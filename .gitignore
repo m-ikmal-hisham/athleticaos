@@ -1,0 +1,11 @@
+# Node + Vite + Java + IntelliJ + macOS
+node_modules/
+dist/
+build/
+out/
+.idea/
+.vscode/
+target/
+*.log
+.DS_Store
+.env

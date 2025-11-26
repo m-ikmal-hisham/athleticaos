@@ -1,0 +1,40 @@
+
+digraph ERD {
+  node [shape=record, fontname=Helvetica];
+  User [label="{User|id|email|password_hash|phone|is_active|created_at|updated_at}"];
+  Role [label="{Role|id|name}"];
+  User_Role [label="{User_Role|user_id|role_id}"];
+  Organisation [label="{Organisation|id|name|org_type|parent_org_id|primary_color|secondary_color|logo_url|created_at}"];
+  User_Organisation [label="{User_Organisation|user_id|organisation_id|role}"];
+  Person [label="{Person|id|first_name|last_name|gender|dob|ic_or_passport|nationality|email|phone|address|created_at}"];
+  Player [label="{Player|id|person_id|status|dominant_hand|dominant_leg|height_cm|weight_kg|created_at}"];
+  Player_Season_Lifecycle [label="{Player_Season_Lifecycle|id|player_id|organisation_id|season_year|age_group|auto_age_up}"];
+  Team [label="{Team|id|organisation_id|name|category|age_group|created_at}"];
+  Team_Player [label="{Team_Player|id|team_id|player_id|position_primary|position_secondary|joined_at}"];
+  Tournament [label="{Tournament|id|name|level|organiser_org_id|start_date|end_date|venue|is_published|created_at}"];
+  Tournament_Team [label="{Tournament_Team|id|tournament_id|team_id|pool_number}"];
+  Match [label="{Match|id|tournament_id|home_team_id|away_team_id|status|start_time|field_number|winner_team_id|created_at}"];
+  Match_Event [label="{Match_Event|id|match_id|player_id|event_type|minute|notes}"];
+  Event [label="{Event|id|organisation_id|title|description|event_type|start_datetime|end_datetime|linked_tournament_id|linked_match_id}"];
+  Theme_Config [label="{Theme_Config|id|organisation_id|primary_color|secondary_color|logo_url|updated_at}"];
+  Audit_Log [label="{Audit_Log|id|user_id|action|entity|entity_id|timestamp}"];
+
+  User_Role -> User;
+  User_Role -> Role;
+  User_Organisation -> User;
+  User_Organisation -> Organisation;
+  Player -> Person;
+  Player_Season_Lifecycle -> Player;
+  Player_Season_Lifecycle -> Organisation;
+  Team -> Organisation;
+  Team_Player -> Team;
+  Team_Player -> Player;
+  Tournament_Team -> Tournament;
+  Tournament_Team -> Team;
+  Match -> Tournament;
+  Match_Event -> Match;
+  Match_Event -> Player;
+  Event -> Organisation;
+  Theme_Config -> Organisation;
+  Audit_Log -> User;
+}

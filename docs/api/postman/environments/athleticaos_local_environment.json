@@ -1,0 +1,90 @@
+{
+  "name": "AthleticaOS Local",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "roles",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "scope",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "org_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "union_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "club_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "team_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "player_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "tournament_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "match_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "home_team_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "away_team_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

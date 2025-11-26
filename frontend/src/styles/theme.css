@@ -1,0 +1,55 @@
+:root {
+  --athos-blue: #0053F0;
+  --athos-red: #D0021B;
+
+  --athos-bg-light: #F3F4F8;
+  --athos-bg-dark: #0E1014;
+
+  --athos-text-light: rgba(0, 0, 0, 0.88);
+  --athos-text-muted-light: rgba(0, 0, 0, 0.55);
+
+  --athos-text-dark: rgba(255, 255, 255, 0.92);
+  --athos-text-muted-dark: rgba(255, 255, 255, 0.65);
+
+  --athos-card-light: #FFFFFF;
+  --athos-card-dark: rgba(18, 22, 30, 0.96);
+
+  --athos-border-subtle: rgba(15, 23, 42, 0.06);
+
+  --athos-radius-xl: 24px;
+  --athos-radius-lg: 18px;
+  --athos-radius-md: 12px;
+
+  --athos-shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.18);
+  --athos-shadow-card: 0 12px 30px rgba(15, 23, 42, 0.12);
+
+  --athos-transition-fast: 150ms ease-out;
+
+  /* Legacy aliases for compatibility */
+  --primary: var(--athos-blue);
+  --primary-glow: rgba(0, 83, 240, 0.35);
+  --blur-level: 24px;
+  --radius-xl: var(--athos-radius-xl);
+}
+
+[data-theme="light"] {
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --text-color: var(--athos-text-light);
+  --text-muted: var(--athos-text-muted-light);
+  --bg-base: var(--athos-bg-light);
+  --card-bg: var(--athos-card-light);
+}
+
+[data-theme="dark"] {
+  --glass-bg: rgba(0, 0, 0, 0.4);
+  --text-color: var(--athos-text-dark);
+  --text-muted: var(--athos-text-muted-dark);
+  --bg-base: var(--athos-bg-dark);
+  --card-bg: var(--athos-card-dark);
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-color);
+  transition: background 0.3s ease, color 0.3s ease;
+}
