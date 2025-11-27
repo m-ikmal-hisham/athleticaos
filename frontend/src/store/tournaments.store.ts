@@ -1,36 +1,36 @@
-import { create } from 'zustand';
-import { fetchTournaments } from '@/api/tournaments.api';
-import toast from 'react-hot-toast';
+import { create } from "zustand";
+import { fetchTournaments } from "../api/tournaments.api";
 
-interface Tournament {
+export interface Tournament {
     id: string;
     name: string;
+    level: string;
     startDate: string;
     endDate: string;
-    status: 'Upcoming' | 'Ongoing' | 'Completed';
-    location: string;
+    venue: string;
+    status: string;
+    organiserOrgId: string;
 }
 
 interface TournamentsState {
     tournaments: Tournament[];
     loading: boolean;
     error: string | null;
-    fetchTournaments: () => Promise<void>;
+    getTournaments: () => Promise<void>;
 }
 
 export const useTournamentsStore = create<TournamentsState>((set) => ({
     tournaments: [],
     loading: false,
     error: null,
-    fetchTournaments: async () => {
+
+    async getTournaments() {
         set({ loading: true, error: null });
         try {
-            const response = await fetchTournaments();
-            set({ tournaments: response.data, loading: false });
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 'Failed to load tournaments';
-            set({ error: errorMessage, loading: false });
-            toast.error(errorMessage);
+            const res = await fetchTournaments();
+            set({ tournaments: res.data, loading: false });
+        } catch (err) {
+            set({ loading: false, error: "Failed to load tournaments" });
         }
-    },
+    }
 }));

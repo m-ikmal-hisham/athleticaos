@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { User } from '@/types';
 import { authApi } from '@/api/auth.api';
 import toast from 'react-hot-toast';
+import { AxiosError } from 'axios';
 
 interface AuthState {
     user: User | null;
@@ -33,8 +34,9 @@ export const useAuthStore = create<AuthState>()(
                     localStorage.setItem('athos_token', token);
                     set({ user, token, isAuthenticated: true });
                     toast.success('Login successful!');
-                } catch (error: any) {
-                    const errorMessage = error.response?.data?.message || 'Login failed';
+                } catch (error: unknown) {
+                    const axiosError = error as AxiosError<{ message: string }>;
+                    const errorMessage = axiosError.response?.data?.message || 'Login failed';
                     toast.error(errorMessage);
                     throw error;
                 }

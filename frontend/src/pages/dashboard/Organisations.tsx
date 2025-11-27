@@ -1,60 +1,62 @@
-import { useEffect } from 'react';
-import { Card } from '@/components/Card';
-import { useOrganisationsStore } from '@/store/organisations.store';
-import { Badge } from '@/components/Badge';
+import { useEffect } from "react";
+import { Card } from "../../components/Card";
+import { useOrganisationsStore } from "../../store/organisations.store";
+import { StatusPill } from "../../components/StatusPill";
 
-export const Organisations = () => {
-    const { organisations, loading, fetchOrganisations } = useOrganisationsStore();
+export default function Organisations() {
+    const { organisations, loading, error, getOrganisations } = useOrganisationsStore();
 
     useEffect(() => {
-        fetchOrganisations();
-    }, [fetchOrganisations]);
+        getOrganisations();
+    }, [getOrganisations]);
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-foreground">Organisations</h1>
-                <p className="text-muted-foreground mt-1">Manage unions, states, and clubs</p>
+        <Card>
+            <div className="card-header-row" style={{ marginBottom: '1.5rem' }}>
+                <div>
+                    <h2>Organisations</h2>
+                    <p className="text-muted-foreground">Unions, state associations, clubs and schools</p>
+                </div>
             </div>
 
-            {/* Table Card */}
-            <Card>
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-white/10">
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Category</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {organisations.map((org) => (
-                                    <tr key={org.id} className="border-b border-white/5 hover:bg-black/5 dark:hover:bg-white/5">
-                                        <td className="py-3 px-4 text-sm text-foreground font-medium">{org.name}</td>
-                                        <td className="py-3 px-4">
-                                            <Badge variant={org.category === 'Union' ? 'primary' : org.category === 'State' ? 'secondary' : 'default'}>
-                                                {org.category}
-                                            </Badge>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <Badge variant={org.status === 'Active' ? 'default' : 'secondary'}>
-                                                {org.status}
-                                            </Badge>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </Card>
-        </div>
+            {loading && <p>Loading organisations…</p>}
+            {error && <p>{error}</p>}
+
+            {!loading && organisations.length === 0 && <p>No organisations found</p>}
+
+            {!loading && organisations.length > 0 && (
+                <table className="glass-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>State</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {organisations.map((org) => (
+                            <tr key={org.id}>
+                                <td style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    {org.logoUrl && (
+                                        <img
+                                            src={org.logoUrl}
+                                            alt={org.name}
+                                            style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                        />
+                                    )}
+                                    {org.name}
+                                </td>
+                                <td>{org.type}</td>
+                                <td>{org.state}</td>
+                                <td>
+                                    <StatusPill status={org.status} />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </Card>
     );
-};
+}

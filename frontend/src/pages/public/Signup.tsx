@@ -52,8 +52,9 @@ export const Signup = () => {
             navigate('/login', {
                 state: { message: 'Registration successful! Please sign in.' }
             });
-        } catch (err: any) {
-            setError(err.message || 'Registration failed. Please try again.');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+            setError(message);
         } finally {
             setIsLoading(false);
         }

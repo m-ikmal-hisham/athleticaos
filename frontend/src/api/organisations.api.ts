@@ -1,6 +1,3 @@
-import api from './axios';
+import api from "./axios";
 
-export const fetchOrganisations = async () => {
-    const response = await api.get('/organisations');
-    return response;
-};
+export const fetchOrganisations = () => api.get("/organisations");

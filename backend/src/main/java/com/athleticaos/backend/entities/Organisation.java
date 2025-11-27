@@ -41,6 +41,13 @@ public class Organisation {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    @Column
+    private String state; // State/Region
+
+    @Column
+    @Builder.Default
+    private String status = "Active"; // Active, Inactive
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

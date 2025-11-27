@@ -1,34 +1,36 @@
-import { create } from 'zustand';
-import { fetchOrganisations } from '@/api/organisations.api';
-import toast from 'react-hot-toast';
+import { create } from "zustand";
+import { fetchOrganisations } from "../api/organisations.api";
 
-interface Organisation {
+export interface Organisation {
     id: string;
     name: string;
-    category: 'Union' | 'State' | 'Club';
-    status: 'Active' | 'Inactive';
+    type: string;
+    state: string;
+    status: string;
+    primaryColor: string;
+    secondaryColor: string;
+    logoUrl?: string;
 }
 
 interface OrganisationsState {
     organisations: Organisation[];
     loading: boolean;
     error: string | null;
-    fetchOrganisations: () => Promise<void>;
+    getOrganisations: () => Promise<void>;
 }
 
 export const useOrganisationsStore = create<OrganisationsState>((set) => ({
     organisations: [],
     loading: false,
     error: null,
-    fetchOrganisations: async () => {
+
+    async getOrganisations() {
         set({ loading: true, error: null });
         try {
-            const response = await fetchOrganisations();
-            set({ organisations: response.data, loading: false });
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 'Failed to load organisations';
-            set({ error: errorMessage, loading: false });
-            toast.error(errorMessage);
+            const res = await fetchOrganisations();
+            set({ organisations: res.data, loading: false });
+        } catch (err) {
+            set({ loading: false, error: "Failed to load organisations" });
         }
-    },
+    }
 }));

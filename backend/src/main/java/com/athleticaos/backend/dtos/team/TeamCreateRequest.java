@@ -25,4 +25,8 @@ public class TeamCreateRequest {
 
     @NotBlank(message = "Age group is required")
     private String ageGroup;
+
+    private String division; // Optional
+
+    private String state; // Optional
 }

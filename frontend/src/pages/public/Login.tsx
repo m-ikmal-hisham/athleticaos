@@ -36,9 +36,10 @@ export const Login = () => {
             await login(data);
 
             // Redirect to the page they tried to visit or dashboard
-            const from = (location.state as any)?.from?.pathname || '/dashboard';
+            const state = location.state as { from?: { pathname: string } } | null;
+            const from = state?.from?.pathname || '/dashboard';
             navigate(from, { replace: true });
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Error is already handled by toast in the store
         } finally {
             setIsLoading(false);

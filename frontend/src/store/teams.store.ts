@@ -1,35 +1,47 @@
-import { create } from 'zustand';
-import { fetchTeams } from '@/api/teams.api';
-import toast from 'react-hot-toast';
+import { create } from "zustand";
+import { fetchTeams, createTeam } from "../api/teams.api";
 
-interface Team {
+export interface Team {
     id: string;
     name: string;
+    category: string;
+    ageGroup: string;
     division: string;
     state: string;
-    status: 'Active' | 'Inactive';
+    status: string;
+    organisationId: string;
 }
 
 interface TeamsState {
     teams: Team[];
     loading: boolean;
     error: string | null;
-    fetchTeams: () => Promise<void>;
+    getTeams: () => Promise<void>;
+    saveTeam: (payload: any) => Promise<void>;
 }
 
-export const useTeamsStore = create<TeamsState>((set) => ({
+export const useTeamsStore = create<TeamsState>((set, get) => ({
     teams: [],
     loading: false,
     error: null,
-    fetchTeams: async () => {
+
+    async getTeams() {
         set({ loading: true, error: null });
         try {
-            const response = await fetchTeams();
-            set({ teams: response.data, loading: false });
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 'Failed to load teams';
-            set({ error: errorMessage, loading: false });
-            toast.error(errorMessage);
+            const res = await fetchTeams();
+            set({ teams: res.data, loading: false });
+        } catch (err) {
+            set({ loading: false, error: "Failed to load teams" });
         }
     },
+
+    async saveTeam(payload) {
+        // Placeholder for future implementation
+        try {
+            await createTeam(payload);
+            await get().getTeams();
+        } catch (err) {
+            set({ error: "Failed to save team" });
+        }
+    }
 }));

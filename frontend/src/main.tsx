@@ -6,7 +6,7 @@ import '@/styles/globals.css'
 import { useUIStore } from "@/store/ui.store";
 import { Toaster } from 'react-hot-toast';
 
-const Root = () => {
+export const Root = () => {
     const { theme, getEffectiveTheme } = useUIStore();
 
     useEffect(() => {

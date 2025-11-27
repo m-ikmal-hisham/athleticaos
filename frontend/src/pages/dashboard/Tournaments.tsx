@@ -1,66 +1,60 @@
-import { useEffect } from 'react';
-import { Card } from '@/components/Card';
-import { useTournamentsStore } from '@/store/tournaments.store';
-import { Badge } from '@/components/Badge';
+import { useEffect } from "react";
+import { Card } from "../../components/Card";
+import { Button } from "../../components/Button";
+import { useTournamentsStore } from "../../store/tournaments.store";
+import { StatusPill } from "../../components/StatusPill";
 
-export const Tournaments = () => {
-    const { tournaments, loading, fetchTournaments } = useTournamentsStore();
+export default function Tournaments() {
+    const { tournaments, loading, error, getTournaments } = useTournamentsStore();
 
     useEffect(() => {
-        fetchTournaments();
-    }, [fetchTournaments]);
+        getTournaments();
+    }, [getTournaments]);
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-foreground">Tournaments</h1>
-                <p className="text-muted-foreground mt-1">Manage all rugby tournaments</p>
+        <Card>
+            <div className="card-header-row" style={{ marginBottom: '1.5rem' }}>
+                <div>
+                    <h2>Tournaments</h2>
+                    <p className="text-muted-foreground">Overview of rugby competitions</p>
+                </div>
             </div>
 
-            {/* Table Card */}
-            <Card>
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-white/10">
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Start Date</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">End Date</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Location</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tournaments.map((tournament) => (
-                                    <tr key={tournament.id} className="border-b border-white/5 hover:bg-black/5 dark:hover:bg-white/5">
-                                        <td className="py-3 px-4 text-sm text-foreground font-medium">{tournament.name}</td>
-                                        <td className="py-3 px-4 text-sm text-foreground">{tournament.startDate}</td>
-                                        <td className="py-3 px-4 text-sm text-foreground">{tournament.endDate}</td>
-                                        <td className="py-3 px-4 text-sm text-foreground">{tournament.location}</td>
-                                        <td className="py-3 px-4">
-                                            <Badge
-                                                variant={
-                                                    tournament.status === 'Upcoming' ? 'default' :
-                                                        tournament.status === 'Ongoing' ? 'primary' :
-                                                            'secondary'
-                                                }
-                                            >
-                                                {tournament.status}
-                                            </Badge>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </Card>
-        </div>
+            {loading && <p>Loading tournaments…</p>}
+            {error && <p>{error}</p>}
+
+            {!loading && tournaments.length === 0 && <p>No tournaments found</p>}
+
+            {!loading && tournaments.length > 0 && (
+                <table className="glass-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Level</th>
+                            <th>Start Date</th>
+                            <th>Status</th>
+                            <th />
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tournaments.map((t) => (
+                            <tr key={t.id}>
+                                <td>{t.name}</td>
+                                <td>{t.level}</td>
+                                <td>{new Date(t.startDate).toLocaleDateString()}</td>
+                                <td>
+                                    <StatusPill status={t.status} />
+                                </td>
+                                <td>
+                                    <Button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+                                        View details
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </Card>
     );
-};
+}

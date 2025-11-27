@@ -4,17 +4,15 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { Login } from '@/pages/public/Login';
 import { Signup } from '@/pages/public/Signup';
 import { DashboardHome } from '@/pages/dashboard/DashboardHome';
-import { Players } from '@/pages/dashboard/Players';
-import { Teams } from '@/pages/dashboard/Teams';
-import { Organisations } from '@/pages/dashboard/Organisations';
-import { Tournaments } from '@/pages/dashboard/Tournaments';
+import Players from '@/pages/dashboard/Players';
+import Teams from '@/pages/dashboard/Teams';
+import Organisations from '@/pages/dashboard/Organisations';
+import Tournaments from '@/pages/dashboard/Tournaments';
 import { Matches } from '@/pages/dashboard/Matches';
 import { AuthGuard } from '@/routes/AuthGuard';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
-// Placeholder components for missing pages
-const UsersListPage = () => <div>Users List Placeholder</div>;
-const UnauthorizedPage = () => <div>Unauthorized Placeholder</div>;
+
 
 export const router = createBrowserRouter([
     {
@@ -36,7 +34,7 @@ export const router = createBrowserRouter([
     },
     {
         path: '/unauthorized',
-        element: <UnauthorizedPage />,
+        element: <div>Unauthorized Placeholder</div>,
     },
     {
         path: '/dashboard',
@@ -54,7 +52,7 @@ export const router = createBrowserRouter([
                 path: 'users',
                 element: (
                     <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_UNION_ADMIN']}>
-                        <UsersListPage />
+                        <div>Users List Placeholder</div>
                     </AuthGuard>
                 ),
             },

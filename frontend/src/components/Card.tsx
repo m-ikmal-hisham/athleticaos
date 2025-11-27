@@ -12,6 +12,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
                 ref={ref}
                 className={clsx(
                     'glass-card',
+                    hover && 'hover:bg-white/5 transition-colors cursor-pointer',
                     className
                 )}
                 {...props}

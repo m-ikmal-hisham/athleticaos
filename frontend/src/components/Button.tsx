@@ -12,7 +12,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         return (
             <button
                 ref={ref}
-                className={clsx('btn-primary', className)}
+                className={clsx(
+                    'btn',
+                    variant === 'primary' && 'btn-primary',
+                    variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+                    variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+                    variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',
+                    variant === 'danger' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                    size === 'sm' && 'h-9 px-3 text-xs',
+                    size === 'md' && 'h-10 px-4 py-2',
+                    size === 'lg' && 'h-11 px-8',
+                    className
+                )}
                 disabled={disabled || isLoading}
                 {...props}
             >

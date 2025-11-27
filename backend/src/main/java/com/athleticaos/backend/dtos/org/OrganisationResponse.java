@@ -14,9 +14,11 @@ import java.util.UUID;
 public class OrganisationResponse {
     private UUID id;
     private String name;
-    private String orgType;
+    private String type; // Renamed from orgType for frontend compatibility
     private UUID parentOrgId;
     private String primaryColor;
     private String secondaryColor;
     private String logoUrl;
+    private String state;
+    private String status;
 }

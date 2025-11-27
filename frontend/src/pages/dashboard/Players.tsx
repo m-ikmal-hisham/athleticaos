@@ -1,72 +1,86 @@
-import { useEffect } from 'react';
-import { Card } from '@/components/Card';
-import { usePlayersStore } from '@/store/players.store';
+import { useEffect } from "react";
+import { Card } from "../../components/Card";
+import { Button } from "../../components/Button";
+import { usePlayersStore } from "../../store/players.store";
+import { PlayerModal } from "../../components/modals/PlayerModal";
+import { StatusPill } from "../../components/StatusPill";
 
-export const Players = () => {
-    const { players, loading, fetchPlayers } = usePlayersStore();
+export default function Players() {
+    const {
+        players,
+        loading,
+        error,
+        getPlayers,
+        isModalOpen,
+        mode,
+        selectedPlayer,
+        openCreateModal,
+        openEditModal,
+        closeModal,
+        savePlayer,
+        toggleStatus
+    } = usePlayersStore();
 
     useEffect(() => {
-        fetchPlayers();
-    }, [fetchPlayers]);
+        getPlayers();
+    }, [getPlayers]);
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-foreground">Players</h1>
-                <p className="text-muted-foreground mt-1">Manage all registered players</p>
+        <Card>
+            <div className="card-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <h2>Players</h2>
+                    <p className="text-muted-foreground">Manage all registered rugby players</p>
+                </div>
+                <Button onClick={openCreateModal}>Add Player</Button>
             </div>
 
-            {/* Table Card */}
-            <Card>
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                    </div>
-                ) : players.length === 0 ? (
-                    <div className="text-center py-12">
-                        <p className="text-muted-foreground">No players found</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="glass-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Club</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {players.map((player: any) => {
-                                    const fullName = [player.firstName || player.firstname, player.lastName || player.lastname]
-                                        .filter(Boolean)
-                                        .join(' ')
-                                        .trim() || player.email;
+            {loading && <p>Loading players…</p>}
+            {error && <p>{error}</p>}
 
-                                    const isActive = player.status === 'Active' || player.isActive;
+            {!loading && players.length === 0 && <p>No players found</p>}
 
-                                    return (
-                                        <tr key={player.id}>
-                                            <td className="font-medium">{fullName}</td>
-                                            <td className="text-muted-foreground">{player.email || '—'}</td>
-                                            <td>{player.role || player.roles?.[0]?.replace('ROLE_', '') || '—'}</td>
-                                            <td>{player.club?.name || player.club || player.organisation?.name || '—'}</td>
-                                            <td>
-                                                <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
-                                                    {player.status || (player.isActive ? 'Active' : 'Inactive')}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </Card>
-        </div>
+            {!loading && players.length > 0 && (
+                <table className="glass-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Club</th>
+                            <th>Status</th>
+                            <th />
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {players.map((p) => (
+                            <tr key={p.id}>
+                                <td>{p.firstName} {p.lastName}</td>
+                                <td>{p.email}</td>
+                                <td>{p.role || "PLAYER"}</td>
+                                <td>{p.clubName || "—"}</td>
+                                <td>
+                                    <StatusPill
+                                        status={p.status || "ACTIVE"}
+                                        onClick={() => toggleStatus(p.id)}
+                                    />
+                                </td>
+                                <td>
+                                    <button onClick={() => openEditModal(p)} style={{ background: 'none', border: 'none', color: 'var(--athos-blue)', cursor: 'pointer' }}>Edit</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+
+            <PlayerModal
+                isOpen={isModalOpen}
+                mode={mode}
+                initialPlayer={selectedPlayer}
+                onClose={closeModal}
+                onSubmit={savePlayer}
+            />
+        </Card>
     );
-};
+}

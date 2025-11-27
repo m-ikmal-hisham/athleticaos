@@ -21,4 +21,5 @@ public class TournamentResponse {
     private LocalDate endDate;
     private String venue;
     private boolean isPublished;
+    private String status;
 }

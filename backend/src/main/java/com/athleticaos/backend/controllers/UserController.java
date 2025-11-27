@@ -1,7 +1,9 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.dtos.user.PlayerResponse;
 import com.athleticaos.backend.dtos.user.UserResponse;
 import com.athleticaos.backend.dtos.user.UserUpdateRequest;
+import com.athleticaos.backend.services.PlayerService;
 import com.athleticaos.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +19,16 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final PlayerService playerService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_UNION_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
@@ -34,5 +37,16 @@ public class UserController {
     @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     public ResponseEntity<UserResponse> updateUser(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
+    }
+
+    // Player-specific endpoints
+    @GetMapping(params = "role")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<PlayerResponse>> getUsersByRole(@RequestParam String role) {
+        // Only support PLAYER role for now
+        if ("PLAYER".equalsIgnoreCase(role)) {
+            return ResponseEntity.ok(playerService.getAllPlayers());
+        }
+        return ResponseEntity.ok(List.of());
     }
 }

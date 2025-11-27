@@ -1,6 +1,3 @@
-import api from './axios';
+import api from "./axios";
 
-export const fetchTournaments = async () => {
-    const response = await api.get('/tournaments');
-    return response;
-};
+export const fetchTournaments = () => api.get("/tournaments");

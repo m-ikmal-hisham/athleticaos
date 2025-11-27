@@ -35,6 +35,16 @@ public class Team {
     @Column(name = "age_group", nullable = false)
     private String ageGroup;
 
+    @Column
+    private String division; // Premier, Division 1, Division 2, School
+
+    @Column
+    private String state; // State/Region
+
+    @Column
+    @Builder.Default
+    private String status = "Active"; // Active, Inactive
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

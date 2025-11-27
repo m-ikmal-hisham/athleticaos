@@ -6,7 +6,7 @@ export const authApi = {
         return response;
     },
 
-    register: async (data: any) => {
+    register: async (data: { firstName: string; lastName: string; email: string; password: string; roles: string[] }) => {
         const response = await api.post('/auth/register', data);
         return response;
     },

@@ -1,0 +1,36 @@
+{
+    "name": "AthleticaOS Dev v2",
+    "values": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "enabled": true
+        },
+        {
+            "key": "auth_token",
+            "value": "",
+            "enabled": true
+        },
+        {
+            "key": "player_id",
+            "value": "",
+            "enabled": true
+        },
+        {
+            "key": "team_id",
+            "value": "",
+            "enabled": true
+        },
+        {
+            "key": "organisation_id",
+            "value": "",
+            "enabled": true
+        },
+        {
+            "key": "tournament_id",
+            "value": "",
+            "enabled": true
+        }
+    ],
+    "_postman_variable_scope": "environment"
+}
