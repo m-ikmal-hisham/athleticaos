@@ -1,5 +1,6 @@
 package com.athleticaos.backend.entities;
 
+import com.athleticaos.backend.enums.TournamentFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,6 +46,21 @@ public class Tournament {
     @Column(name = "is_published", nullable = false)
     @Builder.Default
     private boolean isPublished = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "format")
+    private TournamentFormat format;
+
+    @Column(name = "number_of_pools")
+    private Integer numberOfPools;
+
+    @Column(name = "has_placement_stages")
+    @Builder.Default
+    private Boolean hasPlacementStages = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

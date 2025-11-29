@@ -1,6 +1,6 @@
 package com.athleticaos.backend.dtos.match;
 
-import jakarta.validation.constraints.NotBlank;
+import com.athleticaos.backend.enums.MatchEventType;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,15 +14,14 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MatchEventCreateRequest {
-    @NotNull(message = "Match ID is required")
-    private UUID matchId;
+    @NotNull(message = "Team ID is required")
+    private UUID teamId;
 
     private UUID playerId;
 
-    @NotBlank(message = "Event type is required")
-    private String eventType;
+    @NotNull(message = "Event type is required")
+    private MatchEventType eventType;
 
-    @NotNull(message = "Minute is required")
     private Integer minute;
 
     private String notes;

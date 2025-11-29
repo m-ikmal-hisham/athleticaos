@@ -2,6 +2,7 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.dtos.tournament.TournamentCreateRequest;
 import com.athleticaos.backend.dtos.tournament.TournamentResponse;
+import com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.repositories.OrganisationRepository;
@@ -27,6 +28,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     public List<TournamentResponse> getAllTournaments() {
         return tournamentRepository.findAll().stream()
+                .filter(tournament -> !tournament.isDeleted()) // Filter out deleted tournaments
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -34,6 +36,7 @@ public class TournamentServiceImpl implements TournamentService {
     @SuppressWarnings("null")
     public TournamentResponse getTournamentById(UUID id) {
         return tournamentRepository.findById(id)
+                .filter(tournament -> !tournament.isDeleted())
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
     }
@@ -42,6 +45,11 @@ public class TournamentServiceImpl implements TournamentService {
     @SuppressWarnings("null")
     public TournamentResponse createTournament(TournamentCreateRequest request) {
         log.info("Creating tournament: {}", request.getName());
+
+        // Validate dates
+        validateDates(request.getStartDate(), request.getEndDate());
+
+        // Validate organiser organisation exists
         Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
                 .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
 
@@ -53,9 +61,79 @@ public class TournamentServiceImpl implements TournamentService {
                 .endDate(request.getEndDate())
                 .venue(request.getVenue())
                 .isPublished(false)
+                .deleted(false)
                 .build();
 
         return mapToResponse(tournamentRepository.save(tournament));
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public TournamentResponse updateTournament(UUID id, TournamentUpdateRequest request) {
+        log.info("Updating tournament: {}", id);
+        Tournament tournament = tournamentRepository.findById(id)
+                .filter(t -> !t.isDeleted())
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        // Update fields if provided
+        if (request.getName() != null) {
+            tournament.setName(request.getName());
+        }
+        if (request.getLevel() != null) {
+            tournament.setLevel(request.getLevel());
+        }
+        if (request.getOrganiserOrgId() != null) {
+            Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
+            tournament.setOrganiserOrg(org);
+        }
+        if (request.getStartDate() != null) {
+            tournament.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            tournament.setEndDate(request.getEndDate());
+        }
+        if (request.getVenue() != null) {
+            tournament.setVenue(request.getVenue());
+        }
+        if (request.getIsPublished() != null) {
+            tournament.setPublished(request.getIsPublished());
+        }
+
+        // Validate dates after updates
+        validateDates(tournament.getStartDate(), tournament.getEndDate());
+
+        return mapToResponse(tournamentRepository.save(tournament));
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public void deleteTournament(UUID id) {
+        log.info("Soft deleting tournament: {}", id);
+        Tournament tournament = tournamentRepository.findById(id)
+                .filter(t -> !t.isDeleted())
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        tournament.setDeleted(true);
+        tournamentRepository.save(tournament);
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public TournamentResponse updatePublishStatus(UUID id, boolean publish) {
+        log.info("Updating publish status for tournament {}: {}", id, publish);
+        Tournament tournament = tournamentRepository.findById(id)
+                .filter(t -> !t.isDeleted())
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        tournament.setPublished(publish);
+        return mapToResponse(tournamentRepository.save(tournament));
+    }
+
+    private void validateDates(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("End date must be on or after start date");
+        }
     }
 
     private TournamentResponse mapToResponse(Tournament tournament) {

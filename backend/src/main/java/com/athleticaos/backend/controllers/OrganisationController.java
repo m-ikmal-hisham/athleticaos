@@ -35,7 +35,7 @@ public class OrganisationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<OrganisationResponse> createOrganisation(
             @RequestBody @Valid OrganisationCreateRequest request) {
         log.info("Admin creating organisation: {}", request.getName());
@@ -43,7 +43,7 @@ public class OrganisationController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<OrganisationResponse> updateOrganisation(
             @PathVariable UUID id,
             @RequestBody @Valid OrganisationUpdateRequest request) {

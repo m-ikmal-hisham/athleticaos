@@ -18,6 +18,7 @@ public class TeamResponse {
     private String category;
     private String ageGroup;
     private String division;
+    private String level;
     private String state;
     private String status;
 }

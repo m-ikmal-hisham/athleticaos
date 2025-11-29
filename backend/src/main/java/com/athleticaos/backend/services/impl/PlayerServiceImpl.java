@@ -30,6 +30,14 @@ public class PlayerServiceImpl implements PlayerService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    public PlayerResponse getPlayerById(UUID id) {
+        log.info("Fetching player by id: {}", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        return mapToPlayerResponse(user);
+    }
+
+    @Override
     public List<PlayerResponse> getAllPlayers() {
         return userRepository.findByRoles_Name("ROLE_PLAYER").stream()
                 .map(this::mapToPlayerResponse)

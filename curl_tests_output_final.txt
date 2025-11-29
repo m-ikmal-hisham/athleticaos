@@ -1,0 +1,82 @@
+Obtained JWT token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBhdGhsZXRpY2Fvcy5jb20iLCJpYXQiOjE3NjQzMTAxNDAsImV4cCI6MTc2NDM5NjU0MH0.NxVOkr8Ismd60Dn_TJRZV7z_ym6gJ43FPAfwKKi16Yw
+Created Organisation ID: 598d72fa-50b6-4eae-bc29-a8f0a8c7bb4c
+Created Team 1 ID: 68e64e39-d3a4-427b-8f15-7e39b061bb55
+Created Team 2 ID: 5c3b0f0a-cc7c-4f0b-a9fb-c9b633bac65a
+Created Tournament ID: 8a4b727a-e521-41d5-948d-cf7a3e299082
+Create Player Response: {"id":"f118b51d-4c67-4f54-99ca-344c6fa726eb","firstName":"John","lastName":"Doe","email":"john.doe.1764310141@example.com","phone":null,"status":"Active","roles":["ROLE_PLAYER"],"organisationId":null,"active":true}
+Created Player (User) ID: f118b51d-4c67-4f54-99ca-344c6fa726eb
+Create Match Response: {"id":"9f58a55e-9a75-472d-ac40-9897e4cf8953","tournamentId":"8a4b727a-e521-41d5-948d-cf7a3e299082","homeTeamId":"68e64e39-d3a4-427b-8f15-7e39b061bb55","homeTeamName":"Test Team 1","awayTeamId":"5c3b0f0a-cc7c-4f0b-a9fb-c9b633bac65a","awayTeamName":"Test Team 2","matchDate":"2025-12-05","kickOffTime":"15:00:00","venue":"Test Stadium","pitch":"Main Pitch","status":"SCHEDULED","homeScore":null,"awayScore":null,"phase":"Group Stage","matchCode":"M001"}
+Created Match ID: 9f58a55e-9a75-472d-ac40-9897e4cf8953
+Create Match Event Response: {"id":"025566f8-e83c-4a8e-8e86-dc05648f5f17","matchId":"9f58a55e-9a75-472d-ac40-9897e4cf8953","teamId":"68e64e39-d3a4-427b-8f15-7e39b061bb55","playerId":"f118b51d-4c67-4f54-99ca-344c6fa726eb","eventType":"TRY","minute":23,"notes":null}
+Created Match Event ID: 025566f8-e83c-4a8e-8e86-dc05648f5f17
+{
+  "id": "598d72fa-50b6-4eae-bc29-a8f0a8c7bb4c",
+  "name": "Test Org",
+  "type": "CLUB",
+  "parentOrgId": null,
+  "primaryColor": "#FF0000",
+  "secondaryColor": "#00FF00",
+  "logoUrl": "http://example.com/logo.png",
+  "state": null,
+  "status": "Active"
+}
+{
+  "id": "68e64e39-d3a4-427b-8f15-7e39b061bb55",
+  "organisationId": "598d72fa-50b6-4eae-bc29-a8f0a8c7bb4c",
+  "name": "Test Team 1",
+  "category": "Senior",
+  "ageGroup": "U20",
+  "division": null,
+  "level": null,
+  "state": null,
+  "status": "Active"
+}
+{
+  "id": "8a4b727a-e521-41d5-948d-cf7a3e299082",
+  "name": "Test Tournament",
+  "level": "National",
+  "organiserOrgId": "598d72fa-50b6-4eae-bc29-a8f0a8c7bb4c",
+  "startDate": "2025-12-01",
+  "endDate": "2025-12-10",
+  "venue": "Test Stadium",
+  "status": "Draft",
+  "published": false
+}
+{
+  "id": "f118b51d-4c67-4f54-99ca-344c6fa726eb",
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe.1764310141@example.com",
+  "phone": null,
+  "status": "Active",
+  "roles": [
+    "ROLE_PLAYER"
+  ],
+  "organisationId": null,
+  "active": true
+}
+{
+  "id": "9f58a55e-9a75-472d-ac40-9897e4cf8953",
+  "tournamentId": "8a4b727a-e521-41d5-948d-cf7a3e299082",
+  "homeTeamId": "68e64e39-d3a4-427b-8f15-7e39b061bb55",
+  "homeTeamName": "Test Team 1",
+  "awayTeamId": "5c3b0f0a-cc7c-4f0b-a9fb-c9b633bac65a",
+  "awayTeamName": "Test Team 2",
+  "matchDate": "2025-12-05",
+  "kickOffTime": "15:00:00",
+  "venue": "Test Stadium",
+  "pitch": "Main Pitch",
+  "status": "SCHEDULED",
+  "homeScore": null,
+  "awayScore": null,
+  "phase": "Group Stage",
+  "matchCode": "M001"
+}
+{
+  "status": 500,
+  "error": "Internal Server Error",
+  "message": "An unexpected error occurred: No static resource api/v1/matches/9f58a55e-9a75-472d-ac40-9897e4cf8953/events/025566f8-e83c-4a8e-8e86-dc05648f5f17.",
+  "details": null,
+  "path": "/api/v1/matches/9f58a55e-9a75-472d-ac40-9897e4cf8953/events/025566f8-e83c-4a8e-8e86-dc05648f5f17",
+  "timestamp": "2025-11-28T14:09:01.396791"
+}

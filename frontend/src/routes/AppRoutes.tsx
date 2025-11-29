@@ -9,6 +9,7 @@ import Teams from '@/pages/dashboard/Teams';
 import Organisations from '@/pages/dashboard/Organisations';
 import Tournaments from '@/pages/dashboard/Tournaments';
 import { Matches } from '@/pages/dashboard/Matches';
+import Stats from '@/pages/dashboard/Stats';
 import { AuthGuard } from '@/routes/AuthGuard';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
@@ -75,6 +76,10 @@ export const router = createBrowserRouter([
             {
                 path: 'matches',
                 element: <Matches />,
+            },
+            {
+                path: 'stats',
+                element: <Stats />,
             },
         ],
     },

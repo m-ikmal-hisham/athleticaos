@@ -1,11 +1,14 @@
 package com.athleticaos.backend.entities;
 
+import com.athleticaos.backend.enums.MatchEventType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -25,14 +28,24 @@ public class MatchEvent {
     private Match match;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id", nullable = false)
+    private Team team;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id")
-    private Player player;
+    private User player;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
-    private String eventType; // TRY, CONVERSION, etc.
+    private MatchEventType eventType;
 
-    @Column(nullable = false)
+    @Column
     private Integer minute;
 
+    @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

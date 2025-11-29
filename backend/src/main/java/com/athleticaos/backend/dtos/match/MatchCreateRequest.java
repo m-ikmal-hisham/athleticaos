@@ -6,7 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -23,8 +24,14 @@ public class MatchCreateRequest {
     @NotNull(message = "Away Team ID is required")
     private UUID awayTeamId;
 
-    @NotNull(message = "Start time is required")
-    private LocalDateTime startTime;
+    @NotNull(message = "Match date is required")
+    private LocalDate matchDate;
 
-    private String fieldNumber;
+    @NotNull(message = "Kick-off time is required")
+    private LocalTime kickOffTime;
+
+    private String venue;
+    private String pitch;
+    private String phase;
+    private String matchCode;
 }

@@ -14,8 +14,12 @@ import java.util.UUID;
 @NoArgsConstructor
 public class UserResponse {
     private UUID id;
+    private String firstName;
+    private String lastName;
     private String email;
     private String phone;
     private boolean isActive;
+    private String status;
     private Set<String> roles;
+    private UUID organisationId;
 }

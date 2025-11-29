@@ -1,0 +1,2 @@
+{"status":403,"error":"Forbidden","message":"Access denied","details":null,"path":null,"timestamp":"2025-11-28T21:09:24.01896"}
+HTTP_STATUS:403

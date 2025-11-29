@@ -36,12 +36,32 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, jakarta.servlet.http.HttpServletRequest request) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage(),
+                request);
+    }
+
+    private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message,
+            jakarta.servlet.http.HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                null,
+                request.getRequestURI(),
+                LocalDateTime.now());
+        return new ResponseEntity<>(error, status);
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message) {
-        ErrorResponse error = new ErrorResponse(status.value(), message, null, LocalDateTime.now());
+        // Fallback for when request is not available or for internal calls if any
+        ErrorResponse error = new ErrorResponse(
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                null,
+                null,
+                LocalDateTime.now());
         return new ResponseEntity<>(error, status);
     }
 }

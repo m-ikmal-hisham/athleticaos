@@ -33,10 +33,23 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<UserResponse> createUser(
+            @RequestBody @jakarta.validation.Valid com.athleticaos.backend.dtos.user.UserCreateRequest request) {
+        return ResponseEntity.ok(userService.createUser(request));
+    }
+
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<UserResponse> updateUser(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<UserResponse> updateUserStatus(@PathVariable UUID id, @RequestParam String status) {
+        return ResponseEntity.ok(userService.updateUserStatus(id, status));
     }
 
     // Player-specific endpoints

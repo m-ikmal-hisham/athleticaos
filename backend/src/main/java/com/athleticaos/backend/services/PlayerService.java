@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface PlayerService {
     List<PlayerResponse> getAllPlayers();
 
+    PlayerResponse getPlayerById(UUID id);
+
     PlayerResponse createPlayer(PlayerCreateRequest request);
 
     PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request);

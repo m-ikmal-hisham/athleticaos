@@ -96,6 +96,7 @@ public class TeamServiceImpl implements TeamService {
                 .category(team.getCategory())
                 .ageGroup(team.getAgeGroup())
                 .division(team.getDivision())
+                .level(team.getDivision()) // Map division to level for now
                 .state(team.getState())
                 .status(team.getStatus())
                 .build();

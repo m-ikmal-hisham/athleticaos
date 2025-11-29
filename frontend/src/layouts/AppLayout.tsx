@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, UsersRound, Building, Trophy, X, Bell, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Home, Users, UsersRound, Building, Trophy, X, Bell, LogOut, User, Settings, ChevronDown, BarChart2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -42,6 +42,12 @@ const navItems: NavItem[] = [
         path: '/dashboard/tournaments',
         icon: <Trophy className="w-5 h-5" />,
         iconFilled: <Trophy className="w-5 h-5 fill-current" />
+    },
+    {
+        label: 'Stats & Leaderboards',
+        path: '/dashboard/stats',
+        icon: <BarChart2 className="w-5 h-5" />,
+        iconFilled: <BarChart2 className="w-5 h-5 fill-current" />
     },
 ];
 

@@ -1,13 +1,17 @@
 package com.athleticaos.backend.entities;
 
+import com.athleticaos.backend.enums.MatchStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -34,20 +38,44 @@ public class Match {
     @JoinColumn(name = "away_team_id", nullable = false)
     private Team awayTeam;
 
+    @Column(name = "match_date", nullable = false)
+    private LocalDate matchDate;
+
+    @Column(name = "kick_off_time", nullable = false)
+    private LocalTime kickOffTime;
+
+    @Column
+    private String venue;
+
+    @Column
+    private String pitch;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // SCHEDULED, LIVE, COMPLETED
+    @Builder.Default
+    private MatchStatus status = MatchStatus.SCHEDULED;
 
-    @Column(name = "start_time", nullable = false)
-    private LocalDateTime startTime;
+    @Column(name = "home_score")
+    private Integer homeScore;
 
-    @Column(name = "field_number")
-    private String fieldNumber;
+    @Column(name = "away_score")
+    private Integer awayScore;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "winner_team_id")
-    private Team winnerTeam;
+    @JoinColumn(name = "stage_id")
+    private TournamentStage stage;
+
+    @Column
+    private String phase;
+
+    @Column(name = "match_code")
+    private String matchCode;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

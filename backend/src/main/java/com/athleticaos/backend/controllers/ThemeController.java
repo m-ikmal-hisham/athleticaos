@@ -24,7 +24,7 @@ public class ThemeController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('ROLE_CLUB_ADMIN', 'ROLE_UNION_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'UNION_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ThemeConfigResponse> updateTheme(@RequestBody @Valid ThemeConfigUpdateRequest request) {
         return ResponseEntity.ok(themeService.updateTheme(request));
     }
