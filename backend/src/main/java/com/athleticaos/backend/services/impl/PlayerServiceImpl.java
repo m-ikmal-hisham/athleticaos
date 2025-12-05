@@ -2,20 +2,20 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.dtos.player.PlayerCreateRequest;
 import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
-import com.athleticaos.backend.dtos.user.PlayerResponse;
-import com.athleticaos.backend.entities.Role;
-import com.athleticaos.backend.entities.User;
-import com.athleticaos.backend.repositories.RoleRepository;
-import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.dtos.player.PlayerResponse;
+import com.athleticaos.backend.entities.Person;
+import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.repositories.PersonRepository;
+import com.athleticaos.backend.repositories.PlayerRepository;
+import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerService;
+import com.athleticaos.backend.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,21 +25,38 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PlayerServiceImpl implements PlayerService {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PlayerRepository playerRepository;
+    private final PersonRepository personRepository;
+    private final UserService userService;
+    private final PlayerTeamRepository playerTeamRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public PlayerResponse getPlayerById(UUID id) {
         log.info("Fetching player by id: {}", id);
-        User user = userRepository.findById(id)
+        Player player = playerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
-        return mapToPlayerResponse(user);
+        return mapToPlayerResponse(player);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PlayerResponse> getAllPlayers() {
-        return userRepository.findByRoles_Name("ROLE_PLAYER").stream()
+        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+        List<Player> players;
+
+        if (accessibleIds == null) {
+            // SUPER_ADMIN sees all
+            players = playerRepository.findAllByOrderByCreatedAtDesc();
+        } else if (accessibleIds.isEmpty()) {
+            // No organisation assigned or empty hierarchy
+            players = java.util.Collections.emptyList();
+        } else {
+            // Filter by accessible organisations via team assignments
+            players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds);
+        }
+
+        return players.stream()
                 .map(this::mapToPlayerResponse)
                 .collect(Collectors.toList());
     }
@@ -48,80 +65,148 @@ public class PlayerServiceImpl implements PlayerService {
     @Transactional
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
-        if (userRepository.existsByEmail(request.email())) {
+
+        // Check if person with email already exists
+        if (personRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        User user = User.builder()
+        // Create Person record (PII)
+        Person person = Person.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
+                .gender(request.gender())
+                .dob(request.dob())
+                .icOrPassport(request.icOrPassport())
+                .nationality(request.nationality())
                 .email(request.email())
-                .passwordHash(passwordEncoder.encode(
-                        request.password() != null ? request.password() : "DefaultPass123!"))
-                .isActive(true)
+                .phone(request.phone())
+                .address(request.address())
                 .build();
 
-        Role playerRole = roleRepository.findByName("ROLE_PLAYER")
-                .orElseThrow(() -> new EntityNotFoundException("Role ROLE_PLAYER not found"));
+        person = personRepository.save(person);
+        log.info("Created person record with id: {}", person.getId());
 
-        user.setRoles(Collections.singleton(playerRole));
+        // Create Player record (Rugby-specific)
+        Player player = Player.builder()
+                .person(person)
+                .status(request.status() != null ? request.status() : "ACTIVE")
+                .dominantHand(request.dominantHand())
+                .dominantLeg(request.dominantLeg())
+                .heightCm(request.heightCm())
+                .weightKg(request.weightKg())
+                .build();
 
-        return mapToPlayerResponse(userRepository.save(user));
+        player = playerRepository.save(player);
+        log.info("Created player record with id: {}", player.getId());
+
+        return mapToPlayerResponse(player);
     }
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request) {
         log.info("Updating player: {}", id);
-        User user = userRepository.findById(id)
+
+        Player player = playerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
+        Person person = player.getPerson();
+
+        // Update Person (PII) fields
         if (request.firstName() != null) {
-            user.setFirstName(request.firstName());
+            person.setFirstName(request.firstName());
         }
         if (request.lastName() != null) {
-            user.setLastName(request.lastName());
+            person.setLastName(request.lastName());
+        }
+        if (request.gender() != null) {
+            person.setGender(request.gender());
+        }
+        if (request.dob() != null) {
+            person.setDob(request.dob());
+        }
+        if (request.icOrPassport() != null) {
+            person.setIcOrPassport(request.icOrPassport());
+        }
+        if (request.nationality() != null) {
+            person.setNationality(request.nationality());
         }
         if (request.email() != null) {
-            user.setEmail(request.email());
+            person.setEmail(request.email());
         }
-        if (request.status() != null) {
-            boolean isActive = "ACTIVE".equalsIgnoreCase(request.status())
-                    || "Active".equalsIgnoreCase(request.status());
-            user.setActive(isActive);
+        if (request.phone() != null) {
+            person.setPhone(request.phone());
+        }
+        if (request.address() != null) {
+            person.setAddress(request.address());
         }
 
-        return mapToPlayerResponse(userRepository.save(user));
+        personRepository.save(person);
+
+        // Update Player (Rugby-specific) fields
+        if (request.status() != null) {
+            player.setStatus(request.status());
+        }
+        if (request.dominantHand() != null) {
+            player.setDominantHand(request.dominantHand());
+        }
+        if (request.dominantLeg() != null) {
+            player.setDominantLeg(request.dominantLeg());
+        }
+        if (request.heightCm() != null) {
+            player.setHeightCm(request.heightCm());
+        }
+        if (request.weightKg() != null) {
+            player.setWeightKg(request.weightKg());
+        }
+
+        player = playerRepository.save(player);
+        log.info("Updated player: {}", id);
+
+        return mapToPlayerResponse(player);
     }
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public PlayerResponse toggleStatus(UUID id) {
         log.info("Toggling status for player: {}", id);
-        User user = userRepository.findById(id)
+
+        Player player = playerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
-        user.setActive(!user.isActive());
+        // Toggle between ACTIVE and INACTIVE
+        String currentStatus = player.getStatus();
+        String newStatus = "ACTIVE".equals(currentStatus) ? "INACTIVE" : "ACTIVE";
+        player.setStatus(newStatus);
 
-        return mapToPlayerResponse(userRepository.save(user));
+        player = playerRepository.save(player);
+        log.info("Toggled player status to: {}", newStatus);
+
+        return mapToPlayerResponse(player);
     }
 
-    private PlayerResponse mapToPlayerResponse(User user) {
-        String role = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse("UNKNOWN");
+    private PlayerResponse mapToPlayerResponse(Player player) {
+        Person person = player.getPerson();
 
-        return new PlayerResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                role,
-                user.isActive() ? "Active" : "Inactive",
-                null // Club name not yet linked
-        );
+        return PlayerResponse.builder()
+                .id(player.getId())
+                .personId(person.getId())
+                .firstName(person.getFirstName())
+                .lastName(person.getLastName())
+                .gender(person.getGender())
+                .dob(person.getDob())
+                .icOrPassport(person.getIcOrPassport()) // Include for update flow
+                .nationality(person.getNationality())
+                .email(person.getEmail())
+                .phone(person.getPhone())
+                .address(person.getAddress())
+                .status(player.getStatus())
+                .dominantHand(player.getDominantHand())
+                .dominantLeg(player.getDominantLeg())
+                .heightCm(player.getHeightCm())
+                .weightKg(player.getWeightKg())
+                .createdAt(player.getCreatedAt())
+                .build();
     }
 }

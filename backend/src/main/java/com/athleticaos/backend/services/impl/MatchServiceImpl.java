@@ -10,8 +10,12 @@ import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.TournamentRepository;
+import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.MatchService;
+import com.athleticaos.backend.services.PlayerSuspensionService;
+import com.athleticaos.backend.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,11 +31,29 @@ public class MatchServiceImpl implements MatchService {
     private final MatchRepository matchRepository;
     private final TournamentRepository tournamentRepository;
     private final TeamRepository teamRepository;
+    private final com.athleticaos.backend.repositories.MatchEventRepository matchEventRepository;
+    private final UserService userService;
+    private final AuditLogger auditLogger;
+    private final PlayerSuspensionService suspensionService;
 
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches() {
-        return matchRepository.findAll().stream()
+        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+        List<Match> matches;
+
+        if (accessibleIds == null) {
+            // SUPER_ADMIN sees all
+            matches = matchRepository.findAll();
+        } else if (accessibleIds.isEmpty()) {
+            matches = java.util.Collections.emptyList();
+        } else {
+            // Filter by accessible organisations (Home Team OR Away Team OR Tournament
+            // Organiser)
+            matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
+        }
+
+        return matches.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -58,7 +80,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    public MatchResponse createMatch(MatchCreateRequest request) {
+    public MatchResponse createMatch(MatchCreateRequest request, HttpServletRequest httpRequest) {
         Tournament tournament = tournamentRepository.findById(request.getTournamentId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Tournament not found with ID: " + request.getTournamentId()));
@@ -94,12 +116,13 @@ public class MatchServiceImpl implements MatchService {
                 .build();
 
         Match savedMatch = matchRepository.save(match);
+        auditLogger.logMatchCreated(savedMatch, httpRequest);
         return mapToResponse(savedMatch);
     }
 
     @Override
     @Transactional
-    public MatchResponse updateMatch(UUID id, MatchUpdateRequest request) {
+    public MatchResponse updateMatch(UUID id, MatchUpdateRequest request, HttpServletRequest httpRequest) {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
 
@@ -142,6 +165,11 @@ public class MatchServiceImpl implements MatchService {
                 }
             }
             match.setStatus(request.getStatus());
+
+            // Decrement suspensions if match is completed
+            if (request.getStatus() == MatchStatus.COMPLETED) {
+                suspensionService.decrementSuspensions(match);
+            }
         }
 
         if (request.getHomeScore() != null) {
@@ -152,6 +180,7 @@ public class MatchServiceImpl implements MatchService {
         }
 
         Match updatedMatch = matchRepository.save(match);
+        auditLogger.logMatchUpdated(updatedMatch, httpRequest);
         return mapToResponse(updatedMatch);
     }
 
@@ -169,8 +198,10 @@ public class MatchServiceImpl implements MatchService {
                 .id(match.getId())
                 .tournamentId(match.getTournament().getId())
                 .homeTeamId(match.getHomeTeam().getId())
+                .homeTeamOrgId(match.getHomeTeam().getOrganisation().getId())
                 .homeTeamName(match.getHomeTeam().getName())
                 .awayTeamId(match.getAwayTeam().getId())
+                .awayTeamOrgId(match.getAwayTeam().getOrganisation().getId())
                 .awayTeamName(match.getAwayTeam().getName())
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
@@ -182,5 +213,80 @@ public class MatchServiceImpl implements MatchService {
                 .phase(match.getPhase())
                 .matchCode(match.getMatchCode())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getMatchesByStatus(String status) {
+        MatchStatus matchStatus = MatchStatus.valueOf(status.toUpperCase());
+        return matchRepository.findByStatus(matchStatus).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void recalculateMatchScores(UUID matchId) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
+
+        List<com.athleticaos.backend.entities.MatchEvent> events = matchEventRepository.findByMatchId(matchId);
+
+        int homeScore = 0;
+        int awayScore = 0;
+
+        for (com.athleticaos.backend.entities.MatchEvent event : events) {
+            int points = getPointsForEventType(event.getEventType());
+            if (event.getTeam().getId().equals(match.getHomeTeam().getId())) {
+                homeScore += points;
+            } else if (event.getTeam().getId().equals(match.getAwayTeam().getId())) {
+                awayScore += points;
+            }
+        }
+
+        match.setHomeScore(homeScore);
+        match.setAwayScore(awayScore);
+        matchRepository.save(match);
+    }
+
+    private int getPointsForEventType(com.athleticaos.backend.enums.MatchEventType eventType) {
+        if (eventType == null)
+            return 0;
+        switch (eventType) {
+            case TRY:
+                return 5;
+            case CONVERSION:
+                return 2;
+            case PENALTY:
+                return 3;
+            case DROP_GOAL:
+                return 3;
+            default:
+                return 0;
+        }
+    }
+
+    @Override
+    @Transactional
+    public MatchResponse updateMatchStatus(UUID id, String status, HttpServletRequest httpRequest) {
+        Match match = matchRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
+
+        MatchStatus matchStatus;
+        try {
+            matchStatus = MatchStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid match status: " + status);
+        }
+
+        match.setStatus(matchStatus);
+
+        // Decrement suspensions if match is completed
+        if (matchStatus == MatchStatus.COMPLETED) {
+            suspensionService.decrementSuspensions(match);
+        }
+
+        Match updatedMatch = matchRepository.save(match);
+        return mapToResponse(updatedMatch);
     }
 }

@@ -1,15 +1,18 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, UsersRound, Building, Trophy, X, Bell, LogOut, User, Settings, ChevronDown, BarChart2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Home, Users, UsersRound, Building, Trophy, X, Bell, ChevronDown, BarChart2, Calendar, Award, Activity as ActivityIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { TournamentPill } from '@/components/TournamentPill';
+import { ProfilePopup } from '@/components/ProfilePopup';
 
 interface NavItem {
     label: string;
     path: string;
     icon: React.ReactNode;
     iconFilled: React.ReactNode;
+    roles?: string[]; // Optional roles for role-based visibility
 }
 
 const navItems: NavItem[] = [
@@ -18,6 +21,13 @@ const navItems: NavItem[] = [
         path: '/dashboard',
         icon: <Home className="w-5 h-5" />,
         iconFilled: <Home className="w-5 h-5 fill-current" />
+    },
+    {
+        label: 'Users',
+        path: '/dashboard/users',
+        icon: <Users className="w-5 h-5" />,
+        iconFilled: <Users className="w-5 h-5 fill-current" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
     },
     {
         label: 'Players',
@@ -38,10 +48,22 @@ const navItems: NavItem[] = [
         iconFilled: <Building className="w-5 h-5 fill-current" />
     },
     {
+        label: 'Competitions',
+        path: '/dashboard/competitions',
+        icon: <Award className="w-5 h-5" />,
+        iconFilled: <Award className="w-5 h-5 fill-current" />
+    },
+    {
         label: 'Tournaments',
         path: '/dashboard/tournaments',
         icon: <Trophy className="w-5 h-5" />,
         iconFilled: <Trophy className="w-5 h-5 fill-current" />
+    },
+    {
+        label: 'Matches',
+        path: '/dashboard/matches',
+        icon: <Calendar className="w-5 h-5" />,
+        iconFilled: <Calendar className="w-5 h-5 fill-current" />
     },
     {
         label: 'Stats & Leaderboards',
@@ -49,19 +71,24 @@ const navItems: NavItem[] = [
         icon: <BarChart2 className="w-5 h-5" />,
         iconFilled: <BarChart2 className="w-5 h-5 fill-current" />
     },
+    {
+        label: 'Activity & Logs',
+        path: '/dashboard/activity',
+        icon: <ActivityIcon className="w-5 h-5" />,
+        iconFilled: <ActivityIcon className="w-5 h-5 fill-current" />
+    },
 ];
 
 export const AppLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [showProfilePopup, setShowProfilePopup] = useState(false);
     const location = useLocation();
-    const navigate = useNavigate();
-    const { user, logout } = useAuthStore();
+    const { user, checkTokenValidity } = useAuthStore();
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+    // Check token validity on mount
+    useEffect(() => {
+        checkTokenValidity();
+    }, [checkTokenValidity]);
 
     return (
         <div className="min-h-screen flex">
@@ -102,30 +129,33 @@ export const AppLayout = () => {
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto p-4">
                         <ul className="space-y-1">
-                            {navItems.map((item) => {
-                                const isActive = location.pathname === item.path;
-                                return (
-                                    <li key={item.path}>
-                                        <Link
-                                            to={item.path}
-                                            onClick={() => setSidebarOpen(false)}
-                                            className={clsx(
-                                                'flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-200 relative group',
-                                                isActive
-                                                    ? 'text-primary font-medium bg-primary/10 shadow-sm'
-                                                    : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5'
-                                            )}
-                                            style={isActive ? {
-                                                boxShadow: '0 0 12px rgba(0, 83, 240, 0.15)',
-                                                backdropFilter: 'blur(8px)'
-                                            } : {}}
-                                        >
-                                            {isActive ? item.iconFilled : item.icon}
-                                            <span className="text-sm font-medium">{item.label}</span>
-                                        </Link>
-                                    </li>
-                                );
-                            })}
+                            {navItems
+                                .filter(item => {
+                                    // If no roles specified, show to everyone
+                                    if (!item.roles || item.roles.length === 0) return true;
+                                    // Check if user has any of the required roles
+                                    return item.roles.some(role => user?.roles?.includes(role));
+                                })
+                                .map((item) => {
+                                    const isActive = location.pathname === item.path;
+                                    return (
+                                        <li key={item.path}>
+                                            <Link
+                                                to={item.path}
+                                                onClick={() => setSidebarOpen(false)}
+                                                className={clsx(
+                                                    'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 relative group',
+                                                    isActive
+                                                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium'
+                                                        : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                                                )}
+                                            >
+                                                {isActive ? item.iconFilled : item.icon}
+                                                <span className="text-sm">{item.label}</span>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
                         </ul>
                     </nav>
 
@@ -135,7 +165,7 @@ export const AppLayout = () => {
                         <div className="flex items-center justify-center gap-2">
                             <button className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 relative transition-all duration-150">
                                 <Bell className="w-5 h-5" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-background"></span>
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full ring-2 ring-background"></span>
                             </button>
                             <ThemeToggle />
                         </div>
@@ -143,10 +173,10 @@ export const AppLayout = () => {
                         {/* Profile Block */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                onClick={() => setShowProfilePopup(true)}
                                 className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150"
                             >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-md ring-2 ring-primary/20">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-600 flex items-center justify-center shadow-md ring-2 ring-primary-500/20">
                                     <span className="font-bold text-white text-sm">
                                         {user?.firstName?.[0]}{user?.lastName?.[0]}
                                     </span>
@@ -159,47 +189,8 @@ export const AppLayout = () => {
                                         {user?.roles?.[0]?.replace('ROLE_', '') || 'User'}
                                     </p>
                                 </div>
-                                <ChevronDown className={clsx(
-                                    'w-4 h-4 text-muted-foreground transition-transform duration-200',
-                                    showProfileMenu && 'rotate-180'
-                                )} />
+                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
                             </button>
-
-                            {/* Profile Dropdown */}
-                            {showProfileMenu && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 z-10"
-                                        onClick={() => setShowProfileMenu(false)}
-                                    />
-                                    <div className="absolute bottom-full left-0 right-0 mb-2 glass-card z-20 p-1.5 shadow-lg">
-                                        <Link
-                                            to="/profile"
-                                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground transition-all duration-150"
-                                            onClick={() => setShowProfileMenu(false)}
-                                        >
-                                            <User className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Profile</span>
-                                        </Link>
-                                        <Link
-                                            to="/settings"
-                                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground transition-all duration-150"
-                                            onClick={() => setShowProfileMenu(false)}
-                                        >
-                                            <Settings className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Settings</span>
-                                        </Link>
-                                        <div className="h-px bg-white/10 my-1"></div>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-all duration-150"
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Sign out</span>
-                                        </button>
-                                    </div>
-                                </>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -227,12 +218,25 @@ export const AppLayout = () => {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-                    <div className="max-w-7xl mx-auto w-full">
+                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative">
+                    <div className="max-w-7xl mx-auto w-full pb-24">
                         <Outlet />
                     </div>
                 </main>
+
+                {/* Sticky Tournament Pill */}
+                <div className="fixed bottom-6 left-0 right-0 lg:left-64 flex justify-center z-20 pointer-events-none px-4">
+                    <div className="pointer-events-auto w-full max-w-2xl">
+                        <TournamentPill />
+                    </div>
+                </div>
             </div>
+
+            {/* Profile Popup */}
+            <ProfilePopup
+                isOpen={showProfilePopup}
+                onClose={() => setShowProfilePopup(false)}
+            />
         </div>
     );
 };

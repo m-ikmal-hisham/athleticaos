@@ -14,9 +14,16 @@ public interface MatchService {
 
         MatchResponse getMatchById(UUID id);
 
-        MatchResponse createMatch(MatchCreateRequest request);
+        MatchResponse createMatch(MatchCreateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
-        MatchResponse updateMatch(UUID id, MatchUpdateRequest request);
+        MatchResponse updateMatch(UUID id, MatchUpdateRequest request,
+                        jakarta.servlet.http.HttpServletRequest httpRequest);
 
         void deleteMatch(UUID id);
+
+        List<MatchResponse> getMatchesByStatus(String status);
+
+        void recalculateMatchScores(UUID matchId);
+
+        MatchResponse updateMatchStatus(UUID id, String status, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

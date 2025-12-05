@@ -15,4 +15,16 @@ public interface OrganisationService {
     OrganisationResponse createOrganisation(OrganisationCreateRequest request);
 
     OrganisationResponse updateOrganisation(UUID id, OrganisationUpdateRequest request);
+
+    List<OrganisationResponse> getCountries();
+
+    List<OrganisationResponse> getStates(UUID countryId);
+
+    List<OrganisationResponse> getDivisions(UUID stateId);
+
+    List<OrganisationResponse> getDistricts(UUID stateId);
+
+    List<OrganisationResponse> getChildren(UUID parentId);
+
+    Object getTree(UUID countryId);
 }

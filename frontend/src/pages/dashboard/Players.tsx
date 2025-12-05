@@ -1,86 +1,220 @@
-import { useEffect } from "react";
-import { Card } from "../../components/Card";
+import { useEffect, useState } from "react";
+import { Search, MoreHorizontal } from "lucide-react";
+import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
+import { Input } from "../../components/Input";
+import { Card, CardContent } from "../../components/Card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "../../components/Table";
+import { Badge } from "../../components/Badge";
 import { usePlayersStore } from "../../store/players.store";
 import { PlayerModal } from "../../components/modals/PlayerModal";
-import { StatusPill } from "../../components/StatusPill";
+import { PlayerDetailDrawer } from "./players/PlayerDetailDrawer";
+import { useAuthStore } from "../../store/auth.store";
+import { Player } from "../../types";
 
 export default function Players() {
     const {
-        players,
+        filteredPlayers,
         loading,
         error,
         getPlayers,
-        isModalOpen,
-        mode,
-        selectedPlayer,
-        openCreateModal,
-        openEditModal,
-        closeModal,
         savePlayer,
-        toggleStatus
+        // Drawer
+        selectedPlayerId,
+        isDrawerOpen,
+        openPlayerDrawer,
+        closePlayerDrawer,
+        // Filters
+        statusFilter,
+        searchQuery,
+        setStatusFilter,
+        setSearchQuery,
     } = usePlayersStore();
+
+    const { user } = useAuthStore();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+    const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
     useEffect(() => {
         getPlayers();
     }, [getPlayers]);
 
+    const handleAdd = () => {
+        setModalMode('create');
+        setSelectedPlayer(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (player: Player, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setModalMode('edit');
+        setSelectedPlayer(player);
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (data: any) => {
+        try {
+            await savePlayer(data);
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Failed to save player:', error);
+            // Error handling is done in store/api usually via toast
+        }
+    };
+
+    const getStatusVariant = (status: string) => {
+        switch (status) {
+            case 'ACTIVE': return 'green';
+            case 'INACTIVE': return 'secondary';
+            case 'BANNED': return 'destructive';
+            default: return 'secondary';
+        }
+    };
+
     return (
-        <Card>
-            <div className="card-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                    <h2>Players</h2>
-                    <p className="text-muted-foreground">Manage all registered rugby players</p>
-                </div>
-                <Button onClick={openCreateModal}>Add Player</Button>
-            </div>
+        <div className="space-y-6">
+            <PageHeader
+                title="Players"
+                description="Manage all registered rugby players"
+                action={
+                    isAdmin && (
+                        <Button onClick={handleAdd}>
+                            Add Player
+                        </Button>
+                    )
+                }
+            />
 
-            {loading && <p>Loading players…</p>}
-            {error && <p>{error}</p>}
+            <Card>
+                <CardContent className="p-0">
+                    <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
+                        <div className="relative flex-1 w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <Input
+                                placeholder="Search by name or email..."
+                                className="pl-9 bg-glass-bg/50"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <select
+                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="ALL">All Status</option>
+                                <option value="ACTIVE">Active</option>
+                                <option value="INACTIVE">Inactive</option>
+                                <option value="BANNED">Banned</option>
+                            </select>
+                        </div>
+                    </div>
 
-            {!loading && players.length === 0 && <p>No players found</p>}
-
-            {!loading && players.length > 0 && (
-                <table className="glass-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Club</th>
-                            <th>Status</th>
-                            <th />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {players.map((p) => (
-                            <tr key={p.id}>
-                                <td>{p.firstName} {p.lastName}</td>
-                                <td>{p.email}</td>
-                                <td>{p.role || "PLAYER"}</td>
-                                <td>{p.clubName || "—"}</td>
-                                <td>
-                                    <StatusPill
-                                        status={p.status || "ACTIVE"}
-                                        onClick={() => toggleStatus(p.id)}
-                                    />
-                                </td>
-                                <td>
-                                    <button onClick={() => openEditModal(p)} style={{ background: 'none', border: 'none', color: 'var(--athos-blue)', cursor: 'pointer' }}>Edit</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
+                    <Table>
+                        <TableHeader className="border-b border-border/60">
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground">Gender</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground">Nationality</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8">Loading players...</TableCell>
+                                </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8 text-destructive">{error}</TableCell>
+                                </TableRow>
+                            ) : filteredPlayers.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No players found</TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredPlayers.map((p) => (
+                                    <TableRow
+                                        key={p.id}
+                                        className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
+                                        onClick={() => openPlayerDrawer(p.id)}
+                                    >
+                                        <TableCell className="py-4">
+                                            <span className="text-sm font-medium">{p.firstName} {p.lastName}</span>
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <span className="text-sm text-muted-foreground">{p.email || "—"}</span>
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <span className="text-sm">{p.gender || "—"}</span>
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <span className="text-sm">{p.nationality || "—"}</span>
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <Badge variant={getStatusVariant(p.status) as any} className="text-xs">
+                                                {p.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {isAdmin && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => handleEdit(p, e)}
+                                                        className="h-8 px-3"
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openPlayerDrawer(p.id);
+                                                    }}
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
             <PlayerModal
                 isOpen={isModalOpen}
-                mode={mode}
+                mode={modalMode}
                 initialPlayer={selectedPlayer}
-                onClose={closeModal}
-                onSubmit={savePlayer}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleSubmit}
             />
-        </Card>
+
+            <PlayerDetailDrawer
+                isOpen={isDrawerOpen}
+                onClose={closePlayerDrawer}
+                playerId={selectedPlayerId}
+            />
+        </div>
     );
 }

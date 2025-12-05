@@ -1,6 +1,6 @@
 package com.athleticaos.backend.services;
 
-import com.athleticaos.backend.dtos.user.PlayerResponse;
+import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.dtos.player.PlayerCreateRequest;
 import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 

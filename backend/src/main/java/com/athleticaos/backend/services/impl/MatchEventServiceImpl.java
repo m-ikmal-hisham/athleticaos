@@ -2,16 +2,22 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.dtos.match.MatchEventCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchEventResponse;
+import com.athleticaos.backend.dtos.roster.PlayerSuspensionDTO;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.MatchEvent;
+import com.athleticaos.backend.entities.PlayerSuspension;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.User;
+import com.athleticaos.backend.enums.MatchEventType;
 import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.MatchEventService;
+import com.athleticaos.backend.services.PlayerSuspensionService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +34,8 @@ public class MatchEventServiceImpl implements MatchEventService {
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final AuditLogger auditLogger;
+    private final PlayerSuspensionService suspensionService;
 
     @Override
     @Transactional(readOnly = true)
@@ -42,7 +50,8 @@ public class MatchEventServiceImpl implements MatchEventService {
 
     @Override
     @Transactional
-    public MatchEventResponse addEventToMatch(UUID matchId, MatchEventCreateRequest request) {
+    public MatchEventResponse addEventToMatch(UUID matchId, MatchEventCreateRequest request,
+            HttpServletRequest httpRequest) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
 
@@ -71,16 +80,76 @@ public class MatchEventServiceImpl implements MatchEventService {
                 .build();
 
         MatchEvent savedEvent = matchEventRepository.saveAndFlush(event);
+        auditLogger.logMatchEventAdded(savedEvent, httpRequest);
+
+        // Handle suspensions for disciplinary cards
+        handleSuspensions(savedEvent, httpRequest);
+
         return mapToResponse(savedEvent);
+    }
+
+    /**
+     * Creates suspensions for red cards and two yellow cards.
+     */
+    private void handleSuspensions(MatchEvent event, HttpServletRequest httpRequest) {
+        if (event.getPlayer() == null) {
+            return; // No player involved, skip suspension logic
+        }
+
+        Match match = event.getMatch();
+        Team team = event.getTeam();
+        User player = event.getPlayer();
+        MatchEventType eventType = event.getEventType();
+
+        // Red card = immediate 1 match suspension
+        if (eventType == MatchEventType.RED_CARD) {
+            PlayerSuspension suspension = suspensionService.createSuspension(
+                    match.getTournament(),
+                    team,
+                    player,
+                    "Red card in match " + (match.getMatchCode() != null ? match.getMatchCode() : match.getId()),
+                    1 // MVP: 1 match suspension
+            );
+            auditLogger.logSuspensionCreated(suspension, httpRequest);
+        }
+
+        // Two yellow cards in same match = 1 match suspension
+        if (eventType == MatchEventType.YELLOW_CARD) {
+            long yellowCount = matchEventRepository.findByMatchId(match.getId()).stream()
+                    .filter(e -> e.getPlayer() != null &&
+                            e.getPlayer().getId().equals(player.getId()) &&
+                            e.getEventType() == MatchEventType.YELLOW_CARD)
+                    .count();
+
+            if (yellowCount >= 2) {
+                // Check if suspension already created for this match
+                boolean alreadySuspended = suspensionService.getPlayerActiveSuspensions(
+                        match.getTournament().getId(),
+                        player.getId()).stream()
+                        .anyMatch(s -> s.getReason().contains(match.getId().toString()));
+
+                if (!alreadySuspended) {
+                    PlayerSuspension suspension = suspensionService.createSuspension(
+                            match.getTournament(),
+                            team,
+                            player,
+                            "Two yellow cards in match "
+                                    + (match.getMatchCode() != null ? match.getMatchCode() : match.getId()),
+                            1);
+                    auditLogger.logSuspensionCreated(suspension, httpRequest);
+                }
+            }
+        }
     }
 
     @Override
     @Transactional
-    public void deleteEvent(UUID eventId) {
-        if (!matchEventRepository.existsById(eventId)) {
-            throw new EntityNotFoundException("Match Event not found with ID: " + eventId);
-        }
+    public UUID deleteEvent(UUID eventId) {
+        MatchEvent event = matchEventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Match Event not found with ID: " + eventId));
+        UUID matchId = event.getMatch().getId();
         matchEventRepository.deleteById(eventId);
+        return matchId;
     }
 
     private MatchEventResponse mapToResponse(MatchEvent event) {

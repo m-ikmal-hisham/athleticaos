@@ -1,5 +1,6 @@
 package com.athleticaos.backend.dtos.tournament;
 
+import com.athleticaos.backend.enums.CompetitionType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -32,4 +33,8 @@ public class TournamentCreateRequest {
 
     @NotBlank(message = "Venue is required")
     private String venue;
+
+    // Phase C: Competition Management
+    private UUID seasonId;
+    private CompetitionType competitionType;
 }

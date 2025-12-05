@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,18 +35,26 @@ public class TeamController {
         return ResponseEntity.ok(teamService.getTeamById(id));
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<TeamResponse> getTeamBySlug(@PathVariable String slug) {
+        log.info("Fetching team by slug: {}", slug);
+        return ResponseEntity.ok(teamService.getTeamBySlug(slug));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<TeamResponse> createTeam(@RequestBody @Valid TeamCreateRequest request) {
+    public ResponseEntity<TeamResponse> createTeam(@RequestBody @Valid TeamCreateRequest request,
+            HttpServletRequest httpRequest) {
         log.info("Admin creating team: {}", request.getName());
-        return ResponseEntity.ok(teamService.createTeam(request));
+        return ResponseEntity.ok(teamService.createTeam(request, httpRequest));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<TeamResponse> updateTeam(@PathVariable UUID id,
-            @RequestBody @Valid TeamUpdateRequest request) {
+            @RequestBody @Valid TeamUpdateRequest request, HttpServletRequest httpRequest) {
         log.info("Admin updating team {}", id);
-        return ResponseEntity.ok(teamService.updateTeam(id, request));
+        return ResponseEntity.ok(teamService.updateTeam(id, request, httpRequest));
     }
 }

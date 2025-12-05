@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class MatchEventController {
 
     private final MatchEventService matchEventService;
+    private final com.athleticaos.backend.services.MatchService matchService;
 
     @GetMapping("/{matchId}/events")
     @PreAuthorize("isAuthenticated()")
@@ -33,15 +35,20 @@ public class MatchEventController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
     @Operation(summary = "Add an event to a match")
     public ResponseEntity<MatchEventResponse> addEventToMatch(@PathVariable UUID matchId,
-            @RequestBody @Valid MatchEventCreateRequest request) {
-        return ResponseEntity.ok(matchEventService.addEventToMatch(matchId, request));
+            @RequestBody @Valid MatchEventCreateRequest request, HttpServletRequest httpRequest) {
+        MatchEventResponse response = matchEventService.addEventToMatch(matchId, request, httpRequest);
+        matchService.recalculateMatchScores(matchId);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/events/{eventId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
     @Operation(summary = "Delete a match event")
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
-        matchEventService.deleteEvent(eventId);
+        UUID matchId = matchEventService.deleteEvent(eventId);
+        if (matchId != null) {
+            matchService.recalculateMatchScores(matchId);
+        }
         return ResponseEntity.noContent().build();
     }
 }

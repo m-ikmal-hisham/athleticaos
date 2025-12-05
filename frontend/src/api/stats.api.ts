@@ -11,3 +11,9 @@ export const fetchTournamentTeamStats = (tournamentId: string) =>
 
 export const fetchTournamentLeaderboard = (tournamentId: string) =>
   api.get(`/stats/tournaments/${tournamentId}/leaderboard`);
+
+export const fetchPlayerStats = (playerId: string) =>
+  api.get(`/stats/players/${playerId}`);
+
+export const fetchTeamStats = (teamId: string) =>
+  api.get(`/stats/teams/${teamId}`);

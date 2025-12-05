@@ -1,28 +1,34 @@
 package com.athleticaos.backend.dtos.player;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
+import lombok.Builder;
+
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class PlayerResponse {
-    private UUID id;
-    private UUID personId;
-    private String firstName;
-    private String lastName;
-    private String gender;
-    private LocalDate dob;
-    private String nationality;
-    private String status;
-    private String dominantHand;
-    private String dominantLeg;
-    private Integer heightCm;
-    private Integer weightKg;
+public record PlayerResponse(
+                // Player ID
+                UUID id,
+
+                // Person (PII) fields
+                UUID personId,
+                String firstName,
+                String lastName,
+                String gender,
+                LocalDate dob,
+                String icOrPassport, // Full value for updates (not masked for now)
+                String nationality,
+                String email,
+                String phone,
+                String address,
+
+                // Player (Rugby-specific) fields
+                String status,
+                String dominantHand,
+                String dominantLeg,
+                Integer heightCm,
+                Integer weightKg,
+
+                LocalDateTime createdAt) {
 }

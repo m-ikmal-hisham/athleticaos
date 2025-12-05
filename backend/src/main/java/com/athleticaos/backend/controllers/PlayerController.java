@@ -1,7 +1,8 @@
 package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.player.PlayerCreateRequest;
-import com.athleticaos.backend.dtos.user.PlayerResponse;
+import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
+import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.services.PlayerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,12 @@ public class PlayerController {
     @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<PlayerResponse> createPlayer(@RequestBody @Valid PlayerCreateRequest request) {
         return ResponseEntity.ok(playerService.createPlayer(request));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<PlayerResponse> updatePlayer(@PathVariable UUID id,
+            @RequestBody @Valid PlayerUpdateRequest request) {
+        return ResponseEntity.ok(playerService.updatePlayer(id, request));
     }
 }

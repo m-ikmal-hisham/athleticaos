@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -14,6 +15,8 @@ import java.util.UUID;
 public class TeamResponse {
     private UUID id;
     private UUID organisationId;
+    private String organisationName;
+    private String slug;
     private String name;
     private String category;
     private String ageGroup;
@@ -21,4 +24,5 @@ public class TeamResponse {
     private String level;
     private String state;
     private String status;
+    private List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> players;
 }

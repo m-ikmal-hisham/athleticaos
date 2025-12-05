@@ -30,6 +30,8 @@ export default function Tournaments() {
                     <thead>
                         <tr>
                             <th>Title</th>
+                            <th>Season</th>
+                            <th>Type</th>
                             <th>Level</th>
                             <th>Start Date</th>
                             <th>Status</th>
@@ -40,15 +42,30 @@ export default function Tournaments() {
                         {tournaments.map((t) => (
                             <tr key={t.id}>
                                 <td>{t.name}</td>
+                                <td>{t.seasonName || '-'}</td>
+                                <td>{t.competitionType || '-'}</td>
                                 <td>{t.level}</td>
                                 <td>{new Date(t.startDate).toLocaleDateString()}</td>
                                 <td>
                                     <StatusPill status={t.status} />
                                 </td>
                                 <td>
-                                    <Button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
-                                        View details
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            className="btn-secondary"
+                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                                            onClick={() => window.open(`/api/v1/tournaments/${t.id}/export/matches`, '_blank')}
+                                        >
+                                            Export Matches
+                                        </Button>
+                                        <Button
+                                            className="btn-secondary"
+                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                                            onClick={() => window.open(`/api/v1/tournaments/${t.id}/export/results`, '_blank')}
+                                        >
+                                            Export Results
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

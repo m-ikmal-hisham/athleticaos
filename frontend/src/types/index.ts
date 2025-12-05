@@ -10,9 +10,12 @@ export interface User {
     phone?: string;
     roles: string[];
     organisationId?: string;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
+    organisationName?: string;
+    active: boolean;
+    isActive?: boolean; // Backend returns isActive
+    status?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface LoginRequest {
@@ -87,11 +90,14 @@ export enum AgeGroup {
 export interface Team {
     id: string;
     organisationId: string;
+    organisationName?: string;
+    slug?: string;
     name: string;
-    category: TeamCategory;
-    ageGroup: AgeGroup;
-    createdAt: string;
-    updatedAt: string;
+    category: string;
+    ageGroup: string;
+    division?: string;
+    state?: string;
+    status: string;
 }
 
 export interface TeamCreateRequest {
@@ -119,40 +125,60 @@ export enum DominantSide {
 
 export interface Player {
     id: string;
+    personId: string;
+    // Person (PII) fields
     firstName: string;
     lastName: string;
     gender: Gender;
     dob: string;
-    icOrPassport: string;
+    icOrPassport: string; // Now included in response
     nationality: string;
     email?: string;
     phone?: string;
     address?: string;
-    emergencyContactName?: string;
-    emergencyContactPhone?: string;
+    // Player (Rugby-specific) fields
+    status: string; // ACTIVE, INACTIVE, BANNED
     dominantHand?: DominantSide;
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
-    photoUrl?: string;
     createdAt: string;
-    updatedAt: string;
 }
 
 export interface PlayerCreateRequest {
+    // Person (PII) fields - required
     firstName: string;
     lastName: string;
     gender: Gender;
     dob: string;
     icOrPassport: string;
     nationality: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    // Player (Rugby-specific) fields - optional
+    status?: string;
+    dominantHand?: DominantSide;
+    dominantLeg?: DominantSide;
+    heightCm?: number;
+    weightKg?: number;
+}
+
+export interface PlayerUpdateRequest {
+    // Person (PII) fields - all optional for updates
+    firstName?: string;
+    lastName?: string;
+    gender?: string;
+    dob?: string;
+    icOrPassport?: string;
+    nationality?: string;
     email?: string;
     phone?: string;
     address?: string;
-    emergencyContactName?: string;
-    emergencyContactPhone?: string;
-    dominantHand?: DominantSide;
-    dominantLeg?: DominantSide;
+    // Player (Rugby-specific) fields - all optional
+    status?: string;
+    dominantHand?: string;
+    dominantLeg?: string;
     heightCm?: number;
     weightKg?: number;
 }
@@ -188,6 +214,11 @@ export interface Tournament {
     status: TournamentStatus;
     createdAt: string;
     updatedAt: string;
+    seasonId?: string;
+    seasonName?: string;
+    competitionType?: string;
+    isAgeGrade?: boolean;
+    ageGroupLabel?: string;
 }
 
 export interface TournamentCreateRequest {

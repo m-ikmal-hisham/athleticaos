@@ -1,16 +1,5 @@
 import { create } from "zustand";
-import { fetchOrganisations } from "../api/organisations.api";
-
-export interface Organisation {
-    id: string;
-    name: string;
-    type: string;
-    state: string;
-    status: string;
-    primaryColor: string;
-    secondaryColor: string;
-    logoUrl?: string;
-}
+import { fetchOrganisations, Organisation } from "../api/organisations.api";
 
 interface OrganisationsState {
     organisations: Organisation[];
@@ -27,8 +16,8 @@ export const useOrganisationsStore = create<OrganisationsState>((set) => ({
     async getOrganisations() {
         set({ loading: true, error: null });
         try {
-            const res = await fetchOrganisations();
-            set({ organisations: res.data, loading: false });
+            const data = await fetchOrganisations();
+            set({ organisations: data, loading: false });
         } catch (err) {
             set({ loading: false, error: "Failed to load organisations" });
         }

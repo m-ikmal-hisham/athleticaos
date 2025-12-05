@@ -1,8 +1,9 @@
 
 
+
 interface Props {
   status: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent) => void;
 }
 
 export function StatusPill({ status, onClick }: Props) {

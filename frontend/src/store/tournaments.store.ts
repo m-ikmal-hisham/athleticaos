@@ -1,16 +1,6 @@
 import { create } from "zustand";
 import { fetchTournaments } from "../api/tournaments.api";
-
-export interface Tournament {
-    id: string;
-    name: string;
-    level: string;
-    startDate: string;
-    endDate: string;
-    venue: string;
-    status: string;
-    organiserOrgId: string;
-}
+import { Tournament } from "../types";
 
 interface TournamentsState {
     tournaments: Tournament[];

@@ -18,7 +18,10 @@ public class OrganisationResponse {
     private UUID parentOrgId;
     private String primaryColor;
     private String secondaryColor;
+    private String tertiaryColor;
+    private String quaternaryColor;
     private String logoUrl;
     private String state;
     private String status;
+    private com.athleticaos.backend.enums.OrganisationLevel orgLevel;
 }

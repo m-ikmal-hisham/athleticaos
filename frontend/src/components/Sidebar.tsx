@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -7,7 +8,8 @@ import {
     Users2,
     Trophy,
     Calendar,
-    X
+    X,
+    Medal
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
@@ -32,41 +34,58 @@ const navItems: NavItem[] = [
     },
     {
         label: 'Users',
-        path: '/users',
+        path: '/dashboard/users',
         icon: <Users className="w-5 h-5" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_UNION_ADMIN'],
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
     },
     {
         label: 'Organisations',
-        path: '/organisations',
+        path: '/dashboard/organisations',
         icon: <Building2 className="w-5 h-5" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_UNION_ADMIN'],
-    },
-    {
-        label: 'Players',
-        path: '/players',
-        icon: <UserCircle className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
     },
     {
         label: 'Teams',
-        path: '/teams',
+        path: '/dashboard/teams',
         icon: <Users2 className="w-5 h-5" />,
+        // All roles except PLAYER can see teams (with different scopes)
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_COACH'],
     },
     {
-        label: 'Tournaments',
-        path: '/tournaments',
-        icon: <Trophy className="w-5 h-5" />,
+        label: 'Players',
+        path: '/dashboard/players',
+        icon: <UserCircle className="w-5 h-5" />,
+        // All roles can see players (PLAYER sees only self)
     },
     {
         label: 'Matches',
-        path: '/matches',
+        path: '/dashboard/matches',
         icon: <Calendar className="w-5 h-5" />,
+        // All roles can see matches
+    },
+    {
+        label: 'Tournaments',
+        path: '/dashboard/tournaments',
+        icon: <Trophy className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+    },
+    {
+        label: 'Competitions',
+        path: '/dashboard/competitions',
+        icon: <Medal className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
     },
 ];
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     const location = useLocation();
-    const { hasAnyRole } = useAuthStore();
+    const { user, hasAnyRole } = useAuthStore();
+
+    useEffect(() => {
+        if (user) {
+            console.log('Sidebar: Current user roles:', user.roles);
+        }
+    }, [user]);
 
     const filteredNavItems = navItems.filter(item => {
         if (!item.roles || item.roles.length === 0) return true;

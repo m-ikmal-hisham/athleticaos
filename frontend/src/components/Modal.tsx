@@ -29,21 +29,25 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style={{ position: 'fixed', overflowY: 'auto' }}
+            >
                 <div
                     className={clsx(
-                        'glass-card w-full animate-scale-in',
+                        'glass-card w-full animate-scale-in my-8',
                         sizes[size]
                     )}
                     onClick={(e) => e.stopPropagation()}
+                    style={{ maxHeight: '90vh', overflowY: 'auto' }}
                 >
                     {/* Header */}
                     {title && (
                         <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
-                            <h2 className="text-xl font-semibold text-slate-100">{title}</h2>
+                            <h2 className="text-xl font-semibold text-foreground">{title}</h2>
                             <button
                                 onClick={onClose}
-                                className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-white/5"
+                                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-white/5"
                             >
                                 <X className="w-5 h-5" />
                             </button>

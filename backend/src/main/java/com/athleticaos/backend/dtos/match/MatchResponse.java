@@ -17,8 +17,10 @@ public class MatchResponse {
     private UUID id;
     private UUID tournamentId;
     private UUID homeTeamId;
+    private UUID homeTeamOrgId;
     private String homeTeamName;
     private UUID awayTeamId;
+    private UUID awayTeamOrgId;
     private String awayTeamName;
     private LocalDate matchDate;
     private LocalTime kickOffTime;

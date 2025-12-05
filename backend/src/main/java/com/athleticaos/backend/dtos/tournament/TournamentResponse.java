@@ -22,4 +22,6 @@ public class TournamentResponse {
     private String venue;
     private boolean isPublished;
     private String status;
+    private String seasonName;
+    private String competitionType;
 }

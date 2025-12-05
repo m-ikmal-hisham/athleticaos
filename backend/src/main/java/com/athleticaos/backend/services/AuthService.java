@@ -3,6 +3,7 @@ package com.athleticaos.backend.services;
 import com.athleticaos.backend.dtos.auth.AuthResponse;
 import com.athleticaos.backend.dtos.auth.LoginRequest;
 import com.athleticaos.backend.dtos.auth.RegisterRequest;
+import com.athleticaos.backend.dtos.user.UserResponse;
 import com.athleticaos.backend.entities.Role;
 import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.repositories.RoleRepository;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +71,7 @@ public class AuthService {
                 return AuthResponse.builder()
                                 .token(jwtToken)
                                 .refreshToken(refreshToken)
+                                .user(mapToUserResponse(user))
                                 .build();
         }
 
@@ -103,6 +106,23 @@ public class AuthService {
                 return AuthResponse.builder()
                                 .token(jwtToken)
                                 .refreshToken(refreshToken)
+                                .user(mapToUserResponse(user))
+                                .build();
+        }
+
+        private UserResponse mapToUserResponse(User user) {
+                return UserResponse.builder()
+                                .id(user.getId())
+                                .firstName(user.getFirstName())
+                                .lastName(user.getLastName())
+                                .email(user.getEmail())
+                                .phone(user.getPhone())
+                                .isActive(user.isActive())
+                                .status(user.isActive() ? "Active" : "Inactive")
+                                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                                .organisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null)
+                                .createdAt(user.getCreatedAt())
+                                .updatedAt(user.getUpdatedAt())
                                 .build();
         }
 }

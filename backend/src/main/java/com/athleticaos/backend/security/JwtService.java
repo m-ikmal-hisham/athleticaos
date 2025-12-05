@@ -18,6 +18,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
+    private final com.athleticaos.backend.services.TokenGenerationService tokenGenerationService;
+
     @Value("${application.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
     private String secretKey;
 
@@ -26,6 +28,10 @@ public class JwtService {
 
     @Value("${application.security.jwt.refresh-token.expiration:604800000}")
     private long refreshExpiration;
+
+    public JwtService(com.athleticaos.backend.services.TokenGenerationService tokenGenerationService) {
+        this.tokenGenerationService = tokenGenerationService;
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -49,6 +55,9 @@ public class JwtService {
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+        // Add token generation to claims
+        extraClaims.put("generation", tokenGenerationService.getCurrentGeneration());
+
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
@@ -60,7 +69,17 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token) && isGenerationValid(token);
+    }
+
+    private boolean isGenerationValid(String token) {
+        try {
+            Long tokenGeneration = extractClaim(token, claims -> claims.get("generation", Long.class));
+            Long currentGeneration = tokenGenerationService.getCurrentGeneration();
+            return tokenGeneration != null && tokenGeneration.equals(currentGeneration);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {

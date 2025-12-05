@@ -1,10 +1,14 @@
 package com.athleticaos.backend.controllers;
 
-import com.athleticaos.backend.dtos.user.PlayerResponse;
+import com.athleticaos.backend.dtos.player.PlayerResponse;
+import com.athleticaos.backend.dtos.user.InviteUserRequest;
+import com.athleticaos.backend.dtos.user.InviteUserResponse;
 import com.athleticaos.backend.dtos.user.UserResponse;
+import com.athleticaos.backend.dtos.user.UserRolesResponse;
 import com.athleticaos.backend.dtos.user.UserUpdateRequest;
 import com.athleticaos.backend.services.PlayerService;
 import com.athleticaos.backend.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,20 +40,41 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<UserResponse> createUser(
-            @RequestBody @jakarta.validation.Valid com.athleticaos.backend.dtos.user.UserCreateRequest request) {
-        return ResponseEntity.ok(userService.createUser(request));
+            @RequestBody @jakarta.validation.Valid com.athleticaos.backend.dtos.user.UserCreateRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(userService.createUser(request, httpRequest));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
-        return ResponseEntity.ok(userService.updateUser(id, request));
+    public ResponseEntity<UserResponse> updateUser(
+            @PathVariable UUID id,
+            @RequestBody UserUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(userService.updateUser(id, request, httpRequest));
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<UserResponse> updateUserStatus(@PathVariable UUID id, @RequestParam String status) {
-        return ResponseEntity.ok(userService.updateUserStatus(id, status));
+    public ResponseEntity<UserResponse> updateUserStatus(
+            @PathVariable UUID id,
+            @RequestParam String status,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(userService.updateUserStatus(id, status, httpRequest));
+    }
+
+    @PostMapping("/invite")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN')")
+    public ResponseEntity<InviteUserResponse> inviteUser(
+            @RequestBody @jakarta.validation.Valid InviteUserRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(userService.inviteUser(request, httpRequest));
+    }
+
+    @GetMapping("/{id}/roles")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserRolesResponse> getUserRoles(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getUserRoles(id));
     }
 
     // Player-specific endpoints

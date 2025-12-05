@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,8 +28,12 @@ public class MatchController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get all matches")
-    public ResponseEntity<List<MatchResponse>> getAllMatches() {
+    @Operation(summary = "Get all matches, optionally filtered by status")
+    public ResponseEntity<List<MatchResponse>> getAllMatches(
+            @RequestParam(required = false) String status) {
+        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            return ResponseEntity.ok(matchService.getMatchesByStatus(status));
+        }
         return ResponseEntity.ok(matchService.getAllMatches());
     }
 
@@ -49,16 +54,25 @@ public class MatchController {
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
     @Operation(summary = "Create a new match")
-    public ResponseEntity<MatchResponse> createMatch(@RequestBody @Valid MatchCreateRequest request) {
-        return ResponseEntity.ok(matchService.createMatch(request));
+    public ResponseEntity<MatchResponse> createMatch(@RequestBody @Valid MatchCreateRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchService.createMatch(request, httpRequest));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
     @Operation(summary = "Update an existing match")
     public ResponseEntity<MatchResponse> updateMatch(@PathVariable UUID id,
-            @RequestBody @Valid MatchUpdateRequest request) {
-        return ResponseEntity.ok(matchService.updateMatch(id, request));
+            @RequestBody @Valid MatchUpdateRequest request, HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchService.updateMatch(id, request, httpRequest));
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @Operation(summary = "Update match status")
+    public ResponseEntity<MatchResponse> updateMatchStatus(@PathVariable UUID id, @RequestParam String status,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchService.updateMatchStatus(id, status, httpRequest));
     }
 
     @DeleteMapping("/{id}")

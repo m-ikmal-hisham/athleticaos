@@ -1,9 +1,9 @@
-import { TableHTMLAttributes, forwardRef } from 'react';
+import { TableHTMLAttributes, ThHTMLAttributes, TdHTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 export const Table = forwardRef<HTMLTableElement, TableHTMLAttributes<HTMLTableElement>>(
     ({ className, ...props }, ref) => (
-        <div className="w-full overflow-auto custom-scrollbar rounded-lg border border-glass-border">
+        <div className="w-full overflow-auto custom-scrollbar rounded-lg">
             <table
                 ref={ref}
                 className={clsx('w-full caption-bottom text-sm', className)}
@@ -25,7 +25,7 @@ TableHeader.displayName = 'TableHeader';
 
 export const TableBody = forwardRef<HTMLTableSectionElement, TableHTMLAttributes<HTMLTableSectionElement>>(
     ({ className, ...props }, ref) => (
-        <tbody ref={ref} className={clsx('[&_tr:last-child]:border-0', className)} {...props} />
+        <tbody ref={ref} className={clsx('', className)} {...props} />
     )
 );
 
@@ -36,7 +36,7 @@ export const TableRow = forwardRef<HTMLTableRowElement, TableHTMLAttributes<HTML
         <tr
             ref={ref}
             className={clsx(
-                'border-b border-glass-border transition-colors hover:bg-black/5 dark:hover:bg-white/5',
+                'transition-colors hover:bg-black/5 dark:hover:bg-white/5',
                 className
             )}
             {...props}
@@ -46,7 +46,7 @@ export const TableRow = forwardRef<HTMLTableRowElement, TableHTMLAttributes<HTML
 
 TableRow.displayName = 'TableRow';
 
-export const TableHead = forwardRef<HTMLTableCellElement, TableHTMLAttributes<HTMLTableCellElement>>(
+export const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLTableCellElement>>(
     ({ className, ...props }, ref) => (
         <th
             ref={ref}
@@ -61,7 +61,7 @@ export const TableHead = forwardRef<HTMLTableCellElement, TableHTMLAttributes<HT
 
 TableHead.displayName = 'TableHead';
 
-export const TableCell = forwardRef<HTMLTableCellElement, TableHTMLAttributes<HTMLTableCellElement>>(
+export const TableCell = forwardRef<HTMLTableCellElement, TdHTMLAttributes<HTMLTableCellElement>>(
     ({ className, ...props }, ref) => (
         <td
             ref={ref}

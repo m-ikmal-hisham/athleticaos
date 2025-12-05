@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-import { Team } from '@/store/teams.store';
+import { Team } from '@/types';
 
 interface TeamModalProps {
     isOpen: boolean;

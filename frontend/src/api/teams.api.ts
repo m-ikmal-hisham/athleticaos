@@ -19,3 +19,11 @@ export const updateTeam = (id: string, payload: {
     state?: string;
     status?: string;
 }) => api.put(`/teams/${id}`, payload);
+
+export const fetchTeamById = (id: string) => api.get(`/teams/${id}`);
+
+export const fetchTeamBySlug = (slug: string) => api.get(`/teams/slug/${slug}`);
+
+export const fetchTeamStats = (teamId: string) => api.get(`/stats/teams/${teamId}`);
+
+export const fetchTeamMatches = (teamId: string) => api.get(`/matches`, { params: { teamId } });

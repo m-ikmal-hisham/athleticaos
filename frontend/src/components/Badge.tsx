@@ -2,7 +2,7 @@ import { HTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-    variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'secondary' | 'destructive';
+    variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'primary' | 'secondary' | 'destructive' | 'outline';
 }
 
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
@@ -16,6 +16,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
             info: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
             primary: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
             secondary: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+            outline: 'bg-transparent border-white/20 text-foreground',
         };
 
         return (

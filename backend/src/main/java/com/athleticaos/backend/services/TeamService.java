@@ -12,7 +12,9 @@ public interface TeamService {
 
     TeamResponse getTeamById(UUID id);
 
-    TeamResponse createTeam(TeamCreateRequest request);
+    TeamResponse getTeamBySlug(String slug);
 
-    TeamResponse updateTeam(UUID id, TeamUpdateRequest request);
+    TeamResponse createTeam(TeamCreateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    TeamResponse updateTeam(UUID id, TeamUpdateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

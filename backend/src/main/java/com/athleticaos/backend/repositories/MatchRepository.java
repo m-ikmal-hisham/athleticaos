@@ -17,4 +17,12 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
     List<Match> findByHomeTeamIdOrAwayTeamId(UUID homeTeamId, UUID awayTeamId);
 
     List<Match> findByTournamentIdAndStatus(UUID tournamentId, com.athleticaos.backend.enums.MatchStatus status);
+
+    List<Match> findByStatus(com.athleticaos.backend.enums.MatchStatus status);
+
+    long countByStatus(com.athleticaos.backend.enums.MatchStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.homeTeam.organisation.id IN :orgIds OR m.awayTeam.organisation.id IN :orgIds OR m.tournament.organiserOrg.id IN :orgIds")
+    List<Match> findMatchesByOrganisationIds(
+            @org.springframework.data.repository.query.Param("orgIds") java.util.Set<UUID> orgIds);
 }

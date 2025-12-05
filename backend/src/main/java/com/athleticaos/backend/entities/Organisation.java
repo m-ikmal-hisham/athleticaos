@@ -28,6 +28,11 @@ public class Organisation {
     @Column(name = "org_type", nullable = false)
     private String orgType; // ENUM as String
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "org_level", nullable = false)
+    @Builder.Default
+    private com.athleticaos.backend.enums.OrganisationLevel orgLevel = com.athleticaos.backend.enums.OrganisationLevel.CLUB;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_org_id")
     private Organisation parentOrg;
@@ -37,6 +42,12 @@ public class Organisation {
 
     @Column(name = "secondary_color")
     private String secondaryColor;
+
+    @Column(name = "tertiary_color")
+    private String tertiaryColor;
+
+    @Column(name = "quaternary_color")
+    private String quaternaryColor;
 
     @Column(name = "logo_url")
     private String logoUrl;

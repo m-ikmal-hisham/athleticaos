@@ -50,4 +50,40 @@ public class OrganisationController {
         log.info("Admin updating organisation {}", id);
         return ResponseEntity.ok(organisationService.updateOrganisation(id, request));
     }
+
+    @GetMapping("/hierarchy/countries")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<OrganisationResponse>> getCountries() {
+        return ResponseEntity.ok(organisationService.getCountries());
+    }
+
+    @GetMapping("/hierarchy/states")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<OrganisationResponse>> getStates(@RequestParam UUID countryId) {
+        return ResponseEntity.ok(organisationService.getStates(countryId));
+    }
+
+    @GetMapping("/hierarchy/divisions")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<OrganisationResponse>> getDivisions(@RequestParam UUID stateId) {
+        return ResponseEntity.ok(organisationService.getDivisions(stateId));
+    }
+
+    @GetMapping("/hierarchy/districts")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<OrganisationResponse>> getDistricts(@RequestParam UUID stateId) {
+        return ResponseEntity.ok(organisationService.getDistricts(stateId));
+    }
+
+    @GetMapping("/hierarchy/children")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<OrganisationResponse>> getChildren(@RequestParam UUID parentId) {
+        return ResponseEntity.ok(organisationService.getChildren(parentId));
+    }
+
+    @GetMapping("/hierarchy/tree/{countryId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Object> getTree(@PathVariable UUID countryId) {
+        return ResponseEntity.ok(organisationService.getTree(countryId));
+    }
 }

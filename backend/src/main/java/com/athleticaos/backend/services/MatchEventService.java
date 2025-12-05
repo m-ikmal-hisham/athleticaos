@@ -9,7 +9,8 @@ import java.util.UUID;
 public interface MatchEventService {
     List<MatchEventResponse> getEventsForMatch(UUID matchId);
 
-    MatchEventResponse addEventToMatch(UUID matchId, MatchEventCreateRequest request);
+    MatchEventResponse addEventToMatch(UUID matchId, MatchEventCreateRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest);
 
-    void deleteEvent(UUID eventId);
+    UUID deleteEvent(UUID eventId);
 }

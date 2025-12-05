@@ -15,4 +15,15 @@ export const authApi = {
         const response = await api.get('/auth/me');
         return response;
     },
+
+    verifyToken: async () => {
+        // Simple endpoint call to verify token is still valid
+        const response = await api.get('/auth/me');
+        return response;
+    },
+
+    getUserRoles: async () => {
+        const response = await api.get('/auth/me/roles');
+        return response;
+    },
 };

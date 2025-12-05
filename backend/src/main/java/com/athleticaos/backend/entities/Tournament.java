@@ -1,5 +1,6 @@
 package com.athleticaos.backend.entities;
 
+import com.athleticaos.backend.enums.CompetitionType;
 import com.athleticaos.backend.enums.TournamentFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -57,6 +58,21 @@ public class Tournament {
     @Column(name = "has_placement_stages")
     @Builder.Default
     private Boolean hasPlacementStages = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "season_id")
+    private Season season;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "competition_type")
+    private CompetitionType competitionType;
+
+    @Column(name = "is_age_grade")
+    @Builder.Default
+    private boolean isAgeGrade = false;
+
+    @Column(name = "age_group_label")
+    private String ageGroupLabel;
 
     @Column(nullable = false)
     @Builder.Default
