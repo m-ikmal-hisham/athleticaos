@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 
 @RestControllerAdvice
+@lombok.extern.slf4j.Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -23,10 +24,20 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<ErrorResponse> handleNullPointerException(NullPointerException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        log.error("NullPointerException occurred: ", ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "A system error occurred (Null Reference). Please contact support.", request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
         var fieldError = ex.getBindingResult().getFieldError();
-        String message = fieldError != null ? fieldError.getDefaultMessage() : "Validation error";
+        String message = fieldError != null
+                ? String.format("Validation error: %s - %s", fieldError.getField(), fieldError.getDefaultMessage())
+                : "Validation error";
         return buildResponse(HttpStatus.BAD_REQUEST, message);
     }
 
@@ -37,6 +48,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, jakarta.servlet.http.HttpServletRequest request) {
+        log.error("Unexpected error occurred: ", ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage(),
                 request);
     }

@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services;
 
+import com.athleticaos.backend.dtos.player.PlayerResponse;
+import com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO;
 import com.athleticaos.backend.dtos.team.TeamCreateRequest;
 import com.athleticaos.backend.dtos.team.TeamResponse;
 import com.athleticaos.backend.dtos.team.TeamUpdateRequest;
@@ -17,4 +19,6 @@ public interface TeamService {
     TeamResponse createTeam(TeamCreateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
     TeamResponse updateTeam(UUID id, TeamUpdateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId);
 }

@@ -1,9 +1,13 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.dtos.org.OrganisationCreateRequest;
 import com.athleticaos.backend.dtos.org.OrganisationResponse;
 import com.athleticaos.backend.dtos.org.OrganisationUpdateRequest;
+import com.athleticaos.backend.entities.Organisation;
+import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.services.OrganisationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +25,8 @@ import java.util.UUID;
 public class OrganisationController {
 
     private final OrganisationService organisationService;
+    private final OrganisationRepository organisationRepository;
+    private final AuditLogger auditLogger;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -37,18 +43,36 @@ public class OrganisationController {
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<OrganisationResponse> createOrganisation(
-            @RequestBody @Valid OrganisationCreateRequest request) {
+            @RequestBody @Valid OrganisationCreateRequest request,
+            HttpServletRequest httpRequest) {
         log.info("Admin creating organisation: {}", request.getName());
-        return ResponseEntity.ok(organisationService.createOrganisation(request));
+        OrganisationResponse response = organisationService.createOrganisation(request);
+
+        // Audit log
+        Organisation org = organisationRepository.findById(response.getId()).orElse(null);
+        if (org != null) {
+            auditLogger.logOrganisationCreated(org, httpRequest);
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<OrganisationResponse> updateOrganisation(
             @PathVariable UUID id,
-            @RequestBody @Valid OrganisationUpdateRequest request) {
+            @RequestBody @Valid OrganisationUpdateRequest request,
+            HttpServletRequest httpRequest) {
         log.info("Admin updating organisation {}", id);
-        return ResponseEntity.ok(organisationService.updateOrganisation(id, request));
+        OrganisationResponse response = organisationService.updateOrganisation(id, request);
+
+        // Audit log
+        Organisation org = organisationRepository.findById(id).orElse(null);
+        if (org != null) {
+            auditLogger.logOrganisationUpdated(org, httpRequest);
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/hierarchy/countries")

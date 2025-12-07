@@ -132,6 +132,8 @@ export interface Player {
     gender: Gender;
     dob: string;
     icOrPassport: string; // Now included in response
+    identificationType?: string;
+    identificationValue?: string;
     nationality: string;
     email?: string;
     phone?: string;
@@ -142,7 +144,20 @@ export interface Player {
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
+    teamNames?: string[];
     createdAt: string;
+}
+
+export interface TeamPlayer {
+    playerId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    jerseyNumber?: number;
+    position?: string;
+    status: string;
+    joinedDate: string;
+    isActive: boolean;
 }
 
 export interface PlayerCreateRequest {
@@ -152,6 +167,8 @@ export interface PlayerCreateRequest {
     gender: Gender;
     dob: string;
     icOrPassport: string;
+    identificationType?: string;
+    identificationValue?: string;
     nationality: string;
     email: string;
     phone?: string;
@@ -171,6 +188,8 @@ export interface PlayerUpdateRequest {
     gender?: string;
     dob?: string;
     icOrPassport?: string;
+    identificationType?: string;
+    identificationValue?: string;
     nationality?: string;
     email?: string;
     phone?: string;
@@ -196,11 +215,11 @@ export enum TournamentLevel {
 }
 
 export enum TournamentStatus {
-    DRAFT = 'DRAFT',
-    OPEN = 'OPEN',
-    ONGOING = 'ONGOING',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED',
+    DRAFT = 'Draft',
+    UPCOMING = 'Upcoming', // Mapped from PUBLISHED
+    ONGOING = 'Ongoing',   // Mapped from LIVE
+    COMPLETED = 'Completed',
+    CANCELLED = 'Cancelled',
 }
 
 export interface Tournament {
@@ -234,13 +253,10 @@ export interface TournamentCreateRequest {
 // Match Types
 // ============================================
 
-export enum MatchStage {
-    GROUP = 'GROUP',
-    ROUND_16 = 'ROUND_16',
-    QUARTER_FINAL = 'QUARTER_FINAL',
-    SEMI_FINAL = 'SEMI_FINAL',
-    FINAL = 'FINAL',
-    THIRD_PLACE = 'THIRD_PLACE',
+export interface MatchStage {
+    id: string; // Changed from enum to object/interface if needed, but keeping simple for now. Actually backend returns object.
+    name: string;
+    stageType: string;
 }
 
 export enum MatchStatus {
@@ -255,10 +271,17 @@ export interface Match {
     id: string;
     tournamentId: string;
     homeTeamId: string;
+    homeTeam?: { id: string, name: string }; // Optional populated team
     awayTeamId: string;
+    awayTeam?: { id: string, name: string }; // Optional populated team
     matchDate: string;
-    location: string;
-    stage: MatchStage;
+    kickOffTime: string; // Added
+    venue?: string; // Changed from location to venue to match backend
+    location?: string; // Keep for backward compat if needed
+    pitch?: string;
+    matchCode?: string;
+    stage?: MatchStage; // Changed from enum
+    phase?: string;
     status: MatchStatus;
     homeScore?: number;
     awayScore?: number;
@@ -271,8 +294,26 @@ export interface MatchCreateRequest {
     homeTeamId: string;
     awayTeamId: string;
     matchDate: string;
-    location: string;
-    stage: MatchStage;
+    kickOffTime: string;
+    venue?: string;
+    pitch?: string;
+    matchCode?: string;
+    phase?: string;
+    status?: MatchStatus;
+}
+
+export interface Standings {
+    poolName: string;
+    teamId: string;
+    teamName: string;
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    pointsFor: number;
+    pointsAgainst: number;
+    pointsDiff: number;
+    points: number;
 }
 
 // ============================================

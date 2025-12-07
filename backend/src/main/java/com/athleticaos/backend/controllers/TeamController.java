@@ -1,5 +1,6 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO;
 import com.athleticaos.backend.dtos.team.TeamCreateRequest;
 import com.athleticaos.backend.dtos.team.TeamResponse;
 import com.athleticaos.backend.dtos.team.TeamUpdateRequest;
@@ -56,5 +57,11 @@ public class TeamController {
             @RequestBody @Valid TeamUpdateRequest request, HttpServletRequest httpRequest) {
         log.info("Admin updating team {}", id);
         return ResponseEntity.ok(teamService.updateTeam(id, request, httpRequest));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/players")
+    public ResponseEntity<List<PlayerInTeamDTO>> getPlayersByTeam(@PathVariable UUID id) {
+        return ResponseEntity.ok(teamService.getPlayersByTeam(id));
     }
 }

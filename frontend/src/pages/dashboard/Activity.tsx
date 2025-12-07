@@ -28,6 +28,7 @@ export default function Activity() {
 
     useEffect(() => {
         loadLogs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, currentPage]);
 
     const loadLogs = () => {
@@ -163,6 +164,7 @@ export default function Activity() {
                                         </TableCell>
                                         <TableCell className="py-4">
                                             <Badge
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 variant={getActionBadgeVariant(log.actionType) as any}
                                                 className="text-xs"
                                             >

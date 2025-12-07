@@ -31,6 +31,9 @@ public class Tournament {
     @Column(nullable = false)
     private String level; // NATIONAL, STATE, SCHOOL
 
+    @Column(unique = true, nullable = false)
+    private String slug;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organiser_org_id", nullable = false)
     private Organisation organiserOrg;
@@ -47,6 +50,11 @@ public class Tournament {
     @Column(name = "is_published", nullable = false)
     @Builder.Default
     private boolean isPublished = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private com.athleticaos.backend.enums.TournamentStatus status = com.athleticaos.backend.enums.TournamentStatus.DRAFT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "format")

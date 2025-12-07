@@ -38,6 +38,12 @@ public class Person {
     @Column(name = "ic_or_passport", nullable = false)
     private String icOrPassport; // Encrypted
 
+    @Column(name = "identification_type")
+    private String identificationType; // IC, PASSPORT, OTHER
+
+    @Column(name = "identification_value")
+    private String identificationValue;
+
     @Column(nullable = false)
     private String nationality;
 

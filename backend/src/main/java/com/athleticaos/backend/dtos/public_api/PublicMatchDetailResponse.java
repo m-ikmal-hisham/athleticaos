@@ -17,4 +17,5 @@ public class PublicMatchDetailResponse extends PublicMatchSummaryResponse {
     private List<PublicMatchEventResponse> events;
     private PublicTeamStatsResponse homeStats;
     private PublicTeamStatsResponse awayStats;
+    private PublicOrganisationBranding organiserBranding;
 }

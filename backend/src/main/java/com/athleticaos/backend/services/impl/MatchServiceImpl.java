@@ -283,6 +283,9 @@ public class MatchServiceImpl implements MatchService {
 
         // Decrement suspensions if match is completed
         if (matchStatus == MatchStatus.COMPLETED) {
+            if (match.getHomeScore() == null || match.getAwayScore() == null) {
+                throw new IllegalArgumentException("Cannot set status to COMPLETED without home and away scores.");
+            }
             suspensionService.decrementSuspensions(match);
         }
 

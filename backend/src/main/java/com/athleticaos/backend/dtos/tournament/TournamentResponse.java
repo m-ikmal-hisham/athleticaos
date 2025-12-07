@@ -15,6 +15,7 @@ import java.util.UUID;
 public class TournamentResponse {
     private UUID id;
     private String name;
+    private String slug;
     private String level;
     private UUID organiserOrgId;
     private LocalDate startDate;

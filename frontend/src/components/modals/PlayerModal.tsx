@@ -27,7 +27,9 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
     const [email, setEmail] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [icOrPassport, setIcOrPassport] = useState("");
+    const [identificationType, setIdentificationType] = useState("IC");
+    const [identificationValue, setIdentificationValue] = useState("");
+    // const [icOrPassport, setIcOrPassport] = useState(""); // Removed in favor of active fields
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
@@ -54,7 +56,9 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             setEmail(initialPlayer.email || "");
             setGender(initialPlayer.gender || Gender.MALE);
             setDob(initialPlayer.dob || "");
-            setIcOrPassport(initialPlayer.icOrPassport || ""); // Now available from API
+            setIdentificationType(initialPlayer.identificationType || "IC");
+            setIdentificationValue(initialPlayer.identificationValue || initialPlayer.icOrPassport || "");
+            // setIcOrPassport(initialPlayer.icOrPassport || ""); // Deprecated state
             setNationality(initialPlayer.nationality || "");
             setPhone(initialPlayer.phone || "");
             setAddress(initialPlayer.address || "");
@@ -72,7 +76,9 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             setEmail("");
             setGender(Gender.MALE);
             setDob("");
-            setIcOrPassport("");
+            setIdentificationType("IC");
+            setIdentificationValue("");
+            // setIcOrPassport("");
             setNationality("");
             setPhone("");
             setAddress("");
@@ -112,7 +118,10 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             email,
             gender: String(gender), // Ensure it's a string
             dob,
-            icOrPassport, // Always include (disabled in edit mode, so value is preserved)
+            icOrPassport: identificationValue, // Legacy mapping for validation
+            identificationType,
+            identificationValue,
+            // icOrPassport, // Always include (disabled in edit mode, so value is preserved)
             nationality,
             phone: phone || undefined,
             address: address || undefined,
@@ -241,17 +250,29 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-muted">Identification Type</label>
+                            <select
+                                value={identificationType}
+                                onChange={(e) => setIdentificationType(e.target.value)}
+                                className="input-base w-full"
+                            >
+                                <option value="IC">IC</option>
+                                <option value="PASSPORT">Passport</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">
-                                IC / Passport {mode === 'create' && '*'}
+                                Identification Value {mode === 'create' && '*'}
                             </label>
                             <input
                                 type="text"
-                                value={icOrPassport}
-                                onChange={(e) => setIcOrPassport(e.target.value)}
+                                value={identificationValue}
+                                onChange={(e) => setIdentificationValue(e.target.value)}
                                 required={mode === 'create'}
-                                disabled={mode === 'edit'}
-                                className={`input-base w-full ${mode === 'edit' ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                placeholder={mode === 'edit' ? 'Cannot be changed' : 'Identification Number'}
+                                // Disabled in edit mode removed to allow updates as per requirement
+                                className="input-base w-full"
+                                placeholder="Identification Number"
                             />
                         </div>
                         <div className="space-y-1.5">

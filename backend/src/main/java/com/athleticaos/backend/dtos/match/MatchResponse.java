@@ -31,4 +31,28 @@ public class MatchResponse {
     private Integer awayScore;
     private String phase;
     private String matchCode;
+    private StageInfo stage;
+
+    private TeamInfo homeTeam;
+    private TeamInfo awayTeam;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class StageInfo {
+        private String id;
+        private String name;
+        private String stageType;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TeamInfo {
+        private UUID id;
+        private String name;
+        private UUID orgId;
+    }
 }

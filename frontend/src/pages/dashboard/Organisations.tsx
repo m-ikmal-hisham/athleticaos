@@ -17,6 +17,7 @@ import { useOrganisationsStore } from "../../store/organisations.store";
 import { getCountries, getStates, getDivisions, getDistricts, Organisation, createOrganisation, updateOrganisation, OrganisationLevel } from "../../api/organisations.api";
 import { OrganisationModal } from "../../components/modals/OrganisationModal";
 import { useAuthStore } from "../../store/auth.store";
+import { getImageUrl } from "../../utils/image";
 
 export default function Organisations() {
     const { organisations, loading, error, getOrganisations } = useOrganisationsStore();
@@ -242,7 +243,7 @@ export default function Organisations() {
                                             <div className="flex items-center gap-3">
                                                 {org.logoUrl && (
                                                     <img
-                                                        src={org.logoUrl}
+                                                        src={getImageUrl(org.logoUrl)}
                                                         alt={org.name}
                                                         className="w-6 h-6 rounded-full object-cover"
                                                     />

@@ -78,6 +78,8 @@ public class PlayerServiceImpl implements PlayerService {
                 .gender(request.gender())
                 .dob(request.dob())
                 .icOrPassport(request.icOrPassport())
+                .identificationType(request.identificationType())
+                .identificationValue(request.identificationValue())
                 .nationality(request.nationality())
                 .email(request.email())
                 .phone(request.phone())
@@ -128,6 +130,12 @@ public class PlayerServiceImpl implements PlayerService {
         }
         if (request.icOrPassport() != null) {
             person.setIcOrPassport(request.icOrPassport());
+        }
+        if (request.identificationType() != null) {
+            person.setIdentificationType(request.identificationType());
+        }
+        if (request.identificationValue() != null) {
+            person.setIdentificationValue(request.identificationValue());
         }
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
@@ -189,6 +197,28 @@ public class PlayerServiceImpl implements PlayerService {
     private PlayerResponse mapToPlayerResponse(Player player) {
         Person person = player.getPerson();
 
+        // Get organisation from current team assignment
+        UUID organisationId = null;
+        String organisationName = null;
+        java.util.List<String> teamNames = new java.util.ArrayList<>();
+
+        List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
+                .findByPlayerIdAndIsActiveTrue(player.getId());
+        if (!playerTeams.isEmpty()) {
+            // Get the first active team assignment
+            var playerTeam = playerTeams.get(0);
+
+            if (playerTeam.getTeam() != null && playerTeam.getTeam().getOrganisation() != null) {
+                organisationId = playerTeam.getTeam().getOrganisation().getId();
+                organisationName = playerTeam.getTeam().getOrganisation().getName();
+            }
+
+            // Collect all active team names
+            teamNames = playerTeams.stream()
+                    .map(pt -> pt.getTeam().getName())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
@@ -197,6 +227,8 @@ public class PlayerServiceImpl implements PlayerService {
                 .gender(person.getGender())
                 .dob(person.getDob())
                 .icOrPassport(person.getIcOrPassport()) // Include for update flow
+                .identificationType(person.getIdentificationType())
+                .identificationValue(person.getIdentificationValue())
                 .nationality(person.getNationality())
                 .email(person.getEmail())
                 .phone(person.getPhone())
@@ -206,6 +238,9 @@ public class PlayerServiceImpl implements PlayerService {
                 .dominantLeg(player.getDominantLeg())
                 .heightCm(player.getHeightCm())
                 .weightKg(player.getWeightKg())
+                .organisationId(organisationId)
+                .organisationName(organisationName)
+                .teamNames(teamNames)
                 .createdAt(player.getCreatedAt())
                 .build();
     }

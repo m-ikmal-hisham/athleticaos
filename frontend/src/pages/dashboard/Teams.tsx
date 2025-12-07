@@ -4,6 +4,9 @@ import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
 import { useTeamsStore } from "../../store/teams.store";
 import { StatusPill } from "../../components/StatusPill";
+import { TableSkeleton } from "../../components/LoadingSkeleton";
+import { EmptyState } from "../../components/EmptyState";
+import { Users2 } from "lucide-react";
 
 export default function Teams() {
     const navigate = useNavigate();
@@ -95,40 +98,57 @@ export default function Teams() {
                 </select>
             </div>
 
-            {loading && <p>Loading teams…</p>}
-            {error && <p>{error}</p>}
+            {loading && (
+                <div className="py-4">
+                    <TableSkeleton rows={5} cols={5} />
+                </div>
+            )}
 
-            {!loading && filteredTeams.length === 0 && <p>No teams found</p>}
+            {error && <p className="text-destructive py-4">{error}</p>}
+
+            {!loading && filteredTeams.length === 0 && (
+                <EmptyState
+                    icon={Users2}
+                    title="No teams found"
+                    description="Adjust filters or add a new team."
+                    actionLabel="Add Team"
+                    onAction={() => { }} // Placeholder as Add Team is disabled
+                    className="border-none bg-transparent"
+                />
+            )}
 
             {!loading && filteredTeams.length > 0 && (
-                <table className="glass-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Division</th>
-                            <th>State</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredTeams.map((t) => (
-                            <tr
-                                key={t.id}
-                                onClick={() => navigate(`/dashboard/teams/${t.slug || t.id}`)}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <td>{t.name}</td>
-                                <td>{t.category} ({t.ageGroup})</td>
-                                <td>{t.division}</td>
-                                <td>{t.state}</td>
-                                <td>
-                                    <StatusPill status={t.status} />
-                                </td>
+                <div className="w-full overflow-auto">
+                    <table className="glass-table w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b border-border/60 text-muted-foreground text-sm">
+                                <th className="p-4 font-medium">Name</th>
+                                <th className="p-4 font-medium">Category</th>
+                                <th className="p-4 font-medium">Division</th>
+                                <th className="p-4 font-medium">State</th>
+                                <th className="p-4 font-medium">Status</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredTeams.map((t) => (
+                                <tr
+                                    key={t.id}
+                                    onClick={() => navigate(`/dashboard/teams/${t.slug || t.id}`)}
+                                    style={{ cursor: 'pointer' }}
+                                    className="border-b border-border/40 hover:bg-muted/30 transition-colors"
+                                >
+                                    <td className="p-4">{t.name}</td>
+                                    <td className="p-4 text-muted-foreground">{t.category} ({t.ageGroup})</td>
+                                    <td className="p-4">{t.division}</td>
+                                    <td className="p-4">{t.state}</td>
+                                    <td className="p-4">
+                                        <StatusPill status={t.status} />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </Card>
     );

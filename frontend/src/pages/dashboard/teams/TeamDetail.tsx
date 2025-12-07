@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
-import { fetchTeamBySlug, fetchTeamStats, fetchTeamMatches } from '../../../api/teams.api';
+import { fetchTeamBySlug, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
 import { usePlayersStore } from '../../../store/players.store';
 import { ArrowLeft, Users, Trophy, Target, TrendingUp } from 'lucide-react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
@@ -49,6 +49,7 @@ export default function TeamDetail() {
     const [team, setTeam] = useState<TeamDetail | null>(null);
     const [stats, setStats] = useState<TeamStats | null>(null);
     const [matches, setMatches] = useState<Match[]>([]);
+    const [teamPlayers, setTeamPlayers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -63,13 +64,15 @@ export default function TeamDetail() {
                 const teamRes = await fetchTeamBySlug(slug);
                 setTeam(teamRes.data);
 
-                // Then fetch stats and matches using team ID
-                const [statsRes, matchesRes] = await Promise.all([
+                // Then fetch stats, matches, and players using team ID
+                const [statsRes, matchesRes, playersRes] = await Promise.all([
                     fetchTeamStats(teamRes.data.id).catch(() => ({ data: null })),
-                    fetchTeamMatches(teamRes.data.id).catch(() => ({ data: [] }))
+                    fetchTeamMatches(teamRes.data.id).catch(() => ({ data: [] })),
+                    fetchTeamPlayers(teamRes.data.id).catch(() => ({ data: [] }))
                 ]);
                 setStats(statsRes.data);
                 setMatches(matchesRes.data || []);
+                setTeamPlayers(playersRes.data || []);
             } catch (err) {
                 setError('Failed to load team details');
                 console.error(err);
@@ -81,8 +84,7 @@ export default function TeamDetail() {
         loadTeamData();
     }, [slug]);
 
-    // TODO: Fetch team roster via proper API endpoint instead of filtering all players
-    const teamPlayers: any[] = []; // filteredPlayers.filter(p => p.teamNames?.includes(team?.name || ''));
+
 
     const handleViewMatches = () => {
         if (team?.id) {

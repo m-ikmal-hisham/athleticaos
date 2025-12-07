@@ -29,6 +29,24 @@ export default function MatchCenter() {
         }
     }, [matchId, match?.status]);
 
+    // Apply branding
+    useEffect(() => {
+        if (match?.organiserBranding?.primaryColor) {
+            const root = document.documentElement;
+            const { primaryColor, secondaryColor, accentColor } = match.organiserBranding;
+
+            root.style.setProperty('--brand-primary', primaryColor);
+            if (secondaryColor) root.style.setProperty('--brand-secondary', secondaryColor);
+            if (accentColor) root.style.setProperty('--brand-accent', accentColor);
+
+            return () => {
+                root.style.removeProperty('--brand-primary');
+                root.style.removeProperty('--brand-secondary');
+                root.style.removeProperty('--brand-accent');
+            };
+        }
+    }, [match]);
+
     const loadMatch = async (silent = false) => {
         if (!matchId) return;
 
@@ -104,8 +122,21 @@ export default function MatchCenter() {
             </Link>
 
             {/* Match Header */}
-            <div className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-8">
-                <div className="space-y-6">
+            <div
+                className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden"
+                style={{
+                    borderColor: match.organiserBranding?.primaryColor ? `var(--brand-primary)` : undefined,
+                    borderTopWidth: match.organiserBranding?.primaryColor ? '4px' : '1px'
+                }}
+            >
+                {match.organiserBranding?.primaryColor && (
+                    <div
+                        className="absolute inset-0 opacity-5 pointer-events-none"
+                        style={{ backgroundColor: `var(--brand-primary)` }}
+                    />
+                )}
+
+                <div className="space-y-6 relative z-10">
                     {/* Status & Last Updated */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">

@@ -25,4 +25,9 @@ export const matchService = {
     async delete(id: string): Promise<void> {
         await axios.delete(`/api/v1/matches/${id}`);
     },
+
+    async getByTournament(tournamentId: string): Promise<Match[]> {
+        const response = await axios.get<Match[]>(`/api/v1/tournaments/${tournamentId}/matches`);
+        return response.data;
+    },
 };

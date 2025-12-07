@@ -1,5 +1,6 @@
 package com.athleticaos.backend.services;
 
+import com.athleticaos.backend.dtos.team.TeamResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentCreateRequest;
 import com.athleticaos.backend.dtos.tournament.TournamentDashboardResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentResponse;
@@ -9,13 +10,15 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TournamentService {
-        List<TournamentResponse> getAllTournaments();
+        List<TournamentResponse> getAllTournaments(String level);
 
         List<TournamentResponse> getPublishedTournaments();
 
-        TournamentResponse getTournamentById(UUID id);
+        TournamentResponse getTournamentById(java.util.UUID id);
 
-        TournamentDashboardResponse getTournamentDashboard(UUID id);
+        TournamentResponse getTournamentBySlug(String slug);
+
+        TournamentDashboardResponse getTournamentDashboard(java.util.UUID id);
 
         TournamentResponse createTournament(TournamentCreateRequest request,
                         jakarta.servlet.http.HttpServletRequest httpRequest);
@@ -31,4 +34,23 @@ public interface TournamentService {
         byte[] exportMatches(UUID tournamentId);
 
         byte[] exportResults(UUID tournamentId);
+
+        List<TeamResponse> getTeamsByTournament(UUID tournamentId);
+
+        void addTeamsToTournament(UUID tournamentId, List<UUID> teamIds);
+
+        void removeTeamFromTournament(UUID tournamentId, UUID teamId);
+
+        void generateSchedule(UUID tournamentId,
+                        com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request);
+
+        com.athleticaos.backend.dtos.match.MatchResponse createMatch(UUID tournamentId,
+                        com.athleticaos.backend.dtos.match.MatchCreateRequest request);
+
+        List<com.athleticaos.backend.dtos.match.MatchResponse> getMatchesByTournament(UUID tournamentId);
+
+        void clearSchedule(UUID tournamentId);
+
+        TournamentResponse updateStatus(UUID id, com.athleticaos.backend.enums.TournamentStatus status,
+                        jakarta.servlet.http.HttpServletRequest httpRequest);
 }

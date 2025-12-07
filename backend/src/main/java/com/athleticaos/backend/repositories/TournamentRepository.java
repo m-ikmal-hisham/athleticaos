@@ -16,4 +16,8 @@ public interface TournamentRepository extends JpaRepository<Tournament, UUID> {
     java.util.List<Tournament> findByCompetitionType(CompetitionType competitionType);
 
     java.util.List<Tournament> findByIsPublishedTrue();
+
+    java.util.List<Tournament> findByLevel(String level);
+
+    java.util.Optional<Tournament> findBySlug(String slug);
 }

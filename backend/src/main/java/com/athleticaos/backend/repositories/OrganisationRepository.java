@@ -14,4 +14,6 @@ public interface OrganisationRepository extends JpaRepository<Organisation, UUID
 
     java.util.List<Organisation> findByOrgLevelAndParentOrgId(com.athleticaos.backend.enums.OrganisationLevel level,
             UUID parentId);
+
+    java.util.Optional<Organisation> findBySlug(String slug);
 }

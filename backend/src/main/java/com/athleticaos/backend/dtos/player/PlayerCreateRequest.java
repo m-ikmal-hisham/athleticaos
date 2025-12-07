@@ -7,33 +7,37 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public record PlayerCreateRequest(
-        // Person (PII) fields
-        @NotBlank(message = "First name is required") String firstName,
+                // Person (PII) fields
+                @NotBlank(message = "First name is required") String firstName,
 
-        @NotBlank(message = "Last name is required") String lastName,
+                @NotBlank(message = "Last name is required") String lastName,
 
-        @NotBlank(message = "Gender is required") String gender, // MALE, FEMALE, OTHER
+                @NotBlank(message = "Gender is required") String gender, // MALE, FEMALE, OTHER
 
-        @NotNull(message = "Date of birth is required") LocalDate dob,
+                @NotNull(message = "Date of birth is required") LocalDate dob,
 
-        @NotBlank(message = "IC or Passport is required") String icOrPassport,
+                @NotBlank(message = "IC or Passport is required") String icOrPassport,
 
-        @NotBlank(message = "Nationality is required") String nationality,
+                String identificationType,
 
-        @Email(message = "Invalid email format") @NotBlank(message = "Email is required") String email,
+                String identificationValue,
 
-        String phone,
+                @NotBlank(message = "Nationality is required") String nationality,
 
-        String address,
+                @Email(message = "Invalid email format") @NotBlank(message = "Email is required") String email,
 
-        // Player (Rugby-specific) fields
-        String status, // ACTIVE, INACTIVE, BANNED - defaults to ACTIVE if null
+                String phone,
 
-        String dominantHand, // LEFT, RIGHT, BOTH
+                String address,
 
-        String dominantLeg, // LEFT, RIGHT, BOTH
+                // Player (Rugby-specific) fields
+                String status, // ACTIVE, INACTIVE, BANNED - defaults to ACTIVE if null
 
-        Integer heightCm,
+                String dominantHand, // LEFT, RIGHT, BOTH
 
-        Integer weightKg) {
+                String dominantLeg, // LEFT, RIGHT, BOTH
+
+                Integer heightCm,
+
+                Integer weightKg) {
 }

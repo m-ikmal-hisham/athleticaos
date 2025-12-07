@@ -20,7 +20,15 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "player_suspensions")
+@Table(name = "player_suspensions", indexes = {
+        @Index(name = "idx_player_suspension_tournament", columnList = "tournament_id"),
+        @Index(name = "idx_player_suspension_team", columnList = "team_id"),
+        @Index(name = "idx_player_suspension_player", columnList = "player_id"),
+        @Index(name = "idx_player_suspension_active", columnList = "is_active"),
+        @Index(name = "idx_player_suspension_tournament_active", columnList = "tournament_id, is_active"),
+        @Index(name = "idx_player_suspension_tournament_team_active", columnList = "tournament_id, team_id, is_active"),
+        @Index(name = "idx_player_suspension_tournament_player_active", columnList = "tournament_id, player_id, is_active")
+})
 public class PlayerSuspension {
 
     @Id

@@ -13,6 +13,8 @@ import { updateMatch, updateMatchStatus } from '@/api/matches.api';
 import { Toast } from '@/components/Toast';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchControls } from '@/components/MatchControls';
+import { rosterService } from '@/services/rosterService';
+import { LineupHintsDTO } from '@/types/roster.types';
 
 // Rugby scoring rules
 const SCORING_RULES: Record<string, number> = {
@@ -92,6 +94,7 @@ export const MatchDetail = () => {
         onConfirm: () => void;
     }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [isHalfTime, setIsHalfTime] = useState<boolean>(false);
+    const [lineupHints, setLineupHints] = useState<LineupHintsDTO | null>(null);
 
     const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +104,9 @@ export const MatchDetail = () => {
         if (id) {
             loadMatchDetail(id);
             loadPlayers();
+            loadLineupHints();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, loadMatchDetail, loadPlayers]);
 
     // Auto-scroll timeline to latest event
@@ -132,6 +137,22 @@ export const MatchDetail = () => {
 
         return { homeScore, awayScore };
     }, [events, selectedMatch]);
+
+    const loadLineupHints = async () => {
+        if (!id) return;
+        try {
+            const hints = await rosterService.getLineupHints(id);
+            setLineupHints(hints);
+        } catch (err) {
+            console.error('Failed to load lineup hints:', err);
+        }
+    };
+
+    const getPlayerSuspensionInfo = (playerId: string, teamId: string) => {
+        if (!lineupHints) return null;
+        const teamPlayers = teamId === selectedMatch?.homeTeamId ? lineupHints.homeTeamPlayers : lineupHints.awayTeamPlayers;
+        return teamPlayers.find(p => p.playerId === playerId);
+    };
 
     if (loadingDetail) {
         return <div className="p-8 text-center">Loading match details...</div>;
@@ -321,6 +342,7 @@ export const MatchDetail = () => {
                     </div>
                 </div>
                 <div className="flex flex-col gap-3 items-end">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Badge variant={getStatusColor(selectedMatch.status, isHalfTime) as any} className="text-base px-3 py-1">
                         {getStatusLabel(selectedMatch.status, isHalfTime)}
                     </Badge>
@@ -510,10 +532,51 @@ export const MatchDetail = () => {
                                         disabled={!newEvent.teamId}
                                     >
                                         <option value="">Select Player</option>
-                                        {teamPlayers.map(p => (
-                                            <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
-                                        ))}
+                                        {teamPlayers.map(p => {
+                                            const suspensionInfo = getPlayerSuspensionInfo(p.id, newEvent.teamId!);
+                                            const isSuspended = suspensionInfo?.isSuspended;
+                                            const isIneligible = suspensionInfo && !suspensionInfo.isEligible;
+                                            return (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.firstName} {p.lastName}
+                                                    {isSuspended ? ' 🔴 SUSPENDED' : ''}
+                                                    {isIneligible ? ' ⚠️ INELIGIBLE' : ''}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
+                                    {newEvent.playerId && (() => {
+                                        const suspensionInfo = getPlayerSuspensionInfo(newEvent.playerId, newEvent.teamId!);
+                                        if (suspensionInfo?.isSuspended) {
+                                            return (
+                                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                                    <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-2">
+                                                        🔴 This player is currently suspended
+                                                    </p>
+                                                    {suspensionInfo.suspensionReason && (
+                                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                                            Reason: {suspensionInfo.suspensionReason} ({suspensionInfo.suspensionMatchesRemaining} matches remaining)
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        if (suspensionInfo && !suspensionInfo.isEligible) {
+                                            return (
+                                                <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                                                    <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium flex items-center gap-2">
+                                                        ⚠️ This player is ineligible
+                                                    </p>
+                                                    {suspensionInfo.eligibilityNote && (
+                                                        <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                                                            {suspensionInfo.eligibilityNote}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
 
                                 <div className="space-y-2">

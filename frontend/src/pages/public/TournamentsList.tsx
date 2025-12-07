@@ -126,7 +126,7 @@ export default function TournamentsList() {
                     {filteredTournaments.map(tournament => (
                         <Link
                             key={tournament.id}
-                            to={`/tournaments/${tournament.id}`}
+                            to={`/tournaments/${tournament.slug || tournament.id}`}
                             className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10"
                         >
                             <div className="p-6 space-y-4">
@@ -151,18 +151,30 @@ export default function TournamentsList() {
                                 </div>
 
                                 {/* Tournament Info */}
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                                        {tournament.name}
-                                    </h3>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                        {tournament.level}
-                                        {tournament.competitionType && ` • ${tournament.competitionType}`}
-                                    </p>
-                                    {tournament.seasonName && (
-                                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                                            {tournament.seasonName}
+                                {/* Tournament Info & Logo */}
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                                            {tournament.name}
+                                        </h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                            {tournament.level}
+                                            {tournament.competitionType && ` • ${tournament.competitionType}`}
                                         </p>
+                                        {tournament.seasonName && (
+                                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                                                {tournament.seasonName}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {tournament.organiserBranding?.logoUrl && (
+                                        <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                                            <img
+                                                src={tournament.organiserBranding.logoUrl}
+                                                alt={tournament.organiserName}
+                                                className="w-full h-full object-contain"
+                                            />
+                                        </div>
                                     )}
                                 </div>
 

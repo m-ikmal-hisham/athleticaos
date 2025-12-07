@@ -27,3 +27,5 @@ export const fetchTeamBySlug = (slug: string) => api.get(`/teams/slug/${slug}`);
 export const fetchTeamStats = (teamId: string) => api.get(`/stats/teams/${teamId}`);
 
 export const fetchTeamMatches = (teamId: string) => api.get(`/matches`, { params: { teamId } });
+
+export const fetchTeamPlayers = (teamId: string) => api.get(`/teams/${teamId}/players`);

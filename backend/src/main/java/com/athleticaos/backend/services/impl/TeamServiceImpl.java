@@ -141,4 +141,10 @@ public class TeamServiceImpl implements TeamService {
                 .players(playerTeamService.getTeamRoster(team.getId()))
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> getPlayersByTeam(UUID teamId) {
+        return playerTeamService.getTeamRoster(teamId);
+    }
 }

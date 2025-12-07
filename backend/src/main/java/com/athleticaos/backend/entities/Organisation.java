@@ -25,6 +25,9 @@ public class Organisation {
     @Column(nullable = false)
     private String name;
 
+    @Column(unique = true)
+    private String slug;
+
     @Column(name = "org_type", nullable = false)
     private String orgType; // ENUM as String
 
@@ -51,6 +54,12 @@ public class Organisation {
 
     @Column(name = "logo_url")
     private String logoUrl;
+
+    @Column(name = "accent_color")
+    private String accentColor;
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
 
     @Column
     private String state; // State/Region

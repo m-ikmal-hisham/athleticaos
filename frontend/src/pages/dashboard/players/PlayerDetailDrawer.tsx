@@ -36,7 +36,8 @@ interface PlayerDetail {
     email: string;
     status: string;
     role: string;
-    clubName?: string;
+    organisationName?: string;
+    teamNames?: string[];
     // Optional extended fields
     position?: string;
     jerseyNumber?: number;
@@ -174,8 +175,22 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                             {/* Organisation & Team */}
                             <div className="glass-section">
                                 <h4 className="section-header-blue">Organisation</h4>
-                                <p className="text-foreground">{player.clubName || '—'}</p>
+                                <p className="text-foreground">{player.organisationName || '—'}</p>
                             </div>
+
+                            {/* Teams */}
+                            {player.teamNames && player.teamNames.length > 0 && (
+                                <div className="glass-section">
+                                    <h4 className="section-header-blue">Teams</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {player.teamNames.map((teamName, idx) => (
+                                            <span key={idx} className="status-pill status-active">
+                                                {teamName}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Optional Fields */}
                             {(player.position || player.gender || player.dateOfBirth) && (

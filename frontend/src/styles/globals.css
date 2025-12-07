@@ -143,8 +143,13 @@
   }
 
   .status-pill--inactive {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(148, 163, 184, 0.15);
+    color: rgba(100, 116, 139, 0.9);
+  }
+
+  [data-theme="dark"] .status-pill--inactive {
+    background: rgba(148, 163, 184, 0.15);
+    color: rgba(226, 232, 240, 0.7);
   }
 
   /* Modal */

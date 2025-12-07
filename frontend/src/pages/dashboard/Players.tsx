@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Search, MoreHorizontal } from "lucide-react";
+import { Search, MoreHorizontal, UserX } from "lucide-react";
+import { TableSkeleton } from "../../components/LoadingSkeleton";
+import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
@@ -121,84 +123,97 @@ export default function Players() {
                         </div>
                     </div>
 
-                    <Table>
-                        <TableHeader className="border-b border-border/60">
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Gender</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Nationality</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8">Loading players...</TableCell>
+                    {loading ? (
+                        <div className="p-4">
+                            <TableSkeleton rows={5} cols={6} />
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader className="border-b border-border/60">
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
+                                    <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
+                                    <TableHead className="text-xs font-medium text-muted-foreground">Gender</TableHead>
+                                    <TableHead className="text-xs font-medium text-muted-foreground">Nationality</TableHead>
+                                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+                                    <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
                                 </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-destructive">{error}</TableCell>
-                                </TableRow>
-                            ) : filteredPlayers.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No players found</TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredPlayers.map((p) => (
-                                    <TableRow
-                                        key={p.id}
-                                        className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
-                                        onClick={() => openPlayerDrawer(p.id)}
-                                    >
-                                        <TableCell className="py-4">
-                                            <span className="text-sm font-medium">{p.firstName} {p.lastName}</span>
+                            </TableHeader>
+                            <TableBody>
+                                {error ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-destructive">{error}</TableCell>
+                                    </TableRow>
+                                ) : filteredPlayers.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="p-0">
+                                            <EmptyState
+                                                icon={UserX}
+                                                title="No players found"
+                                                description="Try adjusting your search or filters, or add a new player."
+                                                actionLabel={isAdmin ? "Add Player" : undefined}
+                                                onAction={isAdmin ? handleAdd : undefined}
+                                                className="border-none bg-transparent"
+                                            />
                                         </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm text-muted-foreground">{p.email || "—"}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm">{p.gender || "—"}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm">{p.nationality || "—"}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <Badge variant={getStatusVariant(p.status) as any} className="text-xs">
-                                                {p.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {isAdmin && (
+                                    </TableRow>
+                                ) : (
+                                    filteredPlayers.map((p) => (
+                                        <TableRow
+                                            key={p.id}
+                                            className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
+                                            onClick={() => openPlayerDrawer(p.id)}
+                                        >
+                                            <TableCell className="py-4">
+                                                <span className="text-sm font-medium">{p.firstName} {p.lastName}</span>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <span className="text-sm text-muted-foreground">{p.email || "—"}</span>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <span className="text-sm">{p.gender || "—"}</span>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <span className="text-sm">{p.nationality || "—"}</span>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <span className="text-sm">
+                                                    <Badge variant={getStatusVariant(p.status) as any} className="text-xs">
+                                                        {p.status}
+                                                    </Badge>
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {isAdmin && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={(e) => handleEdit(p, e)}
+                                                            className="h-8 px-3"
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={(e) => handleEdit(p, e)}
-                                                        className="h-8 px-3"
+                                                        className="h-8 w-8 p-0"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openPlayerDrawer(p.id);
+                                                        }}
                                                     >
-                                                        Edit
+                                                        <MoreHorizontal className="w-4 h-4" />
                                                     </Button>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openPlayerDrawer(p.id);
-                                                    }}
-                                                >
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
 

@@ -5,6 +5,7 @@ export type OrganisationLevel = 'COUNTRY' | 'STATE' | 'DIVISION' | 'DISTRICT' | 
 export interface Organisation {
     id: string;
     name: string;
+    slug?: string;
     type: string;
     orgLevel: OrganisationLevel;
     parentOrgId?: string;
@@ -13,6 +14,8 @@ export interface Organisation {
     tertiaryColor?: string;
     quaternaryColor?: string;
     logoUrl?: string;
+    accentColor?: string;
+    coverImageUrl?: string;
     state?: string;
     status: string;
 }
@@ -31,6 +34,8 @@ export interface OrganisationCreateRequest {
     tertiaryColor?: string;
     quaternaryColor?: string;
     logoUrl?: string;
+    accentColor?: string;
+    coverImageUrl?: string;
 }
 
 export interface OrganisationUpdateRequest {
@@ -43,9 +48,13 @@ export interface OrganisationUpdateRequest {
     tertiaryColor?: string;
     quaternaryColor?: string;
     logoUrl?: string;
+    accentColor?: string;
+    coverImageUrl?: string;
 }
 
 export const fetchOrganisations = () => api.get<Organisation[]>("/organisations").then(res => res.data);
+
+export const getOrganisationById = (id: string) => api.get<Organisation>(`/organisations/${id}`).then(res => res.data);
 
 export const createOrganisation = (data: OrganisationCreateRequest) => api.post<Organisation>("/organisations", data).then(res => res.data);
 

@@ -21,6 +21,7 @@ export const fetchMatchEvents = (matchId: string) => {
     return api.get(`/matches/${matchId}/events`);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createMatchEvent = (matchId: string, body: any) => {
     return api.post(`/matches/${matchId}/events`, body);
 };
@@ -29,6 +30,7 @@ export const deleteMatchEvent = (eventId: string) => {
     return api.delete(`/matches/events/${eventId}`);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const updateMatch = (id: string, data: any) => {
     return api.put(`/matches/${id}`, data);
 };

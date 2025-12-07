@@ -62,16 +62,43 @@ public class OrganisationServiceImpl implements OrganisationService {
                     .orElseThrow(() -> new EntityNotFoundException("Parent organisation not found"));
         }
 
+        String slug = generateSlug(request.getName());
+
+        String orgState = null;
+        if (parent != null) {
+            if (parent.getOrgLevel() == OrganisationLevel.STATE) {
+                orgState = parent.getName();
+            } else if (parent.getParentOrg() != null
+                    && parent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                orgState = parent.getParentOrg().getName();
+            } else if (parent.getOrgLevel() == OrganisationLevel.DIVISION
+                    && request.getOrgLevel() == OrganisationLevel.CLUB) {
+                // Special case for Sarawak: If parent is Division, we might need to look up if
+                // that Division has a parent
+                if (parent.getParentOrg() != null && parent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                    orgState = parent.getParentOrg().getName();
+                }
+            }
+            // Fallback: If parent has state set, use it
+            if (orgState == null && parent.getState() != null) {
+                orgState = parent.getState();
+            }
+        }
+
         Organisation org = Organisation.builder()
                 .name(request.getName())
                 .orgType(request.getOrgType())
                 .orgLevel(request.getOrgLevel() != null ? request.getOrgLevel() : OrganisationLevel.CLUB)
                 .parentOrg(parent)
+                .state(orgState)
                 .primaryColor(request.getPrimaryColor())
                 .secondaryColor(request.getSecondaryColor())
                 .tertiaryColor(request.getTertiaryColor())
                 .quaternaryColor(request.getQuaternaryColor())
                 .logoUrl(request.getLogoUrl())
+                .accentColor(request.getAccentColor())
+                .coverImageUrl(request.getCoverImageUrl())
+                .slug(slug)
                 .status("Active")
                 .build();
 
@@ -89,6 +116,9 @@ public class OrganisationServiceImpl implements OrganisationService {
 
         if (request.getName() != null) {
             org.setName(request.getName());
+        }
+        if (request.getOrgType() != null) {
+            org.setOrgType(request.getOrgType());
         }
         if (request.getState() != null) {
             org.setState(request.getState());
@@ -114,6 +144,46 @@ public class OrganisationServiceImpl implements OrganisationService {
         if (request.getLogoUrl() != null) {
             org.setLogoUrl(request.getLogoUrl());
         }
+        if (request.getAccentColor() != null) {
+            org.setAccentColor(request.getAccentColor());
+        }
+        if (request.getCoverImageUrl() != null) {
+            org.setCoverImageUrl(request.getCoverImageUrl());
+        }
+
+        // Handle Parent Org update and recursive state resolution
+        if (request.getParentOrgId() != null) {
+            Organisation newParent = organisationRepository.findById(request.getParentOrgId())
+                    .orElseThrow(() -> new EntityNotFoundException("New parent organisation not found"));
+
+            org.setParentOrg(newParent);
+
+            // Re-calculate state based on new parent
+            String orgState = null;
+            if (newParent.getOrgLevel() == OrganisationLevel.STATE) {
+                orgState = newParent.getName();
+            } else if (newParent.getParentOrg() != null
+                    && newParent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                orgState = newParent.getParentOrg().getName();
+            } else if (newParent.getOrgLevel() == OrganisationLevel.DIVISION
+                    && org.getOrgLevel() == OrganisationLevel.CLUB) {
+                // Special case for Sarawak: If parent is Division, we might need to look up if
+                // that Division has a parent
+                if (newParent.getParentOrg() != null
+                        && newParent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                    orgState = newParent.getParentOrg().getName();
+                }
+            }
+
+            // Fallback: If parent has state set, use it
+            if (orgState == null && newParent.getState() != null) {
+                orgState = newParent.getState();
+            }
+
+            if (orgState != null) {
+                org.setState(orgState);
+            }
+        }
 
         validateHierarchy(org);
 
@@ -124,6 +194,7 @@ public class OrganisationServiceImpl implements OrganisationService {
         return OrganisationResponse.builder()
                 .id(org.getId())
                 .name(org.getName())
+                .slug(org.getSlug())
                 .type(org.getOrgType()) // Map orgType to type
                 .parentOrgId(org.getParentOrg() != null ? org.getParentOrg().getId() : null)
                 .primaryColor(org.getPrimaryColor())
@@ -131,6 +202,8 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .tertiaryColor(org.getTertiaryColor())
                 .quaternaryColor(org.getQuaternaryColor())
                 .logoUrl(org.getLogoUrl())
+                .accentColor(org.getAccentColor())
+                .coverImageUrl(org.getCoverImageUrl())
                 .state(org.getState())
                 .status(org.getStatus())
                 .orgLevel(org.getOrgLevel())
@@ -234,10 +307,29 @@ public class OrganisationServiceImpl implements OrganisationService {
             case CLUB, SCHOOL -> {
                 if (parent == null ||
                         !(parent.getOrgLevel() == OrganisationLevel.DISTRICT
-                                || parent.getOrgLevel() == OrganisationLevel.DIVISION)) {
-                    throw new IllegalArgumentException(level + " must have a DISTRICT or DIVISION as parent.");
+                                || parent.getOrgLevel() == OrganisationLevel.DIVISION
+                                || parent.getOrgLevel() == OrganisationLevel.STATE)) {
+                    throw new IllegalArgumentException(level + " must have a STATE, DISTRICT or DIVISION as parent.");
                 }
             }
         }
+    }
+
+    private String generateSlug(String name) {
+        if (name == null)
+            return null;
+        String slug = name.toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-");
+
+        // Ensure uniqueness
+        if (organisationRepository.findBySlug(slug).isPresent()) {
+            int suffix = 1;
+            while (organisationRepository.findBySlug(slug + "-" + suffix).isPresent()) {
+                suffix++;
+            }
+            slug = slug + "-" + suffix;
+        }
+        return slug;
     }
 }

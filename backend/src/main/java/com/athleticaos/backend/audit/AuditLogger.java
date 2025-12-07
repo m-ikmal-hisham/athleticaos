@@ -220,6 +220,57 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        // ==================== ORGANISATION ACTIONS ====================
+
+        public void logOrganisationCreated(Organisation organisation, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("ORGANISATION_CREATED")
+                                .entityType("ORGANISATION")
+                                .entityId(organisation.getId())
+                                .entitySummary(String.format("Organisation created: %s (%s)",
+                                                organisation.getName(), organisation.getOrgLevel()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logOrganisationUpdated(Organisation organisation, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("ORGANISATION_UPDATED")
+                                .entityType("ORGANISATION")
+                                .entityId(organisation.getId())
+                                .entitySummary(String.format("Organisation updated: %s", organisation.getName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        // ==================== PLAYER ACTIONS ====================
+
+        public void logPlayerCreated(Player player, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PLAYER_CREATED")
+                                .entityType("PLAYER")
+                                .entityId(player.getId())
+                                .entitySummary(String.format("Player created: %s %s",
+                                                player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPlayerUpdated(Player player, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PLAYER_UPDATED")
+                                .entityType("PLAYER")
+                                .entityId(player.getId())
+                                .entitySummary(String.format("Player updated: %s %s",
+                                                player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== HELPER METHODS ====================
 
         private String getIpAddress(HttpServletRequest request) {

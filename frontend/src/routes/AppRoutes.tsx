@@ -22,6 +22,9 @@ import Stats from '@/pages/dashboard/Stats';
 import { Seasons } from '@/pages/dashboard/competitions/Seasons';
 import { SeasonDetail } from '@/pages/dashboard/competitions/SeasonDetail';
 import Activity from '@/pages/dashboard/Activity';
+import TournamentRosters from '@/pages/dashboard/TournamentRosters';
+import DashboardTournamentDetail from '@/pages/dashboard/TournamentDetail';
+import BrandingSettings from '@/pages/dashboard/organisations/BrandingSettings';
 import { AuthGuard } from '@/routes/AuthGuard';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
@@ -97,6 +100,10 @@ export const router = createBrowserRouter([
                 element: <Organisations />,
             },
             {
+                path: 'organisations/:id/branding',
+                element: <BrandingSettings />,
+            },
+            {
                 path: 'players',
                 element: <Players />,
             },
@@ -131,6 +138,14 @@ export const router = createBrowserRouter([
             {
                 path: 'stats',
                 element: <Stats />,
+            },
+            {
+                path: 'tournaments/:id',
+                element: <DashboardTournamentDetail />,
+            },
+            {
+                path: 'tournaments/:tournamentId/rosters',
+                element: <TournamentRosters />,
             },
             {
                 path: 'activity',

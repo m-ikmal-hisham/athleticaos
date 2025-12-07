@@ -1,5 +1,6 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.dtos.team.TeamResponse;
 import com.athleticaos.backend.dtos.tournament.BracketGenerationRequest;
 import com.athleticaos.backend.dtos.tournament.BracketViewResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentCreateRequest;
@@ -10,7 +11,7 @@ import com.athleticaos.backend.services.BracketService;
 import com.athleticaos.backend.services.ProgressionService;
 import com.athleticaos.backend.services.TournamentService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -32,11 +33,13 @@ public class TournamentController {
     private final TournamentService tournamentService;
     private final BracketService bracketService;
     private final ProgressionService progressionService;
+    private final com.athleticaos.backend.services.StandingsService standingsService;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
-    public ResponseEntity<List<TournamentResponse>> getAllTournaments() {
-        return ResponseEntity.ok(tournamentService.getAllTournaments());
+    public ResponseEntity<List<TournamentResponse>> getAllTournaments(
+            @RequestParam(required = false) String level) {
+        return ResponseEntity.ok(tournamentService.getAllTournaments(level));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -133,5 +136,89 @@ public class TournamentController {
     public ResponseEntity<Void> progressPoolsToKnockout(@PathVariable UUID id) {
         bracketService.progressPoolsToKnockout(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Update tournament status")
+    public ResponseEntity<TournamentResponse> updateStatus(
+            @PathVariable UUID id,
+            @RequestParam("status") com.athleticaos.backend.enums.TournamentStatus status,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return ResponseEntity.ok(tournamentService.updateStatus(id, status, request));
+    }
+
+    @GetMapping("/{id}/teams")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get all teams participating in a tournament")
+    public ResponseEntity<List<TeamResponse>> getTeamsByTournament(@PathVariable UUID id) {
+        return ResponseEntity.ok(tournamentService.getTeamsByTournament(id));
+    }
+
+    @PostMapping("/{id}/teams")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Add teams to tournament")
+    public ResponseEntity<Void> addTeamsToTournament(@PathVariable UUID id,
+            @RequestBody com.athleticaos.backend.dtos.tournament.TeamListRequest request) {
+        tournamentService.addTeamsToTournament(id, request.getTeamIds());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}/teams/{teamId}")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Remove team from tournament")
+    public ResponseEntity<Void> removeTeamFromTournament(@PathVariable UUID id, @PathVariable UUID teamId) {
+        tournamentService.removeTeamFromTournament(id, teamId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/format/generate")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Generate tournament schedule based on format")
+    public ResponseEntity<Void> generateSchedule(@PathVariable UUID id,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
+        tournamentService.generateSchedule(id, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/matches")
+    @Operation(summary = "Get all matches for a tournament")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.match.MatchResponse>> getMatchesByTournament(
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(tournamentService.getMatchesByTournament(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/standings")
+    @Operation(summary = "Get standings for a tournament (pools)")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.standing.StandingsResponse>> getStandings(
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(standingsService.getStandings(id));
+    }
+
+    @DeleteMapping("/{id}/matches")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @Operation(summary = "Clear all matches for a tournament")
+    public ResponseEntity<Void> clearSchedule(@PathVariable UUID id) {
+        tournamentService.clearSchedule(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/matches")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @Operation(summary = "Create a manual match in the tournament")
+    public ResponseEntity<com.athleticaos.backend.dtos.match.MatchResponse> createMatch(@PathVariable UUID id,
+            @Valid @RequestBody com.athleticaos.backend.dtos.match.MatchCreateRequest request) {
+        // Enforce tournament ID in request matches path variable
+        request.setTournamentId(id);
+        // Delegate to matchService or tournamentService?
+        // Existing MatchController uses MatchService.
+        // We probably should use MatchService but ensure validation. For now, let's
+        // stick to calling matchService if easy, or implement simple logic.
+        // There is no matchService injected here. Let's see if we can do it via
+        // tournamentService.
+        // I will add createMatch to TournamentService.
+        return ResponseEntity.ok(tournamentService.createMatch(id, request));
     }
 }

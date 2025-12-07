@@ -12,6 +12,7 @@ const publicApi = axios.create({
 
 export interface PublicTournamentSummary {
     id: string;
+    slug?: string;
     name: string;
     level: string;
     seasonName?: string;
@@ -22,6 +23,13 @@ export interface PublicTournamentSummary {
     completed: boolean;
     organiserName: string;
     competitionType?: string;
+    organiserBranding?: {
+        primaryColor?: string;
+        secondaryColor?: string;
+        accentColor?: string;
+        logoUrl?: string;
+        coverImageUrl?: string;
+    };
 }
 
 export interface PublicTournamentDetail extends PublicTournamentSummary {
@@ -55,6 +63,13 @@ export interface PublicMatchDetail extends PublicMatchSummary {
     events: PublicMatchEvent[];
     homeStats?: PublicTeamStats;
     awayStats?: PublicTeamStats;
+    organiserBranding?: {
+        primaryColor?: string;
+        secondaryColor?: string;
+        accentColor?: string;
+        logoUrl?: string;
+        coverImageUrl?: string;
+    };
 }
 
 export interface PublicMatchEvent {
@@ -73,6 +88,20 @@ export interface PublicTeamStats {
     redCards?: number;
 }
 
+export interface PublicStanding {
+    poolName: string;
+    teamId: string;
+    teamName: string;
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    pointsFor: number;
+    pointsAgainst: number;
+    pointsDiff: number;
+    points: number;
+}
+
 // API Functions
 export const publicTournamentApi = {
     getTournaments: async (): Promise<PublicTournamentSummary[]> => {
@@ -87,6 +116,11 @@ export const publicTournamentApi = {
 
     getTournamentMatches: async (id: string): Promise<PublicMatchSummary[]> => {
         const response = await publicApi.get(`/tournaments/${id}/matches`);
+        return response.data;
+    },
+
+    getTournamentStandings: async (id: string): Promise<PublicStanding[]> => {
+        const response = await publicApi.get(`/tournaments/${id}/standings`);
         return response.data;
     },
 

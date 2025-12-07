@@ -5,14 +5,18 @@ import {
     publicTournamentApi,
     PublicTournamentDetail,
     PublicMatchSummary,
+    PublicStanding,
 } from '../../api/public.api';
+import { PublicTournamentPools } from './components/PublicTournamentPools';
+import { PublicTournamentBracket } from './components/PublicTournamentBracket';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
     const [tournament, setTournament] = useState<PublicTournamentDetail | null>(null);
     const [matches, setMatches] = useState<PublicMatchSummary[]>([]);
+    const [standings, setStandings] = useState<PublicStanding[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'fixtures' | 'results'>('fixtures');
+    const [activeTab, setActiveTab] = useState<'fixtures' | 'results' | 'standings' | 'bracket'>('fixtures');
 
     useEffect(() => {
         if (id) {
@@ -20,16 +24,36 @@ export default function TournamentDetail() {
         }
     }, [id]);
 
+    // Apply tournament organizer branding to page
+    useEffect(() => {
+        if (tournament?.organiserBranding?.primaryColor) {
+            const root = document.documentElement;
+            const { primaryColor, secondaryColor, accentColor } = tournament.organiserBranding;
+
+            root.style.setProperty('--brand-primary', primaryColor);
+            if (secondaryColor) root.style.setProperty('--brand-secondary', secondaryColor);
+            if (accentColor) root.style.setProperty('--brand-accent', accentColor);
+
+            return () => {
+                root.style.removeProperty('--brand-primary');
+                root.style.removeProperty('--brand-secondary');
+                root.style.removeProperty('--brand-accent');
+            };
+        }
+    }, [tournament]);
+
     const loadTournamentData = async () => {
         if (!id) return;
 
         try {
-            const [tournamentData, matchesData] = await Promise.all([
+            const [tournamentData, matchesData, standingsData] = await Promise.all([
                 publicTournamentApi.getTournamentById(id),
                 publicTournamentApi.getTournamentMatches(id),
+                publicTournamentApi.getTournamentStandings(id).catch(() => []),
             ]);
             setTournament(tournamentData);
             setMatches(matchesData);
+            setStandings(standingsData || []);
         } catch (error) {
             console.error('Failed to load tournament:', error);
         } finally {
@@ -58,6 +82,16 @@ export default function TournamentDetail() {
 
     const displayMatches = activeTab === 'fixtures' ? fixturesMatches : resultsMatches;
     const groupedMatches = groupMatchesByDate(displayMatches);
+
+    // Filter relevant matches for Pools and Brackets
+    const hasStandings = standings.length > 0;
+    const hasPoolMatches = matches.some(m => m.stage?.toLowerCase().includes('pool') || m.stage?.toLowerCase().includes('group'));
+    const showPoolTab = hasStandings || hasPoolMatches;
+
+    const hasKnockoutMatches = matches.some(m => {
+        const stage = m.stage?.toLowerCase() || '';
+        return stage && !stage.includes('pool') && !stage.includes('group');
+    });
 
     if (loading) {
         return (
@@ -92,8 +126,22 @@ export default function TournamentDetail() {
             </Link>
 
             {/* Tournament Header */}
-            <div className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-8">
-                <div className="space-y-4">
+            <div
+                className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden"
+                style={{
+                    borderColor: tournament.organiserBranding?.primaryColor ? `var(--brand-primary)` : undefined,
+                    borderTopWidth: tournament.organiserBranding?.primaryColor ? '4px' : '1px'
+                }}
+            >
+                {/* Background Tint if branding exists */}
+                {tournament.organiserBranding?.primaryColor && (
+                    <div
+                        className="absolute inset-0 opacity-5 pointer-events-none"
+                        style={{ backgroundColor: `var(--brand-primary)` }}
+                    />
+                )}
+
+                <div className="space-y-4 relative z-10">
                     {/* Status Badge */}
                     <div className="flex items-center gap-2">
                         {tournament.live && (
@@ -152,11 +200,17 @@ export default function TournamentDetail() {
                 </div>
             </div>
 
+            {tournament.organiserBranding?.logoUrl && (
+                <div className="absolute top-8 right-8 hidden md:block">
+                    <img src={tournament.organiserBranding.logoUrl} alt="Organiser Logo" className="w-16 h-16 object-contain" />
+                </div>
+            )}
+
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex gap-2 border-b border-slate-200/50 dark:border-slate-700/50 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('fixtures')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors relative ${activeTab === 'fixtures'
+                    className={`px-4 py-2 font-medium text-sm transition-colors relative whitespace-nowrap ${activeTab === 'fixtures'
                         ? 'text-blue-600 dark:text-blue-400'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
@@ -168,7 +222,7 @@ export default function TournamentDetail() {
                 </button>
                 <button
                     onClick={() => setActiveTab('results')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors relative ${activeTab === 'results'
+                    className={`px-4 py-2 font-medium text-sm transition-colors relative whitespace-nowrap ${activeTab === 'results'
                         ? 'text-blue-600 dark:text-blue-400'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
@@ -178,105 +232,141 @@ export default function TournamentDetail() {
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
                     )}
                 </button>
+                {showPoolTab && (
+                    <button
+                        onClick={() => setActiveTab('standings')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors relative whitespace-nowrap ${activeTab === 'standings'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        Pool Standings
+                        {activeTab === 'standings' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                        )}
+                    </button>
+                )}
+                {hasKnockoutMatches && (
+                    <button
+                        onClick={() => setActiveTab('bracket')}
+                        className={`px-4 py-2 font-medium text-sm transition-colors relative whitespace-nowrap ${activeTab === 'bracket'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        Knockout Bracket
+                        {activeTab === 'bracket' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                        )}
+                    </button>
+                )}
             </div>
 
-            {/* Matches */}
-            {groupedMatches.length === 0 ? (
-                <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-                    <Trophy className="w-12 h-12 mx-auto text-slate-400 mb-4" />
-                    <p className="text-slate-600 dark:text-slate-400">
-                        No {activeTab} available
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {groupedMatches.map(([date, dateMatches]) => (
-                        <div key={date} className="space-y-3">
-                            {/* Date Header */}
-                            <div className="flex items-center gap-3">
-                                <div className="h-px flex-1 bg-slate-200/50 dark:bg-slate-700/50" />
-                                <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                                    {new Date(date).toLocaleDateString('en-US', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}
-                                </h3>
-                                <div className="h-px flex-1 bg-slate-200/50 dark:bg-slate-700/50" />
-                            </div>
-
-                            {/* Matches for this date */}
-                            <div className="space-y-3">
-                                {dateMatches.map(match => (
-                                    <Link
-                                        key={match.id}
-                                        to={`/matches/${match.id}`}
-                                        className="block rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-lg p-4"
-                                    >
-                                        <div className="flex items-center justify-between gap-4">
-                                            {/* Time & Status */}
-                                            <div className="flex items-center gap-3 min-w-[100px]">
-                                                <Clock className="w-4 h-4 text-slate-400" />
-                                                <div className="text-sm">
-                                                    {match.status === 'LIVE' || match.status === 'ONGOING' ? (
-                                                        <span className="font-medium text-red-600 dark:text-red-400">
-                                                            LIVE
-                                                        </span>
-                                                    ) : match.status === 'COMPLETED' || match.status === 'FULL_TIME' ? (
-                                                        <span className="text-slate-600 dark:text-slate-400">FT</span>
-                                                    ) : (
-                                                        <span className="text-slate-600 dark:text-slate-400">
-                                                            {match.matchTime}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Teams & Score */}
-                                            <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-                                                <div className="text-right">
-                                                    <p className="font-medium text-slate-900 dark:text-white">
-                                                        {match.homeTeamName}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-3 px-4">
-                                                    {match.homeScore !== null && match.awayScore !== null ? (
-                                                        <div className="flex items-center gap-2 text-lg font-bold">
-                                                            <span className="text-slate-900 dark:text-white">
-                                                                {match.homeScore}
-                                                            </span>
-                                                            <span className="text-slate-400">-</span>
-                                                            <span className="text-slate-900 dark:text-white">
-                                                                {match.awayScore}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-slate-400">vs</span>
-                                                    )}
-                                                </div>
-                                                <div className="text-left">
-                                                    <p className="font-medium text-slate-900 dark:text-white">
-                                                        {match.awayTeamName}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Venue */}
-                                            {match.venue && (
-                                                <div className="hidden md:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[150px]">
-                                                    <MapPin className="w-4 h-4" />
-                                                    <span className="truncate">{match.venue}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
+            {/* Tab Content */}
+            <div className="min-h-[300px]">
+                {activeTab === 'standings' ? (
+                    <PublicTournamentPools standings={standings} />
+                ) : activeTab === 'bracket' ? (
+                    <PublicTournamentBracket matches={matches} />
+                ) : (
+                    groupedMatches.length === 0 ? (
+                        <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
+                            <Trophy className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+                            <p className="text-slate-600 dark:text-slate-400">
+                                No {activeTab} available
+                            </p>
                         </div>
-                    ))}
-                </div>
-            )}
+                    ) : (
+                        <div className="space-y-6">
+                            {groupedMatches.map(([date, dateMatches]) => (
+                                <div key={date} className="space-y-3">
+                                    {/* Date Header */}
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-px flex-1 bg-slate-200/50 dark:bg-slate-700/50" />
+                                        <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                            {new Date(date).toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                            })}
+                                        </h3>
+                                        <div className="h-px flex-1 bg-slate-200/50 dark:bg-slate-700/50" />
+                                    </div>
+
+                                    {/* Matches for this date */}
+                                    <div className="space-y-3">
+                                        {dateMatches.map(match => (
+                                            <Link
+                                                key={match.id}
+                                                to={`/matches/${match.id}`}
+                                                className="block rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-lg p-4"
+                                            >
+                                                <div className="flex items-center justify-between gap-4">
+                                                    {/* Time & Status */}
+                                                    <div className="flex items-center gap-3 min-w-[100px]">
+                                                        <Clock className="w-4 h-4 text-slate-400" />
+                                                        <div className="text-sm">
+                                                            {match.status === 'LIVE' || match.status === 'ONGOING' ? (
+                                                                <span className="font-medium text-red-600 dark:text-red-400">
+                                                                    LIVE
+                                                                </span>
+                                                            ) : match.status === 'COMPLETED' || match.status === 'FULL_TIME' ? (
+                                                                <span className="text-slate-600 dark:text-slate-400">FT</span>
+                                                            ) : (
+                                                                <span className="text-slate-600 dark:text-slate-400">
+                                                                    {match.matchTime}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Teams & Score */}
+                                                    <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                                                        <div className="text-right">
+                                                            <p className="font-medium text-slate-900 dark:text-white">
+                                                                {match.homeTeamName}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 px-4">
+                                                            {match.homeScore !== null && match.awayScore !== null ? (
+                                                                <div className="flex items-center gap-2 text-lg font-bold">
+                                                                    <span className="text-slate-900 dark:text-white">
+                                                                        {match.homeScore}
+                                                                    </span>
+                                                                    <span className="text-slate-400">-</span>
+                                                                    <span className="text-slate-900 dark:text-white">
+                                                                        {match.awayScore}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-400">vs</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <p className="font-medium text-slate-900 dark:text-white">
+                                                                {match.awayTeamName}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Venue */}
+                                                    {match.venue && (
+                                                        <div className="hidden md:flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[150px]">
+                                                            <MapPin className="w-4 h-4" />
+                                                            <span className="truncate">{match.venue}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                )}
+            </div>
         </div>
     );
 }

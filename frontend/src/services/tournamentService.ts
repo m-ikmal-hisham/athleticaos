@@ -1,5 +1,5 @@
 import axios from '@/lib/axios';
-import { Tournament, TournamentCreateRequest } from '@/types';
+import { Tournament, TournamentCreateRequest, Team, Standings } from '@/types';
 
 export const tournamentService = {
     async getAll(): Promise<Tournament[]> {
@@ -24,5 +24,45 @@ export const tournamentService = {
 
     async delete(id: string): Promise<void> {
         await axios.delete(`/api/v1/tournaments/${id}`);
+    },
+
+    async getTeams(id: string): Promise<Team[]> {
+        const response = await axios.get<Team[]>(`/api/v1/tournaments/${id}/teams`);
+        return response.data;
+    },
+
+    async addTeams(id: string, teamIds: string[]): Promise<void> {
+        await axios.post(`/api/v1/tournaments/${id}/teams`, { teamIds });
+    },
+
+    async removeTeam(id: string, teamId: string): Promise<void> {
+        await axios.delete(`/api/v1/tournaments/${id}/teams/${teamId}`);
+    },
+
+    async generateSchedule(id: string, format: string, numberOfPools?: number): Promise<void> {
+        await axios.post(`/api/v1/tournaments/${id}/format/generate`, {
+            format,
+            numberOfPools,
+        });
+    },
+
+    async createMatch(id: string, data: any): Promise<any> {
+        const response = await axios.post(`/api/v1/tournaments/${id}/matches`, data);
+        return response.data;
+    },
+
+    async clearSchedule(id: string): Promise<void> {
+        await axios.delete(`/api/v1/tournaments/${id}/matches`);
+    },
+
+    async updateStatus(id: string, status: string): Promise<void> {
+        await axios.put(`/api/v1/tournaments/${id}/status`, null, {
+            params: { status }
+        });
+    },
+
+    async getStandings(id: string): Promise<Standings[]> {
+        const response = await axios.get<Standings[]>(`/api/v1/tournaments/${id}/standings`);
+        return response.data;
     },
 };

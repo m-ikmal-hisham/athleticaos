@@ -1,28 +1,36 @@
 import { Trophy, Calendar, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
 
-interface TournamentPillProps {
-    tournament?: {
-        name: string;
-        status: 'LIVE' | 'UPCOMING';
-        date: string;
-        id: string;
-    };
-}
+export const TournamentPill = () => {
+    const [tournament, setTournament] = useState<PublicTournamentSummary | null>(null);
 
-export const TournamentPill = ({ tournament }: TournamentPillProps) => {
-    // Dummy data if no tournament provided
-    const data = tournament || {
-        name: "Malaysia Rugby Super League 2025",
-        status: 'LIVE',
-        date: "Week 4 • Matchday 2",
-        id: "mrsl-2025"
-    };
+    useEffect(() => {
+        const loadTournament = async () => {
+            try {
+                // Fetch public tournaments
+                const tournaments = await publicTournamentApi.getTournaments();
+                // Find first live one, or first upcoming, or just first one
+                const featured = tournaments.find(t => t.live) || tournaments.find(t => !t.completed) || tournaments[0];
+                if (featured) {
+                    setTournament(featured);
+                }
+            } catch (error) {
+                console.error("Failed to load featured tournament for pill", error);
+            }
+        };
+        loadTournament();
+    }, []);
+
+    if (!tournament) return null;
+
+    const status = tournament.live ? 'LIVE' : (tournament.completed ? 'COMPLETED' : 'UPCOMING');
 
     return (
         <Link
-            to={`/dashboard/tournaments/${data.id}`}
+            to={`/tournaments/${tournament.id}`}
             className={clsx(
                 "group relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
                 "bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg",
@@ -33,7 +41,7 @@ export const TournamentPill = ({ tournament }: TournamentPillProps) => {
             {/* Status Indicator */}
             <div className={clsx(
                 "flex items-center justify-center w-10 h-10 rounded-full shrink-0",
-                data.status === 'LIVE'
+                tournament.live
                     ? "bg-red-500/20 text-red-500 animate-pulse"
                     : "bg-blue-500/20 text-blue-500"
             )}>
@@ -44,13 +52,13 @@ export const TournamentPill = ({ tournament }: TournamentPillProps) => {
             <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                 <div className="flex flex-col min-w-0">
                     <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground flex items-center gap-2">
-                        {data.status === 'LIVE' && (
+                        {tournament.live && (
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                         )}
-                        {data.status} TOURNAMENT
+                        {status} TOURNAMENT
                     </span>
                     <span className="text-sm font-medium text-foreground truncate">
-                        {data.name}
+                        {tournament.name}
                     </span>
                 </div>
 
@@ -58,7 +66,9 @@ export const TournamentPill = ({ tournament }: TournamentPillProps) => {
 
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span className="text-xs">{data.date}</span>
+                    <span className="text-xs">
+                        {new Date(tournament.startDate).toLocaleDateString()}
+                    </span>
                 </div>
             </div>
 

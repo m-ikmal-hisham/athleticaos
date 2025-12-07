@@ -36,6 +36,14 @@ public class AuthenticationController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserRolesResponse> getCurrentUser() {
+        // Get current user and return their details with roles
+        com.athleticaos.backend.entities.User user = userService.getCurrentUser();
+        return ResponseEntity.ok(userService.getUserRoles(user.getId()));
+    }
+
     @GetMapping("/me/roles")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserRolesResponse> getCurrentUserRoles() {

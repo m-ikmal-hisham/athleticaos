@@ -24,7 +24,7 @@ export function RecentActivityWidget({
         if (entityId) {
             fetchEntityLogs(entityType, entityId, { page: 0, size: limit });
         }
-    }, [entityType, entityId, limit]);
+    }, [entityType, entityId, limit, fetchEntityLogs]);
 
     const getActionBadgeVariant = (actionType: string) => {
         if (actionType.includes('CREATED')) return 'success';

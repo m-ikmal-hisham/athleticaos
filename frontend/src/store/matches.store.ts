@@ -94,12 +94,14 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         set({ loadingList: true, error: null });
         try {
             const { filters } = get();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const params: any = {};
             if (filters.tournamentId) params.tournamentId = filters.tournamentId;
             if (filters.status && filters.status !== "ALL") params.status = filters.status;
 
             const response = await fetchMatches(params);
             set({ matches: response.data });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to load matches", error);
             set({ error: "Failed to load matches" });
@@ -116,6 +118,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
                 fetchMatchEvents(matchId)
             ]);
             set({ selectedMatch: matchRes.data, events: eventsRes.data });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to load match detail", error);
             set({ error: "Failed to load match detail" });
@@ -139,6 +142,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
             // Refresh events
             const eventsRes = await fetchMatchEvents(matchId);
             set({ events: eventsRes.data });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to add event", error);
             set({ error: "Failed to add event" });
@@ -151,6 +155,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
             // Refresh events
             const eventsRes = await fetchMatchEvents(matchId);
             set({ events: eventsRes.data });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to remove event", error);
             set({ error: "Failed to remove event" });
@@ -184,10 +189,10 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
             const updatedMatches = matches.map(m => m.id === matchId ? { ...m, status: 'CANCELLED' as MatchStatus } : m);
             set({ matches: updatedMatches });
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to cancel match", error);
             set({ error: "Failed to cancel match" });
         }
     }
 }));
-

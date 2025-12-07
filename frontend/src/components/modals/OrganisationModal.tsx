@@ -4,6 +4,8 @@ import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Organisation, OrganisationLevel, fetchOrganisations } from '@/api/organisations.api';
 import { Upload } from 'lucide-react';
+import { uploadFile } from '@/api/upload.api';
+import { getImageUrl } from '@/utils/image';
 
 interface OrganisationModalProps {
     isOpen: boolean;
@@ -113,14 +115,24 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
 
         setLoading(true);
         try {
-            // Note: In a real app, you would upload the logo file to a storage service
-            // and get back a URL. For now, we'll just use the logoUrl field.
-            // You could integrate with services like AWS S3, Cloudinary, etc.
+            let finalLogoUrl = formData.logoUrl;
+
+            // If a file was selected, upload it first
+            if (logoFile) {
+                try {
+                    finalLogoUrl = await uploadFile(logoFile);
+                } catch (uploadErr) {
+                    console.error('Failed to upload logo', uploadErr);
+                    setErrors({ ...errors, logo: 'Failed to upload logo image' });
+                    setLoading(false);
+                    return;
+                }
+            }
 
             const submitData = {
                 ...formData,
-                // If a new logo file was selected, you would upload it here
-                // and update the logoUrl with the returned URL
+                parentOrgId: formData.parentOrgId === '' ? null : formData.parentOrgId,
+                logoUrl: finalLogoUrl
             };
 
             await onSubmit(submitData);
@@ -272,7 +284,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                         </label>
                         {logoPreview && (
                             <img
-                                src={logoPreview}
+                                src={logoPreview.startsWith('blob:') ? logoPreview : getImageUrl(logoPreview)}
                                 alt="Logo preview"
                                 className="w-12 h-12 rounded-lg object-cover border border-white/10"
                             />

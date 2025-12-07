@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
+import { Link } from "react-router-dom";
 import { useTournamentsStore } from "../../store/tournaments.store";
 import { StatusPill } from "../../components/StatusPill";
 
@@ -41,7 +42,14 @@ export default function Tournaments() {
                     <tbody>
                         {tournaments.map((t) => (
                             <tr key={t.id}>
-                                <td>{t.name}</td>
+                                <td>
+                                    <Link
+                                        to={`/dashboard/tournaments/${t.id}`}
+                                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                                    >
+                                        {t.name}
+                                    </Link>
+                                </td>
                                 <td>{t.seasonName || '-'}</td>
                                 <td>{t.competitionType || '-'}</td>
                                 <td>{t.level}</td>

@@ -25,5 +25,7 @@ public class OrganisationCreateRequest {
     private String tertiaryColor;
     private String quaternaryColor;
     private String logoUrl;
+    private String accentColor;
+    private String coverImageUrl;
     private com.athleticaos.backend.enums.OrganisationLevel orgLevel;
 }

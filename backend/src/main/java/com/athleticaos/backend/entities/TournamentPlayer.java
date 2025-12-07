@@ -21,6 +21,13 @@ import java.util.UUID;
 @Entity
 @Table(name = "tournament_players", uniqueConstraints = {
         @UniqueConstraint(columnNames = { "tournament_id", "team_id", "player_id" })
+}, indexes = {
+        @Index(name = "idx_tournament_player_tournament", columnList = "tournament_id"),
+        @Index(name = "idx_tournament_player_team", columnList = "team_id"),
+        @Index(name = "idx_tournament_player_player", columnList = "player_id"),
+        @Index(name = "idx_tournament_player_tournament_team", columnList = "tournament_id, team_id"),
+        @Index(name = "idx_tournament_player_active", columnList = "is_active"),
+        @Index(name = "idx_tournament_player_tournament_team_active", columnList = "tournament_id, team_id, is_active")
 })
 public class TournamentPlayer {
 

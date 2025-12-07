@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrganisationUpdateRequest {
     private String name;
+    private String orgType;
     private String state;
     private String status;
     private com.athleticaos.backend.enums.OrganisationLevel orgLevel;
@@ -19,4 +20,7 @@ public class OrganisationUpdateRequest {
     private String tertiaryColor;
     private String quaternaryColor;
     private String logoUrl;
+    private String accentColor;
+    private String coverImageUrl;
+    private java.util.UUID parentOrgId;
 }

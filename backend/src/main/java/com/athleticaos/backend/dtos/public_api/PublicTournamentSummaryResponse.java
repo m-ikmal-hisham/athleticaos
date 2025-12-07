@@ -15,6 +15,7 @@ import java.util.UUID;
 public class PublicTournamentSummaryResponse {
     private UUID id;
     private String name;
+    private String slug;
     private String level;
     private String seasonName;
     private LocalDate startDate;
@@ -23,5 +24,6 @@ public class PublicTournamentSummaryResponse {
     private boolean isLive;
     private boolean isCompleted;
     private String organiserName;
+    private PublicOrganisationBranding organiserBranding;
     private String competitionType;
 }

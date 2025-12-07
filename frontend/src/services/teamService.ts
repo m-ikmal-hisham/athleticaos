@@ -1,5 +1,5 @@
 import axios from '@/lib/axios';
-import { Team, TeamCreateRequest } from '@/types';
+import { Team, TeamCreateRequest, TeamPlayer } from '@/types';
 
 export const teamService = {
     async getAll(): Promise<Team[]> {
@@ -24,5 +24,10 @@ export const teamService = {
 
     async delete(id: string): Promise<void> {
         await axios.delete(`/api/v1/teams/${id}`);
+    },
+
+    async getPlayers(id: string): Promise<TeamPlayer[]> {
+        const response = await axios.get<TeamPlayer[]>(`/api/v1/teams/${id}/players`);
+        return response.data;
     },
 };

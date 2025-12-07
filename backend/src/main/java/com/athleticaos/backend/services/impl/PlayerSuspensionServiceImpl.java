@@ -20,6 +20,21 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
 
     private final PlayerSuspensionRepository suspensionRepository;
 
+    /**
+     * Creates a new suspension for a player in a tournament.
+     * 
+     * This is typically called automatically when:
+     * - A player receives a RED_CARD
+     * - A player receives 2 YELLOW_CARDs in the same match
+     * 
+     * @param tournament The tournament where the suspension applies
+     * @param team       The team the player belongs to
+     * @param player     The player being suspended
+     * @param reason     The reason for suspension (e.g., "RED_CARD", "2
+     *                   YELLOW_CARDS")
+     * @param matches    Number of matches the player is suspended for
+     * @return The created PlayerSuspension entity
+     */
     @Override
     @Transactional
     public PlayerSuspension createSuspension(Tournament tournament, Team team, User player, String reason,
@@ -39,6 +54,20 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
         return suspensionRepository.save(suspension);
     }
 
+    /**
+     * Decrements all active suspensions for both teams in a completed match.
+     * 
+     * This method is called automatically when a match status is updated to
+     * COMPLETED.
+     * It reduces the matchesRemaining count for all active suspensions and
+     * deactivates
+     * suspensions that have reached zero matches remaining.
+     * 
+     * IMPORTANT: This only affects suspensions for the teams playing in the match,
+     * ensuring suspensions are only served when the team actually plays.
+     * 
+     * @param match The completed match
+     */
     @Override
     @Transactional
     public void decrementSuspensions(Match match) {
@@ -48,21 +77,33 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
         Team homeTeam = match.getHomeTeam();
         Team awayTeam = match.getAwayTeam();
 
-        // Get active suspensions for both teams
+        // Get active suspensions for both teams in this tournament
         List<PlayerSuspension> homeTeamSuspensions = suspensionRepository
                 .findByTournamentIdAndTeamIdAndIsActiveTrue(tournament.getId(), homeTeam.getId());
         List<PlayerSuspension> awayTeamSuspensions = suspensionRepository
                 .findByTournamentIdAndTeamIdAndIsActiveTrue(tournament.getId(), awayTeam.getId());
 
-        // Decrement and update
+        // Decrement and update suspensions for both teams
         decrementAndUpdate(homeTeamSuspensions);
         decrementAndUpdate(awayTeamSuspensions);
     }
 
+    /**
+     * Helper method to decrement a list of suspensions and deactivate completed
+     * ones.
+     * 
+     * For each suspension:
+     * 1. Reduce matchesRemaining by 1
+     * 2. If matchesRemaining <= 0, set isActive to false
+     * 3. Save the updated suspension
+     * 
+     * @param suspensions List of suspensions to process
+     */
     private void decrementAndUpdate(List<PlayerSuspension> suspensions) {
         for (PlayerSuspension suspension : suspensions) {
             suspension.setMatchesRemaining(suspension.getMatchesRemaining() - 1);
 
+            // If suspension is served, deactivate it
             if (suspension.getMatchesRemaining() <= 0) {
                 suspension.setActive(false);
                 log.info("Suspension {} cleared for player {}", suspension.getId(), suspension.getPlayer().getId());

@@ -26,10 +26,16 @@
   --athos-transition-fast: 150ms ease-out;
 
   /* Legacy aliases for compatibility */
-  --primary: var(--athos-blue);
-  --primary-glow: rgba(0, 83, 240, 0.35);
+  --primary: var(--brand-primary, var(--athos-blue));
+  --primary-glow: rgba(0, 83, 240, 0.35); /* This might need to be dynamic too but difficult with CSS vars alone - for now leave default glow or use opacity trick if needed */
   --blur-level: 24px;
   --radius-xl: var(--athos-radius-xl);
+
+  /* Branding Defaults */
+  --brand-primary: var(--athos-blue);
+  --brand-secondary: #FFD700; /* Default gold-ish secondary */
+  --brand-accent: #FFFFFF;
+
 }
 
 [data-theme="light"] {

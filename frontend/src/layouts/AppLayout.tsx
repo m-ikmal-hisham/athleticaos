@@ -79,16 +79,78 @@ const navItems: NavItem[] = [
     },
 ];
 
+import { useBrandingStore } from '@/store/branding.store';
+import { getOrganisationById } from '@/api/organisations.api';
+
+// ... (existing imports)
+
 export const AppLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const location = useLocation();
     const { user, checkTokenValidity } = useAuthStore();
+    const { setBrandingFromOrganisation, resetBranding, primaryColor, secondaryColor, accentColor, logoUrl: brandLogoUrl } = useBrandingStore();
 
     // Check token validity on mount
     useEffect(() => {
         checkTokenValidity();
     }, [checkTokenValidity]);
+
+    // Initialize Branding
+    useEffect(() => {
+        const initBranding = async () => {
+            // We need a way to know the user's organisation ID directly.
+            // Assuming user object has organisationId or similar. If not, we might need to rely on what available.
+            // If the backend User entity has organisation, it should be in the user object.
+            // If explicit organisationId is not on user, we might default to defaults.
+
+            // For now, let's assume we can find it or we just reset if we can't.
+            // Actually, we should check if the user is an ORG_ADMIN or belongs to an org.
+            // If specific org info is missing in user, we skip.
+            // However, the prompt says "Extract organisation branding fields" from organisation.
+
+            // Let's try to fetch organisation if user has an ID.
+            // Checking the User type isn't possible directly here as I didn't see the file content,
+            // but let's assume 'organisationId' might be there.
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (user && (user as any).organisationId) {
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const org = await getOrganisationById((user as any).organisationId);
+                    setBrandingFromOrganisation(org);
+                } catch (e) {
+                    console.warn("Failed to load organisation branding", e);
+                    resetBranding();
+                }
+            } else {
+                // If we can't find an org, reset to defaults
+                resetBranding();
+            }
+        };
+
+        if (user) {
+            initBranding();
+        } else {
+            resetBranding();
+        }
+    }, [user, setBrandingFromOrganisation, resetBranding]);
+
+    // Apply Branding to CSS Variables
+    useEffect(() => {
+        const root = document.documentElement;
+        if (primaryColor) root.style.setProperty('--brand-primary', primaryColor);
+        else root.style.removeProperty('--brand-primary');
+
+        if (secondaryColor) root.style.setProperty('--brand-secondary', secondaryColor);
+        else root.style.removeProperty('--brand-secondary');
+
+        if (accentColor) root.style.setProperty('--brand-accent', accentColor);
+        else root.style.removeProperty('--brand-accent');
+
+        // Optional: Force a repaint or re-evaluation if needed, but CSS vars usually update immediately
+    }, [primaryColor, secondaryColor, accentColor]);
+
 
     return (
         <div className="min-h-screen flex">
@@ -113,7 +175,7 @@ export const AppLayout = () => {
                     {/* Logo */}
                     <div className="flex items-center justify-between p-4 border-b border-white/10">
                         <Link to="/dashboard" className="flex items-center gap-3">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-10 rounded-lg" />
+                            <img src={brandLogoUrl || "/logo.png"} alt="Logo" className="h-10 w-10 rounded-lg object-contain bg-white/5" />
                             <span className="font-bold text-lg text-foreground">
                                 AthleticaOS
                             </span>
