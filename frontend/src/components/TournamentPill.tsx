@@ -30,7 +30,7 @@ export const TournamentPill = () => {
 
     return (
         <Link
-            to={`/tournaments/${tournament.id}`}
+            to={`/tournaments/${tournament.slug || tournament.id}`}
             className={clsx(
                 "group relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
                 "bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg",

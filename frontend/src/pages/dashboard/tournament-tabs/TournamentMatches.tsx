@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Calendar, Plus, MapPin, Clock, Trash2 } from 'lucide-react';
 import { matchService } from '@/services/matchService';
 import { tournamentService } from '@/services/tournamentService';
@@ -6,8 +6,7 @@ import { Match, Team } from '@/types';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useNavigate } from 'react-router-dom';
-import { StandingsTable } from './StandingsTable';
-import { Standings } from '@/types';
+
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -16,7 +15,7 @@ interface TournamentMatchesProps {
 export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const navigate = useNavigate();
     const [matches, setMatches] = useState<Match[]>([]);
-    const [standings, setStandings] = useState<Standings[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -39,16 +38,8 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const loadMatches = async () => {
         try {
             setLoading(true);
-            // Load Standings in parallel
-            const [matchesData, standingsData] = await Promise.all([
-                matchService.getByTournament(tournamentId),
-                tournamentService.getStandings(tournamentId).catch(err => {
-                    console.error('Failed to load standings:', err);
-                    return [];
-                })
-            ]);
+            const matchesData = await matchService.getByTournament(tournamentId);
             setMatches(matchesData);
-            setStandings(standingsData || []);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -112,19 +103,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
     const sortedStageNames = Object.keys(matchesByStage).sort();
 
-    // Group Standings by Pool
-    const groupedStandings = useMemo(() => {
-        const groups: Record<string, Standings[]> = {};
-        standings.forEach(s => {
-            const poolName = s.poolName || 'Unassigned';
-            if (!groups[poolName]) groups[poolName] = [];
-            groups[poolName].push(s);
-        });
-        return groups;
-    }, [standings]);
 
-    // Sort Pools (Pool A, Pool B ...)
-    const sortedPools = Object.keys(groupedStandings).sort();
 
     return (
         <div className="space-y-6">
@@ -156,22 +135,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             ) : (
                 <div className="space-y-8">
                     {/* Standings Section */}
-                    {standings.length > 0 && (
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                                Pool Standings
-                            </h3>
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                {sortedPools.map(poolName => (
-                                    <StandingsTable
-                                        key={poolName}
-                                        poolName={poolName}
-                                        standings={groupedStandings[poolName]}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
+
 
                     {sortedStageNames.map(stageName => (
                         <div key={stageName} className="space-y-4">

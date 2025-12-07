@@ -224,6 +224,7 @@ export enum TournamentStatus {
 
 export interface Tournament {
     id: string;
+    slug?: string;
     organiserOrgId: string;
     name: string;
     level: TournamentLevel;
@@ -302,6 +303,31 @@ export interface MatchCreateRequest {
     status?: MatchStatus;
 }
 
+export interface MatchResponse extends Match {
+    homeTeamName?: string;
+    awayTeamName?: string;
+}
+
+export interface TournamentStageResponse {
+    id: string;
+    tournamentId: string;
+    name: string;
+    stageType: string;
+    displayOrder: number;
+    groupStage: boolean;
+    knockoutStage: boolean;
+}
+
+export interface TournamentStageBracket {
+    stage: TournamentStageResponse;
+    matches: MatchResponse[];
+}
+
+export interface BracketViewResponse {
+    tournament: Tournament;
+    stages: TournamentStageBracket[];
+}
+
 export interface Standings {
     poolName: string;
     teamId: string;
@@ -315,6 +341,8 @@ export interface Standings {
     pointsDiff: number;
     points: number;
 }
+
+export type StandingsResponse = Standings;
 
 // ============================================
 // API Response Types

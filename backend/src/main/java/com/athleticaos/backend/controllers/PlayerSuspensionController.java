@@ -13,18 +13,20 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/tournaments/{tournamentId}/suspensions")
+@RequestMapping("/api/tournaments/{tournamentIdOrSlug}/suspensions")
 @RequiredArgsConstructor
 @Tag(name = "Player Suspensions", description = "Endpoints for managing player suspensions")
 public class PlayerSuspensionController {
 
     private final PlayerSuspensionService suspensionService;
+    private final com.athleticaos.backend.services.TournamentService tournamentService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get all active suspensions for a tournament")
     public ResponseEntity<List<PlayerSuspensionDTO>> getActiveSuspensions(
-            @PathVariable UUID tournamentId) {
+            @PathVariable String tournamentIdOrSlug) {
+        UUID tournamentId = getTournamentId(tournamentIdOrSlug);
         return ResponseEntity.ok(suspensionService.getActiveSuspensions(tournamentId));
     }
 
@@ -32,8 +34,17 @@ public class PlayerSuspensionController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get active suspensions for a specific player in a tournament")
     public ResponseEntity<List<PlayerSuspensionDTO>> getPlayerSuspensions(
-            @PathVariable UUID tournamentId,
+            @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID playerId) {
+        UUID tournamentId = getTournamentId(tournamentIdOrSlug);
         return ResponseEntity.ok(suspensionService.getPlayerActiveSuspensions(tournamentId, playerId));
+    }
+
+    private UUID getTournamentId(String idOrSlug) {
+        try {
+            return UUID.fromString(idOrSlug);
+        } catch (IllegalArgumentException e) {
+            return tournamentService.getTournamentBySlug(idOrSlug).getId();
+        }
     }
 }

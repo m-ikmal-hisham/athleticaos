@@ -54,16 +54,23 @@ public class FormatServiceImpl implements FormatService {
         tournament.setNumberOfPools(request.getNumberOfPools());
         tournamentRepository.save(tournament);
 
-        if (request.getFormat() == TournamentFormat.ROUND_ROBIN
-                || request.getFormat() == TournamentFormat.POOL_TO_KNOCKOUT) {
+        if (request.getFormat() == TournamentFormat.ROUND_ROBIN) {
             int poolCount = request.getNumberOfPools() != null && request.getNumberOfPools() > 0
                     ? request.getNumberOfPools()
                     : 1;
             generatePools(tournament, teams, poolCount);
-        } else if (request.getFormat() == TournamentFormat.KNOCKOUT) {
-            // Delegate to existing BracketService for purely Knockout if robust, or
-            // implement here.
-            // Assuming BracketService handles knockout generation.
+        } else if (request.getFormat() == TournamentFormat.KNOCKOUT
+                || request.getFormat() == TournamentFormat.POOL_TO_KNOCKOUT
+                || request.getFormat() == TournamentFormat.MIXED) {
+
+            // Populate team IDs if missing (required by bracketService)
+            if (request.getTeamIds() == null || request.getTeamIds().isEmpty()) {
+                List<UUID> teamIds = teams.stream()
+                        .map(tt -> tt.getTeam().getId())
+                        .collect(Collectors.toList());
+                request.setTeamIds(teamIds);
+            }
+
             bracketService.generateBracketForTournament(tournamentId, request);
         }
     }

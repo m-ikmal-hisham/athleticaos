@@ -31,11 +31,11 @@ public class Match {
     private Tournament tournament;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "home_team_id", nullable = false)
+    @JoinColumn(name = "home_team_id", nullable = true)
     private Team homeTeam;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "away_team_id", nullable = false)
+    @JoinColumn(name = "away_team_id", nullable = true)
     private Team awayTeam;
 
     @Column(name = "match_date", nullable = false)
@@ -70,6 +70,24 @@ public class Match {
 
     @Column(name = "match_code")
     private String matchCode;
+
+    @Column(name = "next_match_id_for_winner")
+    private UUID nextMatchIdForWinner;
+
+    @Column(name = "next_match_id_for_loser")
+    private UUID nextMatchIdForLoser;
+
+    @Column(name = "winner_slot")
+    private String winnerSlot; // HOME or AWAY
+
+    @Column(name = "loser_slot")
+    private String loserSlot; // HOME or AWAY
+
+    @Column(name = "home_team_placeholder")
+    private String homeTeamPlaceholder;
+
+    @Column(name = "away_team_placeholder")
+    private String awayTeamPlaceholder;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

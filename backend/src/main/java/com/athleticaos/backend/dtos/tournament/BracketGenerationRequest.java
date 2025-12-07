@@ -24,4 +24,7 @@ public class BracketGenerationRequest {
     private Boolean includePlacementStages; // Plate/Bowl etc., optional
 
     private List<UUID> teamIds; // optional: use explicit subset of teams
+
+    private List<String> poolNames; // optional: custom names for pools (e.g., ["Champions Pool", "Challengers
+                                    // Pool"])
 }

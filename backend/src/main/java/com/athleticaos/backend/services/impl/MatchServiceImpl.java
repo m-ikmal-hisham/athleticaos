@@ -194,15 +194,9 @@ public class MatchServiceImpl implements MatchService {
     }
 
     private MatchResponse mapToResponse(Match match) {
-        return MatchResponse.builder()
+        MatchResponse.MatchResponseBuilder builder = MatchResponse.builder()
                 .id(match.getId())
                 .tournamentId(match.getTournament().getId())
-                .homeTeamId(match.getHomeTeam().getId())
-                .homeTeamOrgId(match.getHomeTeam().getOrganisation().getId())
-                .homeTeamName(match.getHomeTeam().getName())
-                .awayTeamId(match.getAwayTeam().getId())
-                .awayTeamOrgId(match.getAwayTeam().getOrganisation().getId())
-                .awayTeamName(match.getAwayTeam().getName())
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
                 .venue(match.getVenue())
@@ -211,8 +205,29 @@ public class MatchServiceImpl implements MatchService {
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
                 .phase(match.getPhase())
-                .matchCode(match.getMatchCode())
-                .build();
+                .matchCode(match.getMatchCode());
+
+        if (match.getHomeTeam() != null) {
+            builder.homeTeamId(match.getHomeTeam().getId());
+            builder.homeTeamName(match.getHomeTeam().getName());
+            if (match.getHomeTeam().getOrganisation() != null) {
+                builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
+            }
+        } else {
+            builder.homeTeamName(match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD");
+        }
+
+        if (match.getAwayTeam() != null) {
+            builder.awayTeamId(match.getAwayTeam().getId());
+            builder.awayTeamName(match.getAwayTeam().getName());
+            if (match.getAwayTeam().getOrganisation() != null) {
+                builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
+            }
+        } else {
+            builder.awayTeamName(match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD");
+        }
+
+        return builder.build();
     }
 
     @Override

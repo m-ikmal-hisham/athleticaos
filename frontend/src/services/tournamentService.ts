@@ -65,4 +65,9 @@ export const tournamentService = {
         const response = await axios.get<Standings[]>(`/api/v1/tournaments/${id}/standings`);
         return response.data;
     },
+
+    async getBracket(id: string): Promise<any> { // Using any for now to match backend response structure flexibility if needed
+        const response = await axios.get<any>(`/api/v1/tournaments/${id}/bracket`);
+        return response.data;
+    },
 };

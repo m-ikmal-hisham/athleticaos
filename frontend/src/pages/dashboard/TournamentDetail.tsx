@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, MapPin, Trophy, Users, Settings, Play } from 'lucide-react';
 import { tournamentService } from '@/services/tournamentService';
 import { Tournament, TournamentStatus } from '@/types';
@@ -10,6 +10,10 @@ import { SuspensionWidget } from '@/components/roster/SuspensionWidget';
 import { TournamentTeams } from './tournament-tabs/TournamentTeams';
 import { TournamentFormat } from './tournament-tabs/TournamentFormat';
 import { TournamentMatches } from './tournament-tabs/TournamentMatches';
+import StandingsTable from '@/components/content/StandingsTable';
+import BracketView from '@/components/content/BracketView';
+import { BracketViewResponse, StandingsResponse } from '@/types';
+import { LayoutList, GitMerge } from 'lucide-react';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -20,6 +24,8 @@ export default function TournamentDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [standings, setStandings] = useState<StandingsResponse[]>([]);
+    const [bracket, setBracket] = useState<BracketViewResponse | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -32,6 +38,34 @@ export default function TournamentDetail() {
             }
         }
     }, [id, location.search]);
+
+    const loadStandings = async () => {
+        if (!id) return;
+        try {
+            const data = await tournamentService.getStandings(id);
+            setStandings(data);
+        } catch (err) {
+            console.error('Failed to load standings', err);
+        }
+    };
+
+    const loadBracket = async () => {
+        if (!id) return;
+        try {
+            const data = await tournamentService.getBracket(id);
+            setBracket(data);
+        } catch (err) {
+            console.error('Failed to load bracket', err);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'standings') {
+            loadStandings();
+        } else if (activeTab === 'bracket') {
+            loadBracket();
+        }
+    }, [activeTab, id]);
 
     const loadTournament = async () => {
         if (!id) return;
@@ -85,19 +119,13 @@ export default function TournamentDetail() {
         { id: 'teams', label: 'Teams', icon: Users },
         { id: 'format', label: 'Format & Stages', icon: Settings },
         { id: 'matches', label: 'Matches', icon: Play },
+        { id: 'standings', label: 'Standings', icon: LayoutList },
+        { id: 'bracket', label: 'Bracket', icon: GitMerge },
     ];
 
+    {/* Header */ }
     return (
         <div className="space-y-6">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                <Link to="/dashboard/tournaments" className="hover:text-blue-600 dark:hover:text-blue-400">
-                    Tournaments
-                </Link>
-                <span>/</span>
-                <span className="text-slate-900 dark:text-white">{tournament.name}</span>
-            </div>
-
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -204,7 +232,17 @@ export default function TournamentDetail() {
                 {activeTab === 'matches' && id && (
                     <TournamentMatches tournamentId={id} />
                 )}
+
+                {activeTab === 'standings' && (
+                    <div className="space-y-6">
+                        <StandingsTable standings={standings} />
+                    </div>
+                )}
+
+                {activeTab === 'bracket' && bracket && (
+                    <BracketView stages={bracket.stages.map(s => s.stage)} matches={bracket.stages.flatMap(s => s.matches)} />
+                )}
             </div>
-        </div>
+        </div >
     );
 }

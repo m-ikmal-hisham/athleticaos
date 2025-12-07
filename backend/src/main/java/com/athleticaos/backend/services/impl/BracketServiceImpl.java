@@ -28,6 +28,7 @@ public class BracketServiceImpl implements BracketService {
     private final TournamentStageRepository stageRepository;
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
+    private final TournamentTeamRepository tournamentTeamRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -91,7 +92,7 @@ public class BracketServiceImpl implements BracketService {
         // Generate bracket based on format
         switch (request.getFormat()) {
             case ROUND_ROBIN:
-                generateRoundRobinBracket(tournament, teams, request.getNumberOfPools());
+                generateRoundRobinBracket(tournament, teams, request.getNumberOfPools(), request.getPoolNames());
                 break;
             case KNOCKOUT:
                 generateKnockoutBracket(tournament, teams);
@@ -101,7 +102,8 @@ public class BracketServiceImpl implements BracketService {
                 }
                 break;
             case MIXED:
-                generateMixedFormatBracket(tournament, teams, request.getNumberOfPools());
+            case POOL_TO_KNOCKOUT:
+                generateMixedFormatBracket(tournament, teams, request.getNumberOfPools(), request.getPoolNames());
                 // Generate placement stages if requested
                 if (Boolean.TRUE.equals(tournament.getHasPlacementStages())) {
                     generatePlacementStages(tournament, teams.size());
@@ -117,8 +119,6 @@ public class BracketServiceImpl implements BracketService {
 
     private List<Team> getTeamsForBracket(BracketGenerationRequest request) {
         if (request.getTeamIds() == null || request.getTeamIds().isEmpty()) {
-            // TODO: In future, could fetch all teams associated with tournament's
-            // organisation
             return Collections.emptyList();
         }
 
@@ -140,7 +140,8 @@ public class BracketServiceImpl implements BracketService {
         stageRepository.deleteByTournamentId(tournamentId);
     }
 
-    private void generateRoundRobinBracket(Tournament tournament, List<Team> teams, Integer numberOfPools) {
+    private void generateRoundRobinBracket(Tournament tournament, List<Team> teams, Integer numberOfPools,
+            List<String> poolNames) {
         log.info("Generating round-robin bracket with {} pools for {} teams", numberOfPools, teams.size());
 
         if (numberOfPools == null || numberOfPools < 1) {
@@ -153,7 +154,16 @@ public class BracketServiceImpl implements BracketService {
         int stageOrder = 1;
         for (int i = 0; i < pools.size(); i++) {
             List<Team> poolTeams = pools.get(i);
-            String poolName = "Pool " + (char) ('A' + i);
+
+            // Use custom pool name if provided, otherwise default to "Pool A", "Pool B",
+            // etc.
+            String poolName;
+            if (poolNames != null && i < poolNames.size() && poolNames.get(i) != null
+                    && !poolNames.get(i).trim().isEmpty()) {
+                poolName = poolNames.get(i).trim();
+            } else {
+                poolName = "Pool " + (char) ('A' + i);
+            }
 
             // Create stage
             TournamentStage stage = TournamentStage.builder()
@@ -165,6 +175,15 @@ public class BracketServiceImpl implements BracketService {
                     .isKnockoutStage(false)
                     .build();
             stage = stageRepository.save(stage);
+
+            // Persist pool assignment to TournamentTeam
+            for (Team team : poolTeams) {
+                tournamentTeamRepository.findFirstByTournamentIdAndTeamId(tournament.getId(), team.getId())
+                        .ifPresent(tt -> {
+                            tt.setPoolNumber(poolName);
+                            tournamentTeamRepository.save(tt);
+                        });
+            }
 
             // Generate all round-robin pairings for this pool
             generateRoundRobinMatches(tournament, stage, poolTeams, poolName);
@@ -214,12 +233,22 @@ public class BracketServiceImpl implements BracketService {
     private void generateKnockoutBracket(Tournament tournament, List<Team> teams) {
         log.info("Generating knockout bracket for {} teams", teams.size());
 
+        // Generate knockout bracket logic
+        if (teams.size() == 16) {
+            generateRugby16Bracket(tournament, teams);
+        } else {
+            // Default logic for other sizes
+            legacyKnockoutGeneration(tournament, teams);
+        }
+        log.info("Knockout bracket generated.");
+    }
+
+    private void legacyKnockoutGeneration(Tournament tournament, List<Team> teams) {
         int teamCount = teams.size();
 
         // Check if team count is power of 2
         if (!isPowerOfTwo(teamCount)) {
             log.warn("Team count {} is not a power of 2. Some teams will receive BYEs.", teamCount);
-            // TODO: Implement BYE logic for non-power-of-2 team counts
         }
 
         // Determine knockout stages needed
@@ -228,6 +257,8 @@ public class BracketServiceImpl implements BracketService {
         int stageOrder = 1;
         int currentTeamCount = teamCount;
         List<Team> currentRoundTeams = new ArrayList<>(teams);
+
+        List<Match> previousRoundMatches = new ArrayList<>();
 
         for (KnockoutStageInfo stageInfo : stages) {
             TournamentStage stage = TournamentStage.builder()
@@ -239,6 +270,8 @@ public class BracketServiceImpl implements BracketService {
                     .isKnockoutStage(true)
                     .build();
             stage = stageRepository.save(stage);
+
+            List<Match> currentRoundMatches = new ArrayList<>();
 
             // Generate matches for this knockout round
             int matchesInRound = currentTeamCount / 2;
@@ -259,14 +292,208 @@ public class BracketServiceImpl implements BracketService {
                         .matchCode(String.format("%s-M%d", stageInfo.abbreviation, i + 1))
                         .build();
 
-                matchRepository.save(match);
+                match = matchRepository.save(match);
+                currentRoundMatches.add(match);
             }
 
+            // Link previous round to this round (Winners)
+            if (!previousRoundMatches.isEmpty()) {
+                linkRounds(previousRoundMatches, currentRoundMatches);
+            }
+
+            previousRoundMatches = currentRoundMatches;
             currentTeamCount = matchesInRound;
         }
+    }
 
-        // TODO: Add third-place playoff if needed
-        log.info("Knockout bracket generated. Progression logic is a TODO for future implementation.");
+    private void generateRugby16Bracket(Tournament tournament, List<Team> teams) {
+        log.info("Generating Rugby 16-team cascading bracket (Cup, Plate, Bowl, Shield, Spoon, Fork)");
+
+        int nextDisplayOrder = 1;
+
+        // Maps to hold stages and their matches by a unique key (stage name)
+        Map<String, TournamentStage> stagesMap = new HashMap<>();
+        Map<String, List<Match>> matchesMap = new HashMap<>();
+
+        // 1. Create Stages and Matches
+        // Helper to create and store stage and its matches
+        createAndStoreStage(tournament, "Round of 16", TournamentStageType.ROUND_OF_16, nextDisplayOrder++, 8,
+                stagesMap, matchesMap);
+
+        // Cup Path
+        createAndStoreStage(tournament, "Cup Quarter Finals", TournamentStageType.QUARTER_FINAL, nextDisplayOrder++, 4,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Cup Semi Finals", TournamentStageType.SEMI_FINAL, nextDisplayOrder++, 2,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Cup Final", TournamentStageType.FINAL, nextDisplayOrder++, 1, stagesMap,
+                matchesMap);
+        createAndStoreStage(tournament, "3rd Place Playoff", TournamentStageType.THIRD_PLACE, nextDisplayOrder++, 1,
+                stagesMap, matchesMap);
+
+        // Bowl Path (Losers of R16)
+        createAndStoreStage(tournament, "Bowl Quarter Finals", TournamentStageType.BOWL, nextDisplayOrder++, 4,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Bowl Semi Finals", TournamentStageType.BOWL, nextDisplayOrder++, 2, stagesMap,
+                matchesMap);
+        createAndStoreStage(tournament, "Bowl Final (9th Place)", TournamentStageType.BOWL, nextDisplayOrder++, 1,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Fork Final (11th Place)", TournamentStageType.FORK, nextDisplayOrder++, 1,
+                stagesMap, matchesMap);
+
+        // Plate Path (Losers of Cup QF)
+        createAndStoreStage(tournament, "Plate Semi Finals", TournamentStageType.PLATE, nextDisplayOrder++, 2,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Plate Final (5th Place)", TournamentStageType.PLATE, nextDisplayOrder++, 1,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "7th Place Playoff", TournamentStageType.FORK, nextDisplayOrder++, 1, stagesMap,
+                matchesMap);
+
+        // Shield Path (Losers of Bowl QF)
+        createAndStoreStage(tournament, "Shield Semi Finals", TournamentStageType.SHIELD, nextDisplayOrder++, 2,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Shield Final (13th Place)", TournamentStageType.SHIELD, nextDisplayOrder++, 1,
+                stagesMap, matchesMap);
+        createAndStoreStage(tournament, "Spoon Final (15th Place)", TournamentStageType.SPOON, nextDisplayOrder++, 1,
+                stagesMap, matchesMap);
+
+        // 2. Assign Teams to R16 Matches
+        List<Match> r16Matches = matchesMap.get("Round of 16");
+        for (int i = 0; i < 8; i++) {
+            if (i * 2 + 1 < teams.size()) {
+                Match match = r16Matches.get(i);
+                match.setHomeTeam(teams.get(i * 2));
+                match.setAwayTeam(teams.get(i * 2 + 1));
+                matchRepository.save(match);
+            }
+        }
+
+        // 3. Link Stages (Using in-memory lists)
+        // Link R16 -> Cup QF (Winners) & Bowl QF (Losers)
+        linkComplexRound(matchesMap.get("Round of 16"), matchesMap.get("Cup Quarter Finals"),
+                matchesMap.get("Bowl Quarter Finals"));
+
+        // Link Cup QF -> Cup SF (Winners) & Plate SF (Losers)
+        linkComplexRound(matchesMap.get("Cup Quarter Finals"), matchesMap.get("Cup Semi Finals"),
+                matchesMap.get("Plate Semi Finals"));
+
+        // Link Bowl QF -> Bowl SF (Winners) & Shield SF (Losers)
+        linkComplexRound(matchesMap.get("Bowl Quarter Finals"), matchesMap.get("Bowl Semi Finals"),
+                matchesMap.get("Shield Semi Finals"));
+
+        // Link Cup SF -> Cup Final (Winners) & 3rd Place (Losers)
+        linkComplexRound(matchesMap.get("Cup Semi Finals"), matchesMap.get("Cup Final"),
+                matchesMap.get("3rd Place Playoff"));
+
+        // Link Plate SF -> Plate Final (Winners) & 7th Place (Losers)
+        linkComplexRound(matchesMap.get("Plate Semi Finals"), matchesMap.get("Plate Final (5th Place)"),
+                matchesMap.get("7th Place Playoff"));
+
+        // Link Bowl SF -> Bowl Final (Winners) & Fork Final (Losers - 11th)
+        linkComplexRound(matchesMap.get("Bowl Semi Finals"), matchesMap.get("Bowl Final (9th Place)"),
+                matchesMap.get("Fork Final (11th Place)"));
+
+        // Link Shield SF -> Shield Final (Winners) & Spoon Final (Losers - 15th)
+        linkComplexRound(matchesMap.get("Shield Semi Finals"), matchesMap.get("Shield Final (13th Place)"),
+                matchesMap.get("Spoon Final (15th Place)"));
+    }
+
+    private TournamentStage createAndStoreStage(Tournament tournament, String name, TournamentStageType type, int order,
+            int matchCount, Map<String, TournamentStage> stagesMap,
+            Map<String, List<Match>> matchesMap) {
+        TournamentStage stage = TournamentStage.builder()
+                .tournament(tournament)
+                .name(name)
+                .stageType(type)
+                .displayOrder(order)
+                .isGroupStage(false)
+                .isKnockoutStage(true)
+                .build();
+        stage = stageRepository.save(stage);
+        stagesMap.put(name, stage);
+
+        List<Match> stageMatches = new ArrayList<>();
+        for (int i = 0; i < matchCount; i++) {
+            Match match = Match.builder()
+                    .tournament(tournament)
+                    .stage(stage)
+                    .matchDate(tournament.getStartDate())
+                    .kickOffTime(LocalTime.of(10, 0))
+                    .venue(tournament.getVenue())
+                    .status(MatchStatus.SCHEDULED)
+                    .phase(name)
+                    .matchCode(getStageAbbreviation(type) + (i + 1))
+                    .build();
+            match = matchRepository.save(match);
+            stageMatches.add(match);
+        }
+        matchesMap.put(name, stageMatches);
+        return stage;
+    }
+
+    private void linkComplexRound(List<Match> sourceMatches, List<Match> winnerMatches, List<Match> loserMatches) {
+        if (sourceMatches == null)
+            return;
+
+        for (int i = 0; i < sourceMatches.size(); i++) {
+            Match source = sourceMatches.get(i);
+            int targetIndex = i / 2;
+
+            // Link Winner
+            if (winnerMatches != null && targetIndex < winnerMatches.size()) {
+                Match target = winnerMatches.get(targetIndex);
+                source.setNextMatchIdForWinner(target.getId());
+                source.setWinnerSlot((i % 2 == 0) ? "HOME" : "AWAY");
+
+                // Set placeholder on target
+                String placeholder = "Winner " + source.getMatchCode();
+                if (i % 2 == 0) {
+                    target.setHomeTeamPlaceholder(placeholder);
+                } else {
+                    target.setAwayTeamPlaceholder(placeholder);
+                }
+                matchRepository.save(target);
+            }
+
+            // Link Loser
+            if (loserMatches != null && targetIndex < loserMatches.size()) {
+                Match target = loserMatches.get(targetIndex);
+                source.setNextMatchIdForLoser(target.getId());
+                source.setLoserSlot((i % 2 == 0) ? "HOME" : "AWAY");
+
+                // Set placeholder on target
+                String placeholder = "Loser " + source.getMatchCode();
+                if (i % 2 == 0) {
+                    target.setHomeTeamPlaceholder(placeholder);
+                } else {
+                    target.setAwayTeamPlaceholder(placeholder);
+                }
+                matchRepository.save(target);
+            }
+            matchRepository.save(source);
+        }
+    }
+
+    private void linkRounds(List<Match> previousRoundMatches, List<Match> currentRoundMatches) {
+        for (int i = 0; i < previousRoundMatches.size(); i++) {
+            Match prevMatch = previousRoundMatches.get(i);
+            int targetIndex = i / 2;
+
+            if (targetIndex < currentRoundMatches.size()) {
+                Match targetMatch = currentRoundMatches.get(targetIndex);
+                prevMatch.setNextMatchIdForWinner(targetMatch.getId());
+                prevMatch.setWinnerSlot((i % 2 == 0) ? "HOME" : "AWAY");
+
+                // Set placeholder
+                String placeholder = "Winner " + prevMatch.getMatchCode();
+                if (i % 2 == 0) {
+                    targetMatch.setHomeTeamPlaceholder(placeholder);
+                } else {
+                    targetMatch.setAwayTeamPlaceholder(placeholder);
+                }
+                matchRepository.save(targetMatch);
+                matchRepository.save(prevMatch);
+            }
+        }
     }
 
     private boolean isPowerOfTwo(int n) {
@@ -289,18 +516,25 @@ public class BracketServiceImpl implements BracketService {
         return stages;
     }
 
-    private void generateMixedFormatBracket(Tournament tournament, List<Team> teams, Integer numberOfPools) {
+    private void generateMixedFormatBracket(Tournament tournament, List<Team> teams, Integer numberOfPools,
+            List<String> poolNames) {
         log.info("Generating mixed format bracket with {} pools for {} teams", numberOfPools, teams.size());
 
         if (numberOfPools == null || numberOfPools < 2) {
-            numberOfPools = 2; // Default to 2 pools for mixed format
+            // Dynamic pool calculation: Target ~4 teams per pool, preferring power of 2 for
+            // clean knockout
+            if (teams.size() >= 12) {
+                numberOfPools = 4;
+            } else {
+                numberOfPools = 2;
+            }
+            log.info("Auto-calculated numberOfPools: {} for {} teams", numberOfPools, teams.size());
         }
 
         // Step 1: Generate pool stage (round-robin within pools)
-        generateRoundRobinBracket(tournament, teams, numberOfPools);
+        generateRoundRobinBracket(tournament, teams, numberOfPools, poolNames);
 
         // Step 2: Create knockout stages for pool winners/runners-up
-        // Note: Teams will be assigned to knockout matches via pool progression logic
         int teamsAdvancingPerPool = 2; // Top 2 from each pool
         int knockoutTeamCount = numberOfPools * teamsAdvancingPerPool;
 
@@ -316,6 +550,8 @@ public class BracketServiceImpl implements BracketService {
                 .orElse(0) + 1;
 
         // Create knockout stages with placeholder teams
+        List<Match> previousRoundMatches = new ArrayList<>();
+
         for (KnockoutStageInfo stageInfo : knockoutStages) {
             TournamentStage stage = TournamentStage.builder()
                     .tournament(tournament)
@@ -327,7 +563,8 @@ public class BracketServiceImpl implements BracketService {
                     .build();
             stage = stageRepository.save(stage);
 
-            // Create matches with TBD teams (will be filled after pool stage completes)
+            List<Match> currentRoundMatches = new ArrayList<>();
+            // Create matches with TBD teams
             int matchesInRound = knockoutTeamCount / 2;
             for (int i = 0; i < matchesInRound; i++) {
                 Match match = Match.builder()
@@ -341,19 +578,28 @@ public class BracketServiceImpl implements BracketService {
                         .matchCode(String.format("%s-M%d", stageInfo.abbreviation, i + 1))
                         .build();
 
-                matchRepository.save(match);
+                // Set initial placeholders for first round (Pool qualifiers)
+                if (previousRoundMatches.isEmpty()) {
+                    match.setHomeTeamPlaceholder("Pool Qualifier");
+                    match.setAwayTeamPlaceholder("Pool Qualifier");
+                }
+
+                match = matchRepository.save(match);
+                currentRoundMatches.add(match);
             }
 
+            // Link rounds
+            if (!previousRoundMatches.isEmpty()) {
+                linkRounds(previousRoundMatches, currentRoundMatches);
+            }
+
+            previousRoundMatches = currentRoundMatches;
             knockoutTeamCount = matchesInRound;
         }
 
         log.info("Mixed format bracket generated. Pool winners/runners-up will be assigned via progression logic.");
     }
 
-    /**
-     * Calculate pool standings and progress top teams to knockout stage.
-     * This should be called after all pool matches are completed.
-     */
     @Transactional
     public void progressPoolsToKnockout(UUID tournamentId) {
         log.info("Progressing pool winners to knockout stage for tournament: {}", tournamentId);
@@ -497,15 +743,9 @@ public class BracketServiceImpl implements BracketService {
         }
     }
 
-    /**
-     * Generate placement stages (Plate, Bowl, Shield) for losers in knockout
-     * stages.
-     * This creates parallel brackets for teams that lose in various rounds.
-     */
     private void generatePlacementStages(Tournament tournament, int totalTeams) {
         log.info("Generating placement stages for tournament with {} teams", totalTeams);
 
-        // Get the highest display order from main knockout stages
         List<TournamentStage> existingStages = stageRepository
                 .findByTournamentIdOrderByDisplayOrderAsc(tournament.getId());
         int nextDisplayOrder = existingStages.stream()
@@ -513,21 +753,16 @@ public class BracketServiceImpl implements BracketService {
                 .max()
                 .orElse(0) + 1;
 
-        // Determine which placement stages to create based on team count
         if (totalTeams >= 16) {
-            // Plate (for QF losers), Bowl (for SF losers in lower bracket), Shield (for
-            // early losers)
             createPlacementStage(tournament, "Plate Semi Finals", TournamentStageType.PLATE, nextDisplayOrder++, 2);
             createPlacementStage(tournament, "Plate Final", TournamentStageType.PLATE, nextDisplayOrder++, 1);
             createPlacementStage(tournament, "Bowl Semi Finals", TournamentStageType.BOWL, nextDisplayOrder++, 2);
             createPlacementStage(tournament, "Bowl Final", TournamentStageType.BOWL, nextDisplayOrder++, 1);
             createPlacementStage(tournament, "Shield Final", TournamentStageType.SHIELD, nextDisplayOrder++, 1);
         } else if (totalTeams >= 8) {
-            // Plate (for SF losers), Bowl (for QF losers)
             createPlacementStage(tournament, "Plate Final", TournamentStageType.PLATE, nextDisplayOrder++, 1);
             createPlacementStage(tournament, "Bowl Final", TournamentStageType.BOWL, nextDisplayOrder++, 1);
         } else if (totalTeams >= 4) {
-            // Just Plate (for SF losers - 3rd place playoff)
             createPlacementStage(tournament, "3rd Place Playoff", TournamentStageType.THIRD_PLACE, nextDisplayOrder++,
                     1);
         }
@@ -543,17 +778,15 @@ public class BracketServiceImpl implements BracketService {
                 .stageType(stageType)
                 .displayOrder(displayOrder)
                 .isGroupStage(false)
-                .isKnockoutStage(true) // Placement stages are also knockout format
+                .isKnockoutStage(true)
                 .build();
         stage = stageRepository.save(stage);
 
-        // Create placeholder matches (teams will be assigned when losers are
-        // determined)
         for (int i = 0; i < numberOfMatches; i++) {
             Match match = Match.builder()
                     .tournament(tournament)
                     .stage(stage)
-                    .matchDate(tournament.getEndDate()) // Schedule for end of tournament
+                    .matchDate(tournament.getEndDate())
                     .kickOffTime(LocalTime.of(12, 0))
                     .venue(tournament.getVenue())
                     .status(MatchStatus.SCHEDULED)
@@ -569,6 +802,7 @@ public class BracketServiceImpl implements BracketService {
 
     private String getStageAbbreviation(TournamentStageType stageType) {
         return switch (stageType) {
+            case ROUND_OF_16 -> "R16";
             case QUARTER_FINAL -> "QF";
             case SEMI_FINAL -> "SF";
             case FINAL -> "F";
@@ -576,11 +810,12 @@ public class BracketServiceImpl implements BracketService {
             case PLATE -> "PL";
             case BOWL -> "BW";
             case SHIELD -> "SH";
+            case SPOON -> "SP";
+            case FORK -> "FO";
             default -> stageType.name().substring(0, 2);
         };
     }
 
-    // Mapping methods
     private TournamentResponse mapTournamentToResponse(Tournament tournament) {
         String status;
         LocalDate now = LocalDate.now();
@@ -624,10 +859,10 @@ public class BracketServiceImpl implements BracketService {
         return MatchResponse.builder()
                 .id(match.getId())
                 .tournamentId(match.getTournament().getId())
-                .homeTeamId(match.getHomeTeam().getId())
-                .homeTeamName(match.getHomeTeam().getName())
-                .awayTeamId(match.getAwayTeam().getId())
-                .awayTeamName(match.getAwayTeam().getName())
+                .homeTeamId(match.getHomeTeam() != null ? match.getHomeTeam().getId() : null)
+                .homeTeamName(match.getHomeTeam() != null ? match.getHomeTeam().getName() : "TBD")
+                .awayTeamId(match.getAwayTeam() != null ? match.getAwayTeam().getId() : null)
+                .awayTeamName(match.getAwayTeam() != null ? match.getAwayTeam().getName() : "TBD")
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
                 .venue(match.getVenue())
@@ -640,7 +875,6 @@ public class BracketServiceImpl implements BracketService {
                 .build();
     }
 
-    // Helper class for knockout stage information
     private static class KnockoutStageInfo {
         String name;
         TournamentStageType type;

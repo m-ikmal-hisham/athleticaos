@@ -5,9 +5,12 @@ public enum TournamentStageType {
     PLATE,
     BOWL,
     SHIELD,
+    ROUND_OF_16,
     QUARTER_FINAL,
     SEMI_FINAL,
     FINAL,
     THIRD_PLACE,
-    CLASSIFICATION
+    CLASSIFICATION,
+    SPOON,
+    FORK
 }

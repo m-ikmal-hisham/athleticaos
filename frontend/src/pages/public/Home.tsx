@@ -91,7 +91,7 @@ export default function Home() {
                         {tournaments.map(tournament => (
                             <Link
                                 key={tournament.id}
-                                to={`/tournaments/${tournament.id}`}
+                                to={`/tournaments/${tournament.slug || tournament.id}`}
                                 className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10"
                             >
                                 <div className="p-6 space-y-4">

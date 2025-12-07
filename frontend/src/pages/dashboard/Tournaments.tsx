@@ -44,7 +44,7 @@ export default function Tournaments() {
                             <tr key={t.id}>
                                 <td>
                                     <Link
-                                        to={`/dashboard/tournaments/${t.id}`}
+                                        to={`/dashboard/tournaments/${t.slug || t.id}`}
                                         className="text-blue-600 dark:text-blue-400 hover:underline"
                                     >
                                         {t.name}

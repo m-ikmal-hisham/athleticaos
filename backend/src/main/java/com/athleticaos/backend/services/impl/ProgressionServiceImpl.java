@@ -60,7 +60,19 @@ public class ProgressionServiceImpl implements ProgressionService {
             return;
         }
 
-        // Find next stage
+        // Check for explicit progression (new model)
+        if (match.getNextMatchIdForWinner() != null) {
+            progressWinnerExplicitly(match, winner);
+
+            // Handle loser explicit progression if configured
+            Team loser = determineLoser(match);
+            if (loser != null && match.getNextMatchIdForLoser() != null) {
+                progressLoserExplicitly(match, loser);
+            }
+            return;
+        }
+
+        // Fallback to implicit stage-based progression (legacy support)
         TournamentStage nextStage = findNextStage(currentStage);
         if (nextStage == null) {
             log.info("Match {} is in final stage, no further progression", matchId);
@@ -350,6 +362,68 @@ public class ProgressionServiceImpl implements ProgressionService {
         }
 
         matchRepository.save(targetMatch);
+    }
+
+    private void progressWinnerExplicitly(Match completedMatch, Team winner) {
+        UUID nextMatchId = completedMatch.getNextMatchIdForWinner();
+        String slot = completedMatch.getWinnerSlot();
+
+        log.info("Explicitly progressing winner {} to match {} slot {}",
+                winner.getName(), nextMatchId, slot);
+
+        matchRepository.findById(nextMatchId).ifPresent(nextMatch -> {
+            boolean updated = false;
+
+            if ("HOME".equalsIgnoreCase(slot)) {
+                if (nextMatch.getHomeTeam() == null) {
+                    nextMatch.setHomeTeam(winner);
+                    updated = true;
+                } else {
+                    log.warn("Target match {} home slot already occupied by {}",
+                            nextMatchId, nextMatch.getHomeTeam().getName());
+                }
+            } else if ("AWAY".equalsIgnoreCase(slot)) {
+                if (nextMatch.getAwayTeam() == null) {
+                    nextMatch.setAwayTeam(winner);
+                    updated = true;
+                } else {
+                    log.warn("Target match {} away slot already occupied by {}",
+                            nextMatchId, nextMatch.getAwayTeam().getName());
+                }
+            }
+
+            if (updated) {
+                matchRepository.save(nextMatch);
+            }
+        });
+    }
+
+    private void progressLoserExplicitly(Match completedMatch, Team loser) {
+        UUID nextMatchId = completedMatch.getNextMatchIdForLoser();
+        String slot = completedMatch.getLoserSlot();
+
+        log.info("Explicitly progressing loser {} to match {} slot {}",
+                loser.getName(), nextMatchId, slot);
+
+        matchRepository.findById(nextMatchId).ifPresent(nextMatch -> {
+            boolean updated = false;
+
+            if ("HOME".equalsIgnoreCase(slot)) {
+                if (nextMatch.getHomeTeam() == null) {
+                    nextMatch.setHomeTeam(loser);
+                    updated = true;
+                }
+            } else if ("AWAY".equalsIgnoreCase(slot)) {
+                if (nextMatch.getAwayTeam() == null) {
+                    nextMatch.setAwayTeam(loser);
+                    updated = true;
+                }
+            }
+
+            if (updated) {
+                matchRepository.save(nextMatch);
+            }
+        });
     }
 
     private String getStageAbbreviation(TournamentStageType stageType) {

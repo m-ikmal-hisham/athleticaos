@@ -43,14 +43,16 @@ public class TournamentController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/{id}")
-    public ResponseEntity<TournamentResponse> getTournamentById(@PathVariable UUID id) {
-        return ResponseEntity.ok(tournamentService.getTournamentById(id));
+    @GetMapping("/{idOrSlug}")
+    public ResponseEntity<TournamentResponse> getTournamentById(@PathVariable String idOrSlug) {
+        TournamentResponse tournament = fetchTournament(idOrSlug);
+        return ResponseEntity.ok(tournament);
     }
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/{id}/dashboard")
-    public ResponseEntity<TournamentDashboardResponse> getTournamentDashboard(@PathVariable UUID id) {
+    @GetMapping("/{idOrSlug}/dashboard")
+    public ResponseEntity<TournamentDashboardResponse> getTournamentDashboard(@PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         return ResponseEntity.ok(tournamentService.getTournamentDashboard(id));
     }
 
@@ -109,9 +111,10 @@ public class TournamentController {
 
     // Bracket Management Endpoints
 
-    @GetMapping("/{id}/bracket")
+    @GetMapping("/{idOrSlug}/bracket")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<BracketViewResponse> getBracket(@PathVariable UUID id) {
+    public ResponseEntity<BracketViewResponse> getBracket(@PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         return ResponseEntity.ok(bracketService.getBracketForTournament(id));
     }
 
@@ -148,10 +151,11 @@ public class TournamentController {
         return ResponseEntity.ok(tournamentService.updateStatus(id, status, request));
     }
 
-    @GetMapping("/{id}/teams")
+    @GetMapping("/{idOrSlug}/teams")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get all teams participating in a tournament")
-    public ResponseEntity<List<TeamResponse>> getTeamsByTournament(@PathVariable UUID id) {
+    public ResponseEntity<List<TeamResponse>> getTeamsByTournament(@PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         return ResponseEntity.ok(tournamentService.getTeamsByTournament(id));
     }
 
@@ -182,18 +186,20 @@ public class TournamentController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/{id}/matches")
+    @GetMapping("/{idOrSlug}/matches")
     @Operation(summary = "Get all matches for a tournament")
     public ResponseEntity<List<com.athleticaos.backend.dtos.match.MatchResponse>> getMatchesByTournament(
-            @PathVariable UUID id) {
+            @PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         return ResponseEntity.ok(tournamentService.getMatchesByTournament(id));
     }
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/{id}/standings")
+    @GetMapping("/{idOrSlug}/standings")
     @Operation(summary = "Get standings for a tournament (pools)")
     public ResponseEntity<List<com.athleticaos.backend.dtos.standing.StandingsResponse>> getStandings(
-            @PathVariable UUID id) {
+            @PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         return ResponseEntity.ok(standingsService.getStandings(id));
     }
 
@@ -220,5 +226,15 @@ public class TournamentController {
         // tournamentService.
         // I will add createMatch to TournamentService.
         return ResponseEntity.ok(tournamentService.createMatch(id, request));
+    }
+
+    // Helper method to fetch tournament by UUID or slug
+    private TournamentResponse fetchTournament(String idOrSlug) {
+        try {
+            UUID uuid = UUID.fromString(idOrSlug);
+            return tournamentService.getTournamentById(uuid);
+        } catch (IllegalArgumentException e) {
+            return tournamentService.getTournamentBySlug(idOrSlug);
+        }
     }
 }

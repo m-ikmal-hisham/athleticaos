@@ -69,12 +69,12 @@ public class TournamentServiceImpl implements TournamentService {
                 .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("null")
     public TournamentResponse getTournamentById(UUID id) {
-        return tournamentRepository.findById(id)
-                .filter(tournament -> !tournament.isDeleted())
-                .map(this::mapToResponse)
+        Tournament tournament = tournamentRepository.findById(id)
+                .filter(t -> !t.isDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        return mapToResponse(tournament);
     }
 
     @Override
@@ -362,6 +362,23 @@ public class TournamentServiceImpl implements TournamentService {
                 break;
             default:
                 status = "Draft";
+        }
+
+        // Auto-fix invalid slug (ensure it propagates on list views too)
+        if (tournament.getSlug() != null && tournament.getSlug().contains(" ")) {
+            String fixedSlug = tournament.getSlug().replace(" ", "-");
+            log.warn("Auto-fixing invalid slug for tournament {}: {} -> {}", tournament.getId(), tournament.getSlug(),
+                    fixedSlug);
+            tournament.setSlug(fixedSlug);
+            // Verify we are in transaction or simpler: assume this will be persisted if
+            // transactional,
+            // or explicitly save if we are in a read-only context (which might be an
+            // issue).
+            // Since mapToResponse is called from Transactional methods usually...
+            // But valid read-only transactions won't flush changes?
+            // Let's force a repository save. This is a side effect but necessary for this
+            // fix.
+            tournamentRepository.save(tournament);
         }
 
         return TournamentResponse.builder()
