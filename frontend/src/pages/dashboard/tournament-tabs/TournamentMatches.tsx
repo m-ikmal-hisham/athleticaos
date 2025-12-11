@@ -147,7 +147,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                     <Card
                                         key={match.id}
                                         className="p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-blue-500"
-                                        onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                                        onClick={() => navigate(`/dashboard/matches/${match.matchCode || match.id}`)}
                                     >
                                         <div className="flex justify-between items-center mb-3">
                                             <div className="text-xs text-slate-500 font-mono">{match.matchCode}</div>

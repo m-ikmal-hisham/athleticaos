@@ -79,6 +79,14 @@ public class MatchServiceImpl implements MatchService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public MatchResponse getMatchByCode(String matchCode) {
+        Match match = matchRepository.findByMatchCode(matchCode)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with code: " + matchCode));
+        return mapToResponse(match);
+    }
+
+    @Override
     @Transactional
     public MatchResponse createMatch(MatchCreateRequest request, HttpServletRequest httpRequest) {
         Tournament tournament = tournamentRepository.findById(request.getTournamentId())
@@ -145,23 +153,21 @@ public class MatchServiceImpl implements MatchService {
             match.setMatchCode(request.getMatchCode());
         }
 
-        // Status update logic
+        // Set scores first if provided in the request
+        if (request.getHomeScore() != null) {
+            match.setHomeScore(request.getHomeScore());
+        }
+        if (request.getAwayScore() != null) {
+            match.setAwayScore(request.getAwayScore());
+        }
+
+        // Status update logic - validate after scores are set
         if (request.getStatus() != null) {
             if (request.getStatus() == MatchStatus.COMPLETED) {
-                // Require scores if completing
-                if (request.getHomeScore() == null || request.getAwayScore() == null) {
-                    // If scores are not provided in this request, check if they are already set?
-                    // Or strictly require them in the update request.
-                    // Let's check if they are set in the entity or request.
-                    Integer newHomeScore = request.getHomeScore() != null ? request.getHomeScore()
-                            : match.getHomeScore();
-                    Integer newAwayScore = request.getAwayScore() != null ? request.getAwayScore()
-                            : match.getAwayScore();
-
-                    if (newHomeScore == null || newAwayScore == null) {
-                        throw new IllegalArgumentException(
-                                "Cannot set status to COMPLETED without home and away scores.");
-                    }
+                // Require scores to be set (either from request or already in entity)
+                if (match.getHomeScore() == null || match.getAwayScore() == null) {
+                    throw new IllegalArgumentException(
+                            "Cannot set status to COMPLETED without home and away scores.");
                 }
             }
             match.setStatus(request.getStatus());
@@ -170,13 +176,6 @@ public class MatchServiceImpl implements MatchService {
             if (request.getStatus() == MatchStatus.COMPLETED) {
                 suspensionService.decrementSuspensions(match);
             }
-        }
-
-        if (request.getHomeScore() != null) {
-            match.setHomeScore(request.getHomeScore());
-        }
-        if (request.getAwayScore() != null) {
-            match.setAwayScore(request.getAwayScore());
         }
 
         Match updatedMatch = matchRepository.save(match);

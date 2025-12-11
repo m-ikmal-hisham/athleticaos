@@ -37,11 +37,12 @@ public class MatchController {
         return ResponseEntity.ok(matchService.getAllMatches());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{idOrSlug}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get match by ID")
-    public ResponseEntity<MatchResponse> getMatchById(@PathVariable UUID id) {
-        return ResponseEntity.ok(matchService.getMatchById(id));
+    @Operation(summary = "Get match by ID or match code")
+    public ResponseEntity<MatchResponse> getMatchById(@PathVariable String idOrSlug) {
+        MatchResponse match = fetchMatch(idOrSlug);
+        return ResponseEntity.ok(match);
     }
 
     @GetMapping("/by-tournament/{tournamentId}")
@@ -98,5 +99,15 @@ public class MatchController {
     @Operation(summary = "Check if match can progress to next stage")
     public ResponseEntity<Boolean> canProgress(@PathVariable UUID id) {
         return ResponseEntity.ok(progressionService.canProgress(id));
+    }
+
+    // Helper method to fetch match by UUID or matchCode
+    private MatchResponse fetchMatch(String idOrSlug) {
+        try {
+            UUID uuid = UUID.fromString(idOrSlug);
+            return matchService.getMatchById(uuid);
+        } catch (IllegalArgumentException e) {
+            return matchService.getMatchByCode(idOrSlug);
+        }
     }
 }

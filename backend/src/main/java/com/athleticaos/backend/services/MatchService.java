@@ -26,4 +26,6 @@ public interface MatchService {
         void recalculateMatchScores(UUID matchId);
 
         MatchResponse updateMatchStatus(UUID id, String status, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        MatchResponse getMatchByCode(String matchCode);
 }

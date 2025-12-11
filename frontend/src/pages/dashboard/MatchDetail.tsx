@@ -324,7 +324,12 @@ export const MatchDetail = () => {
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Link to="/dashboard/matches" className="hover:text-primary">Matches</Link>
                 <span>/</span>
-                <span>{selectedMatch.tournamentName}</span>
+                <Link
+                    to={`/dashboard/tournaments/${selectedMatch.tournamentId}`}
+                    className="hover:text-primary"
+                >
+                    {selectedMatch.tournamentName}
+                </Link>
                 <span>/</span>
                 <span className="text-foreground">{selectedMatch.matchCode || 'Match'}</span>
             </div>

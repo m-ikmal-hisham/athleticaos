@@ -146,7 +146,7 @@ export const Matches = () => {
                                     <TableRow
                                         key={m.id}
                                         className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
-                                        onClick={() => navigate(`/dashboard/matches/${m.id}`)}
+                                        onClick={() => navigate(`/dashboard/matches/${m.matchCode || m.id}`)}
                                     >
                                         <TableCell className="py-4">
                                             <div className="flex flex-col">

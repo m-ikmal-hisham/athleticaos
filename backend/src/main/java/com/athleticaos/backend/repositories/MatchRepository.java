@@ -34,5 +34,7 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         List<Match> findMatchesByOrganisationIds(
                         @org.springframework.data.repository.query.Param("orgIds") java.util.Set<UUID> orgIds);
 
+        java.util.Optional<Match> findByMatchCode(String matchCode);
+
         void deleteByTournamentId(UUID tournamentId);
 }
