@@ -14,6 +14,7 @@ interface AuthState {
     // Actions
     login: (credentials: { email: string; password: string }) => Promise<void>;
     setAuth: (user: User, token: string) => void;
+    setUser: (user: User) => void;
     logout: () => void;
     checkTokenValidity: () => Promise<void>;
     hasRole: (role: string) => boolean;
@@ -59,6 +60,13 @@ export const useAuthStore = create<AuthState>()(
                     ? user.roles[0].replace('ROLE_', '')
                     : null;
                 set({ user, token, isAuthenticated: true, primaryRole });
+            },
+
+            setUser: (user: User) => {
+                const primaryRole = user.roles && user.roles.length > 0
+                    ? user.roles[0].replace('ROLE_', '')
+                    : null;
+                set({ user, primaryRole });
             },
 
             logout: () => {

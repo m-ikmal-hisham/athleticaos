@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
 
     @GetMapping("/tournaments")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<PublicTournamentSummaryResponse>> getPublicTournaments(
             @RequestParam(required = false) String seasonId,
             @RequestParam(required = false) String status) {
@@ -45,6 +48,7 @@ public class PublicTournamentController {
     }
 
     @GetMapping("/tournaments/{idOrSlug}")
+    @Transactional(readOnly = true)
     public ResponseEntity<PublicTournamentDetailResponse> getTournamentDetail(@PathVariable String idOrSlug) {
         try {
             TournamentResponse tournament = fetchTournament(idOrSlug);
@@ -62,6 +66,7 @@ public class PublicTournamentController {
     }
 
     @GetMapping("/tournaments/{idOrSlug}/matches")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<PublicMatchSummaryResponse>> getTournamentMatches(
             @PathVariable String idOrSlug,
             @RequestParam(required = false) String stage) {
@@ -86,8 +91,19 @@ public class PublicTournamentController {
         }
     }
 
-    @GetMapping("/matches/{matchId}")
-    public ResponseEntity<PublicMatchDetailResponse> getMatchDetail(@PathVariable UUID matchId) {
+    @GetMapping("/matches/{idOrSlug}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicMatchDetailResponse> getMatchDetail(@PathVariable String idOrSlug) {
+        // Resolve UUID or matchCode
+        UUID matchId;
+        try {
+            matchId = UUID.fromString(idOrSlug);
+        } catch (IllegalArgumentException e) {
+            // Not a UUID, try to find by matchCode
+            MatchResponse matchByCode = matchService.getMatchByCode(idOrSlug);
+            matchId = matchByCode.getId();
+        }
+
         MatchResponse match = matchService.getMatchById(matchId);
 
         // Verify tournament is published
@@ -101,6 +117,7 @@ public class PublicTournamentController {
     }
 
     @GetMapping("/tournaments/{idOrSlug}/standings")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<StandingsResponse>> getTournamentStandings(@PathVariable String idOrSlug) {
         try {
             // Verify tournament is published
@@ -229,8 +246,8 @@ public class PublicTournamentController {
                 .map(event -> {
                     String playerName = null;
                     if (event.getPlayer() != null) {
-                        com.athleticaos.backend.entities.User player = event.getPlayer();
-                        playerName = player.getFirstName() + " " + player.getLastName();
+                        com.athleticaos.backend.entities.Player player = event.getPlayer();
+                        playerName = player.getPerson().getFirstName() + " " + player.getPerson().getLastName();
                     }
 
                     return PublicMatchEventResponse.builder()
@@ -271,6 +288,8 @@ public class PublicTournamentController {
                 .homeStats(homeStats)
                 .awayStats(awayStats)
                 .organiserBranding(branding)
+                .tournamentId(m.getTournamentId())
+                .tournamentSlug(m.getTournamentSlug())
                 .build();
     }
 

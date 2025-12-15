@@ -16,6 +16,8 @@ import java.util.UUID;
 public class MatchResponse {
     private UUID id;
     private UUID tournamentId;
+    private String tournamentName;
+    private String tournamentSlug;
     private UUID homeTeamId;
     private UUID homeTeamOrgId;
     private String homeTeamName;

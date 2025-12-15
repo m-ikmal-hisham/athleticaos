@@ -39,18 +39,54 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches() {
+        return getAllMatches(null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getMatchesByStatus(String status) {
+        return getAllMatches(status, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getAllMatches(String status, UUID tournamentId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Match> matches;
 
         if (accessibleIds == null) {
             // SUPER_ADMIN sees all
-            matches = matchRepository.findAll();
+            if (tournamentId != null) {
+                matches = matchRepository.findByTournamentIdWithDetails(tournamentId);
+            } else {
+                matches = matchRepository.findAllWithDetails();
+            }
         } else if (accessibleIds.isEmpty()) {
             matches = java.util.Collections.emptyList();
         } else {
-            // Filter by accessible organisations (Home Team OR Away Team OR Tournament
-            // Organiser)
+            // Filter by accessible organisations
             matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
+
+            // If tournamentId is provided, filter the results
+            if (tournamentId != null) {
+                matches = matches.stream()
+                        .filter(m -> m.getTournament().getId().equals(tournamentId))
+                        .collect(Collectors.toList());
+            }
+        }
+
+        // Filter by status if provided
+        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            try {
+                MatchStatus matchStatus = MatchStatus.valueOf(status.toUpperCase());
+                matches = matches.stream()
+                        .filter(m -> m.getStatus() == matchStatus)
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // Ignore invalid status or return empty list?
+                // Returning empty list matches previous behavior likely
+                return java.util.Collections.emptyList();
+            }
         }
 
         return matches.stream()
@@ -195,7 +231,9 @@ public class MatchServiceImpl implements MatchService {
     private MatchResponse mapToResponse(Match match) {
         MatchResponse.MatchResponseBuilder builder = MatchResponse.builder()
                 .id(match.getId())
-                .tournamentId(match.getTournament().getId())
+                .tournamentId(match.getTournament() != null ? match.getTournament().getId() : null)
+                .tournamentName(match.getTournament() != null ? match.getTournament().getName() : "")
+                .tournamentSlug(match.getTournament() != null ? match.getTournament().getSlug() : null)
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
                 .venue(match.getVenue())
@@ -230,15 +268,6 @@ public class MatchServiceImpl implements MatchService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<MatchResponse> getMatchesByStatus(String status) {
-        MatchStatus matchStatus = MatchStatus.valueOf(status.toUpperCase());
-        return matchRepository.findByStatus(matchStatus).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     @Transactional
     public void recalculateMatchScores(UUID matchId) {
         Match match = matchRepository.findById(matchId)
@@ -251,9 +280,9 @@ public class MatchServiceImpl implements MatchService {
 
         for (com.athleticaos.backend.entities.MatchEvent event : events) {
             int points = getPointsForEventType(event.getEventType());
-            if (event.getTeam().getId().equals(match.getHomeTeam().getId())) {
+            if (match.getHomeTeam() != null && event.getTeam().getId().equals(match.getHomeTeam().getId())) {
                 homeScore += points;
-            } else if (event.getTeam().getId().equals(match.getAwayTeam().getId())) {
+            } else if (match.getAwayTeam() != null && event.getTeam().getId().equals(match.getAwayTeam().getId())) {
                 awayScore += points;
             }
         }

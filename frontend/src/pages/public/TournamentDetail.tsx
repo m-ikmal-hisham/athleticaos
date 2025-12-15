@@ -299,7 +299,7 @@ export default function TournamentDetail() {
                                         {dateMatches.map(match => (
                                             <Link
                                                 key={match.id}
-                                                to={`/matches/${match.id}`}
+                                                to={`/matches/${match.code || match.id}`}
                                                 className="block rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-lg p-4"
                                             >
                                                 <div className="flex items-center justify-between gap-4">

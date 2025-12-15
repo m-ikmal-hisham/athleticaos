@@ -138,7 +138,8 @@
   }
 
   .status-pill--active {
-    background: rgba(0, 80, 255, 0.15); /* from #0050FF */
+    background: rgba(0, 80, 255, 0.15);
+    /* from #0050FF */
     color: #0050ff;
   }
 
@@ -187,6 +188,7 @@
       transform: translateY(100%);
       opacity: 0;
     }
+
     to {
       transform: translateY(0);
       opacity: 1;
@@ -197,6 +199,7 @@
     from {
       opacity: 0;
     }
+
     to {
       opacity: 1;
     }
@@ -207,6 +210,7 @@
       transform: scale(0.95);
       opacity: 0;
     }
+
     to {
       transform: scale(1);
       opacity: 1;
@@ -255,6 +259,7 @@
       transform: translateX(100%);
       opacity: 0;
     }
+
     to {
       transform: translateX(0);
       opacity: 1;
@@ -379,5 +384,42 @@
     body {
       font-size: 14px;
     }
+  }
+
+  /* Dark Mode Secondary Color Enhancements */
+  [data-theme="dark"] .btn-primary {
+    background: linear-gradient(135deg, var(--athos-blue), #D32F2F);
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+  }
+
+  [data-theme="dark"] .btn-primary:hover {
+    box-shadow: 0 6px 16px rgba(211, 47, 47, 0.4);
+  }
+
+  [data-theme="dark"] .glass-card {
+    border: 1px solid rgba(211, 47, 47, 0.15);
+  }
+
+  [data-theme="dark"] .glass-card:hover {
+    border-color: rgba(211, 47, 47, 0.3);
+    box-shadow: 0 8px 24px rgba(211, 47, 47, 0.2);
+  }
+
+  [data-theme="dark"] .input-base:focus {
+    border-color: #D32F2F;
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
+  }
+
+  [data-theme="dark"] .glass-table tbody tr:hover {
+    background-color: rgba(211, 47, 47, 0.08);
+  }
+
+  /* Secondary color accents for interactive elements */
+  [data-theme="dark"] button:not(.btn-primary):hover {
+    background-color: rgba(211, 47, 47, 0.1);
+  }
+
+  [data-theme="dark"] a:hover {
+    color: #D32F2F;
   }
 }

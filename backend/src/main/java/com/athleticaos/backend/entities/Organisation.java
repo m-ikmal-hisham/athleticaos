@@ -64,6 +64,25 @@ public class Organisation {
     @Column
     private String state; // State/Region
 
+    // Structured Address Fields
+    @Column(name = "address_line1")
+    private String addressLine1;
+
+    @Column(name = "address_line2")
+    private String addressLine2;
+
+    @Column
+    private String postcode;
+
+    @Column
+    private String city;
+
+    @Column(name = "state_code")
+    private String stateCode;
+
+    @Column(name = "country_code")
+    private String countryCode;
+
     @Column
     @Builder.Default
     private String status = "Active"; // Active, Inactive

@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Slf4j
 public class DashboardServiceImpl implements DashboardService {
 
-    private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
     private final MatchRepository matchRepository;
     private final OrganisationRepository organisationRepository;
@@ -27,7 +27,7 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardStatsResponse getDashboardStats() {
         log.info("Fetching dashboard statistics");
 
-        long totalPlayers = userRepository.count();
+        long totalPlayers = playerRepository.count();
         long totalTeams = teamRepository.count();
         long totalMatches = matchRepository.count();
         long totalOrganisations = organisationRepository.count();

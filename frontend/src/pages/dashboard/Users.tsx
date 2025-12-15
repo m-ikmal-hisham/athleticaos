@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Pencil } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -14,6 +14,7 @@ import {
 } from '@/components/Table';
 import { Badge } from '@/components/Badge';
 import { InviteUserModal } from '@/components/InviteUserModal';
+import { EditUserModal } from '@/components/EditUserModal';
 import { usersApi } from '@/api/users.api';
 import { useAuthStore } from '@/store/auth.store';
 import toast from 'react-hot-toast';
@@ -25,6 +26,7 @@ interface User {
     email: string;
     roles: string[];
     organisationName?: string;
+    organisationId?: string;
     isActive: boolean;
 }
 
@@ -34,8 +36,10 @@ export default function Users() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-    const canInvite = currentUser?.roles?.some(r =>
+    const canManageUsers = currentUser?.roles?.some(r =>
         ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r)
     );
 
@@ -73,13 +77,18 @@ export default function Users() {
         return 'secondary';
     };
 
+    const handleEdit = (user: User) => {
+        setSelectedUser(user);
+        setIsEditModalOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             <PageHeader
                 title="Users"
                 description="Manage user accounts and invitations"
                 action={
-                    canInvite && (
+                    canManageUsers && (
                         <Button onClick={() => setIsInviteModalOpen(true)}>
                             <UserPlus className="w-4 h-4 mr-2" />
                             Invite User
@@ -110,16 +119,17 @@ export default function Users() {
                                 <TableHead className="text-xs font-medium text-muted-foreground">Role</TableHead>
                                 <TableHead className="text-xs font-medium text-muted-foreground">Organisation</TableHead>
                                 <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+                                <TableHead className="text-xs font-medium text-muted-foreground"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8">Loading users...</TableCell>
+                                    <TableCell colSpan={6} className="text-center py-8">Loading users...</TableCell>
                                 </TableRow>
                             ) : filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                         No users found
                                     </TableCell>
                                 </TableRow>
@@ -127,7 +137,7 @@ export default function Users() {
                                 filteredUsers.map((u) => (
                                     <TableRow
                                         key={u.id}
-                                        className="hover:bg-muted/30 transition-colors border-b border-border/40"
+                                        className="hover:bg-muted/30 transition-colors border-b border-border/40 group"
                                     >
                                         <TableCell className="py-4">
                                             <span className="text-sm font-medium">{u.firstName} {u.lastName}</span>
@@ -159,6 +169,19 @@ export default function Users() {
                                                 {u.isActive ? 'Active' : 'Inactive'}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell className="py-4 text-right">
+                                            {canManageUsers && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => handleEdit(u)}
+                                                >
+                                                    <Pencil className="w-3 h-3 mr-1" />
+                                                    Edit
+                                                </Button>
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
@@ -170,6 +193,13 @@ export default function Users() {
             <InviteUserModal
                 isOpen={isInviteModalOpen}
                 onClose={() => setIsInviteModalOpen(false)}
+                onSuccess={fetchUsers}
+            />
+
+            <EditUserModal
+                isOpen={isEditModalOpen}
+                initialData={selectedUser}
+                onClose={() => setIsEditModalOpen(false)}
                 onSuccess={fetchUsers}
             />
         </div>

@@ -199,8 +199,8 @@ public class AuditLogger {
                                 .entityType("PLAYER_SUSPENSION")
                                 .entityId(suspension.getId())
                                 .entitySummary(String.format("Player suspended: %s %s - %s",
-                                                suspension.getPlayer().getFirstName(),
-                                                suspension.getPlayer().getLastName(),
+                                                suspension.getPlayer().getPerson().getFirstName(),
+                                                suspension.getPlayer().getPerson().getLastName(),
                                                 suspension.getReason()))
                                 .build();
 

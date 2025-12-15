@@ -18,6 +18,7 @@ import { getCountries, getStates, getDivisions, getDistricts, Organisation, crea
 import { OrganisationModal } from "../../components/modals/OrganisationModal";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
+import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
 
 export default function Organisations() {
     const { organisations, loading, error, getOrganisations } = useOrganisationsStore();
@@ -255,11 +256,13 @@ export default function Organisations() {
                                             <span className="text-sm">{org.type}</span>
                                         </TableCell>
                                         <TableCell className="py-4">
-                                            <span className="text-sm text-muted-foreground">{org.state || '-'}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {org.state || (org.stateCode ? MALAYSIA_STATES.find(s => s.code === org.stateCode)?.name : '-')}
+                                            </span>
                                         </TableCell>
                                         <TableCell className="py-4">
-                                            <Badge variant={getStatusVariant(org.status) as any} className="text-xs">
-                                                {org.status}
+                                            <Badge variant={getStatusVariant(org.status || 'Active') as any} className="text-xs">
+                                                {org.status || 'Active'}
                                             </Badge>
                                         </TableCell>
                                         {isAdmin && (

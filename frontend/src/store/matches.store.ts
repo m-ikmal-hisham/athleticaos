@@ -16,6 +16,7 @@ export interface MatchItem {
     id: string;
     tournamentId: string;
     tournamentName: string;
+    tournamentSlug?: string;
     homeTeamId: string;
     homeTeamOrgId: string;
     homeTeamName: string;
@@ -146,6 +147,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         } catch (error: any) {
             console.error("Failed to add event", error);
             set({ error: "Failed to add event" });
+            throw error; // Re-throw to let component handle it
         }
     },
 
@@ -159,6 +161,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         } catch (error: any) {
             console.error("Failed to remove event", error);
             set({ error: "Failed to remove event" });
+            throw error; // Re-throw to let component handle it
         }
     },
 

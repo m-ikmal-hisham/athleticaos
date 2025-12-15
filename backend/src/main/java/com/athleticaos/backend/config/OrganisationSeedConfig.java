@@ -39,8 +39,8 @@ public class OrganisationSeedConfig {
             malaysia = organisationRepository.save(malaysia);
 
             // States
-            String[] states = { "Sarawak", "Sabah", "Johor", "Selangor", "Kuala Lumpur", "Penang", "Perak", "Kedah",
-                    "Perlis", "Kelantan", "Terengganu", "Pahang", "Negeri Sembilan", "Melaka", "Putrajaya", "Labuan" };
+            String[] states = { "Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Penang", "Perak",
+                    "Perlis", "Sabah", "Sarawak", "Selangor", "Terengganu", "Kuala Lumpur", "Labuan", "Putrajaya" };
 
             Organisation sarawak = null;
 
@@ -50,6 +50,8 @@ public class OrganisationSeedConfig {
                         .orgType("STATE_UNION")
                         .orgLevel(OrganisationLevel.STATE)
                         .parentOrg(malaysia)
+                        .state(stateName)
+                        .stateCode(getCodeForState(stateName))
                         .status("Active")
                         .build();
                 state = organisationRepository.save(state);
@@ -100,6 +102,28 @@ public class OrganisationSeedConfig {
                         .build();
                 organisationRepository.save(school);
             }
+        };
+    }
+
+    private String getCodeForState(String name) {
+        return switch (name) {
+            case "Johor" -> "MY-01";
+            case "Kedah" -> "MY-02";
+            case "Kelantan" -> "MY-03";
+            case "Melaka" -> "MY-04";
+            case "Negeri Sembilan" -> "MY-05";
+            case "Pahang" -> "MY-06";
+            case "Penang" -> "MY-07";
+            case "Perak" -> "MY-08";
+            case "Perlis" -> "MY-09";
+            case "Selangor" -> "MY-10";
+            case "Terengganu" -> "MY-11";
+            case "Sabah" -> "MY-12";
+            case "Sarawak" -> "MY-13";
+            case "Kuala Lumpur" -> "MY-14";
+            case "Labuan" -> "MY-15";
+            case "Putrajaya" -> "MY-16";
+            default -> null;
         };
     }
 }

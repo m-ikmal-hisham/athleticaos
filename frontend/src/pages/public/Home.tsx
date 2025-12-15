@@ -28,7 +28,7 @@ export default function Home() {
         <div className="space-y-12">
             {/* Hero Section */}
             <div className="text-center space-y-6 py-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-[#D32F2F]/10 dark:from-blue-900/30 dark:to-[#D32F2F]/20 text-blue-700 dark:text-blue-300 text-sm font-medium border border-[#D32F2F]/20">
                     <Trophy className="w-4 h-4" />
                     <span>Malaysia Rugby Competitions</span>
                 </div>
@@ -36,7 +36,7 @@ export default function Home() {
                 <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white">
                     Live Scores, Fixtures
                     <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-[#D32F2F]">
                         & Results
                     </span>
                 </h1>
@@ -48,7 +48,7 @@ export default function Home() {
                 <div className="flex items-center justify-center gap-4 pt-4">
                     <Link
                         to="/tournaments"
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-[#D32F2F] hover:from-blue-700 hover:to-[#C62828] text-white font-medium rounded-lg transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-[#D32F2F]/40 flex items-center gap-2"
                     >
                         View All Tournaments
                         <ArrowRight className="w-4 h-4" />
@@ -64,7 +64,7 @@ export default function Home() {
                     </h2>
                     <Link
                         to="/tournaments"
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-[#D32F2F] dark:hover:text-[#D32F2F] hover:underline transition-colors"
                     >
                         View all →
                     </Link>
@@ -92,12 +92,12 @@ export default function Home() {
                             <Link
                                 key={tournament.id}
                                 to={`/tournaments/${tournament.slug || tournament.id}`}
-                                className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10"
+                                className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#D32F2F]/50 dark:hover:border-[#D32F2F]/60 transition-all hover:shadow-xl hover:shadow-[#D32F2F]/20"
                             >
                                 <div className="p-6 space-y-4">
                                     {/* Status Badge */}
                                     {tournament.live && (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium border border-red-500/30">
                                             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                                             LIVE NOW
                                         </div>
@@ -105,7 +105,7 @@ export default function Home() {
 
                                     {/* Tournament Info */}
                                     <div>
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#D32F2F] dark:group-hover:text-[#D32F2F] transition-colors">
                                             {tournament.name}
                                         </h3>
                                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -131,7 +131,7 @@ export default function Home() {
                                 </div>
 
                                 {/* Hover Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all" />
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-transparent to-[#D32F2F]/0 group-hover:from-blue-500/5 group-hover:to-[#D32F2F]/10 transition-all" />
                             </Link>
                         ))}
                     </div>

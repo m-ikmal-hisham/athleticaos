@@ -39,7 +39,7 @@ public class MatchEventController {
             @RequestBody @Valid MatchEventCreateRequest request, HttpServletRequest httpRequest) {
         UUID matchId = resolveMatchId(matchIdOrSlug);
         MatchEventResponse response = matchEventService.addEventToMatch(matchId, request, httpRequest);
-        matchService.recalculateMatchScores(matchId);
+        // Score recalculation is now handled in the service
         return ResponseEntity.ok(response);
     }
 

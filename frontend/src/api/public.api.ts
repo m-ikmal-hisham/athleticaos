@@ -70,6 +70,8 @@ export interface PublicMatchDetail extends PublicMatchSummary {
         logoUrl?: string;
         coverImageUrl?: string;
     };
+    tournamentId?: string;
+    tournamentSlug?: string;
 }
 
 export interface PublicMatchEvent {

@@ -87,7 +87,7 @@ export const Login = () => {
                 <div className="mt-4">
                     <p className="text-sm text-muted-foreground">
                         Don't have an account?{' '}
-                        <Link to="/signup" className="text-primary hover:text-primary-glow font-medium transition-colors">
+                        <Link to="/signup" className="text-primary hover:text-[#D32F2F] dark:hover:text-[#D32F2F] font-medium transition-colors">
                             Sign up
                         </Link>
                     </p>

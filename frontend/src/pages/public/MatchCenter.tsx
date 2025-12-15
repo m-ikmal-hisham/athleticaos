@@ -16,14 +16,14 @@ export default function MatchCenter() {
 
             // Set up polling for live matches
             if (match?.status === 'LIVE' || match?.status === 'ONGOING') {
-                intervalRef.current = setInterval(() => {
+                intervalRef.current = window.setInterval(() => {
                     loadMatch(true);
                 }, 15000); // Poll every 15 seconds
             }
 
             return () => {
                 if (intervalRef.current) {
-                    clearInterval(intervalRef.current);
+                    window.clearInterval(intervalRef.current);
                 }
             };
         }
@@ -114,11 +114,11 @@ export default function MatchCenter() {
         <div className="space-y-6">
             {/* Back Button */}
             <Link
-                to="/tournaments"
+                to={match.tournamentSlug ? `/tournaments/${match.tournamentSlug}` : '/tournaments'}
                 className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Tournaments
+                {match.tournamentSlug ? 'Back to Tournament' : 'Back to Tournaments'}
             </Link>
 
             {/* Match Header */}

@@ -30,11 +30,41 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
 
         long countByStatus(com.athleticaos.backend.enums.MatchStatus status);
 
-        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.homeTeam.organisation.id IN :orgIds OR m.awayTeam.organisation.id IN :orgIds OR m.tournament.organiserOrg.id IN :orgIds")
+        @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
+                        "LEFT JOIN m.homeTeam ht " +
+                        "LEFT JOIN ht.organisation hto " +
+                        "LEFT JOIN m.awayTeam at " +
+                        "LEFT JOIN at.organisation ato " +
+                        "JOIN m.tournament t " +
+                        "JOIN t.organiserOrg tOrg " +
+                        "LEFT JOIN FETCH m.stage " +
+                        "WHERE hto.id IN :orgIds OR ato.id IN :orgIds OR tOrg.id IN :orgIds")
         List<Match> findMatchesByOrganisationIds(
                         @org.springframework.data.repository.query.Param("orgIds") java.util.Set<UUID> orgIds);
 
         java.util.Optional<Match> findByMatchCode(String matchCode);
 
         void deleteByTournamentId(UUID tournamentId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
+                        "LEFT JOIN FETCH m.homeTeam ht " +
+                        "LEFT JOIN FETCH ht.organisation hto " +
+                        "LEFT JOIN FETCH m.awayTeam at " +
+                        "LEFT JOIN FETCH at.organisation ato " +
+                        "LEFT JOIN FETCH m.tournament t " +
+                        "LEFT JOIN FETCH t.organiserOrg tOrg " +
+                        "LEFT JOIN FETCH m.stage")
+        List<Match> findAllWithDetails();
+
+        @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
+                        "LEFT JOIN FETCH m.homeTeam ht " +
+                        "LEFT JOIN FETCH ht.organisation hto " +
+                        "LEFT JOIN FETCH m.awayTeam at " +
+                        "LEFT JOIN FETCH at.organisation ato " +
+                        "LEFT JOIN FETCH m.tournament t " +
+                        "LEFT JOIN FETCH t.organiserOrg tOrg " +
+                        "LEFT JOIN FETCH m.stage " +
+                        "WHERE t.id = :tournamentId")
+        List<Match> findByTournamentIdWithDetails(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 }

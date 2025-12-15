@@ -7,14 +7,15 @@ import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.MatchEvent;
 import com.athleticaos.backend.entities.PlayerSuspension;
 import com.athleticaos.backend.entities.Team;
-import com.athleticaos.backend.entities.User;
+import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.enums.MatchEventType;
 import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
-import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.MatchEventService;
+import com.athleticaos.backend.services.MatchService;
 import com.athleticaos.backend.services.PlayerSuspensionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,9 +34,11 @@ public class MatchEventServiceImpl implements MatchEventService {
     private final MatchEventRepository matchEventRepository;
     private final MatchRepository matchRepository;
     private final TeamRepository teamRepository;
-    private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
+    private final com.athleticaos.backend.repositories.PlayerTeamRepository playerTeamRepository;
     private final AuditLogger auditLogger;
     private final PlayerSuspensionService suspensionService;
+    private final MatchService matchService;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,15 +61,25 @@ public class MatchEventServiceImpl implements MatchEventService {
         Team team = teamRepository.findById(request.getTeamId())
                 .orElseThrow(() -> new EntityNotFoundException("Team not found with ID: " + request.getTeamId()));
 
-        User player = null;
+        Player player = null;
         if (request.getPlayerId() != null) {
-            player = userRepository.findById(request.getPlayerId())
+            player = playerRepository.findById(request.getPlayerId())
                     .orElseThrow(
                             () -> new EntityNotFoundException("Player not found with ID: " + request.getPlayerId()));
+
+            // Validate player belongs to the team
+            boolean isPlayerInTeam = playerTeamRepository.existsByPlayerIdAndTeamId(player.getId(), team.getId());
+            if (!isPlayerInTeam) {
+                throw new IllegalArgumentException(
+                        "Selected player " + player.getId() + " is not assigned to team " + team.getName());
+            }
         }
 
         // Validate that the team is part of the match
-        if (!match.getHomeTeam().getId().equals(team.getId()) && !match.getAwayTeam().getId().equals(team.getId())) {
+        boolean isHomeTeam = match.getHomeTeam() != null && match.getHomeTeam().getId().equals(team.getId());
+        boolean isAwayTeam = match.getAwayTeam() != null && match.getAwayTeam().getId().equals(team.getId());
+
+        if (!isHomeTeam && !isAwayTeam) {
             throw new IllegalArgumentException("Team is not part of this match.");
         }
 
@@ -85,6 +98,9 @@ public class MatchEventServiceImpl implements MatchEventService {
         // Handle suspensions for disciplinary cards
         handleSuspensions(savedEvent, httpRequest);
 
+        // Recalculate scores
+        matchService.recalculateMatchScores(match.getId());
+
         return mapToResponse(savedEvent);
     }
 
@@ -98,7 +114,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
         Match match = event.getMatch();
         Team team = event.getTeam();
-        User player = event.getPlayer();
+        Player player = event.getPlayer();
         MatchEventType eventType = event.getEventType();
 
         // Red card = immediate 1 match suspension
@@ -149,6 +165,7 @@ public class MatchEventServiceImpl implements MatchEventService {
                 .orElseThrow(() -> new EntityNotFoundException("Match Event not found with ID: " + eventId));
         UUID matchId = event.getMatch().getId();
         matchEventRepository.deleteById(eventId);
+        matchService.recalculateMatchScores(matchId);
         return matchId;
     }
 

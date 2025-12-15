@@ -45,7 +45,7 @@ public class PlayerSuspension {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
-    private User player;
+    private Player player;
 
     @Column(nullable = false, length = 500)
     private String reason;

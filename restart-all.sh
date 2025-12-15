@@ -33,27 +33,46 @@ print_error() {
     echo -e "${RED}✗ $1${NC}"
 }
 
-# Step 1: Stop existing processes
-print_step "Step 1: Stopping existing processes..."
+# Step 1: Comprehensive process cleanup
+print_step "Step 1: Comprehensive process cleanup..."
 
-# Kill existing backend processes (Spring Boot on port 8080)
-if lsof -ti:8080 > /dev/null 2>&1; then
-    print_step "Killing process on port 8080 (Backend)..."
-    kill -9 $(lsof -ti:8080) 2>/dev/null || true
-    print_success "Backend process stopped"
-else
-    echo "No process running on port 8080"
-fi
+kill_port() {
+  local PORT=$1
+  local DESCRIPTION=$2
+  if lsof -ti:${PORT} > /dev/null 2>&1; then
+    print_step "Killing process on port ${PORT} (${DESCRIPTION})..."
+    PIDS=$(lsof -ti:${PORT})
+    kill -9 $PIDS 2>/dev/null || true
+    print_success "${DESCRIPTION} process stopped (PIDs: $PIDS)"
+  else
+    echo "  ℹ No process running on port ${PORT}"
+  fi
+}
 
-# Kill existing frontend processes (Vite on port 5173)
-if lsof -ti:5173 > /dev/null 2>&1; then
-    print_step "Killing process on port 5173 (Frontend)..."
-    kill -9 $(lsof -ti:5173) 2>/dev/null || true
-    print_success "Frontend process stopped"
-else
-    echo "No process running on port 5173"
-fi
+kill_by_pattern() {
+  local PATTERN=$1
+  local DESCRIPTION=$2
+  PIDS=$(pgrep -f "$PATTERN" 2>/dev/null || true)
+  if [ -n "$PIDS" ]; then
+    print_step "Killing ${DESCRIPTION}..."
+    echo "  Found PIDs: $PIDS"
+    kill -9 $PIDS 2>/dev/null || true
+    print_success "${DESCRIPTION} stopped"
+  fi
+}
 
+# Kill all related processes
+kill_by_pattern "mvn.*athleticaos" "Maven processes"
+kill_by_pattern "mvnw.*spring-boot:run" "Maven wrapper processes"
+kill_by_pattern "java.*athleticaos.*backend" "Spring Boot backend"
+kill_by_pattern "vite.*athleticaos" "Vite frontend"
+kill_by_pattern "node.*vite" "Node Vite processes"
+
+# Kill processes on specific ports
+kill_port "8080" "Backend"
+kill_port "5173" "Frontend"
+
+print_success "All existing processes cleaned up"
 echo ""
 
 # Step 2: Restart Database
@@ -155,7 +174,6 @@ echo "  • Backend:   tail -f $PROJECT_ROOT/backend.log"
 echo "  • Frontend:  tail -f $PROJECT_ROOT/frontend.log"
 echo ""
 echo "To stop services:"
-echo "  • Backend:   kill $BACKEND_PID"
-echo "  • Frontend:  kill $FRONTEND_PID"
-echo "  • Database:  docker-compose down"
+echo "  • Run:       ./stop_all.sh"
+echo "  • Or kill:   kill $BACKEND_PID $FRONTEND_PID && docker-compose down"
 echo ""

@@ -168,25 +168,27 @@ export const MatchDetail = () => {
     }
 
     const handleAddEvent = async () => {
-        if (!id || !newEvent.teamId || !newEvent.eventType) return;
+        if (!id || !newEvent.teamId || !newEvent.eventType || !selectedMatch) return;
 
         setIsSubmitting(true);
         try {
             const selectedPlayer = players.find(p => p.id === newEvent.playerId);
+            // Use selectedMatch.id (UUID) instead of id (which might be slug)
+            const matchUUID = selectedMatch.id;
 
-            await addEvent(id, {
-                matchId: id,
+            await addEvent(matchUUID, {
+                matchId: matchUUID,
                 teamId: newEvent.teamId,
                 teamName: newEvent.teamId === selectedMatch.homeTeamId ? selectedMatch.homeTeamName : selectedMatch.awayTeamName,
                 playerId: newEvent.playerId || null,
                 playerName: selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : null,
                 eventType: newEvent.eventType as string,
-                minute: Number(newEvent.minute),
+                minute: Number(newEvent.minute) || 0,
                 notes: newEvent.notes
             });
 
-            // Reload match to get updated data
-            await loadMatchDetail(id);
+            // Reload match to get updated data using UUID
+            await loadMatchDetail(matchUUID);
 
             // Reset form
             setNewEvent(prev => ({ ...prev, notes: '', playerId: '' }));
@@ -325,7 +327,7 @@ export const MatchDetail = () => {
                 <Link to="/dashboard/matches" className="hover:text-primary">Matches</Link>
                 <span>/</span>
                 <Link
-                    to={`/dashboard/tournaments/${selectedMatch.tournamentId}`}
+                    to={`/dashboard/tournaments/${selectedMatch.tournamentSlug || selectedMatch.tournamentId}?tab=matches`}
                     className="hover:text-primary"
                 >
                     {selectedMatch.tournamentName}
@@ -607,8 +609,11 @@ export const MatchDetail = () => {
                                         type="number"
                                         min="0"
                                         max="100"
-                                        value={newEvent.minute ?? ''}
-                                        onChange={(e) => setNewEvent({ ...newEvent, minute: parseInt(e.target.value) })}
+                                        value={newEvent.minute ?? 0}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            setNewEvent({ ...newEvent, minute: isNaN(val) ? 0 : val });
+                                        }}
                                     />
                                 </div>
 

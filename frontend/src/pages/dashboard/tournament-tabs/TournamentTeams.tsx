@@ -179,7 +179,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                         </div>
 
                         <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
-                            <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+                            <Button variant="cancel" onClick={() => setShowAddModal(false)}>
                                 Cancel
                             </Button>
                             <Button

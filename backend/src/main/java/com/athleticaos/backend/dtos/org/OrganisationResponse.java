@@ -17,6 +17,7 @@ public class OrganisationResponse {
     private String slug;
     private String type; // Renamed from orgType for frontend compatibility
     private UUID parentOrgId;
+    private String parentOrganisationName; // Derived field
     private String primaryColor;
     private String secondaryColor;
     private String tertiaryColor;
@@ -25,6 +26,12 @@ public class OrganisationResponse {
     private String accentColor;
     private String coverImageUrl;
     private String state;
+    private String addressLine1;
+    private String addressLine2;
+    private String postcode;
+    private String city;
+    private String stateCode;
+    private String countryCode;
     private String status;
     private com.athleticaos.backend.enums.OrganisationLevel orgLevel;
 }

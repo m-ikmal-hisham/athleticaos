@@ -60,7 +60,7 @@ export function PlayerSelectionModal({
 
     if (!isOpen) return null;
 
-    const availablePlayers = players.filter(p => !existingPlayerIds.includes(p.playerId));
+    const availablePlayers = players.filter(p => !(existingPlayerIds || []).includes(p.playerId));
     const filteredPlayers = availablePlayers.filter(p =>
         p.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -132,7 +132,7 @@ export function PlayerSelectionModal({
 
                 {/* Footer */}
                 <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
-                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button variant="cancel" onClick={onClose}>Cancel</Button>
                     <Button
                         onClick={handleConfirm}
                         disabled={selectedPlayerIds.size === 0}

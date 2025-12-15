@@ -5,7 +5,7 @@ import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.PlayerSuspension;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
-import com.athleticaos.backend.entities.User;
+import com.athleticaos.backend.entities.Player;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,7 +15,7 @@ public interface PlayerSuspensionService {
     /**
      * Creates a new suspension for a player.
      */
-    PlayerSuspension createSuspension(Tournament tournament, Team team, User player, String reason, int matches);
+    PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, String reason, int matches);
 
     /**
      * Decrements suspensions for teams involved in a completed match.

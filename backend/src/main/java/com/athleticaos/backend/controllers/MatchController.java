@@ -28,13 +28,11 @@ public class MatchController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get all matches, optionally filtered by status")
+    @Operation(summary = "Get all matches, optionally filtered by status and tournament")
     public ResponseEntity<List<MatchResponse>> getAllMatches(
-            @RequestParam(required = false) String status) {
-        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
-            return ResponseEntity.ok(matchService.getMatchesByStatus(status));
-        }
-        return ResponseEntity.ok(matchService.getAllMatches());
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID tournamentId) {
+        return ResponseEntity.ok(matchService.getAllMatches(status, tournamentId));
     }
 
     @GetMapping("/{idOrSlug}")

@@ -175,7 +175,28 @@ export const AppLayout = () => {
                     {/* Logo */}
                     <div className="flex items-center justify-between p-4 border-b border-white/10">
                         <Link to="/dashboard" className="flex items-center gap-3">
-                            <img src={brandLogoUrl || "/logo.png"} alt="Logo" className="h-10 w-10 rounded-lg object-contain bg-white/5" />
+                            {brandLogoUrl ? (
+                                <img
+                                    src={brandLogoUrl}
+                                    alt="Logo"
+                                    className="h-10 w-10 rounded-lg object-contain bg-white/5"
+                                    onError={(e) => {
+                                        // Hide broken image and show fallback
+                                        e.currentTarget.style.display = 'none';
+                                        const fallback = e.currentTarget.nextElementSibling;
+                                        if (fallback) {
+                                            (fallback as HTMLElement).style.display = 'flex';
+                                        }
+                                    }}
+                                />
+                            ) : null}
+                            {/* Fallback logo - always rendered but hidden if image loads */}
+                            <div
+                                className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg text-white font-bold text-xl"
+                                style={{ display: brandLogoUrl ? 'none' : 'flex' }}
+                            >
+                                A
+                            </div>
                             <span className="font-bold text-lg text-foreground">
                                 AthleticaOS
                             </span>

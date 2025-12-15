@@ -1,4 +1,6 @@
 
+import { Button } from './Button';
+
 interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -43,12 +45,12 @@ export const ConfirmModal = ({
                     <p className="text-muted-foreground mb-6">{message}</p>
 
                     <div className="flex gap-3 justify-end">
-                        <button
+                        <Button
+                            variant="cancel"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors text-foreground font-medium"
                         >
                             {cancelText}
-                        </button>
+                        </Button>
                         <button
                             onClick={handleConfirm}
                             className="px-4 py-2 btn-primary rounded-lg font-medium transition-colors text-white bg-primary hover:bg-primary/90"

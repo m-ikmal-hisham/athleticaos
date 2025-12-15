@@ -4,6 +4,7 @@ import { Card } from '@/components/Card';
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigate } from 'react-router-dom';
 import { fetchDashboardStats } from '@/api/dashboard.api';
+import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 
 // Custom hook for counter animation
 const useCountUp = (end: number, duration: number = 2000) => {
@@ -119,6 +120,21 @@ export const DashboardHome = () => {
         },
     ];
 
+    // Determine scope for Recent Activity
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
+    const isOrgAdmin = user?.roles?.includes('ROLE_ORG_ADMIN') || user?.roles?.includes('ROLE_CLUB_ADMIN');
+
+    let activityScope: 'global' | 'org' | 'user' = 'user';
+    let activityEntityId = user?.id;
+
+    if (isSuperAdmin) {
+        activityScope = 'global';
+        activityEntityId = undefined;
+    } else if (isOrgAdmin && user?.organisationId) {
+        activityScope = 'org';
+        activityEntityId = user.organisationId;
+    }
+
     return (
         <div className="space-y-6" style={{ paddingTop: '2.5rem', paddingBottom: '3rem' }}>
             {/* Header */}
@@ -142,41 +158,42 @@ export const DashboardHome = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {statCards.map((stat, index) => (
-                        <Card
-                            key={index}
-                            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
-                            onClick={() => navigate(stat.path)}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                                    <p className="text-3xl font-bold text-foreground mt-2">{stat.value}</p>
+                    {statCards.map((stat, index) => {
+                        // Alternate gradient directions for visual interest
+                        // More prominent gradients in dark mode using secondary color
+                        const gradientClass = index % 2 === 0
+                            ? 'bg-gradient-to-br from-primary-500/5 via-transparent to-[#D32F2F]/5 dark:from-primary-500/10 dark:to-[#D32F2F]/15 dark:border-[#D32F2F]/20'
+                            : 'bg-gradient-to-bl from-[#D32F2F]/5 via-transparent to-primary-500/5 dark:from-[#D32F2F]/15 dark:to-primary-500/10 dark:border-[#D32F2F]/20';
+
+                        return (
+                            <Card
+                                key={index}
+                                className={`cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-[#D32F2F]/40 dark:hover:border-[#D32F2F]/60 ${gradientClass}`}
+                                onClick={() => navigate(stat.path)}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">{stat.title}</p>
+                                        <p className="text-3xl font-bold text-foreground mt-2">{stat.value}</p>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-primary/10 dark:bg-[#D32F2F]/20 text-primary dark:text-[#D32F2F] dark:border dark:border-[#D32F2F]/30">
+                                        {stat.icon}
+                                    </div>
                                 </div>
-                                <div className="p-3 rounded-lg bg-primary/10 text-primary">
-                                    {stat.icon}
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
 
             {/* Recent Activity */}
-            <Card>
-                <h2 className="text-xl font-bold text-foreground mb-4">Recent Activity</h2>
-                <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150">
-                            <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                            <div className="flex-1">
-                                <p className="text-sm text-foreground">New player registered</p>
-                                <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </Card>
+            <div>
+                <RecentActivityWidget
+                    scope={activityScope}
+                    entityId={activityEntityId}
+                    limit={10}
+                />
+            </div>
         </div>
     );
 };

@@ -8,7 +8,8 @@ export interface Organisation {
     slug?: string;
     type: string;
     orgLevel: OrganisationLevel;
-    parentOrgId?: string;
+    parentOrgId?: string | null;
+    parentOrganisationName?: string;
     primaryColor?: string;
     secondaryColor?: string;
     tertiaryColor?: string;
@@ -16,8 +17,15 @@ export interface Organisation {
     logoUrl?: string;
     accentColor?: string;
     coverImageUrl?: string;
-    state?: string;
-    status: string;
+    state?: string; // Legacy/Display state name
+    status?: string;
+    // Address Fields
+    addressLine1?: string;
+    addressLine2?: string;
+    postcode?: string;
+    city?: string;
+    stateCode?: string;
+    countryCode?: string;
 }
 
 export interface OrganisationTreeNode extends Organisation {

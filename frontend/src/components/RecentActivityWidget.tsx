@@ -1,30 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
-import { Activity, Clock } from 'lucide-react';
+import { Activity, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuditStore } from '@/store/audit.store';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/Badge';
+import { Button } from '@/components/Button';
 
 interface RecentActivityWidgetProps {
-    entityType: string;
-    entityId: string;
+    scope?: 'global' | 'org' | 'user' | 'entity';
+    entityType?: string;
+    entityId?: string;
     title?: string;
     limit?: number;
 }
 
 export function RecentActivityWidget({
+    scope = 'entity',
     entityType,
     entityId,
     title = "Recent Activity",
     limit = 5
 }: RecentActivityWidgetProps) {
-    const { logs, fetchEntityLogs, isLoading } = useAuditStore();
+    const { logs, fetchGlobalLogs, fetchOrgLogs, fetchUserLogs, fetchEntityLogs, isLoading } = useAuditStore();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const INITIAL_DISPLAY_COUNT = 5;
 
     useEffect(() => {
-        if (entityId) {
-            fetchEntityLogs(entityType, entityId, { page: 0, size: limit });
+        const params = { page: 0, size: limit };
+
+        if (scope === 'global') {
+            fetchGlobalLogs(params);
+        } else if (scope === 'org' && entityId) {
+            fetchOrgLogs(entityId, params);
+        } else if (scope === 'user' && entityId) {
+            fetchUserLogs(entityId, params);
+        } else if (scope === 'entity' && entityType && entityId) {
+            fetchEntityLogs(entityType, entityId, params);
         }
-    }, [entityType, entityId, limit, fetchEntityLogs]);
+    }, [scope, entityType, entityId, limit, fetchGlobalLogs, fetchOrgLogs, fetchUserLogs, fetchEntityLogs]);
 
     const getActionBadgeVariant = (actionType: string) => {
         if (actionType.includes('CREATED')) return 'success';
@@ -32,6 +45,8 @@ export function RecentActivityWidget({
         if (actionType.includes('DELETED')) return 'destructive';
         return 'secondary';
     };
+
+    const displayLogs = isExpanded ? logs : logs.slice(0, INITIAL_DISPLAY_COUNT);
 
     if (isLoading && logs.length === 0) {
         return (
@@ -52,21 +67,21 @@ export function RecentActivityWidget({
     }
 
     return (
-        <Card className="h-full">
-            <CardHeader className="pb-2">
+        <Card className="h-full flex flex-col">
+            <CardHeader className="pb-2 flex-none">
                 <CardTitle className="text-lg font-medium flex items-center gap-2">
                     <Activity className="w-5 h-5 text-primary-500" />
                     {title}
                 </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1 min-h-0">
                 {logs.length === 0 ? (
                     <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
                         No recent activity
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {logs.slice(0, limit).map((log) => (
+                        {displayLogs.map((log) => (
                             <div key={log.id} className="flex gap-3 items-start group">
                                 <div className="mt-1 relative">
                                     <div className="w-2 h-2 rounded-full bg-primary-500 ring-4 ring-primary-500/10" />
@@ -93,6 +108,27 @@ export function RecentActivityWidget({
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {logs.length > INITIAL_DISPLAY_COUNT && (
+                    <div className="mt-4 pt-2 border-t border-border/50 flex justify-center">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="text-xs text-muted-foreground hover:text-foreground h-8"
+                        >
+                            {isExpanded ? (
+                                <>
+                                    <ChevronUp className="w-3 h-3 mr-1" /> Show Less
+                                </>
+                            ) : (
+                                <>
+                                    <ChevronDown className="w-3 h-3 mr-1" /> View All ({logs.length - INITIAL_DISPLAY_COUNT} more)
+                                </>
+                            )}
+                        </Button>
                     </div>
                 )}
             </CardContent>

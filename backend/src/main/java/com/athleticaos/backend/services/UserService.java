@@ -70,11 +70,43 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Email already exists");
+            }
+            user.setEmail(request.getEmail());
+        }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }
         if (request.getIsActive() != null) {
             user.setActive(request.getIsActive());
+        }
+
+        // Update Organisation
+        if (request.getOrganisationId() != null) {
+            com.athleticaos.backend.entities.Organisation organisation = organisationRepository
+                    .findById(request.getOrganisationId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+            user.setOrganisation(organisation);
+        }
+
+        // Update Roles if provided
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            java.util.Set<Role> newRoles = request.getRoles().stream()
+                    .map(roleName -> {
+                        String name = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+                        return roleRepository.findByName(name)
+                                .orElseThrow(() -> new EntityNotFoundException("Role not found: " + name));
+                    })
+                    .collect(Collectors.toSet());
+            user.setRoles(newRoles);
         }
 
         User savedUser = userRepository.save(user);

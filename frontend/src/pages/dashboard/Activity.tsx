@@ -20,11 +20,19 @@ import { format } from 'date-fns';
 export default function Activity() {
     const { user: currentUser } = useAuthStore();
     const { logs, isLoading, fetchGlobalLogs, fetchOrgLogs, fetchUserLogs, currentPage, pageSize } = useAuditStore();
-    const [activeTab, setActiveTab] = useState<'global' | 'org' | 'user'>('user');
-    const [searchQuery, setSearchQuery] = useState('');
 
     const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPER_ADMIN');
     const isOrgAdmin = currentUser?.roles?.includes('ROLE_ORG_ADMIN');
+
+    // Set default tab based on user role
+    const getDefaultTab = (): 'global' | 'org' | 'user' => {
+        if (isSuperAdmin) return 'global';
+        if (isOrgAdmin) return 'org';
+        return 'user';
+    };
+
+    const [activeTab, setActiveTab] = useState<'global' | 'org' | 'user'>(getDefaultTab());
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         loadLogs();

@@ -17,6 +17,15 @@ export interface InviteUserResponse {
     message?: string;
 }
 
+export interface UserUpdateRequest {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    roles?: string[];
+    organisationId?: string;
+    isActive?: boolean;
+}
+
 export const usersApi = {
     inviteUser: async (request: InviteUserRequest) => {
         const response = await api.post<InviteUserResponse>('/users/invite', request);
@@ -30,6 +39,11 @@ export const usersApi = {
 
     getUserById: async (id: string) => {
         const response = await api.get(`/users/${id}`);
+        return response;
+    },
+
+    updateUser: async (id: string, request: UserUpdateRequest) => {
+        const response = await api.put(`/users/${id}`, request);
         return response;
     },
 };

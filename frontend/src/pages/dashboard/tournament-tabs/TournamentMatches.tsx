@@ -283,7 +283,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                             </div>
 
                             <div className="pt-2 flex justify-end gap-2">
-                                <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
+                                <Button type="button" variant="cancel" onClick={() => setShowCreateModal(false)}>
                                     Cancel
                                 </Button>
                                 <Button type="submit">Create Match</Button>

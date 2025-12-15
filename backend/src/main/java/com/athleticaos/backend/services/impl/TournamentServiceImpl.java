@@ -43,6 +43,8 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.services.FormatService formatService;
     private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
 
+    @Override
+    @Transactional(readOnly = true)
     public List<TournamentResponse> getAllTournaments(String level) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Tournament> tournaments;
@@ -62,6 +64,7 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TournamentResponse> getPublishedTournaments() {
         return tournamentRepository.findByIsPublishedTrue().stream()
                 .filter(tournament -> !tournament.isDeleted())
@@ -69,6 +72,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public TournamentResponse getTournamentById(UUID id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !t.isDeleted())
@@ -78,6 +83,7 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     public TournamentResponse getTournamentBySlug(String slug) {
         return tournamentRepository.findBySlug(slug)
@@ -87,6 +93,7 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TournamentDashboardResponse getTournamentDashboard(UUID id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !t.isDeleted())

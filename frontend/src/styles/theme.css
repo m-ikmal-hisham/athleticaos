@@ -33,7 +33,7 @@
 
   /* Branding Defaults */
   --brand-primary: var(--athos-blue);
-  --brand-secondary: #FFD700; /* Default gold-ish secondary */
+  --brand-secondary: #D32F2F; /* Malaysia Red - adjusted for UI harmony */
   --brand-accent: #FFFFFF;
 
 }

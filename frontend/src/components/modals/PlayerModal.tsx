@@ -434,9 +434,9 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                 )}
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-                    <button type="button" onClick={onClose} className="btn-secondary">
+                    <Button type="button" variant="cancel" onClick={onClose}>
                         Cancel
-                    </button>
+                    </Button>
                     <Button type="submit">
                         {mode === "create" ? "Save Player" : "Update Player"}
                     </Button>

@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface MatchService {
         List<MatchResponse> getAllMatches();
 
+        List<MatchResponse> getAllMatches(String status, UUID tournamentId);
+
         List<MatchResponse> getMatchesByTournament(UUID tournamentId);
 
         MatchResponse getMatchById(UUID id);

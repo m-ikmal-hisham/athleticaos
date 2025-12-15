@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Filter, Calendar, Users, Medal } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Input } from '@/components/Input';
+import { Card, CardContent } from '@/components/Card';
 import { Badge } from '@/components/Badge';
+import { StatusPill } from '@/components/StatusPill';
 import { getSeasons } from '@/api/seasons.api';
 import { Season, SeasonLevel, SeasonStatus } from '@/types/season.types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -13,6 +15,8 @@ export const Seasons = () => {
     const navigate = useNavigate();
     const [seasons, setSeasons] = useState<Season[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [filterLevel, setFilterLevel] = useState<string>('ALL');
     const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
@@ -23,35 +27,40 @@ export const Seasons = () => {
     const loadSeasons = async () => {
         try {
             setLoading(true);
+            setError(null);
             const data = await getSeasons();
             setSeasons(data);
-        } catch (error) {
-            console.error('Failed to load seasons', error);
+        } catch (err: any) {
+            console.error('Failed to load seasons', err);
+            if (err.response?.status === 403) {
+                setError('You do not have permission to view seasons. Please contact your administrator.');
+            } else if (err.response?.status === 401) {
+                setError('Your session has expired. Please log in again.');
+            } else {
+                setError('Failed to load seasons. Please try again later.');
+            }
         } finally {
             setLoading(false);
         }
     };
 
+    // Apply search and filters
     const filteredSeasons = seasons.filter((season) => {
+        // Search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const matchesSearch = season.name.toLowerCase().includes(query) ||
+                season.code?.toLowerCase().includes(query) ||
+                season.level?.toLowerCase().includes(query);
+            if (!matchesSearch) return false;
+        }
+
+        // Dropdown filters
         if (filterLevel !== 'ALL' && season.level !== filterLevel) return false;
         if (filterStatus !== 'ALL' && season.status !== filterStatus) return false;
+
         return true;
     });
-
-    const getStatusColor = (status: SeasonStatus) => {
-        switch (status) {
-            case SeasonStatus.ACTIVE:
-                return 'success';
-            case SeasonStatus.PLANNED:
-                return 'info';
-            case SeasonStatus.COMPLETED:
-                return 'warning';
-            case SeasonStatus.ARCHIVED:
-                return 'default';
-            default:
-                return 'default';
-        }
-    };
 
     return (
         <div className="space-y-6">
@@ -60,94 +69,123 @@ export const Seasons = () => {
                 description="Manage and review national, state, and age-grade rugby seasons."
                 action={
                     <Button onClick={() => { }}>
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 mr-2" />
                         New Season
                     </Button>
                 }
             />
 
-            {/* Filters */}
-            <div className="flex gap-4 items-center bg-glass-bg p-4 rounded-xl border border-glass-border">
-                <Filter className="w-5 h-5 text-muted" />
-                <select
-                    className="bg-transparent border-none focus:ring-0 text-sm font-medium"
-                    value={filterLevel}
-                    onChange={(e) => setFilterLevel(e.target.value)}
-                >
-                    <option value="ALL">All Levels</option>
-                    {Object.values(SeasonLevel).map((level) => (
-                        <option key={level} value={level}>
-                            {level}
-                        </option>
-                    ))}
-                </select>
-                <div className="h-6 w-px bg-glass-border" />
-                <select
-                    className="bg-transparent border-none focus:ring-0 text-sm font-medium"
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                    <option value="ALL">All Statuses</option>
-                    {Object.values(SeasonStatus).map((status) => (
-                        <option key={status} value={status}>
-                            {status}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            <Card>
+                <CardContent className="p-0">
+                    {/* Search Box */}
+                    <div className="p-4 border-b border-glass-border">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <Input
+                                placeholder="Search by name, code, or level..."
+                                className="pl-9 bg-glass-bg/50"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
 
-            {loading ? (
-                <div className="flex justify-center py-12">
-                    <LoadingSpinner />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredSeasons.map((season) => (
-                        <Card
-                            key={season.id}
-                            className="cursor-pointer hover:border-primary-500/50 transition-colors group"
-                            onClick={() => navigate(`/competitions/seasons/${season.id}`)}
+                    {/* Filters */}
+                    <div className="p-4 border-b border-glass-border grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <select
+                            className="input-base w-full"
+                            style={{ cursor: 'pointer' }}
+                            value={filterLevel}
+                            onChange={(e) => setFilterLevel(e.target.value)}
                         >
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-foreground group-hover:text-primary-500 transition-colors">
-                                            {season.name}
-                                        </h3>
-                                        <p className="text-sm text-muted font-mono mt-1">{season.code}</p>
-                                    </div>
-                                    <Badge variant={getStatusColor(season.status)}>{season.status}</Badge>
-                                </div>
+                            <option value="ALL">All Levels</option>
+                            {Object.values(SeasonLevel).map((level) => (
+                                <option key={level} value={level}>
+                                    {level}
+                                </option>
+                            ))}
+                        </select>
 
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div className="flex items-center gap-2 text-muted">
-                                        <Medal className="w-4 h-4" />
-                                        <span>{season.level}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-muted">
-                                        <Calendar className="w-4 h-4" />
-                                        <span>
-                                            {season.startDate} - {season.endDate}
-                                        </span>
-                                    </div>
-                                    {season.organiser && (
-                                        <div className="flex items-center gap-2 text-muted col-span-2">
-                                            <Users className="w-4 h-4" />
-                                            <span>{season.organiser.name}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
+                        <select
+                            className="input-base w-full"
+                            style={{ cursor: 'pointer' }}
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                            <option value="ALL">All Statuses</option>
+                            {Object.values(SeasonStatus).map((status) => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                    {filteredSeasons.length === 0 && (
-                        <div className="col-span-full text-center py-12 text-muted">
-                            No seasons found matching your filters.
+                    {error && (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={loadSeasons}
+                                className="mt-2"
+                            >
+                                Try Again
+                            </Button>
                         </div>
                     )}
-                </div>
-            )}
+
+                    {loading && (
+                        <div className="flex justify-center py-12">
+                            <LoadingSpinner />
+                        </div>
+                    )}
+
+                    {!loading && !error && filteredSeasons.length === 0 && (
+                        <p className="p-4 text-muted-foreground">No seasons found</p>
+                    )}
+
+                    {!loading && filteredSeasons.length > 0 && (
+                        <div className="w-full overflow-auto">
+                            <table className="glass-table w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-border/60 text-muted-foreground text-sm">
+                                        <th className="p-4 font-medium">Name</th>
+                                        <th className="p-4 font-medium">Code</th>
+                                        <th className="p-4 font-medium">Level</th>
+                                        <th className="p-4 font-medium">Period</th>
+                                        <th className="p-4 font-medium">Organiser</th>
+                                        <th className="p-4 font-medium">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredSeasons.map((season) => (
+                                        <tr
+                                            key={season.id}
+                                            onClick={() => navigate(`/dashboard/competitions/seasons/${season.id}`)}
+                                            style={{ cursor: 'pointer' }}
+                                            className="border-b border-border/40 hover:bg-muted/30 transition-colors"
+                                        >
+                                            <td className="p-4 font-medium">{season.name}</td>
+                                            <td className="p-4 text-muted-foreground font-mono text-sm">{season.code}</td>
+                                            <td className="p-4">
+                                                <Badge variant="secondary">{season.level}</Badge>
+                                            </td>
+                                            <td className="p-4 text-sm text-muted-foreground">
+                                                {season.startDate} - {season.endDate}
+                                            </td>
+                                            <td className="p-4 text-sm">{season.organiser?.name || '-'}</td>
+                                            <td className="p-4">
+                                                <StatusPill status={season.status} />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };

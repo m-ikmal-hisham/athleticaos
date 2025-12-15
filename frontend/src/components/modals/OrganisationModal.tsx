@@ -3,9 +3,12 @@ import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Organisation, OrganisationLevel, fetchOrganisations } from '@/api/organisations.api';
+import { fetchTeams } from '@/api/teams.api';
+import { Team } from '@/types';
 import { Upload } from 'lucide-react';
 import { uploadFile } from '@/api/upload.api';
 import { getImageUrl } from '@/utils/image';
+import { MALAYSIA_STATES, getDistrictsForState, getSarawakDistricts } from '@/constants/malaysia-geo';
 
 interface OrganisationModalProps {
     isOpen: boolean;
@@ -28,17 +31,30 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
         tertiaryColor: '',
         quaternaryColor: '',
         logoUrl: '',
-        state: ''
+        state: '',
+        // Address
+        addressLine1: '',
+        addressLine2: '',
+        postcode: '',
+        city: '',
+        stateCode: '',
+        countryCode: 'MY'
     });
+    const [teamIds, setTeamIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [availableOrganisations, setAvailableOrganisations] = useState<Organisation[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string>('');
+
+    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [sarawakDivision, setSarawakDivision] = useState<string>('');
 
     useEffect(() => {
         if (isOpen) {
             fetchOrganisations().then(setAvailableOrganisations).catch(console.error);
+            fetchTeams().then(res => setTeams(res.data)).catch(console.error);
         }
     }, [isOpen]);
 
@@ -54,8 +70,29 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 tertiaryColor: initialData.tertiaryColor || '',
                 quaternaryColor: initialData.quaternaryColor || '',
                 logoUrl: initialData.logoUrl || '',
-                state: initialData.state || ''
+                state: initialData.state || '',
+                addressLine1: initialData.addressLine1 || '',
+                addressLine2: initialData.addressLine2 || '',
+                postcode: initialData.postcode || '',
+                city: initialData.city || '',
+                stateCode: initialData.stateCode || '',
+                countryCode: initialData.countryCode || 'MY'
             });
+
+            // Initialize districts if stateCode exists
+            if (initialData.stateCode) {
+                if (initialData.stateCode === 'MY-13') {
+                    // Try to infer division or just load divisions first
+                    setAvailableDistricts(getDistrictsForState(initialData.stateCode)); // Loads Divisions
+                    // Note: We can't easily auto-set the division unless we saved it or inferred it from city
+                    // For now user re-selects if editing address
+                } else {
+                    setAvailableDistricts(getDistrictsForState(initialData.stateCode));
+                }
+            }
+            // If we had a way to get existing mapped teams, we would set them here.
+            // For now, defaulting empty or we need to fetch org teams.
+            setTeamIds([]);
             setLogoPreview(initialData.logoUrl || '');
         } else {
             setFormData({
@@ -68,9 +105,18 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 tertiaryColor: '',
                 quaternaryColor: '',
                 logoUrl: '',
-                state: ''
+                state: '',
+                addressLine1: '',
+                addressLine2: '',
+                postcode: '',
+                city: '',
+                stateCode: '',
+                countryCode: 'MY'
             });
+            setTeamIds([]);
             setLogoPreview('');
+            setAvailableDistricts([]);
+            setSarawakDivision('');
         }
         setErrors({});
         setLogoFile(null);
@@ -109,6 +155,23 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
         img.src = URL.createObjectURL(file);
     };
 
+    const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const code = e.target.value;
+        const selectedState = MALAYSIA_STATES.find(s => s.code === code);
+
+        // Update districts list
+        const districts = getDistrictsForState(code);
+        setAvailableDistricts(districts);
+        setSarawakDivision(''); // Reset division on state change
+
+        setFormData({
+            ...formData,
+            stateCode: code,
+            state: selectedState ? selectedState.name : '', // Auto-fill legacy state name
+            city: '' // Reset district/city when state changes
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
@@ -132,7 +195,8 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
             const submitData = {
                 ...formData,
                 parentOrgId: formData.parentOrgId === '' ? null : formData.parentOrgId,
-                logoUrl: finalLogoUrl
+                logoUrl: finalLogoUrl,
+                teamIds: teamIds.length > 0 ? teamIds : null
             };
 
             await onSubmit(submitData);
@@ -202,25 +266,176 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Parent Organisation (Optional)</label>
+                <div className="space-y-4 border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider">Address Details</h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Address Line 1</label>
+                            <Input
+                                value={formData.addressLine1}
+                                onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                                placeholder="Unit No, Building Name"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Address Line 2</label>
+                            <Input
+                                value={formData.addressLine2}
+                                onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                                placeholder="Street Name, Taman, etc."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">State / Federal Territory</label>
+                            <select
+                                value={formData.stateCode}
+                                onChange={handleStateChange}
+                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="">Select State</option>
+                                {MALAYSIA_STATES.map(s => (
+                                    <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Country</label>
+                            <select
+                                value={formData.countryCode}
+                                onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="MY">Malaysia</option>
+                                {/* Future: Add more countries if needed */}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Postcode</label>
+                            <Input
+                                value={formData.postcode}
+                                onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
+                                placeholder="e.g. 96400"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Special Handling for Sarawak: Division Selection */}
+                    {formData.stateCode === 'MY-13' && (
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Division</label>
+                            <select
+                                value={sarawakDivision}
+                                onChange={(e) => {
+                                    const div = e.target.value;
+                                    setSarawakDivision(div);
+                                    const districts = getSarawakDistricts(div);
+                                    // Update the "City/District" dropdown options immediately
+                                    // But wait, "availableDistricts" currently holds the Level 1 list (Divisions)
+                                    // We need a secondary state or we jus swap availableDistricts?
+                                    // Let's swap availableDistricts to strictly be the FINAL selectable units (Districts)
+                                    // BUT "Division" dropdown needs the list of Divisions.
+                                    // Refactor: 
+                                    // availableDistricts -> list for the FINAL "City" dropdown
+                                    // divisionOptions -> list for this intermediate dropdown
+                                    setAvailableDistricts(districts); // Update availableDistricts to be the districts of the selected division
+                                    setFormData(prev => ({ ...prev, city: '' })); // Reset city when division changes
+                                }}
+                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="">Select Division</option>
+                                {getDistrictsForState('MY-13').map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                            {formData.stateCode === 'MY-13' ? 'District' : (formData.stateCode === 'MY-14' ? 'Constituency' : 'District / City')}
+                        </label>
+
+                        {/* Dynamic Input: Select if we have districts, otherwise Text Input */}
+                        {/* For Sarawak, strictly depend on Division? OR allow if division not selected? */}
+                        {/* If Sarawak and Division selected, show Districts. If Sarawak and NO division, disable or show full list? */}
+
+                        {(availableDistricts.length > 0 || (formData.stateCode === 'MY-13' && sarawakDivision)) ? (
+                            <select
+                                value={formData.city}
+                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                disabled={formData.stateCode === 'MY-13' && !sarawakDivision}
+                            >
+                                <option value="">Select...</option>
+                                {(formData.stateCode === 'MY-13' && sarawakDivision
+                                    ? getSarawakDistricts(sarawakDivision)
+                                    : availableDistricts).map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                            </select>
+                        ) : (
+                            <Input
+                                value={formData.city}
+                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                placeholder="City name"
+                            />
+                        )}
+                    </div>
+                </div>
+
+
+                <div className="border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">Hierarchy</h3>
+                    {formData.stateCode === 'MY-13' && (
+                        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-400">
+                            Sarawak organisations often map to <strong>Divisions</strong> (e.g. Kuching, Sibu) rather than Districts.
+                        </div>
+                    )}
+
                     <select
                         value={formData.parentOrgId}
                         onChange={(e) => setFormData({ ...formData, parentOrgId: e.target.value })}
                         className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
                         <option value="">None (Top Level)</option>
-                        {availableOrganisations.map(org => (
-                            <option key={org.id} value={org.id}>
-                                {org.name} ({org.orgLevel})
-                            </option>
-                        ))}
+                        {/* Improved Filtering: Map State or National orgs for Clubs */}
+                        {availableOrganisations
+                            // Optional: Filter logic could go here if we wanted to be strict, but requirements say "Soft filter only"
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(org => (
+                                <option key={org.id} value={org.id}>
+                                    {org.name} ({org.orgLevel}) {org.state ? `- ${org.state}` : ''}
+                                </option>
+                            ))}
                     </select>
                     {formData.parentOrgId && (
                         <p className="text-xs text-muted-foreground mt-1">
                             Selected: {getParentOrgName()}
                         </p>
                     )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Map Teams (Optional)</label>
+                    <div className="border border-white/10 rounded-xl p-3 max-h-40 overflow-y-auto bg-black/5 dark:bg-white/5">
+                        {teams.map(team => (
+                            <label key={team.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-white/5 rounded px-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={teamIds.includes(team.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setTeamIds([...teamIds, team.id]);
+                                        else setTeamIds(teamIds.filter(id => id !== team.id));
+                                    }}
+                                    className="rounded border-white/20 bg-black/20"
+                                />
+                                {team.name} ({team.division})
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -303,7 +518,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
-                    <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
+                    <Button type="button" variant="cancel" onClick={onClose} disabled={loading}>
                         Cancel
                     </Button>
                     <Button type="submit" variant="primary" isLoading={loading}>
@@ -311,6 +526,6 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                     </Button>
                 </div>
             </form>
-        </Modal>
+        </Modal >
     );
 };

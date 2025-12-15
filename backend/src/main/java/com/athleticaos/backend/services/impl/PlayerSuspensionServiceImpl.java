@@ -37,7 +37,7 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
      */
     @Override
     @Transactional
-    public PlayerSuspension createSuspension(Tournament tournament, Team team, User player, String reason,
+    public PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, String reason,
             int matches) {
         log.info("Creating suspension for player {} in tournament {}: {}",
                 player.getId(), tournament.getId(), reason);
@@ -147,8 +147,8 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
                 .teamId(suspension.getTeam().getId())
                 .teamName(suspension.getTeam().getName())
                 .playerId(suspension.getPlayer().getId())
-                .playerName(suspension.getPlayer().getFirstName() + " " +
-                        suspension.getPlayer().getLastName())
+                .playerName(suspension.getPlayer().getPerson().getFirstName() + " " +
+                        suspension.getPlayer().getPerson().getLastName())
                 .reason(suspension.getReason())
                 .matchesRemaining(suspension.getMatchesRemaining())
                 .isActive(suspension.isActive())

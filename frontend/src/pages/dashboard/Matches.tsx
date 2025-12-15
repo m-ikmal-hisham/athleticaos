@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Card, CardContent } from '@/components/Card';
+import { MatchModal } from '@/components/modals/MatchModal';
 import {
     Table,
     TableBody,
@@ -23,6 +24,7 @@ export const Matches = () => {
     const { matches, loadingList, filters, setFilters, loadMatches } = useMatchesStore();
     const { user } = useAuthStore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     useEffect(() => {
         loadMatches();
@@ -81,7 +83,7 @@ export const Matches = () => {
                 description="View and manage match schedules and results."
                 action={
                     isAdmin && (
-                        <Button>
+                        <Button onClick={() => setIsCreateModalOpen(true)}>
                             New Match
                         </Button>
                     )
@@ -216,6 +218,14 @@ export const Matches = () => {
                     </Table>
                 </CardContent>
             </Card>
+
+            <MatchModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={() => {
+                    loadMatches();
+                }}
+            />
         </div>
     );
 };

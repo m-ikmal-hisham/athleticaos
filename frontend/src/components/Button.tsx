@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'cancel';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
 }
@@ -14,11 +14,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 ref={ref}
                 className={clsx(
                     'btn inline-flex items-center justify-center gap-2',
-                    variant === 'primary' && 'btn-primary',
-                    variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-                    variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-                    variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',
+                    variant === 'primary' && 'btn-primary dark:bg-gradient-to-r dark:from-primary-500 dark:to-[#D32F2F] dark:shadow-lg dark:shadow-[#D32F2F]/30',
+                    variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80 dark:bg-[#D32F2F]/20 dark:text-[#D32F2F] dark:border dark:border-[#D32F2F]/40 dark:hover:bg-[#D32F2F]/30',
+                    variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground dark:border-[#D32F2F]/30 dark:hover:border-[#D32F2F]/60 dark:hover:bg-[#D32F2F]/10',
+                    variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-[#D32F2F]/10 dark:hover:text-[#D32F2F]',
                     variant === 'danger' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                    variant === 'cancel' && 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl',
                     size === 'sm' && 'h-9 px-3 text-xs',
                     size === 'md' && 'h-10 px-4 py-2',
                     size === 'lg' && 'h-11 px-8',

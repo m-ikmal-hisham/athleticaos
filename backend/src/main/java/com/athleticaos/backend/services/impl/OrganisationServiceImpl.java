@@ -7,6 +7,8 @@ import com.athleticaos.backend.dtos.org.OrganisationUpdateRequest;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.enums.OrganisationLevel;
 import com.athleticaos.backend.repositories.OrganisationRepository;
+import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.entities.Team;
 
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class OrganisationServiceImpl implements OrganisationService {
 
     private final OrganisationRepository organisationRepository;
+    private final TeamRepository teamRepository;
     private final UserService userService;
 
     public List<OrganisationResponse> getAllOrganisations() {
@@ -67,16 +70,18 @@ public class OrganisationServiceImpl implements OrganisationService {
         String orgState = null;
         if (parent != null) {
             if (parent.getOrgLevel() == OrganisationLevel.STATE) {
-                orgState = parent.getName();
+                orgState = parent.getState() != null ? parent.getState() : parent.getName();
             } else if (parent.getParentOrg() != null
                     && parent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
-                orgState = parent.getParentOrg().getName();
+                orgState = parent.getParentOrg().getState() != null ? parent.getParentOrg().getState()
+                        : parent.getParentOrg().getName();
             } else if (parent.getOrgLevel() == OrganisationLevel.DIVISION
                     && request.getOrgLevel() == OrganisationLevel.CLUB) {
                 // Special case for Sarawak: If parent is Division, we might need to look up if
                 // that Division has a parent
                 if (parent.getParentOrg() != null && parent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
-                    orgState = parent.getParentOrg().getName();
+                    orgState = parent.getParentOrg().getState() != null ? parent.getParentOrg().getState()
+                            : parent.getParentOrg().getName();
                 }
             }
             // Fallback: If parent has state set, use it
@@ -98,6 +103,12 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .logoUrl(request.getLogoUrl())
                 .accentColor(request.getAccentColor())
                 .coverImageUrl(request.getCoverImageUrl())
+                .addressLine1(request.getAddressLine1())
+                .addressLine2(request.getAddressLine2())
+                .postcode(request.getPostcode())
+                .city(request.getCity())
+                .stateCode(request.getStateCode())
+                .countryCode(request.getCountryCode())
                 .slug(slug)
                 .status("Active")
                 .build();
@@ -150,6 +161,24 @@ public class OrganisationServiceImpl implements OrganisationService {
         if (request.getCoverImageUrl() != null) {
             org.setCoverImageUrl(request.getCoverImageUrl());
         }
+        if (request.getAddressLine1() != null) {
+            org.setAddressLine1(request.getAddressLine1());
+        }
+        if (request.getAddressLine2() != null) {
+            org.setAddressLine2(request.getAddressLine2());
+        }
+        if (request.getPostcode() != null) {
+            org.setPostcode(request.getPostcode());
+        }
+        if (request.getCity() != null) {
+            org.setCity(request.getCity());
+        }
+        if (request.getStateCode() != null) {
+            org.setStateCode(request.getStateCode());
+        }
+        if (request.getCountryCode() != null) {
+            org.setCountryCode(request.getCountryCode());
+        }
 
         // Handle Parent Org update and recursive state resolution
         if (request.getParentOrgId() != null) {
@@ -161,17 +190,19 @@ public class OrganisationServiceImpl implements OrganisationService {
             // Re-calculate state based on new parent
             String orgState = null;
             if (newParent.getOrgLevel() == OrganisationLevel.STATE) {
-                orgState = newParent.getName();
+                orgState = newParent.getState() != null ? newParent.getState() : newParent.getName();
             } else if (newParent.getParentOrg() != null
                     && newParent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
-                orgState = newParent.getParentOrg().getName();
+                orgState = newParent.getParentOrg().getState() != null ? newParent.getParentOrg().getState()
+                        : newParent.getParentOrg().getName();
             } else if (newParent.getOrgLevel() == OrganisationLevel.DIVISION
                     && org.getOrgLevel() == OrganisationLevel.CLUB) {
                 // Special case for Sarawak: If parent is Division, we might need to look up if
                 // that Division has a parent
                 if (newParent.getParentOrg() != null
                         && newParent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
-                    orgState = newParent.getParentOrg().getName();
+                    orgState = newParent.getParentOrg().getState() != null ? newParent.getParentOrg().getState()
+                            : newParent.getParentOrg().getName();
                 }
             }
 
@@ -183,6 +214,12 @@ public class OrganisationServiceImpl implements OrganisationService {
             if (orgState != null) {
                 org.setState(orgState);
             }
+        }
+
+        if (request.getTeamIds() != null && !request.getTeamIds().isEmpty()) {
+            List<Team> teams = teamRepository.findAllById(request.getTeamIds());
+            teams.forEach(t -> t.setOrganisation(org));
+            teamRepository.saveAll(teams);
         }
 
         validateHierarchy(org);
@@ -205,8 +242,15 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .accentColor(org.getAccentColor())
                 .coverImageUrl(org.getCoverImageUrl())
                 .state(org.getState())
+                .addressLine1(org.getAddressLine1())
+                .addressLine2(org.getAddressLine2())
+                .postcode(org.getPostcode())
+                .city(org.getCity())
+                .stateCode(org.getStateCode())
+                .countryCode(org.getCountryCode())
                 .status(org.getStatus())
                 .orgLevel(org.getOrgLevel())
+                .parentOrganisationName(org.getParentOrg() != null ? org.getParentOrg().getName() : null)
                 .build();
     }
 
@@ -289,28 +333,27 @@ public class OrganisationServiceImpl implements OrganisationService {
             }
             case STATE -> {
                 if (parent == null || parent.getOrgLevel() != OrganisationLevel.COUNTRY) {
-                    throw new IllegalArgumentException("STATE must have a COUNTRY as parent.");
+                    // Relaxed: Just warn or allow null parent for now if needed, but keeping strict
+                    // for State-Country link seems safe?
+                    // Let's keep strict for State -> Country as that is standard.
+                    if (parent != null && parent.getOrgLevel() != OrganisationLevel.COUNTRY) {
+                        throw new IllegalArgumentException("STATE must have a COUNTRY as parent.");
+                    }
                 }
             }
             case DIVISION -> {
-                if (parent == null || parent.getOrgLevel() != OrganisationLevel.STATE) {
+                // Relaxed: Divisions exist in Sarawak/Sabah, parent should be State.
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.STATE) {
                     throw new IllegalArgumentException("DIVISION must have a STATE as parent.");
                 }
             }
+            // For DISTRICT, CLUB, SCHOOL -> We RELAX the rules to allow skipping levels.
+            // e.g. Club -> State, or Club -> Division, or Club -> District.
             case DISTRICT -> {
-                if (parent == null ||
-                        !(parent.getOrgLevel() == OrganisationLevel.STATE
-                                || parent.getOrgLevel() == OrganisationLevel.DIVISION)) {
-                    throw new IllegalArgumentException("DISTRICT must have a STATE or DIVISION as parent.");
-                }
+                // No strict validation on parent level
             }
             case CLUB, SCHOOL -> {
-                if (parent == null ||
-                        !(parent.getOrgLevel() == OrganisationLevel.DISTRICT
-                                || parent.getOrgLevel() == OrganisationLevel.DIVISION
-                                || parent.getOrgLevel() == OrganisationLevel.STATE)) {
-                    throw new IllegalArgumentException(level + " must have a STATE, DISTRICT or DIVISION as parent.");
-                }
+                // No strict validation on parent level
             }
         }
     }
