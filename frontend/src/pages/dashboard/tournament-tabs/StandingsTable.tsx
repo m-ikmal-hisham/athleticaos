@@ -32,15 +32,15 @@ export function StandingsTable({ poolName, standings }: StandingsTableProps) {
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                         {standings.map((team, index) => (
                             <tr key={team.teamId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                <td className="px-6 py-4 font-medium">{index + 1}</td>
+                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{index + 1}</td>
                                 <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{team.teamName}</td>
-                                <td className="px-4 py-4 text-center">{team.played}</td>
-                                <td className="px-4 py-4 text-center">{team.won}</td>
-                                <td className="px-4 py-4 text-center">{team.drawn}</td>
-                                <td className="px-4 py-4 text-center">{team.lost}</td>
-                                <td className="px-4 py-4 text-center hidden md:table-cell">{team.pointsFor}</td>
-                                <td className="px-4 py-4 text-center hidden md:table-cell">{team.pointsAgainst}</td>
-                                <td className={`px-4 py-4 text-center ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-600' : ''}`}>
+                                <td className="px-4 py-4 text-center text-slate-900 dark:text-white">{team.played}</td>
+                                <td className="px-4 py-4 text-center text-slate-900 dark:text-white">{team.won}</td>
+                                <td className="px-4 py-4 text-center text-slate-900 dark:text-white">{team.drawn}</td>
+                                <td className="px-4 py-4 text-center text-slate-900 dark:text-white">{team.lost}</td>
+                                <td className="px-4 py-4 text-center text-slate-900 dark:text-white hidden md:table-cell">{team.pointsFor}</td>
+                                <td className="px-4 py-4 text-center text-slate-900 dark:text-white hidden md:table-cell">{team.pointsAgainst}</td>
+                                <td className={`px-4 py-4 text-center ${team.pointsDiff > 0 ? 'text-green-600 dark:text-green-400' : team.pointsDiff < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>
                                     {team.pointsDiff > 0 ? '+' : ''}{team.pointsDiff}
                                 </td>
                                 <td className="px-6 py-4 text-center font-bold text-slate-900 dark:text-white">{team.points}</td>

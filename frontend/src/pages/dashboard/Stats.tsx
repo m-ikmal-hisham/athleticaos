@@ -168,11 +168,16 @@ export default function Stats() {
                                                 </tr>
                                             ) : (
                                                 playerStats.map((player, idx) => (
-                                                    <tr key={player.playerId} className="hover:bg-white/5 transition-colors">
+                                                    <tr
+                                                        key={player.playerId}
+                                                        className="hover:bg-white/5 transition-colors cursor-pointer group"
+                                                        onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`} // Backend response might need to include slug if available, using playerId as fallback or slug if stats response is updated.
+                                                    // Actually StatisticsController returns PlayerStatsResponse. Does it include slug?
+                                                    >
                                                         <td className="px-6 py-4 font-medium text-muted-foreground">
                                                             {idx + 1}
                                                         </td>
-                                                        <td className="px-6 py-4 font-medium text-foreground">
+                                                        <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors">
                                                             {player.firstName} {player.lastName}
                                                         </td>
                                                         <td className="px-6 py-4 text-muted-foreground">

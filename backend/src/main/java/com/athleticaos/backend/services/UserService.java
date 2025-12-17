@@ -89,6 +89,20 @@ public class UserService {
             user.setActive(request.getIsActive());
         }
 
+        // Update Address
+        if (request.getAddressLine1() != null)
+            user.setAddressLine1(request.getAddressLine1());
+        if (request.getAddressLine2() != null)
+            user.setAddressLine2(request.getAddressLine2());
+        if (request.getCity() != null)
+            user.setCity(request.getCity());
+        if (request.getPostcode() != null)
+            user.setPostcode(request.getPostcode());
+        if (request.getState() != null)
+            user.setState(request.getState());
+        if (request.getCountry() != null)
+            user.setCountry(request.getCountry());
+
         // Update Organisation
         if (request.getOrganisationId() != null) {
             com.athleticaos.backend.entities.Organisation organisation = organisationRepository
@@ -303,6 +317,13 @@ public class UserService {
                 .organisationName(user.getOrganisation() != null ? user.getOrganisation().getName() : null)
                 .teamIds(teamIds)
                 .teamNames(teamNames)
+                .addressLine1(user.getAddressLine1())
+                .addressLine2(user.getAddressLine2())
+                .city(user.getCity())
+                .postcode(user.getPostcode())
+                .state(user.getState())
+                .country(user.getCountry())
+                .address(user.getAddress())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

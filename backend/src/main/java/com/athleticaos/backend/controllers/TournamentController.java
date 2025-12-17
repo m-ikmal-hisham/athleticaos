@@ -89,9 +89,10 @@ public class TournamentController {
         return ResponseEntity.ok(tournamentService.updatePublishStatus(id, publish, httpRequest));
     }
 
-    @GetMapping("/{id}/export/matches")
+    @GetMapping("/{idOrSlug}/export/matches")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<byte[]> exportMatches(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> exportMatches(@PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         byte[] csvData = tournamentService.exportMatches(id);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=matches.csv")
@@ -99,9 +100,10 @@ public class TournamentController {
                 .body(csvData);
     }
 
-    @GetMapping("/{id}/export/results")
+    @GetMapping("/{idOrSlug}/export/results")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<byte[]> exportResults(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> exportResults(@PathVariable String idOrSlug) {
+        UUID id = fetchTournament(idOrSlug).getId();
         byte[] csvData = tournamentService.exportResults(id);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=results.csv")
@@ -159,29 +161,32 @@ public class TournamentController {
         return ResponseEntity.ok(tournamentService.getTeamsByTournament(id));
     }
 
-    @PostMapping("/{id}/teams")
+    @PostMapping("/{idOrSlug}/teams")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Add teams to tournament")
-    public ResponseEntity<Void> addTeamsToTournament(@PathVariable UUID id,
+    public ResponseEntity<Void> addTeamsToTournament(@PathVariable String idOrSlug,
             @RequestBody com.athleticaos.backend.dtos.tournament.TeamListRequest request) {
-        tournamentService.addTeamsToTournament(id, request.getTeamIds());
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        tournamentService.addTeamsToTournament(tournamentId, request.getTeamIds());
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{id}/teams/{teamId}")
+    @DeleteMapping("/{idOrSlug}/teams/{teamId}")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Remove team from tournament")
-    public ResponseEntity<Void> removeTeamFromTournament(@PathVariable UUID id, @PathVariable UUID teamId) {
-        tournamentService.removeTeamFromTournament(id, teamId);
+    public ResponseEntity<Void> removeTeamFromTournament(@PathVariable String idOrSlug, @PathVariable UUID teamId) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        tournamentService.removeTeamFromTournament(tournamentId, teamId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{id}/format/generate")
+    @PostMapping("/{idOrSlug}/format/generate")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Generate tournament schedule based on format")
-    public ResponseEntity<Void> generateSchedule(@PathVariable UUID id,
+    public ResponseEntity<Void> generateSchedule(@PathVariable String idOrSlug,
             @Valid @RequestBody com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
-        tournamentService.generateSchedule(id, request);
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        tournamentService.generateSchedule(tournamentId, request);
         return ResponseEntity.ok().build();
     }
 
@@ -203,19 +208,25 @@ public class TournamentController {
         return ResponseEntity.ok(standingsService.getStandings(id));
     }
 
-    @DeleteMapping("/{id}/matches")
+    @DeleteMapping("/{idOrSlug}/matches")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Clear all matches for a tournament")
-    public ResponseEntity<Void> clearSchedule(@PathVariable UUID id) {
-        tournamentService.clearSchedule(id);
+    public ResponseEntity<Void> clearSchedule(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false, defaultValue = "false") boolean keepStructure) {
+
+        UUID id = fetchTournament(idOrSlug).getId();
+        // if keepStructure is true, clearStructure is false
+        tournamentService.clearSchedule(id, !keepStructure);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{id}/matches")
+    @PostMapping("/{idOrSlug}/matches")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Create a manual match in the tournament")
-    public ResponseEntity<com.athleticaos.backend.dtos.match.MatchResponse> createMatch(@PathVariable UUID id,
+    public ResponseEntity<com.athleticaos.backend.dtos.match.MatchResponse> createMatch(@PathVariable String idOrSlug,
             @Valid @RequestBody com.athleticaos.backend.dtos.match.MatchCreateRequest request) {
+        UUID id = fetchTournament(idOrSlug).getId();
         // Enforce tournament ID in request matches path variable
         request.setTournamentId(id);
         // Delegate to matchService or tournamentService?
@@ -226,6 +237,26 @@ public class TournamentController {
         // tournamentService.
         // I will add createMatch to TournamentService.
         return ResponseEntity.ok(tournamentService.createMatch(id, request));
+    }
+
+    // Format Configuration Endpoints
+    @GetMapping("/{idOrSlug}/format")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get tournament format configuration")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO> getFormatConfig(
+            @PathVariable String idOrSlug) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(tournamentService.getFormatConfig(tournamentId));
+    }
+
+    @PostMapping("/{idOrSlug}/format")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Update tournament format configuration")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO> updateFormatConfig(
+            @PathVariable String idOrSlug,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO configDTO) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(tournamentService.updateFormatConfig(tournamentId, configDTO));
     }
 
     // Helper method to fetch tournament by UUID or slug

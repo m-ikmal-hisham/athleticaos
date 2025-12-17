@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, MoreHorizontal, UserX } from "lucide-react";
 import { TableSkeleton } from "../../components/LoadingSkeleton";
 import { EmptyState } from "../../components/EmptyState";
@@ -20,6 +21,7 @@ import { PlayerModal } from "../../components/modals/PlayerModal";
 import { PlayerDetailDrawer } from "./players/PlayerDetailDrawer";
 import { useAuthStore } from "../../store/auth.store";
 import { Player } from "../../types";
+import { calculateAge } from "../../utils/date";
 
 export default function Players() {
     const {
@@ -45,11 +47,43 @@ export default function Players() {
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
+    const [searchParams, setSearchParams] = useSearchParams();
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
     useEffect(() => {
         getPlayers();
     }, [getPlayers]);
+
+    // URL is the Source of Truth for Drawer Sate
+    useEffect(() => {
+        const playerParam = searchParams.get('player');
+        if (playerParam) {
+            if (!isDrawerOpen || selectedPlayerId !== playerParam) {
+                openPlayerDrawer(playerParam);
+            }
+        } else {
+            if (isDrawerOpen) {
+                closePlayerDrawer();
+            }
+        }
+    }, [searchParams, isDrawerOpen, selectedPlayerId, openPlayerDrawer, closePlayerDrawer]);
+
+    // Handle opening drawer via URL update
+    const handleRowClick = (player: Player) => {
+        const slugOrId = player.slug || player.id;
+        setSearchParams((prev) => {
+            prev.set('player', slugOrId);
+            return prev;
+        });
+    };
+
+    // Handle closing drawer by clearing URL
+    const handleCloseDrawer = () => {
+        setSearchParams((prev) => {
+            prev.delete('player');
+            return prev;
+        });
+    };
 
     const handleAdd = () => {
         setModalMode('create');
@@ -134,6 +168,7 @@ export default function Players() {
                                     <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
                                     <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
                                     <TableHead className="text-xs font-medium text-muted-foreground">Gender</TableHead>
+                                    <TableHead className="text-xs font-medium text-muted-foreground">Age</TableHead>
                                     <TableHead className="text-xs font-medium text-muted-foreground">Nationality</TableHead>
                                     <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
                                     <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
@@ -142,11 +177,11 @@ export default function Players() {
                             <TableBody>
                                 {error ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-8 text-destructive">{error}</TableCell>
+                                        <TableCell colSpan={7} className="text-center py-8 text-destructive">{error}</TableCell>
                                     </TableRow>
                                 ) : filteredPlayers.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="p-0">
+                                        <TableCell colSpan={7} className="p-0">
                                             <EmptyState
                                                 icon={UserX}
                                                 title="No players found"
@@ -162,7 +197,7 @@ export default function Players() {
                                         <TableRow
                                             key={p.id}
                                             className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
-                                            onClick={() => openPlayerDrawer(p.id)}
+                                            onClick={() => handleRowClick(p)}
                                         >
                                             <TableCell className="py-4">
                                                 <span className="text-sm font-medium">{p.firstName} {p.lastName}</span>
@@ -172,6 +207,9 @@ export default function Players() {
                                             </TableCell>
                                             <TableCell className="py-4">
                                                 <span className="text-sm">{p.gender || "—"}</span>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <span className="text-sm">{calculateAge(p.dob) ?? "—"}</span>
                                             </TableCell>
                                             <TableCell className="py-4">
                                                 <span className="text-sm">{p.nationality || "—"}</span>
@@ -227,7 +265,7 @@ export default function Players() {
 
             <PlayerDetailDrawer
                 isOpen={isDrawerOpen}
-                onClose={closePlayerDrawer}
+                onClose={handleCloseDrawer}
                 playerId={selectedPlayerId}
             />
         </div>

@@ -86,8 +86,7 @@ export default function Tournaments() {
                         <select
                             value={seasonFilter}
                             onChange={(e) => setSeasonFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Seasons</option>
                             {seasons.map(season => (
@@ -98,8 +97,7 @@ export default function Tournaments() {
                         <select
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Types</option>
                             {types.map(type => (
@@ -110,8 +108,7 @@ export default function Tournaments() {
                         <select
                             value={levelFilter}
                             onChange={(e) => setLevelFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Levels</option>
                             {levels.map(level => (
@@ -122,8 +119,7 @@ export default function Tournaments() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Statuses</option>
                             {statuses.map(status => (

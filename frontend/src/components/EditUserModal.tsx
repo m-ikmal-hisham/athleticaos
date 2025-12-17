@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { usersApi, UserUpdateRequest } from '@/api/users.api';
 import { useOrganisationsStore } from '@/store/organisations.store';
+import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { useAuthStore } from '@/store/auth.store';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,15 @@ interface User {
     organisationName?: string;
     organisationId?: string;
     isActive: boolean;
+    // Address fields
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postcode?: string;
+    state?: string;
+    country?: string;
+    stateCode?: string;
+    countryCode?: string;
 }
 
 interface EditUserModalProps {
@@ -35,12 +45,28 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
         email: string;
         role: string;
         organisationId: string;
+        addressLine1: string;
+        addressLine2: string;
+        city: string;
+        postcode: string;
+        state: string;
+        country: string;
+        stateCode: string;
+        countryCode: string;
     }>({
         firstName: '',
         lastName: '',
         email: '',
         role: 'PLAYER',
         organisationId: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        postcode: '',
+        state: '',
+        country: '',
+        stateCode: '',
+        countryCode: 'MY'
     });
     const [loading, setLoading] = useState(false);
 
@@ -63,6 +89,14 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
                 email: initialData.email,
                 role: primaryRole.replace('ROLE_', ''),
                 organisationId: initialData.organisationId || '',
+                addressLine1: initialData.addressLine1 || '',
+                addressLine2: initialData.addressLine2 || '',
+                city: initialData.city || '',
+                postcode: initialData.postcode || '',
+                state: initialData.state || '',
+                country: initialData.country || '',
+                stateCode: initialData.stateCode || '',
+                countryCode: initialData.countryCode || 'MY'
             });
 
             if (isSuperAdmin) {
@@ -96,6 +130,12 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
                 email: formData.email,
                 roles: [`ROLE_${formData.role}`],
                 organisationId: formData.organisationId,
+                addressLine1: formData.addressLine1,
+                addressLine2: formData.addressLine2,
+                city: formData.city,
+                postcode: formData.postcode,
+                state: formData.state,
+                country: formData.country
             };
 
             await usersApi.updateUser(initialData.id, updateRequest);
@@ -168,6 +208,34 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
                         </select>
                     </div>
                 )}
+
+                <div className="space-y-4 pt-4 border-t border-white/10">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider">Address Details</h3>
+                    <AddressInputs
+                        data={{
+                            addressLine1: formData.addressLine1,
+                            addressLine2: formData.addressLine2,
+                            city: formData.city,
+                            postcode: formData.postcode,
+                            state: formData.state,
+                            stateCode: formData.stateCode,
+                            country: 'Malaysia',
+                            countryCode: formData.countryCode
+                        }}
+                        onChange={(newData: AddressData) => {
+                            setFormData({
+                                ...formData,
+                                addressLine1: newData.addressLine1 || '',
+                                addressLine2: newData.addressLine2 || '',
+                                city: newData.city || '',
+                                postcode: newData.postcode || '',
+                                state: newData.state || '',
+                                stateCode: newData.stateCode || '',
+                                countryCode: newData.countryCode || 'MY'
+                            });
+                        }}
+                    />
+                </div>
 
                 {/* Status Toggle could be added here later if needed, but for now user focused on "Ranking admin access" (roles) */}
 

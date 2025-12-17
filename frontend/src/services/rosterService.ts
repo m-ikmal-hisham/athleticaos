@@ -36,7 +36,7 @@ export const rosterService = {
 
     // Lineup Hints
     async getLineupHints(matchId: string): Promise<LineupHintsDTO> {
-        const response = await axios.get<LineupHintsDTO>(`/api/matches/${matchId}/lineup-hints`);
+        const response = await axios.get<LineupHintsDTO>(`/api/matches/${matchId}/lineup/hints`);
         return response.data;
     }
 };

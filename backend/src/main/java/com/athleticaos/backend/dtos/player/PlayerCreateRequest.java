@@ -7,37 +7,49 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public record PlayerCreateRequest(
-                // Person (PII) fields
-                @NotBlank(message = "First name is required") String firstName,
+        // Person (PII) fields
+        @NotBlank(message = "First name is required") String firstName,
 
-                @NotBlank(message = "Last name is required") String lastName,
+        @NotBlank(message = "Last name is required") String lastName,
 
-                @NotBlank(message = "Gender is required") String gender, // MALE, FEMALE, OTHER
+        @NotBlank(message = "Gender is required") String gender, // MALE, FEMALE, OTHER
 
-                @NotNull(message = "Date of birth is required") LocalDate dob,
+        @NotNull(message = "Date of birth is required") LocalDate dob,
 
-                @NotBlank(message = "IC or Passport is required") String icOrPassport,
+        @NotBlank(message = "IC or Passport is required") String icOrPassport,
 
-                String identificationType,
+        String identificationType,
 
-                String identificationValue,
+        String identificationValue,
 
-                @NotBlank(message = "Nationality is required") String nationality,
+        @NotBlank(message = "Nationality is required") String nationality,
 
-                @Email(message = "Invalid email format") @NotBlank(message = "Email is required") String email,
+        @Email(message = "Invalid email format") @NotBlank(message = "Email is required") String email,
 
-                String phone,
+        String phone,
 
-                String address,
+        // Structured Address
+        String addressLine1,
+        String addressLine2,
+        String postcode,
+        String city,
+        String state,
+        String country,
 
-                // Player (Rugby-specific) fields
-                String status, // ACTIVE, INACTIVE, BANNED - defaults to ACTIVE if null
+        @Deprecated String address, // Keeping for backward compat, but new fields preferred
 
-                String dominantHand, // LEFT, RIGHT, BOTH
+        // Immediate Team/Org Assignment
+        java.util.UUID teamId,
+        java.util.UUID organisationId, // Optional, can filter team selection or just be recorded
 
-                String dominantLeg, // LEFT, RIGHT, BOTH
+        // Player (Rugby-specific) fields
+        String status, // ACTIVE, INACTIVE, BANNED - defaults to ACTIVE if null
 
-                Integer heightCm,
+        String dominantHand, // LEFT, RIGHT, BOTH
 
-                Integer weightKg) {
+        String dominantLeg, // LEFT, RIGHT, BOTH
+
+        Integer heightCm,
+
+        Integer weightKg) {
 }

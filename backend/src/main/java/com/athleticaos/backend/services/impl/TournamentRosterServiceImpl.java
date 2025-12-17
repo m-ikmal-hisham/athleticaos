@@ -136,10 +136,14 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
                 // Convert to lineup player DTOs
                 List<LineupPlayerDTO> homePlayers = homeRoster.stream()
+                                .filter(com.athleticaos.backend.utils.StreamUtils
+                                                .distinctByKey(tp -> tp.getPlayer().getId()))
                                 .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
                                 .collect(Collectors.toList());
 
                 List<LineupPlayerDTO> awayPlayers = awayRoster.stream()
+                                .filter(com.athleticaos.backend.utils.StreamUtils
+                                                .distinctByKey(tp -> tp.getPlayer().getId()))
                                 .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
                                 .collect(Collectors.toList());
 

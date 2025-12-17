@@ -1,7 +1,5 @@
 package com.athleticaos.backend.utils;
 
-import com.athleticaos.backend.repositories.TeamRepository;
-
 public class SlugGenerator {
 
     /**
@@ -24,13 +22,18 @@ public class SlugGenerator {
     /**
      * Generate a unique slug by appending a counter if needed
      * Example: "sydney-roosters-u18" -> "sydney-roosters-u18-2" if first exists
+     *
+     * @param name        The name to slugify
+     * @param existsCheck A function that returns true if the slug already exists
+     *                    (e.g. repo::existsBySlug)
+     * @return A unique slug
      */
-    public static String generateUniqueSlug(String name, TeamRepository repository) {
+    public static String generateUniqueSlug(String name, java.util.function.Predicate<String> existsCheck) {
         String baseSlug = generateSlug(name);
         String slug = baseSlug;
         int counter = 1;
 
-        while (repository.existsBySlug(slug)) {
+        while (existsCheck.test(slug)) {
             slug = baseSlug + "-" + counter++;
         }
 

@@ -103,7 +103,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                         <Card key={team.id} className="p-4 flex justify-between items-center group">
                             <div>
                                 <h4 className="font-medium text-slate-900 dark:text-white">{team.name}</h4>
-                                <p className="text-sm text-slate-500">{team.organisationName}</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{team.organisationName}</p>
                             </div>
                             <Button
                                 variant="ghost"
@@ -123,7 +123,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
                         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">Add Teams to Tournament</h3>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add Teams to Tournament</h3>
                             <button
                                 onClick={() => setShowAddModal(false)}
                                 className="text-slate-500 hover:text-slate-700"
@@ -160,8 +160,8 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                         `}
                                     >
                                         <div>
-                                            <p className="font-medium text-sm">{team.name}</p>
-                                            <p className="text-xs text-slate-500">{team.organisationName}</p>
+                                            <p className="font-medium text-sm text-slate-900 dark:text-white">{team.name}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{team.organisationName}</p>
                                         </div>
                                         {selectedTeamIds.has(team.id) && (
                                             <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
@@ -171,7 +171,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                     </div>
                                 ))}
                                 {filteredAvailableTeams.length === 0 && (
-                                    <div className="col-span-full text-center py-8 text-slate-500">
+                                    <div className="col-span-full text-center py-8 text-slate-500 dark:text-slate-400">
                                         No eligible teams found.
                                     </div>
                                 )}

@@ -51,6 +51,27 @@ public class Person {
 
     private String phone;
 
+    // Structured Address Fields
+    @Column(name = "address_line1")
+    private String addressLine1;
+
+    @Column(name = "address_line2")
+    private String addressLine2;
+
+    @Column
+    private String postcode;
+
+    @Column
+    private String city;
+
+    @Column // State/Region
+    private String state;
+
+    @Column
+    private String country;
+
+    @Deprecated // Keep for backward compatibility migration if needed, or repurposed
+    @Column(name = "full_address_legacy")
     private String address;
 
     @CreationTimestamp

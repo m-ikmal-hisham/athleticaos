@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'cancel';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'cancel' | 'tertiary';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
 }
@@ -13,13 +13,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             <button
                 ref={ref}
                 className={clsx(
-                    'btn inline-flex items-center justify-center gap-2',
-                    variant === 'primary' && 'btn-primary dark:bg-gradient-to-r dark:from-primary-500 dark:to-[#D32F2F] dark:shadow-lg dark:shadow-[#D32F2F]/30',
+                    'btn inline-flex items-center justify-center gap-2 rounded-xl',
+                    variant === 'primary' && 'bg-gradient-to-r from-blue-600 to-red-600 text-white shadow-lg shadow-blue-500/30 hover:from-blue-700 hover:to-red-700 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200',
                     variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80 dark:bg-[#D32F2F]/20 dark:text-[#D32F2F] dark:border dark:border-[#D32F2F]/40 dark:hover:bg-[#D32F2F]/30',
                     variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground dark:border-[#D32F2F]/30 dark:hover:border-[#D32F2F]/60 dark:hover:bg-[#D32F2F]/10',
                     variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-[#D32F2F]/10 dark:hover:text-[#D32F2F]',
                     variant === 'danger' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
                     variant === 'cancel' && 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl',
+                    variant === 'tertiary' && 'backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-slate-100 shadow-sm transition-all duration-200',
                     size === 'sm' && 'h-9 px-3 text-xs',
                     size === 'md' && 'h-10 px-4 py-2',
                     size === 'lg' && 'h-11 px-8',

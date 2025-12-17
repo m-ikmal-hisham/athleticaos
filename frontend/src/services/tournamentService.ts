@@ -1,5 +1,5 @@
 import axios from '@/lib/axios';
-import { Tournament, TournamentCreateRequest, Team, Standings } from '@/types';
+import { Tournament, TournamentCreateRequest, Team, Standings, TournamentFormatConfig } from '@/types';
 
 export const tournamentService = {
     async getAll(): Promise<Tournament[]> {
@@ -39,11 +39,23 @@ export const tournamentService = {
         await axios.delete(`/api/v1/tournaments/${id}/teams/${teamId}`);
     },
 
-    async generateSchedule(id: string, format: string, numberOfPools?: number): Promise<void> {
+    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean): Promise<void> {
         await axios.post(`/api/v1/tournaments/${id}/format/generate`, {
             format,
             numberOfPools,
+            generateTimings,
+            useExistingGroups
         });
+    },
+
+    async getFormatConfig(id: string): Promise<TournamentFormatConfig> {
+        const response = await axios.get<TournamentFormatConfig>(`/api/v1/tournaments/${id}/format`);
+        return response.data;
+    },
+
+    async updateFormatConfig(id: string, config: TournamentFormatConfig): Promise<TournamentFormatConfig> {
+        const response = await axios.post<TournamentFormatConfig>(`/api/v1/tournaments/${id}/format`, config);
+        return response.data;
     },
 
     async createMatch(id: string, data: any): Promise<any> {
@@ -51,8 +63,10 @@ export const tournamentService = {
         return response.data;
     },
 
-    async clearSchedule(id: string): Promise<void> {
-        await axios.delete(`/api/v1/tournaments/${id}/matches`);
+    async clearSchedule(id: string, keepStructure: boolean = false): Promise<void> {
+        await axios.delete(`/api/v1/tournaments/${id}/matches`, {
+            params: { keepStructure }
+        });
     },
 
     async updateStatus(id: string, status: string): Promise<void> {

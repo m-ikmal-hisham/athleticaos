@@ -13,6 +13,7 @@ public record PlayerResponse(
 
         // Person (PII) fields
         UUID personId,
+        String slug,
         String firstName,
         String lastName,
         String gender,
@@ -23,7 +24,15 @@ public record PlayerResponse(
         String nationality,
         String email,
         String phone,
-        String address,
+        // Structured Address
+        String addressLine1,
+        String addressLine2,
+        String postcode,
+        String city,
+        String state,
+        String country,
+
+        @Deprecated String address,
 
         // Player (Rugby-specific) fields
         String status,

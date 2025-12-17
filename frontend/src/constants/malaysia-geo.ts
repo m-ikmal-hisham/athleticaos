@@ -143,3 +143,59 @@ export const getDistrictsForState = (stateCode: string): string[] => {
 export const getSarawakDistricts = (division: string): string[] => {
     return SARAWAK_GEO_DATA[division] || [];
 };
+
+export const detectStateFromPostcode = (postcode: string): { code: string; name: string } | null => {
+    if (!postcode || postcode.length < 2) return null;
+    const prefix = parseInt(postcode.substring(0, 2));
+
+
+    // Kuala Lumpur: 50xxx - 60xxx, 68xxx (some overlap)
+    if ((prefix >= 50 && prefix <= 60) || prefix === 68) return { code: 'MY-14', name: 'Wilayah Persekutuan Kuala Lumpur' };
+
+    // Putrajaya: 62xxx
+    if (prefix === 62) return { code: 'MY-16', name: 'Wilayah Persekutuan Putrajaya' };
+
+    // Labuan: 87xxx
+    if (prefix === 87) return { code: 'MY-15', name: 'Wilayah Persekutuan Labuan' };
+
+    // Selangor: 40xxx - 48xxx, 63xxx - 68xxx (excluding KL overlaps usually handled by specific checks but simplified here)
+    if ((prefix >= 40 && prefix <= 48) || (prefix >= 63 && prefix <= 68)) return { code: 'MY-10', name: 'Selangor' };
+
+    // Johor: 79xxx - 86xxx
+    if (prefix >= 79 && prefix <= 86) return { code: 'MY-01', name: 'Johor' };
+
+    // Kedah: 05xxx - 09xxx
+    if (prefix >= 5 && prefix <= 9) return { code: 'MY-02', name: 'Kedah' };
+
+    // Kelantan: 15xxx - 18xxx
+    if (prefix >= 15 && prefix <= 18) return { code: 'MY-03', name: 'Kelantan' };
+
+    // Melaka: 75xxx - 78xxx
+    if (prefix >= 75 && prefix <= 78) return { code: 'MY-04', name: 'Melaka' };
+
+    // Negeri Sembilan: 70xxx - 73xxx
+    if (prefix >= 70 && prefix <= 73) return { code: 'MY-05', name: 'Negeri Sembilan' };
+
+    // Pahang: 25xxx - 28xxx, 39xxx (Highlands), 69xxx (Genting)
+    if ((prefix >= 25 && prefix <= 28) || prefix === 39 || prefix === 69) return { code: 'MY-06', name: 'Pahang' };
+
+    // Penang: 10xxx - 14xxx
+    if (prefix >= 10 && prefix <= 14) return { code: 'MY-07', name: 'Penang' };
+
+    // Perak: 30xxx - 36xxx
+    if (prefix >= 30 && prefix <= 36) return { code: 'MY-08', name: 'Perak' };
+
+    // Perlis: 01xxx
+    if (prefix === 1) return { code: 'MY-09', name: 'Perlis' };
+
+    // Terengganu: 20xxx - 24xxx
+    if (prefix >= 20 && prefix <= 24) return { code: 'MY-11', name: 'Terengganu' };
+
+    // Sabah: 88xxx - 91xxx
+    if (prefix >= 88 && prefix <= 91) return { code: 'MY-12', name: 'Sabah' };
+
+    // Sarawak: 93xxx - 98xxx
+    if (prefix >= 93 && prefix <= 98) return { code: 'MY-13', name: 'Sarawak' };
+
+    return null;
+};

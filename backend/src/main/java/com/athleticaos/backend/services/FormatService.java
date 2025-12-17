@@ -16,4 +16,6 @@ public interface FormatService {
     void generateSchedule(UUID tournamentId, BracketGenerationRequest request);
 
     void clearSchedule(UUID tournamentId);
+
+    void clearSchedule(UUID tournamentId, boolean clearStructure);
 }

@@ -28,6 +28,8 @@ public class FormatServiceImpl implements FormatService {
     private final TournamentTeamRepository tournamentTeamRepository;
     private final TournamentStageRepository stageRepository;
     private final MatchRepository matchRepository;
+    private final MatchEventRepository matchEventRepository;
+    private final MatchLineupRepository matchLineupRepository;
     private final BracketService bracketService;
 
     @Override
@@ -44,21 +46,21 @@ public class FormatServiceImpl implements FormatService {
             throw new RuntimeException("Need at least 2 teams to generate a schedule");
         }
 
-        // Clean up existing unplayed generated matches (MVP: simplifcation, clearing
-        // all simple matches for now not handled)
-        // ideally we would clear previous stages if re-generating.
-        // For now, assuming fresh generation or manual cleanup.
-
         // Update tournament format settings
         tournament.setFormat(request.getFormat());
         tournament.setNumberOfPools(request.getNumberOfPools());
         tournamentRepository.save(tournament);
 
         if (request.getFormat() == TournamentFormat.ROUND_ROBIN) {
-            int poolCount = request.getNumberOfPools() != null && request.getNumberOfPools() > 0
-                    ? request.getNumberOfPools()
-                    : 1;
-            generatePools(tournament, teams, poolCount);
+            // Check if we should use existing groups (Pools)
+            if (Boolean.TRUE.equals(request.getUseExistingGroups())) {
+                generateMatchesForExistingGroups(tournament, request);
+            } else {
+                int poolCount = request.getNumberOfPools() != null && request.getNumberOfPools() > 0
+                        ? request.getNumberOfPools()
+                        : 1;
+                generatePools(tournament, teams, poolCount, request);
+            }
         } else if (request.getFormat() == TournamentFormat.KNOCKOUT
                 || request.getFormat() == TournamentFormat.POOL_TO_KNOCKOUT
                 || request.getFormat() == TournamentFormat.MIXED) {
@@ -75,7 +77,28 @@ public class FormatServiceImpl implements FormatService {
         }
     }
 
-    private void generatePools(Tournament tournament, List<TournamentTeam> teams, int poolCount) {
+    private void generateMatchesForExistingGroups(Tournament tournament, BracketGenerationRequest request) {
+        // Fetch existing stages/pools
+        List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournament.getId());
+        List<TournamentTeam> allTeams = tournamentTeamRepository.findByTournamentId(tournament.getId());
+
+        // Group teams by pool name
+        java.util.Map<String, List<TournamentTeam>> poolMap = allTeams.stream()
+                .filter(t -> t.getPoolNumber() != null)
+                .collect(Collectors.groupingBy(TournamentTeam::getPoolNumber));
+
+        for (TournamentStage stage : stages) {
+            if (stage.getStageType() == TournamentStageType.POOL) {
+                List<TournamentTeam> poolTeams = poolMap.get(stage.getName());
+                if (poolTeams != null && !poolTeams.isEmpty()) {
+                    generateRoundRobinMatches(tournament, stage, poolTeams, request);
+                }
+            }
+        }
+    }
+
+    private void generatePools(Tournament tournament, List<TournamentTeam> teams, int poolCount,
+            BracketGenerationRequest request) {
         // distribute teams
         List<List<TournamentTeam>> pools = new ArrayList<>();
         for (int i = 0; i < poolCount; i++) {
@@ -114,28 +137,68 @@ public class FormatServiceImpl implements FormatService {
             }
 
             // Generate Matches (Round Robin)
-            generateRoundRobinMatches(tournament, stage, poolTeams);
+            generateRoundRobinMatches(tournament, stage, poolTeams, request);
         }
     }
 
-    private void generateRoundRobinMatches(Tournament tournament, TournamentStage stage, List<TournamentTeam> teams) {
+    private void generateRoundRobinMatches(Tournament tournament, TournamentStage stage, List<TournamentTeam> teams,
+            BracketGenerationRequest request) {
         int n = teams.size();
+
+        // Calculate total number of matches
+        int totalMatches = (n * (n - 1)) / 2;
+
+        // Calculate days available for the tournament
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
+                tournament.getStartDate(),
+                tournament.getEndDate());
+
+        // If tournament is only 1 day or less, schedule all on start date
+        // Otherwise, distribute matches evenly across the date range
+        int matchCounter = 0;
+        boolean generateTimings = request.getGenerateTimings() == null || request.getGenerateTimings();
+
         // A simple algorithm for round robin
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
                 TournamentTeam home = teams.get(i);
                 TournamentTeam away = teams.get(j);
 
+                java.time.LocalDate matchDate = null;
+                java.time.LocalTime kickOffTime = null;
+
+                if (generateTimings) {
+                    // Calculate match date by distributing evenly across tournament period
+                    if (daysBetween <= 0 || totalMatches == 1) {
+                        matchDate = tournament.getStartDate();
+                    } else {
+                        // Distribute matches evenly across the date range
+                        long daysToAdd = (matchCounter * daysBetween) / (totalMatches - 1);
+                        matchDate = tournament.getStartDate().plusDays(daysToAdd);
+                    }
+
+                    // Vary kick-off times slightly (9 AM, 11 AM, 2 PM, 4 PM cycle)
+                    int timeSlot = matchCounter % 4;
+                    kickOffTime = switch (timeSlot) {
+                        case 0 -> java.time.LocalTime.of(9, 0);
+                        case 1 -> java.time.LocalTime.of(11, 0);
+                        case 2 -> java.time.LocalTime.of(14, 0);
+                        default -> java.time.LocalTime.of(16, 0);
+                    };
+                }
+
                 Match match = Match.builder()
                         .tournament(tournament)
                         .homeTeam(home.getTeam())
                         .awayTeam(away.getTeam())
                         .stage(stage)
-                        .matchDate(tournament.getStartDate()) // default to start date
-                        .kickOffTime(java.time.LocalTime.of(9, 0)) // default time
+                        .matchDate(matchDate) // Can be null
+                        .kickOffTime(kickOffTime) // Can be null
                         .status(MatchStatus.SCHEDULED)
                         .build();
                 matchRepository.save(match);
+
+                matchCounter++;
             }
         }
     }
@@ -143,20 +206,34 @@ public class FormatServiceImpl implements FormatService {
     @Override
     @Transactional
     public void clearSchedule(UUID tournamentId) {
-        log.info("Clearing schedule for tournament {}", tournamentId);
+        // Default behavior for backward compatibility or when "Reset All" is requested
+        clearSchedule(tournamentId, true);
+    }
+
+    // New overloaded method support partial clearing (structure preservation)
+    // Note: Needs interface update if exposed directly, for now we will rely on
+    // internal logic or add to interface
+    public void clearSchedule(UUID tournamentId, boolean clearStructure) {
+        log.info("Clearing schedule for tournament {} (clearStructure={})", tournamentId, clearStructure);
+
+        // Delete dependency data first (Events, Lineups)
+        matchEventRepository.deleteByMatch_Tournament_Id(tournamentId);
+        matchLineupRepository.deleteByMatch_Tournament_Id(tournamentId);
 
         // Delete all matches
         matchRepository.deleteByTournamentId(tournamentId);
 
-        // Delete all stages
-        stageRepository.deleteByTournamentId(tournamentId);
+        if (clearStructure) {
+            // Delete all stages
+            stageRepository.deleteByTournamentId(tournamentId);
 
-        // Reset pool numbers on active teams
-        List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
-        for (TournamentTeam team : teams) {
-            if (team.getPoolNumber() != null) {
-                team.setPoolNumber(null);
-                tournamentTeamRepository.save(team);
+            // Reset pool numbers on active teams
+            List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
+            for (TournamentTeam team : teams) {
+                if (team.getPoolNumber() != null) {
+                    team.setPoolNumber(null);
+                    tournamentTeamRepository.save(team);
+                }
             }
         }
     }

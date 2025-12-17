@@ -42,6 +42,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final AuditLogger auditLogger;
     private final com.athleticaos.backend.services.FormatService formatService;
     private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
+    private final com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,7 +58,7 @@ public class TournamentServiceImpl implements TournamentService {
         }
 
         return tournaments.stream()
-                .filter(tournament -> !tournament.isDeleted()) // Filter out deleted tournaments
+                .filter(tournament -> !Boolean.TRUE.equals(tournament.getDeleted())) // Filter out deleted tournaments
                 .filter(tournament -> level == null || tournament.getLevel().equals(level))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -67,7 +68,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Transactional(readOnly = true)
     public List<TournamentResponse> getPublishedTournaments() {
         return tournamentRepository.findByIsPublishedTrue().stream()
-                .filter(tournament -> !tournament.isDeleted())
+                .filter(tournament -> !Boolean.TRUE.equals(tournament.getDeleted()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -76,7 +77,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Transactional(readOnly = true)
     public TournamentResponse getTournamentById(UUID id) {
         Tournament tournament = tournamentRepository.findById(id)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         return mapToResponse(tournament);
@@ -87,7 +88,7 @@ public class TournamentServiceImpl implements TournamentService {
     @SuppressWarnings("null")
     public TournamentResponse getTournamentBySlug(String slug) {
         return tournamentRepository.findBySlug(slug)
-                .filter(tournament -> !tournament.isDeleted())
+                .filter(tournament -> !Boolean.TRUE.equals(tournament.getDeleted()))
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
     }
@@ -96,10 +97,15 @@ public class TournamentServiceImpl implements TournamentService {
     @Transactional(readOnly = true)
     public TournamentDashboardResponse getTournamentDashboard(UUID id) {
         Tournament tournament = tournamentRepository.findById(id)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        // TODO: Populate stats from Match/Team repositories
+        int totalMatches = matchRepository.findByTournamentId(id).size();
+        int completedMatches = matchRepository
+                .findByTournamentIdAndStatus(id, com.athleticaos.backend.enums.MatchStatus.COMPLETED).size();
+        int totalTeams = tournamentTeamRepository.findByTournamentId(id).size();
+        int totalPlayers = tournamentPlayerRepository.findByTournamentId(id).size();
+
         return TournamentDashboardResponse.builder()
                 .id(tournament.getId())
                 .name(tournament.getName())
@@ -110,10 +116,10 @@ public class TournamentServiceImpl implements TournamentService {
                 .startDate(tournament.getStartDate())
                 .endDate(tournament.getEndDate())
                 .venue(tournament.getVenue())
-                .totalMatches(0)
-                .completedMatches(0)
-                .totalTeams(0)
-                .totalPlayers(0)
+                .totalMatches(totalMatches)
+                .completedMatches(completedMatches)
+                .totalTeams(totalTeams)
+                .totalPlayers(totalPlayers)
                 .status(mapToResponse(tournament).getStatus())
                 .build();
     }
@@ -170,7 +176,7 @@ public class TournamentServiceImpl implements TournamentService {
             HttpServletRequest httpRequest) {
         log.info("Updating tournament: {}", id);
         Tournament tournament = tournamentRepository.findById(id)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         // Update fields if provided
@@ -211,7 +217,7 @@ public class TournamentServiceImpl implements TournamentService {
     public void deleteTournament(UUID id) {
         log.info("Soft deleting tournament: {}", id);
         Tournament tournament = tournamentRepository.findById(id)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setDeleted(true);
@@ -223,7 +229,7 @@ public class TournamentServiceImpl implements TournamentService {
     public TournamentResponse updatePublishStatus(UUID id, boolean publish, HttpServletRequest httpRequest) {
         log.info("Updating publish status for tournament {}: {}", id, publish);
         Tournament tournament = tournamentRepository.findById(id)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setPublished(publish);
@@ -238,7 +244,7 @@ public class TournamentServiceImpl implements TournamentService {
             HttpServletRequest httpRequest) {
         log.info("Updating status for tournament {}: {}", id, status);
         Tournament tournament = tournamentRepository.findById(id)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setStatus(status);
@@ -547,8 +553,8 @@ public class TournamentServiceImpl implements TournamentService {
     @Transactional(readOnly = true)
     public List<com.athleticaos.backend.dtos.match.MatchResponse> getMatchesByTournament(UUID tournamentId) {
         // Verify tournament exists
-        tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        tournamentRepository.findById(java.util.Objects.requireNonNull(tournamentId))
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         List<com.athleticaos.backend.entities.Match> matches = matchRepository
                 .findByTournamentIdWithTeams(tournamentId);
@@ -561,11 +567,18 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional
     public void clearSchedule(UUID tournamentId) {
-        // Verify tournament exists
-        tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        // Default behavior: Clear All (structure included)
+        clearSchedule(tournamentId, true);
+    }
 
-        formatService.clearSchedule(tournamentId);
+    @Override
+    @Transactional
+    public void clearSchedule(UUID tournamentId, boolean clearStructure) {
+        // Verify tournament exists
+        tournamentRepository.findById(java.util.Objects.requireNonNull(tournamentId))
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        formatService.clearSchedule(tournamentId, clearStructure);
     }
 
     private com.athleticaos.backend.dtos.match.MatchResponse mapMatchToResponse(
@@ -623,5 +636,86 @@ public class TournamentServiceImpl implements TournamentService {
         }
 
         return builder.build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        return tournament.getFormatConfig() != null ? mapToConfigDTO(tournament.getFormatConfig()) : null;
+    }
+
+    @Override
+    @Transactional
+    public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO updateFormatConfig(UUID tournamentId,
+            com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO configDTO) {
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        // Validation: Cannot change format if matches are already generated for the
+        // tournament
+        // (unless we decide to allow it by clearing schedule, but requirements say
+        // "LOCKED")
+        boolean hasMatches = !matchRepository.findByTournamentId(tournamentId).isEmpty();
+        if (hasMatches) {
+            // Check if significant changes are being made? Requirements say "Cannot be
+            // edited after generation"
+            throw new IllegalStateException("Cannot update format rules after matches have been generated.");
+        }
+
+        com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig();
+        if (config == null) {
+            config = new com.athleticaos.backend.entities.TournamentFormatConfig();
+            config.setTournament(tournament);
+        }
+
+        config.setFormatType(configDTO.getFormatType());
+        config.setRugbyFormat(configDTO.getRugbyFormat());
+        config.setTeamCount(configDTO.getTeamCount());
+        config.setPoolCount(configDTO.getPoolCount());
+        config.setMatchDurationMinutes(configDTO.getMatchDurationMinutes());
+
+        // Scoring
+        config.setPointsWin(configDTO.getPointsWin() != null ? configDTO.getPointsWin() : 4);
+        config.setPointsDraw(configDTO.getPointsDraw() != null ? configDTO.getPointsDraw() : 2);
+        config.setPointsLoss(configDTO.getPointsLoss() != null ? configDTO.getPointsLoss() : 0);
+        config.setPointsBonusTry(configDTO.getPointsBonusTry() != null ? configDTO.getPointsBonusTry() : 1);
+        config.setPointsBonusLoss(configDTO.getPointsBonusLoss() != null ? configDTO.getPointsBonusLoss() : 1);
+
+        // Lineups
+        config.setStartersCount(configDTO.getStartersCount());
+        config.setMaxBenchCount(configDTO.getMaxBenchCount() != null ? configDTO.getMaxBenchCount() : 8);
+
+        // Update main tournament format field as well for backward compatibility
+        tournament.setFormat(configDTO.getFormatType());
+        tournament.setNumberOfPools(configDTO.getPoolCount());
+
+        tournament.setFormatConfig(config); // Should cascade save
+        tournamentRepository.save(tournament);
+
+        return mapToConfigDTO(config);
+    }
+
+    private com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO mapToConfigDTO(
+            com.athleticaos.backend.entities.TournamentFormatConfig config) {
+        return com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO.builder()
+                .id(config.getId())
+                .tournamentId(config.getTournament().getId())
+                .formatType(config.getFormatType())
+                .rugbyFormat(config.getRugbyFormat())
+                .teamCount(config.getTeamCount())
+                .poolCount(config.getPoolCount())
+                .matchDurationMinutes(config.getMatchDurationMinutes())
+                .pointsWin(config.getPointsWin())
+                .pointsDraw(config.getPointsDraw())
+                .pointsLoss(config.getPointsLoss())
+                .pointsBonusTry(config.getPointsBonusTry())
+                .pointsBonusLoss(config.getPointsBonusLoss())
+                .startersCount(config.getStartersCount())
+                .maxBenchCount(config.getMaxBenchCount())
+                .build();
     }
 }

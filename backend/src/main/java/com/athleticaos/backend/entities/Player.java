@@ -41,6 +41,16 @@ public class Player {
     @Column(name = "weight_kg")
     private Integer weightKg;
 
+    @Column(unique = true)
+    private String slug;
+
+    @Column(name = "deleted")
+    @Builder.Default
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -38,10 +38,10 @@ public class Match {
     @JoinColumn(name = "away_team_id", nullable = true)
     private Team awayTeam;
 
-    @Column(name = "match_date", nullable = false)
+    @Column(name = "match_date", nullable = true)
     private LocalDate matchDate;
 
-    @Column(name = "kick_off_time", nullable = false)
+    @Column(name = "kick_off_time", nullable = true)
     private LocalTime kickOffTime;
 
     @Column

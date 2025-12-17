@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Trash2, RotateCcw } from 'lucide-react';
+import { Calendar, MapPin, Clock, Trash2, RotateCcw, Edit } from 'lucide-react';
 import { useMatchesStore, MatchStatus, MatchEventItem } from '@/store/matches.store';
 import { Button } from '@/components/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
@@ -15,6 +15,8 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchControls } from '@/components/MatchControls';
 import { rosterService } from '@/services/rosterService';
 import { LineupHintsDTO } from '@/types/roster.types';
+import { MatchLineupEditor } from '@/components/MatchLineupEditor';
+import { MatchModal } from '@/components/modals/MatchModal';
 
 // Rugby scoring rules
 const SCORING_RULES: Record<string, number> = {
@@ -95,8 +97,17 @@ export const MatchDetail = () => {
     }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [isHalfTime, setIsHalfTime] = useState<boolean>(false);
     const [lineupHints, setLineupHints] = useState<LineupHintsDTO | null>(null);
-
     const timelineRef = useRef<HTMLDivElement>(null);
+    const [activeTab, setActiveTab] = useState<'overview' | 'lineups'>('overview');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [lineupTeamId, setLineupTeamId] = useState<string>('');
+
+    // Set default lineup team when match loads
+    useEffect(() => {
+        if (selectedMatch && !lineupTeamId) {
+            setLineupTeamId(selectedMatch.homeTeamId);
+        }
+    }, [selectedMatch, lineupTeamId]);
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
@@ -353,291 +364,351 @@ export const MatchDetail = () => {
                     <Badge variant={getStatusColor(selectedMatch.status, isHalfTime) as any} className="text-base px-3 py-1">
                         {getStatusLabel(selectedMatch.status, isHalfTime)}
                     </Badge>
-                    <MatchControls
-                        match={selectedMatch}
-                        isHalfTime={isHalfTime}
-                        onStartMatch={handleStartMatch}
-                        onHalfTime={handleHalfTime}
-                        onResume={handleResume}
-                        onFullTime={handleFullTime}
-                        onCancelMatch={handleCancelMatch}
-                        isAdmin={isAdmin!}
-                    />
+                    <div className="flex gap-2">
+                        {isAdmin && selectedMatch.status === 'SCHEDULED' && (
+                            <Button
+                                size="sm"
+                                variant="tertiary"
+                                onClick={() => setIsEditModalOpen(true)}
+                            >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                            </Button>
+                        )}
+                        <MatchControls
+                            match={selectedMatch}
+                            isHalfTime={isHalfTime}
+                            onStartMatch={handleStartMatch}
+                            onHalfTime={handleHalfTime}
+                            onResume={handleResume}
+                            onFullTime={handleFullTime}
+                            onCancelMatch={handleCancelMatch}
+                            isAdmin={isAdmin!}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Score Bar */}
-            <Card className="bg-glass-bg/50">
-                <CardContent className="p-6 flex justify-between items-center">
-                    <div className="text-2xl font-bold">{selectedMatch.homeTeamName}</div>
-                    <div className="text-4xl font-mono font-bold text-primary">
-                        {calculatedScores.homeScore} - {calculatedScores.awayScore}
-                    </div>
-                    <div className="text-2xl font-bold text-right">{selectedMatch.awayTeamName}</div>
-                </CardContent>
-            </Card>
 
-            {/* Visual Timeline */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Match Timeline</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div ref={timelineRef} className="relative py-12 px-4 overflow-x-auto">
-                        {/* Timeline Line */}
-                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2 min-w-[600px]" />
 
-                        {/* Markers */}
-                        <div className="absolute top-1/2 left-0 w-0.5 h-4 bg-border -translate-y-1/2" />
-                        <div className="absolute top-1/2 left-1/2 w-0.5 h-4 bg-border -translate-y-1/2" />
-                        <div className="absolute top-1/2 right-0 w-0.5 h-4 bg-border -translate-y-1/2" />
+            {/* Tabs Navigation */}
+            <div className="flex border-b border-border mb-6">
+                <button
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'overview' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setActiveTab('overview')}
+                >
+                    Match Overview
+                </button>
+                <button
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'lineups' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setActiveTab('lineups')}
+                >
+                    Lineups & Squads
+                </button>
+            </div>
 
-                        {/* Labels */}
-                        <div className="absolute top-[60%] left-0 text-xs text-muted-foreground">0'</div>
-                        <div className="absolute top-[60%] left-1/2 text-xs text-muted-foreground -translate-x-1/2 font-semibold">HT (40')</div>
-                        <div className="absolute top-[60%] right-0 text-xs text-muted-foreground">80'+</div>
-
-                        {/* Events */}
-                        <div className="relative h-16 min-w-[600px]">
-                            {timelineEvents.map((event, index) => {
-                                const position = Math.min(Math.max(((event.minute || 0) / 80) * 100, 0), 100);
-                                const isHomeTeam = event.teamId === selectedMatch.homeTeamId;
-                                const isLatest = index === timelineEvents.length - 1;
-
-                                return (
-                                    <div
-                                        key={event.id}
-                                        data-latest={isLatest}
-                                        className="absolute transform -translate-x-1/2 flex flex-col items-center group cursor-pointer"
-                                        style={{ left: `${position}%`, top: isHomeTeam ? '-2rem' : '1rem' }}
-                                    >
-                                        <div className={`bg-background border-2 rounded-full p-1 shadow-sm text-lg z-10 hover:scale-110 transition-transform ${isHomeTeam ? 'border-blue-500' : 'border-red-500'}`}>
-                                            {getEventIcon(event.eventType)}
-                                        </div>
-                                        <div className="opacity-0 group-hover:opacity-100 absolute w-32 text-center text-xs bg-popover text-popover-foreground p-2 rounded shadow-lg z-20 transition-opacity pointer-events-none"
-                                            style={{ top: isHomeTeam ? '-2.5rem' : '2.5rem' }}>
-                                            <div className="font-bold">{event.minute}' {event.eventType}</div>
-                                            <div>{event.playerName || event.teamName}</div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* No Minute Events */}
-                    {noMinuteEvents.length > 0 && (
-                        <div className="mt-6 border-t pt-4">
-                            <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Other Events</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {noMinuteEvents.map(e => (
-                                    <Badge key={e.id} variant="secondary" className="gap-1">
-                                        {getEventIcon(e.eventType)} {e.eventType} - {e.teamName}
-                                    </Badge>
-                                ))}
+            {activeTab === 'overview' && (
+                <>
+                    {/* Score Bar & Timeline */}
+                    <Card className="bg-glass-bg/50">
+                        <CardContent className="p-6 flex justify-between items-center">
+                            <div className="text-2xl font-bold">{selectedMatch.homeTeamName}</div>
+                            <div className="text-4xl font-mono font-bold text-primary">
+                                {calculatedScores.homeScore} - {calculatedScores.awayScore}
                             </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Event List & Management */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Event Log</CardTitle>
-                            {isAdmin && events.length > 0 && !isMatchLocked && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleUndoLastEvent}
-                                    className="gap-2 text-muted-foreground hover:text-foreground"
-                                >
-                                    <RotateCcw className="w-4 h-4" />
-                                    Undo Last
-                                </Button>
-                            )}
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-16">Min</TableHead>
-                                        <TableHead>Team</TableHead>
-                                        <TableHead>Event</TableHead>
-                                        <TableHead>Player</TableHead>
-                                        <TableHead>Notes</TableHead>
-                                        {isAdmin && !isMatchLocked && <TableHead className="w-12"></TableHead>}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {events.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                                No events recorded yet.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        events.map((event) => (
-                                            <TableRow key={event.id}>
-                                                <TableCell className="font-mono">{event.minute}'</TableCell>
-                                                <TableCell>{event.teamName}</TableCell>
-                                                <TableCell>
-                                                    <span className="flex items-center gap-2">
-                                                        {getEventIcon(event.eventType)} {event.eventType}
-                                                        {SCORING_RULES[event.eventType] > 0 && (
-                                                            <span className="text-xs text-primary font-semibold">+{SCORING_RULES[event.eventType]}</span>
-                                                        )}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>{event.playerName || '-'}</TableCell>
-                                                <TableCell className="text-muted-foreground text-sm">{event.notes}</TableCell>
-                                                {isAdmin && !isMatchLocked && (
-                                                    <TableCell>
-                                                        <Button variant="ghost" size="sm" className="h-8 w-8 text-destructive hover:text-destructive p-0" onClick={() => removeEvent(event.id, selectedMatch.id)}>
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                )}
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
+                            <div className="text-2xl font-bold text-right">{selectedMatch.awayTeamName}</div>
                         </CardContent>
                     </Card>
-                </div>
 
-                {/* Add Stats Form */}
-                {isAdmin && !isMatchLocked && (
-                    <div>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Add Stats</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Team</label>
-                                    <select
-                                        className="w-full p-2 rounded-md border border-input bg-background"
-                                        value={newEvent.teamId}
-                                        onChange={(e) => setNewEvent({ ...newEvent, teamId: e.target.value, playerId: '' })}
-                                    >
-                                        <option value="">Select Team</option>
-                                        <option value={selectedMatch.homeTeamId}>{selectedMatch.homeTeamName}</option>
-                                        <option value={selectedMatch.awayTeamId}>{selectedMatch.awayTeamName}</option>
-                                    </select>
-                                </div>
+                    {/* Visual Timeline */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Match Timeline</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div ref={timelineRef} className="relative py-12 px-4 overflow-x-auto">
+                                {/* Timeline Line */}
+                                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2 min-w-[600px]" />
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Player (Optional)</label>
-                                    <select
-                                        className="w-full p-2 rounded-md border border-input bg-background"
-                                        value={newEvent.playerId || ''}
-                                        onChange={(e) => setNewEvent({ ...newEvent, playerId: e.target.value })}
-                                        disabled={!newEvent.teamId}
-                                    >
-                                        <option value="">Select Player</option>
-                                        {teamPlayers.map(p => {
-                                            const suspensionInfo = getPlayerSuspensionInfo(p.id, newEvent.teamId!);
-                                            const isSuspended = suspensionInfo?.isSuspended;
-                                            const isIneligible = suspensionInfo && !suspensionInfo.isEligible;
-                                            return (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.firstName} {p.lastName}
-                                                    {isSuspended ? ' 🔴 SUSPENDED' : ''}
-                                                    {isIneligible ? ' ⚠️ INELIGIBLE' : ''}
-                                                </option>
-                                            );
-                                        })}
-                                    </select>
-                                    {newEvent.playerId && (() => {
-                                        const suspensionInfo = getPlayerSuspensionInfo(newEvent.playerId, newEvent.teamId!);
-                                        if (suspensionInfo?.isSuspended) {
-                                            return (
-                                                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                                                    <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-2">
-                                                        🔴 This player is currently suspended
-                                                    </p>
-                                                    {suspensionInfo.suspensionReason && (
-                                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                                                            Reason: {suspensionInfo.suspensionReason} ({suspensionInfo.suspensionMatchesRemaining} matches remaining)
-                                                        </p>
-                                                    )}
+                                {/* Markers */}
+                                <div className="absolute top-1/2 left-0 w-0.5 h-4 bg-border -translate-y-1/2" />
+                                <div className="absolute top-1/2 left-1/2 w-0.5 h-4 bg-border -translate-y-1/2" />
+                                <div className="absolute top-1/2 right-0 w-0.5 h-4 bg-border -translate-y-1/2" />
+
+                                {/* Labels */}
+                                <div className="absolute top-[60%] left-0 text-xs text-muted-foreground">0'</div>
+                                <div className="absolute top-[60%] left-1/2 text-xs text-muted-foreground -translate-x-1/2 font-semibold">HT (40')</div>
+                                <div className="absolute top-[60%] right-0 text-xs text-muted-foreground">80'+</div>
+
+                                {/* Events */}
+                                <div className="relative h-16 min-w-[600px]">
+                                    {timelineEvents.map((event, index) => {
+                                        const position = Math.min(Math.max(((event.minute || 0) / 80) * 100, 0), 100);
+                                        const isHomeTeam = event.teamId === selectedMatch.homeTeamId;
+                                        const isLatest = index === timelineEvents.length - 1;
+
+                                        return (
+                                            <div
+                                                key={event.id}
+                                                data-latest={isLatest}
+                                                className="absolute transform -translate-x-1/2 flex flex-col items-center group cursor-pointer"
+                                                style={{ left: `${position}%`, top: isHomeTeam ? '-2rem' : '1rem' }}
+                                            >
+                                                <div className={`bg-background border-2 rounded-full p-1 shadow-sm text-lg z-10 hover:scale-110 transition-transform ${isHomeTeam ? 'border-blue-500' : 'border-red-500'}`}>
+                                                    {getEventIcon(event.eventType)}
                                                 </div>
-                                            );
-                                        }
-                                        if (suspensionInfo && !suspensionInfo.isEligible) {
-                                            return (
-                                                <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                                                    <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium flex items-center gap-2">
-                                                        ⚠️ This player is ineligible
-                                                    </p>
-                                                    {suspensionInfo.eligibilityNote && (
-                                                        <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                                                            {suspensionInfo.eligibilityNote}
-                                                        </p>
-                                                    )}
+                                                <div className="opacity-0 group-hover:opacity-100 absolute w-32 text-center text-xs bg-popover text-popover-foreground p-2 rounded shadow-lg z-20 transition-opacity pointer-events-none"
+                                                    style={{ top: isHomeTeam ? '-2.5rem' : '2.5rem' }}>
+                                                    <div className="font-bold">{event.minute}' {event.eventType}</div>
+                                                    <div>{event.playerName || event.teamName}</div>
                                                 </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Event Type</label>
-                                    <select
-                                        className="w-full p-2 rounded-md border border-input bg-background"
-                                        value={newEvent.eventType}
-                                        onChange={(e) => setNewEvent({ ...newEvent, eventType: e.target.value })}
-                                    >
-                                        <option value="TRY">Try (5 pts)</option>
-                                        <option value="CONVERSION">Conversion (2 pts)</option>
-                                        <option value="PENALTY">Penalty Goal (3 pts)</option>
-                                        <option value="DROP_GOAL">Drop Goal (3 pts)</option>
-                                        <option value="YELLOW_CARD">Yellow Card</option>
-                                        <option value="RED_CARD">Red Card</option>
-                                        <option value="SUBSTITUTION">Substitution</option>
-                                    </select>
+                            {/* No Minute Events */}
+                            {noMinuteEvents.length > 0 && (
+                                <div className="mt-6 border-t pt-4">
+                                    <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Other Events</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {noMinuteEvents.map(e => (
+                                            <Badge key={e.id} variant="secondary" className="gap-1">
+                                                {getEventIcon(e.eventType)} {e.eventType} - {e.teamName}
+                                            </Badge>
+                                        ))}
+                                    </div>
                                 </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Minute</label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={newEvent.minute ?? 0}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            setNewEvent({ ...newEvent, minute: isNaN(val) ? 0 : val });
-                                        }}
-                                    />
-                                </div>
+                    {/* Event List & Management */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle>Event Log</CardTitle>
+                                    {isAdmin && events.length > 0 && !isMatchLocked && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleUndoLastEvent}
+                                            className="gap-2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            <RotateCcw className="w-4 h-4" />
+                                            Undo Last
+                                        </Button>
+                                    )}
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-16">Min</TableHead>
+                                                <TableHead>Team</TableHead>
+                                                <TableHead>Event</TableHead>
+                                                <TableHead>Player</TableHead>
+                                                <TableHead>Notes</TableHead>
+                                                {isAdmin && !isMatchLocked && <TableHead className="w-12"></TableHead>}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {events.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                        No events recorded yet.
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                events.map((event) => (
+                                                    <TableRow key={event.id}>
+                                                        <TableCell className="font-mono">{event.minute}'</TableCell>
+                                                        <TableCell>{event.teamName}</TableCell>
+                                                        <TableCell>
+                                                            <span className="flex items-center gap-2">
+                                                                {getEventIcon(event.eventType)} {event.eventType}
+                                                                {SCORING_RULES[event.eventType] > 0 && (
+                                                                    <span className="text-xs text-primary font-semibold">+{SCORING_RULES[event.eventType]}</span>
+                                                                )}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell>{event.playerName || '-'}</TableCell>
+                                                        <TableCell className="text-muted-foreground text-sm">{event.notes}</TableCell>
+                                                        {isAdmin && !isMatchLocked && (
+                                                            <TableCell>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 text-destructive hover:text-destructive p-0" onClick={() => removeEvent(event.id, selectedMatch.id)}>
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </TableCell>
+                                                        )}
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Notes</label>
-                                    <Input
-                                        placeholder="Details..."
-                                        value={newEvent.notes || ''}
-                                        onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })}
-                                    />
-                                </div>
+                        {/* Add Stats Form */}
+                        {isAdmin && !isMatchLocked && (
+                            <div>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Add Stats</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Team</label>
+                                            <select
+                                                className="w-full p-2 rounded-md border border-input bg-background"
+                                                value={newEvent.teamId}
+                                                onChange={(e) => setNewEvent({ ...newEvent, teamId: e.target.value, playerId: '' })}
+                                            >
+                                                <option value="">Select Team</option>
+                                                <option value={selectedMatch.homeTeamId}>{selectedMatch.homeTeamName}</option>
+                                                <option value={selectedMatch.awayTeamId}>{selectedMatch.awayTeamName}</option>
+                                            </select>
+                                        </div>
 
-                                <Button
-                                    className="w-full"
-                                    onClick={handleAddEvent}
-                                    disabled={!newEvent.teamId || isSubmitting}
-                                >
-                                    {isSubmitting ? 'Adding...' : 'Add Stats'}
-                                </Button>
-                            </CardContent>
-                        </Card>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Player (Optional)</label>
+                                            <select
+                                                className="w-full p-2 rounded-md border border-input bg-background"
+                                                value={newEvent.playerId || ''}
+                                                onChange={(e) => setNewEvent({ ...newEvent, playerId: e.target.value })}
+                                                disabled={!newEvent.teamId}
+                                            >
+                                                <option value="">Select Player</option>
+                                                {teamPlayers.map(p => {
+                                                    const suspensionInfo = getPlayerSuspensionInfo(p.id, newEvent.teamId!);
+                                                    const isSuspended = suspensionInfo?.isSuspended;
+                                                    const isIneligible = suspensionInfo && !suspensionInfo.isEligible;
+                                                    return (
+                                                        <option key={p.id} value={p.id}>
+                                                            {p.firstName} {p.lastName}
+                                                            {isSuspended ? ' 🔴 SUSPENDED' : ''}
+                                                            {isIneligible ? ' ⚠️ INELIGIBLE' : ''}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                            {newEvent.playerId && (() => {
+                                                const suspensionInfo = getPlayerSuspensionInfo(newEvent.playerId, newEvent.teamId!);
+                                                if (suspensionInfo?.isSuspended) {
+                                                    return (
+                                                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                                                            <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-2">
+                                                                🔴 This player is currently suspended
+                                                            </p>
+                                                            {suspensionInfo.suspensionReason && (
+                                                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                                                    Reason: {suspensionInfo.suspensionReason} ({suspensionInfo.suspensionMatchesRemaining} matches remaining)
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+                                                if (suspensionInfo && !suspensionInfo.isEligible) {
+                                                    return (
+                                                        <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                                                            <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium flex items-center gap-2">
+                                                                ⚠️ This player is ineligible
+                                                            </p>
+                                                            {suspensionInfo.eligibilityNote && (
+                                                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                                                                    {suspensionInfo.eligibilityNote}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Event Type</label>
+                                            <select
+                                                className="w-full p-2 rounded-md border border-input bg-background"
+                                                value={newEvent.eventType}
+                                                onChange={(e) => setNewEvent({ ...newEvent, eventType: e.target.value })}
+                                            >
+                                                <option value="TRY">Try (5 pts)</option>
+                                                <option value="CONVERSION">Conversion (2 pts)</option>
+                                                <option value="PENALTY">Penalty Goal (3 pts)</option>
+                                                <option value="DROP_GOAL">Drop Goal (3 pts)</option>
+                                                <option value="YELLOW_CARD">Yellow Card</option>
+                                                <option value="RED_CARD">Red Card</option>
+                                                <option value="SUBSTITUTION">Substitution</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Minute</label>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                value={newEvent.minute ?? 0}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    setNewEvent({ ...newEvent, minute: isNaN(val) ? 0 : val });
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Notes</label>
+                                            <Input
+                                                placeholder="Details..."
+                                                value={newEvent.notes || ''}
+                                                onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <Button
+                                            className="w-full"
+                                            onClick={handleAddEvent}
+                                            disabled={!newEvent.teamId || isSubmitting}
+                                        >
+                                            {isSubmitting ? 'Adding...' : 'Add Stats'}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+                </>
+            )}
+
+            {activeTab === 'lineups' && (
+                <div className="space-y-6">
+                    <div className="flex gap-4">
+                        <Button
+                            variant={lineupTeamId === selectedMatch.homeTeamId ? 'primary' : 'tertiary'}
+                            onClick={() => setLineupTeamId(selectedMatch.homeTeamId)}
+                        >
+                            {selectedMatch.homeTeamName}
+                        </Button>
+                        <Button
+                            variant={lineupTeamId === selectedMatch.awayTeamId ? 'primary' : 'tertiary'}
+                            onClick={() => setLineupTeamId(selectedMatch.awayTeamId)}
+                        >
+                            {selectedMatch.awayTeamName}
+                        </Button>
+                    </div>
+
+                    <MatchLineupEditor
+                        matchId={selectedMatch.id}
+                        teamId={lineupTeamId}
+                        homeTeamId={selectedMatch.homeTeamId}
+                        isLocked={selectedMatch.status !== 'SCHEDULED'} // Locked unless SCHEDULED
+                    />
+                </div>
+            )}
 
             {/* Toast Notification */}
             {toast && (
@@ -651,10 +722,30 @@ export const MatchDetail = () => {
             {/* Confirm Modal */}
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
-                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                onConfirm={confirmModal.onConfirm}
                 title={confirmModal.title}
                 message={confirmModal.message}
+                onConfirm={() => {
+                    confirmModal.onConfirm();
+                    setConfirmModal({ ...confirmModal, isOpen: false });
+                }}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+            />
+
+            {/* Edit Match Modal */}
+            <MatchModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSuccess={async () => {
+                    await loadMatchDetail(selectedMatch.id);
+                    setToast({ message: 'Match updated successfully', type: 'success' });
+                }}
+                mode="edit"
+                initialMatch={{
+                    ...selectedMatch,
+                    venue: selectedMatch.venue || '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                } as any}
             />
         </div>
     );

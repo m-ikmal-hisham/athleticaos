@@ -23,4 +23,6 @@ public class MatchUpdateRequest {
     private MatchStatus status;
     private Integer homeScore;
     private Integer awayScore;
+    private java.util.UUID homeTeamId;
+    private java.util.UUID awayTeamId;
 }

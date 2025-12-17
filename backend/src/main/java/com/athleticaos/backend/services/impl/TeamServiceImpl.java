@@ -76,7 +76,8 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
         // Generate unique slug
-        String slug = SlugGenerator.generateUniqueSlug(request.getName(), teamRepository);
+        // Generate unique slug
+        String slug = SlugGenerator.generateUniqueSlug(request.getName(), teamRepository::existsBySlug);
 
         Team team = Team.builder()
                 .organisation(org)

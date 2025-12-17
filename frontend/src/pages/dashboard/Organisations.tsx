@@ -69,15 +69,52 @@ export default function Organisations() {
         setSelectedDistrict("");
     }, [selectedState]);
 
+    // Build hierarchy map for deep recursive filtering
+    const hierarchyMap = useMemo(() => {
+        const map = new Map<string, string[]>(); // parentId -> childIds
+        if (organisations) {
+            organisations.forEach(org => {
+                if (org.parentOrgId) {
+                    if (!map.has(org.parentOrgId)) map.set(org.parentOrgId, []);
+                    map.get(org.parentOrgId)?.push(org.id);
+                }
+            });
+        }
+        return map;
+    }, [organisations]);
+
+    // Helper to get all descendant IDs recursively
+    const getDescendants = (rootId: string) => {
+        const results = new Set<string>();
+        const queue = [rootId];
+        results.add(rootId); // Include the root itself
+
+        while (queue.length > 0) {
+            const current = queue.pop();
+            if (current) {
+                const children = hierarchyMap.get(current);
+                if (children) {
+                    children.forEach(c => {
+                        results.add(c);
+                        queue.push(c);
+                    });
+                }
+            }
+        }
+        return results;
+    };
+
     const filteredOrganisations = useMemo(() => {
         if (!organisations) return [];
         let filtered = organisations;
 
-        // Apply hierarchy filter
+        // Apply hierarchy filter (Deep Filter)
         if (selectedDistrict) {
-            filtered = filtered.filter(org => org.parentOrgId === selectedDistrict || org.id === selectedDistrict);
+            const descendantIds = getDescendants(selectedDistrict);
+            filtered = filtered.filter(org => descendantIds.has(org.id));
         } else if (selectedDivision) {
-            filtered = filtered.filter(org => org.parentOrgId === selectedDivision || org.id === selectedDivision);
+            const descendantIds = getDescendants(selectedDivision);
+            filtered = filtered.filter(org => descendantIds.has(org.id));
         } else if (selectedState) {
             const stateObj = states.find(s => s.id === selectedState);
             if (stateObj) {
@@ -94,7 +131,7 @@ export default function Organisations() {
         }
 
         return filtered;
-    }, [organisations, selectedDistrict, selectedDivision, selectedState, states, searchTerm]);
+    }, [organisations, selectedDistrict, selectedDivision, selectedState, states, searchTerm, hierarchyMap]);
 
     const handleAdd = () => {
         setModalMode('create');
@@ -173,7 +210,7 @@ export default function Organisations() {
                             <select
                                 value={selectedCountry}
                                 onChange={e => setSelectedCountry(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">All Countries</option>
                                 {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -182,7 +219,7 @@ export default function Organisations() {
                             <select
                                 value={selectedState}
                                 onChange={e => setSelectedState(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={!selectedCountry}
                             >
                                 <option value="">All States</option>
@@ -192,7 +229,7 @@ export default function Organisations() {
                             <select
                                 value={selectedDivision}
                                 onChange={e => setSelectedDivision(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={!selectedState}
                             >
                                 <option value="">All Divisions</option>
@@ -202,7 +239,7 @@ export default function Organisations() {
                             <select
                                 value={selectedDistrict}
                                 onChange={e => setSelectedDistrict(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={!selectedState}
                             >
                                 <option value="">All Districts</option>

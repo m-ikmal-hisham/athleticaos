@@ -37,7 +37,7 @@ public class BracketServiceImpl implements BracketService {
         log.info("Getting bracket for tournament: {}", tournamentId);
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
@@ -69,7 +69,7 @@ public class BracketServiceImpl implements BracketService {
         log.info("Generating bracket for tournament: {} with format: {}", tournamentId, request.getFormat());
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         // Get teams to participate
@@ -222,7 +222,8 @@ public class BracketServiceImpl implements BracketService {
                         .venue(tournament.getVenue())
                         .status(MatchStatus.SCHEDULED)
                         .phase(poolName)
-                        .matchCode(String.format("%s-M%d", poolName.replace(" ", ""), i * teams.size() + j))
+                        .matchCode(String.format("%s-%s-M%d", tournament.getSlug(), poolName.replace(" ", ""),
+                                i * teams.size() + j))
                         .build();
 
                 matchRepository.save(match);
@@ -421,7 +422,7 @@ public class BracketServiceImpl implements BracketService {
                     .venue(tournament.getVenue())
                     .status(MatchStatus.SCHEDULED)
                     .phase(name)
-                    .matchCode(getStageAbbreviation(type) + (i + 1))
+                    .matchCode(String.format("%s-%s%d", tournament.getSlug(), getStageAbbreviation(type), (i + 1)))
                     .build();
             match = matchRepository.save(match);
             stageMatches.add(match);
@@ -605,7 +606,7 @@ public class BracketServiceImpl implements BracketService {
         log.info("Progressing pool winners to knockout stage for tournament: {}", tournamentId);
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         // Get all pool stages

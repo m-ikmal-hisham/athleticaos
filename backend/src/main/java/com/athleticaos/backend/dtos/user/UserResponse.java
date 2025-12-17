@@ -22,6 +22,15 @@ public class UserResponse {
     private String email;
     private String phone;
 
+    // Structured Address
+    private String addressLine1;
+    private String addressLine2;
+    private String city;
+    private String postcode;
+    private String state;
+    private String country;
+    private String address;
+
     private boolean isActive;
 
     private String status;

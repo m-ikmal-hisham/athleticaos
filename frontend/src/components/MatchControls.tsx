@@ -87,7 +87,7 @@ export const MatchControls = ({
             {/* Cancel Match */}
             {!isCompleted && !isCancelled && (
                 <Button
-                    variant="danger"
+                    variant="tertiary"
                     size="sm"
                     onClick={onCancelMatch}
                     className="gap-2"

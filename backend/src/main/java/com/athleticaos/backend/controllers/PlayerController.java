@@ -31,9 +31,13 @@ public class PlayerController {
         return ResponseEntity.ok(playerService.getAllPlayers());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable UUID id) {
-        return ResponseEntity.ok(playerService.getPlayerById(id));
+    @GetMapping("/{idOrSlug}")
+    public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable String idOrSlug) {
+        if (isValidUUID(idOrSlug)) {
+            return ResponseEntity.ok(playerService.getPlayerById(UUID.fromString(idOrSlug)));
+        } else {
+            return ResponseEntity.ok(playerService.getPlayerBySlug(idOrSlug));
+        }
     }
 
     @PostMapping
@@ -52,12 +56,13 @@ public class PlayerController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{idOrSlug}")
     @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<PlayerResponse> updatePlayer(
-            @PathVariable UUID id,
+            @PathVariable String idOrSlug,
             @RequestBody @Valid PlayerUpdateRequest request,
             HttpServletRequest httpRequest) {
+        UUID id = resolveId(idOrSlug);
         PlayerResponse response = playerService.updatePlayer(id, request);
 
         // Audit log
@@ -67,5 +72,47 @@ public class PlayerController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{idOrSlug}")
+    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<Void> deletePlayer(
+            @PathVariable String idOrSlug,
+            HttpServletRequest httpRequest) {
+
+        UUID id = resolveId(idOrSlug);
+        Player player = playerRepository.findById(id).orElse(null);
+
+        playerService.deletePlayer(id);
+
+        if (player != null) {
+            auditLogger.logPlayerDeleted(player, httpRequest);
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/admin/regenerate-slugs")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> regenerateSlugs() {
+        playerService.regenerateAllSlugs();
+        return ResponseEntity.ok().build();
+    }
+
+    private boolean isValidUUID(String str) {
+        try {
+            UUID.fromString(str);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private UUID resolveId(String idOrSlug) {
+        if (isValidUUID(idOrSlug)) {
+            return UUID.fromString(idOrSlug);
+        } else {
+            return playerService.getPlayerBySlug(idOrSlug).id();
+        }
     }
 }

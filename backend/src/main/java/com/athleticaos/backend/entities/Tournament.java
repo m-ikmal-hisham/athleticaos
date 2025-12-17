@@ -31,7 +31,7 @@ public class Tournament {
     @Column(nullable = false)
     private String level; // NATIONAL, STATE, SCHOOL
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String slug;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -60,6 +60,9 @@ public class Tournament {
     @Column(name = "format")
     private TournamentFormat format;
 
+    @OneToOne(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TournamentFormatConfig formatConfig;
+
     @Column(name = "number_of_pools")
     private Integer numberOfPools;
 
@@ -82,9 +85,9 @@ public class Tournament {
     @Column(name = "age_group_label")
     private String ageGroupLabel;
 
-    @Column(nullable = false)
+    @Column(name = "deleted")
     @Builder.Default
-    private boolean deleted = false;
+    private Boolean deleted = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

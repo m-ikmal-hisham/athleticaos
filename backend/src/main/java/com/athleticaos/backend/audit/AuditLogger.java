@@ -271,6 +271,18 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logPlayerDeleted(Player player, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PLAYER_DELETED")
+                                .entityType("PLAYER")
+                                .entityId(player.getId())
+                                .entitySummary(String.format("Player deleted: %s %s",
+                                                player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== HELPER METHODS ====================
 
         private String getIpAddress(HttpServletRequest request) {

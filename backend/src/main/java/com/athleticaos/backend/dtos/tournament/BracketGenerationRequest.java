@@ -27,4 +27,10 @@ public class BracketGenerationRequest {
 
     private List<String> poolNames; // optional: custom names for pools (e.g., ["Champions Pool", "Challengers
                                     // Pool"])
+
+    @Builder.Default
+    private Boolean generateTimings = true;
+
+    @Builder.Default
+    private Boolean useExistingGroups = false;
 }

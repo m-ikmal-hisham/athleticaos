@@ -117,8 +117,25 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public MatchResponse getMatchByCode(String matchCode) {
-        Match match = matchRepository.findByMatchCode(matchCode)
-                .orElseThrow(() -> new EntityNotFoundException("Match not found with code: " + matchCode));
+        List<Match> matches = matchRepository.findByMatchCode(matchCode);
+
+        if (matches.isEmpty()) {
+            throw new EntityNotFoundException("Match not found with code: " + matchCode);
+        }
+
+        Match match;
+        if (matches.size() == 1) {
+            match = matches.get(0);
+        } else {
+            // Handle duplicates: Prioritize LIVE/ONGOING tournaments
+            match = matches.stream()
+                    .filter(m -> m.getTournament() != null &&
+                            ("LIVE".equalsIgnoreCase(m.getTournament().getStatus().name()) ||
+                                    "ONGOING".equalsIgnoreCase(m.getTournament().getStatus().name())))
+                    .findFirst()
+                    .orElse(matches.get(0)); // Fallback to first match if no active tournament match found
+        }
+
         return mapToResponse(match);
     }
 
@@ -187,6 +204,18 @@ public class MatchServiceImpl implements MatchService {
         }
         if (request.getMatchCode() != null) {
             match.setMatchCode(request.getMatchCode());
+        }
+
+        // Update Teams if provided
+        if (request.getHomeTeamId() != null) {
+            Team homeTeam = teamRepository.findById(request.getHomeTeamId())
+                    .orElseThrow(() -> new EntityNotFoundException("Home Team not found"));
+            match.setHomeTeam(homeTeam);
+        }
+        if (request.getAwayTeamId() != null) {
+            Team awayTeam = teamRepository.findById(request.getAwayTeamId())
+                    .orElseThrow(() -> new EntityNotFoundException("Away Team not found"));
+            match.setAwayTeam(awayTeam);
         }
 
         // Set scores first if provided in the request

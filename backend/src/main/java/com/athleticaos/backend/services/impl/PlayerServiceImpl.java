@@ -5,9 +5,12 @@ import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.entities.PlayerTeam;
+import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
+import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.services.PlayerService;
 import com.athleticaos.backend.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,18 +27,31 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("null") // Suppressing null analysis warnings for cleaner logs
 public class PlayerServiceImpl implements PlayerService {
 
     private final PlayerRepository playerRepository;
     private final PersonRepository personRepository;
     private final UserService userService;
     private final PlayerTeamRepository playerTeamRepository;
+    private final TeamRepository teamRepository;
 
     @Override
     @Transactional(readOnly = true)
     public PlayerResponse getPlayerById(UUID id) {
         log.info("Fetching player by id: {}", id);
         Player player = playerRepository.findById(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        return mapToPlayerResponse(player);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PlayerResponse getPlayerBySlug(String slug) {
+        log.info("Fetching player by slug: {}", slug);
+        Player player = playerRepository.findBySlug(slug)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
         return mapToPlayerResponse(player);
     }
@@ -47,13 +64,19 @@ public class PlayerServiceImpl implements PlayerService {
 
         if (accessibleIds == null) {
             // SUPER_ADMIN sees all
-            players = playerRepository.findAllByOrderByCreatedAtDesc();
+            players = playerRepository.findAllByDeletedFalseOrderByCreatedAtDesc();
         } else if (accessibleIds.isEmpty()) {
             // No organisation assigned or empty hierarchy
             players = java.util.Collections.emptyList();
         } else {
             // Filter by accessible organisations via team assignments
-            players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds);
+            // Note: This logic might need updating for soft-delete if the repo query
+            // doesn't handle it
+            // For now, filtering in stream or assuming strict repo setup.
+            // Better to filter explicitly here for safety until custom query is confirmed.
+            players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds).stream()
+                    .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                    .collect(Collectors.toList());
         }
 
         return players.stream()
@@ -83,15 +106,27 @@ public class PlayerServiceImpl implements PlayerService {
                 .nationality(request.nationality())
                 .email(request.email())
                 .phone(request.phone())
-                .address(request.address())
+                .addressLine1(request.addressLine1())
+                .addressLine2(request.addressLine2())
+                .city(request.city())
+                .postcode(request.postcode())
+                .state(request.state())
+                .country(request.country())
+                .address(request.address()) // Legacy mapping
                 .build();
 
         person = personRepository.save(person);
         log.info("Created person record with id: {}", person.getId());
 
+        // Generate slug
+        String name = person.getFirstName() + " " + person.getLastName();
+        String slug = com.athleticaos.backend.utils.SlugGenerator.generateUniqueSlug(name,
+                playerRepository::existsBySlug);
+
         // Create Player record (Rugby-specific)
         Player player = Player.builder()
                 .person(person)
+                .slug(slug)
                 .status(request.status() != null ? request.status() : "ACTIVE")
                 .dominantHand(request.dominantHand())
                 .dominantLeg(request.dominantLeg())
@@ -102,6 +137,11 @@ public class PlayerServiceImpl implements PlayerService {
         player = playerRepository.save(player);
         log.info("Created player record with id: {}", player.getId());
 
+        // Handle Immediate Team Assignment
+        if (request.teamId() != null) {
+            assignToTeam(player, request.teamId());
+        }
+
         return mapToPlayerResponse(player);
     }
 
@@ -111,6 +151,7 @@ public class PlayerServiceImpl implements PlayerService {
         log.info("Updating player: {}", id);
 
         Player player = playerRepository.findById(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
         Person person = player.getPerson();
@@ -146,6 +187,21 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.phone() != null) {
             person.setPhone(request.phone());
         }
+
+        // Structured Address Updates
+        if (request.addressLine1() != null)
+            person.setAddressLine1(request.addressLine1());
+        if (request.addressLine2() != null)
+            person.setAddressLine2(request.addressLine2());
+        if (request.city() != null)
+            person.setCity(request.city());
+        if (request.postcode() != null)
+            person.setPostcode(request.postcode());
+        if (request.state() != null)
+            person.setState(request.state());
+        if (request.country() != null)
+            person.setCountry(request.country());
+
         if (request.address() != null) {
             person.setAddress(request.address());
         }
@@ -181,6 +237,7 @@ public class PlayerServiceImpl implements PlayerService {
         log.info("Toggling status for player: {}", id);
 
         Player player = playerRepository.findById(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
         // Toggle between ACTIVE and INACTIVE
@@ -194,6 +251,66 @@ public class PlayerServiceImpl implements PlayerService {
         return mapToPlayerResponse(player);
     }
 
+    @Override
+    @Transactional
+    public void deletePlayer(UUID id) {
+        Player player = playerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        player.setDeleted(true);
+        player.setDeletedAt(java.time.LocalDateTime.now());
+        playerRepository.save(player);
+    }
+
+    @Override
+    @Transactional
+    public void regenerateAllSlugs() {
+        List<Player> players = playerRepository.findAll();
+        for (Player player : players) {
+            boolean changed = false;
+            // Fix Null Slug
+            if (player.getSlug() == null || player.getSlug().isEmpty()) {
+                String baseSlug = com.athleticaos.backend.utils.SlugGenerator
+                        .generateSlug(player.getPerson().getFirstName() + " " + player.getPerson().getLastName());
+                String uniqueSlug = com.athleticaos.backend.utils.SlugGenerator.generateUniqueSlug(
+                        baseSlug,
+                        slug -> playerRepository.findBySlug(slug).isPresent());
+                player.setSlug(uniqueSlug);
+                changed = true;
+            }
+            // Fix Null Deleted
+            if (player.getDeleted() == null) {
+                player.setDeleted(false);
+                changed = true;
+            }
+
+            if (changed) {
+                playerRepository.save(player);
+            }
+        }
+    }
+
+    private void assignToTeam(Player player, UUID teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        // Check if already assigned
+        boolean exists = playerTeamRepository.existsByPlayerIdAndTeamId(player.getId(), teamId);
+        if (exists) {
+            return; // Already assigned, nothing to do
+        }
+
+        PlayerTeam playerTeam = PlayerTeam.builder()
+                .player(player)
+                .team(team)
+                .isActive(true)
+                .joinedDate(LocalDate.now())
+                .build();
+
+        playerTeamRepository.save(playerTeam);
+        log.info("Assigned player {} to team {}", player.getId(), team.getId());
+    }
+
+    @SuppressWarnings("deprecation")
     private PlayerResponse mapToPlayerResponse(Player player) {
         Person person = player.getPerson();
 
@@ -202,6 +319,8 @@ public class PlayerServiceImpl implements PlayerService {
         String organisationName = null;
         java.util.List<String> teamNames = new java.util.ArrayList<>();
 
+        // Helper filter for active assignments usually won't include deleted players
+        // unless logic is flawed
         List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
                 .findByPlayerIdAndIsActiveTrue(player.getId());
         if (!playerTeams.isEmpty()) {
@@ -222,6 +341,7 @@ public class PlayerServiceImpl implements PlayerService {
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
+                .slug(player.getSlug())
                 .firstName(person.getFirstName())
                 .lastName(person.getLastName())
                 .gender(person.getGender())
@@ -232,7 +352,15 @@ public class PlayerServiceImpl implements PlayerService {
                 .nationality(person.getNationality())
                 .email(person.getEmail())
                 .phone(person.getPhone())
-                .address(person.getAddress())
+                // Structured Address
+                .addressLine1(person.getAddressLine1())
+                .addressLine2(person.getAddressLine2())
+                .city(person.getCity())
+                .postcode(person.getPostcode())
+                .state(person.getState())
+                .country(person.getCountry())
+                .address(person.getAddress()) // Legacy
+                // Rugby
                 .status(player.getStatus())
                 .dominantHand(player.getDominantHand())
                 .dominantLeg(player.getDominantLeg())

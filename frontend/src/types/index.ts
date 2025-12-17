@@ -16,6 +16,16 @@ export interface User {
     status?: string;
     createdAt?: string;
     updatedAt?: string;
+    // Address fields
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postcode?: string;
+    state?: string;
+    country?: string;
+    stateCode?: string;
+    countryCode?: string;
+    address?: string; // Legacy
 }
 
 export interface LoginRequest {
@@ -126,6 +136,7 @@ export enum DominantSide {
 export interface Player {
     id: string;
     personId: string;
+    slug?: string;
     // Person (PII) fields
     firstName: string;
     lastName: string;
@@ -137,13 +148,22 @@ export interface Player {
     nationality: string;
     email?: string;
     phone?: string;
-    address?: string;
+    // Structured Address
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postcode?: string;
+    state?: string;
+    country?: string;
+    address?: string; // Legacy
     // Player (Rugby-specific) fields
     status: string; // ACTIVE, INACTIVE, BANNED
     dominantHand?: DominantSide;
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
+    organisationId?: string;
+    organisationName?: string;
     teamNames?: string[];
     createdAt: string;
 }
@@ -248,6 +268,23 @@ export interface TournamentCreateRequest {
     startDate: string;
     endDate: string;
     venue: string;
+}
+
+export interface TournamentFormatConfig {
+    id?: string;
+    tournamentId?: string;
+    formatType: string;
+    rugbyFormat: 'XV' | 'SEVENS' | 'TENS' | 'TOUCH';
+    teamCount: number;
+    poolCount?: number;
+    matchDurationMinutes: number;
+    pointsWin?: number;
+    pointsDraw?: number;
+    pointsLoss?: number;
+    pointsBonusTry?: number;
+    pointsBonusLoss?: number;
+    startersCount: number;
+    maxBenchCount: number;
 }
 
 // ============================================
@@ -361,4 +398,22 @@ export interface PaginatedResponse<T> {
     totalPages: number;
     size: number;
     number: number;
+}
+
+export enum LineupRole {
+    STARTER = 'STARTER',
+    BENCH = 'BENCH',
+    RESERVE = 'RESERVE',
+    NOT_SELECTED = 'NOT_SELECTED'
+}
+
+export interface MatchLineupEntry {
+    playerId: string;
+    playerName: string;
+    jerseyNumber?: number;
+    isCaptain: boolean;
+    role: LineupRole;
+    orderIndex?: number;
+    isStarter?: boolean;
+    positionDisplay?: string;
 }

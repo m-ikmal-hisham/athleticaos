@@ -14,5 +14,9 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
 
     List<Player> findByStatus(String status);
 
-    List<Player> findAllByOrderByCreatedAtDesc();
+    List<Player> findAllByDeletedFalseOrderByCreatedAtDesc();
+
+    boolean existsBySlug(String slug);
+
+    Optional<Player> findBySlug(String slug);
 }

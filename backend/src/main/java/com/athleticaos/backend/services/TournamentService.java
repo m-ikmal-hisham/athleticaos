@@ -51,6 +51,13 @@ public interface TournamentService {
 
         void clearSchedule(UUID tournamentId);
 
+        void clearSchedule(UUID tournamentId, boolean clearStructure);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO updateFormatConfig(UUID tournamentId,
+                        com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO configDTO);
+
         TournamentResponse updateStatus(UUID id, com.athleticaos.backend.enums.TournamentStatus status,
                         jakarta.servlet.http.HttpServletRequest httpRequest);
 }

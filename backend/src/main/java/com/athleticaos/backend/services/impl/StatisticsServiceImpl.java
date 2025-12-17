@@ -32,15 +32,12 @@ public class StatisticsServiceImpl implements StatisticsService {
         private final MatchRepository matchRepository;
         private final MatchEventRepository matchEventRepository;
         private final TournamentRepository tournamentRepository;
+        private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
 
         @Override
         public TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId) {
                 Tournament tournament = tournamentRepository.findById(tournamentId)
-                                .orElseThrow(() -> new RuntimeException("Tournament not found")); // Using
-                                                                                                  // RuntimeException
-                                                                                                  // for now,
-                                                                                                  // should be
-                                                                                                  // ResourceNotFoundException
+                                .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
@@ -80,21 +77,56 @@ public class StatisticsServiceImpl implements StatisticsService {
         @Override
         public List<PlayerStatsResponse> getPlayerStatsForTournament(UUID tournamentId) {
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
+                List<com.athleticaos.backend.entities.MatchLineup> lineups = matchLineupRepository
+                                .findByMatch_Tournament_Id(tournamentId);
 
-                // Group events by player ID
+                // Collect all unique player IDs involved in the tournament (via events or
+                // lineups)
+                Set<UUID> playerIds = new HashSet<>();
+                events.stream().filter(e -> e.getPlayer() != null).forEach(e -> playerIds.add(e.getPlayer().getId()));
+                lineups.forEach(l -> playerIds.add(l.getPlayer().getId()));
+
+                // Pre-group for efficiency
                 Map<UUID, List<MatchEvent>> eventsByPlayer = events.stream()
                                 .filter(e -> e.getPlayer() != null)
                                 .collect(Collectors.groupingBy(e -> e.getPlayer().getId()));
 
+                Map<UUID, Long> matchesPlayedByPlayer = lineups.stream()
+                                .filter(l -> l.getRole() == com.athleticaos.backend.enums.LineupRole.STARTER ||
+                                                l.getRole() == com.athleticaos.backend.enums.LineupRole.BENCH)
+                                .collect(Collectors.groupingBy(l -> l.getPlayer().getId(), Collectors.counting()));
+
+                // We need Player details. Since we don't have a bulk fetch handy or want to
+                // avoid N+1 issues cleanly without new repo methods,
+                // we will rely on data available in the objects. Lineup has Player, Event has
+                // Player.
+                // We'll create a map of PlayerId -> Player entity from the available lists.
+                Map<UUID, Player> playerEntityMap = new HashMap<>();
+                events.stream().filter(e -> e.getPlayer() != null)
+                                .forEach(e -> playerEntityMap.putIfAbsent(e.getPlayer().getId(), e.getPlayer()));
+                lineups.forEach(l -> playerEntityMap.putIfAbsent(l.getPlayer().getId(), l.getPlayer()));
+
                 List<PlayerStatsResponse> stats = new ArrayList<>();
 
-                for (Map.Entry<UUID, List<MatchEvent>> entry : eventsByPlayer.entrySet()) {
-                        UUID playerId = entry.getKey();
-                        List<MatchEvent> playerEvents = entry.getValue();
-                        Player player = playerEvents.get(0).getPlayer(); // Assuming player exists
-                        String teamName = playerEvents.get(0).getTeam() != null
-                                        ? playerEvents.get(0).getTeam().getName()
-                                        : null;
+                for (UUID playerId : playerIds) {
+                        Player player = playerEntityMap.get(playerId);
+                        if (player == null)
+                                continue;
+
+                        List<MatchEvent> playerEvents = eventsByPlayer.getOrDefault(playerId, Collections.emptyList());
+                        int matchesPlayed = matchesPlayedByPlayer.getOrDefault(playerId, 0L).intValue();
+
+                        String teamName = null;
+                        if (!playerEvents.isEmpty() && playerEvents.get(0).getTeam() != null) {
+                                teamName = playerEvents.get(0).getTeam().getName();
+                        } else {
+                                // Try to find team from lineups
+                                teamName = lineups.stream()
+                                                .filter(l -> l.getPlayer().getId().equals(playerId))
+                                                .findFirst()
+                                                .map(l -> l.getTeam().getName())
+                                                .orElse(null);
+                        }
 
                         int tries = countEvents(playerEvents, MatchEventType.TRY);
                         int conversions = countEvents(playerEvents, MatchEventType.CONVERSION);
@@ -104,14 +136,6 @@ public class StatisticsServiceImpl implements StatisticsService {
                         int redCards = countEvents(playerEvents, MatchEventType.RED_CARD);
 
                         int totalPoints = playerEvents.stream().mapToInt(this::getPointsForEvent).sum();
-
-                        // Matches played approximation: distinct match IDs in events
-                        // Ideally we'd check lineups, but per prompt we use events or lineups.
-                        // Since we don't have lineups yet, we use events.
-                        int matchesPlayed = (int) playerEvents.stream()
-                                        .map(e -> e.getMatch().getId())
-                                        .distinct()
-                                        .count();
 
                         stats.add(new PlayerStatsResponse(
                                         playerId,

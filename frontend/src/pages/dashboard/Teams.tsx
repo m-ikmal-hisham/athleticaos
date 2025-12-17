@@ -80,8 +80,7 @@ export default function Teams() {
                         <select
                             value={organisationFilter}
                             onChange={(e) => setOrganisationFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Organisations</option>
                             {organisations.map(org => (
@@ -92,8 +91,7 @@ export default function Teams() {
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Categories</option>
                             {categories.map(cat => (
@@ -104,8 +102,7 @@ export default function Teams() {
                         <select
                             value={ageGroupFilter}
                             onChange={(e) => setAgeGroupFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All Age Groups</option>
                             {ageGroups.map(age => (
@@ -116,8 +113,7 @@ export default function Teams() {
                         <select
                             value={stateFilter}
                             onChange={(e) => setStateFilter(e.target.value)}
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">All States</option>
                             {states.map(state => (

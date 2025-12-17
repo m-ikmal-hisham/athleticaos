@@ -96,7 +96,7 @@ public class ProgressionServiceImpl implements ProgressionService {
 
         // Verify tournament exists
         tournamentRepository.findById(tournamentId)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
@@ -261,7 +261,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .venue(completedMatch.getTournament().getVenue())
                 .status(MatchStatus.SCHEDULED)
                 .phase(placementStage.getName())
-                .matchCode(String.format("%s-M%d", getStageAbbreviation(placementStage.getStageType()),
+                .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
+                        getStageAbbreviation(placementStage.getStageType()),
                         existingMatches.size() + 1))
                 .build();
 
@@ -335,7 +336,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .venue(completedMatch.getTournament().getVenue())
                 .status(MatchStatus.SCHEDULED)
                 .phase(nextStage.getName())
-                .matchCode(String.format("%s-M%d", getStageAbbreviation(nextStage.getStageType()),
+                .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
+                        getStageAbbreviation(nextStage.getStageType()),
                         nextStageMatchIndex + 1))
                 .build();
 

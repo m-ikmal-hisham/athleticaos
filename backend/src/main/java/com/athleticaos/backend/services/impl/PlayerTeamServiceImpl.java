@@ -99,6 +99,8 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                 List<PlayerTeam> playerTeams = playerTeamRepository.findActiveRosterByTeamId(teamId);
 
                 return playerTeams.stream()
+                                .filter(com.athleticaos.backend.utils.StreamUtils
+                                                .distinctByKey(pt -> pt.getPlayer().getId()))
                                 .map(pt -> PlayerInTeamDTO.builder()
                                                 .playerId(pt.getPlayer().getId())
                                                 .firstName(pt.getPlayer().getPerson().getFirstName())

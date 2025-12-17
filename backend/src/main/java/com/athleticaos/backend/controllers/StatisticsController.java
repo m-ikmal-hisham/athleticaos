@@ -23,6 +23,7 @@ import java.util.UUID;
 public class StatisticsController {
 
     private final StatisticsService statisticsService;
+    private final com.athleticaos.backend.services.PlayerService playerService;
 
     @GetMapping("/tournaments/{tournamentId}/summary")
     @PreAuthorize("isAuthenticated()")
@@ -52,11 +53,17 @@ public class StatisticsController {
         return statisticsService.getTournamentLeaderboard(tournamentId);
     }
 
-    @GetMapping("/players/{playerId}")
+    @GetMapping("/players/{id}")
     @PreAuthorize("isAuthenticated()")
     public PlayerStatsResponse getPlayerStatsAcrossTournaments(
-            @PathVariable UUID playerId) {
-        return statisticsService.getPlayerStatsAcrossTournaments(playerId);
+            @PathVariable String id) {
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            uuid = playerService.getPlayerBySlug(id).id();
+        }
+        return statisticsService.getPlayerStatsAcrossTournaments(uuid);
     }
 
     @GetMapping("/teams/{teamId}")

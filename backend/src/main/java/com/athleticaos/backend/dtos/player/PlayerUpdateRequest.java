@@ -6,26 +6,34 @@ import jakarta.validation.constraints.Email;
 import java.time.LocalDate;
 
 public record PlayerUpdateRequest(
-        // Person (PII) fields
-        String firstName,
-        String lastName,
-        String gender,
-        @JsonFormat(pattern = "yyyy-MM-dd") LocalDate dob,
-        String icOrPassport,
-        String identificationType,
-        String identificationValue,
-        String nationality,
+                // Person (PII) fields
+                String firstName,
+                String lastName,
+                String gender,
+                @JsonFormat(pattern = "yyyy-MM-dd") LocalDate dob,
+                String icOrPassport,
+                String identificationType,
+                String identificationValue,
+                String nationality,
 
-        @Email(message = "Invalid email format") String email,
+                @Email(message = "Invalid email format") String email,
 
-        String phone,
-        String address,
+                String phone,
+                // Structured Address
+                String addressLine1,
+                String addressLine2,
+                String postcode,
+                String city,
+                String state,
+                String country,
 
-        // Player (Rugby-specific) fields
-        String status, // ACTIVE, INACTIVE, BANNED
+                @Deprecated String address,
 
-        String dominantHand,
-        String dominantLeg,
-        Integer heightCm,
-        Integer weightKg) {
+                // Player (Rugby-specific) fields
+                String status, // ACTIVE, INACTIVE, BANNED
+
+                String dominantHand,
+                String dominantLeg,
+                Integer heightCm,
+                Integer weightKg) {
 }

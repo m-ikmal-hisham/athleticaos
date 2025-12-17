@@ -17,4 +17,10 @@ public interface PlayerService {
     PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request);
 
     PlayerResponse toggleStatus(UUID id);
+
+    void deletePlayer(UUID id);
+
+    PlayerResponse getPlayerBySlug(String slug);
+
+    void regenerateAllSlugs();
 }

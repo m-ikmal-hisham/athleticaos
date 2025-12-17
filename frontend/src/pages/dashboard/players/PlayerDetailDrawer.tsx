@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useState } from 'react';
-import { X, TrendingUp, Award, Target } from 'lucide-react';
+import { X, TrendingUp, Award, Target, Trash2 } from 'lucide-react';
 import { fetchPlayerById, fetchPlayerStats } from '../../../api/players.api';
 import { Button } from '../../../components/Button';
+import { usePlayersStore } from '../../../store/players.store';
+import { useAuthStore } from '../../../store/auth.store';
+import { calculateAge } from '../../../utils/date';
 
 interface PlayerDetailDrawerProps {
     playerId: string | null;
@@ -51,6 +54,33 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
     const [stats, setStats] = useState<PlayerStats | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const { deletePlayer } = usePlayersStore();
+    const { user } = useAuthStore();
+    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!playerId) return;
+        setIsDeleting(true);
+        try {
+            await deletePlayer(playerId);
+            // success is handled by closing drawer (logic in store or here)
+            // But store logic closes drawer if active player is deleted.
+            // We just need to ensure modal closes.
+            setShowDeleteConfirm(false);
+        } catch (err) {
+            console.error('Failed to delete player:', err);
+            // Optional: Show toast error
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     useEffect(() => {
         if (!isOpen) {
@@ -214,6 +244,9 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                                 <span className="text-muted-foreground">Date of Birth</span>
                                                 <span className="text-foreground">
                                                     {new Date(player.dateOfBirth).toLocaleDateString()}
+                                                    <span className="text-muted-foreground ml-2">
+                                                        ({calculateAge(player.dateOfBirth)} yrs)
+                                                    </span>
                                                 </span>
                                             </div>
                                         )}
@@ -325,15 +358,54 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                             )}
 
                             {/* Actions */}
-                            <div className="pt-4">
-                                <Button onClick={handleViewStats} className="w-full">
+                            <div className="pt-4 flex gap-3">
+                                <Button onClick={handleViewStats} className="flex-1">
                                     View Full Stats
                                 </Button>
+                                {isAdmin && (
+                                    <Button
+                                        onClick={handleDeleteClick}
+                                        variant="danger"
+                                        className="w-10 px-0 flex items-center justify-center"
+                                        title="Delete Player"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-background border border-border rounded-lg shadow-lg max-w-md w-full p-6 space-y-4">
+                        <h3 className="text-lg font-semibold text-foreground">Delete Player</h3>
+                        <p className="text-muted-foreground">
+                            Are you sure you want to delete <strong>{player?.firstName} {player?.lastName}</strong>?
+                            This action uses soft delete and can be audited.
+                        </p>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={isDeleting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={handleConfirmDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Fragment>
     );
 };

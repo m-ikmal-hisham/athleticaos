@@ -28,7 +28,7 @@ public class Team {
     @JoinColumn(name = "organisation_id", nullable = false)
     private Organisation organisation;
 
-    @Column(unique = true, nullable = false, length = 255)
+    @Column(unique = true, length = 255)
     private String slug;
 
     @Column(nullable = false)

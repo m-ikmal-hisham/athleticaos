@@ -24,6 +24,12 @@ export interface UserUpdateRequest {
     roles?: string[];
     organisationId?: string;
     isActive?: boolean;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postcode?: string;
+    state?: string;
+    country?: string;
 }
 
 export const usersApi = {
