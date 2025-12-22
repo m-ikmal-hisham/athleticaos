@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -32,8 +30,9 @@ public class DashboardServiceImpl implements DashboardService {
         long totalMatches = matchRepository.count();
         long totalOrganisations = organisationRepository.count();
 
-        // Count active tournaments (assuming there's a status field)
-        long activeTournaments = tournamentRepository.count(); // TODO: filter by active status if available
+        // Count active tournaments (LIVE status)
+        long activeTournaments = tournamentRepository
+                .countByStatus(com.athleticaos.backend.enums.TournamentStatus.LIVE);
 
         // Count upcoming matches (scheduled status)
         long upcomingMatches = matchRepository.countByStatus(MatchStatus.SCHEDULED);

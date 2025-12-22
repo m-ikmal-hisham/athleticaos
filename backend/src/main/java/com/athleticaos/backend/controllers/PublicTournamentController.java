@@ -180,12 +180,16 @@ public class PublicTournamentController {
 
         // Fetch organiser name
         String organiserName = "Organiser";
-        try {
-            organiserName = organisationRepository.findById(t.getOrganiserOrgId())
-                    .map(com.athleticaos.backend.entities.Organisation::getName)
-                    .orElse("Organiser");
-        } catch (Exception e) {
-            // Fallback to default
+        if (t.getOrganiserOrgId() != null) {
+            try {
+                @SuppressWarnings("null")
+                String name = organisationRepository.findById(t.getOrganiserOrgId())
+                        .map(com.athleticaos.backend.entities.Organisation::getName)
+                        .orElse("Organiser");
+                organiserName = name;
+            } catch (Exception e) {
+                // Fallback to default
+            }
         }
 
         return PublicTournamentDetailResponse.builder()

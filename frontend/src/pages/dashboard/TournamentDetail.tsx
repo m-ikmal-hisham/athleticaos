@@ -207,9 +207,22 @@ export default function TournamentDetail() {
                                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tournament.competitionType || 'Standard'}</p>
                                 </div>
                                 <div className="p-6 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Age Group</h3>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{tournament.ageGroupLabel || 'Open'}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tournament.isAgeGrade ? 'Restricted' : 'Unrestricted'}</p>
+                                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Divisions / Categories</h3>
+                                    {tournament.categories && tournament.categories.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {tournament.categories.map(cat => (
+                                                <div key={cat.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded text-sm">
+                                                    <span className="font-semibold">{cat.name}</span>
+                                                    <span className="text-xs text-muted-foreground">{cat.gender}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{tournament.ageGroupLabel || 'Open'}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tournament.isAgeGrade ? 'Restricted' : 'Unrestricted'}</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

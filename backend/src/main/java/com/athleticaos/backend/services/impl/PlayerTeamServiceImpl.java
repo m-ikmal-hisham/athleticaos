@@ -30,6 +30,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
 
         @Override
         @Transactional
+        @SuppressWarnings("null")
         public void assignPlayerToTeam(AssignPlayerRequest request) {
                 log.info("Assigning player {} to team {}", request.getPlayerId(), request.getTeamId());
 

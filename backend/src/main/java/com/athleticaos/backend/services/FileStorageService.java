@@ -30,10 +30,14 @@ public class FileStorageService {
 
     public String storeFile(MultipartFile file) {
         // Normalize file name
-        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName == null) {
+            throw new RuntimeException("Sorry! Filename is empty");
+        }
+        String cleanFileName = StringUtils.cleanPath(originalFileName);
 
         // Generate a unique file name to avoid collisions
-        String fileName = UUID.randomUUID().toString() + "_" + originalFileName;
+        String fileName = UUID.randomUUID().toString() + "_" + cleanFileName;
 
         try {
             // Check if the file's name contains invalid characters
@@ -51,10 +55,12 @@ public class FileStorageService {
         }
     }
 
+    @SuppressWarnings("null")
     public Resource loadFileAsResource(String fileName) {
         try {
             Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
+            java.net.URI uri = filePath.toUri();
+            Resource resource = new UrlResource(uri);
             if (resource.exists()) {
                 return resource;
             } else {

@@ -41,7 +41,8 @@ public class OrganisationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<OrganisationResponse> createOrganisation(
             @RequestBody @Valid OrganisationCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -58,7 +59,8 @@ public class OrganisationController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<OrganisationResponse> updateOrganisation(
             @PathVariable UUID id,
             @RequestBody @Valid OrganisationUpdateRequest request,

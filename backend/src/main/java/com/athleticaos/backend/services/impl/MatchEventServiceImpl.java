@@ -2,7 +2,6 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.dtos.match.MatchEventCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchEventResponse;
-import com.athleticaos.backend.dtos.roster.PlayerSuspensionDTO;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.MatchEvent;
 import com.athleticaos.backend.entities.PlayerSuspension;
@@ -42,6 +41,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public List<MatchEventResponse> getEventsForMatch(UUID matchId) {
         if (!matchRepository.existsById(matchId)) {
             throw new EntityNotFoundException("Match not found with ID: " + matchId);
@@ -53,6 +53,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public MatchEventResponse addEventToMatch(UUID matchId, MatchEventCreateRequest request,
             HttpServletRequest httpRequest) {
         Match match = matchRepository.findById(matchId)
@@ -160,6 +161,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public UUID deleteEvent(UUID eventId) {
         MatchEvent event = matchEventRepository.findById(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Match Event not found with ID: " + eventId));

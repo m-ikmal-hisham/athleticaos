@@ -36,7 +36,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         @Override
         public TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId) {
-                Tournament tournament = tournamentRepository.findById(tournamentId)
+                Tournament tournament = tournamentRepository
+                                .findById(java.util.Objects.requireNonNull(tournamentId,
+                                                "Tournament ID must not be null"))
                                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
@@ -76,6 +78,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         @Override
         public List<PlayerStatsResponse> getPlayerStatsForTournament(UUID tournamentId) {
+                java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
                 List<com.athleticaos.backend.entities.MatchLineup> lineups = matchLineupRepository
                                 .findByMatch_Tournament_Id(tournamentId);
@@ -157,6 +160,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         @Override
         public List<TeamStatsResponse> getTeamStatsForTournament(UUID tournamentId) {
+                java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
 
@@ -246,6 +250,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         @Override
         public TournamentLeaderboardResponse getTournamentLeaderboard(UUID tournamentId) {
+                java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 TournamentStatsSummaryResponse summary = getTournamentSummary(tournamentId);
                 List<PlayerStatsResponse> playerStats = getPlayerStatsForTournament(tournamentId);
                 List<TeamStatsResponse> teamStats = getTeamStatsForTournament(tournamentId);
@@ -283,13 +288,13 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         @Override
         public PlayerStatsResponse getPlayerStatsAcrossTournaments(UUID playerId) {
-                // TODO: Implement across tournaments
+                // Note: Implementation across tournaments pending
                 return null;
         }
 
         @Override
         public TeamStatsResponse getTeamStatsAcrossTournaments(UUID teamId) {
-                // TODO: Implement across tournaments
+                // Note: Implementation across tournaments pending
                 return null;
         }
 

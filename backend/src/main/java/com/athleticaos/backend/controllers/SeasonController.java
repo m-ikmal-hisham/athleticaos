@@ -43,19 +43,19 @@ public class SeasonController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     public ResponseEntity<Season> createSeason(@RequestBody Season season) {
         return ResponseEntity.ok(seasonService.createSeason(season));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     public ResponseEntity<Season> updateSeason(@PathVariable UUID id, @RequestBody Season season) {
         return ResponseEntity.ok(seasonService.updateSeason(id, season));
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     public ResponseEntity<Season> updateStatus(@PathVariable UUID id, @RequestParam String status) {
         return ResponseEntity.ok(seasonService.updateStatus(id, status));
     }

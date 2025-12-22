@@ -96,6 +96,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public List<MatchResponse> getMatchesByTournament(UUID tournamentId) {
         // Validate tournament exists
         if (!tournamentRepository.existsById(tournamentId)) {
@@ -108,6 +109,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public MatchResponse getMatchById(UUID id) {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
@@ -141,6 +143,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public MatchResponse createMatch(MatchCreateRequest request, HttpServletRequest httpRequest) {
         Tournament tournament = tournamentRepository.findById(request.getTournamentId())
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -183,6 +186,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public MatchResponse updateMatch(UUID id, MatchUpdateRequest request, HttpServletRequest httpRequest) {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
@@ -250,6 +254,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public void deleteMatch(UUID id) {
         if (!matchRepository.existsById(id)) {
             throw new EntityNotFoundException("Match not found with ID: " + id);
@@ -298,6 +303,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public void recalculateMatchScores(UUID matchId) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
@@ -340,6 +346,7 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public MatchResponse updateMatchStatus(UUID id, String status, HttpServletRequest httpRequest) {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));

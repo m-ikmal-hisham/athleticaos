@@ -35,6 +35,9 @@ public class TournamentCreateRequest {
     private String venue;
 
     // Phase C: Competition Management
+    // Phase C: Competition Management
     private UUID seasonId;
     private CompetitionType competitionType;
+
+    private java.util.List<CreateCategoryRequest> categories;
 }

@@ -37,6 +37,7 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
      */
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, String reason,
             int matches) {
         log.info("Creating suspension for player {} in tournament {}: {}",

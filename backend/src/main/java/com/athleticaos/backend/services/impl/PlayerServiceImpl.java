@@ -86,6 +86,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
+    @SuppressWarnings("deprecation")
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
@@ -147,6 +148,7 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
+    @SuppressWarnings("deprecation")
     public PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request) {
         log.info("Updating player: {}", id);
 

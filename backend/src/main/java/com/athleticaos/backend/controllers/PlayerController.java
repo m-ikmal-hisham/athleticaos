@@ -41,7 +41,8 @@ public class PlayerController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PlayerResponse> createPlayer(
             @RequestBody @Valid PlayerCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -57,7 +58,8 @@ public class PlayerController {
     }
 
     @PutMapping("/{idOrSlug}")
-    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PlayerResponse> updatePlayer(
             @PathVariable String idOrSlug,
             @RequestBody @Valid PlayerUpdateRequest request,
@@ -75,7 +77,8 @@ public class PlayerController {
     }
 
     @DeleteMapping("/{idOrSlug}")
-    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<Void> deletePlayer(
             @PathVariable String idOrSlug,
             HttpServletRequest httpRequest) {
@@ -93,7 +96,7 @@ public class PlayerController {
     }
 
     @PostMapping("/admin/regenerate-slugs")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<Void> regenerateSlugs() {
         playerService.regenerateAllSlugs();
         return ResponseEntity.ok().build();

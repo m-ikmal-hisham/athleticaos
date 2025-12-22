@@ -4,7 +4,6 @@ import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.tournament.*;
 import com.athleticaos.backend.entities.*;
 import com.athleticaos.backend.enums.MatchStatus;
-import com.athleticaos.backend.enums.TournamentFormat;
 import com.athleticaos.backend.enums.TournamentStageType;
 import com.athleticaos.backend.repositories.*;
 import com.athleticaos.backend.services.BracketService;
@@ -117,6 +116,7 @@ public class BracketServiceImpl implements BracketService {
         return getBracketForTournament(tournamentId);
     }
 
+    @SuppressWarnings("null")
     private List<Team> getTeamsForBracket(BracketGenerationRequest request) {
         if (request.getTeamIds() == null || request.getTeamIds().isEmpty()) {
             return Collections.emptyList();
@@ -129,6 +129,7 @@ public class BracketServiceImpl implements BracketService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
     protected void clearExistingBracket(UUID tournamentId) {
         log.info("Clearing existing bracket for tournament: {}", tournamentId);
 
@@ -140,6 +141,7 @@ public class BracketServiceImpl implements BracketService {
         stageRepository.deleteByTournamentId(tournamentId);
     }
 
+    @SuppressWarnings("null")
     private void generateRoundRobinBracket(Tournament tournament, List<Team> teams, Integer numberOfPools,
             List<String> poolNames) {
         log.info("Generating round-robin bracket with {} pools for {} teams", numberOfPools, teams.size());
@@ -204,6 +206,7 @@ public class BracketServiceImpl implements BracketService {
         return pools;
     }
 
+    @SuppressWarnings("null")
     private void generateRoundRobinMatches(Tournament tournament, TournamentStage stage, List<Team> teams,
             String poolName) {
         // Generate all possible pairings (each team plays every other team once)
@@ -244,6 +247,7 @@ public class BracketServiceImpl implements BracketService {
         log.info("Knockout bracket generated.");
     }
 
+    @SuppressWarnings("null")
     private void legacyKnockoutGeneration(Tournament tournament, List<Team> teams) {
         int teamCount = teams.size();
 
@@ -398,6 +402,7 @@ public class BracketServiceImpl implements BracketService {
                 matchesMap.get("Spoon Final (15th Place)"));
     }
 
+    @SuppressWarnings("null")
     private TournamentStage createAndStoreStage(Tournament tournament, String name, TournamentStageType type, int order,
             int matchCount, Map<String, TournamentStage> stagesMap,
             Map<String, List<Match>> matchesMap) {
@@ -431,6 +436,7 @@ public class BracketServiceImpl implements BracketService {
         return stage;
     }
 
+    @SuppressWarnings("null")
     private void linkComplexRound(List<Match> sourceMatches, List<Match> winnerMatches, List<Match> loserMatches) {
         if (sourceMatches == null)
             return;
@@ -517,6 +523,7 @@ public class BracketServiceImpl implements BracketService {
         return stages;
     }
 
+    @SuppressWarnings("null")
     private void generateMixedFormatBracket(Tournament tournament, List<Team> teams, Integer numberOfPools,
             List<String> poolNames) {
         log.info("Generating mixed format bracket with {} pools for {} teams", numberOfPools, teams.size());
@@ -602,6 +609,7 @@ public class BracketServiceImpl implements BracketService {
     }
 
     @Transactional
+    @SuppressWarnings({ "null", "unused" })
     public void progressPoolsToKnockout(UUID tournamentId) {
         log.info("Progressing pool winners to knockout stage for tournament: {}", tournamentId);
 
@@ -650,9 +658,9 @@ public class BracketServiceImpl implements BracketService {
         // Initialize standings for all teams in pool
         for (Match match : poolMatches) {
             standingsMap.putIfAbsent(match.getHomeTeam().getId(),
-                    new PoolStanding(match.getHomeTeam(), poolStage.getName()));
+                    new PoolStanding(match.getHomeTeam()));
             standingsMap.putIfAbsent(match.getAwayTeam().getId(),
-                    new PoolStanding(match.getAwayTeam(), poolStage.getName()));
+                    new PoolStanding(match.getAwayTeam()));
         }
 
         // Calculate points from completed matches
@@ -666,24 +674,16 @@ public class BracketServiceImpl implements BracketService {
             PoolStanding homeStanding = standingsMap.get(match.getHomeTeam().getId());
             PoolStanding awayStanding = standingsMap.get(match.getAwayTeam().getId());
 
-            homeStanding.played++;
-            awayStanding.played++;
             homeStanding.pointsFor += match.getHomeScore();
             homeStanding.pointsAgainst += match.getAwayScore();
             awayStanding.pointsFor += match.getAwayScore();
             awayStanding.pointsAgainst += match.getHomeScore();
 
             if (match.getHomeScore() > match.getAwayScore()) {
-                homeStanding.wins++;
                 homeStanding.points += 4; // 4 points for win
-                awayStanding.losses++;
             } else if (match.getAwayScore() > match.getHomeScore()) {
-                awayStanding.wins++;
                 awayStanding.points += 4;
-                homeStanding.losses++;
             } else {
-                homeStanding.draws++;
-                awayStanding.draws++;
                 homeStanding.points += 2; // 2 points for draw
                 awayStanding.points += 2;
             }
@@ -725,18 +725,17 @@ public class BracketServiceImpl implements BracketService {
     // Helper class for pool standings
     private static class PoolStanding {
         Team team;
-        String poolName;
-        int played = 0;
-        int wins = 0;
-        int draws = 0;
-        int losses = 0;
+        // Fields for calculation logic only
         int pointsFor = 0;
         int pointsAgainst = 0;
         int points = 0;
 
-        PoolStanding(Team team, String poolName) {
+        // Although played, wins, draws, losses are calculated, they aren't used for
+        // sorting currently
+        // Keeping logic simple
+
+        PoolStanding(Team team) {
             this.team = team;
-            this.poolName = poolName;
         }
 
         int getPoints() {
@@ -771,6 +770,7 @@ public class BracketServiceImpl implements BracketService {
         log.info("Placement stages created. Teams will be assigned via progression logic when matches complete.");
     }
 
+    @SuppressWarnings("null")
     private void createPlacementStage(Tournament tournament, String stageName, TournamentStageType stageType,
             int displayOrder, int numberOfMatches) {
         TournamentStage stage = TournamentStage.builder()

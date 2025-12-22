@@ -33,7 +33,7 @@ public class MatchEventController {
     }
 
     @PostMapping("/{matchIdOrSlug}/events")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Add an event to a match")
     public ResponseEntity<MatchEventResponse> addEventToMatch(@PathVariable String matchIdOrSlug,
             @RequestBody @Valid MatchEventCreateRequest request, HttpServletRequest httpRequest) {
@@ -44,7 +44,7 @@ public class MatchEventController {
     }
 
     @DeleteMapping("/events/{eventId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Delete a match event")
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
         UUID matchId = matchEventService.deleteEvent(eventId);

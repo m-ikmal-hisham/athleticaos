@@ -97,6 +97,7 @@ public class SeedingServiceImpl implements SeedingService {
         log.info("Pilot data seeding completed.");
     }
 
+    @SuppressWarnings("null")
     private Organisation createStateUnion(String state, String name) {
         String slug = SlugGenerator.generateUniqueSlug(name, s -> organisationRepository.findBySlug(s).isPresent());
         Organisation org = Organisation.builder()
@@ -112,6 +113,7 @@ public class SeedingServiceImpl implements SeedingService {
         return organisationRepository.save(org);
     }
 
+    @SuppressWarnings("null")
     private Team createTeam(Organisation org, String name) {
         String slug = SlugGenerator.generateUniqueSlug(name, s -> teamRepository.findBySlug(s).isPresent());
         Team team = Team.builder()
@@ -126,6 +128,7 @@ public class SeedingServiceImpl implements SeedingService {
         return teamRepository.save(team);
     }
 
+    @SuppressWarnings("null")
     private void createAndAssignPlayer(Team team, Organisation org) {
         // Person
         String firstName = faker.name().firstName();

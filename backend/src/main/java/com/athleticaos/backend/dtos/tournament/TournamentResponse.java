@@ -25,4 +25,5 @@ public class TournamentResponse {
     private String status;
     private String seasonName;
     private String competitionType;
+    private java.util.List<TournamentCategoryDTO> categories;
 }

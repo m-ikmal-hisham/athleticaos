@@ -51,19 +51,17 @@ public class TeamServiceImpl implements TeamService {
                 .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("null")
     @Transactional(readOnly = true)
     public TeamResponse getTeamById(UUID id) {
-        return teamRepository.findById(id)
+        return teamRepository.findById(java.util.Objects.requireNonNull(id, "ID must not be null"))
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
     }
 
-    @SuppressWarnings("null")
     @Transactional(readOnly = true)
     public TeamResponse getTeamBySlug(String slug) {
         log.info("Fetching team by slug: {}", slug);
-        return teamRepository.findBySlug(slug)
+        return teamRepository.findBySlug(java.util.Objects.requireNonNull(slug, "Slug must not be null"))
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found with slug: " + slug));
     }

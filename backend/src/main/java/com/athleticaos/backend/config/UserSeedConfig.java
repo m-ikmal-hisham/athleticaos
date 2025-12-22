@@ -25,6 +25,7 @@ public class UserSeedConfig {
     private final PasswordEncoder passwordEncoder;
 
     @Bean
+    @SuppressWarnings("null")
     public CommandLineRunner seedUsers() {
         return args -> {
             log.info("Seeding users...");

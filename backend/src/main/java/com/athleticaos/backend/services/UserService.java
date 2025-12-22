@@ -2,7 +2,6 @@ package com.athleticaos.backend.services;
 
 import com.athleticaos.backend.dtos.user.InviteUserRequest;
 import com.athleticaos.backend.dtos.user.InviteUserResponse;
-import com.athleticaos.backend.dtos.user.PlayerResponse;
 import com.athleticaos.backend.dtos.user.UserCreateRequest;
 import com.athleticaos.backend.dtos.user.UserResponse;
 import com.athleticaos.backend.dtos.user.UserRolesResponse;
@@ -10,7 +9,6 @@ import com.athleticaos.backend.dtos.user.UserUpdateRequest;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.entities.Role;
 import com.athleticaos.backend.repositories.RoleRepository;
-import com.athleticaos.backend.services.PlayerTeamService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.athleticaos.backend.entities.User;
@@ -197,6 +195,7 @@ public class UserService {
         validateInvitePermissions(currentUser, roleName, request.getOrganisationId());
 
         // Fetch organisation
+        @SuppressWarnings("null")
         com.athleticaos.backend.entities.Organisation organisation = organisationRepository
                 .findById(request.getOrganisationId())
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
@@ -216,6 +215,7 @@ public class UserService {
                 .roles(Collections.singleton(role))
                 .build();
 
+        @SuppressWarnings("null")
         User savedUser = userRepository.save(newUser);
         auditLogger.logUserInvited(savedUser, httpRequest);
 
@@ -276,6 +276,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public UserRolesResponse getUserRoles(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -301,7 +302,7 @@ public class UserService {
         // Since we removed the direct relationship, we need to fetch this differently
         // or return empty for now
         // The PlayerTeamService handles the relationship between players and teams
-        List<String> teamNames = Collections.emptyList(); // TODO: Fetch via PlayerTeamService if needed for
+        List<String> teamNames = Collections.emptyList(); // Fetch via PlayerTeamService if needed for UserResponse
                                                           // UserResponse
 
         return UserResponse.builder()
@@ -327,23 +328,6 @@ public class UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
-    }
-
-    private PlayerResponse mapToPlayerResponse(User user) {
-        String role = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse("UNKNOWN");
-
-        return new PlayerResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                role,
-                user.isActive() ? "Active" : "Inactive",
-                user.getOrganisation() != null ? user.getOrganisation().getName() : null,
-                user.getOrganisation() != null ? user.getOrganisation().getId() : null);
     }
 
     public java.util.Set<UUID> resolveAccessibleOrganisationIds(User currentUser) {

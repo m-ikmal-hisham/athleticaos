@@ -32,6 +32,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional
+        @SuppressWarnings("null")
         public List<TournamentPlayerDTO> addPlayersToRoster(UUID tournamentId, UUID teamId, List<UUID> playerIds) {
                 log.info("Adding {} players to roster for tournament {} team {}", playerIds.size(), tournamentId,
                                 teamId);
@@ -90,6 +91,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional
+        @SuppressWarnings("null")
         public void removePlayerFromRoster(UUID tournamentPlayerId) {
                 log.info("Removing player from roster: {}", tournamentPlayerId);
 
@@ -116,6 +118,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional(readOnly = true)
+        @SuppressWarnings("null")
         public LineupHintsDTO getLineupHints(UUID matchId) {
                 log.info("Getting lineup hints for match {}", matchId);
 

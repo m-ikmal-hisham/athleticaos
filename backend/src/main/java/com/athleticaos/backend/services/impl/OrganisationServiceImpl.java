@@ -290,6 +290,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @SuppressWarnings("null")
     public Object getTree(UUID countryId) {
         Organisation country = organisationRepository.findById(countryId)
                 .orElseThrow(() -> new EntityNotFoundException("Country not found"));

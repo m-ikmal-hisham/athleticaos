@@ -23,7 +23,7 @@ public class SeedingController {
     private final SeedingService seedingService;
 
     @PostMapping("/pilot-data")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @Operation(summary = "Seed Pilot Data", description = "Generates 16 State Union organisations, 1 Men's Open team each, and 40 players per team.")
     public ResponseEntity<String> seedPilotData() {
         log.info("Request to seed pilot data received.");

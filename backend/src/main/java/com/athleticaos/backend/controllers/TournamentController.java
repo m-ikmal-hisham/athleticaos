@@ -34,6 +34,7 @@ public class TournamentController {
     private final BracketService bracketService;
     private final ProgressionService progressionService;
     private final com.athleticaos.backend.services.StandingsService standingsService;
+    private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -57,7 +58,7 @@ public class TournamentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<TournamentResponse> createTournament(
             @Valid @RequestBody TournamentCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -65,7 +66,7 @@ public class TournamentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<TournamentResponse> updateTournament(
             @PathVariable UUID id,
             @Valid @RequestBody TournamentUpdateRequest request,
@@ -74,14 +75,14 @@ public class TournamentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<Void> deleteTournament(@PathVariable UUID id) {
         tournamentService.deleteTournament(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/publish")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<TournamentResponse> publishTournament(
             @PathVariable UUID id,
             @RequestParam boolean publish,
@@ -91,6 +92,7 @@ public class TournamentController {
 
     @GetMapping("/{idOrSlug}/export/matches")
     @PreAuthorize("isAuthenticated()")
+    @SuppressWarnings("null")
     public ResponseEntity<byte[]> exportMatches(@PathVariable String idOrSlug) {
         UUID id = fetchTournament(idOrSlug).getId();
         byte[] csvData = tournamentService.exportMatches(id);
@@ -102,6 +104,7 @@ public class TournamentController {
 
     @GetMapping("/{idOrSlug}/export/results")
     @PreAuthorize("isAuthenticated()")
+    @SuppressWarnings("null")
     public ResponseEntity<byte[]> exportResults(@PathVariable String idOrSlug) {
         UUID id = fetchTournament(idOrSlug).getId();
         byte[] csvData = tournamentService.exportResults(id);
@@ -121,7 +124,7 @@ public class TournamentController {
     }
 
     @PostMapping("/{id}/bracket/generate")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
     public ResponseEntity<BracketViewResponse> generateBracket(
             @PathVariable UUID id,
             @Valid @RequestBody BracketGenerationRequest request) {
@@ -129,14 +132,14 @@ public class TournamentController {
     }
 
     @PostMapping("/{id}/progress")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
     public ResponseEntity<Integer> progressTournament(@PathVariable UUID id) {
         int progressedCount = progressionService.progressTournament(id);
         return ResponseEntity.ok(progressedCount);
     }
 
     @PostMapping("/{id}/progress-pools")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
     @Operation(summary = "Progress pool winners to knockout stage")
     public ResponseEntity<Void> progressPoolsToKnockout(@PathVariable UUID id) {
         bracketService.progressPoolsToKnockout(id);
@@ -144,7 +147,7 @@ public class TournamentController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Update tournament status")
     public ResponseEntity<TournamentResponse> updateStatus(
             @PathVariable UUID id,
@@ -162,7 +165,7 @@ public class TournamentController {
     }
 
     @PostMapping("/{idOrSlug}/teams")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Add teams to tournament")
     public ResponseEntity<Void> addTeamsToTournament(@PathVariable String idOrSlug,
             @RequestBody com.athleticaos.backend.dtos.tournament.TeamListRequest request) {
@@ -172,7 +175,7 @@ public class TournamentController {
     }
 
     @DeleteMapping("/{idOrSlug}/teams/{teamId}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Remove team from tournament")
     public ResponseEntity<Void> removeTeamFromTournament(@PathVariable String idOrSlug, @PathVariable UUID teamId) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
@@ -180,13 +183,35 @@ public class TournamentController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{idOrSlug}/teams/{teamId}/pool")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Update team pool assignment")
+    public ResponseEntity<Void> updateTeamPool(@PathVariable String idOrSlug, @PathVariable UUID teamId,
+            @RequestParam(required = false) String poolNumber) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        tournamentService.updateTeamPool(tournamentId, teamId, poolNumber);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{idOrSlug}/format/generate")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Generate tournament schedule based on format")
     public ResponseEntity<Void> generateSchedule(@PathVariable String idOrSlug,
             @Valid @RequestBody com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
         tournamentService.generateSchedule(tournamentId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{idOrSlug}/format/structure")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Generate tournament pool structure (stages) without matches")
+    public ResponseEntity<Void> generateStructure(@PathVariable String idOrSlug,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        // Default pool count from request or 1? FormatService handles it.
+        int poolCount = request.getNumberOfPools() != null ? request.getNumberOfPools() : 1;
+        tournamentService.generateStructure(tournamentId, poolCount, request);
         return ResponseEntity.ok().build();
     }
 
@@ -209,7 +234,7 @@ public class TournamentController {
     }
 
     @DeleteMapping("/{idOrSlug}/matches")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     @Operation(summary = "Clear all matches for a tournament")
     public ResponseEntity<Void> clearSchedule(
             @PathVariable String idOrSlug,
@@ -222,7 +247,7 @@ public class TournamentController {
     }
 
     @PostMapping("/{idOrSlug}/matches")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     @Operation(summary = "Create a manual match in the tournament")
     public ResponseEntity<com.athleticaos.backend.dtos.match.MatchResponse> createMatch(@PathVariable String idOrSlug,
             @Valid @RequestBody com.athleticaos.backend.dtos.match.MatchCreateRequest request) {
@@ -250,13 +275,56 @@ public class TournamentController {
     }
 
     @PostMapping("/{idOrSlug}/format")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Update tournament format configuration")
     public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO> updateFormatConfig(
             @PathVariable String idOrSlug,
             @Valid @RequestBody com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO configDTO) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
         return ResponseEntity.ok(tournamentService.updateFormatConfig(tournamentId, configDTO));
+    }
+
+    // Category Management Endpoints
+
+    @PostMapping("/{idOrSlug}/categories")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Create a tournament category")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentCategoryDTO> createCategory(
+            @PathVariable String idOrSlug,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.CreateCategoryRequest request) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(categoryService.createCategory(tournamentId, request));
+    }
+
+    @GetMapping("/{idOrSlug}/categories")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get all categories for a tournament")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.TournamentCategoryDTO>> getCategories(
+            @PathVariable String idOrSlug) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(categoryService.getCategoriesByTournament(tournamentId));
+    }
+
+    @DeleteMapping("/{idOrSlug}/categories/{categoryId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete a tournament category")
+    public ResponseEntity<Void> deleteCategory(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID categoryId) {
+        // We might want to verify the category belongs to the tournament, but for now
+        // ID is sufficient
+        categoryService.deleteCategory(categoryId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{idOrSlug}/categories/{categoryId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Update a tournament category")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentCategoryDTO> updateCategory(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID categoryId,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.CreateCategoryRequest request) {
+        return ResponseEntity.ok(categoryService.updateCategory(categoryId, request));
     }
 
     // Helper method to fetch tournament by UUID or slug

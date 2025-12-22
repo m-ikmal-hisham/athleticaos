@@ -15,10 +15,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "tournament_teams", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "tournament_id", "team_id" })
-})
-public class TournamentTeam {
+@Table(name = "tournament_categories")
+public class TournamentCategory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,20 +26,20 @@ public class TournamentTeam {
     @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private TournamentCategory category;
+    @Column(nullable = false)
+    private String name; // e.g. "Men's Open", "U16 Boys"
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = false)
-    private Team team;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @Column(name = "pool_number")
-    private String poolNumber;
+    @Column(name = "gender")
+    private String gender; // e.g. "MALE", "FEMALE", "MIXED"
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private boolean isActive = true;
+    @Column(name = "min_age")
+    private Integer minAge;
+
+    @Column(name = "max_age")
+    private Integer maxAge;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -19,6 +19,7 @@ public class OrganisationSeedConfig {
     private final OrganisationRepository organisationRepository;
 
     @Bean
+    @SuppressWarnings("null")
     public CommandLineRunner seedOrganisations() {
         return args -> {
             List<Organisation> countries = organisationRepository.findByOrgLevel(OrganisationLevel.COUNTRY);

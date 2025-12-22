@@ -39,14 +39,7 @@ export const tournamentService = {
         await axios.delete(`/api/v1/tournaments/${id}/teams/${teamId}`);
     },
 
-    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean): Promise<void> {
-        await axios.post(`/api/v1/tournaments/${id}/format/generate`, {
-            format,
-            numberOfPools,
-            generateTimings,
-            useExistingGroups
-        });
-    },
+
 
     async getFormatConfig(id: string): Promise<TournamentFormatConfig> {
         const response = await axios.get<TournamentFormatConfig>(`/api/v1/tournaments/${id}/format`);
@@ -83,5 +76,45 @@ export const tournamentService = {
     async getBracket(id: string): Promise<any> { // Using any for now to match backend response structure flexibility if needed
         const response = await axios.get<any>(`/api/v1/tournaments/${id}/bracket`);
         return response.data;
+    },
+    async getCategories(id: string): Promise<any[]> {
+        const response = await axios.get<any[]>(`/api/v1/tournaments/${id}/categories`);
+        return response.data;
+    },
+
+    async generateStructure(id: string, numberOfPools: number, categoryId?: string): Promise<any[]> {
+        const response = await axios.post<any[]>(`/api/v1/tournaments/${id}/format/structure`, {
+            categoryId,
+            numberOfPools,
+            // Format is currently global but structure generation might need it? 
+            // The backend generateStructure takes BracketGenerationRequest which has categoryId and poolCount.
+            // Format type is fetched from config usually on backend, or should be passed?
+            // The request DTO doesn't have formatType, it assumes saved config. 
+            // EXCEPT generateSchedule implementation.
+            // Let's check backend controller. generateStructure calls tournamentService.generateStructure.
+            // which calls formatService.generateStructure.
+            // FormatService uses Tournament entity's format OR config?
+            // FormatServiceImpl.generateStructure gets numberOfPools from request.
+            // It doesn't seem to check formatType (Round Robin etc) explicitly for structure creation, 
+            // assuming Pools if poolCount > 1.
+        });
+        return response.data;
+    },
+
+    async updateTeamPool(id: string, teamId: string, poolNumber: string | null): Promise<void> {
+        await axios.patch(`/api/v1/tournaments/${id}/teams/${teamId}/pool`, null, {
+            params: { poolNumber }
+        });
+    },
+
+    // Refactoring generateSchedule to include categoryId if needed
+    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean, categoryId?: string): Promise<void> {
+        await axios.post(`/api/v1/tournaments/${id}/format/generate`, {
+            format,
+            numberOfPools,
+            generateTimings,
+            useExistingGroups,
+            categoryId
+        });
     },
 };

@@ -31,6 +31,10 @@ public class Match {
     private Tournament tournament;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private TournamentCategory category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "home_team_id", nullable = true)
     private Team homeTeam;
 

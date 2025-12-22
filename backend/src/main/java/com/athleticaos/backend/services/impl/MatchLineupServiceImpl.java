@@ -43,8 +43,9 @@ public class MatchLineupServiceImpl implements MatchLineupService {
         @Override
         @Transactional
         public List<MatchLineupEntryDTO> updateLineup(UUID matchId, MatchLineupUpdateRequest request) {
-                UUID teamId = request.getTeamId();
-                Match match = matchRepository.findById(matchId)
+                UUID teamId = java.util.Objects.requireNonNull(request.getTeamId(), "Team ID must not be null");
+                Match match = matchRepository
+                                .findById(java.util.Objects.requireNonNull(matchId, "Match ID must not be null"))
                                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
 
                 if (!isTeamInMatch(match, teamId)) {
@@ -70,7 +71,8 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                         }
                 }
 
-                Team team = teamRepository.findById(teamId)
+                Team team = teamRepository
+                                .findById(java.util.Objects.requireNonNull(teamId, "Team ID must not be null"))
                                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
 
                 // Validate Counts
@@ -86,7 +88,9 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                 // Create new entries
                 List<MatchLineup> newLineups = request.getEntries().stream()
                                 .map(entry -> {
-                                        Player player = playerRepository.findById(entry.getPlayerId())
+                                        Player player = playerRepository
+                                                        .findById(java.util.Objects.requireNonNull(entry.getPlayerId(),
+                                                                        "Player ID must not be null"))
                                                         .orElseThrow(() -> new EntityNotFoundException(
                                                                         "Player not found: " + entry.getPlayerId()));
 
@@ -112,7 +116,7 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                 })
                                 .collect(Collectors.toList());
 
-                List<MatchLineup> saved = matchLineupRepository.saveAll(newLineups);
+                List<MatchLineup> saved = matchLineupRepository.saveAll(java.util.Objects.requireNonNull(newLineups));
 
                 return saved.stream()
                                 .map(this::mapToDTO)

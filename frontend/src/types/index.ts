@@ -108,6 +108,9 @@ export interface Team {
     division?: string;
     state?: string;
     status: string;
+    // Tournament context fields (optional)
+    poolNumber?: string;
+    tournamentCategoryId?: string;
 }
 
 export interface TeamCreateRequest {
@@ -259,6 +262,25 @@ export interface Tournament {
     competitionType?: string;
     isAgeGrade?: boolean;
     ageGroupLabel?: string;
+    categories?: TournamentCategory[];
+}
+
+export interface TournamentCategory {
+    id: string;
+    tournamentId: string;
+    name: string;
+    description?: string;
+    gender?: string;
+    minAge?: number;
+    maxAge?: number;
+}
+
+export interface CreateCategoryRequest {
+    name: string;
+    description?: string;
+    gender?: string;
+    minAge?: number;
+    maxAge?: number;
 }
 
 export interface TournamentCreateRequest {
@@ -268,6 +290,7 @@ export interface TournamentCreateRequest {
     startDate: string;
     endDate: string;
     venue: string;
+    categories?: CreateCategoryRequest[];
 }
 
 export interface TournamentFormatConfig {

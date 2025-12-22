@@ -2,7 +2,6 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
-import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.TournamentStage;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.enums.TournamentStageType;
@@ -91,6 +90,7 @@ public class ProgressionServiceImpl implements ProgressionService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public int progressTournament(UUID tournamentId) {
         log.info("Processing tournament progression for tournament: {}", tournamentId);
 
@@ -140,9 +140,10 @@ public class ProgressionServiceImpl implements ProgressionService {
 
     @Override
     @Transactional(readOnly = true)
-    @SuppressWarnings("null")
     public boolean canProgress(UUID matchId) {
-        Match match = matchRepository.findById(matchId)
+        if (matchId == null)
+            return false;
+        Match match = matchRepository.findById(java.util.Objects.requireNonNull(matchId))
                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
 
         // Match must be completed
@@ -231,7 +232,6 @@ public class ProgressionServiceImpl implements ProgressionService {
         };
     }
 
-    @SuppressWarnings("null")
     private TournamentStage findPlacementStage(UUID tournamentId, TournamentStageType stageType) {
         List<TournamentStage> allStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
 
@@ -283,7 +283,6 @@ public class ProgressionServiceImpl implements ProgressionService {
         matchRepository.save(targetMatch);
     }
 
-    @SuppressWarnings("null")
     private TournamentStage findNextStage(TournamentStage currentStage) {
         List<TournamentStage> allStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(
                 currentStage.getTournament().getId());
@@ -366,6 +365,7 @@ public class ProgressionServiceImpl implements ProgressionService {
         matchRepository.save(targetMatch);
     }
 
+    @SuppressWarnings("null")
     private void progressWinnerExplicitly(Match completedMatch, Team winner) {
         UUID nextMatchId = completedMatch.getNextMatchIdForWinner();
         String slot = completedMatch.getWinnerSlot();
@@ -400,6 +400,7 @@ public class ProgressionServiceImpl implements ProgressionService {
         });
     }
 
+    @SuppressWarnings("null")
     private void progressLoserExplicitly(Match completedMatch, Team loser) {
         UUID nextMatchId = completedMatch.getNextMatchIdForLoser();
         String slot = completedMatch.getLoserSlot();

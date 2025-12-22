@@ -1,6 +1,7 @@
 spring:
   application:
     name: athleticaos-backend
+
   profiles:
     active: dev
   jpa:
@@ -20,3 +21,8 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui/index.html
+
+application:
+  security:
+    cors:
+      allowed-origins: http://localhost:5173,http://localhost:3000

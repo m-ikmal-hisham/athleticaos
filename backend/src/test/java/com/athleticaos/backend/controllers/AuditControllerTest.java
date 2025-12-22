@@ -1,8 +1,7 @@
 package com.athleticaos.backend.controllers;
 
-import com.athleticaos.backend.dtos.audit.AuditLogResponse;
 import com.athleticaos.backend.dtos.user.UserResponse;
-import com.athleticaos.backend.entities.Organisation;
+import com.athleticaos.backend.dtos.audit.AuditLogResponse;
 import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.services.AuditLogService;
 import com.athleticaos.backend.services.UserService;
@@ -10,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,8 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.athleticaos.backend.security.SecurityConfig;
 import org.springframework.context.annotation.Import;
-
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @WebMvcTest(AuditController.class)
 @Import(SecurityConfig.class)
@@ -60,10 +56,12 @@ public class AuditControllerTest {
 
         @Test
         @WithMockUser(roles = "SUPER_ADMIN")
+        @SuppressWarnings("null")
         void getRecentGlobal_SuperAdmin_ShouldSucceed() throws Exception {
                 when(auditLogService.getRecentGlobal(any(Pageable.class)))
                                 .thenReturn(new org.springframework.data.domain.PageImpl<>(
-                                                java.util.Collections.emptyList(), Pageable.ofSize(20), 0));
+                                                java.util.Collections.<AuditLogResponse>emptyList(),
+                                                Pageable.ofSize(20), 0));
 
                 mockMvc.perform(get("/api/v1/audit/recent/global"))
                                 .andExpect(status().isOk());
@@ -81,12 +79,14 @@ public class AuditControllerTest {
 
         @Test
         @WithMockUser(roles = "ORG_ADMIN")
+        @SuppressWarnings("null")
         void getRecentForOrg_AuthorizedOrgAdmin_ShouldSucceed() throws Exception {
                 UUID orgId = UUID.randomUUID();
                 when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
                 when(auditLogService.getRecentForOrg(eq(orgId), any(Pageable.class)))
                                 .thenReturn(new org.springframework.data.domain.PageImpl<>(
-                                                java.util.Collections.emptyList(), Pageable.ofSize(20), 0));
+                                                java.util.Collections.<AuditLogResponse>emptyList(),
+                                                Pageable.ofSize(20), 0));
 
                 mockMvc.perform(get("/api/v1/audit/recent/org/" + orgId))
                                 .andExpect(status().isOk());
@@ -108,13 +108,15 @@ public class AuditControllerTest {
 
         @Test
         @WithMockUser(roles = "SUPER_ADMIN")
+        @SuppressWarnings("null")
         void getRecentForOrg_SuperAdmin_ShouldSucceed() throws Exception {
                 UUID orgId = UUID.randomUUID();
                 when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null); // Super admin returns null or
                                                                                         // all
                 when(auditLogService.getRecentForOrg(eq(orgId), any(Pageable.class)))
                                 .thenReturn(new org.springframework.data.domain.PageImpl<>(
-                                                java.util.Collections.emptyList(), Pageable.ofSize(20), 0));
+                                                java.util.Collections.<AuditLogResponse>emptyList(),
+                                                Pageable.ofSize(20), 0));
 
                 mockMvc.perform(get("/api/v1/audit/recent/org/" + orgId))
                                 .andExpect(status().isOk());
@@ -122,6 +124,7 @@ public class AuditControllerTest {
 
         @Test
         @WithMockUser(username = "user")
+        @SuppressWarnings("null")
         void getRecentForUser_OwnLogs_ShouldSucceed() throws Exception {
                 UUID userId = UUID.randomUUID();
                 User currentUser = new User();
@@ -130,7 +133,8 @@ public class AuditControllerTest {
                 when(userService.getCurrentUser()).thenReturn(currentUser);
                 when(auditLogService.getRecentForUser(eq(userId), any(Pageable.class)))
                                 .thenReturn(new org.springframework.data.domain.PageImpl<>(
-                                                java.util.Collections.emptyList(), Pageable.ofSize(20), 0));
+                                                java.util.Collections.<AuditLogResponse>emptyList(),
+                                                Pageable.ofSize(20), 0));
 
                 mockMvc.perform(get("/api/v1/audit/recent/user/" + userId))
                                 .andExpect(status().isOk());
@@ -138,6 +142,7 @@ public class AuditControllerTest {
 
         @Test
         @WithMockUser(username = "admin", roles = "ORG_ADMIN")
+        @SuppressWarnings("null")
         void getRecentForUser_OtherUserInAccessibleOrg_ShouldSucceed() throws Exception {
                 UUID currentUserId = UUID.randomUUID();
                 UUID targetUserId = UUID.randomUUID();
@@ -157,7 +162,8 @@ public class AuditControllerTest {
                 when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
                 when(auditLogService.getRecentForUser(eq(targetUserId), any(Pageable.class)))
                                 .thenReturn(new org.springframework.data.domain.PageImpl<>(
-                                                java.util.Collections.emptyList(), Pageable.ofSize(20), 0));
+                                                java.util.Collections.<AuditLogResponse>emptyList(),
+                                                Pageable.ofSize(20), 0));
 
                 mockMvc.perform(get("/api/v1/audit/recent/user/" + targetUserId))
                                 .andExpect(status().isOk());

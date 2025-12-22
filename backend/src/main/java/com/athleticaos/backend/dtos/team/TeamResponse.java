@@ -24,5 +24,7 @@ public class TeamResponse {
     private String level;
     private String state;
     private String status;
+    private String poolNumber;
+    private UUID tournamentCategoryId;
     private List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> players;
 }

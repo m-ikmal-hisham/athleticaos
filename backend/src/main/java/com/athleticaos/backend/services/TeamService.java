@@ -1,6 +1,5 @@
 package com.athleticaos.backend.services;
 
-import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO;
 import com.athleticaos.backend.dtos.team.TeamCreateRequest;
 import com.athleticaos.backend.dtos.team.TeamResponse;

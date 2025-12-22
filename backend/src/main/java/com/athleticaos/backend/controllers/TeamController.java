@@ -44,7 +44,7 @@ public class TeamController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<TeamResponse> createTeam(@RequestBody @Valid TeamCreateRequest request,
             HttpServletRequest httpRequest) {
         log.info("Admin creating team: {}", request.getName());
@@ -52,7 +52,7 @@ public class TeamController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<TeamResponse> updateTeam(@PathVariable UUID id,
             @RequestBody @Valid TeamUpdateRequest request, HttpServletRequest httpRequest) {
         log.info("Admin updating team {}", id);

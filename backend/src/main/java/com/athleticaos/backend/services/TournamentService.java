@@ -41,7 +41,12 @@ public interface TournamentService {
 
         void removeTeamFromTournament(UUID tournamentId, UUID teamId);
 
+        void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber);
+
         void generateSchedule(UUID tournamentId,
+                        com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request);
+
+        List<com.athleticaos.backend.entities.TournamentStage> generateStructure(UUID tournamentId, int poolCount,
                         com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request);
 
         com.athleticaos.backend.dtos.match.MatchResponse createMatch(UUID tournamentId,

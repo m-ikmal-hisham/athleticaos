@@ -75,6 +75,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public TournamentResponse getTournamentById(UUID id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
@@ -85,7 +86,6 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional(readOnly = true)
-    @SuppressWarnings("null")
     public TournamentResponse getTournamentBySlug(String slug) {
         return tournamentRepository.findBySlug(slug)
                 .filter(tournament -> !Boolean.TRUE.equals(tournament.getDeleted()))
@@ -95,6 +95,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public TournamentDashboardResponse getTournamentDashboard(UUID id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
@@ -166,6 +167,25 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = builder.build();
 
         Tournament savedTournament = tournamentRepository.save(tournament);
+
+        // Create categories if provided
+        if (request.getCategories() != null && !request.getCategories().isEmpty()) {
+            final Tournament tournamentForCategories = savedTournament;
+            List<com.athleticaos.backend.entities.TournamentCategory> categories = request.getCategories().stream()
+                    .map(catReq -> com.athleticaos.backend.entities.TournamentCategory.builder()
+                            .tournament(tournamentForCategories)
+                            .name(catReq.getName())
+                            .description(catReq.getDescription())
+                            .gender(catReq.getGender())
+                            .minAge(catReq.getMinAge())
+                            .maxAge(catReq.getMaxAge())
+                            .build())
+                    .collect(Collectors.toList());
+
+            savedTournament.getCategories().addAll(categories);
+            savedTournament = tournamentRepository.save(savedTournament);
+        }
+
         auditLogger.logTournamentCreated(savedTournament, httpRequest);
         return mapToResponse(savedTournament);
     }
@@ -240,6 +260,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public TournamentResponse updateStatus(UUID id, com.athleticaos.backend.enums.TournamentStatus status,
             HttpServletRequest httpRequest) {
         log.info("Updating status for tournament {}: {}", id, status);
@@ -278,6 +299,7 @@ public class TournamentServiceImpl implements TournamentService {
         return generateCsv(tournamentId, true);
     }
 
+    @SuppressWarnings("null")
     private byte[] generateCsv(UUID tournamentId, boolean includeResults) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
@@ -408,6 +430,17 @@ public class TournamentServiceImpl implements TournamentService {
                 .seasonName(tournament.getSeason() != null ? tournament.getSeason().getName() : null)
                 .competitionType(
                         tournament.getCompetitionType() != null ? tournament.getCompetitionType().name() : null)
+                .categories(tournament.getCategories().stream()
+                        .map(cat -> com.athleticaos.backend.dtos.tournament.TournamentCategoryDTO.builder()
+                                .id(cat.getId())
+                                .tournamentId(cat.getTournament().getId())
+                                .name(cat.getName())
+                                .description(cat.getDescription())
+                                .gender(cat.getGender())
+                                .minAge(cat.getMinAge())
+                                .maxAge(cat.getMaxAge())
+                                .build())
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -427,7 +460,11 @@ public class TournamentServiceImpl implements TournamentService {
                         .division(tournamentTeam.getTeam().getDivision())
                         .level(tournamentTeam.getTeam().getDivision())
                         .state(tournamentTeam.getTeam().getState())
+                        .state(tournamentTeam.getTeam().getState())
                         .status(tournamentTeam.getTeam().getStatus())
+                        .poolNumber(tournamentTeam.getPoolNumber())
+                        .tournamentCategoryId(
+                                tournamentTeam.getCategory() != null ? tournamentTeam.getCategory().getId() : null)
                         .players(null) // Don't load players for list view
                         .build())
                 .collect(Collectors.toList());
@@ -435,6 +472,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public void addTeamsToTournament(UUID tournamentId, List<UUID> teamIds) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
@@ -482,6 +520,17 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    public void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber) {
+        com.athleticaos.backend.entities.TournamentTeam tt = tournamentTeamRepository
+                .findFirstByTournamentIdAndTeamId(tournamentId, teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team is not registered for this tournament"));
+
+        tt.setPoolNumber(poolNumber);
+        tournamentTeamRepository.save(tt);
+    }
+
+    @Override
+    @Transactional
     public void generateSchedule(UUID tournamentId,
             com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
         formatService.generateSchedule(tournamentId, request);
@@ -489,6 +538,17 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
+    public List<com.athleticaos.backend.entities.TournamentStage> generateStructure(UUID tournamentId, int poolCount,
+            com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+        return formatService.generateStructure(tournament, poolCount, request);
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
     public com.athleticaos.backend.dtos.match.MatchResponse createMatch(UUID tournamentId,
             com.athleticaos.backend.dtos.match.MatchCreateRequest request) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -640,6 +700,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
@@ -649,6 +710,7 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO updateFormatConfig(UUID tournamentId,
             com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO configDTO) {
 

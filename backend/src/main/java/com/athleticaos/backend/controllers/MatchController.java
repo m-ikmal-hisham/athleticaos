@@ -51,7 +51,7 @@ public class MatchController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Create a new match")
     public ResponseEntity<MatchResponse> createMatch(@RequestBody @Valid MatchCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -59,7 +59,7 @@ public class MatchController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Update an existing match")
     public ResponseEntity<MatchResponse> updateMatch(@PathVariable UUID id,
             @RequestBody @Valid MatchUpdateRequest request, HttpServletRequest httpRequest) {
@@ -67,7 +67,7 @@ public class MatchController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Update match status")
     public ResponseEntity<MatchResponse> updateMatchStatus(@PathVariable UUID id, @RequestParam String status,
             HttpServletRequest httpRequest) {
@@ -75,7 +75,7 @@ public class MatchController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @Operation(summary = "Delete a match")
     public ResponseEntity<Void> deleteMatch(@PathVariable UUID id) {
         matchService.deleteMatch(id);
@@ -85,7 +85,7 @@ public class MatchController {
     // Match Progression Endpoints
 
     @PostMapping("/{id}/progress")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Process match completion and advance winner to next stage")
     public ResponseEntity<Void> progressMatch(@PathVariable UUID id) {
         progressionService.processMatchCompletion(id);
