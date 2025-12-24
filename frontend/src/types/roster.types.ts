@@ -14,7 +14,9 @@ export interface TournamentPlayerDTO {
 export interface PlayerSuspensionDTO {
     id: string;
     tournamentId: string;
+    tournamentName: string;
     teamId: string;
+    teamName: string;
     playerId: string;
     playerName: string;
     reason: string;

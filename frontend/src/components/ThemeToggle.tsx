@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun } from '@phosphor-icons/react';
 import { useUIStore } from '@/store/ui.store';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -19,8 +19,8 @@ export const ThemeToggle = () => {
                     key={option.value}
                     onClick={() => setTheme(option.value)}
                     className={`p-2 rounded-lg transition-all duration-200 ${theme === option.value
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
                         }`}
                     title={option.label}
                 >

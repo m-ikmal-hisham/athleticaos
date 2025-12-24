@@ -263,6 +263,13 @@ export interface Tournament {
     isAgeGrade?: boolean;
     ageGroupLabel?: string;
     categories?: TournamentCategory[];
+    logoUrl?: string;
+    livestreamUrl?: string;
+    organiserBranding?: {
+        id: string;
+        name: string;
+        logoUrl?: string;
+    };
 }
 
 export interface TournamentCategory {
@@ -291,6 +298,8 @@ export interface TournamentCreateRequest {
     endDate: string;
     venue: string;
     categories?: CreateCategoryRequest[];
+    logoUrl?: string;
+    livestreamUrl?: string;
 }
 
 export interface TournamentFormatConfig {

@@ -1,7 +1,7 @@
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, CSSProperties } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Clock, Trash2, RotateCcw, Edit } from 'lucide-react';
+import { CalendarBlank, MapPin, Clock, Trash, ArrowCounterClockwise, PencilSimple } from '@phosphor-icons/react';
 import { useMatchesStore, MatchStatus, MatchEventItem } from '@/store/matches.store';
 import { Button } from '@/components/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
@@ -329,7 +329,9 @@ export const MatchDetail = () => {
         return p.organisationId === teamOrgId;
     });
 
-    const isMatchLocked = selectedMatch.status === 'COMPLETED' || selectedMatch.status === 'CANCELLED';
+    // Locked if Cancelled, or if Completed AND not Admin
+    // Admins can still edit Completed matches to fix stats
+    const isMatchLocked = selectedMatch.status === 'CANCELLED' || (selectedMatch.status === 'COMPLETED' && !isAdmin);
 
     return (
         <div className="space-y-6">
@@ -353,7 +355,7 @@ export const MatchDetail = () => {
                         {selectedMatch.homeTeamName} <span className="text-muted-foreground text-xl">vs</span> {selectedMatch.awayTeamName}
                     </h1>
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {new Date(selectedMatch.matchDate).toLocaleDateString()}</div>
+                        <div className="flex items-center gap-1"><CalendarBlank className="w-4 h-4" /> {new Date(selectedMatch.matchDate).toLocaleDateString()}</div>
                         <div className="flex items-center gap-1"><Clock className="w-4 h-4" /> {selectedMatch.kickOffTime}</div>
                         <div className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedMatch.venue || 'TBA'}</div>
                         {selectedMatch.phase && <Badge variant="outline">{selectedMatch.phase}</Badge>}
@@ -365,13 +367,13 @@ export const MatchDetail = () => {
                         {getStatusLabel(selectedMatch.status, isHalfTime)}
                     </Badge>
                     <div className="flex gap-2">
-                        {isAdmin && selectedMatch.status === 'SCHEDULED' && (
+                        {isAdmin && (selectedMatch.status === 'SCHEDULED' || selectedMatch.status === 'COMPLETED') && (
                             <Button
                                 size="sm"
                                 variant="tertiary"
                                 onClick={() => setIsEditModalOpen(true)}
                             >
-                                <Edit className="w-4 h-4 mr-2" />
+                                <PencilSimple className="w-4 h-4 mr-2" />
                                 Edit
                             </Button>
                         )}
@@ -451,14 +453,14 @@ export const MatchDetail = () => {
                                             <div
                                                 key={event.id}
                                                 data-latest={isLatest}
-                                                className="absolute transform -translate-x-1/2 flex flex-col items-center group cursor-pointer"
-                                                style={{ left: `${position}%`, top: isHomeTeam ? '-2rem' : '1rem' }}
+                                                className={`absolute transform -translate-x-1/2 flex flex-col items-center group cursor-pointer ${isHomeTeam ? '-top-8' : 'top-4'} left-[var(--event-left)]`}
+                                                // eslint-disable-next-line
+                                                style={{ '--event-left': `${position}%` } as CSSProperties}
                                             >
                                                 <div className={`bg-background border-2 rounded-full p-1 shadow-sm text-lg z-10 hover:scale-110 transition-transform ${isHomeTeam ? 'border-blue-500' : 'border-red-500'}`}>
                                                     {getEventIcon(event.eventType)}
                                                 </div>
-                                                <div className="opacity-0 group-hover:opacity-100 absolute w-32 text-center text-xs bg-popover text-popover-foreground p-2 rounded shadow-lg z-20 transition-opacity pointer-events-none"
-                                                    style={{ top: isHomeTeam ? '-2.5rem' : '2.5rem' }}>
+                                                <div className={`opacity-0 group-hover:opacity-100 absolute w-32 text-center text-xs bg-popover text-popover-foreground p-2 rounded shadow-lg z-20 transition-opacity pointer-events-none ${isHomeTeam ? '-top-10' : 'top-10'}`}>
                                                     <div className="font-bold">{event.minute}' {event.eventType}</div>
                                                     <div>{event.playerName || event.teamName}</div>
                                                 </div>
@@ -497,7 +499,7 @@ export const MatchDetail = () => {
                                             onClick={handleUndoLastEvent}
                                             className="gap-2 text-muted-foreground hover:text-foreground"
                                         >
-                                            <RotateCcw className="w-4 h-4" />
+                                            <ArrowCounterClockwise className="w-4 h-4" />
                                             Undo Last
                                         </Button>
                                     )}
@@ -539,7 +541,7 @@ export const MatchDetail = () => {
                                                         {isAdmin && !isMatchLocked && (
                                                             <TableCell>
                                                                 <Button variant="ghost" size="sm" className="h-8 w-8 text-destructive hover:text-destructive p-0" onClick={() => removeEvent(event.id, selectedMatch.id)}>
-                                                                    <Trash2 className="w-4 h-4" />
+                                                                    <Trash className="w-4 h-4" />
                                                                 </Button>
                                                             </TableCell>
                                                         )}
@@ -566,6 +568,7 @@ export const MatchDetail = () => {
                                                 className="w-full p-2 rounded-md border border-input bg-background"
                                                 value={newEvent.teamId}
                                                 onChange={(e) => setNewEvent({ ...newEvent, teamId: e.target.value, playerId: '' })}
+                                                aria-label="Select Team"
                                             >
                                                 <option value="">Select Team</option>
                                                 <option value={selectedMatch.homeTeamId}>{selectedMatch.homeTeamName}</option>
@@ -580,6 +583,7 @@ export const MatchDetail = () => {
                                                 value={newEvent.playerId || ''}
                                                 onChange={(e) => setNewEvent({ ...newEvent, playerId: e.target.value })}
                                                 disabled={!newEvent.teamId}
+                                                aria-label="Select Player"
                                             >
                                                 <option value="">Select Player</option>
                                                 {teamPlayers.map(p => {
@@ -635,6 +639,7 @@ export const MatchDetail = () => {
                                                 className="w-full p-2 rounded-md border border-input bg-background"
                                                 value={newEvent.eventType}
                                                 onChange={(e) => setNewEvent({ ...newEvent, eventType: e.target.value })}
+                                                aria-label="Select Event Type"
                                             >
                                                 <option value="TRY">Try (5 pts)</option>
                                                 <option value="CONVERSION">Conversion (2 pts)</option>
@@ -705,7 +710,7 @@ export const MatchDetail = () => {
                         matchId={selectedMatch.id}
                         teamId={lineupTeamId}
                         homeTeamId={selectedMatch.homeTeamId}
-                        isLocked={selectedMatch.status !== 'SCHEDULED'} // Locked unless SCHEDULED
+                        isLocked={selectedMatch.status === 'CANCELLED' || (selectedMatch.status === 'COMPLETED' && !isAdmin)}
                     />
                 </div>
             )}

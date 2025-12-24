@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, CheckCircle, WarningCircle, Info } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 
 interface ToastProps {
@@ -20,7 +20,7 @@ export const Toast = ({ message, type = 'success', duration = 3000, onClose }: T
 
     const icons = {
         success: CheckCircle,
-        error: AlertCircle,
+        error: WarningCircle,
         info: Info,
     };
 
@@ -43,6 +43,7 @@ export const Toast = ({ message, type = 'success', duration = 3000, onClose }: T
                 <button
                     onClick={onClose}
                     className="text-white/80 hover:text-white transition-colors"
+                    aria-label="Close"
                 >
                     <X className="w-4 h-4" />
                 </button>

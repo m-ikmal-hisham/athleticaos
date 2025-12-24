@@ -180,12 +180,26 @@ public class AuditLogger {
         // ==================== MATCH EVENT ACTIONS ====================
 
         public void logMatchEventAdded(MatchEvent event, HttpServletRequest request) {
+                String summary;
+                if (event.getPlayer() != null) {
+                        summary = String.format("Match event added: %s by %s %s (%s) at %d min",
+                                        event.getEventType(),
+                                        event.getPlayer().getPerson().getFirstName(),
+                                        event.getPlayer().getPerson().getLastName(),
+                                        event.getTeam().getName(),
+                                        event.getMinute());
+                } else {
+                        summary = String.format("Match event added: %s for %s at %d min",
+                                        event.getEventType(),
+                                        event.getTeam().getName(),
+                                        event.getMinute());
+                }
+
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType("MATCH_EVENT_ADDED")
                                 .entityType("MATCH_EVENT")
                                 .entityId(event.getId())
-                                .entitySummary(String.format("Match event added: %s at %d min",
-                                                event.getEventType(), event.getMinute()))
+                                .entitySummary(summary)
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));

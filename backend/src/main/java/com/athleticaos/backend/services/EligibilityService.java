@@ -4,6 +4,9 @@ import com.athleticaos.backend.dtos.roster.EligibilityResult;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.Player;
 
+/**
+ * Service for checking player eligibility.
+ */
 public interface EligibilityService {
 
     /**

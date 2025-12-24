@@ -144,6 +144,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .venue(request.getVenue())
+                .logoUrl(request.getLogoUrl())
+                .livestreamUrl(request.getLivestreamUrl())
                 .isPublished(false)
                 .deleted(false);
 
@@ -220,6 +222,12 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getVenue() != null) {
             tournament.setVenue(request.getVenue());
         }
+        if (request.getLogoUrl() != null) {
+            tournament.setLogoUrl(request.getLogoUrl());
+        }
+        if (request.getLivestreamUrl() != null) {
+            tournament.setLivestreamUrl(request.getLivestreamUrl());
+        }
         if (request.getIsPublished() != null) {
             tournament.setPublished(request.getIsPublished());
         }
@@ -242,6 +250,10 @@ public class TournamentServiceImpl implements TournamentService {
 
         tournament.setDeleted(true);
         tournamentRepository.save(tournament);
+
+        // Cascade soft delete to matches and teams
+        matchRepository.softDeleteByTournamentId(id);
+        tournamentTeamRepository.softDeleteByTournamentId(id);
     }
 
     @Transactional
@@ -428,6 +440,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .isPublished(tournament.isPublished())
                 .status(status)
                 .seasonName(tournament.getSeason() != null ? tournament.getSeason().getName() : null)
+                .logoUrl(tournament.getLogoUrl())
+                .livestreamUrl(tournament.getLivestreamUrl())
                 .competitionType(
                         tournament.getCompetitionType() != null ? tournament.getCompetitionType().name() : null)
                 .categories(tournament.getCategories().stream()

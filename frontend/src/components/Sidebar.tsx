@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-    LayoutDashboard,
+    Layout,
     Users,
-    Building2,
+    Buildings,
     UserCircle,
-    Users2,
+    UsersThree,
     Trophy,
     Calendar,
     X,
     Medal
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
     {
         label: 'Dashboard',
         path: '/dashboard',
-        icon: <LayoutDashboard className="w-5 h-5" />,
+        icon: <Layout className="w-5 h-5" />,
     },
     {
         label: 'Users',
@@ -41,13 +41,13 @@ const navItems: NavItem[] = [
     {
         label: 'Organisations',
         path: '/dashboard/organisations',
-        icon: <Building2 className="w-5 h-5" />,
+        icon: <Buildings className="w-5 h-5" />,
         roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
     },
     {
         label: 'Teams',
         path: '/dashboard/teams',
-        icon: <Users2 className="w-5 h-5" />,
+        icon: <UsersThree className="w-5 h-5" />,
         // All roles except PLAYER can see teams (with different scopes)
         roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_COACH'],
     },
@@ -115,6 +115,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     <button
                         onClick={onClose}
                         className="lg:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted"
+                        aria-label="Close Sidebar"
                     >
                         <X className="w-5 h-5" />
                     </button>

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "../../components/Card";
+import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { Link } from "react-router-dom";
-import { Search } from "lucide-react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useTournamentsStore } from "../../store/tournaments.store";
 import { StatusPill } from "../../components/StatusPill";
 import { TournamentModal } from "@/components/modals/TournamentModal";
@@ -14,6 +14,7 @@ export default function Tournaments() {
     const { tournaments, loading, error, getTournaments } = useTournamentsStore();
     const { user } = useAuthStore();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [selectedTournament, setSelectedTournament] = useState<any | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [seasonFilter, setSeasonFilter] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
@@ -59,19 +60,22 @@ export default function Tournaments() {
                 description="Overview of rugby competitions"
                 action={
                     isAdmin && (
-                        <Button onClick={() => setIsCreateModalOpen(true)}>
+                        <Button onClick={() => {
+                            setSelectedTournament(null);
+                            setIsCreateModalOpen(true);
+                        }}>
                             New Tournament
                         </Button>
                     )
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
+            <GlassCard>
+                <div className="p-0">
                     {/* Search Box */}
                     <div className="p-4 border-b border-glass-border">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search by name, season, or level..."
                                 className="pl-9 bg-glass-bg/50"
@@ -87,6 +91,7 @@ export default function Tournaments() {
                             value={seasonFilter}
                             onChange={(e) => setSeasonFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Season"
                         >
                             <option value="">All Seasons</option>
                             {seasons.map(season => (
@@ -98,6 +103,7 @@ export default function Tournaments() {
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Type"
                         >
                             <option value="">All Types</option>
                             {types.map(type => (
@@ -109,6 +115,7 @@ export default function Tournaments() {
                             value={levelFilter}
                             onChange={(e) => setLevelFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Level"
                         >
                             <option value="">All Levels</option>
                             {levels.map(level => (
@@ -120,6 +127,7 @@ export default function Tournaments() {
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Status"
                         >
                             <option value="">All Statuses</option>
                             {statuses.map(status => (
@@ -167,6 +175,17 @@ export default function Tournaments() {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex gap-2">
+                                                    {isAdmin && (
+                                                        <Button
+                                                            className="btn-secondary h-8 px-3 text-xs"
+                                                            onClick={() => {
+                                                                setSelectedTournament(t);
+                                                                setIsCreateModalOpen(true);
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         className="btn-secondary h-8 px-3 text-xs"
                                                         onClick={() => window.open(`/api/v1/tournaments/${t.id}/export/matches`, '_blank')}
@@ -187,12 +206,16 @@ export default function Tournaments() {
                             </table>
                         </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </GlassCard>
 
             <TournamentModal
                 isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
+                tournament={selectedTournament}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    setSelectedTournament(null);
+                }}
                 onSuccess={() => {
                     getTournaments();
                 }}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { rosterService } from '@/services/rosterService';
 import { TournamentPlayerDTO } from '@/types/roster.types';
 import { Button } from '@/components/Button';
-import { AlertCircle, CheckCircle, ShieldAlert, UserPlus, X } from 'lucide-react';
+import { WarningCircle, CheckCircle, ShieldWarning, UserPlus, X } from '@phosphor-icons/react';
 import { PlayerSelectionModal } from './PlayerSelectionModal';
 
 interface RosterManagementProps {
@@ -102,7 +102,7 @@ export function RosterManagement({ tournamentId, teamId, teamName }: RosterManag
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-sm" title={player.eligibilityNote}>
-                                                <AlertCircle className="w-4 h-4" />
+                                                <WarningCircle className="w-4 h-4" />
                                                 Ineligible
                                             </span>
                                         )}
@@ -110,7 +110,7 @@ export function RosterManagement({ tournamentId, teamId, teamName }: RosterManag
                                     <td className="py-3 px-4">
                                         {player.hasActiveSuspension ? (
                                             <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-medium bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                                                <ShieldAlert className="w-4 h-4" />
+                                                <ShieldWarning className="w-4 h-4" />
                                                 Suspended ({player.suspensionMatchesRemaining} matches)
                                             </span>
                                         ) : (

@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
-import { Card, CardContent } from "../../components/Card";
+import { GlassCard } from "../../components/GlassCard";
 import {
     Table,
     TableBody,
@@ -194,11 +194,11 @@ export default function Organisations() {
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
+            <GlassCard>
+                <div className="p-0">
                     <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
                         <div className="relative flex-1 w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search organisations..."
                                 className="pl-9 bg-glass-bg/50"
@@ -211,6 +211,7 @@ export default function Organisations() {
                                 value={selectedCountry}
                                 onChange={e => setSelectedCountry(e.target.value)}
                                 className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                aria-label="Filter by Country"
                             >
                                 <option value="">All Countries</option>
                                 {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -221,6 +222,7 @@ export default function Organisations() {
                                 onChange={e => setSelectedState(e.target.value)}
                                 className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={!selectedCountry}
+                                aria-label="Filter by State"
                             >
                                 <option value="">All States</option>
                                 {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -231,6 +233,7 @@ export default function Organisations() {
                                 onChange={e => setSelectedDivision(e.target.value)}
                                 className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={!selectedState}
+                                aria-label="Filter by Division"
                             >
                                 <option value="">All Divisions</option>
                                 {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -241,6 +244,7 @@ export default function Organisations() {
                                 onChange={e => setSelectedDistrict(e.target.value)}
                                 className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 disabled={!selectedState}
+                                aria-label="Filter by District"
                             >
                                 <option value="">All Districts</option>
                                 {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -321,8 +325,8 @@ export default function Organisations() {
                             )}
                         </TableBody>
                     </Table>
-                </CardContent>
-            </Card>
+                </div>
+            </GlassCard>
 
             <OrganisationModal
                 isOpen={isModalOpen}

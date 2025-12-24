@@ -22,8 +22,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { matchLineupService } from '@/services/matchLineupService';
 import { MatchLineupEntry, LineupRole } from '@/types';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { GripVertical, User as UserIcon } from 'lucide-react';
+import { GlassCard } from '@/components/GlassCard';
+import { DotsSixVertical, User as UserIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -279,7 +279,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
             >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Available Pool */}
-                    <Card className="p-4 bg-slate-50 dark:bg-slate-900/50">
+                    <GlassCard className="p-4 bg-slate-50 dark:bg-slate-900/50">
                         <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Squad</h3>
                         <SortableContext
                             id={LineupRole.NOT_SELECTED}
@@ -290,10 +290,10 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                 {items[LineupRole.NOT_SELECTED].map(renderSortableItem)}
                             </div>
                         </SortableContext>
-                    </Card>
+                    </GlassCard>
 
                     {/* Starters */}
-                    <Card className="p-4 border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
+                    <GlassCard className="p-4 border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
                         <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-blue-600 dark:text-blue-400">Starters</h3>
                         <SortableContext
                             id={LineupRole.STARTER}
@@ -313,10 +313,10 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                 ))}
                             </div>
                         </SortableContext>
-                    </Card>
+                    </GlassCard>
 
                     {/* Bench */}
-                    <Card className="p-4 bg-slate-50 dark:bg-slate-900/50">
+                    <GlassCard className="p-4 bg-slate-50 dark:bg-slate-900/50">
                         <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Bench</h3>
                         <SortableContext
                             id={LineupRole.BENCH}
@@ -335,13 +335,13 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                 ))}
                             </div>
                         </SortableContext>
-                    </Card>
+                    </GlassCard>
                 </div>
 
                 <DragOverlay>
                     {activeId ? (
                         <div className="bg-background p-3 rounded-lg shadow-xl border flex items-center gap-3">
-                            <GripVertical className="w-4 h-4 text-muted-foreground" />
+                            <DotsSixVertical className="w-4 h-4 text-muted-foreground" />
                             <UserIcon className="w-8 h-8 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500" />
                             <span className="font-medium">Dragging...</span>
                         </div>
@@ -367,6 +367,7 @@ function SortableItem({ id, item, index, isStarter, isLocked }: { id: string, it
     };
 
     return (
+        // eslint-disable-next-line
         <div
             ref={setNodeRef}
             style={style}
@@ -378,7 +379,7 @@ function SortableItem({ id, item, index, isStarter, isLocked }: { id: string, it
                 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}
             `}
         >
-            {!isLocked && <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />}
+            {!isLocked && <DotsSixVertical className="w-4 h-4 text-muted-foreground shrink-0" />}
 
             <div className="flex items-center justify-center w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-400 shrink-0">
                 {isStarter ? index : item.jerseyNumber || '-'}

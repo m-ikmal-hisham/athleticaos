@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PublicMatchSummary } from '../../../api/public.api';
-import { Trophy } from 'lucide-react';
+import { Trophy } from '@phosphor-icons/react';
 
 interface PublicTournamentBracketProps {
     matches: PublicMatchSummary[];

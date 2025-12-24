@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { X, TrendingUp, Award, Target, Trash2 } from 'lucide-react';
+import { X, TrendUp, Medal, Target, Trash } from '@phosphor-icons/react';
 import { fetchPlayerById, fetchPlayerStats } from '../../../api/players.api';
 import { Button } from '../../../components/Button';
 import { usePlayersStore } from '../../../store/players.store';
@@ -23,12 +23,16 @@ interface PlayerStats {
     dropGoals: number;
     yellowCards: number;
     redCards: number;
-    matchStats?: Array<{
+    recentMatches: Array<{
         matchId: string;
         matchDate: string;
-        opponent: string;
-        points: number;
+        opponentName: string;
+        result: string;
         tries: number;
+        points: number;
+        yellowCards: number;
+        redCards: number;
+        minutesPlayed: string;
     }>;
 }
 
@@ -55,7 +59,9 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
     const [isDeleting, setIsDeleting] = useState(false);
+    const [activeTab, setActiveTab] = useState('overview');
 
     const { deletePlayer } = usePlayersStore();
     const { user } = useAuthStore();
@@ -138,10 +144,6 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     };
 
-    const handleViewStats = () => {
-        window.location.href = `/dashboard/stats?playerId=${playerId}`;
-    };
-
     return (
         <Fragment>
             {/* Backdrop */}
@@ -151,13 +153,14 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
             />
 
             {/* Drawer Panel */}
-            <div className="drawer-panel" style={{ position: 'fixed', overflowY: 'auto' }}>
+            <div className="drawer-panel fixed overflow-y-auto">
                 {/* Header */}
                 <div className="drawer-header">
                     <h2 className="text-xl font-semibold text-foreground">Player Profile</h2>
                     <button
                         onClick={onClose}
                         className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-white/5"
+                        aria-label="Close"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -254,122 +257,214 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                 </div>
                             )}
 
-                            {/* Stats Summary */}
-                            {stats && (
-                                <>
-                                    <div className="glass-section">
-                                        <h4 className="section-header-blue">Career Statistics</h4>
-                                        <div className="stats-grid">
-                                            <div className="stat-card">
-                                                <Target className="w-5 h-5 text-primary" />
-                                                <div>
-                                                    <p className="text-2xl font-bold text-foreground">
-                                                        {stats.totalMatches}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">Matches</p>
-                                                </div>
-                                            </div>
-                                            <div className="stat-card">
-                                                <TrendingUp className="w-5 h-5 text-primary" />
-                                                <div>
-                                                    <p className="text-2xl font-bold text-foreground">
-                                                        {stats.totalPoints}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">Points</p>
-                                                </div>
-                                            </div>
-                                            <div className="stat-card">
-                                                <Award className="w-5 h-5 text-primary" />
-                                                <div>
-                                                    <p className="text-2xl font-bold text-foreground">
-                                                        {stats.tries}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">Tries</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                            {/* Tabs Header */}
+                            <div className="flex border-b border-border mb-6">
+                                {['Overview', 'Matches', 'Stats'].map((tab) => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab.toLowerCase())}
+                                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab.toLowerCase()
+                                            ? 'text-primary'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                            }`}
+                                    >
+                                        {tab}
+                                        {activeTab === tab.toLowerCase() && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
 
-                                    <div className="glass-section">
-                                        <h4 className="section-header-blue">Breakdown</h4>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Conversions</span>
-                                                <span className="text-foreground font-medium">{stats.conversions}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Penalties</span>
-                                                <span className="text-foreground font-medium">{stats.penalties}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Drop Goals</span>
-                                                <span className="text-foreground font-medium">{stats.dropGoals}</span>
-                                            </div>
-                                            {(stats.yellowCards > 0 || stats.redCards > 0) && (
-                                                <>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Yellow Cards</span>
-                                                        <span className="text-yellow-400 font-medium">{stats.yellowCards}</span>
+                            {/* Tab Content */}
+                            {stats ? (
+                                <>
+                                    {activeTab === 'overview' && (
+                                        <div className="space-y-6">
+                                            {/* Overview: Career Summary Cards */}
+                                            <div className="stats-grid">
+                                                <div className="stat-card">
+                                                    <Target className="w-5 h-5 text-primary" />
+                                                    <div>
+                                                        <p className="text-2xl font-bold text-foreground">
+                                                            {stats.totalMatches}
+                                                        </p>
+                                                        <p className="text-sm text-muted-foreground">Matches</p>
                                                     </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Red Cards</span>
-                                                        <span className="text-red-400 font-medium">{stats.redCards}</span>
+                                                </div>
+                                                <div className="stat-card">
+                                                    <TrendUp className="w-5 h-5 text-primary" />
+                                                    <div>
+                                                        <p className="text-2xl font-bold text-foreground">
+                                                            {stats.totalPoints}
+                                                        </p>
+                                                        <p className="text-sm text-muted-foreground">Points</p>
                                                     </div>
-                                                </>
+                                                </div>
+                                                <div className="stat-card">
+                                                    <Medal className="w-5 h-5 text-primary" />
+                                                    <div>
+                                                        <p className="text-2xl font-bold text-foreground">
+                                                            {stats.tries}
+                                                        </p>
+                                                        <p className="text-sm text-muted-foreground">Tries</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Overview: Latest Matches Preview */}
+                                            {stats.recentMatches && stats.recentMatches.length > 0 && (
+                                                <div className="glass-section">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h4 className="section-header-blue mb-0">Recent Matches</h4>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setActiveTab('matches')}
+                                                            className="text-xs text-primary hover:text-primary/80 p-0 h-auto"
+                                                        >
+                                                            View All
+                                                        </Button>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        {stats.recentMatches.slice(0, 5).map((match, idx) => (
+                                                            <div key={idx} className="match-row flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${match.result.startsWith('W') ? 'bg-green-500/20 text-green-400' :
+                                                                            match.result.startsWith('D') ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                                'bg-red-500/20 text-red-400'
+                                                                            }`}>
+                                                                            {match.result.split(' ')[0]}
+                                                                        </span>
+                                                                        <p className="text-foreground font-medium text-sm">
+                                                                            vs {match.opponentName}
+                                                                        </p>
+                                                                    </div>
+                                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                                        {new Date(match.matchDate).toLocaleDateString()}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-foreground font-bold text-sm">{match.points} pts</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {match.tries} tries
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* Latest Matches */}
-                                    {stats.matchStats && stats.matchStats.length > 0 && (
+                                    {activeTab === 'matches' && (
+                                        <div className="space-y-4">
+                                            <div className="glass-section p-0 overflow-hidden">
+                                                <table className="w-full text-sm text-left">
+                                                    <thead className="bg-white/5 text-muted-foreground font-medium border-b border-white/5">
+                                                        <tr>
+                                                            <th className="p-3">Date</th>
+                                                            <th className="p-3">Opponent</th>
+                                                            <th className="p-3 text-center">Res</th>
+                                                            <th className="p-3 text-center">Mins</th>
+                                                            <th className="p-3 text-center">Pts</th>
+                                                            <th className="p-3 text-center">T</th>
+                                                            <th className="p-3 text-center">YC</th>
+                                                            <th className="p-3 text-center">RC</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5">
+                                                        {stats.recentMatches.map((match, idx) => (
+                                                            <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                                <td className="p-3 text-muted-foreground">
+                                                                    {new Date(match.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                </td>
+                                                                <td className="p-3 text-foreground font-medium">
+                                                                    {match.opponentName}
+                                                                </td>
+                                                                <td className="p-3 text-center">
+                                                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${match.result.startsWith('W') ? 'bg-green-500/20 text-green-400' :
+                                                                        match.result.startsWith('D') ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                            'bg-red-500/20 text-red-400'
+                                                                        }`}>
+                                                                        {match.result.split(' ')[0]}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="p-3 text-center text-muted-foreground">{match.minutesPlayed}</td>
+                                                                <td className="p-3 text-center text-foreground font-bold">{match.points}</td>
+                                                                <td className="p-3 text-center text-muted-foreground">{match.tries}</td>
+                                                                <td className="p-3 text-center">
+                                                                    {match.yellowCards > 0 && <span className="text-yellow-400 font-bold">{match.yellowCards}</span>}
+                                                                </td>
+                                                                <td className="p-3 text-center">
+                                                                    {match.redCards > 0 && <span className="text-red-400 font-bold">{match.redCards}</span>}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                {stats.recentMatches.length === 0 && (
+                                                    <p className="p-6 text-center text-muted-foreground">No matches found.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'stats' && (
                                         <div className="glass-section">
-                                            <h4 className="section-header-blue">Recent Matches</h4>
+                                            <h4 className="section-header-blue">Detailed Breakdown</h4>
                                             <div className="space-y-3">
-                                                {stats.matchStats.slice(0, 5).map((match, idx) => (
-                                                    <div key={idx} className="match-row">
-                                                        <div>
-                                                            <p className="text-foreground font-medium">
-                                                                vs {match.opponent}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {new Date(match.matchDate).toLocaleDateString()}
-                                                            </p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-foreground font-bold">{match.points} pts</p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {match.tries} tries
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Matches Played</span>
+                                                    <span className="text-foreground font-medium">{stats.totalMatches}</span>
+                                                </div>
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Tries Scored</span>
+                                                    <span className="text-foreground font-medium">{stats.tries}</span>
+                                                </div>
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Conversions</span>
+                                                    <span className="text-foreground font-medium">{stats.conversions}</span>
+                                                </div>
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Penalties</span>
+                                                    <span className="text-foreground font-medium">{stats.penalties}</span>
+                                                </div>
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Drop Goals</span>
+                                                    <span className="text-foreground font-medium">{stats.dropGoals}</span>
+                                                </div>
+                                                <div className="border-t border-white/10 my-2"></div>
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Yellow Cards</span>
+                                                    <span className="text-yellow-400 font-medium">{stats.yellowCards}</span>
+                                                </div>
+                                                <div className="flex justify-between p-2 hover:bg-white/5 rounded">
+                                                    <span className="text-muted-foreground">Red Cards</span>
+                                                    <span className="text-red-400 font-medium">{stats.redCards}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
                                 </>
-                            )}
-
-                            {/* Notes */}
-                            {player.notes && (
-                                <div className="glass-section">
-                                    <h4 className="section-header-blue">Notes</h4>
-                                    <p className="text-muted-foreground text-sm">{player.notes}</p>
+                            ) : (
+                                <div className="p-8 text-center bg-white/5 rounded-lg border border-white/10">
+                                    <p className="text-muted-foreground">No statistics available.</p>
                                 </div>
                             )}
 
                             {/* Actions */}
                             <div className="pt-4 flex gap-3">
-                                <Button onClick={handleViewStats} className="flex-1">
-                                    View Full Stats
-                                </Button>
                                 {isAdmin && (
                                     <Button
                                         onClick={handleDeleteClick}
                                         variant="danger"
-                                        className="w-10 px-0 flex items-center justify-center"
+                                        className="w-full flex items-center justify-center gap-2"
                                         title="Delete Player"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash className="w-4 h-4" /> Delete Player
                                     </Button>
                                 )}
                             </div>

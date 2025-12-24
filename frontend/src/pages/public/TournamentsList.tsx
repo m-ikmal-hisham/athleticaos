@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Search } from 'lucide-react';
+import { CalendarBlank, MapPin, Trophy, MagnifyingGlass } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
 
 export default function TournamentsList() {
@@ -69,7 +69,7 @@ export default function TournamentsList() {
             <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Search tournaments..."
@@ -167,11 +167,11 @@ export default function TournamentsList() {
                                             </p>
                                         )}
                                     </div>
-                                    {tournament.organiserBranding?.logoUrl && (
+                                    {(tournament.logoUrl || tournament.organiserBranding?.logoUrl) && (
                                         <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
                                             <img
-                                                src={tournament.organiserBranding.logoUrl}
-                                                alt={tournament.organiserName}
+                                                src={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
+                                                alt={tournament.name}
                                                 className="w-full h-full object-contain"
                                             />
                                         </div>
@@ -181,7 +181,7 @@ export default function TournamentsList() {
                                 {/* Details */}
                                 <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
                                     <div className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                                        <CalendarBlank className="w-4 h-4 flex-shrink-0" />
                                         <span className="truncate">
                                             {new Date(tournament.startDate).toLocaleDateString()} -{' '}
                                             {new Date(tournament.endDate).toLocaleDateString()}

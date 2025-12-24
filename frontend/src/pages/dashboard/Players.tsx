@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, MoreHorizontal, UserX } from "lucide-react";
+import { MagnifyingGlass, DotsThree, UserMinus } from "@phosphor-icons/react";
 import { TableSkeleton } from "../../components/LoadingSkeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
-import { Card, CardContent } from "../../components/Card";
+import { GlassCard } from "../../components/GlassCard";
 import {
     Table,
     TableBody,
@@ -131,11 +131,11 @@ export default function Players() {
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
+            <GlassCard>
+                <div className="p-0">
                     <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
                         <div className="relative flex-1 w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search by name or email..."
                                 className="pl-9 bg-glass-bg/50"
@@ -148,6 +148,7 @@ export default function Players() {
                                 className="h-10 px-3 rounded-md border border-input bg-background text-sm"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
+                                aria-label="Filter by Status"
                             >
                                 <option value="ALL">All Status</option>
                                 <option value="ACTIVE">Active</option>
@@ -183,7 +184,7 @@ export default function Players() {
                                     <TableRow>
                                         <TableCell colSpan={7} className="p-0">
                                             <EmptyState
-                                                icon={UserX}
+                                                icon={UserMinus}
                                                 title="No players found"
                                                 description="Try adjusting your search or filters, or add a new player."
                                                 actionLabel={isAdmin ? "Add Player" : undefined}
@@ -241,8 +242,9 @@ export default function Players() {
                                                             e.stopPropagation();
                                                             openPlayerDrawer(p.id);
                                                         }}
+                                                        aria-label="View Details"
                                                     >
-                                                        <MoreHorizontal className="w-4 h-4" />
+                                                        <DotsThree className="w-4 h-4" />
                                                     </Button>
                                                 </div>
                                             </TableCell>
@@ -252,8 +254,8 @@ export default function Players() {
                             </TableBody>
                         </Table>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </GlassCard>
 
             <PlayerModal
                 isOpen={isModalOpen}

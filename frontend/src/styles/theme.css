@@ -3,7 +3,7 @@
   --athos-red: #D0021B;
 
   --athos-bg-light: #F3F4F8;
-  --athos-bg-dark: #0E1014;
+  --athos-bg-dark: #12161E;
 
   --athos-text-light: rgba(0, 0, 0, 0.88);
   --athos-text-muted-light: rgba(0, 0, 0, 0.55);
@@ -12,7 +12,7 @@
   --athos-text-muted-dark: rgba(255, 255, 255, 0.65);
 
   --athos-card-light: #FFFFFF;
-  --athos-card-dark: rgba(18, 22, 30, 0.96);
+  --athos-card-dark: rgba(18, 22, 30, 0.85);
 
   --athos-border-subtle: rgba(15, 23, 42, 0.06);
 
@@ -20,26 +20,33 @@
   --athos-radius-lg: 18px;
   --athos-radius-md: 12px;
 
-  --athos-shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.18);
-  --athos-shadow-card: 0 12px 30px rgba(15, 23, 42, 0.12);
+  /* Locked Glassmorphism System */
+  --glass-blur: 24px;
+  --glass-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+  --glass-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --glass-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+
+  /* Legacy shadows - now using soft values */
+  --athos-shadow-soft: var(--glass-shadow-lg);
+  --athos-shadow-card: var(--glass-shadow-md);
 
   --athos-transition-fast: 150ms ease-out;
 
   /* Legacy aliases for compatibility */
   --primary: var(--brand-primary, var(--athos-blue));
-  --primary-glow: rgba(0, 83, 240, 0.35); /* This might need to be dynamic too but difficult with CSS vars alone - for now leave default glow or use opacity trick if needed */
-  --blur-level: 24px;
+  --primary-glow: rgba(0, 83, 240, 0.35);
+  --blur-level: var(--glass-blur);
   --radius-xl: var(--athos-radius-xl);
 
   /* Branding Defaults */
   --brand-primary: var(--athos-blue);
-  --brand-secondary: #D32F2F; /* Malaysia Red - adjusted for UI harmony */
+  --brand-secondary: #D32F2F;
   --brand-accent: #FFFFFF;
 
 }
 
 [data-theme="light"] {
-  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.65);
   --text-color: var(--athos-text-light);
   --text-muted: var(--athos-text-muted-light);
   --bg-base: var(--athos-bg-light);
@@ -47,7 +54,7 @@
 }
 
 [data-theme="dark"] {
-  --glass-bg: rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(18, 22, 30, 0.70);
   --text-color: var(--athos-text-dark);
   --text-muted: var(--athos-text-muted-dark);
   --bg-base: var(--athos-bg-dark);

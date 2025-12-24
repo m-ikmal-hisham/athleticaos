@@ -25,7 +25,15 @@ public interface PlayerSuspensionService {
     /**
      * Gets all active suspensions for a tournament.
      */
+    /**
+     * Gets all active suspensions for a tournament.
+     */
     List<PlayerSuspensionDTO> getActiveSuspensions(UUID tournamentId);
+
+    /**
+     * Gets all suspensions (active and inactive) for a tournament.
+     */
+    List<PlayerSuspensionDTO> getAllSuspensions(UUID tournamentId);
 
     /**
      * Gets active suspensions for a specific player in a tournament.

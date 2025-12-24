@@ -1,6 +1,7 @@
 import { Fragment, ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
+import { GlassCard } from './GlassCard';
 
 interface ModalProps {
     isOpen: boolean;
@@ -30,24 +31,23 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
             {/* Modal */}
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                style={{ position: 'fixed', overflowY: 'auto' }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 fixed inset-0 overflow-y-auto"
             >
-                <div
+                <GlassCard
+                    onClick={(e) => e.stopPropagation()}
                     className={clsx(
-                        'glass-card w-full animate-scale-in my-8',
+                        'w-full animate-scale-in my-8 p-0 max-h-[90vh] overflow-y-auto',
                         sizes[size]
                     )}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ maxHeight: '90vh', overflowY: 'auto' }}
                 >
                     {/* Header */}
                     {title && (
-                        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+                        <div className="flex items-center justify-between p-6 border-b border-white/10">
                             <h2 className="text-xl font-semibold text-foreground">{title}</h2>
                             <button
                                 onClick={onClose}
                                 className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-white/5"
+                                aria-label="Close"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -55,8 +55,8 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                     )}
 
                     {/* Content */}
-                    <div>{children}</div>
-                </div>
+                    <div className={title ? "p-6" : ""}>{children}</div>
+                </GlassCard>
             </div>
         </Fragment>
     );

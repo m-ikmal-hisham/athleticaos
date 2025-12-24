@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, User, LogOut, Bell } from 'lucide-react';
+import { List, User, SignOut, Bell } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -25,8 +25,9 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                     <button
                         onClick={onMenuClick}
                         className="lg:hidden p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted"
+                        aria-label="Toggle Menu"
                     >
-                        <Menu className="w-5 h-5" />
+                        <List className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -35,7 +36,10 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                     <ThemeToggle />
 
                     {/* Notifications */}
-                    <button className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted relative">
+                    <button
+                        className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted relative"
+                        aria-label="Notifications"
+                    >
                         <Bell className="w-5 h-5" />
                         <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full ring-2 ring-background"></span>
                     </button>
@@ -85,7 +89,7 @@ export const Navbar = ({ onMenuClick }: NavbarProps) => {
                                         onClick={handleLogout}
                                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-500"
                                     >
-                                        <LogOut className="w-4 h-4" />
+                                        <SignOut className="w-4 h-4" />
                                         <span className="text-sm">Logout</span>
                                     </button>
                                 </div>

@@ -5,7 +5,7 @@ import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
 import { fetchTeamBySlug, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
 import { usePlayersStore } from '../../../store/players.store';
-import { ArrowLeft, Users, Trophy, Target, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 
 interface TeamDetail {
@@ -114,27 +114,17 @@ export default function TeamDetail() {
     const recentMatches = matches.slice(0, 5);
 
     return (
-        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="container mx-auto max-w-[1400px]">
             {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
+            <div className="mb-8">
                 <button
                     onClick={() => navigate('/dashboard/teams')}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--athos-blue)',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        marginBottom: '1rem'
-                    }}
+                    className="flex items-center gap-2 mb-4 text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back to Teams
                 </button>
-                <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-color)', marginBottom: '0.5rem' }}>
+                <h1 className="text-4xl font-bold text-foreground mb-2">
                     {team.name}
                 </h1>
                 <p className="text-muted-foreground">
@@ -143,28 +133,24 @@ export default function TeamDetail() {
             </div>
 
             {/* Desktop 2-column layout, Mobile stacked */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '1.5rem'
-            }}>
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(300px,1fr)] lg:grid-cols-[1fr,1.5fr] gap-6">
                 {/* Left Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div className="flex flex-col gap-6">
                     {/* Team Info */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Team Information</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div className="flex flex-col gap-4">
                                 <div>
-                                    <p className="text-muted-foreground" style={{ fontSize: '0.875rem' }}>Organisation</p>
-                                    <p className="text-foreground" style={{ fontWeight: '500' }}>
+                                    <p className="text-muted-foreground text-sm">Organisation</p>
+                                    <p className="text-foreground font-medium">
                                         {team.organisationName || '—'}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground" style={{ fontSize: '0.875rem' }}>Status</p>
+                                    <p className="text-muted-foreground text-sm">Status</p>
                                     <span className={`status-pill status-${team.status.toLowerCase()}`}>
                                         {team.status}
                                     </span>
@@ -180,7 +166,7 @@ export default function TeamDetail() {
                                 <CardTitle>Team Statistics</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="stats-grid" style={{ marginBottom: '1.5rem' }}>
+                                <div className="stats-grid mb-6">
                                     <div className="stat-card">
                                         <Target className="w-5 h-5 text-primary" />
                                         <div>
@@ -196,27 +182,27 @@ export default function TeamDetail() {
                                         </div>
                                     </div>
                                     <div className="stat-card">
-                                        <TrendingUp className="w-5 h-5 text-primary" />
+                                        <TrendUp className="w-5 h-5 text-primary" />
                                         <div>
                                             <p className="text-2xl font-bold text-foreground">{stats.pointsFor}</p>
                                             <p className="text-sm text-muted-foreground">Points For</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex justify-between">
                                         <span className="text-muted-foreground">Losses</span>
                                         <span className="text-foreground font-medium">{stats.losses}</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <div className="flex justify-between">
                                         <span className="text-muted-foreground">Draws</span>
                                         <span className="text-foreground font-medium">{stats.draws}</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <div className="flex justify-between">
                                         <span className="text-muted-foreground">Points Against</span>
                                         <span className="text-foreground font-medium">{stats.pointsAgainst}</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.75rem', borderTop: '1px solid var(--athos-border-subtle)' }}>
+                                    <div className="flex justify-between pt-3 border-t border-border/50">
                                         <span className="text-muted-foreground">Win Rate</span>
                                         <span className="text-foreground font-bold">
                                             {stats.totalMatches > 0
@@ -231,14 +217,14 @@ export default function TeamDetail() {
                 </div>
 
                 {/* Right Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div className="flex flex-col gap-6">
                     {/* Roster */}
                     <Card>
                         <CardHeader>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <CardTitle>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div className="flex items-center gap-2">
                                             <Users className="w-5 h-5" />
                                             Roster
                                         </div>
@@ -258,10 +244,10 @@ export default function TeamDetail() {
                     {/* Recent Matches */}
                     <Card>
                         <CardHeader>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="flex justify-between items-center">
                                 <CardTitle>Recent Matches</CardTitle>
                                 {matches.length > 0 && (
-                                    <Button onClick={handleViewMatches} style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
+                                    <Button onClick={handleViewMatches} size="sm" variant="outline">
                                         View All
                                     </Button>
                                 )}
@@ -271,22 +257,22 @@ export default function TeamDetail() {
                             {recentMatches.length === 0 ? (
                                 <p className="text-muted-foreground">No matches found</p>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div className="flex flex-col gap-3">
                                     {recentMatches.map((match) => (
                                         <div key={match.id} className="match-row">
-                                            <div style={{ flex: 1 }}>
-                                                <p className="text-foreground font-medium" style={{ fontSize: '0.9rem' }}>
+                                            <div className="flex-1">
+                                                <p className="text-foreground font-medium text-sm">
                                                     {match.homeTeamName} vs {match.awayTeamName}
                                                 </p>
-                                                <p className="text-muted-foreground" style={{ fontSize: '0.8rem' }}>
+                                                <p className="text-muted-foreground text-xs">
                                                     {new Date(match.scheduledTime).toLocaleDateString()}
                                                 </p>
                                             </div>
-                                            <div style={{ textAlign: 'right' }}>
+                                            <div className="text-right">
                                                 <p className="text-foreground font-bold">
                                                     {match.homeScore} - {match.awayScore}
                                                 </p>
-                                                <span className={`status-pill status-${match.status.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>
+                                                <span className={`status-pill status-${match.status.toLowerCase()} text-[0.7rem]`}>
                                                     {match.status}
                                                 </span>
                                             </div>

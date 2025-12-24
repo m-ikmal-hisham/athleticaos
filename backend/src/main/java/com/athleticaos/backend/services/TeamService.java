@@ -9,6 +9,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TeamService {
+    /**
+     * Retrieves all teams.
+     * 
+     * @return list of team responses
+     */
     List<TeamResponse> getAllTeams();
 
     TeamResponse getTeamById(UUID id);

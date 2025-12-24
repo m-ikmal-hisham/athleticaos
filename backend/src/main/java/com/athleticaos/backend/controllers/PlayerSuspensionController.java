@@ -23,11 +23,16 @@ public class PlayerSuspensionController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get all active suspensions for a tournament")
-    public ResponseEntity<List<PlayerSuspensionDTO>> getActiveSuspensions(
-            @PathVariable String tournamentIdOrSlug) {
+    @Operation(summary = "Get suspensions for a tournament (active only by default)")
+    public ResponseEntity<List<PlayerSuspensionDTO>> getSuspensions(
+            @PathVariable String tournamentIdOrSlug,
+            @RequestParam(defaultValue = "true") boolean activeOnly) {
         UUID tournamentId = getTournamentId(tournamentIdOrSlug);
-        return ResponseEntity.ok(suspensionService.getActiveSuspensions(tournamentId));
+        if (activeOnly) {
+            return ResponseEntity.ok(suspensionService.getActiveSuspensions(tournamentId));
+        } else {
+            return ResponseEntity.ok(suspensionService.getAllSuspensions(tournamentId));
+        }
     }
 
     @GetMapping("/player/{playerId}")

@@ -89,6 +89,12 @@ public class Tournament {
     @Builder.Default
     private Boolean deleted = false;
 
+    @Column(name = "logo_url")
+    private String logoUrl;
+
+    @Column(name = "livestream_url")
+    private String livestreamUrl;
+
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private java.util.List<TournamentCategory> categories = new java.util.ArrayList<>();

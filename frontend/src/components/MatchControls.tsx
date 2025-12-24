@@ -1,6 +1,6 @@
 import { Button } from '@/components/Button';
 import { MatchItem } from '@/store/matches.store';
-import { Play, Pause, StopCircle, XCircle } from 'lucide-react';
+import { Play, Pause, StopCircle, XCircle } from '@phosphor-icons/react';
 
 interface MatchControlsProps {
     match: MatchItem;

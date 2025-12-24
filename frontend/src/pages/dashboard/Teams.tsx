@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "../../components/Card";
+import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { useTeamsStore } from "../../store/teams.store";
 import { StatusPill } from "../../components/StatusPill";
 import { TableSkeleton } from "../../components/LoadingSkeleton";
 import { EmptyState } from "../../components/EmptyState";
-import { Users2, Search } from "lucide-react";
+import { UsersThree, MagnifyingGlass } from "@phosphor-icons/react";
 import { TeamModal } from "@/components/modals/TeamModal";
 import { createTeam } from "@/api/teams.api";
 import { PageHeader } from "../../components/PageHeader";
@@ -60,12 +60,12 @@ export default function Teams() {
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
+            <GlassCard>
+                <div className="p-0">
                     {/* Search Box */}
                     <div className="p-4 border-b border-glass-border">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search by name, organisation, or division..."
                                 className="pl-9 bg-glass-bg/50"
@@ -81,6 +81,7 @@ export default function Teams() {
                             value={organisationFilter}
                             onChange={(e) => setOrganisationFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Organisation"
                         >
                             <option value="">All Organisations</option>
                             {organisations.map(org => (
@@ -92,6 +93,7 @@ export default function Teams() {
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Category"
                         >
                             <option value="">All Categories</option>
                             {categories.map(cat => (
@@ -103,6 +105,7 @@ export default function Teams() {
                             value={ageGroupFilter}
                             onChange={(e) => setAgeGroupFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by Age Group"
                         >
                             <option value="">All Age Groups</option>
                             {ageGroups.map(age => (
@@ -114,6 +117,7 @@ export default function Teams() {
                             value={stateFilter}
                             onChange={(e) => setStateFilter(e.target.value)}
                             className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Filter by State"
                         >
                             <option value="">All States</option>
                             {states.map(state => (
@@ -133,7 +137,7 @@ export default function Teams() {
                     {!loading && searchFilteredTeams.length === 0 && (
                         <div className="p-8">
                             <EmptyState
-                                icon={Users2}
+                                icon={UsersThree}
                                 title="No teams found"
                                 description="Adjust filters or add a new team."
                                 actionLabel="Add Team"
@@ -160,8 +164,7 @@ export default function Teams() {
                                         <tr
                                             key={t.id}
                                             onClick={() => navigate(`/dashboard/teams/${t.slug || t.id}`)}
-                                            style={{ cursor: 'pointer' }}
-                                            className="border-b border-border/40 hover:bg-muted/30 transition-colors"
+                                            className="border-b border-border/40 hover:bg-muted/30 transition-colors cursor-pointer"
                                         >
                                             <td className="p-4">{t.name}</td>
                                             <td className="p-4 text-muted-foreground">{t.category} ({t.ageGroup})</td>
@@ -176,8 +179,8 @@ export default function Teams() {
                             </table>
                         </div>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </GlassCard>
 
             <TeamModal
                 isOpen={isCreateModalOpen}

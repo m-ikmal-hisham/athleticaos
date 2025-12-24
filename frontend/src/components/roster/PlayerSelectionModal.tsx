@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { teamService } from '@/services/teamService';
 import { TeamPlayer } from '@/types';
 import { Button } from '@/components/Button';
-import { X, Search, UserPlus } from 'lucide-react';
+import { X, MagnifyingGlass, UserPlus } from '@phosphor-icons/react';
 
 interface PlayerSelectionModalProps {
     isOpen: boolean;
@@ -73,7 +73,7 @@ export function PlayerSelectionModal({
                 {/* Header */}
                 <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                     <h2 className="text-xl font-bold">Add Players to Roster</h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300" aria-label="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -81,7 +81,7 @@ export function PlayerSelectionModal({
                 {/* Search */}
                 <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Search players by name or number..."

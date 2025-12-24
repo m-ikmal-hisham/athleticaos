@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, ArrowLeft, Clock } from 'lucide-react';
+import { Calendar, MapPin, Trophy, ArrowLeft, Clock, VideoCamera, ShareNetwork } from '@phosphor-icons/react';
+
+import { TournamentLogo } from '@/components/common/TournamentLogo';
 import {
     publicTournamentApi,
     PublicTournamentDetail,
@@ -125,19 +127,73 @@ export default function TournamentDetail() {
                 Back to Tournaments
             </Link>
 
+            {/* Live Stream Section */}
+            {tournament?.livestreamUrl && (
+                <div className="mb-8">
+                    <div className="bg-black/95 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 relative aspect-video md:aspect-[21/9]">
+                        {(() => {
+                            // Robust YouTube ID extraction
+                            const getYouTubeId = (url: string) => {
+                                if (!url) return null;
+                                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+                                const match = url.match(regExp);
+                                return (match && match[7].length === 11) ? match[7] : null;
+                            };
+
+                            const videoId = getYouTubeId(tournament.livestreamUrl);
+
+                            if (videoId) {
+                                return (
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        src={`https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`}
+                                        title="Live Stream"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        className="absolute inset-0 w-full h-full"
+                                    />
+                                );
+                            } else {
+                                // Fallback for non-YouTube links
+                                return (
+                                    <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gradient-to-br from-gray-900 to-black">
+                                        <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center mb-4 animate-pulse">
+                                            <VideoCamera className="w-8 h-8 text-white" weight="fill" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-white mb-2">Watch Live</h3>
+                                        <p className="text-gray-400 mb-6 max-w-md">
+                                            Follow the action live on our official stream.
+                                        </p>
+                                        <a
+                                            href={tournament.livestreamUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2"
+                                        >
+                                            <ShareNetwork className="w-5 h-5" />
+                                            Open Stream
+                                        </a>
+                                    </div>
+                                );
+                            }
+                        })()}
+                    </div>
+                </div>
+            )}
+
             {/* Tournament Header */}
             <div
-                className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden"
-                style={{
-                    borderColor: tournament.organiserBranding?.primaryColor ? `var(--brand-primary)` : undefined,
-                    borderTopWidth: tournament.organiserBranding?.primaryColor ? '4px' : '1px'
-                }}
+                className={`rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl p-8 relative overflow-hidden transition-colors ${tournament.organiserBranding?.primaryColor
+                    ? 'border-[color:var(--brand-primary)] border-t-4'
+                    : 'border border-slate-200/50 dark:border-slate-700/50'
+                    }`}
             >
                 {/* Background Tint if branding exists */}
                 {tournament.organiserBranding?.primaryColor && (
                     <div
-                        className="absolute inset-0 opacity-5 pointer-events-none"
-                        style={{ backgroundColor: `var(--brand-primary)` }}
+                        className="absolute inset-0 opacity-5 pointer-events-none bg-[color:var(--brand-primary)]"
                     />
                 )}
 
@@ -198,13 +254,17 @@ export default function TournamentDetail() {
                         )}
                     </div>
                 </div>
-            </div>
 
-            {tournament.organiserBranding?.logoUrl && (
+
+                {/* Display Logo independently or within branding if available */}
                 <div className="absolute top-8 right-8 hidden md:block">
-                    <img src={tournament.organiserBranding.logoUrl} alt="Organiser Logo" className="w-16 h-16 object-contain" />
+                    <TournamentLogo
+                        tournamentId={tournament.id}
+                        logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
+                        className="w-16 h-16 object-contain rounded-xl shadow-sm bg-white/50 backdrop-blur-sm"
+                    />
                 </div>
-            )}
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-2 border-b border-slate-200/50 dark:border-slate-700/50 overflow-x-auto">

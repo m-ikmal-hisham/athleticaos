@@ -1,10 +1,10 @@
 
 import { clsx } from 'clsx';
-import { LucideIcon } from 'lucide-react';
+import { Icon } from '@phosphor-icons/react';
 import { Button } from './Button';
 
 interface EmptyStateProps {
-    icon: LucideIcon;
+    icon: Icon;
     title: string;
     description: string;
     actionLabel?: string;

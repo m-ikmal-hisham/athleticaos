@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, ArrowRight } from 'lucide-react';
+import { CalendarBlank, MapPin, Trophy, ArrowRight } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
 
 export default function Home() {
@@ -117,7 +117,7 @@ export default function Home() {
                                     {/* Details */}
                                     <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
                                         <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4" />
+                                            <CalendarBlank className="w-4 h-4" />
                                             <span>
                                                 {new Date(tournament.startDate).toLocaleDateString()} -{' '}
                                                 {new Date(tournament.endDate).toLocaleDateString()}

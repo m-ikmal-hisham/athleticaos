@@ -20,4 +20,6 @@ public interface MatchLineupRepository extends JpaRepository<MatchLineup, UUID> 
     List<MatchLineup> findByMatch_Tournament_Id(UUID tournamentId);
 
     void deleteByMatch_Tournament_Id(UUID tournamentId);
+
+    List<MatchLineup> findByPlayerId(UUID playerId);
 }

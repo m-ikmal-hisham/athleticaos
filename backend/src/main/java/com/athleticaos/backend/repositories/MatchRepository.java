@@ -15,7 +15,8 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "LEFT JOIN FETCH m.homeTeam " +
                         "LEFT JOIN FETCH m.awayTeam " +
                         "LEFT JOIN FETCH m.stage " +
-                        "WHERE m.tournament.id = :tournamentId")
+                        "LEFT JOIN FETCH m.stage " +
+                        "WHERE m.tournament.id = :tournamentId AND m.deleted = false")
         List<Match> findByTournamentIdWithTeams(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
@@ -38,11 +39,17 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "JOIN m.tournament t " +
                         "JOIN t.organiserOrg tOrg " +
                         "LEFT JOIN FETCH m.stage " +
-                        "WHERE hto.id IN :orgIds OR ato.id IN :orgIds OR tOrg.id IN :orgIds")
+                        "LEFT JOIN FETCH m.stage " +
+                        "WHERE (hto.id IN :orgIds OR ato.id IN :orgIds OR tOrg.id IN :orgIds) AND m.deleted = false")
         List<Match> findMatchesByOrganisationIds(
                         @org.springframework.data.repository.query.Param("orgIds") java.util.Set<UUID> orgIds);
 
         List<Match> findByMatchCode(String matchCode);
+
+        @org.springframework.data.jpa.repository.Modifying
+        @org.springframework.data.jpa.repository.Query("UPDATE Match m SET m.deleted = true WHERE m.tournament.id = :tournamentId")
+        void softDeleteByTournamentId(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
         void deleteByTournamentId(UUID tournamentId);
 
@@ -64,7 +71,8 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "LEFT JOIN FETCH m.tournament t " +
                         "LEFT JOIN FETCH t.organiserOrg tOrg " +
                         "LEFT JOIN FETCH m.stage " +
-                        "WHERE t.id = :tournamentId")
+                        "LEFT JOIN FETCH m.stage " +
+                        "WHERE t.id = :tournamentId AND m.deleted = false")
         List<Match> findByTournamentIdWithDetails(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 }

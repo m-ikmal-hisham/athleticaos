@@ -26,4 +26,6 @@ public class TournamentResponse {
     private String seasonName;
     private String competitionType;
     private java.util.List<TournamentCategoryDTO> categories;
+    private String logoUrl;
+    private String livestreamUrl;
 }

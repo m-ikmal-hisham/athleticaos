@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, Play, MoreHorizontal } from 'lucide-react';
+import { MagnifyingGlass, Funnel, Play, DotsThree } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
@@ -94,7 +94,7 @@ export const Matches = () => {
                 <CardContent className="p-0">
                     <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
                         <div className="relative flex-1 w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search matches..."
                                 className="pl-9 bg-glass-bg/50"
@@ -110,6 +110,7 @@ export const Matches = () => {
                                 className="h-10 px-3 rounded-md border border-input bg-background text-sm"
                                 value={filters.status || 'ALL'}
                                 onChange={(e) => setFilters({ status: e.target.value as MatchStatus | 'ALL' })}
+                                aria-label="Filter by Status"
                             >
                                 <option value="ALL">All Status</option>
                                 <option value="SCHEDULED">Scheduled</option>
@@ -118,7 +119,7 @@ export const Matches = () => {
                                 <option value="CANCELLED">Cancelled</option>
                             </select>
                             <Button variant="outline" className="gap-2">
-                                <Filter className="w-4 h-4" />
+                                <Funnel className="w-4 h-4" />
                                 More Filters
                             </Button>
                         </div>
@@ -206,8 +207,9 @@ export const Matches = () => {
                                                     size="sm"
                                                     className="h-8 w-8 p-0"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    aria-label="Match Actions"
                                                 >
-                                                    <MoreHorizontal className="w-4 h-4" />
+                                                    <DotsThree className="w-4 h-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStatsStore } from '@/store/stats.store';
 import { fetchTournaments } from '@/api/tournaments.api';
-import { Trophy, Users, Activity, AlertCircle, Flag, Award } from 'lucide-react';
+import { Trophy, Users, Pulse, WarningCircle, Flag, Medal } from '@phosphor-icons/react';
 
 interface Tournament {
     id: string;
@@ -65,6 +65,7 @@ export default function Stats() {
                         value={selectedTournamentId || ''}
                         onChange={handleTournamentChange}
                         disabled={tournamentsLoading}
+                        aria-label="Select Tournament"
                     >
                         <option value="">Select tournament...</option>
                         {tournaments.map((t) => (
@@ -79,7 +80,7 @@ export default function Stats() {
             {/* Error State */}
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3 text-red-500">
-                    <AlertCircle className="w-5 h-5" />
+                    <WarningCircle className="w-5 h-5" />
                     <p>{error}</p>
                 </div>
             )}
@@ -98,7 +99,7 @@ export default function Stats() {
                         <SummaryCard
                             label="Total Matches"
                             value={summary?.totalMatches ?? 0}
-                            icon={<Activity className="w-4 h-4 text-blue-400" />}
+                            icon={<Pulse className="w-4 h-4 text-blue-400" />}
                         />
                         <SummaryCard
                             label="Completed"
@@ -108,7 +109,7 @@ export default function Stats() {
                         <SummaryCard
                             label="Total Tries"
                             value={summary?.totalTries ?? 0}
-                            icon={<Award className="w-4 h-4 text-yellow-400" />}
+                            icon={<Medal className="w-4 h-4 text-yellow-400" />}
                         />
                         <SummaryCard
                             label="Total Points"

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -80,7 +80,7 @@ export const Seasons = () => {
                     {/* Search Box */}
                     <div className="p-4 border-b border-glass-border">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search by name, code, or level..."
                                 className="pl-9 bg-glass-bg/50"
@@ -93,10 +93,10 @@ export const Seasons = () => {
                     {/* Filters */}
                     <div className="p-4 border-b border-glass-border grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <select
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="input-base w-full cursor-pointer"
                             value={filterLevel}
                             onChange={(e) => setFilterLevel(e.target.value)}
+                            aria-label="Filter by Level"
                         >
                             <option value="ALL">All Levels</option>
                             {Object.values(SeasonLevel).map((level) => (
@@ -107,10 +107,10 @@ export const Seasons = () => {
                         </select>
 
                         <select
-                            className="input-base w-full"
-                            style={{ cursor: 'pointer' }}
+                            className="input-base w-full cursor-pointer"
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
+                            aria-label="Filter by Status"
                         >
                             <option value="ALL">All Statuses</option>
                             {Object.values(SeasonStatus).map((status) => (
@@ -163,8 +163,7 @@ export const Seasons = () => {
                                         <tr
                                             key={season.id}
                                             onClick={() => navigate(`/dashboard/competitions/seasons/${season.id}`)}
-                                            style={{ cursor: 'pointer' }}
-                                            className="border-b border-border/40 hover:bg-muted/30 transition-colors"
+                                            className="border-b border-border/40 hover:bg-muted/30 transition-colors cursor-pointer"
                                         >
                                             <td className="p-4 font-medium">{season.name}</td>
                                             <td className="p-4 text-muted-foreground font-mono text-sm">{season.code}</td>

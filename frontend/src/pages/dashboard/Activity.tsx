@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, RefreshCw } from 'lucide-react';
+import { MagnifyingGlass, Funnel, ArrowsClockwise } from '@phosphor-icons/react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -77,7 +77,7 @@ export default function Activity() {
                 description="Track system activity and audit logs"
                 action={
                     <Button variant="outline" size="sm" onClick={loadLogs}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        <ArrowsClockwise className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
                 }
@@ -122,7 +122,7 @@ export default function Activity() {
                 <CardContent className="p-0">
                     <div className="p-4 border-b border-glass-border flex justify-between items-center">
                         <div className="relative w-full max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search logs..."
                                 className="pl-9 bg-glass-bg/50"
@@ -132,7 +132,7 @@ export default function Activity() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" size="sm">
-                                <Filter className="w-4 h-4 mr-2" />
+                                <Funnel className="w-4 h-4 mr-2" />
                                 Filter
                             </Button>
                         </div>

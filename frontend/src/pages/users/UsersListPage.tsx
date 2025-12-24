@@ -1,4 +1,4 @@
-import { Users } from 'lucide-react';
+import { Users } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 
 export const UsersListPage = () => {

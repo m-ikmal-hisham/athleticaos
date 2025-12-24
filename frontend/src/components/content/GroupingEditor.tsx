@@ -19,10 +19,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Team, TournamentStageResponse } from '@/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
+import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
-import { GripVertical } from 'lucide-react';
+import { DotsSixVertical } from '@phosphor-icons/react';
 import clsx from 'clsx';
+import styles from './GroupingEditor.module.css';
 
 interface GroupingEditorProps {
     teams: Team[];
@@ -100,14 +101,14 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Unassigned Column */}
                 <div className="lg:col-span-1 space-y-4">
-                    <Card className="h-full border-dashed bg-muted/30">
-                        <CardHeader className="py-4">
-                            <CardTitle className="text-sm font-medium flex justify-between items-center">
+                    <GlassCard className="h-full border-dashed bg-muted/30">
+                        <GlassCardHeader className="py-4">
+                            <GlassCardTitle className="text-sm font-medium flex justify-between items-center">
                                 Unassigned
                                 <Badge variant="secondary">{unassignedTeams.length}</Badge>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-2 min-h-[200px]">
+                            </GlassCardTitle>
+                        </GlassCardHeader>
+                        <GlassCardContent className="p-2 min-h-[200px]">
                             <SortableContext id="unassigned-container" items={unassignedTeams.map(t => t.id)} strategy={rectSortingStrategy}>
                                 <DroppableContainer id="unassigned-container" className="space-y-2 h-full">
                                     {unassignedTeams.map((team) => (
@@ -120,8 +121,8 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                                     )}
                                 </DroppableContainer>
                             </SortableContext>
-                        </CardContent>
-                    </Card>
+                        </GlassCardContent>
+                    </GlassCard>
                 </div>
 
                 {/* Pools Grid */}
@@ -129,14 +130,14 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                     {stages.map((stage) => {
                         const poolTeams = relevantTeams.filter(t => t.poolNumber === stage.name);
                         return (
-                            <Card key={stage.id} className="bg-card">
-                                <CardHeader className="py-3 px-4 border-b">
+                            <GlassCard key={stage.id} className="bg-card">
+                                <GlassCardHeader className="py-3 px-4 border-b">
                                     <div className="flex justify-between items-center">
                                         <h3 className="font-semibold text-sm">{stage.name}</h3>
                                         <Badge variant="outline" className="text-xs">{poolTeams.length} Teams</Badge>
                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-2 min-h-[150px]">
+                                </GlassCardHeader>
+                                <GlassCardContent className="p-2 min-h-[150px]">
                                     <SortableContext id={stage.name} items={poolTeams.map(t => t.id)} strategy={rectSortingStrategy}>
                                         <DroppableContainer id={stage.name} className="space-y-2 h-full min-h-[100px]">
                                             {poolTeams.map((team) => (
@@ -149,8 +150,8 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                                             )}
                                         </DroppableContainer>
                                     </SortableContext>
-                                </CardContent>
-                            </Card>
+                                </GlassCardContent>
+                            </GlassCard>
                         );
                     })}
                 </div>
@@ -200,17 +201,16 @@ function SortableTeamItem({ team, disabled }: SortableTeamItemProps) {
         isDragging,
     } = useSortable({ id: team.id, disabled });
 
-    const style: React.CSSProperties = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-    };
+    const style = {
+        '--dnd-transform': CSS.Transform.toString(transform),
+        '--dnd-transition': transition,
+    } as React.CSSProperties;
 
     return (
-        // eslint-disable-next-line
         <div
             ref={setNodeRef}
             style={style}
-            className={clsx(isDragging && "opacity-30")}
+            className={clsx(styles.sortableItem, isDragging && "opacity-30")}
             {...attributes}
             {...listeners}
         >
@@ -227,7 +227,7 @@ function TeamItem({ team, isOverlay }: { team: Team, isOverlay?: boolean }) {
             !isOverlay && "cursor-grab hover:border-primary/50"
         )}>
             <div className="text-muted-foreground">
-                <GripVertical className="w-4 h-4" />
+                <DotsSixVertical className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{team.name}</div>

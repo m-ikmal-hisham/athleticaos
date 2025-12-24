@@ -40,4 +40,7 @@ public class TournamentCreateRequest {
     private CompetitionType competitionType;
 
     private java.util.List<CreateCategoryRequest> categories;
+
+    private String logoUrl;
+    private String livestreamUrl;
 }

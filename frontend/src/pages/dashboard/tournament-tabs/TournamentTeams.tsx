@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Search, Users } from 'lucide-react';
+import { Plus, Trash, MagnifyingGlass, Users } from '@phosphor-icons/react';
 import { teamService } from '@/services/teamService';
 import { tournamentService } from '@/services/tournamentService';
 import { Team } from '@/types';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { GlassCard } from '@/components/GlassCard';
 
 interface TournamentTeamsProps {
     tournamentId: string;
@@ -100,7 +100,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                     </div>
                 ) : (
                     teams.map(team => (
-                        <Card key={team.id} className="p-4 flex justify-between items-center group">
+                        <GlassCard key={team.id} className="p-4 flex justify-between items-center group">
                             <div>
                                 <h4 className="font-medium text-slate-900 dark:text-white">{team.name}</h4>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">{team.organisationName}</p>
@@ -111,9 +111,9 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                 onClick={() => handleRemoveTeam(team.id)}
                                 className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash className="w-4 h-4" />
                             </Button>
-                        </Card>
+                        </GlassCard>
                     ))
                 )}
             </div>
@@ -134,7 +134,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
 
                         <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
                                     placeholder="Search teams..."

@@ -30,6 +30,8 @@ export interface PublicTournamentSummary {
         logoUrl?: string;
         coverImageUrl?: string;
     };
+    logoUrl?: string;
+    livestreamUrl?: string;
 }
 
 export interface PublicTournamentDetail extends PublicTournamentSummary {

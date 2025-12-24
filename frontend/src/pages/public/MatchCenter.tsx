@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, Calendar, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, CalendarBlank, ArrowsClockwise } from '@phosphor-icons/react';
+import { ShareButton } from '@/components/common/ShareButton';
 import { publicTournamentApi, PublicMatchDetail } from '../../api/public.api';
 
 export default function MatchCenter() {
@@ -123,16 +124,15 @@ export default function MatchCenter() {
 
             {/* Match Header */}
             <div
-                className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden"
+                className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden border-[color:var(--brand-primary,hsl(var(--border)))]"
+                // eslint-disable-next-line
                 style={{
-                    borderColor: match.organiserBranding?.primaryColor ? `var(--brand-primary)` : undefined,
-                    borderTopWidth: match.organiserBranding?.primaryColor ? '4px' : '1px'
+                    borderWidth: match.organiserBranding?.primaryColor ? '4px' : '1px'
                 }}
             >
                 {match.organiserBranding?.primaryColor && (
                     <div
-                        className="absolute inset-0 opacity-5 pointer-events-none"
-                        style={{ backgroundColor: `var(--brand-primary)` }}
+                        className="absolute inset-0 opacity-5 pointer-events-none bg-[color:var(--brand-primary)]"
                     />
                 )}
 
@@ -159,7 +159,7 @@ export default function MatchCenter() {
                         </div>
                         {isLive && (
                             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-500">
-                                <RefreshCw className="w-3 h-3" />
+                                <ArrowsClockwise className="w-3 h-3" />
                                 <span>Updated {lastUpdated.toLocaleTimeString()}</span>
                             </div>
                         )}
@@ -200,7 +200,7 @@ export default function MatchCenter() {
                     {/* Match Details */}
                     <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-sm text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
+                            <CalendarBlank className="w-4 h-4" />
                             <span>{new Date(match.matchDate).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -220,6 +220,13 @@ export default function MatchCenter() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            <div className="flex justify-end">
+                <ShareButton
+                    title={`${match.homeTeamName} vs ${match.awayTeamName}`}
+                    text={`Follow the match ${match.homeTeamName} vs ${match.awayTeamName} on AthleticaOS!`}
+                />
             </div>
 
             {/* Stats */}
@@ -255,6 +262,7 @@ export default function MatchCenter() {
                                     <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-blue-600 transition-all"
+                                            // eslint-disable-next-line
                                             style={{ width: `${homePercent}%` }}
                                         />
                                     </div>

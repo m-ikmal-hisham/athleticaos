@@ -126,6 +126,16 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PlayerSuspensionDTO> getAllSuspensions(UUID tournamentId) {
+        List<PlayerSuspension> suspensions = suspensionRepository.findByTournamentId(tournamentId);
+
+        return suspensions.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PlayerSuspensionDTO> getPlayerActiveSuspensions(UUID tournamentId, UUID playerId) {
         return suspensionRepository.findByTournamentIdAndPlayerIdAndIsActiveTrue(tournamentId, playerId)
                 .stream()
@@ -148,8 +158,10 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
                 .teamId(suspension.getTeam().getId())
                 .teamName(suspension.getTeam().getName())
                 .playerId(suspension.getPlayer().getId())
-                .playerName(suspension.getPlayer().getPerson().getFirstName() + " " +
-                        suspension.getPlayer().getPerson().getLastName())
+                .playerName(suspension.getPlayer().getPerson() != null
+                        ? suspension.getPlayer().getPerson().getFirstName() + " " +
+                                suspension.getPlayer().getPerson().getLastName()
+                        : "Unknown Player")
                 .reason(suspension.getReason())
                 .matchesRemaining(suspension.getMatchesRemaining())
                 .isActive(suspension.isActive())

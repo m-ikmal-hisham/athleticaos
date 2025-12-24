@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings, Play, Save, LayoutTemplate } from 'lucide-react';
+import { Gear, Play, FloppyDisk, Layout } from '@phosphor-icons/react';
 import { tournamentService } from '@/services/tournamentService';
 import { Button } from '@/components/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
+import { GlassCard } from '@/components/GlassCard';
+import { CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { TournamentFormatConfig, TournamentCategory, Team, TournamentStageResponse, BracketViewResponse } from '@/types';
 import { GroupingEditor } from '@/components/content/GroupingEditor';
@@ -234,173 +235,175 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
 
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <GlassCard>
+                <div className="p-0">
+                    <CardHeader>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <Gear className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <CardTitle>Format Configuration</CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        {categories.length > 0
+                                            ? "Configure format and pools for each category."
+                                            : "Define rules and structure for the tournament."}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <CardTitle>Format Configuration</CardTitle>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    {categories.length > 0
-                                        ? "Configure format and pools for each category."
-                                        : "Define rules and structure for the tournament."}
-                                </p>
-                            </div>
+                            {categories.length > 0 && (
+                                <div className="flex gap-2 p-1 bg-muted rounded-lg overflow-x-auto">
+                                    {categories.map(cat => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setSelectedCategoryId(cat.id)}
+                                            className={clsx(
+                                                "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+                                                selectedCategoryId === cat.id
+                                                    ? "bg-background shadow text-foreground"
+                                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                                            )}
+                                        >
+                                            {cat.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                        {categories.length > 0 && (
-                            <div className="flex gap-2 p-1 bg-muted rounded-lg overflow-x-auto">
-                                {categories.map(cat => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setSelectedCategoryId(cat.id)}
-                                        className={clsx(
-                                            "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
-                                            selectedCategoryId === cat.id
-                                                ? "bg-background shadow text-foreground"
-                                                : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                                        )}
-                                    >
-                                        {cat.name}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-8">
+                    </CardHeader>
+                    <CardContent className="space-y-8">
 
-                    {/* Format Rules (Shared or Global currently) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-card/50">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Competition Format</label>
-                            <select
-                                className="w-full p-2 rounded-md border border-input bg-background"
-                                value={config.formatType}
-                                onChange={(e) => setConfig({ ...config, formatType: e.target.value })}
-                                title="Competition Format"
-                            >
-                                <option value="ROUND_ROBIN">Round Robin</option>
-                                <option value="POOL_TO_KNOCKOUT">Pools + Knockout</option>
-                                <option value="KNOCKOUT">Knockout</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Rugby Variation</label>
-                            <select
-                                className="w-full p-2 rounded-md border border-input bg-background"
-                                value={config.rugbyFormat}
-                                onChange={(e) => setConfig({ ...config, rugbyFormat: e.target.value as any })}
-                                title="Rugby Variation"
-                            >
-                                <option value="XV">XV (15s)</option>
-                                <option value="SEVENS">Sevens (7s)</option>
-                                <option value="TENS">Tens (10s)</option>
-                                <option value="TOUCH">Touch</option>
-                            </select>
-                        </div>
-                        {(config.formatType === 'ROUND_ROBIN' || config.formatType === 'POOL_TO_KNOCKOUT') && (
+                        {/* Format Rules (Shared or Global currently) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-card/50">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Pool Count {currentCategory ? `(${currentCategory.name})` : ''}</label>
-                                <Input
-                                    type="number"
-                                    min={1}
-                                    max={16}
-                                    value={config.poolCount || 1}
-                                    onChange={(e) => setConfig({ ...config, poolCount: parseInt(e.target.value) || 1 })}
-                                />
-                                <p className="text-xs text-muted-foreground">Number of groups for {currentCategory?.name || 'the tournament'}.</p>
-                            </div>
-                        )}
-                        <div className="space-y-2 flex items-end">
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                className="w-full"
-                                onClick={handleSaveConfig}
-                                disabled={loading}
-                            >
-                                <Save className="w-4 h-4 mr-2" />
-                                Save Globals
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                <LayoutTemplate className="w-4 h-4" />
-                                Pool Structure & Assignments
-                            </h3>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleGenerateStructure}
-                                    disabled={structureLoading || generating}
+                                <label className="text-sm font-medium">Competition Format</label>
+                                <select
+                                    className="w-full p-2 rounded-md border border-input bg-background"
+                                    value={config.formatType}
+                                    onChange={(e) => setConfig({ ...config, formatType: e.target.value })}
+                                    title="Competition Format"
                                 >
-                                    {structureLoading ? 'Building...' : `Build Pools ${currentCategory ? 'for ' + currentCategory.name : ''}`}
+                                    <option value="ROUND_ROBIN">Round Robin</option>
+                                    <option value="POOL_TO_KNOCKOUT">Pools + Knockout</option>
+                                    <option value="KNOCKOUT">Knockout</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Rugby Variation</label>
+                                <select
+                                    className="w-full p-2 rounded-md border border-input bg-background"
+                                    value={config.rugbyFormat}
+                                    onChange={(e) => setConfig({ ...config, rugbyFormat: e.target.value as any })}
+                                    title="Rugby Variation"
+                                >
+                                    <option value="XV">XV (15s)</option>
+                                    <option value="SEVENS">Sevens (7s)</option>
+                                    <option value="TENS">Tens (10s)</option>
+                                    <option value="TOUCH">Touch</option>
+                                </select>
+                            </div>
+                            {(config.formatType === 'ROUND_ROBIN' || config.formatType === 'POOL_TO_KNOCKOUT') && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Pool Count {currentCategory ? `(${currentCategory.name})` : ''}</label>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={16}
+                                        value={config.poolCount || 1}
+                                        onChange={(e) => setConfig({ ...config, poolCount: parseInt(e.target.value) || 1 })}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Number of groups for {currentCategory?.name || 'the tournament'}.</p>
+                                </div>
+                            )}
+                            <div className="space-y-2 flex items-end">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={handleSaveConfig}
+                                    disabled={loading}
+                                >
+                                    <FloppyDisk className="w-4 h-4 mr-2" />
+                                    Save Globals
                                 </Button>
                             </div>
                         </div>
 
-                        {/* Grouping Editor Area */}
-                        {(config.formatType !== 'KNOCKOUT') && (
-                            <div className="min-h-[300px] border rounded-lg bg-muted/10 p-4">
-                                {stages.length > 0 ? (
-                                    <GroupingEditor
-                                        teams={teams}
-                                        stages={stages}
-                                        categoryId={selectedCategoryId || undefined}
-                                        onAssign={handleAssignTeam}
-                                        readonly={generating}
-                                    />
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 py-12">
-                                        <LayoutTemplate className="w-12 h-12 opacity-20" />
-                                        <p>No pools generated yet.</p>
-                                        <p className="text-sm">Set the "Pool Count" and click <b>Build Pools</b> to start assigning teams.</p>
-                                    </div>
-                                )}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                    <Layout className="w-4 h-4" />
+                                    Pool Structure & Assignments
+                                </h3>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleGenerateStructure}
+                                        disabled={structureLoading || generating}
+                                    >
+                                        {structureLoading ? 'Building...' : `Build Pools ${currentCategory ? 'for ' + currentCategory.name : ''}`}
+                                    </Button>
+                                </div>
                             </div>
-                        )}
-                    </div>
 
-                    <div className="h-px bg-border my-6" />
-
-                    <div className="flex items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/10">
-                        <div className="space-y-1">
-                            <h4 className="font-semibold text-primary">Finalize & Generate Matches</h4>
-                            <p className="text-sm text-muted-foreground">Once teams are assigned, generate the match schedule.</p>
-                            <div className="flex items-center space-x-2 pt-1">
-                                <input
-                                    type="checkbox"
-                                    id="useExistingGroups"
-                                    className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
-                                    checked={useExistingGroups}
-                                    onChange={(e) => setUseExistingGroups(e.target.checked)}
-                                />
-                                <label htmlFor="useExistingGroups" className="text-xs cursor-pointer select-none">
-                                    Preserve manual pool assignments
-                                </label>
-                            </div>
+                            {/* Grouping Editor Area */}
+                            {(config.formatType !== 'KNOCKOUT') && (
+                                <div className="min-h-[300px] border rounded-lg bg-muted/10 p-4">
+                                    {stages.length > 0 ? (
+                                        <GroupingEditor
+                                            teams={teams}
+                                            stages={stages}
+                                            categoryId={selectedCategoryId || undefined}
+                                            onAssign={handleAssignTeam}
+                                            readonly={generating}
+                                        />
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 py-12">
+                                            <Layout className="w-12 h-12 opacity-20" />
+                                            <p>No pools generated yet.</p>
+                                            <p className="text-sm">Set the "Pool Count" and click <b>Build Pools</b> to start assigning teams.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        <Button
-                            onClick={handleGenerateMatches}
-                            disabled={loading || generating || stages.length === 0}
-                            variant="primary"
-                            size="lg"
-                            className="flex items-center gap-2"
-                        >
-                            <Play className="w-4 h-4" />
-                            {generating ? 'Generating Matches...' : 'Generate Matches'}
-                        </Button>
-                    </div>
 
-                </CardContent>
-            </Card>
+                        <div className="h-px bg-border my-6" />
+
+                        <div className="flex items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/10">
+                            <div className="space-y-1">
+                                <h4 className="font-semibold text-primary">Finalize & Generate Matches</h4>
+                                <p className="text-sm text-muted-foreground">Once teams are assigned, generate the match schedule.</p>
+                                <div className="flex items-center space-x-2 pt-1">
+                                    <input
+                                        type="checkbox"
+                                        id="useExistingGroups"
+                                        className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
+                                        checked={useExistingGroups}
+                                        onChange={(e) => setUseExistingGroups(e.target.checked)}
+                                    />
+                                    <label htmlFor="useExistingGroups" className="text-xs cursor-pointer select-none">
+                                        Preserve manual pool assignments
+                                    </label>
+                                </div>
+                            </div>
+                            <Button
+                                onClick={handleGenerateMatches}
+                                disabled={loading || generating || stages.length === 0}
+                                variant="primary"
+                                size="lg"
+                                className="flex items-center gap-2"
+                            >
+                                <Play className="w-4 h-4" />
+                                {generating ? 'Generating Matches...' : 'Generate Matches'}
+                            </Button>
+                        </div>
+
+                    </CardContent>
+                </div>
+            </GlassCard>
         </div>
     );
 }

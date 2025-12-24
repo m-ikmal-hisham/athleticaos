@@ -12,3 +12,7 @@ export const exportMatches = (id: string) =>
 export const exportResults = (id: string) =>
     api.get(`/tournaments/${id}/export/results`, { responseType: 'blob' });
 
+export const deleteTournament = (id: string) => api.delete(`/tournaments/${id}`);
+
+export const updateTournament = (id: string, data: any) => api.put(`/tournaments/${id}`, data);
+

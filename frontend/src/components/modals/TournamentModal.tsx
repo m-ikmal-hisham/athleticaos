@@ -5,10 +5,11 @@ import * as z from 'zod';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-import { createTournament } from '@/api/tournaments.api';
+import { ImageUpload } from '@/components/common/ImageUpload';
+import { createTournament, updateTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash } from '@phosphor-icons/react';
 
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required"),
@@ -26,18 +27,23 @@ const tournamentSchema = z.object({
     venue: z.string().min(1, "Venue is required"),
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().min(1, "End date is required"),
-    categories: z.array(categorySchema).optional()
+    categories: z.array(categorySchema).optional(),
+    logoUrl: z.string().optional(),
+    livestreamUrl: z.string().optional()
 });
 
 type TournamentFormData = z.infer<typeof tournamentSchema>;
+
+import { Tournament } from '@/types';
 
 interface TournamentModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    tournament?: Tournament | null;
 }
 
-export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalProps) => {
+export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: TournamentModalProps) => {
     const [loading, setLoading] = useState(false);
     const [organisations, setOrganisations] = useState<Organisation[]>([]);
 
@@ -70,9 +76,35 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
     useEffect(() => {
         if (isOpen) {
             loadOrganisations();
-            reset(); // Reset form when opening
+            if (tournament) {
+                // Populate form for editing
+                reset({
+                    name: tournament.name,
+                    organiserOrgId: tournament.organiserOrgId || (tournament.organiserBranding?.id),
+                    seasonName: tournament.seasonName,
+                    competitionType: tournament.competitionType,
+                    level: tournament.level,
+                    venue: tournament.venue,
+                    startDate: tournament.startDate?.split('T')[0], // Extract YYYY-MM-DD
+                    endDate: tournament.endDate?.split('T')[0],
+                    categories: tournament.categories?.map(c => ({
+                        name: c.name,
+                        gender: c.gender,
+                        minAge: c.minAge,
+                        maxAge: c.maxAge
+                    })) || [],
+                    logoUrl: tournament.logoUrl,
+                    livestreamUrl: tournament.livestreamUrl
+                });
+            } else {
+                reset({
+                    competitionType: 'LEAGUE',
+                    level: 'CLUB',
+                    categories: []
+                }); // Reset form when creating new
+            }
         }
-    }, [isOpen, reset]);
+    }, [isOpen, reset, tournament]);
 
     const loadOrganisations = async () => {
         try {
@@ -86,17 +118,21 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
     const onSubmit = async (data: TournamentFormData) => {
         setLoading(true);
         try {
-            // Transform data if necessary, here it matches the API mostly but we need to pass numeric constraints?
-            // The API expects CreateCategoryRequest which matches our schema pretty well.
-            await createTournament(data as any);
+            if (tournament?.id) {
+                await updateTournament(tournament.id, data);
+            } else {
+                await createTournament(data as any);
+            }
             onSuccess();
             onClose();
         } catch (error) {
-            console.error('Failed to create tournament', error);
+            console.error('Failed to save tournament', error);
         } finally {
             setLoading(false);
         }
     };
+
+    // ... helper functions remain same
 
     const addCategory = () => {
         if (!newCategory.name) return;
@@ -116,7 +152,7 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Create New Tournament"
+            title={tournament ? "Edit Tournament" : "Create New Tournament"}
             size="lg"
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -145,6 +181,14 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
                             ))}
                         </select>
                         {errors.organiserOrgId && <p className="mt-1.5 text-sm text-red-400">{errors.organiserOrgId.message}</p>}
+                    </div>
+
+                    <div className="col-span-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Tournament Logo</label>
+                        <ImageUpload
+                            value={watch('logoUrl')}
+                            onChange={(url) => setValue('logoUrl', url)}
+                        />
                     </div>
                 </div>
 
@@ -201,7 +245,7 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
                                     </div>
                                 </div>
                                 <button type="button" onClick={() => removeCategory(idx)} className="text-red-500 hover:text-red-400" aria-label="Remove category">
-                                    <Trash2 size={16} />
+                                    <Trash size={16} />
                                 </button>
                             </div>
                         ))}
@@ -288,6 +332,14 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
                                 required
                             />
                         </div>
+                        <div className="col-span-2">
+                            <Input
+                                label="Livestream URL"
+                                placeholder="https://youtube.com/..."
+                                {...register('livestreamUrl')}
+                                error={errors.livestreamUrl?.message}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -296,7 +348,7 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess }: TournamentModalP
                         Cancel
                     </Button>
                     <Button type="submit" variant="primary" isLoading={loading}>
-                        Create Tournament
+                        {tournament ? "Update Tournament" : "Create Tournament"}
                     </Button>
                 </div>
             </form>

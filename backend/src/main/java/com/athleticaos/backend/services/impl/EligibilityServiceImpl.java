@@ -21,6 +21,9 @@ public class EligibilityServiceImpl implements EligibilityService {
     private static final Pattern AGE_GROUP_PATTERN = Pattern.compile("U(\\d+)", Pattern.CASE_INSENSITIVE);
 
     @Override
+    /**
+     * {@inheritDoc}
+     */
     public EligibilityResult checkPlayerEligibility(Tournament tournament, Player player) {
         // If not an age-grade tournament, player is eligible
         if (!tournament.isAgeGrade()) {

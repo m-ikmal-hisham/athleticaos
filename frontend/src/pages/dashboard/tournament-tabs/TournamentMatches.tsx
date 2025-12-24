@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Plus, MapPin, Clock, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { CalendarBlank, Plus, MapPin, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
 import { matchService } from '@/services/matchService';
 import { tournamentService } from '@/services/tournamentService';
 import { Match, Team } from '@/types';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { GlassCard } from '@/components/GlassCard';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -172,7 +172,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Calendar className="w-6 h-6 text-primary" />
+                    <CalendarBlank className="w-6 h-6 text-primary" />
                     Matches ({matches.length})
                 </h3>
                 <div className="flex gap-2">
@@ -184,7 +184,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 onClick={() => setClearScheduleStep('CONFIRM')}
                                 className="flex items-center gap-2"
                             >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash className="w-4 h-4" />
                                 Clear Schedule
                             </Button>
 
@@ -233,7 +233,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                 <div className="text-center py-12 text-slate-500 animate-pulse">Loading matches...</div>
             ) : matches.length === 0 ? (
                 <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                    <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <CalendarBlank className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white">No matches scheduled</h3>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Generate a schedule in the Format tab or create matches manually.</p>
                 </div>
@@ -271,7 +271,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800 sticky top-4">
                             <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 text-amber-500" />
+                                <WarningCircle className="w-4 h-4 text-amber-500" />
                                 Unscheduled ({unscheduledMatches.length})
                             </h4>
 
@@ -318,7 +318,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                                 {editMatch ? 'Edit Match' : 'Create Manual Match'}
                             </h3>
-                            <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" aria-label="Close">
                                 ×
                             </button>
                         </div>
@@ -327,6 +327,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Home Team</label>
                                     <select
+                                        aria-label="Home Team"
                                         required
                                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
                                         value={matchForm.homeTeamId}
@@ -341,6 +342,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Away Team</label>
                                     <select
+                                        aria-label="Away Team"
                                         required
                                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
                                         value={matchForm.awayTeamId}
@@ -358,6 +360,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</label>
                                     <input
+                                        aria-label="Match Date"
                                         type="date"
                                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
                                         value={matchForm.matchDate}
@@ -367,6 +370,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Time</label>
                                     <input
+                                        aria-label="Kick Off Time"
                                         type="time"
                                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
                                         value={matchForm.kickOffTime}
@@ -400,7 +404,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
 function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick: () => void, onEdit: (e: any) => void, onDelete: (e: any) => void }) {
     return (
-        <Card
+        <GlassCard
             className="group relative p-4 hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer border-l-4 border-l-blue-500 dark:border-l-blue-400 bg-white dark:bg-slate-800"
             onClick={onClick}
         >
@@ -415,11 +419,11 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
                         {match.status}
                     </span>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <button onClick={onEdit} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
-                            <Edit2 className="w-3 h-3" />
+                        <button onClick={onEdit} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400" aria-label="Edit Match">
+                            <PencilSimple className="w-3 h-3" />
                         </button>
-                        <button onClick={onDelete} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500 dark:text-red-400">
-                            <Trash2 className="w-3 h-3" />
+                        <button onClick={onDelete} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500 dark:text-red-400" aria-label="Delete Match">
+                            <Trash className="w-3 h-3" />
                         </button>
                     </div>
                 </div>
@@ -443,7 +447,7 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
 
             <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700/50 pt-3 mt-2">
                 <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 opacity-70" />
+                    <CalendarBlank className="w-3.5 h-3.5 opacity-70" />
                     {match.matchDate ? new Date(match.matchDate).toLocaleDateString() : 'Date TBD'}
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -457,6 +461,6 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
                     </div>
                 )}
             </div>
-        </Card>
+        </GlassCard>
     );
 }

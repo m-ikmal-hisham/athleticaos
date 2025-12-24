@@ -4,7 +4,7 @@ import { Card } from '@/components/Card';
 import { RosterManagement } from '@/components/roster/RosterManagement';
 import { tournamentService } from '@/services/tournamentService';
 import { Team } from '@/types';
-import { Users, AlertCircle } from 'lucide-react';
+import { Users, WarningCircle } from '@phosphor-icons/react';
 
 export default function TournamentRosters() {
     const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -49,7 +49,7 @@ export default function TournamentRosters() {
         return (
             <Card>
                 <div className="p-8 text-center">
-                    <AlertCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+                    <WarningCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
                     <p className="text-red-500">{error}</p>
                 </div>
             </Card>

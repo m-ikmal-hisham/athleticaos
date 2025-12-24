@@ -6,9 +6,10 @@
 
 @layer components {
   .glass-card {
-    backdrop-filter: blur(var(--blur-level));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
     background: var(--card-bg);
-    box-shadow: var(--athos-shadow-card);
+    box-shadow: var(--glass-shadow-md);
     border-radius: var(--athos-radius-lg);
     padding: 2rem;
     border: 1px solid var(--athos-border-subtle);
@@ -161,6 +162,7 @@
     width: 100vw;
     height: 100vh;
     background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -234,6 +236,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     z-index: 50;
     animation: fade-in 0.2s ease-out;
@@ -277,7 +280,7 @@
   .drawer-content {
     flex: 1;
     overflow-y: auto;
-    padding: 2rem;
+    padding: 2.5rem;
   }
 
   /* Player Avatar */
@@ -306,7 +309,7 @@
   }
 
   .glass-section {
-    padding: 1.25rem;
+    padding: 1.5rem;
     background: var(--glass-bg);
     border-radius: var(--athos-radius-md);
     border: 1px solid var(--athos-border-subtle);
@@ -367,8 +370,37 @@
     color: rgba(226, 232, 240, 0.7);
   }
 
+  /* Typography Scale */
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  /* Standardized Spacing */
+  .section-gap {
+    margin-bottom: 1.5rem;
+  }
+
   /* Mobile Responsive */
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
+    .glass-card {
+      padding: 1.5rem;
+      border-radius: 16px;
+    }
+
     .drawer-panel {
       max-width: 100%;
     }
@@ -381,45 +413,30 @@
       grid-template-columns: 1fr;
     }
 
+    /* Ensure touch-friendly spacing */
+    button,
+    a {
+      min-height: 44px;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1.125rem;
+    }
+  }
+
+  @media (max-width: 640px) {
     body {
       font-size: 14px;
     }
   }
 
-  /* Dark Mode Secondary Color Enhancements */
-  [data-theme="dark"] .btn-primary {
-    background: linear-gradient(135deg, var(--athos-blue), #D32F2F);
-    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
-  }
-
-  [data-theme="dark"] .btn-primary:hover {
-    box-shadow: 0 6px 16px rgba(211, 47, 47, 0.4);
-  }
-
-  [data-theme="dark"] .glass-card {
-    border: 1px solid rgba(211, 47, 47, 0.15);
-  }
-
-  [data-theme="dark"] .glass-card:hover {
-    border-color: rgba(211, 47, 47, 0.3);
-    box-shadow: 0 8px 24px rgba(211, 47, 47, 0.2);
-  }
-
-  [data-theme="dark"] .input-base:focus {
-    border-color: #D32F2F;
-    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
-  }
-
-  [data-theme="dark"] .glass-table tbody tr:hover {
-    background-color: rgba(211, 47, 47, 0.08);
-  }
-
-  /* Secondary color accents for interactive elements */
-  [data-theme="dark"] button:not(.btn-primary):hover {
-    background-color: rgba(211, 47, 47, 0.1);
-  }
-
-  [data-theme="dark"] a:hover {
-    color: #D32F2F;
-  }
+  /* Dark Mode - Removed aggressive red accents for calmer aesthetic */
 }

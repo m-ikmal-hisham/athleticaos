@@ -6,7 +6,7 @@ import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { Organisation, OrganisationLevel, fetchOrganisations } from '@/api/organisations.api';
 import { fetchTeams } from '@/api/teams.api';
 import { Team } from '@/types';
-import { Upload } from 'lucide-react';
+import { UploadSimple } from '@phosphor-icons/react';
 import { uploadFile } from '@/api/upload.api';
 import { getImageUrl } from '@/utils/image';
 
@@ -215,6 +215,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                             value={formData.orgType}
                             onChange={(e) => setFormData({ ...formData, orgType: e.target.value })}
                             className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            aria-label="Organisation Type"
                         >
                             <option value="CLUB">Club</option>
                             <option value="SCHOOL">School</option>
@@ -230,6 +231,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                             value={formData.orgLevel}
                             onChange={(e) => setFormData({ ...formData, orgLevel: e.target.value as any })}
                             className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            aria-label="Organisation Level"
                         >
                             <option value="COUNTRY">Country</option>
                             <option value="STATE">State</option>
@@ -283,6 +285,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                         value={formData.parentOrgId}
                         onChange={(e) => setFormData({ ...formData, parentOrgId: e.target.value })}
                         className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label="Parent Organisation"
                     >
                         <option value="">None (Top Level)</option>
                         {/* Improved Filtering: Map State or National orgs for Clubs */}
@@ -371,7 +374,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                     <div className="flex items-center gap-4">
                         <label className="flex-1 cursor-pointer">
                             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                                <Upload className="w-4 h-4" />
+                                <UploadSimple className="w-4 h-4" />
                                 <span className="text-sm">{logoFile ? logoFile.name : 'Choose file or enter URL'}</span>
                             </div>
                             <input

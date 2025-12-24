@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Search, UserPlus, Pencil } from 'lucide-react';
+import { MagnifyingGlass, UserPlus, PencilSimple } from '@phosphor-icons/react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { Card, CardContent } from '@/components/Card';
+import { GlassCard } from '@/components/GlassCard';
 import {
     Table,
     TableBody,
@@ -97,11 +97,11 @@ export default function Users() {
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
+            <GlassCard>
+                <div className="p-0">
                     <div className="p-4 border-b border-glass-border">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <Input
                                 placeholder="Search by name or email..."
                                 className="pl-9 bg-glass-bg/50"
@@ -177,7 +177,7 @@ export default function Users() {
                                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                                                     onClick={() => handleEdit(u)}
                                                 >
-                                                    <Pencil className="w-3 h-3 mr-1" />
+                                                    <PencilSimple className="w-3 h-3 mr-1" />
                                                     Edit
                                                 </Button>
                                             )}
@@ -187,8 +187,8 @@ export default function Users() {
                             )}
                         </TableBody>
                     </Table>
-                </CardContent>
-            </Card>
+                </div>
+            </GlassCard>
 
             <InviteUserModal
                 isOpen={isInviteModalOpen}

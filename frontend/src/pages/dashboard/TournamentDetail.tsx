@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Users, Settings, Play } from 'lucide-react';
+import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStructure } from '@phosphor-icons/react';
 import { tournamentService } from '@/services/tournamentService';
 import { Tournament, TournamentStatus } from '@/types';
 import { Button } from '@/components/Button';
@@ -13,7 +13,9 @@ import { TournamentMatches } from './tournament-tabs/TournamentMatches';
 import StandingsTable from '@/components/content/StandingsTable';
 import BracketView from '@/components/content/BracketView';
 import { BracketViewResponse, StandingsResponse } from '@/types';
-import { LayoutList, GitMerge } from 'lucide-react';
+// Removed unused lucide import
+import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import { deleteTournament } from '@/api/tournaments.api';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -26,6 +28,8 @@ export default function TournamentDetail() {
     const [activeTab, setActiveTab] = useState('overview');
     const [standings, setStandings] = useState<StandingsResponse[]>([]);
     const [bracket, setBracket] = useState<BracketViewResponse | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -97,6 +101,22 @@ export default function TournamentDetail() {
         }
     };
 
+    const handleDeleteTournament = async () => {
+        if (!tournament?.id) return;
+
+        try {
+            setIsDeleting(true);
+            await deleteTournament(tournament.id);
+            navigate('/dashboard/tournaments');
+        } catch (err) {
+            console.error('Failed to delete tournament:', err);
+            // Ideally show toast here
+            setError('Failed to delete tournament');
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="p-8 text-center text-slate-500">Loading tournament...</div>
@@ -117,10 +137,10 @@ export default function TournamentDetail() {
     const tabs = [
         { id: 'overview', label: 'Overview', icon: Trophy },
         { id: 'teams', label: 'Teams', icon: Users },
-        { id: 'format', label: 'Format & Stages', icon: Settings },
+        { id: 'format', label: 'Format & Stages', icon: Gear },
         { id: 'matches', label: 'Matches', icon: Play },
-        { id: 'standings', label: 'Standings', icon: LayoutList },
-        { id: 'bracket', label: 'Bracket', icon: GitMerge },
+        { id: 'standings', label: 'Standings', icon: ListNumbers },
+        { id: 'bracket', label: 'Bracket', icon: TreeStructure },
     ];
 
     {/* Header */ }
@@ -134,7 +154,7 @@ export default function TournamentDetail() {
                     </h1>
                     <div className="flex items-center gap-4 mt-2 text-sm text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            <CalendarBlank className="w-4 h-4" />
                             {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}
                         </div>
                         <div className="flex items-center gap-1">
@@ -162,8 +182,25 @@ export default function TournamentDetail() {
                     {tournament.status === TournamentStatus.ONGOING && (
                         <Button size="sm" variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
                     )}
+                    <Button
+                        size="sm"
+                        variant="cancel"
+                        className="text-red-500 hover:text-red-400 border-red-500/20 hover:bg-red-500/10"
+                        onClick={() => setIsDeleteModalOpen(true)}
+                    >
+                        Delete
+                    </Button>
                 </div>
             </div>
+
+            <ConfirmDeleteModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteTournament}
+                title="Delete Tournament"
+                message={`Are you sure you want to delete "${tournament.name}"? This action cannot be undone and will remove all matches, teams, and stats associated with this tournament.`}
+                isDeleting={isDeleting}
+            />
 
             {/* Navigation Tabs */}
             <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto">

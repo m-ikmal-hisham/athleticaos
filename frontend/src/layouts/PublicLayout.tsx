@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
-import { Trophy } from 'lucide-react';
+import { Trophy } from '@phosphor-icons/react';
+import { TournamentPill } from '@/components/TournamentPill';
 
 export default function PublicLayout() {
     return (
@@ -65,6 +66,12 @@ export default function PublicLayout() {
                     </div>
                 </div>
             </footer>
+            {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
+            <div className="fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center">
+                <div className="pointer-events-auto w-full max-w-3xl px-6">
+                    <TournamentPill />
+                </div>
+            </div>
         </div>
     );
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
-import { Activity, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useState, memo } from 'react';
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/GlassCard';
+import { Pulse, Clock, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { useAuditStore } from '@/store/audit.store';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/Badge';
@@ -14,13 +14,13 @@ interface RecentActivityWidgetProps {
     limit?: number;
 }
 
-export function RecentActivityWidget({
+export const RecentActivityWidget = memo(({
     scope = 'entity',
     entityType,
     entityId,
     title = "Recent Activity",
     limit = 5
-}: RecentActivityWidgetProps) {
+}: RecentActivityWidgetProps) => {
     const { logs, fetchGlobalLogs, fetchOrgLogs, fetchUserLogs, fetchEntityLogs, isLoading } = useAuditStore();
     const [isExpanded, setIsExpanded] = useState(false);
     const INITIAL_DISPLAY_COUNT = 5;
@@ -50,37 +50,37 @@ export function RecentActivityWidget({
 
     if (isLoading && logs.length === 0) {
         return (
-            <Card className="h-full">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-medium flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-primary-500" />
+            <GlassCard className="h-full">
+                <GlassCardHeader className="pb-2">
+                    <GlassCardTitle className="text-lg font-medium flex items-center gap-2">
+                        <Pulse className="w-5 h-5 text-primary-500" />
                         {title}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
+                    </GlassCardTitle>
+                </GlassCardHeader>
+                <GlassCardContent>
                     <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
                         Loading activity...
                     </div>
-                </CardContent>
-            </Card>
+                </GlassCardContent>
+            </GlassCard>
         );
     }
 
     return (
-        <Card className="h-full flex flex-col">
-            <CardHeader className="pb-2 flex-none">
-                <CardTitle className="text-lg font-medium flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary-500" />
+        <GlassCard variant="subtle" className="h-full flex flex-col">
+            <GlassCardHeader className="pb-2 flex-none">
+                <GlassCardTitle className="text-lg font-medium flex items-center gap-2">
+                    <Pulse className="w-5 h-5 text-primary-500" />
                     {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 min-h-0">
+                </GlassCardTitle>
+            </GlassCardHeader>
+            <GlassCardContent className="flex-1 min-h-0 max-h-96 overflow-y-auto">
                 {logs.length === 0 ? (
                     <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
                         No recent activity
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {displayLogs.map((log) => (
                             <div key={log.id} className="flex gap-3 items-start group">
                                 <div className="mt-1 relative">
@@ -121,17 +121,17 @@ export function RecentActivityWidget({
                         >
                             {isExpanded ? (
                                 <>
-                                    <ChevronUp className="w-3 h-3 mr-1" /> Show Less
+                                    <CaretUp className="w-3 h-3 mr-1" /> Show Less
                                 </>
                             ) : (
                                 <>
-                                    <ChevronDown className="w-3 h-3 mr-1" /> View All ({logs.length - INITIAL_DISPLAY_COUNT} more)
+                                    <CaretDown className="w-3 h-3 mr-1" /> View All ({logs.length - INITIAL_DISPLAY_COUNT} more)
                                 </>
                             )}
                         </Button>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </GlassCardContent>
+        </GlassCard>
     );
-}
+});

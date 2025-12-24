@@ -5,6 +5,7 @@ import { router } from '@/routes/AppRoutes'
 import '@/styles/globals.css'
 import { useUIStore } from "@/store/ui.store";
 import { Toaster } from 'react-hot-toast';
+import { IconContext } from '@phosphor-icons/react';
 
 export const Root = () => {
     const { theme, getEffectiveTheme } = useUIStore();
@@ -15,7 +16,10 @@ export const Root = () => {
     }, [theme, getEffectiveTheme]);
 
     return (
-        <>
+        <IconContext.Provider value={{
+            weight: "duotone",
+            className: "text-primary-900 dark:text-secondary-100"
+        }}>
             <RouterProvider router={router} />
             <Toaster
                 position="top-right"
@@ -29,7 +33,7 @@ export const Root = () => {
                     },
                 }}
             />
-        </>
+        </IconContext.Provider>
     );
 };
 

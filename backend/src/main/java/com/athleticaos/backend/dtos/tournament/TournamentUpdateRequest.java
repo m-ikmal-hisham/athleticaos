@@ -28,4 +28,7 @@ public class TournamentUpdateRequest {
     private String venue;
 
     private Boolean isPublished;
+
+    private String logoUrl;
+    private String livestreamUrl;
 }

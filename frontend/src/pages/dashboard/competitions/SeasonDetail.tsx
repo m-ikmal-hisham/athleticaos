@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Calendar,
+    CalendarBlank,
     Trophy,
     Users,
     Medal,
     ArrowLeft,
-    Activity
-} from 'lucide-react';
+    Pulse,
+    Plus
+} from '@phosphor-icons/react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -101,7 +102,7 @@ export const SeasonDetail = () => {
                             <>
                                 <span className="w-1 h-1 rounded-full bg-glass-border" />
                                 <div className="flex items-center gap-1.5">
-                                    <Calendar className="w-4 h-4" />
+                                    <CalendarBlank className="w-4 h-4" />
                                     <span>{season.startDate} - {season.endDate}</span>
                                 </div>
                             </>
@@ -122,7 +123,7 @@ export const SeasonDetail = () => {
                 </Card>
                 <Card className="p-4">
                     <div className="flex items-center gap-3 text-muted mb-2">
-                        <Activity className="w-4 h-4" />
+                        <Pulse className="w-4 h-4" />
                         <span className="text-sm font-medium">Matches</span>
                     </div>
                     <div className="flex items-baseline gap-2">
@@ -165,4 +166,4 @@ export const SeasonDetail = () => {
     );
 };
 
-import { Plus } from 'lucide-react';
+

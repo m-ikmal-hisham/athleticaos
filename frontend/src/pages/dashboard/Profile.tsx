@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { EditProfileModal } from '@/components/modals/EditProfileModal';
-import { MapPin } from 'lucide-react';
+import { MapPin } from '@phosphor-icons/react';
 
 export default function Profile() {
     const { user } = useAuthStore();

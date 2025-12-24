@@ -24,8 +24,10 @@ export const rosterService = {
     },
 
     // Suspensions
-    async getActiveSuspensions(tournamentId: string): Promise<PlayerSuspensionDTO[]> {
-        const response = await axios.get<PlayerSuspensionDTO[]>(`/api/tournaments/${tournamentId}/suspensions`);
+    async getActiveSuspensions(tournamentId: string, activeOnly: boolean = true): Promise<PlayerSuspensionDTO[]> {
+        const response = await axios.get<PlayerSuspensionDTO[]>(`/api/tournaments/${tournamentId}/suspensions`, {
+            params: { activeOnly }
+        });
         return response.data;
     },
 
