@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trophy, MagnifyingGlass } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
+import { TournamentLogo } from '@/components/common/TournamentLogo';
 
 export default function TournamentsList() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
@@ -168,10 +169,10 @@ export default function TournamentsList() {
                                         )}
                                     </div>
                                     {(tournament.logoUrl || tournament.organiserBranding?.logoUrl) && (
-                                        <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
-                                            <img
-                                                src={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
-                                                alt={tournament.name}
+                                        <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                            <TournamentLogo
+                                                tournamentId={tournament.id}
+                                                logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
                                                 className="w-full h-full object-contain"
                                             />
                                         </div>

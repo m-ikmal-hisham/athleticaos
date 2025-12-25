@@ -160,6 +160,8 @@ public class PublicTournamentController {
                 .organiserName("Organiser")
                 .organiserBranding(getOrganiserBranding(t.getOrganiserOrgId()))
                 .competitionType(t.getCompetitionType())
+                .logoUrl(t.getLogoUrl())
+                .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
 
@@ -208,6 +210,8 @@ public class PublicTournamentController {
                 .competitionType(t.getCompetitionType())
                 .teams(teams)
                 .stages(List.of()) // Stages can be populated if TournamentStage is used
+                .logoUrl(t.getLogoUrl())
+                .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
 

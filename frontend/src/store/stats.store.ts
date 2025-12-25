@@ -24,6 +24,8 @@ interface PlayerLeaderboardEntry {
     teamName: string | null;
     tries: number;
     totalPoints: number;
+    yellowCards: number;
+    redCards: number;
 }
 
 interface TeamLeaderboardEntry {
@@ -38,7 +40,8 @@ interface TeamLeaderboardEntry {
 interface StatsState {
     selectedTournamentId: string | null;
     summary: TournamentSummary | null;
-    playerStats: PlayerLeaderboardEntry[];
+    playerStats: PlayerLeaderboardEntry[]; // Top Scorers
+    disciplineStats: PlayerLeaderboardEntry[]; // Top Offenders
     teamStats: TeamLeaderboardEntry[];
     loading: boolean;
     error: string | null;
@@ -50,6 +53,7 @@ export const useStatsStore = create<StatsState>((set) => ({
     selectedTournamentId: null,
     summary: null,
     playerStats: [],
+    disciplineStats: [],
     teamStats: [],
     loading: false,
     error: null,
@@ -61,7 +65,7 @@ export const useStatsStore = create<StatsState>((set) => ({
     async loadStatsForTournament(id) {
         set({ loading: true, error: null });
         try {
-            const [summaryRes, playersRes, teamsRes, leaderboardRes] = await Promise.all([
+            const [summaryRes, , , leaderboardRes] = await Promise.all([
                 fetchTournamentSummary(id),
                 fetchTournamentPlayerStats(id),
                 fetchTournamentTeamStats(id),
@@ -74,8 +78,9 @@ export const useStatsStore = create<StatsState>((set) => ({
             set({
                 selectedTournamentId: id,
                 summary: summaryRes.data,
-                playerStats: leaderboard.topPlayers ?? playersRes.data ?? [],
-                teamStats: leaderboard.topTeams ?? teamsRes.data ?? [],
+                playerStats: leaderboard.topPlayers ?? [],
+                disciplineStats: leaderboard.topOffenders ?? [],
+                teamStats: leaderboard.topTeams ?? [],
                 loading: false
             });
         } catch (e) {

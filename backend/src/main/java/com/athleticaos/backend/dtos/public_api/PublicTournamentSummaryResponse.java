@@ -26,4 +26,6 @@ public class PublicTournamentSummaryResponse {
     private String organiserName;
     private PublicOrganisationBranding organiserBranding;
     private String competitionType;
+    private String logoUrl;
+    private String livestreamUrl;
 }

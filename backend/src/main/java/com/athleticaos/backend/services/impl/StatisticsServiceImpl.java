@@ -257,7 +257,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<PlayerStatsResponse> playerStats = getPlayerStatsForTournament(tournamentId);
                 List<TeamStatsResponse> teamStats = getTeamStatsForTournament(tournamentId);
 
-                // Top Players: Tries desc, then Points desc
+                // Top Players (Scorers): Tries desc, then Points desc
                 List<PlayerLeaderboardEntry> topPlayers = playerStats.stream()
                                 .sorted(Comparator.comparingInt(PlayerStatsResponse::tries).reversed()
                                                 .thenComparingInt(PlayerStatsResponse::totalPoints).reversed())
@@ -268,7 +268,26 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 p.lastName(),
                                                 p.teamName(),
                                                 p.tries(),
-                                                p.totalPoints()))
+                                                p.totalPoints(),
+                                                p.yellowCards(),
+                                                p.redCards()))
+                                .toList();
+
+                // Top Offenders (Discipline): Red Cards desc, then Yellow Cards desc
+                List<PlayerLeaderboardEntry> topOffenders = playerStats.stream()
+                                .filter(p -> p.redCards() > 0 || p.yellowCards() > 0)
+                                .sorted(Comparator.comparingInt(PlayerStatsResponse::redCards).reversed()
+                                                .thenComparingInt(PlayerStatsResponse::yellowCards).reversed())
+                                .limit(10)
+                                .map(p -> new PlayerLeaderboardEntry(
+                                                p.playerId(),
+                                                p.firstName(),
+                                                p.lastName(),
+                                                p.teamName(),
+                                                p.tries(),
+                                                p.totalPoints(),
+                                                p.yellowCards(),
+                                                p.redCards()))
                                 .toList();
 
                 // Top Teams: TablePoints desc, Wins desc, PointsDiff desc
@@ -285,7 +304,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 t.tablePoints()))
                                 .toList();
 
-                return new TournamentLeaderboardResponse(summary, topPlayers, topTeams);
+                return new TournamentLeaderboardResponse(summary, topPlayers, topTeams, topOffenders);
         }
 
         @Override

@@ -226,6 +226,7 @@ export default function MatchCenter() {
                 <ShareButton
                     title={`${match.homeTeamName} vs ${match.awayTeamName}`}
                     text={`Follow the match ${match.homeTeamName} vs ${match.awayTeamName} on AthleticaOS!`}
+                    url={window.location.href}
                 />
             </div>
 

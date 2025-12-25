@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ShareNetwork, Check, FacebookLogo, XLogo, WhatsappLogo, Link as LinkIcon } from '@phosphor-icons/react';
+import { ShareNetwork, Check, FacebookLogo, XLogo, WhatsappLogo, Link as LinkIcon, TiktokLogo, InstagramLogo } from '@phosphor-icons/react';
 import { Button } from '@/components/Button';
 import { toast } from 'react-hot-toast';
 import { clsx } from 'clsx';
@@ -56,7 +56,7 @@ export const ShareButton = ({
         }
     };
 
-    const shareToSocial = (platform: 'facebook' | 'twitter' | 'whatsapp') => {
+    const shareToSocial = async (platform: 'facebook' | 'twitter' | 'whatsapp' | 'tiktok' | 'instagram') => {
         let shareUrl = '';
         const encodedUrl = encodeURIComponent(url);
         const encodedText = encodeURIComponent(text);
@@ -64,17 +64,31 @@ export const ShareButton = ({
         switch (platform) {
             case 'facebook':
                 shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+                window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                setIsOpen(false);
                 break;
             case 'twitter':
                 shareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
+                window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                setIsOpen(false);
                 break;
             case 'whatsapp':
                 shareUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+                window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                setIsOpen(false);
+                break;
+            case 'tiktok':
+            case 'instagram':
+                // For TikTok and Instagram, we copy the link and open the site
+                // as they don't have standard web share intents for generic links
+                await navigator.clipboard.writeText(url);
+                toast.success('Link copied! Opening ' + (platform === 'tiktok' ? 'TikTok' : 'Instagram') + '...');
+                setTimeout(() => {
+                    window.open(`https://www.${platform}.com/`, '_blank', 'noopener,noreferrer');
+                }, 1000);
+                setIsOpen(false);
                 break;
         }
-
-        window.open(shareUrl, '_blank', 'noopener,noreferrer');
-        setIsOpen(false);
     };
 
     return (
@@ -135,6 +149,26 @@ export const ShareButton = ({
                                 <WhatsappLogo weight="fill" className="w-5 h-5" />
                             </div>
                             <span className="text-sm font-medium">WhatsApp</span>
+                        </button>
+
+                        <button
+                            onClick={() => shareToSocial('tiktok')}
+                            className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-[#ff0050]/10 flex items-center justify-center text-[#ff0050]">
+                                <TiktokLogo weight="fill" className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-medium">TikTok</span>
+                        </button>
+
+                        <button
+                            onClick={() => shareToSocial('instagram')}
+                            className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-[#E1306C]/10 flex items-center justify-center text-[#E1306C]">
+                                <InstagramLogo weight="fill" className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-medium">Instagram</span>
                         </button>
 
                         <div className="my-1 border-t border-gray-100 dark:border-slate-700" />

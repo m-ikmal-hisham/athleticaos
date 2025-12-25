@@ -2,7 +2,7 @@ import { Trophy, SkipForward, SkipBack, Play, VideoCamera } from '@phosphor-icon
 import { ShareButton } from '@/components/common/ShareButton';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { clsx } from 'clsx';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
 
@@ -10,6 +10,10 @@ export const TournamentPill = () => {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
+
+    // Check if we are in the admin dashboard
+    const isAdmin = location.pathname.startsWith('/dashboard');
 
     useEffect(() => {
         const loadTournaments = async () => {
@@ -59,6 +63,15 @@ export const TournamentPill = () => {
     // Always show the pill, even if loading or no tournaments
     const tournament = tournaments[currentIndex];
     const hasMultipleTournaments = tournaments.length > 1;
+
+    // Helper to get the correct link based on context
+    const getTournamentLink = () => {
+        if (!tournament) return '#';
+        if (isAdmin) {
+            return `/dashboard/tournaments/${tournament.id}`;
+        }
+        return `/tournaments/${tournament.slug || tournament.id}`;
+    };
 
     // Show loading state
     if (loading) {
@@ -138,7 +151,7 @@ export const TournamentPill = () => {
 
                 {/* Center Info - Tournament Details (Clickable) */}
                 <Link
-                    to={`/tournaments/${tournament.slug || tournament.id}`}
+                    to={getTournamentLink()}
                     className="flex-1 flex items-center gap-5 mx-6 min-w-0 group/info cursor-pointer justify-center md:justify-start"
                 >
                     {/* Album Art Style Logo */}
@@ -209,7 +222,7 @@ export const TournamentPill = () => {
 
                     {/* View Action (Play Button equivalent) */}
                     <Link
-                        to={`/tournaments/${tournament.slug || tournament.id}`}
+                        to={getTournamentLink()}
                         className="w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center transition-all"
                         title="View Tournament"
                     >

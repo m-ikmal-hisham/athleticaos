@@ -14,6 +14,7 @@ export default function Stats() {
         selectedTournamentId,
         summary,
         playerStats,
+        disciplineStats,
         teamStats,
         loading,
         error,
@@ -139,14 +140,14 @@ export default function Stats() {
                     {/* Leaderboards */}
                     {!loading && (
                         <div className="grid lg:grid-cols-2 gap-8">
-                            {/* Top Players */}
+                            {/* Top Scorers */}
                             <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col">
                                 <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-primary/20 rounded-lg text-primary">
-                                            <Users className="w-5 h-5" />
+                                            <Trophy className="w-5 h-5" />
                                         </div>
-                                        <h3 className="font-bold text-lg text-foreground">Top Players</h3>
+                                        <h3 className="font-bold text-lg text-foreground">Top Scorers</h3>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -164,7 +165,7 @@ export default function Stats() {
                                             {playerStats.length === 0 ? (
                                                 <tr>
                                                     <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                                                        No player stats available yet.
+                                                        No scoring stats available yet.
                                                     </td>
                                                 </tr>
                                             ) : (
@@ -172,8 +173,7 @@ export default function Stats() {
                                                     <tr
                                                         key={player.playerId}
                                                         className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                                        onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`} // Backend response might need to include slug if available, using playerId as fallback or slug if stats response is updated.
-                                                    // Actually StatisticsController returns PlayerStatsResponse. Does it include slug?
+                                                        onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
                                                     >
                                                         <td className="px-6 py-4 font-medium text-muted-foreground">
                                                             {idx + 1}
@@ -198,12 +198,70 @@ export default function Stats() {
                                 </div>
                             </div>
 
-                            {/* Top Teams */}
+                            {/* Discipline */}
                             <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col">
                                 <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-primary/20 rounded-lg text-primary">
-                                            <Trophy className="w-5 h-5" />
+                                        <div className="p-2 bg-red-500/20 rounded-lg text-red-500">
+                                            <Flag className="w-5 h-5" />
+                                        </div>
+                                        <h3 className="font-bold text-lg text-foreground">Discipline</h3>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead>
+                                            <tr className="border-b border-white/10 text-muted-foreground">
+                                                <th className="px-6 py-4 font-medium w-16">#</th>
+                                                <th className="px-6 py-4 font-medium">Player</th>
+                                                <th className="px-6 py-4 font-medium">Team</th>
+                                                <th className="px-6 py-4 font-medium text-right">YC</th>
+                                                <th className="px-6 py-4 font-medium text-right">RC</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {disciplineStats.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                                                        No discipline stats available yet.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                disciplineStats.map((player, idx) => (
+                                                    <tr
+                                                        key={`disc-${player.playerId}`}
+                                                        className="hover:bg-white/5 transition-colors cursor-pointer group"
+                                                        onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
+                                                    >
+                                                        <td className="px-6 py-4 font-medium text-muted-foreground">
+                                                            {idx + 1}
+                                                        </td>
+                                                        <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors">
+                                                            {player.firstName} {player.lastName}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-muted-foreground">
+                                                            {player.teamName || '-'}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right text-yellow-500 font-bold">
+                                                            {player.yellowCards}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right text-red-500 font-bold">
+                                                            {player.redCards}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Top Teams */}
+                            <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col lg:col-span-2">
+                                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
+                                            <Users className="w-5 h-5" />
                                         </div>
                                         <h3 className="font-bold text-lg text-foreground">Top Teams</h3>
                                     </div>
