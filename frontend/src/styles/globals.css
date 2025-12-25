@@ -439,4 +439,13 @@
   }
 
   /* Dark Mode - Removed aggressive red accents for calmer aesthetic */
+
+  .bg-dot-pattern {
+    background-image: radial-gradient(#6366f1 1px, transparent 1px);
+    background-size: 12px 12px;
+  }
+
+  .progress-fill {
+    width: var(--progress-width, 0%);
+  }
 }

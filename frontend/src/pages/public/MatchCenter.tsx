@@ -124,11 +124,8 @@ export default function MatchCenter() {
 
             {/* Match Header */}
             <div
-                className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden border-[color:var(--brand-primary,hsl(var(--border)))]"
-                // eslint-disable-next-line
-                style={{
-                    borderWidth: match.organiserBranding?.primaryColor ? '4px' : '1px'
-                }}
+                className={`rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50 p-8 relative overflow-hidden border-[color:var(--brand-primary,hsl(var(--border)))] ${match.organiserBranding?.primaryColor ? 'border-[4px]' : 'border'
+                    }`}
             >
                 {match.organiserBranding?.primaryColor && (
                     <div
@@ -261,10 +258,10 @@ export default function MatchCenter() {
                                         </span>
                                     </div>
                                     <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                        {/* eslint-disable-next-line */}
                                         <div
-                                            className="h-full bg-blue-600 transition-all"
-                                            // eslint-disable-next-line
-                                            style={{ width: `${homePercent}%` }}
+                                            className="h-full bg-blue-600 transition-all progress-fill"
+                                            style={{ '--progress-width': `${homePercent}%` } as React.CSSProperties}
                                         />
                                     </div>
                                 </div>

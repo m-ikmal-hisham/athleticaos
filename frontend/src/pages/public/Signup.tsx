@@ -189,8 +189,7 @@ export const Signup = () => {
                         Your journey starts here.
                     </p>
 
-                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20"
-                        style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '12px 12px' }}>
+                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern">
                     </div>
                 </div>
             </div>
