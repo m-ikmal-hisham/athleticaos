@@ -1,17 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, Funnel, Plus, MapPin, Buildings, DotsThree } from "@phosphor-icons/react";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "../../components/Table";
 import { Badge } from "../../components/Badge";
 import { useOrganisationsStore } from "../../store/organisations.store";
 import { getCountries, getStates, getDivisions, getDistricts, Organisation, createOrganisation, updateOrganisation, OrganisationLevel } from "../../api/organisations.api";
@@ -19,9 +11,11 @@ import { OrganisationModal } from "../../components/modals/OrganisationModal";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
 import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
+import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
+import { EmptyState } from "../../components/EmptyState";
 
 export default function Organisations() {
-    const { organisations, loading, error, getOrganisations } = useOrganisationsStore();
+    const { organisations, loading, getOrganisations } = useOrganisationsStore();
     const { user } = useAuthStore();
 
     const [countries, setCountries] = useState<Organisation[]>([]);
@@ -38,6 +32,8 @@ export default function Organisations() {
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
     const [selectedOrg, setSelectedOrg] = useState<Organisation | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
+    const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
@@ -122,6 +118,11 @@ export default function Organisations() {
             }
         }
 
+        // Apply Type Filter
+        if (typeFilter && typeFilter !== 'ALL') {
+            filtered = filtered.filter(org => org.type === typeFilter);
+        }
+
         // Apply search filter
         if (searchTerm) {
             filtered = filtered.filter(org =>
@@ -131,7 +132,17 @@ export default function Organisations() {
         }
 
         return filtered;
-    }, [organisations, selectedDistrict, selectedDivision, selectedState, states, searchTerm, hierarchyMap]);
+    }, [organisations, selectedDistrict, selectedDivision, selectedState, states, searchTerm, hierarchyMap, typeFilter]);
+
+    // Extract unique types for SmartPills
+    const typeOptions: FilterOption[] = useMemo(() => {
+        const types = Array.from(new Set(organisations?.map(o => o.type).filter(Boolean)));
+        return types.map(t => ({
+            id: t,
+            label: t,
+            count: organisations?.filter(o => o.type === t).length
+        })).sort((a, b) => b.count! - a.count!);
+    }, [organisations]);
 
     const handleAdd = () => {
         setModalMode('create');
@@ -181,152 +192,166 @@ export default function Organisations() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title="Organisations"
                 description="Unions, state associations, clubs and schools"
                 action={
                     isAdmin && (
-                        <Button onClick={handleAdd}>
+                        <Button onClick={handleAdd} className="gap-2">
+                            <Plus className="w-4 h-4" />
                             Add Organisation
                         </Button>
                     )
                 }
             />
 
-            <GlassCard>
-                <div className="p-0">
-                    <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
-                        <div className="relative flex-1 w-full">
-                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            {/* Controls Layout */}
+            <div className="space-y-4">
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <div className="flex gap-2 w-full md:w-auto flex-1 max-w-lg">
+                        <div className="relative flex-1">
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted border-glass-border" />
                             <Input
                                 placeholder="Search organisations..."
-                                className="pl-9 bg-glass-bg/50"
+                                className="pl-9 bg-glass-bg border-glass-border focus:border-primary-500/50 transition-colors"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <div className="flex gap-2 w-full md:w-auto flex-wrap">
-                            <select
-                                value={selectedCountry}
-                                onChange={e => setSelectedCountry(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                aria-label="Filter by Country"
-                            >
-                                <option value="">All Countries</option>
-                                {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-
-                            <select
-                                value={selectedState}
-                                onChange={e => setSelectedState(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={!selectedCountry}
-                                aria-label="Filter by State"
-                            >
-                                <option value="">All States</option>
-                                {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </select>
-
-                            <select
-                                value={selectedDivision}
-                                onChange={e => setSelectedDivision(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={!selectedState}
-                                aria-label="Filter by Division"
-                            >
-                                <option value="">All Divisions</option>
-                                {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                            </select>
-
-                            <select
-                                value={selectedDistrict}
-                                onChange={e => setSelectedDistrict(e.target.value)}
-                                className="h-10 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={!selectedState}
-                                aria-label="Filter by District"
-                            >
-                                <option value="">All Districts</option>
-                                {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                            </select>
-                        </div>
+                        <Button
+                            variant="outline"
+                            className={`px-3 md:hidden ${showFilters ? 'bg-primary-500/10 border-primary-500/50 text-primary-500' : ''}`}
+                            onClick={() => setShowFilters(!showFilters)}
+                        >
+                            <Funnel className="w-4 h-4" />
+                        </Button>
                     </div>
 
-                    <Table>
-                        <TableHeader className="border-b border-border/60">
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Type</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">State</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                                {isAdmin && <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8">Loading organisations…</TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-destructive">{error}</TableCell>
-                                </TableRow>
-                            ) : filteredOrganisations.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-muted-foreground">No organisations found</TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredOrganisations.map((org) => (
-                                    <TableRow
-                                        key={org.id}
-                                        className="group hover:bg-muted/30 transition-colors border-b border-border/40"
-                                    >
-                                        <TableCell className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                {org.logoUrl && (
-                                                    <img
-                                                        src={getImageUrl(org.logoUrl)}
-                                                        alt={org.name}
-                                                        className="w-6 h-6 rounded-full object-cover"
-                                                    />
-                                                )}
-                                                <span className="text-sm font-medium">{org.name}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm">{org.type}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm text-muted-foreground">
-                                                {org.state || (org.stateCode ? MALAYSIA_STATES.find(s => s.code === org.stateCode)?.name : '-')}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <Badge variant={getStatusVariant(org.status || 'Active') as any} className="text-xs">
-                                                {org.status || 'Active'}
-                                            </Badge>
-                                        </TableCell>
-                                        {isAdmin && (
-                                            <TableCell className="py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={(e) => handleEdit(org, e)}
-                                                        className="h-8 px-3"
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        )}
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                    <SmartFilterPills
+                        options={typeOptions}
+                        selectedId={typeFilter === 'ALL' ? null : typeFilter}
+                        onSelect={(id) => setTypeFilter(id || 'ALL')}
+                        className="w-full md:w-auto overflow-hidden"
+                    />
                 </div>
-            </GlassCard>
+
+                {/* Secondary Filters - Location Hierarchy */}
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-300 ${showFilters ? 'block' : 'hidden md:grid'}`}>
+                    <select
+                        value={selectedCountry}
+                        onChange={e => setSelectedCountry(e.target.value)}
+                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        aria-label="Filter by Country"
+                    >
+                        <option value="">All Countries</option>
+                        {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+
+                    <select
+                        value={selectedState}
+                        onChange={e => setSelectedState(e.target.value)}
+                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        disabled={!selectedCountry}
+                        aria-label="Filter by State"
+                    >
+                        <option value="">All States</option>
+                        {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+
+                    <select
+                        value={selectedDivision}
+                        onChange={e => setSelectedDivision(e.target.value)}
+                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        disabled={!selectedState}
+                        aria-label="Filter by Division"
+                    >
+                        <option value="">All Divisions</option>
+                        {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+
+                    <select
+                        value={selectedDistrict}
+                        onChange={e => setSelectedDistrict(e.target.value)}
+                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        disabled={!selectedState}
+                        aria-label="Filter by District"
+                    >
+                        <option value="">All Districts</option>
+                        {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <GlassCard key={i} className="h-40 animate-pulse flex flex-col p-6">
+                            <div className="w-12 h-12 rounded-full bg-white/5 mb-4" />
+                            <div className="w-3/4 h-5 bg-white/5 rounded mb-2" />
+                            <div className="w-1/2 h-4 bg-white/5 rounded" />
+                        </GlassCard>
+                    ))}
+                </div>
+            ) : filteredOrganisations.length === 0 ? (
+                <EmptyState
+                    icon={Buildings}
+                    title="No organisations found"
+                    description="Adjust filters or add a new organisation."
+                    actionLabel={isAdmin ? "Add Organisation" : undefined}
+                    onAction={isAdmin ? handleAdd : undefined}
+                    className="min-h-[400px] border-dashed border-white/10"
+                />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredOrganisations.map((org) => (
+                        <GlassCard
+                            key={org.id}
+                            className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
+                            onClick={(e) => handleEdit(org, e)} // Or navigate to detail if exists
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                                    {org.logoUrl ? (
+                                        <img src={getImageUrl(org.logoUrl)} alt={org.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Buildings className="w-6 h-6 text-muted-foreground" />
+                                    )}
+                                </div>
+                                <div className="flex gap-1">
+                                    <Badge variant={getStatusVariant(org.status || 'Active') as any} className="text-[10px] px-1.5 h-5">
+                                        {org.status || 'Active'}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1 mb-4 flex-1">
+                                <h3 className="font-semibold text-lg leading-tight truncate text-foreground group-hover:text-primary-400 transition-colors">
+                                    {org.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground truncate">{org.type}</p>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 pt-4 border-t border-white/5 text-xs text-muted-foreground">
+                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">
+                                    {org.state || (org.stateCode ? MALAYSIA_STATES.find(s => s.code === org.stateCode)?.name : '-')}
+                                </span>
+                            </div>
+
+                            {isAdmin && (
+                                <button
+                                    onClick={(e) => handleEdit(org, e)}
+                                    className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                                    aria-label="Edit organisation"
+                                >
+                                    <DotsThree className="w-4 h-4" weight="bold" />
+                                </button>
+                            )}
+                        </GlassCard>
+                    ))}
+                </div>
+            )}
 
             <OrganisationModal
                 isOpen={isModalOpen}

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trophy, MagnifyingGlass } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
+import { GlassCard } from '@/components/GlassCard';
+import { SmartFilterPills } from '@/components/SmartFilterPills';
 
 export default function TournamentsList() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
@@ -81,20 +83,16 @@ export default function TournamentsList() {
                 </div>
 
                 {/* Status Filter */}
-                <div className="flex gap-2">
-                    {(['all', 'live', 'upcoming', 'completed'] as const).map(status => (
-                        <button
-                            key={status}
-                            onClick={() => setStatusFilter(status)}
-                            className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${statusFilter === status
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:border-blue-500/50'
-                                }`}
-                        >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </button>
-                    ))}
-                </div>
+                <SmartFilterPills
+                    options={[
+                        { id: 'all', label: 'All' },
+                        { id: 'live', label: 'Live' },
+                        { id: 'upcoming', label: 'Upcoming' },
+                        { id: 'completed', label: 'Completed' },
+                    ]}
+                    selectedId={statusFilter}
+                    onSelect={(id) => setStatusFilter(id as any)}
+                />
             </div>
 
             {/* Results Count */}
@@ -128,75 +126,76 @@ export default function TournamentsList() {
                         <Link
                             key={tournament.id}
                             to={`/tournaments/${tournament.slug || tournament.id}`}
-                            className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10"
+                            className="block group"
                         >
-                            <div className="p-6 space-y-4">
-                                {/* Status Badge */}
-                                <div className="flex items-center gap-2">
-                                    {tournament.live && (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium">
-                                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                            LIVE
-                                        </div>
-                                    )}
-                                    {tournament.completed && (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 text-xs font-medium">
-                                            COMPLETED
-                                        </div>
-                                    )}
-                                    {!tournament.live && !tournament.completed && (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
-                                            UPCOMING
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Tournament Info */}
-                                {/* Tournament Info & Logo */}
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                                            {tournament.name}
-                                        </h3>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                            {tournament.level}
-                                            {tournament.competitionType && ` • ${tournament.competitionType}`}
-                                        </p>
-                                        {tournament.seasonName && (
-                                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                                                {tournament.seasonName}
-                                            </p>
+                            <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10">
+                                <div className="p-6 space-y-4 relative z-10">
+                                    {/* Status Badge */}
+                                    <div className="flex items-center gap-2">
+                                        {tournament.live && (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium">
+                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                                LIVE
+                                            </div>
+                                        )}
+                                        {tournament.completed && (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 text-xs font-medium">
+                                                COMPLETED
+                                            </div>
+                                        )}
+                                        {!tournament.live && !tournament.completed && (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                                                UPCOMING
+                                            </div>
                                         )}
                                     </div>
-                                    {(tournament.logoUrl || tournament.organiserBranding?.logoUrl) && (
-                                        <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                            <TournamentLogo
-                                                tournamentId={tournament.id}
-                                                logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
-                                                className="w-full h-full object-contain"
-                                            />
+
+                                    {/* Tournament Info & Logo */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                                                {tournament.name}
+                                            </h3>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                {tournament.level}
+                                                {tournament.competitionType && ` • ${tournament.competitionType}`}
+                                            </p>
+                                            {tournament.seasonName && (
+                                                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                                                    {tournament.seasonName}
+                                                </p>
+                                            )}
                                         </div>
-                                    )}
+                                        {(tournament.logoUrl || tournament.organiserBranding?.logoUrl) && (
+                                            <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                                <TournamentLogo
+                                                    tournamentId={tournament.id}
+                                                    logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Details */}
+                                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                        <div className="flex items-center gap-2">
+                                            <CalendarBlank className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">
+                                                {new Date(tournament.startDate).toLocaleDateString()} -{' '}
+                                                {new Date(tournament.endDate).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{tournament.venue}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Details */}
-                                <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                                    <div className="flex items-center gap-2">
-                                        <CalendarBlank className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate">
-                                            {new Date(tournament.startDate).toLocaleDateString()} -{' '}
-                                            {new Date(tournament.endDate).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate">{tournament.venue}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Hover Effect */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all" />
+                                {/* Hover Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all pointer-events-none" />
+                            </GlassCard>
                         </Link>
                     ))}
                 </div>

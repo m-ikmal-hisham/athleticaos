@@ -187,7 +187,7 @@ export const AppLayout = () => {
                                         className="h-10 w-10 rounded-xl object-contain bg-white/10 shadow-sm"
                                         onError={(e) => {
                                             // Fallback to transparent logo if brand logo fails
-                                            e.currentTarget.src = "/athleticaos-logo-transparent.png";
+                                            e.currentTarget.src = "/athleticaos-logo.svg";
                                             e.currentTarget.className = "h-10 w-10 object-contain mix-blend-screen dark:opacity-90";
                                             // Hide the 'A' fallback if we switch to image
                                             const fallbackA = e.currentTarget.nextElementSibling;
@@ -196,7 +196,7 @@ export const AppLayout = () => {
                                     />
                                 ) : (
                                     <img
-                                        src="/athleticaos-logo-transparent.png"
+                                        src="/athleticaos-logo.svg"
                                         alt="Logo"
                                         className="h-10 w-10 object-contain mix-blend-screen dark:opacity-90"
                                     />

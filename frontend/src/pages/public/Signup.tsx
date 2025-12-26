@@ -68,7 +68,7 @@ export const Signup = () => {
                 <div className="w-full max-w-sm space-y-6">
                     <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
                         <img
-                            src="/athleticaos-logo-transparent.png"
+                            src="/athleticaos-logo.svg"
                             alt="AthleticaOS"
                             className="h-14 w-auto mb-6"
                         />

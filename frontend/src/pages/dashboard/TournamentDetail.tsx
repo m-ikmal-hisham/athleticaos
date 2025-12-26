@@ -4,6 +4,8 @@ import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStru
 import { tournamentService } from '@/services/tournamentService';
 import { Tournament, TournamentStatus } from '@/types';
 import { Button } from '@/components/Button';
+import { GlassCard } from '@/components/GlassCard';
+import { Badge } from '@/components/Badge';
 import { SuspensionWidget } from '@/components/roster/SuspensionWidget';
 
 // Tabs
@@ -147,51 +149,64 @@ export default function TournamentDetail() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                        {tournament.name}
-                    </h1>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-1">
-                            <CalendarBlank className="w-4 h-4" />
-                            {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}
+            <GlassCard className="p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            {tournament.seasonName && (
+                                <Badge variant="secondary" className="flex items-center gap-1">
+                                    <Trophy className="w-3 h-3" />
+                                    {tournament.seasonName}
+                                </Badge>
+                            )}
+                            <Badge variant={tournament.status === TournamentStatus.ONGOING ? 'primary' : 'secondary'} className="uppercase">
+                                {tournament.status}
+                            </Badge>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {tournament.venue}
-                        </div>
-                        {tournament.seasonName && (
-                            <div className="flex items-center gap-1">
-                                <Trophy className="w-4 h-4" />
-                                {tournament.seasonName}
+                        <h1 className="text-4xl font-bold text-white mb-4 tracking-tight">
+                            {tournament.name}
+                        </h1>
+                        <div className="flex flex-wrap items-center gap-6 text-sm text-slate-400">
+                            <div className="flex items-center gap-2">
+                                <CalendarBlank className="w-4 h-4 text-primary-400" />
+                                <span>{new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
                             </div>
-                        )}
-                        <div className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
-                            {tournament.status}
+                            <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-primary-400" />
+                                <span>{tournament.venue}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Gear className="w-4 h-4 text-primary-400" />
+                                <span>{tournament.level} • {tournament.competitionType}</span>
+                            </div>
                         </div>
                     </div>
+
+                    <div className="flex gap-3">
+                        {tournament.status === TournamentStatus.DRAFT && (
+                            <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
+                        )}
+                        {tournament.status === TournamentStatus.UPCOMING && (
+                            <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
+                                <Play className="w-4 h-4" weight="fill" />
+                                Start Tournament
+                            </Button>
+                        )}
+                        {tournament.status === TournamentStatus.ONGOING && (
+                            <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
+                        )}
+                        <Button
+                            variant="danger"
+                            className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/20"
+                            onClick={() => setIsDeleteModalOpen(true)}
+                        >
+                            Delete
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    {tournament.status === TournamentStatus.DRAFT && (
-                        <Button size="sm" onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
-                    )}
-                    {tournament.status === TournamentStatus.UPCOMING && (
-                        <Button size="sm" onClick={() => handleStatusChange('LIVE')}>Start Tournament</Button>
-                    )}
-                    {tournament.status === TournamentStatus.ONGOING && (
-                        <Button size="sm" variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
-                    )}
-                    <Button
-                        size="sm"
-                        variant="cancel"
-                        className="text-red-500 hover:text-red-400 border-red-500/20 hover:bg-red-500/10"
-                        onClick={() => setIsDeleteModalOpen(true)}
-                    >
-                        Delete
-                    </Button>
-                </div>
-            </div>
+            </GlassCard>
 
             <ConfirmDeleteModal
                 isOpen={isDeleteModalOpen}
@@ -203,8 +218,8 @@ export default function TournamentDetail() {
             />
 
             {/* Navigation Tabs */}
-            <div className="border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
-                <nav className="flex space-x-8" aria-label="Tabs">
+            <div className="flex space-x-1 p-1 bg-white/5 rounded-xl border border-white/10 w-full overflow-x-auto">
+                <nav className="flex space-x-1 w-full" aria-label="Tabs">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -216,14 +231,14 @@ export default function TournamentDetail() {
                                     navigate(`?tab=${tab.id}`, { replace: true });
                                 }}
                                 className={`
-                                    whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+                                    flex-1 min-w-[120px] py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300
                                     ${isActive
-                                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
+                                        ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/10'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }
                                 `}
                             >
-                                <Icon className="w-4 h-4" />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-400' : ''}`} />
                                 {tab.label}
                             </button>
                         );
@@ -235,33 +250,63 @@ export default function TournamentDetail() {
             <div className="min-h-[400px]">
                 {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Overview Content similar to before */}
+                        {/* Overview Content */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-6 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Competition</h3>
-                                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{tournament.level}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tournament.competitionType || 'Standard'}</p>
-                                </div>
-                                <div className="p-6 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Divisions / Categories</h3>
+                                <GlassCard className="p-6 flex flex-col items-center justify-center text-center">
+                                    <div className="w-12 h-12 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center mb-4">
+                                        <Trophy className="w-6 h-6" weight="fill" />
+                                    </div>
+                                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Competition Level</h3>
+                                    <p className="text-2xl font-bold text-white">{tournament.level}</p>
+                                    <Badge variant="outline" className="mt-2">{tournament.competitionType || 'Standard'}</Badge>
+                                </GlassCard>
+
+                                <GlassCard className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Categories</h3>
+                                        <Users className="w-5 h-5 text-primary-400" />
+                                    </div>
+
                                     {tournament.categories && tournament.categories.length > 0 ? (
-                                        <div className="space-y-2">
+                                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                                             {tournament.categories.map(cat => (
-                                                <div key={cat.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded text-sm">
-                                                    <span className="font-semibold">{cat.name}</span>
-                                                    <span className="text-xs text-muted-foreground">{cat.gender}</span>
+                                                <div key={cat.id} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm border border-white/5">
+                                                    <span className="font-semibold text-slate-200">{cat.name}</span>
+                                                    <Badge variant="secondary" className="text-[10px] h-5">{cat.gender}</Badge>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <>
-                                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{tournament.ageGroupLabel || 'Open'}</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tournament.isAgeGrade ? 'Restricted' : 'Unrestricted'}</p>
-                                        </>
+                                        <div className="flex flex-col items-center justify-center h-24 text-center">
+                                            <p className="text-xl font-bold text-white">{tournament.ageGroupLabel || 'Open'}</p>
+                                            <p className="text-xs text-slate-500 mt-1">{tournament.isAgeGrade ? 'Age Restricted' : 'Unrestricted Entry'}</p>
+                                        </div>
                                     )}
-                                </div>
+                                </GlassCard>
                             </div>
+
+                            {/* Additional Stats or Info could go here */}
+                            <GlassCard className="p-6">
+                                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <ListNumbers className="w-5 h-5 text-primary-400" />
+                                    Tournament Stats
+                                </h3>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="p-4 bg-white/5 rounded-xl text-center border border-white/5">
+                                        <div className="text-2xl font-bold text-white mb-1">--</div>
+                                        <div className="text-xs text-slate-400 uppercase tracking-wider">Teams</div>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-xl text-center border border-white/5">
+                                        <div className="text-2xl font-bold text-white mb-1">--</div>
+                                        <div className="text-xs text-slate-400 uppercase tracking-wider">Matches</div>
+                                    </div>
+                                    <div className="p-4 bg-white/5 rounded-xl text-center border border-white/5">
+                                        <div className="text-2xl font-bold text-white mb-1">--</div>
+                                        <div className="text-xs text-slate-400 uppercase tracking-wider">Goals</div>
+                                    </div>
+                                </div>
+                            </GlassCard>
                         </div>
 
                         {/* Recent Suspensions Widget */}

@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, CalendarBlank, ArrowsClockwise } from '@phosphor-icons/react';
+import { ArrowLeft, Clock, MapPin, CalendarBlank, ArrowsClockwise, Football, Target, Lightning, ArrowsLeftRight, Notebook } from '@phosphor-icons/react';
 import { ShareButton } from '@/components/common/ShareButton';
+import { GlassCard } from '@/components/GlassCard';
 import { publicTournamentApi, PublicMatchDetail } from '../../api/public.api';
 
 export default function MatchCenter() {
@@ -48,6 +49,8 @@ export default function MatchCenter() {
         }
     }, [match]);
 
+    const [tournamentName, setTournamentName] = useState<string>('');
+
     const loadMatch = async (silent = false) => {
         if (!matchId) return;
 
@@ -57,6 +60,16 @@ export default function MatchCenter() {
             const data = await publicTournamentApi.getMatchById(matchId);
             setMatch(data);
             setLastUpdated(new Date());
+
+            // Fetch tournament name if we have a slug/id
+            if (data.tournamentSlug || data.tournamentId) {
+                try {
+                    const tournamentData = await publicTournamentApi.getTournamentById(data.tournamentSlug || data.tournamentId!);
+                    setTournamentName(tournamentData.name);
+                } catch (tError) {
+                    console.error('Failed to load tournament details:', tError);
+                }
+            }
         } catch (error) {
             console.error('Failed to load match:', error);
         } finally {
@@ -67,24 +80,41 @@ export default function MatchCenter() {
     const getEventIcon = (eventType: string) => {
         switch (eventType) {
             case 'TRY':
-                return '🏉';
+                return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Football className="w-5 h-5" weight="fill" /></div>;
             case 'CONVERSION':
-                return '⚡';
+                return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" weight="bold" /></div>;
             case 'PENALTY':
-                return '🎯';
+                return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" weight="fill" /></div>;
             case 'DROP_GOAL':
-                return '🥅';
+                return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" weight="duotone" /></div>;
             case 'YELLOW_CARD':
-                return '🟨';
+                return <div className="w-4 h-5 bg-yellow-400 border border-yellow-500 rounded-sm shadow-sm" />;
             case 'RED_CARD':
-                return '🟥';
+                return <div className="w-4 h-5 bg-red-600 border border-red-700 rounded-sm shadow-sm" />;
+            case 'SUBSTITUTION':
+                return <div className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full"><ArrowsLeftRight className="w-4 h-4" /></div>;
             default:
-                return '•';
+                return <div className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full"><Notebook className="w-4 h-4" /></div>;
         }
     };
 
     const formatEventType = (eventType: string) => {
         return eventType.replace(/_/g, ' ');
+    };
+
+    const formatMatchCode = (code?: string) => {
+        if (!code) return null;
+        // If code is short (typical match ID like M01, M2), return as is
+        if (code.length < 10) return code;
+
+        // Try to extract Match number from slug (e.g. ...-M2)
+        const matchNumber = code.match(/-M(\d+)$/);
+        if (matchNumber) {
+            return `Match ${matchNumber[1]}`;
+        }
+
+        // Return null if it's just a raw slug/UUID to hide it
+        return null;
     };
 
     if (loading) {
@@ -119,7 +149,7 @@ export default function MatchCenter() {
                 className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
-                {match.tournamentSlug ? 'Back to Tournament' : 'Back to Tournaments'}
+                {tournamentName ? `Back to ${tournamentName}` : (match.tournamentSlug ? 'Back to Tournament' : 'Back to Tournaments')}
             </Link>
 
             {/* Match Header */}
@@ -210,11 +240,14 @@ export default function MatchCenter() {
                                 <span>{match.venue}</span>
                             </div>
                         )}
-                        {match.code && (
-                            <div className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/30 text-xs font-mono">
-                                {match.code}
-                            </div>
-                        )}
+                        <div className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700/30 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            {[
+                                tournamentName,
+                                match.stage,
+                                match.round,
+                                formatMatchCode(match.code)
+                            ].filter(Boolean).join(' • ')}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -229,7 +262,7 @@ export default function MatchCenter() {
 
             {/* Stats */}
             {(match.homeStats || match.awayStats) && (
-                <div className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+                <GlassCard className="p-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
                         Match Statistics
                     </h3>
@@ -268,11 +301,11 @@ export default function MatchCenter() {
                             );
                         })}
                     </div>
-                </div>
+                </GlassCard>
             )}
 
             {/* Timeline */}
-            <div className="rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+            <GlassCard className="p-6">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
                     Match Timeline
                 </h3>
@@ -291,7 +324,7 @@ export default function MatchCenter() {
                                             {event.minute}'
                                         </span>
                                     </div>
-                                    <div className="text-2xl">{getEventIcon(event.eventType)}</div>
+                                    <div>{getEventIcon(event.eventType)}</div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                             <span className="font-medium text-slate-900 dark:text-white">
@@ -320,7 +353,7 @@ export default function MatchCenter() {
                         No events recorded yet
                     </div>
                 )}
-            </div>
+            </GlassCard>
         </div>
     );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trophy, ArrowRight } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
+import { GlassCard } from '@/components/GlassCard';
 
 export default function Home() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
@@ -92,46 +93,48 @@ export default function Home() {
                             <Link
                                 key={tournament.id}
                                 to={`/tournaments/${tournament.slug || tournament.id}`}
-                                className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-[#D32F2F]/50 dark:hover:border-[#D32F2F]/60 transition-all hover:shadow-xl hover:shadow-[#D32F2F]/20"
+                                className="block group"
                             >
-                                <div className="p-6 space-y-4">
-                                    {/* Status Badge */}
-                                    {tournament.live && (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium border border-red-500/30">
-                                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                            LIVE NOW
-                                        </div>
-                                    )}
+                                <GlassCard className="h-full relative overflow-hidden hover:border-[#D32F2F]/50 dark:hover:border-[#D32F2F]/60 transition-all hover:shadow-xl hover:shadow-[#D32F2F]/20">
+                                    <div className="p-6 space-y-4 relative z-10">
+                                        {/* Status Badge */}
+                                        {tournament.live && (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium border border-red-500/30">
+                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                                LIVE NOW
+                                            </div>
+                                        )}
 
-                                    {/* Tournament Info */}
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#D32F2F] dark:group-hover:text-[#D32F2F] transition-colors">
-                                            {tournament.name}
-                                        </h3>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                            {tournament.level}
-                                            {tournament.competitionType && ` • ${tournament.competitionType}`}
-                                        </p>
+                                        {/* Tournament Info */}
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#D32F2F] dark:group-hover:text-[#D32F2F] transition-colors">
+                                                {tournament.name}
+                                            </h3>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                {tournament.level}
+                                                {tournament.competitionType && ` • ${tournament.competitionType}`}
+                                            </p>
+                                        </div>
+
+                                        {/* Details */}
+                                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <div className="flex items-center gap-2">
+                                                <CalendarBlank className="w-4 h-4" />
+                                                <span>
+                                                    {new Date(tournament.startDate).toLocaleDateString()} -{' '}
+                                                    {new Date(tournament.endDate).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="w-4 h-4" />
+                                                <span>{tournament.venue}</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Details */}
-                                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                                        <div className="flex items-center gap-2">
-                                            <CalendarBlank className="w-4 h-4" />
-                                            <span>
-                                                {new Date(tournament.startDate).toLocaleDateString()} -{' '}
-                                                {new Date(tournament.endDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>{tournament.venue}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Hover Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-transparent to-[#D32F2F]/0 group-hover:from-blue-500/5 group-hover:to-[#D32F2F]/10 transition-all" />
+                                    {/* Hover Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-transparent to-[#D32F2F]/0 group-hover:from-blue-500/5 group-hover:to-[#D32F2F]/10 transition-all pointer-events-none" />
+                                </GlassCard>
                             </Link>
                         ))}
                     </div>

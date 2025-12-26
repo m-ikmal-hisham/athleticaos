@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, MapPin, Trophy, ArrowLeft, Clock, VideoCamera, ShareNetwork } from '@phosphor-icons/react';
+import { GlassCard } from '@/components/GlassCard';
 
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import {
@@ -184,10 +185,10 @@ export default function TournamentDetail() {
             )}
 
             {/* Tournament Header */}
-            <div
-                className={`rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl p-8 relative overflow-hidden transition-colors ${tournament.organiserBranding?.primaryColor
+            <GlassCard
+                className={`p-8 relative overflow-hidden transition-colors ${tournament.organiserBranding?.primaryColor
                     ? 'border-[color:var(--brand-primary)] border-t-4'
-                    : 'border border-slate-200/50 dark:border-slate-700/50'
+                    : ''
                     }`}
             >
                 {/* Background Tint if branding exists */}
@@ -264,7 +265,7 @@ export default function TournamentDetail() {
                         className="w-16 h-16 object-contain rounded-xl shadow-sm bg-white/50 backdrop-blur-sm"
                     />
                 </div>
-            </div>
+            </GlassCard>
 
             {/* Tabs */}
             <div className="flex gap-2 border-b border-slate-200/50 dark:border-slate-700/50 overflow-x-auto">

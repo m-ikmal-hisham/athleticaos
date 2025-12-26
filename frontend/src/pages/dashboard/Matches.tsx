@@ -1,23 +1,17 @@
-import { useEffect, useState } from 'react';
-import { MagnifyingGlass, Funnel, Play, DotsThree } from '@phosphor-icons/react';
+import { useEffect, useState, useMemo } from 'react';
+import { MagnifyingGlass, Plus, Calendar, Clock, MapPin, Play } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { Card, CardContent } from '@/components/Card';
+import { GlassCard } from '@/components/GlassCard';
 import { MatchModal } from '@/components/modals/MatchModal';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/Table';
 import { Badge } from '@/components/Badge';
 import { useMatchesStore, MatchStatus } from '@/store/matches.store';
 import { useAuthStore } from '@/store/auth.store';
 import { updateMatch } from '@/api/matches.api';
+import { SmartFilterPills, FilterOption } from '@/components/SmartFilterPills';
+import { EmptyState } from '@/components/EmptyState';
 
 export const Matches = () => {
     const navigate = useNavigate();
@@ -76,150 +70,146 @@ export const Matches = () => {
         }
     };
 
+    // Filter Options
+    const statusOptions: FilterOption[] = useMemo(() => [
+        { id: 'SCHEDULED', label: 'Scheduled', count: matches.filter(m => m.status === 'SCHEDULED').length },
+        { id: 'ONGOING', label: 'Live', count: matches.filter(m => m.status === 'ONGOING').length },
+        { id: 'COMPLETED', label: 'Finished', count: matches.filter(m => m.status === 'COMPLETED').length },
+        { id: 'CANCELLED', label: 'Cancelled' },
+    ], [matches]);
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title="Matches"
                 description="View and manage match schedules and results."
                 action={
                     isAdmin && (
-                        <Button onClick={() => setIsCreateModalOpen(true)}>
+                        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+                            <Plus className="w-4 h-4" />
                             New Match
                         </Button>
                     )
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
-                    <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
-                        <div className="relative flex-1 w-full">
-                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                            <Input
-                                placeholder="Search matches..."
-                                className="pl-9 bg-glass-bg/50"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            {/* TODO: Later, add Organisation filter that respects hierarchy:
-                                Country -> State -> Division/District -> Club/School
-                                This should map onto Organisation and parentOrgId from backend. */}
-                            <select
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
-                                value={filters.status || 'ALL'}
-                                onChange={(e) => setFilters({ status: e.target.value as MatchStatus | 'ALL' })}
-                                aria-label="Filter by Status"
-                            >
-                                <option value="ALL">All Status</option>
-                                <option value="SCHEDULED">Scheduled</option>
-                                <option value="ONGOING">Ongoing</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="CANCELLED">Cancelled</option>
-                            </select>
-                            <Button variant="outline" className="gap-2">
-                                <Funnel className="w-4 h-4" />
-                                More Filters
-                            </Button>
-                        </div>
+            {/* Controls Layout */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="flex gap-2 w-full md:w-auto flex-1 max-w-lg">
+                    <div className="relative flex-1">
+                        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted border-glass-border" />
+                        <Input
+                            placeholder="Search matches by team or venue..."
+                            className="pl-9 bg-glass-bg border-glass-border focus:border-primary-500/50 transition-colors"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
+                </div>
 
-                    <Table>
-                        <TableHeader className="border-b border-border/60">
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="text-xs font-medium text-muted-foreground">Date & Time</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Match</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Score</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loadingList ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8">Loading matches...</TableCell>
-                                </TableRow>
-                            ) : filteredMatches.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No matches found.</TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredMatches.map((m) => (
-                                    <TableRow
-                                        key={m.id}
-                                        className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
-                                        onClick={() => navigate(`/dashboard/matches/${m.matchCode || m.id}`)}
-                                    >
-                                        <TableCell className="py-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-medium">
-                                                    {new Date(m.matchDate).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {m.kickOffTime}
-                                                </span>
+                <SmartFilterPills
+                    options={statusOptions}
+                    selectedId={filters.status && filters.status !== 'ALL' ? filters.status : null}
+                    onSelect={(id) => setFilters({ status: (id as MatchStatus) || 'ALL' })}
+                    className="w-full md:w-auto"
+                />
+            </div>
+
+            {loadingList ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                        <GlassCard key={i} className="h-48 animate-pulse flex flex-col p-6">
+                            <div className="w-full h-4 bg-white/5 rounded mb-4" />
+                            <div className="w-full h-12 bg-white/5 rounded mb-4" />
+                            <div className="w-1/2 h-4 bg-white/5 rounded" />
+                        </GlassCard>
+                    ))}
+                </div>
+            ) : filteredMatches.length === 0 ? (
+                <EmptyState
+                    icon={Calendar}
+                    title="No matches found"
+                    description="Try adjusting your search or filters."
+                    actionLabel={isAdmin ? "Schedule Match" : undefined}
+                    onAction={isAdmin ? () => setIsCreateModalOpen(true) : undefined}
+                    className="min-h-[400px] border-dashed border-white/10"
+                />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredMatches.map((m) => (
+                        <GlassCard
+                            key={m.id}
+                            className="group relative flex flex-col hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10 overflow-hidden"
+                            onClick={() => navigate(`/dashboard/matches/${m.matchCode || m.id}`)}
+                        >
+                            {/* Status Indicator Bar */}
+                            <div className={`h-1 w-full ${m.status === 'ONGOING' ? 'bg-blue-500 animate-pulse' :
+                                m.status === 'COMPLETED' ? 'bg-green-500' :
+                                    m.status === 'CANCELLED' ? 'bg-red-500' : 'bg-primary-500/50'
+                                }`} />
+
+                            <div className="p-5 flex flex-col h-full">
+                                {/* Header: Date & Status */}
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>{new Date(m.matchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span>{m.kickOffTime}</span>
+                                    </div>
+                                    <Badge variant={getStatusVariant(m.status) as any} className="text-[10px] px-1.5 h-5 uppercase tracking-wider">
+                                        {m.status === 'ONGOING' ? 'LIVE' : m.status}
+                                    </Badge>
+                                </div>
+
+                                {/* Teams & Score */}
+                                <div className="flex-1 flex items-center justify-between gap-4 mb-6">
+                                    <div className="flex-1 text-center">
+                                        <div className="font-bold text-lg leading-tight truncate px-1" title={m.homeTeamName}>{m.homeTeamName}</div>
+                                    </div>
+
+                                    <div className="flex flex-col items-center shrink-0 min-w-[60px]">
+                                        {m.status === 'SCHEDULED' ? (
+                                            <span className="text-xl font-bold text-muted-foreground/40 font-mono">VS</span>
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-2xl font-bold font-mono tracking-tight">
+                                                <span className={(m.homeScore ?? 0) > (m.awayScore ?? 0) ? 'text-primary-400' : ''}>{m.homeScore ?? 0}</span>
+                                                <span className="text-muted-foreground/30">-</span>
+                                                <span className={(m.awayScore ?? 0) > (m.homeScore ?? 0) ? 'text-primary-400' : ''}>{m.awayScore ?? 0}</span>
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-semibold">
-                                                    {m.homeTeamName} vs {m.awayTeamName}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {m.venue || 'TBA'}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            {m.status === 'SCHEDULED' ? (
-                                                <span className="text-sm text-muted-foreground">-</span>
-                                            ) : (
-                                                <span className="text-sm font-bold font-mono">
-                                                    {m.homeScore ?? 0} - {m.awayScore ?? 0}
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <Badge variant={getStatusVariant(m.status) as any} className="text-xs">
-                                                {m.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {isAdmin && m.status === 'SCHEDULED' && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={(e) => handleStartMatch(m.id, e)}
-                                                        className="h-8 px-3"
-                                                    >
-                                                        <Play className="w-4 h-4 mr-1" />
-                                                        Start
-                                                    </Button>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    aria-label="Match Actions"
-                                                >
-                                                    <DotsThree className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 text-center">
+                                        <div className="font-bold text-lg leading-tight truncate px-1" title={m.awayTeamName}>{m.awayTeamName}</div>
+                                    </div>
+                                </div>
+
+                                {/* Footer: Venue & Action */}
+                                <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate max-w-[70%]">
+                                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="truncate">{m.venue || 'Venue TBA'}</span>
+                                    </div>
+
+                                    {/* Quick Admin Actions */}
+                                    {isAdmin && m.status === 'SCHEDULED' && (
+                                        <Button
+                                            size="sm"
+                                            className="h-7 px-2.5 text-xs bg-primary-500/10 hover:bg-primary-500 hover:text-white text-primary-500 border-0"
+                                            onClick={(e) => handleStartMatch(m.id, e)}
+                                        >
+                                            <Play className="w-3 h-3 mr-1.5 fill-current" weight="fill" />
+                                            Start
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
+            )}
 
             <MatchModal
                 isOpen={isCreateModalOpen}

@@ -59,7 +59,7 @@ export const Login = () => {
                         {/* Use original colored logo if available, or just the text/symbol. 
                             Since we have logo-transparent and logo.png, logo.png is likely the colored one suitable for white bg. */}
                         <img
-                            src="/athleticaos-logo-transparent.png"
+                            src="/athleticaos-logo.svg"
                             alt="AthleticaOS"
                             className="h-16 w-auto mb-6"
                         />

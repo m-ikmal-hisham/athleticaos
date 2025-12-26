@@ -38,8 +38,8 @@ The frontend is built as a single codebase but logically divided.
 ### State Management (Zustand)
 The application uses Zustand for global state management, split into domain-specific stores:
 -   `auth.store.ts`: Manages User session, JWT token, and login/logout logic.
--   `ui.store.ts`: UI state like sidebars, modals, and themes.
--   `tournaments.store.ts`: Active tournament context and list fetching.
+-   `ui.store.ts`: UI state (theme, sidebar) AND **Active Tournament Context** (`activeTournamentId`).
+-   `tournaments.store.ts`: Handles fetching tournament lists.
 -   `matches.store.ts`: Match operations and live scoring updates.
 -   `stats.store.ts`: Leaderboard and statistics data aggregation.
 

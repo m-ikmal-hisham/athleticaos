@@ -31,12 +31,13 @@ The system uses a recursive hierarchy for organisations.
         -   `nextMatchIdForWinner/Loser`: For bracket progression.
 
 ## 4. People & Players
--   **Entity**: `Person` (Base entity for personal details)
 -   **Entity**: `User`
-    -   **Purpose**: Authentication and system access.
-    -   **Relationship**: Link to `Person`.
+    -   **Purpose**: Authentication, system access, and personal details (Name, Address, Contact).
+    -   **Key Fields**: `email`, `passwordHash`, `firstName`, `lastName`, `roles`, `organisation`.
+    -   **Note**: Unlike the initial design, `User` contains personal details directly and does not link to a separate `Person` entity.
 -   **Entity**: `Player`
-    -   Extends or links to `Person`.
+    -   **Purpose**: Represents a profile for competition participation.
+    -   **Relationship**: Links to `Person` (Conceptually, though implementation may vary, `Player` holds the athletic profile). linked to `User` implicitly or via `Person` record in future iterations. current implementation has `Player` linking to `Person` but `User` is standalone.
 -   **Entity**: `TeamPlayer` (Roster)
     -   Links `Player` to `Team` for a duration.
 

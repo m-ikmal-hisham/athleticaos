@@ -1,20 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { MagnifyingGlass, DotsThree, UserMinus } from "@phosphor-icons/react";
-import { TableSkeleton } from "../../components/LoadingSkeleton";
+import { MagnifyingGlass, DotsThree, UserMinus, Plus } from "@phosphor-icons/react";
 import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "../../components/Table";
 import { Badge } from "../../components/Badge";
 import { usePlayersStore } from "../../store/players.store";
 import { PlayerModal } from "../../components/modals/PlayerModal";
@@ -22,12 +13,12 @@ import { PlayerDetailDrawer } from "./players/PlayerDetailDrawer";
 import { useAuthStore } from "../../store/auth.store";
 import { Player } from "../../types";
 import { calculateAge } from "../../utils/date";
+import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 
 export default function Players() {
     const {
         filteredPlayers,
         loading,
-        error,
         getPlayers,
         savePlayer,
         // Drawer
@@ -69,7 +60,7 @@ export default function Players() {
     }, [searchParams, isDrawerOpen, selectedPlayerId, openPlayerDrawer, closePlayerDrawer]);
 
     // Handle opening drawer via URL update
-    const handleRowClick = (player: Player) => {
+    const handleCardClick = (player: Player) => {
         const slugOrId = player.slug || player.id;
         setSearchParams((prev) => {
             prev.set('player', slugOrId);
@@ -117,145 +108,116 @@ export default function Players() {
         }
     };
 
+    // Filter Options for SmartPills
+    const statusOptions: FilterOption[] = useMemo(() => [
+        { id: 'ACTIVE', label: 'Active', count: filteredPlayers.filter(p => p.status === 'ACTIVE').length },
+        { id: 'INACTIVE', label: 'Inactive' },
+        { id: 'BANNED', label: 'Banned' },
+    ], [filteredPlayers]); // Note: counts might be better calculated on full list vs filtered list, simplified here
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title="Players"
                 description="Manage all registered rugby players"
                 action={
                     isAdmin && (
-                        <Button onClick={handleAdd}>
+                        <Button onClick={handleAdd} className="gap-2">
+                            <Plus className="w-4 h-4" />
                             Add Player
                         </Button>
                     )
                 }
             />
 
-            <GlassCard>
-                <div className="p-0">
-                    <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
-                        <div className="relative flex-1 w-full">
-                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                            <Input
-                                placeholder="Search by name or email..."
-                                className="pl-9 bg-glass-bg/50"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <select
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                aria-label="Filter by Status"
-                            >
-                                <option value="ALL">All Status</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
-                                <option value="BANNED">Banned</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {loading ? (
-                        <div className="p-4">
-                            <TableSkeleton rows={5} cols={6} />
-                        </div>
-                    ) : (
-                        <Table>
-                            <TableHeader className="border-b border-border/60">
-                                <TableRow className="hover:bg-transparent">
-                                    <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
-                                    <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
-                                    <TableHead className="text-xs font-medium text-muted-foreground">Gender</TableHead>
-                                    <TableHead className="text-xs font-medium text-muted-foreground">Age</TableHead>
-                                    <TableHead className="text-xs font-medium text-muted-foreground">Nationality</TableHead>
-                                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                                    <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {error ? (
-                                    <TableRow>
-                                        <TableCell colSpan={7} className="text-center py-8 text-destructive">{error}</TableCell>
-                                    </TableRow>
-                                ) : filteredPlayers.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={7} className="p-0">
-                                            <EmptyState
-                                                icon={UserMinus}
-                                                title="No players found"
-                                                description="Try adjusting your search or filters, or add a new player."
-                                                actionLabel={isAdmin ? "Add Player" : undefined}
-                                                onAction={isAdmin ? handleAdd : undefined}
-                                                className="border-none bg-transparent"
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredPlayers.map((p) => (
-                                        <TableRow
-                                            key={p.id}
-                                            className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
-                                            onClick={() => handleRowClick(p)}
-                                        >
-                                            <TableCell className="py-4">
-                                                <span className="text-sm font-medium">{p.firstName} {p.lastName}</span>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <span className="text-sm text-muted-foreground">{p.email || "—"}</span>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <span className="text-sm">{p.gender || "—"}</span>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <span className="text-sm">{calculateAge(p.dob) ?? "—"}</span>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <span className="text-sm">{p.nationality || "—"}</span>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <span className="text-sm">
-                                                    <Badge variant={getStatusVariant(p.status) as any} className="text-xs">
-                                                        {p.status}
-                                                    </Badge>
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    {isAdmin && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={(e) => handleEdit(p, e)}
-                                                            className="h-8 px-3"
-                                                        >
-                                                            Edit
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            openPlayerDrawer(p.id);
-                                                        }}
-                                                        aria-label="View Details"
-                                                    >
-                                                        <DotsThree className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    )}
+            {/* Controls Layout */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="relative w-full md:w-96">
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted border-glass-border" />
+                    <Input
+                        placeholder="Search players..."
+                        className="pl-9 bg-glass-bg border-glass-border focus:border-primary-500/50 transition-colors"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
-            </GlassCard>
+
+                <SmartFilterPills
+                    options={statusOptions}
+                    selectedId={statusFilter === 'ALL' ? null : statusFilter}
+                    onSelect={(id) => setStatusFilter(id || 'ALL')}
+                    className="w-full md:w-auto"
+                />
+            </div>
+
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <GlassCard key={i} className="h-48 animate-pulse flex flex-col p-6">
+                            <div className="w-12 h-12 rounded-full bg-white/5 mb-4" />
+                            <div className="w-3/4 h-5 bg-white/5 rounded mb-2" />
+                            <div className="w-1/2 h-4 bg-white/5 rounded" />
+                        </GlassCard>
+                    ))}
+                </div>
+            ) : filteredPlayers.length === 0 ? (
+                <EmptyState
+                    icon={UserMinus}
+                    title="No players found"
+                    description="Try adjusting your search or filters, or add a new player."
+                    actionLabel={isAdmin ? "Add Player" : undefined}
+                    onAction={isAdmin ? handleAdd : undefined}
+                    className="min-h-[400px] border-dashed border-white/10"
+                />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredPlayers.map((p) => (
+                        <GlassCard
+                            key={p.id}
+                            className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
+                            onClick={() => handleCardClick(p)}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 text-lg font-bold border border-primary-500/20">
+                                    {p.firstName[0]}{p.lastName[0]}
+                                </div>
+                                <div className="flex gap-1">
+                                    <Badge variant={getStatusVariant(p.status) as any} className="text-[10px] px-1.5 h-5">
+                                        {p.status}
+                                    </Badge>
+                                    {isAdmin && (
+                                        <button
+                                            onClick={(e) => handleEdit(p, e)}
+                                            className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                            aria-label="Edit player"
+                                        >
+                                            <DotsThree className="w-4 h-4" weight="bold" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1 mb-4 flex-1">
+                                <h3 className="font-semibold text-lg leading-tight truncate text-foreground group-hover:text-primary-400 transition-colors">
+                                    {p.firstName} {p.lastName}
+                                </h3>
+                                <p className="text-sm text-muted-foreground truncate">{p.email || "No email"}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-4 border-t border-white/5 text-xs text-muted-foreground">
+                                <div>
+                                    <span className="block text-[10px] uppercase tracking-wider opacity-60">Age</span>
+                                    <span className="font-medium text-foreground">{calculateAge(p.dob) ?? "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-[10px] uppercase tracking-wider opacity-60">Nationality</span>
+                                    <span className="font-medium text-foreground truncate">{p.nationality || "-"}</span>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
+            )}
 
             <PlayerModal
                 isOpen={isModalOpen}

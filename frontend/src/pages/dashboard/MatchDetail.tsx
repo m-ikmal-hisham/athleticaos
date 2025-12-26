@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef, useMemo, CSSProperties } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { CalendarBlank, MapPin, Clock, Trash, ArrowCounterClockwise, PencilSimple, Target, Lightning, ArrowsLeftRight, Notebook } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Clock, Trash, ArrowCounterClockwise, PencilSimple, Target, Lightning, ArrowsLeftRight, Notebook, Football } from '@phosphor-icons/react';
 import { useMatchesStore, MatchStatus, MatchEventItem } from '@/store/matches.store';
 import { Button } from '@/components/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
@@ -51,7 +51,7 @@ const getStatusLabel = (status: MatchStatus, isHalfTime: boolean) => {
 // Helper for event icons
 const getEventIcon = (type: string) => {
     switch (type) {
-        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><div className="w-5 h-5 flex items-center justify-center font-bold text-xs" style={{ fontFamily: 'serif' }}>TRY</div></div>;
+        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Football className="w-5 h-5" weight="fill" /></div>;
         case 'CONVERSION': return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" weight="bold" /></div>;
         case 'PENALTY': return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" weight="fill" /></div>;
         case 'DROP_GOAL': return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" weight="duotone" /></div>;
