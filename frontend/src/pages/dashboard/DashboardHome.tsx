@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clsx } from 'clsx';
-import { Users, UsersThree, Buildings, Trophy, Calendar, TrendUp } from '@phosphor-icons/react';
+import { Users, UsersThree, Buildings, Trophy, Calendar, TrendUp, ChartLineUp } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { useAuthStore } from '@/store/auth.store';
+import { useUIStore } from '@/store/ui.store';
+import { useStatsStore } from '@/store/stats.store';
+import { useMatchesStore } from '@/store/matches.store';
 import { fetchDashboardStats } from '@/api/dashboard.api';
+import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
+import { BentoGrid, BentoItem } from '@/components/dashboard/BentoGrid';
+import { TrendChart } from '@/components/dashboard/TrendChart';
+import { FeaturedTournamentCard } from '@/components/dashboard/FeaturedTournamentCard';
 
 // Custom hook for counter animation
 const useCountUp = (end: number, duration: number = 2000) => {
@@ -36,7 +42,7 @@ const useCountUp = (end: number, duration: number = 2000) => {
     return count;
 };
 
-interface DashboardStats {
+interface GlobalDashboardStats {
     totalPlayers: number;
     totalTeams: number;
     totalMatches: number;
@@ -47,19 +53,30 @@ interface DashboardStats {
 
 export const DashboardHome = () => {
     const { user } = useAuthStore();
+    const { activeTournamentId } = useUIStore();
     const navigate = useNavigate();
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [loading, setLoading] = useState(true);
 
+    // Global Stats State
+    const [globalStats, setGlobalStats] = useState<GlobalDashboardStats | null>(null);
+
+    // Tournament Specific Stores
+    const { summary: tournamentSummary, loadStatsForTournament } = useStatsStore();
+    const { matches, loadMatches } = useMatchesStore();
+
+    // Derived State for Featured Tournament Card
+    const [activeTournamentDetails, setActiveTournamentDetails] = useState<PublicTournamentSummary | null>(null);
+
+    // 1. Fetch Global Stats on Mount
     useEffect(() => {
-        const loadStats = async () => {
+        const loadGlobal = async () => {
             try {
                 const response = await fetchDashboardStats();
-                setStats(response.data);
+                setGlobalStats(response.data);
             } catch (error) {
-                console.error('Failed to load dashboard stats:', error);
-                // Fallback to default values
-                setStats({
+                console.error('Failed to load global stats:', error);
+
+                // Fallback zeroes
+                setGlobalStats({
                     totalPlayers: 0,
                     totalTeams: 0,
                     totalMatches: 0,
@@ -67,71 +84,49 @@ export const DashboardHome = () => {
                     activeTournaments: 0,
                     upcomingMatches: 0
                 });
-            } finally {
-                setLoading(false);
             }
         };
-
-        loadStats();
+        loadGlobal();
     }, []);
 
-    const playersCount = useCountUp(stats?.totalPlayers || 0);
-    const teamsCount = useCountUp(stats?.totalTeams || 0);
-    const orgsCount = useCountUp(stats?.totalOrganisations || 0);
-    const matchesCount = useCountUp(stats?.totalMatches || 0);
-    const tournamentsCount = useCountUp(stats?.activeTournaments || 0);
-    const upcomingCount = useCountUp(stats?.upcomingMatches || 0);
+    // 2. Sync Active Tournament Data
+    useEffect(() => {
+        if (activeTournamentId) {
+            // Load stats and matches for the selected tournament
+            loadStatsForTournament(activeTournamentId);
+            useMatchesStore.getState().setFilters({ tournamentId: activeTournamentId, status: "ALL" }); // Directly set without triggering loop
+            loadMatches(); // Load all matches for trend analysis
 
-    const statCards = [
-        {
-            title: 'Total Players',
-            value: playersCount.toLocaleString(),
-            icon: <Users className="w-6 h-6" />,
-            path: '/dashboard/players',
-            color: 'blue',
-            bgImage: '/assets/dashboard/players_bg.png'
-        },
-        {
-            title: 'Total Teams',
-            value: teamsCount.toLocaleString(),
-            icon: <UsersThree className="w-6 h-6" />,
-            path: '/dashboard/teams',
-            color: 'red',
-            bgImage: '/assets/dashboard/teams_bg.png'
-        },
-        {
-            title: 'Total Organisations',
-            value: orgsCount.toLocaleString(),
-            icon: <Buildings className="w-6 h-6" />,
-            path: '/dashboard/organisations',
-            color: 'blue',
-            bgImage: '/assets/dashboard/orgs_bg.png'
-        },
-        {
-            title: 'Total Matches',
-            value: matchesCount.toLocaleString(),
-            icon: <Trophy className="w-6 h-6" />,
-            path: '/dashboard/matches',
-            color: 'red',
-            bgImage: '/assets/dashboard/matches_bg.png'
-        },
-        {
-            title: 'Active Tournaments',
-            value: tournamentsCount.toLocaleString(),
-            icon: <TrendUp className="w-6 h-6" />,
-            path: '/dashboard/tournaments',
-            color: 'blue',
-            bgImage: '/assets/dashboard/tournaments.png'
-        },
-        {
-            title: 'Upcoming Matches',
-            value: upcomingCount.toLocaleString(),
-            icon: <Calendar className="w-6 h-6" />,
-            path: '/dashboard/matches',
-            color: 'red',
-            bgImage: '/assets/dashboard/upcoming_matches.png'
-        },
-    ];
+            // Fetch details for the card (using public API for simplicity)
+            // Ideally this could come from a cached store list, but fetch is cheap
+            publicTournamentApi.getTournamentById(activeTournamentId).then(res => {
+                setActiveTournamentDetails(res as unknown as PublicTournamentSummary); // Cast because Detail extends Summary roughly or strictly
+            }).catch(console.error);
+        } else {
+            setActiveTournamentDetails(null);
+        }
+    }, [activeTournamentId, loadStatsForTournament, loadMatches]);
+
+    // 3. Client-Side Aggregation for Trend Chart
+    const matchTrendData = useMemo(() => {
+        if (!matches || matches.length === 0) return [];
+
+        // Group matches by date
+        const counts: Record<string, number> = {};
+        matches.forEach(m => {
+            const date = m.matchDate.split('T')[0]; // Simple ISO date check
+            counts[date] = (counts[date] || 0) + 1;
+        });
+
+        // Convert to array and sort
+        return Object.entries(counts)
+            .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+            .map(([date, count]) => ({
+                name: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                value: count
+            }));
+    }, [matches]);
+
 
     // Determine scope for Recent Activity
     const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
@@ -148,94 +143,166 @@ export const DashboardHome = () => {
         activityEntityId = user.organisationId;
     }
 
+    // Animated Counters
+    const playersCount = useCountUp(globalStats?.totalPlayers || 0);
+    const orgsCount = useCountUp(globalStats?.totalOrganisations || 0);
+    const tournamentsCount = useCountUp(globalStats?.activeTournaments || 0);
+
     return (
-        <div className="space-y-8 pt-6 pb-12 animate-in fade-in duration-500">
+        <div className="space-y-6 pt-2 pb-12 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 mb-4">
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">
                     Welcome, {user?.firstName}
                 </h1>
                 <p className="text-muted-foreground text-lg">
-                    Here's what's happening today.
+                    {activeTournamentId
+                        ? "Here's the latest for your selected tournament."
+                        : "Here's what's happening across the platform."}
                 </p>
             </div>
 
-            {/* Stats Grid - Clickable & Glowing */}
-            {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <GlassCard key={i} className="animate-pulse h-32">
-                            <div className="h-full bg-black/5 dark:bg-white/5 rounded"></div>
-                        </GlassCard>
-                    ))}
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {statCards.map((stat, index) => {
-                        return (
-                            <GlassCard
-                                key={index}
-                                className={clsx(
-                                    "relative overflow-hidden transition-all duration-300 cursor-pointer group hover:-translate-y-1 h-32 flex flex-col justify-center",
-                                    // Minimal Glow Effect based on color prop
-                                    stat.color === 'blue' && "hover:shadow-[0_0_20px_rgba(0,83,240,0.15)] dark:hover:shadow-[0_0_30px_rgba(0,83,240,0.2)] hover:border-blue-500/30",
-                                    stat.color === 'red' && "hover:shadow-[0_0_20px_rgba(208,2,27,0.15)] dark:hover:shadow-[0_0_30px_rgba(208,2,27,0.2)] hover:border-red-500/30"
-                                )}
-                                onClick={() => navigate(stat.path)}
-                            >
-                                {/* Background Image with Gradient Overlay */}
-                                <div className="absolute inset-0 z-0">
-                                    <img
-                                        src={stat.bgImage}
-                                        alt=""
-                                        className="w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                    <div className={clsx(
-                                        "absolute inset-0 bg-gradient-to-r",
-                                        "from-background/90 via-background/60 to-transparent" // Heavy fade on left for text readability
-                                    )} />
-                                    {/* Additional color tint */}
-                                    <div className={clsx(
-                                        "absolute inset-0 opacity-20 mix-blend-overlay transition-opacity duration-300 group-hover:opacity-30",
-                                        stat.color === 'blue' && "bg-blue-600",
-                                        stat.color === 'red' && "bg-red-600"
-                                    )} />
+            <BentoGrid>
+                {/* 1. Global KPI: Active Players */}
+                <BentoItem colSpan={1} rowSpan={1}>
+                    <GlassCard className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-colors cursor-pointer group" onClick={() => navigate('/dashboard/players')}>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                <Users className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest">Global</span>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-foreground tracking-tight">{playersCount.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground font-medium mt-1">Active Players</div>
+                        </div>
+                    </GlassCard>
+                </BentoItem>
+
+                {/* 2. Global KPI: Active Tournaments */}
+                <BentoItem colSpan={1} rowSpan={1}>
+                    <GlassCard className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-colors cursor-pointer group" onClick={() => navigate('/dashboard/tournaments')}>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                                <Trophy className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest">Global</span>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-foreground tracking-tight">{tournamentsCount.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground font-medium mt-1">Active Tournaments</div>
+                        </div>
+                    </GlassCard>
+                </BentoItem>
+
+                {/* 3. Featured Tournament Context Card (Takes 2x1) */}
+                <BentoItem colSpan={2} rowSpan={1} className={!activeTournamentId ? "opacity-50 grayscale" : ""}>
+                    <FeaturedTournamentCard
+                        tournament={activeTournamentDetails}
+                        loading={activeTournamentId ? !activeTournamentDetails : false}
+                    />
+                </BentoItem>
+
+                {/* 4. Match Activity Chart (2x2) - Only shows if tournament selected */}
+                <BentoItem colSpan={2} rowSpan={2} className="relative group">
+                    <GlassCard className="h-full p-0 overflow-hidden flex flex-col">
+                        <div className="p-6 pb-2 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                                    <TrendUp className="w-4 h-4 text-primary-500" />
+                                    Match Activity
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {activeTournamentId ? "Matches scheduled per day" : "Select a tournament to view trends"}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 w-full min-h-[160px] flex items-end pb-0">
+                            {activeTournamentId && matchTrendData.length > 0 ? (
+                                <TrendChart data={matchTrendData} height={200} />
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground text-sm p-8 bg-black/5 dark:bg-white/5">
+                                    <ChartLineUp className="w-8 h-8 opacity-20 mb-2" />
+                                    <span>No match data available</span>
                                 </div>
+                            )}
+                        </div>
+                    </GlassCard>
+                </BentoItem>
 
-                                {/* Subtle Background Gradient (Hover) */}
-                                <div className={clsx(
-                                    "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-1",
-                                    stat.color === 'blue' && "bg-gradient-to-br from-blue-500/10 to-transparent",
-                                    stat.color === 'red' && "bg-gradient-to-br from-red-500/10 to-transparent"
-                                )} />
+                {/* 5. Quick Action / KPI: Upcoming Matches */}
+                <BentoItem colSpan={1} rowSpan={1}>
+                    <GlassCard className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-colors cursor-pointer group" onClick={() => navigate('/dashboard/matches')}>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                                <Calendar className="w-6 h-6" />
+                            </div>
+                            {activeTournamentId && tournamentSummary && (
+                                <span className="text-xs font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                                    {tournamentSummary.totalMatches} Total
+                                </span>
+                            )}
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-foreground tracking-tight">{globalStats?.upcomingMatches.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground font-medium mt-1">Upcoming Matches</div>
+                        </div>
+                    </GlassCard>
+                </BentoItem>
 
-                                <div className="flex items-center justify-between relative z-10 px-1 pl-6"> {/* Increased left padding */}
-                                    <div>
-                                        <p className="text-sm font-semibold text-muted-foreground/90 uppercase tracking-wide">{stat.title}</p>
-                                        <p className="text-4xl font-bold text-foreground mt-2 tracking-tight drop-shadow-sm">{stat.value}</p>
-                                    </div>
-                                    <div className={clsx(
-                                        "p-3 rounded-full transition-colors duration-300 backdrop-blur-sm",
-                                        stat.color === 'blue' && "bg-blue-500/20 text-blue-100 group-hover:bg-blue-500/30",
-                                        stat.color === 'red' && "bg-red-500/20 text-red-100 group-hover:bg-red-500/30"
-                                    )}>
-                                        {stat.icon}
-                                    </div>
+                {/* 6. Discipline / Stats KPI */}
+                <BentoItem colSpan={1} rowSpan={1}>
+                    <GlassCard className="h-full flex flex-col justify-between p-6 group hover:bg-white/5 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/stats')}>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500">
+                                <UsersThree className="w-6 h-6" />
+                            </div>
+                            {tournamentSummary && (
+                                <div className="flex gap-1 text-[10px] font-bold uppercase tracking-wider">
+                                    <span className="bg-yellow-500/20 text-yellow-600 px-1.5 py-0.5 rounded">{tournamentSummary.totalYellowCards} YC</span>
+                                    <span className="bg-red-500/20 text-red-600 px-1.5 py-0.5 rounded">{tournamentSummary.totalRedCards} RC</span>
                                 </div>
-                            </GlassCard>
-                        );
-                    })}
-                </div>
-            )}
+                            )}
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-foreground tracking-tight">
+                                {tournamentSummary ? tournamentSummary.totalTries : globalStats?.totalTeams.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-muted-foreground font-medium mt-1">
+                                {tournamentSummary ? "Total Tries Scored" : "Total Teams Registered"}
+                            </div>
+                        </div>
+                    </GlassCard>
+                </BentoItem>
 
-            {/* Recent Activity */}
-            <div>
-                <RecentActivityWidget
-                    scope={activityScope}
-                    entityId={activityEntityId}
-                    limit={10}
-                />
-            </div>
+                {/* 7. Recent Activity (2x2) */}
+                <BentoItem colSpan={2} rowSpan={1} className="lg:col-span-1 lg:row-span-1">
+                    <RecentActivityWidget
+                        scope={activityScope}
+                        entityId={activityEntityId}
+                        limit={5}
+                        title="Recent Activity"
+                    />
+                </BentoItem>
+
+                {/* 8. Extra Space / Fallback */}
+                <BentoItem colSpan={1} rowSpan={1}>
+                    <GlassCard className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-colors cursor-pointer group" onClick={() => navigate('/dashboard/organisations')}>
+                        <div className="flex justify-between items-start">
+                            <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                                <Buildings className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold text-foreground tracking-tight">{orgsCount.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground font-medium mt-1">Organisations</div>
+                        </div>
+                    </GlassCard>
+                </BentoItem>
+
+            </BentoGrid>
+
         </div>
     );
 };

@@ -1,72 +1,52 @@
-# System Architecture - AthleticaOS
+# Architecture & Component Design
 
-## 1. High-Level Architecture Diagram
+## 1. Backend Architecture
+The backend uses a standard Layered Architecture pattern to ensure separation of concerns.
 
-```mermaid
-graph TD
-    User[User (Browser/Mobile)] -->|HTTPS| PWA[PWA Frontend (React + Vite)]
-    
-    subgraph "Local Development Environment"
-        PWA -->|REST API| API[Spring Boot Backend]
-        
-        API -->|JDBC| DB[(PostgreSQL Database)]
-        API -->|Read/Write| FS[Local File System (Images/Docs)]
-        
-        subgraph "Security Layer"
-            Auth[Spring Security]
-            JWT[JWT Token Provider]
-            Enc[Encryption Service (AES-256)]
-        end
-        
-        API --> Auth
-        Auth --> JWT
-        API --> Enc
-    end
+### Layers
+1.  **Controller Layer (`com.athleticaos.backend.controllers`)**:
+    -   Handles incoming HTTP requests.
+    -   Validates input.
+    -   Delegates business logic to Services.
+    -   Return DTOs (Data Transfer Objects) to the client.
+    -   **Separation**: Controllers are often separated by domain (e.g., `TournamentController`, `MatchController`) and audience (`PublicTournamentController` vs `TournamentController`).
 
-    subgraph "External Services (Future)"
-        Email[Email Service]
-        Payment[Payment Gateway]
-    end
-    
-    API -.-> Email
-    API -.-> Payment
-```
+2.  **Service Layer (`com.athleticaos.backend.services`)**:
+    -   Contains core business logic.
+    -   Handles transactions (`@Transactional`).
+    -   Orchestrates calls to Repositories.
+    -   Examples: `TournamentService`, `MatchService`, `EligibilityService`.
 
-## 2. Component Description
+3.  **Repository Layer (`com.athleticaos.backend.repositories`)**:
+    -   Interface with the database.
+    -   Extends `JpaRepository`.
+    -   Handles standard CRUD and custom JPQL/Native queries.
 
-### 2.1 Client Layer (PWA)
-- **Technology**: React, TypeScript, Vite, Tailwind CSS.
-- **Responsibility**: User Interface, State Management, API Consumption.
-- **Features**: Responsive design, Offline capabilities (Service Worker), Form validation.
+### API Boundaries
+-   **Admin API**: Protected by JWT Authentication. accessible only to users with appropriate roles (SUPER_ADMIN, ORG_ADMIN, etc.).
+-   **Public API**: Open endpoints (usually prefixed or specific controllers like `PublicTournamentController`) allowing read-only access to non-sensitive tournament data.
 
-### 2.2 API Gateway / Backend Service
-- **Technology**: Java 17, Spring Boot 3.
-- **Responsibility**: Business Logic, Data Validation, Authentication, Authorization.
-- **Key Modules**:
-    - `UserController`: Auth & Profile management.
-    - `OrgController`: Hierarchy management.
-    - `TournamentController`: Scheduling & Results.
-    - `SecurityConfig`: JWT filter chain & CORS.
+## 2. Frontend Architecture
+The frontend is built as a single codebase but logically divided.
 
-### 2.3 Data Persistence Layer
-- **Technology**: PostgreSQL 15.
-- **Responsibility**: Relational data storage, ACID transactions.
-- **Schema Management**: Flyway migrations.
+### Module Separation
+-   **Public Module**: Pages accessible without login. Focuses on data presentation (Leaderboards, Match Centers, Tournament Brackets).
+    -   Routes typically defined under `/public` or root paths for guests.
+-   **Admin Module**: Protected routes requiring authentication. Focuses on forms, management tables, and data entry.
+    -   Guarded by `<AuthGuard>` component.
 
-### 2.4 Security Components
-- **JWT**: Stateless session management.
-- **AES-256**: Column-level encryption for sensitive PII (IC/Passport).
-- **BCrypt**: Password hashing.
+### State Management (Zustand)
+The application uses Zustand for global state management, split into domain-specific stores:
+-   `auth.store.ts`: Manages User session, JWT token, and login/logout logic.
+-   `ui.store.ts`: UI state like sidebars, modals, and themes.
+-   `tournaments.store.ts`: Active tournament context and list fetching.
+-   `matches.store.ts`: Match operations and live scoring updates.
+-   `stats.store.ts`: Leaderboard and statistics data aggregation.
 
-## 3. Data Flow Example: Match Result Entry
-
-1. **User Action**: Team Manager submits match score via PWA.
-2. **Frontend**: Validates input (non-negative scores), sends POST request with JWT.
-3. **Security**: Backend validates JWT signature and checks `ROLE_TEAM_MANAGER` or `ROLE_OFFICIAL`.
-4. **Controller**: Receives DTO, passes to `MatchService`.
-5. **Service**:
-    - Verifies match status is `LIVE` or `SCHEDULED`.
-    - Updates score.
-    - Creates `Audit_Log` entry.
-6. **Database**: Commits transaction to `Match` and `Audit_Log` tables.
-7. **Response**: Returns updated Match object to Frontend.
+## 3. Data Flow
+1.  **Client Action**: User interacts with UI.
+2.  **Store/Component**: Calls Service/API Utility (Axios).
+3.  **API Request**: Hits Backend Controller.
+4.  **Processing**: Service processes logic, Repository fetches Entity.
+5.  **Response**: DTO returned to Client.
+6.  **State Update**: Store updates state, UI re-renders.

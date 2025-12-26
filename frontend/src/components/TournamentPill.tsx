@@ -5,12 +5,14 @@ import { clsx } from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
+import { useUIStore } from '@/store/ui.store';
 
 export const TournamentPill = () => {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const location = useLocation();
+    const { setActiveTournamentId } = useUIStore();
 
     // Check if we are in the admin dashboard
     const isAdmin = location.pathname.startsWith('/dashboard');
@@ -47,6 +49,16 @@ export const TournamentPill = () => {
         };
         loadTournaments();
     }, []);
+
+    // Sync active tournament to global store
+    useEffect(() => {
+        if (tournaments.length > 0) {
+            const activeId = tournaments[currentIndex].id;
+            setActiveTournamentId(activeId);
+        } else {
+            setActiveTournamentId(null);
+        }
+    }, [currentIndex, tournaments, setActiveTournamentId]);
 
     const handlePrevious = (e: React.MouseEvent) => {
         e.preventDefault();

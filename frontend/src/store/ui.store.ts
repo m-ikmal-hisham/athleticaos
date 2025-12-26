@@ -6,6 +6,8 @@ interface UIState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   getEffectiveTheme: () => 'light' | 'dark';
+  activeTournamentId: string | null;
+  setActiveTournamentId: (id: string | null) => void;
 }
 
 const getSystemTheme = (): 'light' | 'dark' => {
@@ -29,6 +31,9 @@ export const useUIStore = create<UIState>((set, get) => ({
     const { theme } = get();
     return theme === 'system' ? getSystemTheme() : theme;
   },
+
+  activeTournamentId: null,
+  setActiveTournamentId: (id: string | null) => set({ activeTournamentId: id }),
 }));
 
 // Listen for system theme changes
