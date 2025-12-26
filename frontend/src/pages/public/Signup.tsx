@@ -68,7 +68,7 @@ export const Signup = () => {
                 <div className="w-full max-w-sm space-y-6">
                     <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
                         <img
-                            src="/logo.png"
+                            src="/athleticaos-logo-transparent.png"
                             alt="AthleticaOS"
                             className="h-14 w-auto mb-6"
                         />
@@ -160,27 +160,17 @@ export const Signup = () => {
             </div>
 
             {/* Right Side - Abstract Art (Reused from Login) */}
-            <div className="hidden lg:flex flex-1 relative bg-gray-50 overflow-hidden items-center justify-center p-12 lg:w-1/2">
-                {/* CSS Abstract Background */}
-                <div className="absolute inset-0 bg-white">
-                    {/* Organic Blobs */}
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-purple-200/40 blur-[80px]" />
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-200/40 blur-[60px]" />
-                    <div className="absolute top-[40%] left-[20%] w-[300px] h-[300px] rounded-full bg-orange-200/30 blur-[50px]" />
-
-                    {/* Floating Geometric Shapes */}
-                    <div className="absolute top-[20%] right-[15%] w-32 h-32 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-[2rem] shadow-2xl shadow-indigo-500/20 rotate-12 animate-float-slow opacity-90" />
-                    <div className="absolute bottom-[25%] left-[10%] w-24 h-24 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full shadow-xl shadow-blue-500/20 animate-float-medium opacity-80" />
-                    <div className="absolute top-[15%] left-[10%] w-16 h-16 bg-gradient-to-br from-orange-300 to-red-300 rounded-full shadow-lg shadow-orange-500/20 animate-float-fast opacity-90" />
-
-                    {/* Glass Overlay Element */}
-                    <div className="absolute bottom-[-5%] right-[10%] w-64 h-64 bg-white/10 backdrop-blur-xl border border-white/40 rounded-full z-10" />
-                </div>
+            <div className="hidden lg:flex flex-1 relative bg-white overflow-hidden items-center justify-center p-12 lg:w-1/2">
+                <img
+                    src="/athleticaos-login-bg-new.png"
+                    alt="AthleticaOS Background"
+                    className="absolute inset-0 w-full h-full object-cover"
+                />
 
                 <div className="relative z-20 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-gray-900 leading-[1.1]">
                         Join the<br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
                             Revolution
                         </span>
                     </h2>

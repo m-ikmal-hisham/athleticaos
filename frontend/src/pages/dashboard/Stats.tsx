@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStatsStore } from '@/store/stats.store';
 import { fetchTournaments } from '@/api/tournaments.api';
-import { Trophy, Users, Pulse, WarningCircle, Flag, Medal } from '@phosphor-icons/react';
+import { Trophy, Users, Pulse, WarningCircle, Flag, Medal, CaretUp, CaretDown } from '@phosphor-icons/react';
 
 interface Tournament {
     id: string;
@@ -94,226 +94,284 @@ export default function Stats() {
                     <p className="text-muted-foreground mt-2">Please select a tournament from the dropdown to view statistics.</p>
                 </div>
             ) : (
-                <>
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <SummaryCard
-                            label="Total Matches"
-                            value={summary?.totalMatches ?? 0}
-                            icon={<Pulse className="w-4 h-4 text-blue-400" />}
-                        />
-                        <SummaryCard
-                            label="Completed"
-                            value={summary?.completedMatches ?? 0}
-                            icon={<Flag className="w-4 h-4 text-green-400" />}
-                        />
-                        <SummaryCard
-                            label="Total Tries"
-                            value={summary?.totalTries ?? 0}
-                            icon={<Medal className="w-4 h-4 text-yellow-400" />}
-                        />
-                        <SummaryCard
-                            label="Total Points"
-                            value={summary?.totalPoints ?? 0}
-                            icon={<Trophy className="w-4 h-4 text-purple-400" />}
-                        />
-                        <SummaryCard
-                            label="Yellow Cards"
-                            value={summary?.totalYellowCards ?? 0}
-                            icon={<div className="w-3 h-4 bg-yellow-400 rounded-sm" />}
-                        />
-                        <SummaryCard
-                            label="Red Cards"
-                            value={summary?.totalRedCards ?? 0}
-                            icon={<div className="w-3 h-4 bg-red-500 rounded-sm" />}
-                        />
-                    </div>
-
-                    {/* Loading Overlay */}
-                    {loading && (
-                        <div className="text-center py-8">
-                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p className="mt-2 text-muted-foreground text-sm">Loading stats...</p>
-                        </div>
-                    )}
-
-                    {/* Leaderboards */}
-                    {!loading && (
-                        <div className="grid lg:grid-cols-2 gap-8">
-                            {/* Top Scorers */}
-                            <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col">
-                                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-primary/20 rounded-lg text-primary">
-                                            <Trophy className="w-5 h-5" />
-                                        </div>
-                                        <h3 className="font-bold text-lg text-foreground">Top Scorers</h3>
-                                    </div>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead>
-                                            <tr className="border-b border-white/10 text-muted-foreground">
-                                                <th className="px-6 py-4 font-medium w-16">#</th>
-                                                <th className="px-6 py-4 font-medium">Player</th>
-                                                <th className="px-6 py-4 font-medium">Team</th>
-                                                <th className="px-6 py-4 font-medium text-right">Tries</th>
-                                                <th className="px-6 py-4 font-medium text-right">Pts</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {playerStats.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                                                        No scoring stats available yet.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                playerStats.map((player, idx) => (
-                                                    <tr
-                                                        key={player.playerId}
-                                                        className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                                        onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
-                                                    >
-                                                        <td className="px-6 py-4 font-medium text-muted-foreground">
-                                                            {idx + 1}
-                                                        </td>
-                                                        <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors">
-                                                            {player.firstName} {player.lastName}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-muted-foreground">
-                                                            {player.teamName || '-'}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right text-foreground font-medium">
-                                                            {player.tries}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right text-primary font-bold">
-                                                            {player.totalPoints}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* Discipline */}
-                            <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col">
-                                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-red-500/20 rounded-lg text-red-500">
-                                            <Flag className="w-5 h-5" />
-                                        </div>
-                                        <h3 className="font-bold text-lg text-foreground">Discipline</h3>
-                                    </div>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead>
-                                            <tr className="border-b border-white/10 text-muted-foreground">
-                                                <th className="px-6 py-4 font-medium w-16">#</th>
-                                                <th className="px-6 py-4 font-medium">Player</th>
-                                                <th className="px-6 py-4 font-medium">Team</th>
-                                                <th className="px-6 py-4 font-medium text-right">YC</th>
-                                                <th className="px-6 py-4 font-medium text-right">RC</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {disciplineStats.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                                                        No discipline stats available yet.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                disciplineStats.map((player, idx) => (
-                                                    <tr
-                                                        key={`disc-${player.playerId}`}
-                                                        className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                                        onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
-                                                    >
-                                                        <td className="px-6 py-4 font-medium text-muted-foreground">
-                                                            {idx + 1}
-                                                        </td>
-                                                        <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors">
-                                                            {player.firstName} {player.lastName}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-muted-foreground">
-                                                            {player.teamName || '-'}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right text-yellow-500 font-bold">
-                                                            {player.yellowCards}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right text-red-500 font-bold">
-                                                            {player.redCards}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* Top Teams */}
-                            <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col lg:col-span-2">
-                                <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
-                                            <Users className="w-5 h-5" />
-                                        </div>
-                                        <h3 className="font-bold text-lg text-foreground">Top Teams</h3>
-                                    </div>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead>
-                                            <tr className="border-b border-white/10 text-muted-foreground">
-                                                <th className="px-6 py-4 font-medium w-16">#</th>
-                                                <th className="px-6 py-4 font-medium">Team</th>
-                                                <th className="px-6 py-4 font-medium">Org</th>
-                                                <th className="px-6 py-4 font-medium text-right">Wins</th>
-                                                <th className="px-6 py-4 font-medium text-right">Pts</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {teamStats.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                                                        No team stats available yet.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                teamStats.map((team, idx) => (
-                                                    <tr key={team.teamId} className="hover:bg-white/5 transition-colors">
-                                                        <td className="px-6 py-4 font-medium text-muted-foreground">
-                                                            {idx + 1}
-                                                        </td>
-                                                        <td className="px-6 py-4 font-medium text-foreground">
-                                                            {team.teamName}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-muted-foreground">
-                                                            {team.organisationName || '-'}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right text-foreground font-medium">
-                                                            {team.wins}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right text-primary font-bold">
-                                                            {team.tablePoints}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </>
+                <StatsContent
+                    summary={summary}
+                    loading={loading}
+                    playerStats={playerStats}
+                    disciplineStats={disciplineStats}
+                    teamStats={teamStats}
+                />
             )}
         </div>
+    );
+}
+
+// Sub-component to handle sorting logic cleanly
+function StatsContent({ summary, loading, playerStats, disciplineStats, teamStats }: any) {
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc'; type: 'scorers' | 'discipline' | 'teams' } | null>(null);
+
+    const handleSort = (key: string, type: 'scorers' | 'discipline' | 'teams') => {
+        let direction: 'asc' | 'desc' = 'desc'; // Default to descending for stats
+        if (sortConfig && sortConfig.key === key && sortConfig.type === type && sortConfig.direction === 'desc') {
+            direction = 'asc';
+        }
+        setSortConfig({ key, direction, type });
+    };
+
+    const getSortedData = (data: any[], type: 'scorers' | 'discipline' | 'teams') => {
+        // Default sorts
+        if (!sortConfig || sortConfig.type !== type) {
+            if (type === 'scorers') return [...data].sort((a, b) => b.totalPoints - a.totalPoints);
+            if (type === 'discipline') return [...data].sort((a, b) => {
+                if (b.redCards !== a.redCards) return b.redCards - a.redCards;
+                return b.yellowCards - a.yellowCards;
+            });
+            if (type === 'teams') return [...data].sort((a, b) => b.tablePoints - a.tablePoints);
+            return data;
+        }
+
+        // Custom sort
+        return [...data].sort((a, b) => {
+            if (a[sortConfig.key] < b[sortConfig.key]) {
+                return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (a[sortConfig.key] > b[sortConfig.key]) {
+                return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+    };
+
+    const SortIcon = ({ columnKey, type }: { columnKey: string, type: 'scorers' | 'discipline' | 'teams' }) => {
+        if (!sortConfig || sortConfig.key !== columnKey || sortConfig.type !== type) {
+            return <div className="w-4 h-4" />; // Placeholder
+        }
+        return sortConfig.direction === 'asc' ? <CaretUp className="w-4 h-4 inline ml-1" /> : <CaretDown className="w-4 h-4 inline ml-1" />;
+    };
+
+    const sortedScorers = getSortedData(playerStats, 'scorers');
+    const sortedDiscipline = getSortedData(disciplineStats, 'discipline');
+    const sortedTeams = getSortedData(teamStats, 'teams');
+
+    return (
+        <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <SummaryCard
+                    label="Total Matches"
+                    value={summary?.totalMatches ?? 0}
+                    icon={<Pulse className="w-4 h-4 text-blue-400" />}
+                />
+                <SummaryCard
+                    label="Completed"
+                    value={summary?.completedMatches ?? 0}
+                    icon={<Flag className="w-4 h-4 text-green-400" />}
+                />
+                <SummaryCard
+                    label="Total Tries"
+                    value={summary?.totalTries ?? 0}
+                    icon={<Medal className="w-4 h-4 text-yellow-400" />}
+                />
+                <SummaryCard
+                    label="Total Points"
+                    value={summary?.totalPoints ?? 0}
+                    icon={<Trophy className="w-4 h-4 text-purple-400" />}
+                />
+                <SummaryCard
+                    label="Yellow Cards"
+                    value={summary?.totalYellowCards ?? 0}
+                    icon={<div className="w-3 h-4 bg-yellow-400 rounded-sm" />}
+                />
+                <SummaryCard
+                    label="Red Cards"
+                    value={summary?.totalRedCards ?? 0}
+                    icon={<div className="w-3 h-4 bg-red-500 rounded-sm" />}
+                />
+            </div>
+
+            {/* Loading Overlay */}
+            {loading && (
+                <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p className="mt-2 text-muted-foreground text-sm">Loading stats...</p>
+                </div>
+            )}
+
+            {/* Leaderboards */}
+            {!loading && (
+                <div className="grid lg:grid-cols-2 gap-8">
+                    {/* Top Scorers */}
+                    <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/20 rounded-lg text-primary">
+                                    <Trophy className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-lg text-foreground">Top Scorers</h3>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-muted-foreground">
+                                        <th className="px-6 py-4 font-medium w-16">#</th>
+                                        <th className="px-6 py-4 font-medium cursor-pointer hover:text-foreground" onClick={() => handleSort('firstName', 'scorers')}>Player <SortIcon columnKey="firstName" type="scorers" /></th>
+                                        <th className="px-6 py-4 font-medium cursor-pointer hover:text-foreground" onClick={() => handleSort('teamName', 'scorers')}>Team <SortIcon columnKey="teamName" type="scorers" /></th>
+                                        <th className="px-6 py-4 font-medium text-right cursor-pointer hover:text-foreground" onClick={() => handleSort('tries', 'scorers')}>Tries <SortIcon columnKey="tries" type="scorers" /></th>
+                                        <th className="px-6 py-4 font-medium text-right cursor-pointer hover:text-foreground" onClick={() => handleSort('totalPoints', 'scorers')}>Pts <SortIcon columnKey="totalPoints" type="scorers" /></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {sortedScorers.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                                                No scoring stats available yet.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        sortedScorers.map((player: any, idx: number) => (
+                                            <tr
+                                                key={player.playerId}
+                                                className="hover:bg-white/5 transition-colors cursor-pointer group"
+                                                onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
+                                            >
+                                                <td className="px-6 py-4 font-medium text-muted-foreground">
+                                                    {idx + 1}
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors">
+                                                    {player.firstName} {player.lastName}
+                                                </td>
+                                                <td className="px-6 py-4 text-muted-foreground">
+                                                    {player.teamName || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-foreground font-medium">
+                                                    {player.tries}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-primary font-bold">
+                                                    {player.totalPoints}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Discipline */}
+                    <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-red-500/20 rounded-lg text-red-500">
+                                    <Flag className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-lg text-foreground">Discipline</h3>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-muted-foreground">
+                                        <th className="px-6 py-4 font-medium w-16">#</th>
+                                        <th className="px-6 py-4 font-medium cursor-pointer hover:text-foreground" onClick={() => handleSort('firstName', 'discipline')}>Player <SortIcon columnKey="firstName" type="discipline" /></th>
+                                        <th className="px-6 py-4 font-medium cursor-pointer hover:text-foreground" onClick={() => handleSort('teamName', 'discipline')}>Team <SortIcon columnKey="teamName" type="discipline" /></th>
+                                        <th className="px-6 py-4 font-medium text-right cursor-pointer hover:text-foreground" onClick={() => handleSort('yellowCards', 'discipline')}>YC <SortIcon columnKey="yellowCards" type="discipline" /></th>
+                                        <th className="px-6 py-4 font-medium text-right cursor-pointer hover:text-foreground" onClick={() => handleSort('redCards', 'discipline')}>RC <SortIcon columnKey="redCards" type="discipline" /></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {sortedDiscipline.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                                                No discipline stats available yet.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        sortedDiscipline.map((player: any, idx: number) => (
+                                            <tr
+                                                key={`disc-${player.playerId}`}
+                                                className="hover:bg-white/5 transition-colors cursor-pointer group"
+                                                onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
+                                            >
+                                                <td className="px-6 py-4 font-medium text-muted-foreground">
+                                                    {idx + 1}
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-foreground group-hover:text-primary transition-colors">
+                                                    {player.firstName} {player.lastName}
+                                                </td>
+                                                <td className="px-6 py-4 text-muted-foreground">
+                                                    {player.teamName || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-yellow-500 font-bold">
+                                                    {player.yellowCards}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-red-500 font-bold">
+                                                    {player.redCards}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Top Teams - Also sorting enabled for consistency */}
+                    <div className="glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col lg:col-span-2">
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
+                                    <Users className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-lg text-foreground">Top Teams</h3>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-muted-foreground">
+                                        <th className="px-6 py-4 font-medium w-16">#</th>
+                                        <th className="px-6 py-4 font-medium cursor-pointer hover:text-foreground" onClick={() => handleSort('teamName', 'teams')}>Team <SortIcon columnKey="teamName" type="teams" /></th>
+                                        <th className="px-6 py-4 font-medium cursor-pointer hover:text-foreground" onClick={() => handleSort('organisationName', 'teams')}>Org <SortIcon columnKey="organisationName" type="teams" /></th>
+                                        <th className="px-6 py-4 font-medium text-right cursor-pointer hover:text-foreground" onClick={() => handleSort('wins', 'teams')}>Wins <SortIcon columnKey="wins" type="teams" /></th>
+                                        <th className="px-6 py-4 font-medium text-right cursor-pointer hover:text-foreground" onClick={() => handleSort('tablePoints', 'teams')}>Pts <SortIcon columnKey="tablePoints" type="teams" /></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {sortedTeams.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                                                No team stats available yet.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        sortedTeams.map((team: any, idx: number) => (
+                                            <tr key={team.teamId} className="hover:bg-white/5 transition-colors">
+                                                <td className="px-6 py-4 font-medium text-muted-foreground">
+                                                    {idx + 1}
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-foreground">
+                                                    {team.teamName}
+                                                </td>
+                                                <td className="px-6 py-4 text-muted-foreground">
+                                                    {team.organisationName || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-foreground font-medium">
+                                                    {team.wins}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-primary font-bold">
+                                                    {team.tablePoints}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 

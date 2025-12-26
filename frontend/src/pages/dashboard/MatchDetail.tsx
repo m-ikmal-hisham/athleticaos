@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef, useMemo, CSSProperties } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { CalendarBlank, MapPin, Clock, Trash, ArrowCounterClockwise, PencilSimple } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Clock, Trash, ArrowCounterClockwise, PencilSimple, Target, Lightning, ArrowsLeftRight, Notebook } from '@phosphor-icons/react';
 import { useMatchesStore, MatchStatus, MatchEventItem } from '@/store/matches.store';
 import { Button } from '@/components/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
@@ -51,14 +51,14 @@ const getStatusLabel = (status: MatchStatus, isHalfTime: boolean) => {
 // Helper for event icons
 const getEventIcon = (type: string) => {
     switch (type) {
-        case 'TRY': return '🏉';
-        case 'CONVERSION': return '🎯';
-        case 'PENALTY': return '⚡';
-        case 'DROP_GOAL': return '🎯';
-        case 'YELLOW_CARD': return '🟨';
-        case 'RED_CARD': return '🔴';
-        case 'SUBSTITUTION': return '🔄';
-        default: return '📝';
+        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><div className="w-5 h-5 flex items-center justify-center font-bold text-xs" style={{ fontFamily: 'serif' }}>TRY</div></div>;
+        case 'CONVERSION': return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" weight="bold" /></div>;
+        case 'PENALTY': return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" weight="fill" /></div>;
+        case 'DROP_GOAL': return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" weight="duotone" /></div>;
+        case 'YELLOW_CARD': return <div className="w-4 h-5 bg-yellow-400 border border-yellow-500 rounded-sm shadow-sm" />;
+        case 'RED_CARD': return <div className="w-4 h-5 bg-red-600 border border-red-700 rounded-sm shadow-sm" />;
+        case 'SUBSTITUTION': return <div className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full"><ArrowsLeftRight className="w-4 h-4" /></div>;
+        default: return <div className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full"><Notebook className="w-4 h-4" /></div>;
     }
 };
 
@@ -457,7 +457,7 @@ export const MatchDetail = () => {
                                                 // eslint-disable-next-line
                                                 style={{ '--event-left': `${position}%` } as CSSProperties}
                                             >
-                                                <div className={`bg-background border-2 rounded-full p-1 shadow-sm text-lg z-10 hover:scale-110 transition-transform ${isHomeTeam ? 'border-blue-500' : 'border-red-500'}`}>
+                                                <div className={`bg-background rounded-full shadow-sm z-10 hover:scale-110 transition-transform`}>
                                                     {getEventIcon(event.eventType)}
                                                 </div>
                                                 <div className={`opacity-0 group-hover:opacity-100 absolute w-32 text-center text-xs bg-popover text-popover-foreground p-2 rounded shadow-lg z-20 transition-opacity pointer-events-none ${isHomeTeam ? '-top-10' : 'top-10'}`}>

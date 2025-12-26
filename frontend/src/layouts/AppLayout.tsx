@@ -196,7 +196,7 @@ export const AppLayout = () => {
                                     />
                                 ) : (
                                     <img
-                                        src="/logo-transparent.png"
+                                        src="/athleticaos-logo-transparent.png"
                                         alt="Logo"
                                         className="h-10 w-10 object-contain mix-blend-screen dark:opacity-90"
                                     />
