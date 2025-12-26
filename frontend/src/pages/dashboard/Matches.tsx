@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { MagnifyingGlass, Plus, Calendar, Clock, MapPin, Play } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, Calendar, Clock, MapPin, Play, PencilSimple } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { GlassCard } from '@/components/GlassCard';
-import { MatchModal } from '@/components/modals/MatchModal';
 import { Badge } from '@/components/Badge';
 import { useMatchesStore, MatchStatus } from '@/store/matches.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -18,7 +17,6 @@ export const Matches = () => {
     const { matches, loadingList, filters, setFilters, loadMatches } = useMatchesStore();
     const { user } = useAuthStore();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     useEffect(() => {
         loadMatches();
@@ -70,6 +68,11 @@ export const Matches = () => {
         }
     };
 
+    const handleEdit = (matchId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigate(`/dashboard/matches/${matchId}/edit`);
+    };
+
     // Filter Options
     const statusOptions: FilterOption[] = useMemo(() => [
         { id: 'SCHEDULED', label: 'Scheduled', count: matches.filter(m => m.status === 'SCHEDULED').length },
@@ -85,7 +88,7 @@ export const Matches = () => {
                 description="View and manage match schedules and results."
                 action={
                     isAdmin && (
-                        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+                        <Button onClick={() => navigate('/dashboard/matches/new')} className="gap-2">
                             <Plus className="w-4 h-4" />
                             New Match
                         </Button>
@@ -131,7 +134,7 @@ export const Matches = () => {
                     title="No matches found"
                     description="Try adjusting your search or filters."
                     actionLabel={isAdmin ? "Schedule Match" : undefined}
-                    onAction={isAdmin ? () => setIsCreateModalOpen(true) : undefined}
+                    onAction={isAdmin ? () => navigate('/dashboard/matches/new') : undefined}
                     className="min-h-[400px] border-dashed border-white/10"
                 />
             ) : (
@@ -193,31 +196,35 @@ export const Matches = () => {
                                         <span className="truncate">{m.venue || 'Venue TBA'}</span>
                                     </div>
 
-                                    {/* Quick Admin Actions */}
-                                    {isAdmin && m.status === 'SCHEDULED' && (
-                                        <Button
-                                            size="sm"
-                                            className="h-7 px-2.5 text-xs bg-primary-500/10 hover:bg-primary-500 hover:text-white text-primary-500 border-0"
-                                            onClick={(e) => handleStartMatch(m.id, e)}
-                                        >
-                                            <Play className="w-3 h-3 mr-1.5 fill-current" weight="fill" />
-                                            Start
-                                        </Button>
-                                    )}
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-2">
+                                        {isAdmin && m.status === 'SCHEDULED' && (
+                                            <Button
+                                                size="sm"
+                                                className="h-7 px-2.5 text-xs bg-primary-500/10 hover:bg-primary-500 hover:text-white text-primary-500 border-0"
+                                                onClick={(e) => handleStartMatch(m.id, e)}
+                                            >
+                                                <Play className="w-3 h-3 mr-1.5 fill-current" weight="fill" />
+                                                Start
+                                            </Button>
+                                        )}
+                                        {isAdmin && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-7 w-7 p-0"
+                                                onClick={(e) => handleEdit(m.id, e)}
+                                            >
+                                                <PencilSimple className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </GlassCard>
                     ))}
                 </div>
             )}
-
-            <MatchModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={() => {
-                    loadMatches();
-                }}
-            />
         </div>
     );
 };

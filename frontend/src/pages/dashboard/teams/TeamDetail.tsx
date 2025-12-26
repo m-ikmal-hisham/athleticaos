@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
-import { fetchTeamBySlug, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
+import { fetchTeamBySlug, fetchTeamById, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
 import { usePlayersStore } from '../../../store/players.store';
 import { ArrowLeft, Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
@@ -60,15 +60,30 @@ export default function TeamDetail() {
             setLoading(true);
             setError(null);
             try {
-                // First fetch team by slug
-                const teamRes = await fetchTeamBySlug(slug);
-                setTeam(teamRes.data);
+                // Determine if we should fetch by slug or ID
+                // Simple heuristic: if it looks like a standard UUID, try ID first, or just try slug then ID fallback
+                let teamData;
+                try {
+                    const res = await fetchTeamBySlug(slug);
+                    teamData = res.data;
+                } catch (e) {
+                    // Fallback to ID if slug fetch fails
+                    console.warn("Failed to fetch by slug, trying ID...", e);
+                    const res = await fetchTeamById(slug);
+                    teamData = res.data;
+                }
+
+                if (!teamData) throw new Error("Team not found");
+                setTeam(teamData);
+
+                // IDs for subsequent calls
+                const teamId = teamData.id;
 
                 // Then fetch stats, matches, and players using team ID
                 const [statsRes, matchesRes, playersRes] = await Promise.all([
-                    fetchTeamStats(teamRes.data.id).catch(() => ({ data: null })),
-                    fetchTeamMatches(teamRes.data.id).catch(() => ({ data: [] })),
-                    fetchTeamPlayers(teamRes.data.id).catch(() => ({ data: [] }))
+                    fetchTeamStats(teamId).catch(() => ({ data: null })),
+                    fetchTeamMatches(teamId).catch(() => ({ data: [] })),
+                    fetchTeamPlayers(teamId).catch(() => ({ data: [] }))
                 ]);
                 setStats(statsRes.data);
                 setMatches(matchesRes.data || []);
@@ -104,7 +119,7 @@ export default function TeamDetail() {
         return (
             <Card>
                 <p className="text-red-400">{error || 'Team not found'}</p>
-                <Button onClick={() => navigate('/dashboard/teams')} style={{ marginTop: '1rem' }}>
+                <Button onClick={() => navigate('/dashboard/teams')} className="mt-4">
                     Back to Teams
                 </Button>
             </Card>
@@ -221,7 +236,7 @@ export default function TeamDetail() {
                     {/* Roster */}
                     <Card>
                         <CardHeader>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="flex justify-between items-center">
                                 <div>
                                     <CardTitle>
                                         <div className="flex items-center gap-2">

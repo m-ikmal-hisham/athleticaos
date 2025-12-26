@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { MagnifyingGlass, DotsThree, UserMinus, Plus } from "@phosphor-icons/react";
 import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
@@ -8,25 +8,17 @@ import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
 import { Badge } from "../../components/Badge";
 import { usePlayersStore } from "../../store/players.store";
-import { PlayerModal } from "../../components/modals/PlayerModal";
-import { PlayerDetailDrawer } from "./players/PlayerDetailDrawer";
 import { useAuthStore } from "../../store/auth.store";
 import { Player } from "../../types";
 import { calculateAge } from "../../utils/date";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 
 export default function Players() {
+    const navigate = useNavigate();
     const {
         filteredPlayers,
         loading,
         getPlayers,
-        savePlayer,
-        // Drawer
-        selectedPlayerId,
-        isDrawerOpen,
-        openPlayerDrawer,
-        closePlayerDrawer,
-        // Filters
         statusFilter,
         searchQuery,
         setStatusFilter,
@@ -34,69 +26,24 @@ export default function Players() {
     } = usePlayersStore();
 
     const { user } = useAuthStore();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-
-    const [searchParams, setSearchParams] = useSearchParams();
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
     useEffect(() => {
         getPlayers();
     }, [getPlayers]);
 
-    // URL is the Source of Truth for Drawer Sate
-    useEffect(() => {
-        const playerParam = searchParams.get('player');
-        if (playerParam) {
-            if (!isDrawerOpen || selectedPlayerId !== playerParam) {
-                openPlayerDrawer(playerParam);
-            }
-        } else {
-            if (isDrawerOpen) {
-                closePlayerDrawer();
-            }
-        }
-    }, [searchParams, isDrawerOpen, selectedPlayerId, openPlayerDrawer, closePlayerDrawer]);
-
-    // Handle opening drawer via URL update
+    // Navigation handlers
     const handleCardClick = (player: Player) => {
-        const slugOrId = player.slug || player.id;
-        setSearchParams((prev) => {
-            prev.set('player', slugOrId);
-            return prev;
-        });
-    };
-
-    // Handle closing drawer by clearing URL
-    const handleCloseDrawer = () => {
-        setSearchParams((prev) => {
-            prev.delete('player');
-            return prev;
-        });
+        navigate(`/dashboard/players/${player.id}`);
     };
 
     const handleAdd = () => {
-        setModalMode('create');
-        setSelectedPlayer(null);
-        setIsModalOpen(true);
+        navigate('/dashboard/players/new');
     };
 
     const handleEdit = (player: Player, e: React.MouseEvent) => {
         e.stopPropagation();
-        setModalMode('edit');
-        setSelectedPlayer(player);
-        setIsModalOpen(true);
-    };
-
-    const handleSubmit = async (data: any) => {
-        try {
-            await savePlayer(data);
-            setIsModalOpen(false);
-        } catch (error) {
-            console.error('Failed to save player:', error);
-            // Error handling is done in store/api usually via toast
-        }
+        navigate(`/dashboard/players/${player.id}/edit`);
     };
 
     const getStatusVariant = (status: string) => {
@@ -108,12 +55,12 @@ export default function Players() {
         }
     };
 
-    // Filter Options for SmartPills
+    // Filter Options
     const statusOptions: FilterOption[] = useMemo(() => [
         { id: 'ACTIVE', label: 'Active', count: filteredPlayers.filter(p => p.status === 'ACTIVE').length },
         { id: 'INACTIVE', label: 'Inactive' },
         { id: 'BANNED', label: 'Banned' },
-    ], [filteredPlayers]); // Note: counts might be better calculated on full list vs filtered list, simplified here
+    ], [filteredPlayers]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -218,20 +165,6 @@ export default function Players() {
                     ))}
                 </div>
             )}
-
-            <PlayerModal
-                isOpen={isModalOpen}
-                mode={modalMode}
-                initialPlayer={selectedPlayer}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleSubmit}
-            />
-
-            <PlayerDetailDrawer
-                isOpen={isDrawerOpen}
-                onClose={handleCloseDrawer}
-                playerId={selectedPlayerId}
-            />
         </div>
     );
 }

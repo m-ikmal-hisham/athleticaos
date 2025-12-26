@@ -86,7 +86,7 @@ export const FeaturedTournamentCard = ({ tournament, loading }: FeaturedTourname
                         </div>
                     )}
 
-                    <Button size="sm" variant="outline" className="ml-auto rounded-full hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all">
+                    <Button size="sm" className="ml-auto rounded-full bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white border-none shadow-md hover:shadow-lg hover:shadow-blue-500/20 dark:hover:shadow-red-500/20 transition-all">
                         Manage
                     </Button>
                 </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MagnifyingGlass, UserPlus, PencilSimple } from '@phosphor-icons/react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
@@ -13,8 +14,6 @@ import {
     TableRow,
 } from '@/components/Table';
 import { Badge } from '@/components/Badge';
-import { InviteUserModal } from '@/components/InviteUserModal';
-import { EditUserModal } from '@/components/EditUserModal';
 import { usersApi } from '@/api/users.api';
 import { useAuthStore } from '@/store/auth.store';
 import toast from 'react-hot-toast';
@@ -32,12 +31,10 @@ interface User {
 
 export default function Users() {
     const { user: currentUser } = useAuthStore();
+    const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const canManageUsers = currentUser?.roles?.some(r =>
         ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r)
@@ -77,11 +74,6 @@ export default function Users() {
         return 'secondary';
     };
 
-    const handleEdit = (user: User) => {
-        setSelectedUser(user);
-        setIsEditModalOpen(true);
-    };
-
     return (
         <div className="space-y-6">
             <PageHeader
@@ -89,7 +81,7 @@ export default function Users() {
                 description="Manage user accounts and invitations"
                 action={
                     canManageUsers && (
-                        <Button onClick={() => setIsInviteModalOpen(true)}>
+                        <Button onClick={() => navigate('/dashboard/users/new')}>
                             <UserPlus className="w-4 h-4 mr-2" />
                             Invite User
                         </Button>
@@ -175,7 +167,7 @@ export default function Users() {
                                                     variant="ghost"
                                                     size="sm"
                                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => handleEdit(u)}
+                                                    onClick={() => navigate(`/dashboard/users/${u.id}/edit`)}
                                                 >
                                                     <PencilSimple className="w-3 h-3 mr-1" />
                                                     Edit
@@ -189,19 +181,6 @@ export default function Users() {
                     </Table>
                 </div>
             </GlassCard>
-
-            <InviteUserModal
-                isOpen={isInviteModalOpen}
-                onClose={() => setIsInviteModalOpen(false)}
-                onSuccess={fetchUsers}
-            />
-
-            <EditUserModal
-                isOpen={isEditModalOpen}
-                initialData={selectedUser}
-                onClose={() => setIsEditModalOpen(false)}
-                onSuccess={fetchUsers}
-            />
         </div>
     );
 }

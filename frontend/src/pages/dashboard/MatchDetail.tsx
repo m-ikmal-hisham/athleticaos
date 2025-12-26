@@ -16,7 +16,7 @@ import { MatchControls } from '@/components/MatchControls';
 import { rosterService } from '@/services/rosterService';
 import { LineupHintsDTO } from '@/types/roster.types';
 import { MatchLineupEditor } from '@/components/MatchLineupEditor';
-import { MatchModal } from '@/components/modals/MatchModal';
+
 
 // Rugby scoring rules
 const SCORING_RULES: Record<string, number> = {
@@ -99,7 +99,7 @@ export const MatchDetail = () => {
     const [lineupHints, setLineupHints] = useState<LineupHintsDTO | null>(null);
     const timelineRef = useRef<HTMLDivElement>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'lineups'>('overview');
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
     const [lineupTeamId, setLineupTeamId] = useState<string>('');
 
     // Set default lineup team when match loads
@@ -371,7 +371,7 @@ export const MatchDetail = () => {
                             <Button
                                 size="sm"
                                 variant="tertiary"
-                                onClick={() => setIsEditModalOpen(true)}
+                                onClick={() => navigate(`/dashboard/matches/${selectedMatch.id}/edit`)}
                             >
                                 <PencilSimple className="w-4 h-4 mr-2" />
                                 Edit
@@ -734,23 +734,6 @@ export const MatchDetail = () => {
                     setConfirmModal({ ...confirmModal, isOpen: false });
                 }}
                 onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-            />
-
-            {/* Edit Match Modal */}
-            <MatchModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                onSuccess={async () => {
-                    await loadMatchDetail(selectedMatch.id);
-                    setToast({ message: 'Match updated successfully', type: 'success' });
-                }}
-                mode="edit"
-                initialMatch={{
-                    ...selectedMatch,
-                    venue: selectedMatch.venue || '',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                } as any}
             />
         </div>
     );

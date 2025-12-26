@@ -166,7 +166,7 @@ export const AppLayout = () => {
             <aside
                 className={clsx(
                     'fixed z-50 transition-all duration-300 w-72', // Increased width slightly for comfort
-                    'glass-card p-0 flex flex-col', // Reset padding from glass-card to control internal layout
+                    'p-0 flex flex-col', // Removed glass-card, relying on inner div for glass effect
                     'border border-white/10 dark:border-white/5',
                     'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]', // Deeper floating shadow
                     // Floating positioning
@@ -175,7 +175,7 @@ export const AppLayout = () => {
                     sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                <div className="flex flex-col h-full bg-white/60 dark:bg-[#1e1e1e]/60 backdrop-blur-xl backdrop-saturate-150 rounded-[20px]">
+                <div className="flex flex-col h-full bg-white/10 dark:bg-black/10 backdrop-blur-[2px] backdrop-saturate-[180%] rounded-[20px]">
                     {/* Logo & Header */}
                     <div className="flex items-center justify-between p-6 pb-2">
                         <Link to="/dashboard" className="flex items-center gap-3 group">
@@ -187,7 +187,7 @@ export const AppLayout = () => {
                                         className="h-10 w-10 rounded-xl object-contain bg-white/10 shadow-sm"
                                         onError={(e) => {
                                             // Fallback to transparent logo if brand logo fails
-                                            e.currentTarget.src = "/athleticaos-logo.svg";
+                                            e.currentTarget.src = "/athleticaos-logo-svg-new.svg";
                                             e.currentTarget.className = "h-10 w-10 object-contain mix-blend-screen dark:opacity-90";
                                             // Hide the 'A' fallback if we switch to image
                                             const fallbackA = e.currentTarget.nextElementSibling;
@@ -196,7 +196,7 @@ export const AppLayout = () => {
                                     />
                                 ) : (
                                     <img
-                                        src="/athleticaos-logo.svg"
+                                        src="/athleticaos-logo-svg-new.svg"
                                         alt="Logo"
                                         className="h-10 w-10 object-contain mix-blend-screen dark:opacity-90"
                                     />
@@ -252,12 +252,12 @@ export const AppLayout = () => {
                                             className={clsx(
                                                 'flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 group',
                                                 isActive
-                                                    ? 'bg-primary-500/10 text-primary-500 font-medium'
+                                                    ? 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20'
                                                     : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
                                             )}
                                         >
                                             {isActive ? (
-                                                <span className="text-primary-500">{item.iconFilled}</span>
+                                                <span className="text-white">{item.iconFilled}</span>
                                             ) : (
                                                 item.icon
                                             )}

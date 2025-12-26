@@ -27,6 +27,11 @@ export const useUIStore = create<UIState>()(
         // Apply effective theme
         const effectiveTheme = theme === 'system' ? getSystemTheme() : theme;
         document.documentElement.setAttribute("data-theme", effectiveTheme);
+        if (effectiveTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       },
 
       getEffectiveTheme: () => {
@@ -45,6 +50,11 @@ export const useUIStore = create<UIState>()(
         if (state) {
           const effectiveTheme = state.theme === 'system' ? getSystemTheme() : state.theme;
           document.documentElement.setAttribute("data-theme", effectiveTheme);
+          if (effectiveTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
       }
     }
@@ -58,6 +68,11 @@ if (typeof window !== 'undefined') {
     if (store.theme === 'system') {
       const effectiveTheme = getSystemTheme();
       document.documentElement.setAttribute("data-theme", effectiveTheme);
+      if (effectiveTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   });
 }

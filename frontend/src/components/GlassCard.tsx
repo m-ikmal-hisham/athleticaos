@@ -43,7 +43,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
                     ],
 
                     // Simplified hover effects
-                    hover && 'hover:shadow-[var(--glass-shadow-lg)] hover:-translate-y-[1px]',
+                    hover && 'hover:shadow-[var(--glass-shadow-lg)] hover:-translate-y-[1px] hover:border-[var(--highlight-color)]',
 
                     className
                 )}

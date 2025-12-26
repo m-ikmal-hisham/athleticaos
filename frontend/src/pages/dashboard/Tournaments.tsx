@@ -3,11 +3,10 @@ import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin, PencilSimple } from "@phosphor-icons/react";
 import { TournamentStatus } from "@/types";
 import { useTournamentsStore } from "../../store/tournaments.store";
 import { StatusPill } from "../../components/StatusPill";
-import { TournamentModal } from "@/components/modals/TournamentModal";
 import { useAuthStore } from "@/store/auth.store";
 import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "@/components/SmartFilterPills";
@@ -17,8 +16,6 @@ export default function Tournaments() {
     const { tournaments, loading, getTournaments } = useTournamentsStore();
     const { user } = useAuthStore();
     const navigate = useNavigate();
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [selectedTournament, setSelectedTournament] = useState<any | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [seasonFilter, setSeasonFilter] = useState("");
     const [typeFilter, setTypeFilter] = useState("");
@@ -65,6 +62,15 @@ export default function Tournaments() {
         { id: TournamentStatus.DRAFT, label: 'Draft', count: tournaments.filter(t => t.status === TournamentStatus.DRAFT).length },
     ], [tournaments]);
 
+    const handleAdd = () => {
+        navigate('/dashboard/tournaments/new');
+    };
+
+    const handleEdit = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        navigate(`/dashboard/tournaments/${id}/edit`);
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
@@ -72,10 +78,7 @@ export default function Tournaments() {
                 description="Overview of rugby competitions"
                 action={
                     isAdmin && (
-                        <Button onClick={() => {
-                            setSelectedTournament(null);
-                            setIsCreateModalOpen(true);
-                        }} className="gap-2">
+                        <Button onClick={handleAdd} className="gap-2">
                             <Plus className="w-4 h-4" />
                             New Tournament
                         </Button>
@@ -169,10 +172,7 @@ export default function Tournaments() {
                     title="No tournaments found"
                     description="Adjust filters or create a new tournament."
                     actionLabel={isAdmin ? "New Tournament" : undefined}
-                    onAction={isAdmin ? () => {
-                        setSelectedTournament(null);
-                        setIsCreateModalOpen(true);
-                    } : undefined}
+                    onAction={isAdmin ? handleAdd : undefined}
                     className="min-h-[400px] border-dashed border-white/10"
                 />
             ) : (
@@ -218,23 +218,14 @@ export default function Tournaments() {
                                     </div>
                                 </div>
 
-                                {/* Hover actions */}
-                                <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                    {/* Could add quick actions here later */}
-                                </div>
-
                                 {isAdmin && (
                                     <div className="absolute top-4 right-auto left-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Button
                                             size="sm"
                                             className="h-8 bg-black/50 hover:bg-black/70 backdrop-blur-md border hover:border-white/20 text-white"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedTournament(t);
-                                                setIsCreateModalOpen(true);
-                                            }}
+                                            onClick={(e) => handleEdit(e, t.id)}
                                         >
-                                            Edit
+                                            <PencilSimple className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 )}
@@ -243,18 +234,6 @@ export default function Tournaments() {
                     ))}
                 </div>
             )}
-
-            <TournamentModal
-                isOpen={isCreateModalOpen}
-                tournament={selectedTournament}
-                onClose={() => {
-                    setIsCreateModalOpen(false);
-                    setSelectedTournament(null);
-                }}
-                onSuccess={() => {
-                    getTournaments();
-                }}
-            />
         </div>
     );
 }

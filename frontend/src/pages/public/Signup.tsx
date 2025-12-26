@@ -68,7 +68,7 @@ export const Signup = () => {
                 <div className="w-full max-w-sm space-y-6">
                     <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
                         <img
-                            src="/athleticaos-logo.svg"
+                            src="/athleticaos-logo-svg-new.svg"
                             alt="AthleticaOS"
                             className="h-14 w-auto mb-6"
                         />
@@ -162,7 +162,7 @@ export const Signup = () => {
             {/* Right Side - Abstract Art (Reused from Login) */}
             <div className="hidden lg:flex flex-1 relative bg-white overflow-hidden items-center justify-center p-12 lg:w-1/2">
                 <img
-                    src="/athleticaos-login-bg-new.png"
+                    src="/athleticaos-bg-svg-new.svg"
                     alt="AthleticaOS Background"
                     className="absolute inset-0 w-full h-full object-cover"
                 />

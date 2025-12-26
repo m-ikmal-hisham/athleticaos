@@ -154,10 +154,10 @@ export const DashboardHome = () => {
             <div className="flex flex-col gap-1 mb-8">
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight text-foreground bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+                        <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 pb-1">
                             {activeTournamentId ? "Tournament Overview" : "Dashboard"}
                         </h1>
-                        <p className="text-muted-foreground text-lg mt-1">
+                        <p className="text-slate-600 dark:text-slate-300 text-lg mt-1">
                             {activeTournamentId
                                 ? "Real-time insights for the selected competition."
                                 : "Welcome back, " + (user?.firstName || 'User') + "."}
@@ -170,7 +170,7 @@ export const DashboardHome = () => {
                 {/* 1. Global KPI: Active Players */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg"
+                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-blue-500"
                         onClick={() => navigate('/dashboard/players')}
                     >
                         <div className="flex justify-between items-start">
@@ -188,7 +188,7 @@ export const DashboardHome = () => {
                 {/* 2. Global KPI: Active Tournaments */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg"
+                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-amber-500"
                         onClick={() => navigate('/dashboard/tournaments')}
                     >
                         <div className="flex justify-between items-start">
@@ -213,7 +213,7 @@ export const DashboardHome = () => {
 
                 {/* 4. Match Activity Chart (2x2) - Only shows if tournament selected */}
                 <BentoItem colSpan={2} rowSpan={2} className="relative group">
-                    <GlassCard className="h-full p-0 overflow-hidden flex flex-col hover:border-primary-500/20 transition-colors duration-500">
+                    <GlassCard className="h-full p-0 overflow-hidden flex flex-col hover:border-primary-500 transition-colors duration-500">
                         <div className="p-6 pb-2 flex items-center justify-between">
                             <div>
                                 <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -242,10 +242,9 @@ export const DashboardHome = () => {
                     </GlassCard>
                 </BentoItem>
 
-                {/* 5. Quick Action / KPI: Upcoming Matches */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg"
+                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-purple-500"
                         onClick={() => navigate('/dashboard/matches')}
                     >
                         <div className="flex justify-between items-start">
@@ -253,14 +252,27 @@ export const DashboardHome = () => {
                                 <Calendar className="w-5 h-5" weight="fill" />
                             </div>
                             {activeTournamentId && tournamentSummary && (
-                                <span className="text-[10px] font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                    {tournamentSummary.totalMatches} Scheduled
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className="text-[10px] font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider border border-purple-500/20">
+                                        {tournamentSummary.totalMatches - tournamentSummary.completedMatches} Scheduled
+                                    </span>
+                                    {tournamentSummary.completedMatches > 0 && (
+                                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-500/20">
+                                            {tournamentSummary.completedMatches} Completed
+                                        </span>
+                                    )}
+                                </div>
                             )}
                         </div>
                         <div>
-                            <div className="text-4xl font-bold text-foreground tracking-tight mt-4">{globalStats?.upcomingMatches.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground font-medium mt-1">Upcoming Matches</div>
+                            <div className="text-4xl font-bold text-foreground tracking-tight mt-4">
+                                {activeTournamentId && tournamentSummary
+                                    ? tournamentSummary.totalMatches.toLocaleString()
+                                    : globalStats?.upcomingMatches.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-muted-foreground font-medium mt-1">
+                                {activeTournamentId ? "Total Matches" : "Upcoming Matches"}
+                            </div>
                         </div>
                     </GlassCard>
                 </BentoItem>
@@ -268,7 +280,7 @@ export const DashboardHome = () => {
                 {/* 6. Discipline / Stats KPI */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 group hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg"
+                        className="h-full flex flex-col justify-between p-6 group hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg hover:border-red-500"
                         onClick={() => navigate('/dashboard/stats')}
                     >
                         <div className="flex justify-between items-start">
@@ -306,7 +318,7 @@ export const DashboardHome = () => {
                 {/* 8. Extra Space / Fallback */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg"
+                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-orange-500"
                         onClick={() => navigate('/dashboard/organisations')}
                     >
                         <div className="flex justify-between items-start">

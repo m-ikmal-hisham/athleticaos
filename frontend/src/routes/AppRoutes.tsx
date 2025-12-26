@@ -15,6 +15,11 @@ import TeamDetail from '@/pages/dashboard/teams/TeamDetail';
 import Organisations from '@/pages/dashboard/Organisations';
 import Tournaments from '@/pages/dashboard/Tournaments';
 import Users from '@/pages/dashboard/Users';
+import { CreateUser } from '@/pages/dashboard/users/CreateUser';
+import { EditUser } from '@/pages/dashboard/users/EditUser';
+import { CreatePlayer } from '@/pages/dashboard/players/CreatePlayer';
+import { EditPlayer } from '@/pages/dashboard/players/EditPlayer';
+import { PlayerProfile } from '@/pages/dashboard/players/PlayerProfile';
 import Profile from '@/pages/dashboard/Profile';
 import { Matches } from '@/pages/dashboard/Matches';
 import { MatchDetail } from '@/pages/dashboard/MatchDetail';
@@ -26,6 +31,15 @@ import TournamentRosters from '@/pages/dashboard/TournamentRosters';
 import DashboardTournamentDetail from '@/pages/dashboard/TournamentDetail';
 import BrandingSettings from '@/pages/dashboard/organisations/BrandingSettings';
 import { AuthGuard } from '@/routes/AuthGuard';
+import { CreateTeam } from '@/pages/dashboard/teams/CreateTeam';
+import { EditTeam } from '@/pages/dashboard/teams/EditTeam';
+import { CreateOrganisation } from '@/pages/dashboard/organisations/CreateOrganisation';
+import { EditOrganisation } from '@/pages/dashboard/organisations/EditOrganisation';
+import { CreateTournament } from '@/pages/dashboard/tournaments/CreateTournament';
+import { EditTournament } from '@/pages/dashboard/tournaments/EditTournament';
+import { CreateMatch } from '@/pages/dashboard/matches/CreateMatch';
+import { EditMatch } from '@/pages/dashboard/matches/EditMatch';
+import { EditProfile } from '@/pages/dashboard/profile/EditProfile';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 
@@ -92,12 +106,48 @@ export const router = createBrowserRouter([
                 ),
             },
             {
+                path: 'users/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <CreateUser />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'users/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <EditUser />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'profile/edit',
+                element: <EditProfile />,
+            },
+            {
                 path: 'profile',
                 element: <Profile />,
             },
             {
                 path: 'organisations',
                 element: <Organisations />,
+            },
+            {
+                path: 'organisations/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <CreateOrganisation />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'organisations/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <EditOrganisation />
+                    </AuthGuard>
+                ),
             },
             {
                 path: 'organisations/:id/branding',
@@ -108,8 +158,44 @@ export const router = createBrowserRouter([
                 element: <Players />,
             },
             {
+                path: 'players/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <CreatePlayer />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'players/:id',
+                element: <PlayerProfile />,
+            },
+            {
+                path: 'players/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <EditPlayer />
+                    </AuthGuard>
+                ),
+            },
+            {
                 path: 'teams',
                 element: <Teams />,
+            },
+            {
+                path: 'teams/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <CreateTeam />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'teams/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <EditTeam />
+                    </AuthGuard>
+                ),
             },
             {
                 path: 'teams/:slug',
@@ -128,8 +214,40 @@ export const router = createBrowserRouter([
                 element: <Tournaments />,
             },
             {
+                path: 'tournaments/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <CreateTournament />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'tournaments/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <EditTournament />
+                    </AuthGuard>
+                ),
+            },
+            {
                 path: 'matches',
                 element: <Matches />,
+            },
+            {
+                path: 'matches/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <CreateMatch />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'matches/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <EditMatch />
+                    </AuthGuard>
+                ),
             },
             {
                 path: 'matches/:id',

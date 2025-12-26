@@ -30,6 +30,8 @@ export interface UserUpdateRequest {
     postcode?: string;
     state?: string;
     country?: string;
+    stateCode?: string;
+    countryCode?: string;
 }
 
 export const usersApi = {

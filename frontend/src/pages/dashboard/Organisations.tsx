@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
-import { MagnifyingGlass, Funnel, Plus, MapPin, Buildings, DotsThree } from "@phosphor-icons/react";
+import { MagnifyingGlass, Funnel, Plus, MapPin, Buildings, PencilSimple } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
 import { Badge } from "../../components/Badge";
 import { useOrganisationsStore } from "../../store/organisations.store";
-import { getCountries, getStates, getDivisions, getDistricts, Organisation, createOrganisation, updateOrganisation, OrganisationLevel } from "../../api/organisations.api";
-import { OrganisationModal } from "../../components/modals/OrganisationModal";
+import { getCountries, getStates, getDivisions, getDistricts, Organisation } from "../../api/organisations.api";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
 import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
@@ -15,6 +15,7 @@ import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPill
 import { EmptyState } from "../../components/EmptyState";
 
 export default function Organisations() {
+    const navigate = useNavigate();
     const { organisations, loading, getOrganisations } = useOrganisationsStore();
     const { user } = useAuthStore();
 
@@ -28,9 +29,6 @@ export default function Organisations() {
     const [selectedDivision, setSelectedDivision] = useState<string>("");
     const [selectedDistrict, setSelectedDistrict] = useState<string>("");
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [selectedOrg, setSelectedOrg] = useState<Organisation | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -145,46 +143,12 @@ export default function Organisations() {
     }, [organisations]);
 
     const handleAdd = () => {
-        setModalMode('create');
-        setSelectedOrg(null);
-        setIsModalOpen(true);
+        navigate('/dashboard/organisations/new');
     };
 
-    const handleEdit = (org: Organisation, e: React.MouseEvent) => {
+    const handleEdit = (e: React.MouseEvent, orgId: string) => {
         e.stopPropagation();
-        setModalMode('edit');
-        setSelectedOrg(org);
-        setIsModalOpen(true);
-    };
-
-    const handleSubmit = async (data: any) => {
-        try {
-            if (modalMode === 'create') {
-                await createOrganisation(data);
-            } else if (selectedOrg) {
-                await updateOrganisation(selectedOrg.id, data);
-            }
-            await getOrganisations(); // Refresh list
-        } catch (error) {
-            console.error('Failed to save organisation:', error);
-            alert('Failed to save organisation. Please check the console for details.');
-        }
-    };
-
-    const getInitialParentId = () => {
-        if (selectedDistrict) return selectedDistrict;
-        if (selectedDivision) return selectedDivision;
-        if (selectedState) return selectedState;
-        if (selectedCountry) return selectedCountry;
-        return undefined;
-    };
-
-    const getInitialLevel = (): OrganisationLevel | undefined => {
-        if (selectedDistrict) return 'CLUB';
-        if (selectedDivision) return 'CLUB';
-        if (selectedState) return 'DIVISION';
-        if (selectedCountry) return 'STATE';
-        return undefined;
+        navigate(`/dashboard/organisations/${orgId}/edit`);
     };
 
     const getStatusVariant = (status: string) => {
@@ -308,7 +272,7 @@ export default function Organisations() {
                         <GlassCard
                             key={org.id}
                             className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
-                            onClick={(e) => handleEdit(org, e)} // Or navigate to detail if exists
+                            onClick={() => { }} // Could navigate to detail if exists
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
@@ -341,27 +305,17 @@ export default function Organisations() {
 
                             {isAdmin && (
                                 <button
-                                    onClick={(e) => handleEdit(org, e)}
+                                    onClick={(e) => handleEdit(e, org.id)}
                                     className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
                                     aria-label="Edit organisation"
                                 >
-                                    <DotsThree className="w-4 h-4" weight="bold" />
+                                    <PencilSimple className="w-4 h-4" />
                                 </button>
                             )}
                         </GlassCard>
                     ))}
                 </div>
             )}
-
-            <OrganisationModal
-                isOpen={isModalOpen}
-                mode={modalMode}
-                initialData={selectedOrg}
-                initialParentId={getInitialParentId()}
-                initialLevel={getInitialLevel()}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleSubmit}
-            />
         </div>
     );
 }

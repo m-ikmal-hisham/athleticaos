@@ -1,14 +1,13 @@
-import { useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { Card, CardContent } from '@/components/Card';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/Button';
-import { EditProfileModal } from '@/components/modals/EditProfileModal';
-import { MapPin } from '@phosphor-icons/react';
+import { MapPin, PencilSimple } from '@phosphor-icons/react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
     const { user } = useAuthStore();
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     if (!user) {
         return <div>Loading...</div>;
@@ -24,13 +23,14 @@ export default function Profile() {
     ].filter(Boolean).join(', ');
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-between items-center">
                 <PageHeader
                     title="My Profile"
                     description="View and manage your profile information"
                 />
-                <Button onClick={() => setIsEditModalOpen(true)}>
+                <Button onClick={() => navigate('/dashboard/profile/edit')} className="gap-2">
+                    <PencilSimple className="w-4 h-4" />
                     Edit Profile
                 </Button>
             </div>
@@ -91,12 +91,6 @@ export default function Profile() {
                     </div>
                 </CardContent>
             </Card>
-
-            <EditProfileModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                initialData={user}
-            />
         </div>
     );
 }

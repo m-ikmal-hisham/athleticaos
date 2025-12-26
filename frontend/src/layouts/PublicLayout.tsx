@@ -1,24 +1,25 @@
 import { Link, Outlet } from 'react-router-dom';
-import { Trophy } from '@phosphor-icons/react';
 import { TournamentPill } from '@/components/TournamentPill';
 
 export default function PublicLayout() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="min-h-screen bg-background transition-colors duration-300">
             {/* Top Navigation */}
             <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-700/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
-                        <Link to="/" className="flex items-center gap-2 group">
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 group-hover:from-blue-600 group-hover:to-blue-700 transition-all">
-                                <Trophy className="w-6 h-6 text-white" />
-                            </div>
+                        <Link to="/" className="flex items-center gap-3 group">
+                            <img
+                                src="/athleticaos-logo-svg-new.svg"
+                                alt="AthleticaOS Logo"
+                                className="h-10 w-auto"
+                            />
                             <div className="flex flex-col">
-                                <span className="text-lg font-bold text-slate-900 dark:text-white">
+                                <span className="text-lg font-bold text-slate-900 dark:text-white leading-none">
                                     AthleticaOS
                                 </span>
-                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                                     Rugby Malaysia
                                 </span>
                             </div>
@@ -34,7 +35,7 @@ export default function PublicLayout() {
                             </Link>
                             <Link
                                 to="/dashboard"
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 hover:opacity-90 rounded-lg transition-all shadow-md shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-lg"
                             >
                                 Admin Login
                             </Link>

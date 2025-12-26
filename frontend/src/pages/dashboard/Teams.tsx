@@ -5,16 +5,17 @@ import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { useTeamsStore } from "../../store/teams.store";
 import { StatusPill } from "../../components/StatusPill";
-import { UsersThree, MagnifyingGlass, Plus, Funnel } from "@phosphor-icons/react";
-import { TeamModal } from "@/components/modals/TeamModal";
-import { createTeam } from "@/api/teams.api";
+import { UsersThree, MagnifyingGlass, Plus, Funnel, PencilSimple } from "@phosphor-icons/react";
 import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
+import { useAuthStore } from "../../store/auth.store";
 
 export default function Teams() {
     const navigate = useNavigate();
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const { user } = useAuthStore();
+    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+
     const [searchQuery, setSearchQuery] = useState("");
     const [showFilters, setShowFilters] = useState(false);
     const {
@@ -59,16 +60,37 @@ export default function Teams() {
         }));
     }, [categories, filteredTeams]);
 
+    const handleAdd = () => {
+        navigate('/dashboard/teams/new');
+    };
+
+    const handleEdit = (e: React.MouseEvent, teamId: string) => {
+        e.stopPropagation();
+        navigate(`/dashboard/teams/${teamId}/edit`);
+    };
+
+    // Use ID preferably if slug is missing, but backend usually provides slug. 
+    // Ideally we want to use /teams/:slug for public facing, but /teams/:id might be safer for admin if names change.
+    // However, AppRoutes defines /teams/:slug -> TeamDetail.
+    // I will check if TeamDetail handles ID, but for now assuming slug is primary for Detail.
+    // Update: TeamDetail typically uses slug from URL.
+    const handleCardClick = (team: any) => {
+        // Fallback to ID if slug is missing (though slugs should exist)
+        navigate(`/dashboard/teams/${team.slug || team.id}`);
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title="Teams"
                 description="Manage rugby teams and squads"
                 action={
-                    <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add Team
-                    </Button>
+                    isAdmin && (
+                        <Button onClick={handleAdd} className="gap-2">
+                            <Plus className="w-4 h-4" />
+                            Add Team
+                        </Button>
+                    )
                 }
             />
 
@@ -157,8 +179,8 @@ export default function Teams() {
                     icon={UsersThree}
                     title="No teams found"
                     description="Adjust filters or add a new team."
-                    actionLabel="Add Team"
-                    onAction={() => setIsCreateModalOpen(true)}
+                    actionLabel={isAdmin ? "Add Team" : undefined}
+                    onAction={isAdmin ? handleAdd : undefined}
                     className="min-h-[400px] border-dashed border-white/10"
                 />
             ) : (
@@ -167,13 +189,24 @@ export default function Teams() {
                         <GlassCard
                             key={t.id}
                             className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
-                            onClick={() => navigate(`/dashboard/teams/${t.slug || t.id}`)}
+                            onClick={() => handleCardClick(t)}
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 text-lg font-bold border border-orange-500/20">
                                     {t.name.substring(0, 2).toUpperCase()}
                                 </div>
-                                <StatusPill status={t.status} />
+                                <div className="flex gap-2">
+                                    <StatusPill status={t.status} />
+                                    {isAdmin && (
+                                        <button
+                                            onClick={(e) => handleEdit(e, t.id)}
+                                            className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                            aria-label="Edit team"
+                                        >
+                                            <PencilSimple className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-1 mb-4 flex-1">
@@ -197,19 +230,6 @@ export default function Teams() {
                     ))}
                 </div>
             )}
-
-            <TeamModal
-                isOpen={isCreateModalOpen}
-                mode="create"
-                onClose={() => setIsCreateModalOpen(false)}
-                onSubmit={async (data) => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await createTeam(data as any);
-                }}
-                onSuccess={() => {
-                    getTeams();
-                }}
-            />
         </div>
     );
 }

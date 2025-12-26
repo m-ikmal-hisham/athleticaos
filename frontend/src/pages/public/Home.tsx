@@ -34,7 +34,7 @@ export default function Home() {
                     <span>Malaysia Rugby Competitions</span>
                 </div>
 
-                <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-5xl md:text-6xl font-bold text-foreground">
                     Live Scores, Fixtures
                     <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-[#D32F2F]">
@@ -42,14 +42,14 @@ export default function Home() {
                     </span>
                 </h1>
 
-                <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                     Follow all rugby competitions across Malaysia in real-time. Powered by AthleticaOS Rugby.
                 </p>
 
                 <div className="flex items-center justify-center gap-4 pt-4">
                     <Link
                         to="/tournaments"
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-[#D32F2F] hover:from-blue-700 hover:to-[#C62828] text-white font-medium rounded-lg transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-[#D32F2F]/40 flex items-center gap-2"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 hover:opacity-90 text-white font-medium rounded-lg transition-all shadow-lg shadow-blue-500/30 dark:shadow-red-500/30 hover:shadow-xl flex items-center gap-2"
                     >
                         View All Tournaments
                         <ArrowRight className="w-4 h-4" />
@@ -95,7 +95,7 @@ export default function Home() {
                                 to={`/tournaments/${tournament.slug || tournament.id}`}
                                 className="block group"
                             >
-                                <GlassCard className="h-full relative overflow-hidden hover:border-[#D32F2F]/50 dark:hover:border-[#D32F2F]/60 transition-all hover:shadow-xl hover:shadow-[#D32F2F]/20">
+                                <GlassCard className="h-full relative overflow-hidden transition-all hover:shadow-xl hover:shadow-[var(--highlight-glow)] hover:border-[var(--highlight-color)]">
                                     <div className="p-6 space-y-4 relative z-10">
                                         {/* Status Badge */}
                                         {tournament.live && (
@@ -107,7 +107,7 @@ export default function Home() {
 
                                         {/* Tournament Info */}
                                         <div>
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#D32F2F] dark:group-hover:text-[#D32F2F] transition-colors">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[var(--highlight-color)] transition-colors">
                                                 {tournament.name}
                                             </h3>
                                             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -133,7 +133,7 @@ export default function Home() {
                                     </div>
 
                                     {/* Hover Effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-transparent to-[#D32F2F]/0 group-hover:from-blue-500/5 group-hover:to-[#D32F2F]/10 transition-all pointer-events-none" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--highlight-color)] opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none" />
                                 </GlassCard>
                             </Link>
                         ))}

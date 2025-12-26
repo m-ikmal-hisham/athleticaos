@@ -27,7 +27,7 @@ export const BentoGrid = ({ children, className }: BentoGridProps) => {
 export const BentoItem = ({ children, className, colSpan = 1, rowSpan = 1 }: BentoItemProps) => {
     return (
         <div className={clsx(
-            "rounded-[20px] overflow-hidden relative", // Unified rounded corners
+            "relative h-full", // Removed rounded/overflow to prevent clipping of shadows/borders
             "transition-all duration-300",
             // Responsive Column Spans
             colSpan === 1 && "lg:col-span-1",

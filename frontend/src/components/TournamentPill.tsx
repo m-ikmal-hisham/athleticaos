@@ -135,10 +135,10 @@ export const TournamentPill = () => {
     return (
         <div className="relative w-full">
             <div className={clsx(
-                "group relative flex items-center justify-between px-5 py-4 rounded-[20px]", // Less rounded, more like a panel
-                "bg-white/60 dark:bg-[#1e1e1e]/60 backdrop-blur-xl backdrop-saturate-150", // Standardized glass
+                "group relative flex items-center justify-between px-5 py-4 rounded-full", // True Pill shape
+                "bg-white/10 dark:bg-black/10 backdrop-blur-[2px] backdrop-saturate-[180%]", // True Apple Glass: Reduced transparency (30%)
                 "border border-white/20 dark:border-white/10",
-                "shadow-2xl shadow-black/20", // Deep shadow
+                "shadow-2xl shadow-black/20", // Soft deep shadow
                 "w-full transition-all duration-300 hover:scale-[1.005]"
             )}>
                 {/* Progress Bar (Visual only) - Top Edge - hidden for now to clean up look */}

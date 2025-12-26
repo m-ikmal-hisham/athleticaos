@@ -133,6 +133,7 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
                     onChange={handleStateChange}
                     disabled={disabled}
                     className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    aria-label="State"
                 >
                     <option value="">Select State</option>
                     {MALAYSIA_STATES.map(s => (
@@ -158,6 +159,7 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
                             }}
                             disabled={disabled}
                             className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-xs mb-1"
+                            aria-label="Division"
                         >
                             <option value="">Select Division (Sarawak)</option>
                             {/* Division list for Sarawak */}
@@ -174,6 +176,7 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
                         onChange={handleCityChange}
                         disabled={disabled || ((data.stateCode === 'MY-13' || (!data.stateCode && data.state === 'Sarawak')) && !sarawakDivision)}
                         className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label="City"
                     >
                         <option value="">Select...</option>
                         {((data.stateCode === 'MY-13' || (!data.stateCode && data.state === 'Sarawak')) && sarawakDivision
@@ -205,6 +208,7 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
                     })}
                     disabled={disabled}
                     className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    aria-label="Country"
                 >
                     <option value="MY">Malaysia</option>
                     {/* Extendable */}

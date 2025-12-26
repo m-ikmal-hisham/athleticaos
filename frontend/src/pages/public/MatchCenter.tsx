@@ -278,6 +278,7 @@ export default function MatchCenter() {
                             const awayValue = match.awayStats?.[key] ?? 0;
                             const total = homeValue + awayValue;
                             const homePercent = total > 0 ? (homeValue / total) * 100 : 50;
+                            const barStyle = { '--progress-width': `${homePercent}%` } as React.CSSProperties;
 
                             return (
                                 <div key={key} className="space-y-1">
@@ -290,11 +291,10 @@ export default function MatchCenter() {
                                             {awayValue}
                                         </span>
                                     </div>
-                                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                        {/* eslint-disable-next-line */}
+                                    <div className="h-2 bg-red-600 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-blue-600 transition-all progress-fill"
-                                            style={{ '--progress-width': `${homePercent}%` } as React.CSSProperties}
+                                            style={barStyle}
                                         />
                                     </div>
                                 </div>

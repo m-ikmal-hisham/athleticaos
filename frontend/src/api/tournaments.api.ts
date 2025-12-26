@@ -2,6 +2,8 @@ import api from "./axios";
 
 export const fetchTournaments = () => api.get("/tournaments");
 
+export const getTournamentById = (id: string) => api.get(`/tournaments/${id}`);
+
 export const createTournament = (data: any) => api.post("/tournaments", data);
 
 export const getTournamentDashboard = (id: string) => api.get(`/tournaments/${id}/dashboard`);
