@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon } from '@phosphor-icons/react';
+import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -86,6 +86,7 @@ import { getOrganisationById } from '@/api/organisations.api';
 
 export const AppLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const location = useLocation();
     const { user, checkTokenValidity } = useAuthStore();
@@ -165,31 +166,33 @@ export const AppLayout = () => {
             {/* Sidebar - Apple TV/Music Style Floating */}
             <aside
                 className={clsx(
-                    'fixed z-50 transition-all duration-300 w-72', // Increased width slightly for comfort
-                    'p-0 flex flex-col', // Removed glass-card, relying on inner div for glass effect
+                    'fixed z-50 transition-all duration-300',
+                    isCollapsed ? 'w-20' : 'w-72', // Width transition
+                    'p-0 flex flex-col',
                     'border border-white/10 dark:border-white/5',
-                    'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]', // Deeper floating shadow
-                    // Floating positioning
+                    'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]',
                     'lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[20px]',
                     'lg:translate-x-0',
                     sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                <div className="flex flex-col h-full bg-white/10 dark:bg-black/10 backdrop-blur-[2px] backdrop-saturate-[180%] rounded-[20px]">
+                <div className="relative flex flex-col h-full bg-white/10 dark:bg-black/10 backdrop-blur-[2px] backdrop-saturate-[180%] rounded-[20px] overflow-hidden">
+
+                    {/* Toggle Button (Desktop Only) */}
+
+
                     {/* Logo & Header */}
-                    <div className="flex items-center justify-between p-6 pb-2">
-                        <Link to="/dashboard" className="flex items-center gap-3 group">
-                            <div className="relative">
+                    <div className={clsx("flex items-center p-6 pb-2 transition-all duration-300", isCollapsed ? "justify-center px-0" : "justify-between")}>
+                        <Link to="/dashboard" className={clsx("flex items-center group", isCollapsed ? "gap-0" : "gap-3")}>
+                            <div className="relative shrink-0">
                                 {brandLogoUrl ? (
                                     <img
                                         src={brandLogoUrl}
                                         alt="Logo"
-                                        className="h-10 w-10 rounded-xl object-contain bg-white/10 shadow-sm"
+                                        className={clsx("rounded-xl object-contain bg-white/10 shadow-sm transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
                                         onError={(e) => {
-                                            // Fallback to transparent logo if brand logo fails
                                             e.currentTarget.src = "/athleticaos-logo-svg-new.svg";
-                                            e.currentTarget.className = "h-10 w-10 object-contain mix-blend-screen dark:opacity-90";
-                                            // Hide the 'A' fallback if we switch to image
+                                            e.currentTarget.className = clsx("object-contain mix-blend-screen dark:opacity-90", isCollapsed ? "w-8 h-8" : "w-10 h-10");
                                             const fallbackA = e.currentTarget.nextElementSibling;
                                             if (fallbackA) fallbackA.classList.add('hidden');
                                         }}
@@ -198,28 +201,15 @@ export const AppLayout = () => {
                                     <img
                                         src="/athleticaos-logo-svg-new.svg"
                                         alt="Logo"
-                                        className="h-10 w-10 object-contain mix-blend-screen dark:opacity-90"
+                                        className={clsx("object-contain mix-blend-screen dark:opacity-90 transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
                                     />
                                 )}
-                                <div
-                                    className={clsx(
-                                        "w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg text-white font-bold text-xl",
-                                        // Hide this 'A' fallback if we have EITHER a brand logo OR the default logo
-                                        // Basically, we only want this if EVERYTHING fails, which shouldn't happen with the hardcoded default.
-                                        // So let's actually just hide it or only show if brandLogoUrl is invalid string but image load handled above?
-                                        // Actually, let's keep it simple: If we have brandLogoUrl, we try to show it. If it fails, we swap src.
-                                        // The 'A' fallback was for when NO logo existed, but we now ALWAYS have a default logo.
-                                        "hidden"
-                                    )}
-                                >
-                                    A
-                                </div>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors">
+                            <div className={clsx("flex flex-col overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                                <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
                                     AthleticaOS
                                 </span>
-                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mt-0.5">
+                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mt-0.5 whitespace-nowrap">
                                     Manager
                                 </span>
                             </div>
@@ -234,11 +224,23 @@ export const AppLayout = () => {
                         </button>
                     </div>
 
+                    {/* Toggle Button */}
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className={clsx(
+                            "hidden lg:flex w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-md items-center justify-center text-xs border border-slate-200 dark:border-slate-700 z-50 text-slate-500 hover:text-blue-600 transition-all duration-300 mb-2",
+                            isCollapsed
+                                ? "relative mx-auto" // In flow when collapsed
+                                : "absolute top-8 right-6" // Floating when expanded
+                        )}
+                    >
+                        {isCollapsed ? <CaretRight weight="bold" /> : <CaretLeft weight="bold" />}
+                    </button>
+
                     {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
+                    <nav className="flex-1 overflow-y-auto px-2 py-2 custom-scrollbar">
                         <ul className="space-y-1">
                             {navItems.map((item) => {
-                                // Filter logic check
                                 if (item.roles && item.roles.length > 0 && !item.roles.some(role => user?.roles?.includes(role))) {
                                     return null;
                                 }
@@ -250,18 +252,29 @@ export const AppLayout = () => {
                                             to={item.path}
                                             onClick={() => setSidebarOpen(false)}
                                             className={clsx(
-                                                'flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 group',
+                                                'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
+                                                isCollapsed ? 'justify-center py-3 px-2' : 'px-4 py-3 mx-2',
                                                 isActive
                                                     ? 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20'
                                                     : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
                                             )}
                                         >
-                                            {isActive ? (
-                                                <span className="text-white">{item.iconFilled}</span>
-                                            ) : (
-                                                item.icon
+                                            <span className={clsx("shrink-0", isActive ? "text-white" : "")}>
+                                                {isActive ? item.iconFilled : item.icon}
+                                            </span>
+
+                                            {!isCollapsed && (
+                                                <span className="text-sm tracking-wide whitespace-nowrap overflow-hidden transition-all duration-300 delay-75">
+                                                    {item.label}
+                                                </span>
                                             )}
-                                            <span className="text-sm tracking-wide">{item.label}</span>
+
+                                            {/* Tooltip for collapsed state */}
+                                            {isCollapsed && (
+                                                <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                                    {item.label}
+                                                </div>
+                                            )}
                                         </Link>
                                     </li>
                                 );
@@ -270,33 +283,48 @@ export const AppLayout = () => {
                     </nav>
 
                     {/* Bottom Section: Theme + Notifications + Profile */}
-                    <div className="p-4 m-4 mt-0 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5">
-                        <div className="text-[10px] text-muted-foreground px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
-                            <span>System</span>
-                            <div className="flex gap-2">
-                                <ThemeToggle />
+                    <div className={clsx("m-4 mt-0 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 transition-all duration-300", isCollapsed ? "p-2" : "p-4")}>
+                        {!isCollapsed && (
+                            <div className="text-[10px] text-muted-foreground px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
+                                <span>System</span>
+                                <div className="flex gap-2">
+                                    <ThemeToggle />
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {isCollapsed && (
+                            <div className="flex justify-center mb-2">
+                                <ThemeToggle orientation="vertical" />
+                            </div>
+                        )}
 
                         {/* Profile Block */}
                         <button
                             onClick={() => setShowProfilePopup(true)}
-                            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/40 dark:hover:bg-black/40 transition-all duration-150 border border-transparent hover:border-black/5 dark:hover:border-white/10"
+                            className={clsx(
+                                "w-full flex items-center rounded-xl hover:bg-white/40 dark:hover:bg-black/40 transition-all duration-150 border border-transparent hover:border-black/5 dark:hover:border-white/10",
+                                isCollapsed ? "justify-center p-1" : "gap-3 p-2"
+                            )}
                         >
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner ring-2 ring-white/10">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
                                 <span className="font-bold text-white text-xs">
                                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                                 </span>
                             </div>
-                            <div className="flex-1 text-left overflow-hidden">
-                                <p className="text-sm font-semibold text-foreground truncate leading-tight">
-                                    {user?.firstName} {user?.lastName}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground truncate">
-                                    Is Active
-                                </p>
-                            </div>
-                            <CaretDown className="w-3 h-3 text-muted-foreground" />
+                            {!isCollapsed && (
+                                <>
+                                    <div className="flex-1 text-left overflow-hidden">
+                                        <p className="text-sm font-semibold text-foreground truncate leading-tight">
+                                            {user?.firstName} {user?.lastName}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground truncate">
+                                            Is Active
+                                        </p>
+                                    </div>
+                                    <CaretDown className="w-3 h-3 text-muted-foreground" />
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -305,7 +333,7 @@ export const AppLayout = () => {
             {/* Main Content */}
             <div className={clsx(
                 "flex-1 flex flex-col min-h-screen transition-all duration-300",
-                "lg:ml-[320px]" // Add margin equal to floating sidebar width + spacing
+                isCollapsed ? "lg:ml-[100px]" : "lg:ml-[320px]" // Adjusted margin for collapsed state
             )}>
                 {/* Topbar - Mobile Only */}
                 <header className="sticky top-0 z-30 glass-card border-b border-white/10 lg:hidden rounded-none">
@@ -334,7 +362,10 @@ export const AppLayout = () => {
                 </main>
 
                 {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
-                <div className="fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center lg:pl-[320px]"> {/* Offset center by sidebar width */}
+                <div className={clsx(
+                    "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
+                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[320px]"
+                )}>
                     <div className="pointer-events-auto w-full max-w-3xl px-6">
                         <TournamentPill />
                     </div>

@@ -165,7 +165,7 @@ export default function TournamentDetail() {
                                 {tournament.status}
                             </Badge>
                         </div>
-                        <h1 className="text-4xl font-bold text-white mb-4 tracking-tight">
+                        <h1 className="text-4xl font-bold text-foreground mb-4 tracking-tight">
                             {tournament.name}
                         </h1>
                         <div className="flex flex-wrap items-center gap-6 text-sm text-slate-400">
@@ -218,7 +218,7 @@ export default function TournamentDetail() {
             />
 
             {/* Navigation Tabs */}
-            <div className="flex space-x-1 p-1 bg-white/5 rounded-xl border border-white/10 w-full overflow-x-auto">
+            <div className="flex space-x-1 p-1 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/10 w-full overflow-x-auto">
                 <nav className="flex space-x-1 w-full" aria-label="Tabs">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
@@ -233,12 +233,12 @@ export default function TournamentDetail() {
                                 className={`
                                     flex-1 min-w-[120px] py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300
                                     ${isActive
-                                        ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/10'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-white dark:bg-white/10 text-primary-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
                                     }
                                 `}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-400' : ''}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-500 dark:text-primary-400' : ''}`} />
                                 {tab.label}
                             </button>
                         );
@@ -258,7 +258,7 @@ export default function TournamentDetail() {
                                         <Trophy className="w-6 h-6" weight="fill" />
                                     </div>
                                     <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Competition Level</h3>
-                                    <p className="text-2xl font-bold text-white">{tournament.level}</p>
+                                    <p className="text-2xl font-bold text-foreground">{tournament.level}</p>
                                     <Badge variant="outline" className="mt-2">{tournament.competitionType || 'Standard'}</Badge>
                                 </GlassCard>
 
@@ -271,15 +271,15 @@ export default function TournamentDetail() {
                                     {tournament.categories && tournament.categories.length > 0 ? (
                                         <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                                             {tournament.categories.map(cat => (
-                                                <div key={cat.id} className="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm border border-white/5">
-                                                    <span className="font-semibold text-slate-200">{cat.name}</span>
+                                                <div key={cat.id} className="flex justify-between items-center bg-black/5 dark:bg-white/5 p-2 rounded-lg text-sm border border-black/5 dark:border-white/5">
+                                                    <span className="font-semibold text-foreground">{cat.name}</span>
                                                     <Badge variant="secondary" className="text-[10px] h-5">{cat.gender}</Badge>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-24 text-center">
-                                            <p className="text-xl font-bold text-white">{tournament.ageGroupLabel || 'Open'}</p>
+                                            <p className="text-xl font-bold text-foreground">{tournament.ageGroupLabel || 'Open'}</p>
                                             <p className="text-xs text-slate-500 mt-1">{tournament.isAgeGrade ? 'Age Restricted' : 'Unrestricted Entry'}</p>
                                         </div>
                                     )}
@@ -288,21 +288,21 @@ export default function TournamentDetail() {
 
                             {/* Additional Stats or Info could go here */}
                             <GlassCard className="p-6">
-                                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                                     <ListNumbers className="w-5 h-5 text-primary-400" />
                                     Tournament Stats
                                 </h3>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="p-4 bg-white/5 rounded-xl text-center border border-white/5">
-                                        <div className="text-2xl font-bold text-white mb-1">--</div>
+                                    <div className="p-4 bg-black/5 dark:bg-white/5 rounded-xl text-center border border-black/5 dark:border-white/5">
+                                        <div className="text-2xl font-bold text-foreground mb-1">--</div>
                                         <div className="text-xs text-slate-400 uppercase tracking-wider">Teams</div>
                                     </div>
-                                    <div className="p-4 bg-white/5 rounded-xl text-center border border-white/5">
-                                        <div className="text-2xl font-bold text-white mb-1">--</div>
+                                    <div className="p-4 bg-black/5 dark:bg-white/5 rounded-xl text-center border border-black/5 dark:border-white/5">
+                                        <div className="text-2xl font-bold text-foreground mb-1">--</div>
                                         <div className="text-xs text-slate-400 uppercase tracking-wider">Matches</div>
                                     </div>
-                                    <div className="p-4 bg-white/5 rounded-xl text-center border border-white/5">
-                                        <div className="text-2xl font-bold text-white mb-1">--</div>
+                                    <div className="p-4 bg-black/5 dark:bg-white/5 rounded-xl text-center border border-black/5 dark:border-white/5">
+                                        <div className="text-2xl font-bold text-foreground mb-1">--</div>
                                         <div className="text-xs text-slate-400 uppercase tracking-wider">Goals</div>
                                     </div>
                                 </div>

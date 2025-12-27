@@ -1,4 +1,5 @@
 import { Link, Outlet } from 'react-router-dom';
+import { SignIn } from '@phosphor-icons/react';
 import { TournamentPill } from '@/components/TournamentPill';
 
 export default function PublicLayout() {
@@ -35,9 +36,10 @@ export default function PublicLayout() {
                             </Link>
                             <Link
                                 to="/dashboard"
-                                className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 hover:opacity-90 rounded-lg transition-all shadow-md shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-lg"
+                                className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 hover:opacity-90 rounded-lg transition-all shadow-md shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-lg"
                             >
-                                Admin Login
+                                <SignIn className="w-4 h-4" weight="bold" />
+                                Login
                             </Link>
                         </div>
                     </div>

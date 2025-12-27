@@ -3,7 +3,11 @@ import { useUIStore } from '@/store/ui.store';
 
 type Theme = 'light' | 'dark' | 'system';
 
-export const ThemeToggle = () => {
+interface ThemeToggleProps {
+    orientation?: 'horizontal' | 'vertical';
+}
+
+export const ThemeToggle = ({ orientation = 'horizontal' }: ThemeToggleProps) => {
     const { theme, setTheme } = useUIStore();
 
     const options: { value: Theme; icon: React.ReactNode; label: string }[] = [
@@ -13,7 +17,7 @@ export const ThemeToggle = () => {
     ];
 
     return (
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5">
+        <div className={`flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}>
             {options.map((option) => (
                 <button
                     key={option.value}
