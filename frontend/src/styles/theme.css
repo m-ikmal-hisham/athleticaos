@@ -39,8 +39,8 @@
   --radius-xl: var(--athos-radius-xl);
 
   /* Highlight System */
-  --highlight-color: var(--athos-blue);
-  --highlight-glow: rgba(0, 83, 240, 0.2);
+  --highlight-color: #3b82f6;
+  --highlight-glow: rgba(59, 130, 246, 0.2);
 
   /* Branding Defaults */
   --brand-primary: var(--athos-blue);
@@ -64,8 +64,8 @@
   --bg-base: var(--athos-bg-dark);
   --card-bg: var(--athos-card-dark);
 
-  --highlight-color: var(--athos-red);
-  --highlight-glow: rgba(208, 2, 27, 0.2);
+  --highlight-color: #ef4444;
+  --highlight-glow: rgba(239, 68, 68, 0.2);
 }
 
 body {

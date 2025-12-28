@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { authApi } from '@/api/auth.api';
 import { SocialButtons } from '@/components/SocialButtons';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 const registerSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -61,23 +62,30 @@ export const Signup = () => {
     };
 
 
+    const effectiveTheme = useEffectiveTheme();
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
+
     return (
         <div className="min-h-screen w-full flex bg-white">
             {/* Left Side - Form */}
             <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white relative z-10 transition-all duration-300">
                 <div className="w-full max-w-sm space-y-6">
-                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+                    {/* Header Section - Side by Side Centered */}
+                    <div className="flex flex-row items-center justify-center gap-5">
                         <img
-                            src="/athleticaos-logo-svg-new.svg"
+                            src={logoSrc}
                             alt="AthleticaOS"
-                            className="h-14 w-auto mb-6"
+                            className="h-16 w-auto object-contain shrink-0"
                         />
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                            Create Account
-                        </h2>
-                        <p className="mt-2 text-sm text-gray-500">
-                            Join the future of rugby management
-                        </p>
+                        <div className="flex flex-col items-start text-left">
+                            <h2 className="text-2xl font-bold tracking-tight text-gray-900 leading-none">
+                                Create Account
+                            </h2>
+                            <p className="mt-1.5 text-xs text-gray-500 font-medium">
+                                Join the future of rugby management
+                            </p>
+                        </div>
                     </div>
 
                     {/* Social Login Section */}
@@ -162,7 +170,7 @@ export const Signup = () => {
             {/* Right Side - Abstract Art (Reused from Login) */}
             <div className="hidden lg:flex flex-1 relative bg-white overflow-hidden items-center justify-center p-12 lg:w-1/2">
                 <img
-                    src="/athleticaos-bg-svg-new.svg"
+                    src={bgSrc}
                     alt="AthleticaOS Background"
                     className="absolute inset-0 w-full h-full object-cover"
                 />

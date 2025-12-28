@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    background-image: url('/bg-light-new.png');
+    background-image: url('/athleticaos-bg-light-new.png');
     background-attachment: fixed;
     background-size: cover;
     background-position: center;
@@ -15,7 +15,7 @@
   }
 
   [data-theme='dark'] body {
-    background-image: url('/bg-dark-new.png');
+    background-image: url('/athleticaos-bg-dark-new.png');
   }
 }
 

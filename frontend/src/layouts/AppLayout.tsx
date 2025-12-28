@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TournamentPill } from '@/components/TournamentPill';
 import { ProfilePopup } from '@/components/ProfilePopup';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 interface NavItem {
     label: string;
@@ -91,6 +92,8 @@ export const AppLayout = () => {
     const location = useLocation();
     const { user, checkTokenValidity } = useAuthStore();
     const { setBrandingFromOrganisation, resetBranding, primaryColor, secondaryColor, accentColor, logoUrl: brandLogoUrl } = useBrandingStore();
+    const effectiveTheme = useEffectiveTheme();
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
 
     // Check token validity on mount
     useEffect(() => {
@@ -100,19 +103,11 @@ export const AppLayout = () => {
     // Initialize Branding
     useEffect(() => {
         const initBranding = async () => {
-            // We need a way to know the user's organisation ID directly.
-            // Assuming user object has organisationId or similar. If not, we might need to rely on what available.
-            // If the backend User entity has organisation, it should be in the user object.
-            // If explicit organisationId is not on user, we might default to defaults.
-
-            // For now, let's assume we can find it or we just reset if we can't.
-            // Actually, we should check if the user is an ORG_ADMIN or belongs to an org.
-            // If specific org info is missing in user, we skip.
-            // However, the prompt says "Extract organisation branding fields" from organisation.
-
-            // Let's try to fetch organisation if user has an ID.
-            // Checking the User type isn't possible directly here as I didn't see the file content,
-            // but let's assume 'organisationId' might be there.
+            // Check if user is SUPER_ADMIN. If so, force default branding (skip fetching org).
+            if (user?.roles?.includes('ROLE_SUPER_ADMIN')) {
+                resetBranding();
+                return;
+            }
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (user && (user as any).organisationId) {
@@ -191,17 +186,17 @@ export const AppLayout = () => {
                                         alt="Logo"
                                         className={clsx("rounded-xl object-contain bg-white/10 shadow-sm transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
                                         onError={(e) => {
-                                            e.currentTarget.src = "/athleticaos-logo-svg-new.svg";
-                                            e.currentTarget.className = clsx("object-contain mix-blend-screen dark:opacity-90", isCollapsed ? "w-8 h-8" : "w-10 h-10");
+                                            e.currentTarget.src = logoSrc;
+                                            e.currentTarget.className = clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10");
                                             const fallbackA = e.currentTarget.nextElementSibling;
                                             if (fallbackA) fallbackA.classList.add('hidden');
                                         }}
                                     />
                                 ) : (
                                     <img
-                                        src="/athleticaos-logo-svg-new.svg"
+                                        src={logoSrc}
                                         alt="Logo"
-                                        className={clsx("object-contain mix-blend-screen dark:opacity-90 transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
+                                        className={clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
                                     />
                                 )}
                             </div>

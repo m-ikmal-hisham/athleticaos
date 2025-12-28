@@ -4,6 +4,7 @@ import { Users, UsersThree, Buildings, Trophy, Calendar, ChartLineUp } from '@ph
 import { GlassCard } from '@/components/GlassCard';
 import { useAuthStore } from '@/store/auth.store';
 import { useUIStore } from '@/store/ui.store';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { useStatsStore } from '@/store/stats.store';
 import { useMatchesStore } from '@/store/matches.store';
 import { fetchDashboardStats } from '@/api/dashboard.api';
@@ -54,6 +55,7 @@ interface GlobalDashboardStats {
 export const DashboardHome = () => {
     const { user } = useAuthStore();
     const { activeTournamentId } = useUIStore();
+    const effectiveTheme = useEffectiveTheme();
     const navigate = useNavigate();
 
     // Global Stats State
@@ -231,7 +233,11 @@ export const DashboardHome = () => {
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
                             {activeTournamentId && matchTrendData.length > 0 ? (
-                                <TrendChart data={matchTrendData} height={200} />
+                                <TrendChart
+                                    data={matchTrendData}
+                                    height={200}
+                                    color={effectiveTheme === 'dark' ? '#ef4444' : '#3b82f6'}
+                                />
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground text-sm p-8 bg-black/5 dark:bg-white/5 backdrop-blur-sm z-10">
                                     <ChartLineUp className="w-12 h-12 opacity-20 mb-3" />

@@ -1,8 +1,12 @@
 import { Link, Outlet } from 'react-router-dom';
 import { SignIn } from '@phosphor-icons/react';
 import { TournamentPill } from '@/components/TournamentPill';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 export default function PublicLayout() {
+    const effectiveTheme = useEffectiveTheme();
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+
     return (
         <div className="min-h-screen bg-background transition-colors duration-300">
             {/* Top Navigation */}
@@ -12,9 +16,9 @@ export default function PublicLayout() {
                         {/* Logo */}
                         <Link to="/" className="flex items-center gap-3 group">
                             <img
-                                src="/athleticaos-logo-svg-new.svg"
+                                src={logoSrc}
                                 alt="AthleticaOS Logo"
-                                className="h-10 w-auto"
+                                className="h-10 w-auto object-contain"
                             />
                             <div className="flex flex-col">
                                 <span className="text-lg font-bold text-slate-900 dark:text-white leading-none">

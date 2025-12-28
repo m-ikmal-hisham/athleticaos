@@ -23,7 +23,7 @@ export const RecentActivityWidget = memo(({
 }: RecentActivityWidgetProps) => {
     const { logs, fetchGlobalLogs, fetchOrgLogs, fetchUserLogs, fetchEntityLogs, isLoading } = useAuditStore();
     const [isExpanded, setIsExpanded] = useState(false);
-    const INITIAL_DISPLAY_COUNT = 5;
+    const INITIAL_DISPLAY_COUNT = 3;
 
     useEffect(() => {
         const params = { page: 0, size: limit };

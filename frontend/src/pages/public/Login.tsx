@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuthStore } from '@/store/auth.store';
 import { SocialButtons } from '@/components/SocialButtons';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -50,25 +51,30 @@ export const Login = () => {
     };
 
 
+    const effectiveTheme = useEffectiveTheme();
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
+
     return (
         <div className="min-h-screen w-full flex bg-white">
             {/* Left Side - Form */}
             <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white relative z-10">
                 <div className="w-full max-w-sm space-y-8">
-                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-                        {/* Use original colored logo if available, or just the text/symbol. 
-                            Since we have logo-transparent and logo.png, logo.png is likely the colored one suitable for white bg. */}
+                    {/* Header Section - Side by Side Centered */}
+                    <div className="flex flex-row items-center justify-center gap-5">
                         <img
-                            src="/athleticaos-logo-svg-new.svg"
+                            src={logoSrc}
                             alt="AthleticaOS"
-                            className="h-16 w-auto mb-6"
+                            className="h-20 w-auto object-contain shrink-0"
                         />
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                            Login
-                        </h2>
-                        <p className="mt-2 text-sm text-gray-500">
-                            Or sign in with email
-                        </p>
+                        <div className="flex flex-col items-start text-left">
+                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 leading-none">
+                                Login
+                            </h2>
+                            <p className="mt-1.5 text-sm text-gray-500 font-medium">
+                                Or sign in with email
+                            </p>
+                        </div>
                     </div>
 
                     {/* Social Login Section */}
@@ -140,7 +146,7 @@ export const Login = () => {
             {/* Right Side - Abstract Art */}
             <div className="hidden lg:flex flex-1 relative bg-white overflow-hidden items-center justify-center p-12">
                 <img
-                    src="/athleticaos-bg-svg-new.svg"
+                    src={bgSrc}
                     alt="AthleticaOS Background"
                     className="absolute inset-0 w-full h-full object-cover"
                 />
