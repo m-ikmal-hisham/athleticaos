@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
         path: '/dashboard/teams',
         icon: <UsersThree className="w-5 h-5" />,
         // All roles except PLAYER can see teams (with different scopes)
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_COACH'],
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER', 'ROLE_COACH', 'ROLE_PLAYER'],
     },
     {
         label: 'Players',
@@ -67,13 +67,13 @@ const navItems: NavItem[] = [
         label: 'Tournaments',
         path: '/dashboard/tournaments',
         icon: <Trophy className="w-5 h-5" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER', 'ROLE_COACH', 'ROLE_PLAYER'],
     },
     {
         label: 'Competitions',
         path: '/dashboard/competitions',
         icon: <Medal className="w-5 h-5" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER', 'ROLE_COACH', 'ROLE_PLAYER'],
     },
 ];
 

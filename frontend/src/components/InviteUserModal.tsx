@@ -46,12 +46,15 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
     // Determine available roles based on current user's role
     const getAvailableRoles = () => {
         if (isSuperAdmin) {
-            return ['SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN', 'COACH', 'PLAYER'];
+            return ['SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN', 'TEAM_MANAGER', 'COACH', 'PLAYER'];
         } else if (isOrgAdmin) {
-            return ['CLUB_ADMIN', 'COACH', 'PLAYER'];
+            return ['CLUB_ADMIN', 'TEAM_MANAGER', 'COACH', 'PLAYER'];
         } else if (isClubAdmin) {
-            return ['COACH', 'PLAYER'];
+            return ['TEAM_MANAGER', 'COACH', 'PLAYER'];
         }
+        // Team Manager can invite Players (and maybe Coaches? sticking to prompt "view and manage players")
+        // If we want Team Manager to invite players:
+        // else if (isTeamManager) { return ['PLAYER']; }
         return ['PLAYER'];
     };
 
@@ -113,6 +116,7 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
                 <div>
                     <label className="block text-sm font-medium mb-2">Role</label>
                     <select
+                        aria-label="Role Selection"
                         className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                         value={formData.role}
                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
@@ -128,6 +132,7 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
                     <div>
                         <label className="block text-sm font-medium mb-2">Organisation</label>
                         <select
+                            aria-label="Organisation Selection"
                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                             value={formData.organisationId}
                             onChange={(e) => setFormData({ ...formData, organisationId: e.target.value })}

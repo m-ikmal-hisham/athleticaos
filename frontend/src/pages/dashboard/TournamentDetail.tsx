@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
 import { SuspensionWidget } from '@/components/roster/SuspensionWidget';
+import { useAuthStore } from '@/store/auth.store';
 
 // Tabs
 import { TournamentTeams } from './tournament-tabs/TournamentTeams';
@@ -23,6 +24,7 @@ export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useAuthStore();
 
     const [tournament, setTournament] = useState<Tournament | null>(null);
     const [loading, setLoading] = useState(true);
@@ -145,6 +147,8 @@ export default function TournamentDetail() {
         { id: 'bracket', label: 'Bracket', icon: TreeStructure },
     ];
 
+    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+
     {/* Header */ }
     return (
         <div className="space-y-6">
@@ -184,27 +188,29 @@ export default function TournamentDetail() {
                         </div>
                     </div>
 
-                    <div className="flex gap-3">
-                        {tournament.status === TournamentStatus.DRAFT && (
-                            <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
-                        )}
-                        {tournament.status === TournamentStatus.UPCOMING && (
-                            <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
-                                <Play className="w-4 h-4" weight="fill" />
-                                Start Tournament
+                    {isAdmin && (
+                        <div className="flex gap-3">
+                            {tournament.status === TournamentStatus.DRAFT && (
+                                <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
+                            )}
+                            {tournament.status === TournamentStatus.UPCOMING && (
+                                <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
+                                    <Play className="w-4 h-4" weight="fill" />
+                                    Start Tournament
+                                </Button>
+                            )}
+                            {tournament.status === TournamentStatus.ONGOING && (
+                                <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
+                            )}
+                            <Button
+                                variant="danger"
+                                className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/20"
+                                onClick={() => setIsDeleteModalOpen(true)}
+                            >
+                                Delete
                             </Button>
-                        )}
-                        {tournament.status === TournamentStatus.ONGOING && (
-                            <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
-                        )}
-                        <Button
-                            variant="danger"
-                            className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/20"
-                            onClick={() => setIsDeleteModalOpen(true)}
-                        >
-                            Delete
-                        </Button>
-                    </div>
+                        </div>
+                    )}
                 </div>
             </GlassCard>
 

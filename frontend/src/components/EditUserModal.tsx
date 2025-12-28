@@ -7,26 +7,7 @@ import { useOrganisationsStore } from '@/store/organisations.store';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { useAuthStore } from '@/store/auth.store';
 import toast from 'react-hot-toast';
-
-interface User {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    roles: string[];
-    organisationName?: string;
-    organisationId?: string;
-    isActive: boolean;
-    // Address fields
-    addressLine1?: string;
-    addressLine2?: string;
-    city?: string;
-    postcode?: string;
-    state?: string;
-    country?: string;
-    stateCode?: string;
-    countryCode?: string;
-}
+import { User } from '@/types';
 
 interface EditUserModalProps {
     isOpen: boolean;
@@ -108,11 +89,11 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
     // Determine available roles based on current user's role
     const getAvailableRoles = () => {
         if (isSuperAdmin) {
-            return ['SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN', 'COACH', 'PLAYER'];
+            return ['SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN', 'TEAM_MANAGER', 'COACH', 'PLAYER'];
         } else if (isOrgAdmin) {
-            return ['CLUB_ADMIN', 'COACH', 'PLAYER'];
+            return ['CLUB_ADMIN', 'TEAM_MANAGER', 'COACH', 'PLAYER'];
         } else if (isClubAdmin) {
-            return ['COACH', 'PLAYER'];
+            return ['TEAM_MANAGER', 'COACH', 'PLAYER'];
         }
         return ['PLAYER'];
     };
@@ -181,6 +162,7 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
                 <div>
                     <label className="block text-sm font-medium mb-2 text-muted-foreground">Role</label>
                     <select
+                        aria-label="Role Selection"
                         className="input-base h-10"
                         value={formData.role}
                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
@@ -196,6 +178,7 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
                     <div>
                         <label className="block text-sm font-medium mb-2 text-muted-foreground">Organisation</label>
                         <select
+                            aria-label="Organisation Selection"
                             className="input-base h-10"
                             value={formData.organisationId}
                             onChange={(e) => setFormData({ ...formData, organisationId: e.target.value })}

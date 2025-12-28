@@ -27,7 +27,7 @@ export default function Tournaments() {
         getTournaments();
     }, [getTournaments]);
 
-    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'].includes(r));
+    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
     // Extract unique values for filters
     const seasons = Array.from(new Set(tournaments.map(t => t.seasonName).filter(Boolean)));
