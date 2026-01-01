@@ -282,10 +282,19 @@ export default function Organisations() {
                                         <Buildings className="w-6 h-6 text-muted-foreground" />
                                     )}
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 items-center">
                                     <Badge variant={getStatusVariant(org.status || 'Active') as any} className="text-[10px] px-1.5 h-5">
                                         {org.status || 'Active'}
                                     </Badge>
+                                    {isAdmin && (
+                                        <button
+                                            onClick={(e) => handleEdit(e, org.id)}
+                                            className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                                            aria-label="Edit organisation"
+                                        >
+                                            <PencilSimple className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -303,15 +312,7 @@ export default function Organisations() {
                                 </span>
                             </div>
 
-                            {isAdmin && (
-                                <button
-                                    onClick={(e) => handleEdit(e, org.id)}
-                                    className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
-                                    aria-label="Edit organisation"
-                                >
-                                    <PencilSimple className="w-4 h-4" />
-                                </button>
-                            )}
+
                         </GlassCard>
                     ))}
                 </div>

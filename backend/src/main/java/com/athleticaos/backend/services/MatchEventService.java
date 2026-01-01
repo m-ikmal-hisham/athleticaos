@@ -12,5 +12,5 @@ public interface MatchEventService {
     MatchEventResponse addEventToMatch(UUID matchId, MatchEventCreateRequest request,
             jakarta.servlet.http.HttpServletRequest httpRequest);
 
-    UUID deleteEvent(UUID eventId);
+    UUID deleteEvent(UUID eventId, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

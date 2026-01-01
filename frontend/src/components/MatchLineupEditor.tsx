@@ -10,6 +10,7 @@ import {
     DragStartEvent,
     DragOverEvent,
     DragEndEvent,
+    useDroppable,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -33,9 +34,10 @@ interface Props {
     isLocked?: boolean;
     maxStarters?: number;
     maxBench?: number;
+    onLineupUpdate?: () => void;
 }
 
-export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = false, maxStarters = 15, maxBench = 8 }: Props) {
+export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = false, maxStarters = 15, maxBench = 8, onLineupUpdate }: Props) {
     const [items, setItems] = useState<{
         [key in LineupRole]: MatchLineupEntry[];
     }>({
@@ -50,7 +52,11 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
     const [saving, setSaving] = useState(false);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -66,26 +72,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
             // Fetch existing lineup
             const lineup = await matchLineupService.getLineup(matchId, teamId);
 
-            // Also fetch hints later if we want "Available squad" that aren't in lineup yet.
-            // For now, let's assume getLineup returns comprehensive list or we fetch squad separately?
-            // Usually we need "Available Players"
-            // The service `getLineup` returns `MatchLineupEntryDTO` from `match_lineups`.
-            // If empty, we need to fetch 'eligible players' from Team Roster.
-            // But `matchLineupService.getLineup` only gets what is saved.
-            // I should use `tournamentService.getTeams` or something to get roster?
-            // Actually `rosterService.getEligiblePlayers(matchId)` would be best.
-            // But for now, let's just use what we have. If empty, maybe show empty state or fetch roster.
-            // Wait, existing impl `getLineup` fetches `MatchLineup`.
-            // I need a way to get "Unselected Players".
-            // I'll update `matchLineupService` or `MatchLineupController` to merge with roster or have separate endpoint.
-            // For MVP, if lineup is empty, maybe I can use `hints` endpoint?
-
-            // Let's assume we implement a `getAvailableSquad` or similar.
-            // Or use `getLineupHints` which I saw in controller.
-
             const hints = await matchLineupService.getHints(matchId);
-            // hints contains `availablePlayers` (PlayerDTO).
-            // I need to merge these.
 
             // Sort into containers
             const starters: MatchLineupEntry[] = [];
@@ -109,6 +96,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                 : (hints?.awayTeamPlayers || []);
 
             if (availablePlayers.length > 0) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 availablePlayers.forEach((p: any) => {
                     if (!existingIds.has(p.playerId)) {
                         reserve.push({
@@ -116,7 +104,9 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                             playerName: p.playerName,
                             isCaptain: false,
                             role: LineupRole.NOT_SELECTED,
-                            orderIndex: 999
+                            orderIndex: 999,
+                            jerseyNumber: p.playerNumber ? parseInt(p.playerNumber) : undefined,
+                            positionDisplay: p.position
                         });
                     }
                 });
@@ -242,6 +232,9 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
 
             await matchLineupService.updateLineup(matchId, teamId, entries);
             toast.success("Lineups saved successfully");
+            if (onLineupUpdate) {
+                onLineupUpdate();
+            }
         } catch (err: any) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to save lineups");
@@ -286,9 +279,9 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                             items={items[LineupRole.NOT_SELECTED].map(i => i.playerId)}
                             strategy={verticalListSortingStrategy}
                         >
-                            <div className="space-y-2 min-h-[200px]">
+                            <DroppableContainer id={LineupRole.NOT_SELECTED} className="space-y-2 min-h-[200px]">
                                 {items[LineupRole.NOT_SELECTED].map(renderSortableItem)}
-                            </div>
+                            </DroppableContainer>
                         </SortableContext>
                     </GlassCard>
 
@@ -300,7 +293,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                             items={items[LineupRole.STARTER].map(i => i.playerId)}
                             strategy={verticalListSortingStrategy}
                         >
-                            <div className="space-y-2 min-h-[200px]">
+                            <DroppableContainer id={LineupRole.STARTER} className="space-y-2 min-h-[200px]">
                                 {items[LineupRole.STARTER].map((item, index) => (
                                     <SortableItem
                                         key={item.playerId}
@@ -311,7 +304,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                         isLocked={isLocked}
                                     />
                                 ))}
-                            </div>
+                            </DroppableContainer>
                         </SortableContext>
                     </GlassCard>
 
@@ -323,7 +316,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                             items={items[LineupRole.BENCH].map(i => i.playerId)}
                             strategy={verticalListSortingStrategy}
                         >
-                            <div className="space-y-2 min-h-[200px]">
+                            <DroppableContainer id={LineupRole.BENCH} className="space-y-2 min-h-[200px]">
                                 {items[LineupRole.BENCH].map((item, index) => (
                                     <SortableItem
                                         key={item.playerId}
@@ -333,7 +326,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                         isLocked={isLocked}
                                     />
                                 ))}
-                            </div>
+                            </DroppableContainer>
                         </SortableContext>
                     </GlassCard>
                 </div>
@@ -348,6 +341,15 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                     ) : null}
                 </DragOverlay>
             </DndContext>
+        </div>
+    );
+}
+
+function DroppableContainer({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) {
+    const { setNodeRef } = useDroppable({ id });
+    return (
+        <div ref={setNodeRef} className={className}>
+            {children}
         </div>
     );
 }
@@ -367,10 +369,9 @@ function SortableItem({ id, item, index, isStarter, isLocked }: { id: string, it
     };
 
     return (
-        // eslint-disable-next-line
         <div
             ref={setNodeRef}
-            style={style}
+            {...{ style }}
             {...attributes}
             {...listeners}
             className={`

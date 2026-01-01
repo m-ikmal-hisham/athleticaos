@@ -12,6 +12,11 @@ export const tournamentService = {
         return response.data;
     },
 
+    async getDashboard(id: string): Promise<any> {
+        const response = await axios.get<any>(`/api/v1/tournaments/${id}/dashboard`);
+        return response.data;
+    },
+
     async create(data: TournamentCreateRequest): Promise<Tournament> {
         const response = await axios.post<Tournament>('/api/v1/tournaments', data);
         return response.data;

@@ -12,8 +12,8 @@ export const fetchMatchesByTournament = (tournamentId: string) => {
     return api.get(`/matches/by-tournament/${tournamentId}`);
 };
 
-export const fetchMatchById = (id: string) => {
-    return api.get(`/matches/${id}`);
+export const fetchMatch = (idOrSlug: string) => {
+    return api.get(`/matches/${idOrSlug}`);
 };
 
 // Match events

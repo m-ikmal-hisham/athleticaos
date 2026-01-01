@@ -302,6 +302,34 @@ export interface TournamentCreateRequest {
     livestreamUrl?: string;
 }
 
+export interface TournamentStatsSummary {
+    totalMatches: number;
+    completedMatches: number;
+    totalTeams: number;
+    totalPlayers: number;
+    totalGoals: number;
+}
+
+export interface TournamentDashboardResponse {
+    id: string;
+    name: string;
+    level: TournamentLevel;
+    competitionType: string;
+    ageGrade: boolean;
+    ageGroupLabel?: string;
+    startDate: string;
+    endDate: string;
+    venue: string;
+    totalMatches: number;
+    completedMatches: number;
+    totalTeams: number;
+    totalPlayers: number;
+    status: TournamentStatus;
+    stats: TournamentStatsSummary;
+    seasonName?: string;
+    categories?: TournamentCategory[];
+}
+
 export interface TournamentFormatConfig {
     id?: string;
     tournamentId?: string;

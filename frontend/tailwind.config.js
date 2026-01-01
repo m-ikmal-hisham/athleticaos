@@ -14,8 +14,8 @@ export default {
             colors: {
                 // Semantic Tokens
                 background: 'var(--bg-app)',
-                foreground: 'var(--text-primary)',
-                muted: 'var(--text-secondary)',
+                foreground: 'var(--text-color)', // Fixed: matches theme.css --text-color
+                muted: 'var(--text-muted)',      // Fixed: matches theme.css --text-muted
                 border: 'var(--border-glass)',
 
                 // Glass & Panels

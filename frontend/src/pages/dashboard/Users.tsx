@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '@/store/auth.store';
 import { userService } from '@/services/userService';
@@ -6,8 +7,6 @@ import { User } from '@/types';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { PageHeader } from '@/components/PageHeader';
-import { InviteUserModal } from '@/components/InviteUserModal';
-import { EditUserModal } from '@/components/EditUserModal';
 import { MagnifyingGlass, UserPlus, PencilSimple, Trash, Shield, Crown, User as UserIcon, Buildings } from '@phosphor-icons/react';
 import { Badge } from '@/components/Badge';
 import toast from 'react-hot-toast';
@@ -18,12 +17,11 @@ import { UsersSummaryCards } from './components/UsersSummaryCards';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 
 export default function Users() {
+    const navigate = useNavigate();
     const { user: currentUser } = useAuthStore();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-    const [editingUser, setEditingUser] = useState<User | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean, userId: string | null }>({
         isOpen: false,
         userId: null
@@ -105,7 +103,7 @@ export default function Users() {
                 description="Manage users, roles, and permissions."
                 action={
                     canManageUsers && (
-                        <Button onClick={() => setIsInviteModalOpen(true)} className="gap-2 shadow-lg shadow-primary-500/20">
+                        <Button onClick={() => navigate('/dashboard/users/new')} className="gap-2 shadow-lg shadow-primary-500/20">
                             <UserPlus className="w-4 h-4" />
                             Invite User
                         </Button>
@@ -201,7 +199,7 @@ export default function Users() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                                                                onClick={() => setEditingUser(user)}
+                                                                onClick={() => navigate(`/dashboard/users/${user.id}/edit`)}
                                                             >
                                                                 <PencilSimple className="w-4 h-4" />
                                                             </Button>
@@ -228,22 +226,6 @@ export default function Users() {
                     </GlassCard>
                 </BentoItem>
             </BentoGrid>
-
-            {/* Modals */}
-            <InviteUserModal
-                isOpen={isInviteModalOpen}
-                onClose={() => setIsInviteModalOpen(false)}
-                onSuccess={fetchUsers}
-            />
-
-            {editingUser && (
-                <EditUserModal
-                    isOpen={!!editingUser}
-                    onClose={() => setEditingUser(null)}
-                    initialData={editingUser}
-                    onSuccess={fetchUsers}
-                />
-            )}
 
             <ConfirmModal
                 isOpen={confirmDelete.isOpen}

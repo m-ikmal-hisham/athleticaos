@@ -101,7 +101,7 @@ export const DashboardHome = () => {
 
             // Fetch details for the card (using public API for simplicity)
             // Ideally this could come from a cached store list, but fetch is cheap
-            publicTournamentApi.getTournamentById(activeTournamentId).then(res => {
+            publicTournamentApi.getTournament(activeTournamentId).then(res => {
                 setActiveTournamentDetails(res as unknown as PublicTournamentSummary); // Cast because Detail extends Summary roughly or strictly
             }).catch(console.error);
         } else {

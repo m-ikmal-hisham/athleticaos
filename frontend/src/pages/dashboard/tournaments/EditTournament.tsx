@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { ImageUpload } from '@/components/common/ImageUpload';
 import { ArrowLeft, Trash, Plus } from '@phosphor-icons/react';
-import { updateTournament, getTournamentById } from '@/api/tournaments.api';
+import { updateTournament, getTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
 import toast from 'react-hot-toast';
@@ -80,7 +80,7 @@ export const EditTournament = () => {
         try {
             const [orgsRes, tournamentRes] = await Promise.all([
                 fetchOrganisations(),
-                getTournamentById(id)
+                getTournament(id)
             ]);
             setOrganisations(orgsRes as any);
 

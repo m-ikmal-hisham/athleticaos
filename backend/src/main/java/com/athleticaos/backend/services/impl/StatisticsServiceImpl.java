@@ -66,6 +66,18 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .mapToInt(this::getPointsForEvent)
                                 .sum();
 
+                long activeTeams = matches.stream()
+                                .flatMap(m -> java.util.stream.Stream.of(m.getHomeTeam(), m.getAwayTeam()))
+                                .filter(java.util.Objects::nonNull)
+                                .map(com.athleticaos.backend.entities.Team::getId)
+                                .distinct()
+                                .count();
+
+                long activePlayers = matchLineupRepository.findByMatch_Tournament_Id(tournamentId).stream()
+                                .map(l -> l.getPlayer().getId())
+                                .distinct()
+                                .count();
+
                 return new TournamentStatsSummaryResponse(
                                 tournament.getId(),
                                 tournament.getName(),
@@ -74,7 +86,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 totalTries,
                                 totalPoints,
                                 totalYellowCards,
-                                totalRedCards);
+                                totalRedCards,
+                                activeTeams,
+                                activePlayers,
+                                totalPoints);
         }
 
         @Override

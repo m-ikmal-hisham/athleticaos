@@ -15,6 +15,7 @@ public class LineupPlayerDTO {
     private UUID playerId;
     private String playerName;
     private String playerNumber;
+    private String position; // Added for hints
     private boolean isEligible;
     private String eligibilityNote;
     private boolean isSuspended;

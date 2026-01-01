@@ -8,7 +8,7 @@ import { Label } from '@/components/Label';
 import { ArrowLeft } from '@phosphor-icons/react';
 import { fetchTournaments } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
-import { updateMatch, fetchMatchById } from '@/api/matches.api';
+import { updateMatch, fetchMatch } from '@/api/matches.api';
 import { Team, Tournament } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -38,7 +38,7 @@ export const EditMatch = () => {
                 const [tournamentsRes, teamsRes, matchRes] = await Promise.all([
                     fetchTournaments(),
                     fetchTeams(),
-                    fetchMatchById(id)
+                    fetchMatch(id)
                 ]);
                 setTournaments(tournamentsRes.data as any);
                 setTeams(teamsRes.data as any);

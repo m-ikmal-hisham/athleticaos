@@ -33,7 +33,7 @@ public class MatchEventController {
     }
 
     @PostMapping("/{matchIdOrSlug}/events")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
     @Operation(summary = "Add an event to a match")
     public ResponseEntity<MatchEventResponse> addEventToMatch(@PathVariable String matchIdOrSlug,
             @RequestBody @Valid MatchEventCreateRequest request, HttpServletRequest httpRequest) {
@@ -44,14 +44,10 @@ public class MatchEventController {
     }
 
     @DeleteMapping("/events/{eventId}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Delete a match event")
-    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
-        UUID matchId = matchEventService.deleteEvent(eventId);
-        if (matchId != null) {
-            matchService.recalculateMatchScores(matchId);
-        }
-        return ResponseEntity.noContent().build();
+    @PreAuthorize("hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    public ResponseEntity<UUID> deleteEvent(@PathVariable UUID eventId, HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchEventService.deleteEvent(eventId, httpRequest));
     }
 
     // Helper method to resolve match ID from UUID or matchCode

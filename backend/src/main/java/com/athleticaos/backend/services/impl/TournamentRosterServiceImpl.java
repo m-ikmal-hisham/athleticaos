@@ -129,26 +129,41 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Team homeTeam = match.getHomeTeam();
                 Team awayTeam = match.getAwayTeam();
 
-                // Get rosters for both teams
+                // Get rosters for both teams (Home)
                 List<TournamentPlayer> homeRoster = tournamentPlayerRepository
                                 .findByTournamentIdAndTeamIdAndIsActiveTrue(
                                                 tournament.getId(), homeTeam.getId());
+
+                List<LineupPlayerDTO> homePlayers;
+                if (homeRoster.isEmpty()) {
+                        homePlayers = playerTeamRepository.findByTeamIdAndIsActiveTrue(homeTeam.getId()).stream()
+                                        .map(pt -> toLineupPlayerDTO(pt, tournament.getId()))
+                                        .collect(Collectors.toList());
+                } else {
+                        homePlayers = homeRoster.stream()
+                                        .filter(com.athleticaos.backend.utils.StreamUtils
+                                                        .distinctByKey(tp -> tp.getPlayer().getId()))
+                                        .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
+                                        .collect(Collectors.toList());
+                }
+
+                // Get rosters for both teams (Away)
                 List<TournamentPlayer> awayRoster = tournamentPlayerRepository
                                 .findByTournamentIdAndTeamIdAndIsActiveTrue(
                                                 tournament.getId(), awayTeam.getId());
 
-                // Convert to lineup player DTOs
-                List<LineupPlayerDTO> homePlayers = homeRoster.stream()
-                                .filter(com.athleticaos.backend.utils.StreamUtils
-                                                .distinctByKey(tp -> tp.getPlayer().getId()))
-                                .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
-                                .collect(Collectors.toList());
-
-                List<LineupPlayerDTO> awayPlayers = awayRoster.stream()
-                                .filter(com.athleticaos.backend.utils.StreamUtils
-                                                .distinctByKey(tp -> tp.getPlayer().getId()))
-                                .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
-                                .collect(Collectors.toList());
+                List<LineupPlayerDTO> awayPlayers;
+                if (awayRoster.isEmpty()) {
+                        awayPlayers = playerTeamRepository.findByTeamIdAndIsActiveTrue(awayTeam.getId()).stream()
+                                        .map(pt -> toLineupPlayerDTO(pt, tournament.getId()))
+                                        .collect(Collectors.toList());
+                } else {
+                        awayPlayers = awayRoster.stream()
+                                        .filter(com.athleticaos.backend.utils.StreamUtils
+                                                        .distinctByKey(tp -> tp.getPlayer().getId()))
+                                        .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
+                                        .collect(Collectors.toList());
+                }
 
                 return LineupHintsDTO.builder()
                                 .homeTeamPlayers(homePlayers)
@@ -201,11 +216,13 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Player player = tp.getPlayer();
                 Person person = player.getPerson();
 
-                // Get jersey number
+                // Get jersey number and position
                 Integer jerseyNumber = null;
+                String position = null;
                 var playerTeam = playerTeamRepository.findByPlayerIdAndTeamId(player.getId(), tp.getTeam().getId());
                 if (playerTeam.isPresent()) {
                         jerseyNumber = playerTeam.get().getJerseyNumber();
+                        position = playerTeam.get().getPosition();
                 }
 
                 // Check for active suspensions
@@ -228,8 +245,44 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 .playerId(player.getId())
                                 .playerName(person.getFirstName() + " " + person.getLastName())
                                 .playerNumber(jerseyNumber != null ? jerseyNumber.toString() : null)
+                                .position(position)
                                 .isEligible(tp.isEligible())
                                 .eligibilityNote(tp.getEligibilityNote())
+                                .isSuspended(hasSuspension)
+                                .suspensionReason(suspensionReason)
+                                .suspensionMatchesRemaining(suspensionMatches)
+                                .build();
+        }
+
+        private LineupPlayerDTO toLineupPlayerDTO(PlayerTeam pt, UUID tournamentId) {
+                Player player = pt.getPlayer();
+                Person person = player.getPerson();
+                Integer jerseyNumber = pt.getJerseyNumber();
+                String position = pt.getPosition();
+
+                // Check for active suspensions
+                boolean hasSuspension = suspensionService.hasActiveSuspension(tournamentId, player.getId());
+                String suspensionReason = null;
+                Integer suspensionMatches = null;
+
+                if (hasSuspension) {
+                        List<PlayerSuspensionDTO> suspensions = suspensionService.getPlayerActiveSuspensions(
+                                        tournamentId,
+                                        player.getId());
+                        if (!suspensions.isEmpty()) {
+                                PlayerSuspensionDTO suspension = suspensions.get(0);
+                                suspensionReason = suspension.getReason();
+                                suspensionMatches = suspension.getMatchesRemaining();
+                        }
+                }
+
+                return LineupPlayerDTO.builder()
+                                .playerId(player.getId())
+                                .playerName(person.getFirstName() + " " + person.getLastName())
+                                .playerNumber(jerseyNumber != null ? jerseyNumber.toString() : null)
+                                .position(position)
+                                .isEligible(true)
+                                .eligibilityNote("Team Roster Fallback")
                                 .isSuspended(hasSuspension)
                                 .suspensionReason(suspensionReason)
                                 .suspensionMatchesRemaining(suspensionMatches)

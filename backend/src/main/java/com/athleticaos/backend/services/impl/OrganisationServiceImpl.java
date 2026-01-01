@@ -31,6 +31,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     private final TeamRepository teamRepository;
     private final UserService userService;
 
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getAllOrganisations() {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
 
@@ -49,6 +50,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @SuppressWarnings("null")
+    @Transactional(readOnly = true)
     public OrganisationResponse getOrganisationById(UUID id) {
         return organisationRepository.findById(id)
                 .map(this::mapToResponse)
@@ -255,6 +257,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getCountries() {
         return organisationRepository.findByOrgLevel(OrganisationLevel.COUNTRY).stream()
                 .map(this::mapToResponse)
@@ -262,6 +265,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getStates(UUID countryId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.STATE, countryId).stream()
                 .map(this::mapToResponse)
@@ -269,6 +273,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getDivisions(UUID stateId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.DIVISION, stateId).stream()
                 .map(this::mapToResponse)
@@ -276,6 +281,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getDistricts(UUID stateId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.DISTRICT, stateId).stream()
                 .map(this::mapToResponse)
@@ -283,6 +289,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getChildren(UUID parentId) {
         return organisationRepository.findByParentOrgId(parentId).stream()
                 .map(this::mapToResponse)
@@ -291,6 +298,7 @@ public class OrganisationServiceImpl implements OrganisationService {
 
     @Override
     @SuppressWarnings("null")
+    @Transactional(readOnly = true)
     public Object getTree(UUID countryId) {
         Organisation country = organisationRepository.findById(countryId)
                 .orElseThrow(() -> new EntityNotFoundException("Country not found"));

@@ -45,6 +45,10 @@ public class MatchEvent {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean isLocked = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -99,6 +99,13 @@ public class MatchController {
         return ResponseEntity.ok(progressionService.canProgress(id));
     }
 
+    @GetMapping("/operations/dashboard")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @Operation(summary = "Get aggregated operations dashboard data")
+    public ResponseEntity<com.athleticaos.backend.dtos.match.OperationsDashboardDTO> getOperationsDashboard() {
+        return ResponseEntity.ok(matchService.getOperationsDashboard());
+    }
+
     // Helper method to fetch match by UUID or matchCode
     private MatchResponse fetchMatch(String idOrSlug) {
         try {

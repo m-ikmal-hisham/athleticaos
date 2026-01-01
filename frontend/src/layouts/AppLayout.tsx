@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight, Wrench, Globe, Gavel, Eye, ShieldWarning, ChartLine, CurrencyDollar } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -71,6 +71,62 @@ const navItems: NavItem[] = [
         path: '/dashboard/stats',
         icon: <ChartBar className="w-5 h-5" />,
         iconFilled: <ChartBar className="w-5 h-5" weight="fill" />
+    },
+    {
+        label: 'Operations',
+        path: '/dashboard/operations',
+        icon: <Wrench className="w-5 h-5" />,
+        iconFilled: <Wrench className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']
+    },
+    {
+        label: 'Officials',
+        path: '/dashboard/officials',
+        icon: <Users className="w-5 h-5" />,
+        iconFilled: <Users className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN']
+    },
+    {
+        label: 'Federation',
+        path: '/dashboard/federation/dashboard',
+        icon: <Globe className="w-5 h-5" />,
+        iconFilled: <Globe className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+    },
+    {
+        label: 'Sanctioning',
+        path: '/dashboard/federation/sanctioning',
+        icon: <Gavel className="w-5 h-5" />,
+        iconFilled: <Gavel className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+    },
+    {
+        label: 'Oversight',
+        path: '/dashboard/federation/oversight',
+        icon: <Eye className="w-5 h-5" />,
+        iconFilled: <Eye className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+    },
+    {
+        label: 'Discipline',
+        path: '/dashboard/federation/discipline',
+        icon: <ShieldWarning className="w-5 h-5" />,
+        iconFilled: <ShieldWarning className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+    },
+    {
+        label: 'Analytics',
+        path: '/dashboard/analytics/teams',
+        icon: <ChartLine className="w-5 h-5" />,
+        iconFilled: <ChartLine className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+    },
+    {
+        label: 'Monetization',
+        path: '/dashboard/monetization/subscriptions',
+        icon: <CurrencyDollar className="w-5 h-5" />,
+        iconFilled: <CurrencyDollar className="w-5 h-5" weight="fill" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
     },
     {
         label: 'Activity & Logs',

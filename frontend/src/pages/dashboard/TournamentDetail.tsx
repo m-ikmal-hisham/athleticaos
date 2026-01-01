@@ -19,6 +19,7 @@ import { BracketViewResponse, StandingsResponse } from '@/types';
 // Removed unused lucide import
 import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
 import { deleteTournament } from '@/api/tournaments.api';
+import TournamentRosters from './TournamentRosters';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -27,6 +28,7 @@ export default function TournamentDetail() {
     const { user } = useAuthStore();
 
     const [tournament, setTournament] = useState<Tournament | null>(null);
+    const [stats, setStats] = useState<any>(null); // Using any temporarily to avoid deep type changes, or update import
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('overview');
@@ -80,8 +82,17 @@ export default function TournamentDetail() {
 
         try {
             setLoading(true);
-            const data = await tournamentService.getById(id);
+            const [data, dashboardData] = await Promise.all([
+                tournamentService.getById(id),
+                tournamentService.getDashboard(id).catch(e => {
+                    console.error('Failed to load dashboard stats', e);
+                    return null;
+                })
+            ]);
             setTournament(data);
+            if (dashboardData && dashboardData.stats) {
+                setStats(dashboardData.stats);
+            }
         } catch (err) {
             console.error('Failed to load tournament:', err);
             setError('Failed to load tournament details');
@@ -145,6 +156,7 @@ export default function TournamentDetail() {
         { id: 'matches', label: 'Matches', icon: Play },
         { id: 'standings', label: 'Standings', icon: ListNumbers },
         { id: 'bracket', label: 'Bracket', icon: TreeStructure },
+        { id: 'rosters', label: 'Rosters', icon: Users },
     ];
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
@@ -300,16 +312,16 @@ export default function TournamentDetail() {
                                 </h3>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="p-4 bg-black/5 dark:bg-white/5 rounded-xl text-center border border-black/5 dark:border-white/5">
-                                        <div className="text-2xl font-bold text-foreground mb-1">--</div>
+                                        <div className="text-2xl font-bold text-foreground mb-1">{stats?.totalTeams || 0}</div>
                                         <div className="text-xs text-slate-400 uppercase tracking-wider">Teams</div>
                                     </div>
                                     <div className="p-4 bg-black/5 dark:bg-white/5 rounded-xl text-center border border-black/5 dark:border-white/5">
-                                        <div className="text-2xl font-bold text-foreground mb-1">--</div>
+                                        <div className="text-2xl font-bold text-foreground mb-1">{stats?.totalMatches || 0}</div>
                                         <div className="text-xs text-slate-400 uppercase tracking-wider">Matches</div>
                                     </div>
                                     <div className="p-4 bg-black/5 dark:bg-white/5 rounded-xl text-center border border-black/5 dark:border-white/5">
-                                        <div className="text-2xl font-bold text-foreground mb-1">--</div>
-                                        <div className="text-xs text-slate-400 uppercase tracking-wider">Goals</div>
+                                        <div className="text-2xl font-bold text-foreground mb-1">{stats?.totalGoals || 0}</div>
+                                        <div className="text-xs text-slate-400 uppercase tracking-wider">Total Points</div>
                                     </div>
                                 </div>
                             </GlassCard>
@@ -343,7 +355,12 @@ export default function TournamentDetail() {
                 {activeTab === 'bracket' && bracket && (
                     <BracketView stages={bracket.stages.map(s => s.stage)} matches={bracket.stages.flatMap(s => s.matches)} />
                 )}
+
+                {activeTab === 'rosters' && id && (
+                    <TournamentRosters tournamentId={id} />
+                )}
             </div>
         </div >
     );
 }
+

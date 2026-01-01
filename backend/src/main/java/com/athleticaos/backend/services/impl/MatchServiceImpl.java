@@ -3,6 +3,8 @@ package com.athleticaos.backend.services.impl;
 import com.athleticaos.backend.dtos.match.MatchCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.match.MatchUpdateRequest;
+import com.athleticaos.backend.dtos.match.MatchValidationDTO;
+import com.athleticaos.backend.dtos.match.OperationsDashboardDTO;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
@@ -370,5 +372,53 @@ public class MatchServiceImpl implements MatchService {
 
         Match updatedMatch = matchRepository.save(match);
         return mapToResponse(updatedMatch);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsDashboardDTO getOperationsDashboard() {
+        // Reuse getAllMatches to ensure we only count accessible matches
+        List<MatchResponse> allMatches = getAllMatches();
+
+        long live = 0;
+        long pending = 0;
+        long completed = 0;
+        List<MatchValidationDTO> attentionRequired = new java.util.ArrayList<>();
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        for (MatchResponse m : allMatches) {
+            String status = m.getStatus();
+            if ("LIVE".equalsIgnoreCase(status) || "ONGOING".equalsIgnoreCase(status)) {
+                live++;
+            } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                completed++;
+            } else {
+                pending++;
+                // Check if overdue (Scheduled but in the past)
+                if ("SCHEDULED".equalsIgnoreCase(status) && m.getMatchDate() != null) {
+                    java.time.LocalDateTime startDateTime = m.getMatchDate().atTime(
+                            m.getKickOffTime() != null ? m.getKickOffTime() : java.time.LocalTime.MIN);
+
+                    if (startDateTime.isBefore(now)) {
+                        attentionRequired.add(MatchValidationDTO.builder()
+                                .matchId(m.getId())
+                                .matchCode(m.getMatchCode())
+                                .homeTeamName(m.getHomeTeamName())
+                                .awayTeamName(m.getAwayTeamName())
+                                .issues(java.util.Collections.singletonList("Match is SCHEDULED but past start time."))
+                                .build());
+                    }
+                }
+            }
+        }
+
+        return OperationsDashboardDTO.builder()
+                .totalMatches(allMatches.size())
+                .liveMatches(live)
+                .pendingMatches(pending)
+                .completedMatches(completed)
+                .attentionRequired(attentionRequired)
+                .build();
     }
 }

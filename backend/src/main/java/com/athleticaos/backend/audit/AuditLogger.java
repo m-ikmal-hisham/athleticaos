@@ -2,6 +2,7 @@ package com.athleticaos.backend.audit;
 
 import com.athleticaos.backend.dtos.audit.AuditLogEntry;
 import com.athleticaos.backend.entities.*;
+import com.athleticaos.backend.entities.MatchOfficial;
 import com.athleticaos.backend.services.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -292,6 +293,22 @@ public class AuditLogger {
                                 .entityId(player.getId())
                                 .entitySummary(String.format("Player deleted: %s %s",
                                                 player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        // ==================== OFFICIAL ACTIONS ====================
+
+        public void logOfficialAssigned(MatchOfficial assignment, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("OFFICIAL_ASSIGNED")
+                                .entityType("MATCH_OFFICIAL")
+                                .entityId(assignment.getId())
+                                .entitySummary(String.format("Official %s assigned as %s to match %s",
+                                                assignment.getOfficial().getUser().getLastName(),
+                                                assignment.getAssignedRole(),
+                                                assignment.getMatch().getMatchCode()))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));

@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/matches/{matchIdOrSlug}/lineup")
+@RequestMapping("/api/v1/matches/{matchIdOrSlug}/lineup")
 @RequiredArgsConstructor
 @Tag(name = "Match Lineup", description = "Endpoints for match lineup management and hints")
 public class MatchLineupController {

@@ -166,8 +166,10 @@ public class MatchLineupServiceImpl implements MatchLineupService {
         private MatchLineupEntryDTO mapToDTO(MatchLineup entity) {
                 return MatchLineupEntryDTO.builder()
                                 .playerId(entity.getPlayer().getId())
-                                .playerName(entity.getPlayer().getPerson().getFirstName() + " "
-                                                + entity.getPlayer().getPerson().getLastName())
+                                .playerName(entity.getPlayer().getPerson() != null
+                                                ? entity.getPlayer().getPerson().getFirstName() + " "
+                                                                + entity.getPlayer().getPerson().getLastName()
+                                                : "Unknown Player")
                                 .jerseyNumber(entity.getJerseyNumber())
                                 .isCaptain(entity.isCaptain())
                                 .role(entity.getRole())

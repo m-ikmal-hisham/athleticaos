@@ -21,4 +21,6 @@ public class MatchEventResponse {
     private String eventType;
     private Integer minute;
     private String notes;
+    private java.time.LocalDateTime createdAt;
+    private boolean isLocked;
 }

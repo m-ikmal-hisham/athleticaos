@@ -26,6 +26,9 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     vendor: ['react', 'react-dom', 'react-router-dom'],
+                    recharts: ['recharts'],
+                    dndkit: ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+                    phosphor: ['@phosphor-icons/react'],
                     ui: ['lucide-react', 'clsx', 'tailwind-merge', 'react-hot-toast'],
                     utils: ['axios', 'date-fns', 'zod', 'zustand', 'react-hook-form', '@hookform/resolvers']
                 }

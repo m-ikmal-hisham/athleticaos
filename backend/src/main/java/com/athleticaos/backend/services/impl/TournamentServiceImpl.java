@@ -107,6 +107,26 @@ public class TournamentServiceImpl implements TournamentService {
         int totalTeams = tournamentTeamRepository.findByTournamentId(id).size();
         int totalPlayers = tournamentPlayerRepository.findByTournamentId(id).size();
 
+        List<Match> matches = matchRepository.findByTournamentId(id);
+        long totalPoints = matches.stream()
+                .filter(m -> m.getStatus() == com.athleticaos.backend.enums.MatchStatus.COMPLETED)
+                .mapToLong(m -> (m.getHomeScore() != null ? m.getHomeScore() : 0)
+                        + (m.getAwayScore() != null ? m.getAwayScore() : 0))
+                .sum();
+
+        com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse stats = new com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse(
+                tournament.getId(),
+                tournament.getName(),
+                totalMatches,
+                completedMatches,
+                0, // tries placeholder
+                (int) totalPoints,
+                0, // yellow placeholder
+                0, // red placeholder
+                totalTeams,
+                totalPlayers,
+                totalPoints);
+
         return TournamentDashboardResponse.builder()
                 .id(tournament.getId())
                 .name(tournament.getName())
@@ -122,6 +142,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .totalTeams(totalTeams)
                 .totalPlayers(totalPlayers)
                 .status(mapToResponse(tournament).getStatus())
+                .stats(stats)
                 .build();
     }
 

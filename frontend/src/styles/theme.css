@@ -33,6 +33,8 @@
   --athos-transition-fast: 150ms ease-out;
 
   /* Legacy aliases for compatibility */
+  --text-primary: var(--text-color);
+  --text-secondary: var(--text-muted);
   --primary: var(--brand-primary, var(--athos-blue));
   --primary-glow: rgba(0, 83, 240, 0.35);
   --blur-level: var(--glass-blur);

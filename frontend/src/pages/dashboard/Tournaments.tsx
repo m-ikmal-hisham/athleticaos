@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "@/components/SmartFilterPills";
 import { EmptyState } from "@/components/EmptyState";
+import { getImageUrl } from "../../utils/image";
 
 export default function Tournaments() {
     const { tournaments, loading, getTournaments } = useTournamentsStore();
@@ -185,7 +186,7 @@ export default function Tournaments() {
                         >
                             {/* Top Banner / Image Placeholder */}
                             <div className="h-32 bg-gradient-to-br from-primary-500/10 to-blue-500/10 relative overflow-hidden">
-                                {t.logoUrl && <img src={t.logoUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />}
+                                {t.logoUrl && <img src={getImageUrl(t.logoUrl)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />}
                                 <div className="absolute top-4 right-4">
                                     <div className="shadow-lg backdrop-blur-md rounded-full">
                                         <StatusPill status={t.status} />
@@ -193,7 +194,7 @@ export default function Tournaments() {
                                 </div>
                                 <div className="absolute -bottom-6 left-6 w-16 h-16 rounded-xl bg-glass-bg border border-white/10 shadow-lg flex items-center justify-center overflow-hidden z-10">
                                     {t.logoUrl ? (
-                                        <img src={t.logoUrl} alt={t.name} className="w-full h-full object-cover" />
+                                        <img src={getImageUrl(t.logoUrl)} alt={t.name} className="w-full h-full object-cover" />
                                     ) : (
                                         <Trophy className="w-8 h-8 text-primary-400" weight="duotone" />
                                     )}

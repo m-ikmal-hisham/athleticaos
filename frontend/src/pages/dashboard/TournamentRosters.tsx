@@ -6,8 +6,13 @@ import { tournamentService } from '@/services/tournamentService';
 import { Team } from '@/types';
 import { Users, WarningCircle } from '@phosphor-icons/react';
 
-export default function TournamentRosters() {
-    const { tournamentId } = useParams<{ tournamentId: string }>();
+interface TournamentRostersProps {
+    tournamentId?: string;
+}
+
+export default function TournamentRosters({ tournamentId: propTournamentId }: TournamentRostersProps) {
+    const params = useParams<{ tournamentId: string; id: string }>();
+    const tournamentId = propTournamentId || params.tournamentId || params.id;
     const [teams, setTeams] = useState<Team[]>([]);
     const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
     const [loading, setLoading] = useState(true);

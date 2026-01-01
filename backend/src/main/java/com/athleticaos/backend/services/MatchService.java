@@ -30,4 +30,6 @@ public interface MatchService {
         MatchResponse updateMatchStatus(UUID id, String status, jakarta.servlet.http.HttpServletRequest httpRequest);
 
         MatchResponse getMatchByCode(String matchCode);
+
+        com.athleticaos.backend.dtos.match.OperationsDashboardDTO getOperationsDashboard();
 }

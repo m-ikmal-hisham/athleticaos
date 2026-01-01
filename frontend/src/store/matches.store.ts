@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import {
     fetchMatches,
-    fetchMatchById,
+    fetchMatch,
     fetchMatchEvents,
     createMatchEvent,
     deleteMatchEvent,
@@ -43,6 +43,8 @@ export interface MatchEventItem {
     eventType: string;  // "TRY", "CONVERSION", etc.
     minute?: number | null;
     notes?: string | null;
+    createdAt?: string;
+    isLocked?: boolean;
 }
 
 export interface PlayerItem {
@@ -115,7 +117,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         set({ loadingDetail: true, error: null, selectedMatch: null, events: [] });
         try {
             const [matchRes, eventsRes] = await Promise.all([
-                fetchMatchById(matchId),
+                fetchMatch(matchId),
                 fetchMatchEvents(matchId)
             ]);
             set({ selectedMatch: matchRes.data, events: eventsRes.data });
