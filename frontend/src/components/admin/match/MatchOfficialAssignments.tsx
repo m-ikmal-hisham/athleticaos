@@ -5,7 +5,7 @@ import { Button } from '@/components/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { Trash, Plus, UserCircle } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
-import { Toast } from '@/components/Toast';
+import { showToast } from '@/lib/customToast';
 
 interface MatchOfficialAssignmentsProps {
     matchId: string;
@@ -19,7 +19,6 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [newAssignment, setNewAssignment] = useState({ officialId: '', role: 'REFEREE' });
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
@@ -48,13 +47,13 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
 
         try {
             await assignOfficial(matchId, newAssignment.officialId, newAssignment.role);
-            setToast({ message: 'Official assigned successfully', type: 'success' });
+            showToast.success('Official assigned successfully');
             setNewAssignment({ officialId: '', role: 'REFEREE' });
             setIsAdding(false);
             loadData();
         } catch (error) {
             console.error("Failed to assign official", error);
-            setToast({ message: 'Failed to assign official', type: 'error' });
+            showToast.error('Failed to assign official');
         }
     };
 
@@ -62,11 +61,11 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
         if (!confirm('Are you sure you want to remove this official?')) return;
         try {
             await removeOfficial(assignmentId);
-            setToast({ message: 'Official removed', type: 'success' });
+            showToast.success('Official removed');
             loadData();
         } catch (error) {
             console.error("Failed to remove official", error);
-            setToast({ message: 'Failed to remove official', type: 'error' });
+            showToast.error('Failed to remove official');
         }
     };
 
@@ -189,14 +188,6 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                     </Table>
                 </CardContent>
             </Card>
-
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
         </div>
     );
 };

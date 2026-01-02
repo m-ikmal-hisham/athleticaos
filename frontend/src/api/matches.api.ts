@@ -26,6 +26,11 @@ export const createMatchEvent = (matchId: string, body: any) => {
     return api.post(`/matches/${matchId}/events`, body);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateMatchEvent = (eventId: string, body: any) => {
+    return api.put(`/matches/events/${eventId}`, body);
+};
+
 export const deleteMatchEvent = (eventId: string) => {
     return api.delete(`/matches/events/${eventId}`);
 };

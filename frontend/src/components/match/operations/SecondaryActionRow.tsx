@@ -1,7 +1,7 @@
 import { ArrowsLeftRight, Ambulance, NotePencil } from '@phosphor-icons/react';
 
 interface SecondaryActionRowProps {
-    onAction: (action: 'SUBSTITUTION' | 'INJURY' | 'NOTE') => void;
+    onAction: (action: 'SUBSTITUTION' | 'INJURY' | 'NOTE' | 'SCRUM' | 'LINEOUT') => void;
     disabled?: boolean;
 }
 
@@ -24,6 +24,24 @@ export const SecondaryActionRow = ({ onAction, disabled }: SecondaryActionRowPro
             >
                 <Ambulance className="w-6 h-6" />
                 <span className="text-sm font-bold uppercase">Injury</span>
+            </button>
+
+            <button
+                onClick={() => onAction('SCRUM')}
+                disabled={disabled}
+                className="bg-slate-800 active:bg-slate-700 text-slate-200 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-slate-700 transition"
+            >
+                <span className="text-xl font-black">🏉</span>
+                <span className="text-sm font-bold uppercase">Scrum</span>
+            </button>
+
+            <button
+                onClick={() => onAction('LINEOUT')}
+                disabled={disabled}
+                className="bg-slate-800 active:bg-slate-700 text-slate-200 p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-slate-700 transition"
+            >
+                <span className="text-xl font-black">🙌</span>
+                <span className="text-sm font-bold uppercase">Lineout</span>
             </button>
 
             <button

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
 import { authApi } from '@/api/auth.api';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { AxiosError } from 'axios';
 
 interface AuthState {
@@ -45,11 +45,11 @@ export const useAuthStore = create<AuthState>()(
                         : null;
 
                     set({ user, isAuthenticated: true, primaryRole, isInitialized: true });
-                    toast.success('Login successful!');
+                    showToast.success('Login successful!');
                 } catch (error: unknown) {
                     const axiosError = error as AxiosError<{ message: string }>;
                     const errorMessage = axiosError.response?.data?.message || 'Login failed';
-                    toast.error(errorMessage);
+                    showToast.error(errorMessage);
                     throw error;
                 }
             },

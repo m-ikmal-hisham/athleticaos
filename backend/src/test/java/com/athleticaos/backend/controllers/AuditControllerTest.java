@@ -22,11 +22,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.athleticaos.backend.security.SecurityConfig;
 import org.springframework.context.annotation.Import;
 
 @WebMvcTest(AuditController.class)
-@Import(SecurityConfig.class)
+@Import(com.athleticaos.backend.security.SecurityConfig.class)
 @org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class AuditControllerTest {
 

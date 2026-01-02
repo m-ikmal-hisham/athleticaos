@@ -10,7 +10,8 @@ import { fetchTournaments } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { createMatch } from '@/api/matches.api';
 import { Team, Tournament } from '@/types';
-import toast from 'react-hot-toast';
+
+import { showToast } from '@/lib/customToast';
 
 export const CreateMatch = () => {
     const navigate = useNavigate();
@@ -40,7 +41,7 @@ export const CreateMatch = () => {
                 setTeams(teamsRes.data as any);
             } catch (error) {
                 console.error("Failed to load form data", error);
-                toast.error("Failed to load options");
+                showToast.error("Failed to load options");
             }
         };
         loadData();
@@ -56,11 +57,11 @@ export const CreateMatch = () => {
 
         try {
             await createMatch(formData);
-            toast.success("Match created successfully");
+            showToast.success("Match created successfully");
             navigate('/dashboard/matches');
         } catch (error: any) {
             console.error('Failed to create match', error);
-            toast.error(error?.response?.data?.message || 'Failed to create match');
+            showToast.error(error?.response?.data?.message || 'Failed to create match');
         } finally {
             setLoading(false);
         }

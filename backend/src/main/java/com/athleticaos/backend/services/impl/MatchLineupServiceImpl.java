@@ -76,10 +76,11 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
 
                 // Validate Counts
-                validateLineupCounts(match, request.getEntries());
+                validateLineupCounts(match, team, request.getEntries());
 
                 // Clear existing lineup
                 matchLineupRepository.deleteByMatchIdAndTeamId(matchId, teamId);
+                matchLineupRepository.flush(); // Ensure deletion is committed before insertion
 
                 if (request.getEntries() == null || request.getEntries().isEmpty()) {
                         return Collections.emptyList();
@@ -123,7 +124,7 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                 .collect(Collectors.toList());
         }
 
-        private void validateLineupCounts(Match match, List<MatchLineupEntryDTO> entries) {
+        private void validateLineupCounts(Match match, Team currentTeam, List<MatchLineupEntryDTO> entries) {
                 if (entries == null || entries.isEmpty())
                         return;
 
@@ -139,10 +140,6 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                 .getFormatConfig();
                 if (config != null) {
                         maxStarters = config.getStartersCount();
-                } else {
-                        // Fallback based on potential rugby format enum in tournament if exists,
-                        // otherwise 15
-                        // Assuming 15 default safe
                 }
 
                 if (starterCount > maxStarters) {
@@ -150,10 +147,39 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                         "Too many starters: " + starterCount + ". Maximum allowed is " + maxStarters);
                 }
 
-                // Also check duplicates
+                // Check self-duplicates within the request
                 long distinctPlayers = entries.stream().map(MatchLineupEntryDTO::getPlayerId).distinct().count();
                 if (distinctPlayers != entries.size()) {
-                        throw new IllegalArgumentException("Duplicate players found in lineup.");
+                        throw new IllegalArgumentException("Duplicate players found in the submitted lineup.");
+                }
+
+                // Check cross-team duplicates (Player playing for the *other* team in the same
+                // match)
+                List<UUID> playerIds = entries.stream()
+                                .map(MatchLineupEntryDTO::getPlayerId)
+                                .collect(Collectors.toList());
+
+                List<MatchLineup> existingEntries = matchLineupRepository.findByMatchIdAndPlayerIdIn(match.getId(),
+                                playerIds);
+
+                for (MatchLineup existing : existingEntries) {
+                        // If the player is in the lineup for a DIFFERENT team, it's a conflict.
+                        // We ignore if it's the SAME team because we are about to delete and replace
+                        // those anyway (or update them).
+                        // Actually, since we do deleteByMatchIdAndTeamId *after* this check, existing
+                        // entries for CURRENT team are still there.
+                        // So checking !existing.getTeam().getId().equals(currentTeam.getId()) is
+                        // exactly right.
+                        if (!existing.getTeam().getId().equals(currentTeam.getId())) {
+                                throw new IllegalArgumentException("Player " +
+                                                (existing.getPlayer().getPerson() != null
+                                                                ? existing.getPlayer().getPerson().getFirstName() + " "
+                                                                                + existing.getPlayer().getPerson()
+                                                                                                .getLastName()
+                                                                : "Unknown")
+                                                +
+                                                " is already in the lineup for " + existing.getTeam().getName());
+                        }
                 }
         }
 

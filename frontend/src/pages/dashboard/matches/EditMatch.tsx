@@ -10,7 +10,7 @@ import { fetchTournaments } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { updateMatch, fetchMatch } from '@/api/matches.api';
 import { Team, Tournament } from '@/types';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const EditMatch = () => {
     const { id } = useParams<{ id: string }>();
@@ -55,7 +55,7 @@ export const EditMatch = () => {
 
             } catch (error) {
                 console.error("Failed to load match data", error);
-                toast.error("Failed to load match details");
+                showToast.error("Failed to load match details");
                 navigate('/dashboard/matches');
             } finally {
                 setFetching(false);
@@ -85,11 +85,11 @@ export const EditMatch = () => {
                 homeTeamId: formData.homeTeamId,
                 awayTeamId: formData.awayTeamId,
             });
-            toast.success("Match updated successfully");
+            showToast.success("Match updated successfully");
             navigate('/dashboard/matches');
         } catch (error: any) {
             console.error('Failed to update match', error);
-            toast.error(error?.response?.data?.message || 'Failed to update match');
+            showToast.error(error?.response?.data?.message || 'Failed to update match');
         } finally {
             setLoading(false);
         }

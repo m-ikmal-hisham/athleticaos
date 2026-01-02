@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/Table';
-import { Toast } from '@/components/Toast';
+import { showToast } from '@/lib/customToast';
 import { Check, X, Clock } from '@phosphor-icons/react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/Tabs';
 
@@ -16,7 +16,6 @@ export const SanctioningConsole = () => {
     const [outgoingRequests, setOutgoingRequests] = useState<SanctioningRequest[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Assume user's primary organisation is the one they represent for sanctioning
     // In a real multi-org setup, we might need a context selector.
@@ -41,7 +40,7 @@ export const SanctioningConsole = () => {
             setOutgoingRequests(outgoing);
         } catch (error) {
             console.error("Failed to load requests", error);
-            setToast({ message: 'Failed to load sanctioning requests', type: 'error' });
+            showToast.error('Failed to load sanctioning requests');
         } finally {
             setLoading(false);
         }
@@ -51,10 +50,10 @@ export const SanctioningConsole = () => {
         setProcessingId(requestId);
         try {
             await approveSanctioning(requestId, "Approved via Console");
-            setToast({ message: 'Request approved successfully', type: 'success' });
+            showToast.success('Request approved successfully');
             loadRequests();
         } catch (error) {
-            setToast({ message: 'Failed to approve request', type: 'error' });
+            showToast.error('Failed to approve request');
         } finally {
             setProcessingId(null);
         }
@@ -67,10 +66,10 @@ export const SanctioningConsole = () => {
         setProcessingId(requestId);
         try {
             await rejectSanctioning(requestId, "Rejected via Console");
-            setToast({ message: 'Request rejected', type: 'success' });
+            showToast.success('Request rejected');
             loadRequests();
         } catch (error) {
-            setToast({ message: 'Failed to reject request', type: 'error' });
+            showToast.error('Failed to reject request');
         } finally {
             setProcessingId(null);
         }
@@ -197,8 +196,6 @@ export const SanctioningConsole = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
-
-            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 };

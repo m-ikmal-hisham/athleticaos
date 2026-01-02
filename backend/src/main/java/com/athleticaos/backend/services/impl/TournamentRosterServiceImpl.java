@@ -6,6 +6,7 @@ import com.athleticaos.backend.repositories.*;
 import com.athleticaos.backend.services.EligibilityService;
 import com.athleticaos.backend.services.PlayerSuspensionService;
 import com.athleticaos.backend.services.TournamentRosterService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,9 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional
-        @SuppressWarnings("null")
-        public List<TournamentPlayerDTO> addPlayersToRoster(UUID tournamentId, UUID teamId, List<UUID> playerIds) {
+
+        public List<TournamentPlayerDTO> addPlayersToRoster(@NonNull UUID tournamentId, @NonNull UUID teamId,
+                        @NonNull List<UUID> playerIds) {
                 log.info("Adding {} players to roster for tournament {} team {}", playerIds.size(), tournamentId,
                                 teamId);
 
@@ -46,7 +48,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 List<TournamentPlayerDTO> addedPlayers = new ArrayList<>();
 
                 for (UUID playerId : playerIds) {
-                        Player player = playerRepository.findById(playerId)
+                        Player player = playerRepository.findById(java.util.Objects.requireNonNull(playerId))
                                         .orElseThrow(() -> new IllegalArgumentException(
                                                         "Player not found: " + playerId));
 
@@ -81,7 +83,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                         .eligibilityNote(eligibility.getReason())
                                         .build();
 
-                        tournamentPlayerRepository.save(tournamentPlayer);
+                        tournamentPlayerRepository.save(java.util.Objects.requireNonNull(tournamentPlayer));
                         addedPlayers.add(toDTO(tournamentPlayer));
                         log.info("Added player {} to roster with eligibility: {}", playerId, eligibility.isEligible());
                 }
@@ -91,8 +93,8 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional
-        @SuppressWarnings("null")
-        public void removePlayerFromRoster(UUID tournamentPlayerId) {
+
+        public void removePlayerFromRoster(@NonNull UUID tournamentPlayerId) {
                 log.info("Removing player from roster: {}", tournamentPlayerId);
 
                 TournamentPlayer tournamentPlayer = tournamentPlayerRepository.findById(tournamentPlayerId)
@@ -118,8 +120,8 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional(readOnly = true)
-        @SuppressWarnings("null")
-        public LineupHintsDTO getLineupHints(UUID matchId) {
+
+        public LineupHintsDTO getLineupHints(@NonNull UUID matchId) {
                 log.info("Getting lineup hints for match {}", matchId);
 
                 Match match = matchRepository.findById(matchId)
@@ -249,9 +251,10 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional
-        @SuppressWarnings("null")
+
         public TournamentPlayerDTO updateTournamentJerseyNumber(
-                        UUID tournamentId, UUID teamId, UUID playerId, Integer jerseyNumber) {
+                        @NonNull UUID tournamentId, @NonNull UUID teamId, @NonNull UUID playerId,
+                        Integer jerseyNumber) {
 
                 log.info("Updating tournament jersey number for player {} in tournament {} team {} to {}",
                                 playerId, tournamentId, teamId, jerseyNumber);

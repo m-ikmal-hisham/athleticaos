@@ -1,17 +1,17 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController, Pencil } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { MatchIntegrityConsole } from '@/components/admin/match/MatchIntegrityConsole';
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/GlassCard';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
-import { updateMatch, updateMatchStatus } from '@/api/matches.api';
+import { updateMatch, updateMatchStatus, updateMatchEvent } from '@/api/matches.api';
 import { getMatchOfficials, MatchOfficial } from '@/api/officials.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchControls } from '@/components/MatchControls';
-import { toast } from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 // New Operations Components
 import { PrimaryActionGrid } from '@/components/match/operations/PrimaryActionGrid';
@@ -27,12 +27,16 @@ import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 
 const SCORING_RULES: Record<string, number> = {
     'TRY': 5,
+    'PENALTY_TRY': 7,
     'CONVERSION': 2,
     'PENALTY': 3,
     'DROP_GOAL': 3,
     'YELLOW_CARD': 0,
     'RED_CARD': 0,
     'SUBSTITUTION': 0,
+    'INJURY': 0,
+    'SCRUM': 0,
+    'LINEOUT': 0,
 };
 
 // Helper for event icons
@@ -93,7 +97,14 @@ export const MatchDetail = () => {
         teamId?: string;
         teamName?: string;
         playerId?: string;
+        sub_in_playerId?: string; // For substitutions
     } | null>(null);
+
+    // Substitution State
+    const [subStep, setSubStep] = useState<'OUT' | 'IN'>('OUT');
+
+    // Event Editing State
+    const [editingEvent, setEditingEvent] = useState<{ id: string; minute: number } | null>(null);
 
     // Initial Load
     useEffect(() => {
@@ -183,6 +194,10 @@ export const MatchDetail = () => {
 
         setDraftAction({ type: actionType });
         setInteractionState('SELECT_TEAM');
+
+        if (actionType === 'SUBSTITUTION') {
+            setSubStep('OUT');
+        }
     };
 
     const handleTeamSelect = (teamId: string, teamName: string) => {
@@ -191,13 +206,39 @@ export const MatchDetail = () => {
         const updatedDraft = { ...draftAction, teamId, teamName };
         setDraftAction(updatedDraft);
 
-        // Almost all actions need a player or at least "Team/Unknown"
-        // So we always flow to Player Picker for consistency
+        // Team-only events skip player selection
+        if (['SCRUM', 'LINEOUT'].includes(draftAction.type)) {
+            submitEvent({ ...updatedDraft, playerId: null });
+            setInteractionState('IDLE');
+            setDraftAction(null);
+            return;
+        }
+
         setInteractionState('SELECT_PLAYER');
     };
 
     const handlePlayerSelect = async (playerId: string) => {
         if (!draftAction || !selectedMatch) return;
+
+        // Handle Substitution Flow
+        if (draftAction.type === 'SUBSTITUTION') {
+            if (subStep === 'OUT') {
+                // Selected player coming OFF
+                setDraftAction(prev => ({ ...prev!, playerId: playerId })); // This is the OUT player (primary event player)
+                setSubStep('IN');
+                // Stay in SELECT_PLAYER state, but picker will re-render with "Select Incoming Player"
+                return;
+            } else {
+                // Selected player coming IN
+                const finalAction = { ...draftAction, sub_in_playerId: playerId };
+                setInteractionState('IDLE');
+                setDraftAction(null);
+                setSubStep('OUT'); // Reset
+
+                await submitEvent(finalAction);
+                return;
+            }
+        }
 
         const finalAction = { ...draftAction, playerId };
         setInteractionState('IDLE');
@@ -206,10 +247,35 @@ export const MatchDetail = () => {
         await submitEvent(finalAction);
     };
 
+    const handleSaveEventMinute = async () => {
+        if (!editingEvent || !selectedMatch) return;
+
+        try {
+            await updateMatchEvent(editingEvent.id, { minute: editingEvent.minute });
+            await loadMatchDetail(selectedMatch.id);
+            showToast.success('Event updated');
+        } catch (error) {
+            console.error('Failed to update event:', error);
+            showToast.error('Failed to update event');
+        } finally {
+            setEditingEvent(null);
+        }
+    };
+
     const submitEvent = async (action: any) => {
         try {
             // Find player details if available
             const selectedPlayer = players.find(p => p.id === action.playerId);
+
+            // Construct custom notes for Subs
+            let eventNotes = action.notes || '';
+            let secondaryPlayerName = null;
+
+            if (action.type === 'SUBSTITUTION' && action.sub_in_playerId) {
+                const inPlayer = players.find(p => p.id === action.sub_in_playerId);
+                secondaryPlayerName = inPlayer ? `${inPlayer.firstName} ${inPlayer.lastName}` : 'Unknown';
+                eventNotes = `OUT: ${selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : 'Unknown'} | IN: ${secondaryPlayerName}`;
+            }
 
             await addEvent(selectedMatch!.id, {
                 matchId: selectedMatch!.id,
@@ -219,14 +285,14 @@ export const MatchDetail = () => {
                 playerName: selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : null,
                 eventType: action.type,
                 minute: displayMinute, // Use the live timer minute
-                notes: ''
+                notes: eventNotes
             });
 
             await loadMatchDetail(selectedMatch!.id);
-            toast.success(`${action.type} recorded!`);
+            showToast.success(`${action.type} recorded!`);
         } catch (error) {
             console.error('Failed to add event', error);
-            toast.error('Failed to add event');
+            showToast.error('Failed to add event');
         }
     };
 
@@ -243,9 +309,9 @@ export const MatchDetail = () => {
                 try {
                     await removeEvent(lastEvent.id, selectedMatch!.id);
                     await loadMatchDetail(selectedMatch!.id);
-                    toast.success('Undone');
+                    showToast.success('Undone');
                 } catch (error) {
-                    toast.error('Failed to undo');
+                    showToast.error('Failed to undo');
                 }
             }
         });
@@ -263,7 +329,7 @@ export const MatchDetail = () => {
                 await loadMatchDetail(selectedMatch!.id);
                 setIsHalfTime(false);
                 setIsTimerRunning(true);
-                toast.success('Match Started');
+                showToast.success('Match Started');
             }
         });
     };
@@ -276,7 +342,7 @@ export const MatchDetail = () => {
             onConfirm: () => {
                 setIsHalfTime(true);
                 setIsTimerRunning(false);
-                toast.success('Half Time');
+                showToast.success('Half Time');
             }
         });
     };
@@ -284,7 +350,7 @@ export const MatchDetail = () => {
     const handleResume = () => {
         setIsHalfTime(false);
         setIsTimerRunning(true);
-        toast.success('Resumed');
+        showToast.success('Resumed');
     };
 
     const handleFullTime = async () => {
@@ -301,7 +367,7 @@ export const MatchDetail = () => {
                 });
                 await loadMatchDetail(selectedMatch!.id);
                 setIsTimerRunning(false);
-                toast.success('Match Completed');
+                showToast.success('Match Completed');
             }
         });
     };
@@ -313,7 +379,7 @@ export const MatchDetail = () => {
             message: 'Are you sure?',
             onConfirm: async () => {
                 await cancelMatch(selectedMatch!.id);
-                toast.success('Cancelled');
+                showToast.success('Cancelled');
                 navigate('/dashboard/matches');
             }
         });
@@ -340,57 +406,43 @@ export const MatchDetail = () => {
     const isMatchLocked = selectedMatch.status === 'CANCELLED' || (selectedMatch.status === 'COMPLETED' && !isAdmin);
 
     const getPlayersForPicker = () => {
-        if (!draftAction?.teamId || !selectedMatch) return [];
+        if (!draftAction?.teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
 
         const isHome = draftAction.teamId === selectedMatch.homeTeamId;
         const currentLineup = isHome ? matchLineups.home : matchLineups.away;
 
-        // If lineup exists, return ONLY players in the lineup (Starters & Bench)
-        // We filter out 'NOT_SELECTED' or 'RESERVE' if that's how they are stored, 
-        // typically getLineup returns everything, so we check role.
-
-        // Actually matchLineupService.getLineup returns stored entries. 
-        // If the team hasn't set a lineup using the new editor, this array might be empty 
-        // or partial. 
-
-        // Strategy: 
-        // 1. If lineup has entries, use them to filter the main players list.
-        // 2. If lineup is EMPTY, fallback to showing all organization players (legacy behavior) OR show empty?
-        // User requested: "dont display ... if they are not in the line ups". 
-        // Implies strict mode. But if they haven't set lineups yet, they can't score? 
-        // Let's assume strict if > 0 entries.
+        // Helper to format
+        const formatP = (l: any) => ({
+            id: l.playerId,
+            name: l.playerName,
+            number: l.jerseyNumber || 0
+        });
 
         if (currentLineup && currentLineup.length > 0) {
-            // Filter to only Starters and Bench
-            // Return from the main 'players' store matched against validIds
-            // This ensures we have the full player details (name, etc) from the store
+            const starters = currentLineup
+                .filter(l => l.role === 'STARTER' || l.isStarter)
+                .map(formatP)
+                .sort((a, b) => (a.number || 999) - (b.number || 999));
 
-            // We map from the lineup entries directly to ensure we use specific ordering or numbering if available?
-            // Actually, the picker needs basic info.
-            // Let's iterate the LINEUP to preserve "Jersey Number" if it was overridden there.
+            const bench = currentLineup
+                .filter(l => l.role === 'BENCH')
+                .map(formatP)
+                .sort((a, b) => (a.number || 999) - (b.number || 999));
 
-            return currentLineup
-                .filter(l => l.role === 'STARTER' || l.role === 'BENCH' || l.isStarter) // Ensure we capture valid active players
-                .map(l => ({
-                    id: l.playerId,
-                    name: l.playerName, // Lineup entry has the snapshot name
-                    number: l.jerseyNumber || 0
-                }))
-                .sort((a, b) => {
-                    // Sort by jersey number for picker
-                    return (a.number || 999) - (b.number || 999);
-                });
+            return { starters, bench, other: [] };
         }
 
-        // Fallback: If no lineup set, show all organization players (or show none? Fallback seems safer for now)
+        // Fallback: All players in "Other" or classify if we can (but we can't if no lineup)
         const teamOrgId = isHome ? selectedMatch.homeTeamOrgId : selectedMatch.awayTeamOrgId;
-        return players
+        const all = players
             .filter(p => p.organisationId === teamOrgId)
             .map(p => ({
                 id: p.id,
                 name: `${p.firstName} ${p.lastName}`,
                 number: 0
             }));
+
+        return { starters: [], bench: [], other: all };
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -427,24 +479,7 @@ export const MatchDetail = () => {
                 </div>
 
                 {/* Match Controls (Timer & Status) */}
-                <div className="w-full xl:w-auto">
-                    <MatchControls
-                        match={selectedMatch}
-                        isHalfTime={isHalfTime}
-                        onStartMatch={handleStartMatch}
-                        onHalfTime={handleHalfTime}
-                        onResume={handleResume}
-                        onFullTime={handleFullTime}
-                        onCancelMatch={handleCancelMatch}
-                        isAdmin={isAdmin!}
-                        matchTimeSeconds={matchTimeSeconds}
-                        isTimerRunning={isTimerRunning}
-                        onTimerStart={handleTimerStart}
-                        onTimerPause={handleTimerPause}
-                        onTimerAdjust={handleTimerAdjust}
-                        onTimeUpdate={(newSeconds) => setMatchTimeSeconds(newSeconds)}
-                    />
-                </div>
+                {/* Match Controls MOVED below scoreboard as requested */}
             </div>
 
             {/* Tab Navigation */}
@@ -541,6 +576,26 @@ export const MatchDetail = () => {
                             </GlassCardContent>
                         </GlassCard>
 
+                        {/* Moved Match Controls Here */}
+                        <div className="flex justify-center w-full">
+                            <MatchControls
+                                match={selectedMatch}
+                                isHalfTime={isHalfTime}
+                                onStartMatch={handleStartMatch}
+                                onHalfTime={handleHalfTime}
+                                onResume={handleResume}
+                                onFullTime={handleFullTime}
+                                onCancelMatch={handleCancelMatch}
+                                isAdmin={isAdmin!}
+                                matchTimeSeconds={matchTimeSeconds}
+                                isTimerRunning={isTimerRunning}
+                                onTimerStart={handleTimerStart}
+                                onTimerPause={handleTimerPause}
+                                onTimerAdjust={handleTimerAdjust}
+                                onTimeUpdate={(newSeconds) => setMatchTimeSeconds(newSeconds)}
+                            />
+                        </div>
+
                         {/* Stats Entry Area (Admin Only) */}
                         {isAdmin && !isMatchLocked && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -596,7 +651,22 @@ export const MatchDetail = () => {
                                             ) : (
                                                 [...events].reverse().map((event) => ( // Show newest first
                                                     <TableRow key={event.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors">
-                                                        <TableCell className="font-mono text-slate-600 dark:text-slate-300 font-bold">{event.minute}'</TableCell>
+                                                        <TableCell className="font-mono text-slate-600 dark:text-slate-300 font-bold">
+                                                            {editingEvent?.id === event.id ? (
+                                                                <input
+                                                                    type="number"
+                                                                    aria-label="Edit match minute"
+                                                                    className="w-12 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-center text-sm"
+                                                                    value={editingEvent.minute}
+                                                                    onChange={(e) => setEditingEvent({ ...editingEvent, minute: parseInt(e.target.value) || 0 })}
+                                                                    onBlur={handleSaveEventMinute}
+                                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEventMinute()}
+                                                                    autoFocus
+                                                                />
+                                                            ) : (
+                                                                <span>{event.minute}'</span>
+                                                            )}
+                                                        </TableCell>
                                                         <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{event.teamName}</TableCell>
                                                         <TableCell>
                                                             <div className="flex items-center gap-3">
@@ -614,24 +684,34 @@ export const MatchDetail = () => {
                                                         <TableCell className="text-slate-500 dark:text-slate-400">{event.playerName || '-'}</TableCell>
                                                         <TableCell>
                                                             {isAdmin && !isMatchLocked && (
-                                                                <button
-                                                                    title="Delete Event"
-                                                                    onClick={() => {
-                                                                        setConfirmModal({
-                                                                            isOpen: true,
-                                                                            title: 'Delete Event',
-                                                                            message: 'Permanently delete this event?',
-                                                                            onConfirm: async () => {
-                                                                                await removeEvent(event.id, selectedMatch.id);
-                                                                                await loadMatchDetail(selectedMatch.id);
-                                                                                toast.success('Deleted');
-                                                                            }
-                                                                        })
-                                                                    }}
-                                                                    className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                                >
-                                                                    <Trash className="w-4 h-4" />
-                                                                </button>
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        title="Edit Minute"
+                                                                        onClick={() => setEditingEvent({ id: event.id, minute: event.minute || 0 })}
+                                                                        className="text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                                    >
+                                                                        <Pencil className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        title="Delete Event"
+                                                                        onClick={() => {
+                                                                            setConfirmModal({
+                                                                                isOpen: true,
+                                                                                title: 'Delete Event',
+                                                                                message: 'Permanently delete this event?',
+                                                                                onConfirm: async () => {
+                                                                                    await removeEvent(event.id, selectedMatch.id);
+                                                                                    await loadMatchDetail(selectedMatch.id);
+                                                                                    showToast.success('Deleted');
+                                                                                }
+                                                                            })
+                                                                        }}
+                                                                        className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                                    >
+                                                                        <Trash className="w-4 h-4" />
+                                                                    </button>
+
+                                                                </div>
                                                             )}
                                                         </TableCell>
                                                     </TableRow>
@@ -807,10 +887,13 @@ export const MatchDetail = () => {
                     teamName={draftAction.teamName || 'Team'}
                     players={getPlayersForPicker()}
                     onSelect={handlePlayerSelect}
-                    onCancel={() => { setInteractionState('IDLE'); setDraftAction(null); }}
+                    onCancel={() => { setInteractionState('IDLE'); setDraftAction(null); setSubStep('OUT'); }}
+                    isSubstitution={draftAction.type === 'SUBSTITUTION'}
+                    subStep={subStep}
                 />
             )}
 
+            {/* Confirm Modal */}
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
                 title={confirmModal.title}
