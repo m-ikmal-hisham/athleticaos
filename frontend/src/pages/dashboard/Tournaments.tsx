@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { SearchableSelect } from "@/components/SearchableSelect";
 import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
@@ -119,41 +120,26 @@ export default function Tournaments() {
 
                 {/* Secondary Filters */}
                 <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-300 ${showFilters ? 'block' : 'hidden md:grid'}`}>
-                    <select
+                    <SearchableSelect
+                        placeholder="All Seasons"
                         value={seasonFilter}
-                        onChange={(e) => setSeasonFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by Season"
-                    >
-                        <option value="">All Seasons</option>
-                        {seasons.map(season => (
-                            <option key={season} value={season}>{season}</option>
-                        ))}
-                    </select>
+                        onChange={(value) => setSeasonFilter(value as string)}
+                        options={[{ value: "", label: "All Seasons" }, ...seasons.map(season => ({ value: season || "", label: season || "Unknown" }))]}
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All Types"
                         value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by Type"
-                    >
-                        <option value="">All Types</option>
-                        {types.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
+                        onChange={(value) => setTypeFilter(value as string)}
+                        options={[{ value: "", label: "All Types" }, ...types.map(type => ({ value: type || "", label: type || "Unknown" }))]}
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All Levels"
                         value={levelFilter}
-                        onChange={(e) => setLevelFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by Level"
-                    >
-                        <option value="">All Levels</option>
-                        {levels.map(level => (
-                            <option key={level} value={level}>{level}</option>
-                        ))}
-                    </select>
+                        onChange={(value) => setLevelFilter(value as string)}
+                        options={[{ value: "", label: "All Levels" }, ...levels.map(level => ({ value: level || "", label: level || "Unknown" }))]}
+                    />
                 </div>
             </div>
 

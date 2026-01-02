@@ -101,7 +101,7 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
                 {/* Scoring Source (Tries vs Kicks) */}
                 <div>
                     <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Points Source</h4>
-                    <div className="h-[180px] w-full text-xs">
+                    <div className="h-[180px] w-full text-xs min-w-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 layout="vertical"
@@ -132,7 +132,7 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
                 {/* Half Breakdown */}
                 <div>
                     <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Half-by-Half Performance</h4>
-                    <div className="h-[180px] w-full text-xs">
+                    <div className="h-[180px] w-full text-xs min-w-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={data.halfData}

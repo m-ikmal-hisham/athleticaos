@@ -6,6 +6,8 @@ import { usersApi, InviteUserRequest } from '@/api/users.api';
 import { useOrganisationsStore } from '@/store/organisations.store';
 import { useAuthStore } from '@/store/auth.store';
 import toast from 'react-hot-toast';
+import { formatRoleName } from '@/utils/stringUtils';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface InviteUserModalProps {
     isOpen: boolean;
@@ -106,27 +108,23 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
                 </div>
 
                 <Input
-                    label="Email"
+                    label={formData.role === 'PLAYER' ? "Email (Optional)" : "Email"}
                     type="email"
                     value={formData.email}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    required={formData.role !== 'PLAYER'}
                 />
 
-                <div>
-                    <label className="block text-sm font-medium mb-2">Role</label>
-                    <select
-                        aria-label="Role Selection"
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        required
-                    >
-                        {getAvailableRoles().map(role => (
-                            <option key={role} value={role}>{role}</option>
-                        ))}
-                    </select>
-                </div>
+                <SearchableSelect
+                    label="Role"
+                    value={formData.role}
+                    onChange={(value) => setFormData({ ...formData, role: value as string })}
+                    options={getAvailableRoles().map(role => ({
+                        value: role,
+                        label: formatRoleName(role)
+                    }))}
+                    required
+                />
 
                 {isSuperAdmin && (
                     <div>

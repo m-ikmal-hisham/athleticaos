@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface TournamentService {
         List<TournamentResponse> getAllTournaments(String level);
 
+        List<TournamentResponse> getTournamentsBySeason(java.util.UUID seasonId);
+
         List<TournamentResponse> getPublishedTournaments();
 
         TournamentResponse getTournamentById(java.util.UUID id);

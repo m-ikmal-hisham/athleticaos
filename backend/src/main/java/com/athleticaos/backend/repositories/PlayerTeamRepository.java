@@ -31,5 +31,8 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
     List<com.athleticaos.backend.entities.Player> findPlayersByOrganisationIds(
             @Param("orgIds") java.util.Set<UUID> orgIds);
 
+    @Query("SELECT DISTINCT pt.player FROM PlayerTeam pt WHERE pt.team.id = :teamId AND pt.isActive = true")
+    List<com.athleticaos.backend.entities.Player> findPlayersByTeamId(@Param("teamId") UUID teamId);
+
     long countByTeamId(UUID teamId);
 }

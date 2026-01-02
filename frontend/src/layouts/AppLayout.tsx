@@ -306,7 +306,7 @@ export const AppLayout = () => {
                                                 'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
                                                 isCollapsed ? 'justify-center py-3 px-2' : 'px-4 py-3 mx-2',
                                                 isActive
-                                                    ? 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20'
+                                                    ? 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-blue-600 dark:to-blue-500 text-white shadow-lg shadow-blue-500/20 dark:shadow-blue-500/20'
                                                     : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
                                             )}
                                         >
@@ -415,7 +415,8 @@ export const AppLayout = () => {
                 {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
                 <div className={clsx(
                     "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
-                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[320px]"
+                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[320px]",
+                    location.pathname.startsWith('/dashboard/matches/') ? "opacity-0 invisible" : "opacity-100 visible"
                 )}>
                     <div className="pointer-events-auto w-full max-w-3xl px-6">
                         <TournamentPill />

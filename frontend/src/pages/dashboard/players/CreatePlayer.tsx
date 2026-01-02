@@ -9,6 +9,7 @@ import { fetchTeams } from '@/api/teams.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { Gender, DominantSide } from '@/types';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
+import { ImageUpload } from '@/components/common/ImageUpload';
 import toast from 'react-hot-toast';
 import { calculateAge } from '@/utils/date';
 
@@ -27,6 +28,7 @@ export const CreatePlayer = () => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
+    const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
     const [identificationType, setIdentificationType] = useState("IC");
@@ -101,6 +103,7 @@ export const CreatePlayer = () => {
             state,
             country,
             address: addressLine1,
+            photoUrl: photoUrl || undefined,
             status,
             heightCm: heightCm ? parseInt(heightCm) : undefined,
             weightKg: weightKg ? parseInt(weightKg) : undefined,
@@ -142,6 +145,15 @@ export const CreatePlayer = () => {
                         <h3 className="text-sm font-semibold text-primary-500 uppercase tracking-wider border-b border-white/10 pb-2">
                             Personal Information
                         </h3>
+
+                        <div className="flex justify-center mb-6">
+                            <ImageUpload
+                                value={photoUrl}
+                                onChange={setPhotoUrl}
+                                label="Profile Photo"
+                                className="w-32"
+                            />
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">

@@ -283,6 +283,8 @@ public class MatchServiceImpl implements MatchService {
         if (match.getHomeTeam() != null) {
             builder.homeTeamId(match.getHomeTeam().getId());
             builder.homeTeamName(match.getHomeTeam().getName());
+            builder.homeTeamLogoUrl(match.getHomeTeam().getLogoUrl());
+            builder.homeTeamShortName(match.getHomeTeam().getShortName());
             if (match.getHomeTeam().getOrganisation() != null) {
                 builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
             }
@@ -293,6 +295,8 @@ public class MatchServiceImpl implements MatchService {
         if (match.getAwayTeam() != null) {
             builder.awayTeamId(match.getAwayTeam().getId());
             builder.awayTeamName(match.getAwayTeam().getName());
+            builder.awayTeamLogoUrl(match.getAwayTeam().getLogoUrl());
+            builder.awayTeamShortName(match.getAwayTeam().getShortName());
             if (match.getAwayTeam().getOrganisation() != null) {
                 builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
             }

@@ -17,6 +17,7 @@ import java.util.UUID;
 public class SeasonController {
 
     private final SeasonService seasonService;
+    private final com.athleticaos.backend.services.TournamentService tournamentService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -58,5 +59,20 @@ public class SeasonController {
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     public ResponseEntity<Season> updateStatus(@PathVariable UUID id, @RequestParam String status) {
         return ResponseEntity.ok(seasonService.updateStatus(id, status));
+    }
+
+    @GetMapping("/{id}/tournaments")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.TournamentResponse>> getTournamentsBySeason(
+            @PathVariable UUID id) {
+        // We need to inject TournamentService. Circular dependency risk?
+        // SeasonService depends on SeasonRepository. TournamentService depends on
+        // SeasonRepository.
+        // Controller depends on Service.
+        // It is cleaner to put this in TournamentController: GET
+        // /tournaments?seasonId=...
+        // But the plan said SeasonController /api/v1/seasons/{id}/tournaments.
+        // Let's add TournamentService dependency.
+        return ResponseEntity.ok(tournamentService.getTournamentsBySeason(id));
     }
 }

@@ -42,6 +42,8 @@ public class StandingsServiceImpl implements StandingsService {
                     standingsMap.put(tt.getTeam().getId(), StandingsResponse.builder()
                             .teamId(tt.getTeam().getId())
                             .teamName(tt.getTeam().getName())
+                            .teamLogoUrl(tt.getTeam().getLogoUrl())
+                            .teamShortName(tt.getTeam().getShortName())
                             .poolName(tt.getPoolNumber())
                             .played(0)
                             .won(0)

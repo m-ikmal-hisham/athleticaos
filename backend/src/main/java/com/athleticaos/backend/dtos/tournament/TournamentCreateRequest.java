@@ -37,10 +37,13 @@ public class TournamentCreateRequest {
     // Phase C: Competition Management
     // Phase C: Competition Management
     private UUID seasonId;
+    private String seasonName;
     private CompetitionType competitionType;
 
     private java.util.List<CreateCategoryRequest> categories;
 
     private String logoUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
     private String livestreamUrl;
 }

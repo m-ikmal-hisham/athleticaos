@@ -1,11 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
+import { SearchableSelect } from "../../components/SearchableSelect";
+import { deleteTeam } from "../../api/teams.api";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { useTeamsStore } from "../../store/teams.store";
 import { StatusPill } from "../../components/StatusPill";
-import { UsersThree, MagnifyingGlass, Plus, Funnel, PencilSimple } from "@phosphor-icons/react";
+import { UsersThree, MagnifyingGlass, Plus, Funnel, PencilSimple, Trash } from "@phosphor-icons/react";
+import toast from "react-hot-toast";
 import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
@@ -69,6 +72,20 @@ export default function Teams() {
         navigate(`/dashboard/teams/${teamId}/edit`);
     };
 
+    const handleDelete = async (e: React.MouseEvent, teamId: string) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to delete this team?")) {
+            try {
+                await deleteTeam(teamId);
+                toast.success("Team deleted successfully");
+                getTeams();
+            } catch (error) {
+                console.error("Failed to delete team", error);
+                toast.error("Failed to delete team");
+            }
+        }
+    };
+
     // Use ID preferably if slug is missing, but backend usually provides slug. 
     // Ideally we want to use /teams/:slug for public facing, but /teams/:id might be safer for admin if names change.
     // However, AppRoutes defines /teams/:slug -> TeamDetail.
@@ -126,41 +143,26 @@ export default function Teams() {
 
                 {/* Secondary Filters - Collapsible on mobile, always visible or grid on desktop if needed */}
                 <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-all duration-300 ${showFilters ? 'block' : 'hidden md:grid'}`}>
-                    <select
+                    <SearchableSelect
+                        placeholder="All Organisations"
                         value={organisationFilter}
-                        onChange={(e) => setOrganisationFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by Organisation"
-                    >
-                        <option value="">All Organisations</option>
-                        {organisations.map(org => (
-                            <option key={org} value={org}>{org}</option>
-                        ))}
-                    </select>
+                        onChange={(value) => setOrganisationFilter(value as string)}
+                        options={[{ value: "", label: "All Organisations" }, ...organisations.map(org => ({ value: org || "", label: org || "Unknown" }))]}
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All Age Groups"
                         value={ageGroupFilter}
-                        onChange={(e) => setAgeGroupFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by Age Group"
-                    >
-                        <option value="">All Age Groups</option>
-                        {ageGroups.map(age => (
-                            <option key={age} value={age}>{age}</option>
-                        ))}
-                    </select>
+                        onChange={(value) => setAgeGroupFilter(value as string)}
+                        options={[{ value: "", label: "All Age Groups" }, ...ageGroups.map(age => ({ value: age || "", label: age || "Unknown" }))]}
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All States"
                         value={stateFilter}
-                        onChange={(e) => setStateFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by State"
-                    >
-                        <option value="">All States</option>
-                        {states.map(state => (
-                            <option key={state} value={state}>{state}</option>
-                        ))}
-                    </select>
+                        onChange={(value) => setStateFilter(value as string)}
+                        options={[{ value: "", label: "All States" }, ...states.map(state => ({ value: state || "", label: state || "Unknown" }))]}
+                    />
                 </div>
             </div>
 
@@ -192,19 +194,38 @@ export default function Teams() {
                             onClick={() => handleCardClick(t)}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 text-lg font-bold border border-orange-500/20">
-                                    {t.name.substring(0, 2).toUpperCase()}
+                                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden">
+                                    {t.logoUrl ? (
+                                        <img
+                                            src={t.logoUrl.startsWith('http') ? t.logoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${t.logoUrl}`}
+                                            alt={t.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-orange-500 text-lg font-bold">
+                                            {t.name.substring(0, 2).toUpperCase()}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex gap-2">
                                     <StatusPill status={t.status} />
                                     {isAdmin && (
-                                        <button
-                                            onClick={(e) => handleEdit(e, t.id)}
-                                            className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                                            aria-label="Edit team"
-                                        >
-                                            <PencilSimple className="w-4 h-4" />
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={(e) => handleEdit(e, t.id)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                aria-label="Edit team"
+                                            >
+                                                <PencilSimple className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(e, t.id)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                aria-label="Delete team"
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             </div>

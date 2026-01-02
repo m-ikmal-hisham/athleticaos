@@ -35,20 +35,62 @@ public class TeamServiceImpl implements TeamService {
     private final AuditLogger auditLogger;
 
     @Transactional(readOnly = true)
-    public List<TeamResponse> getAllTeams() {
+    public List<TeamResponse> getAllTeams(UUID organisationId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
-        List<Team> teams;
-        if (accessibleIds == null) {
-            teams = teamRepository.findAll();
-        } else if (accessibleIds.isEmpty()) {
-            teams = java.util.Collections.emptyList();
+        java.util.Set<UUID> targetIds = new java.util.HashSet<>();
+
+        if (organisationId != null) {
+            // If filtering by specific org, ensure we fetch its hierarchy
+            targetIds = resolveOrganisationHierarchy(organisationId);
+
+            // Security check: Ensure requested org is within user's accessible scope
+            if (accessibleIds != null) {
+                targetIds.retainAll(accessibleIds);
+            }
         } else {
-            teams = teamRepository.findByOrganisation_IdIn(accessibleIds);
+            // No filter, use user's full scope
+            if (accessibleIds != null) {
+                targetIds.addAll(accessibleIds);
+            } else {
+                // Super Admin with no filter -> All teams
+                return teamRepository.findAll().stream()
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList());
+            }
         }
+
+        if (targetIds.isEmpty() && organisationId != null) {
+            return java.util.Collections.emptyList();
+        } else if (targetIds.isEmpty() && accessibleIds != null && !accessibleIds.isEmpty()) {
+            // Should not happen if logic above is correct, but safe fallback
+            return java.util.Collections.emptyList();
+        }
+
+        List<Team> teams = teamRepository.findByOrganisation_IdIn(targetIds);
 
         return teams.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    private java.util.Set<UUID> resolveOrganisationHierarchy(UUID rootId) {
+        java.util.Set<UUID> hierarchy = new java.util.HashSet<>();
+        java.util.Queue<UUID> queue = new java.util.LinkedList<>();
+
+        queue.add(rootId);
+        hierarchy.add(rootId);
+
+        while (!queue.isEmpty()) {
+            UUID currentId = queue.poll();
+            List<Organisation> children = organisationRepository.findByParentOrgId(currentId);
+            for (Organisation child : children) {
+                if (!hierarchy.contains(child.getId())) {
+                    hierarchy.add(child.getId());
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return hierarchy;
     }
 
     @Transactional(readOnly = true)
@@ -81,10 +123,12 @@ public class TeamServiceImpl implements TeamService {
                 .organisation(org)
                 .slug(slug)
                 .name(request.getName())
+                .shortName(request.getShortName())
                 .category(request.getCategory())
                 .ageGroup(request.getAgeGroup())
                 .division(request.getDivision())
                 .state(request.getState())
+                .logoUrl(request.getLogoUrl())
                 .status("Active")
                 .build();
 
@@ -118,6 +162,12 @@ public class TeamServiceImpl implements TeamService {
         if (request.getStatus() != null) {
             team.setStatus(request.getStatus());
         }
+        if (request.getLogoUrl() != null) {
+            team.setLogoUrl(request.getLogoUrl());
+        }
+        if (request.getShortName() != null) {
+            team.setShortName(request.getShortName());
+        }
 
         Team savedTeam = teamRepository.save(team);
         auditLogger.logTeamUpdated(savedTeam, httpRequest);
@@ -131,12 +181,14 @@ public class TeamServiceImpl implements TeamService {
                 .organisationName(team.getOrganisation().getName())
                 .slug(team.getSlug())
                 .name(team.getName())
+                .shortName(team.getShortName())
                 .category(team.getCategory())
                 .ageGroup(team.getAgeGroup())
                 .division(team.getDivision())
                 .level(team.getDivision()) // Map division to level for now
                 .state(team.getState())
                 .status(team.getStatus())
+                .logoUrl(team.getLogoUrl())
                 .players(playerTeamService.getTeamRoster(team.getId()))
                 .build();
     }
@@ -145,5 +197,17 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> getPlayersByTeam(UUID teamId) {
         return playerTeamService.getTeamRoster(teamId);
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public void deleteTeam(UUID id, HttpServletRequest httpRequest) {
+        log.info("Deleting team: {}", id);
+        Team team = teamRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        teamRepository.delete(team);
+        auditLogger.logTeamDeleted(team, httpRequest);
     }
 }

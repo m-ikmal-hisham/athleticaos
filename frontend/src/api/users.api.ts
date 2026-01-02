@@ -32,6 +32,7 @@ export interface UserUpdateRequest {
     country?: string;
     stateCode?: string;
     countryCode?: string;
+    avatarUrl?: string;
 }
 
 export const usersApi = {
@@ -40,8 +41,8 @@ export const usersApi = {
         return response;
     },
 
-    getAllUsers: async () => {
-        const response = await api.get('/users');
+    getAllUsers: async (params?: { organisationId?: string }) => {
+        const response = await api.get('/users', { params });
         return response;
     },
 
@@ -52,6 +53,11 @@ export const usersApi = {
 
     updateUser: async (id: string, request: UserUpdateRequest) => {
         const response = await api.put(`/users/${id}`, request);
+        return response;
+    },
+
+    deleteUser: async (id: string) => {
+        const response = await api.delete(`/users/${id}`);
         return response;
     },
 };

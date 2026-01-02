@@ -197,6 +197,7 @@ public class MatchEventServiceImpl implements MatchEventService {
                                         match.getTournament(),
                                         team,
                                         player,
+                                        match,
                                         "Red card in match " + matchLabel,
                                         1 // MVP: 1 match suspension
                         );
@@ -226,6 +227,7 @@ public class MatchEventServiceImpl implements MatchEventService {
                                                                 match.getTournament(),
                                                                 team,
                                                                 player,
+                                                                match,
                                                                 expectedReason,
                                                                 1);
                                                 auditLogger.logSuspensionCreated(suspension, httpRequest);

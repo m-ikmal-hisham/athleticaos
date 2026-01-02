@@ -486,7 +486,21 @@ export const MatchDetail = () => {
 
                                 <div className="text-center relative z-10">
                                     <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">HOME</h3>
-                                    <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white max-w-[150px] md:max-w-[200px] truncate leading-tight">{selectedMatch.homeTeamName}</div>
+                                    {selectedMatch.homeTeamLogoUrl && (
+                                        <img
+                                            src={selectedMatch.homeTeamLogoUrl.startsWith('http') ? selectedMatch.homeTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${selectedMatch.homeTeamLogoUrl}`}
+                                            alt={`${selectedMatch.homeTeamName} logo`}
+                                            className="w-16 h-16 mx-auto mb-2 object-contain"
+                                        />
+                                    )}
+                                    <div className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 mb-0.5 leading-none">
+                                        {selectedMatch.homeTeamShortName || selectedMatch.homeTeamName}
+                                    </div>
+                                    {selectedMatch.homeTeamShortName && (
+                                        <div className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-[150px] md:max-w-[200px] truncate mx-auto leading-tight">
+                                            {selectedMatch.homeTeamName}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-10">
@@ -502,7 +516,21 @@ export const MatchDetail = () => {
 
                                 <div className="text-center relative z-10">
                                     <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">AWAY</h3>
-                                    <div className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white max-w-[150px] md:max-w-[200px] truncate leading-tight">{selectedMatch.awayTeamName}</div>
+                                    {selectedMatch.awayTeamLogoUrl && (
+                                        <img
+                                            src={selectedMatch.awayTeamLogoUrl.startsWith('http') ? selectedMatch.awayTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${selectedMatch.awayTeamLogoUrl}`}
+                                            alt={`${selectedMatch.awayTeamName} logo`}
+                                            className="w-16 h-16 mx-auto mb-2 object-contain"
+                                        />
+                                    )}
+                                    <div className="text-2xl md:text-3xl font-black text-red-600 dark:text-red-400 mb-0.5 leading-none">
+                                        {selectedMatch.awayTeamShortName || selectedMatch.awayTeamName}
+                                    </div>
+                                    {selectedMatch.awayTeamShortName && (
+                                        <div className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-[150px] md:max-w-[200px] truncate mx-auto leading-tight">
+                                            {selectedMatch.awayTeamName}
+                                        </div>
+                                    )}
                                 </div>
                             </GlassCardContent>
                         </GlassCard>

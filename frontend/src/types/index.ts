@@ -111,6 +111,8 @@ export interface Team {
     // Tournament context fields (optional)
     poolNumber?: string;
     tournamentCategoryId?: string;
+    logoUrl?: string;
+    shortName?: string;
 }
 
 export interface TeamCreateRequest {
@@ -118,6 +120,8 @@ export interface TeamCreateRequest {
     name: string;
     category: TeamCategory;
     ageGroup: AgeGroup;
+    logoUrl?: string;
+    shortName?: string;
 }
 
 // ============================================
@@ -168,6 +172,7 @@ export interface Player {
     organisationId?: string;
     organisationName?: string;
     teamNames?: string[];
+    photoUrl?: string;
     createdAt: string;
 }
 
@@ -202,6 +207,7 @@ export interface PlayerCreateRequest {
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
+    photoUrl?: string;
 }
 
 export interface PlayerUpdateRequest {
@@ -223,6 +229,7 @@ export interface PlayerUpdateRequest {
     dominantLeg?: string;
     heightCm?: number;
     weightKg?: number;
+    photoUrl?: string;
 }
 
 // ============================================
@@ -264,6 +271,8 @@ export interface Tournament {
     ageGroupLabel?: string;
     categories?: TournamentCategory[];
     logoUrl?: string;
+    bannerUrl?: string;
+    backgroundUrl?: string;
     livestreamUrl?: string;
     organiserBranding?: {
         id: string;
@@ -299,6 +308,8 @@ export interface TournamentCreateRequest {
     venue: string;
     categories?: CreateCategoryRequest[];
     logoUrl?: string;
+    bannerUrl?: string;
+    backgroundUrl?: string;
     livestreamUrl?: string;
 }
 
@@ -403,6 +414,14 @@ export interface MatchCreateRequest {
 export interface MatchResponse extends Match {
     homeTeamName?: string;
     awayTeamName?: string;
+    homeTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamLogoUrl?: string;
+    awayTeamShortName?: string;
+    homeTeamOrgId?: string;
+    awayTeamOrgId?: string;
+    tournamentName?: string;
+    tournamentSlug?: string;
 }
 
 export interface TournamentStageResponse {
@@ -429,6 +448,8 @@ export interface Standings {
     poolName: string;
     teamId: string;
     teamName: string;
+    teamLogoUrl?: string;
+    teamShortName?: string;
     played: number;
     won: number;
     drawn: number;

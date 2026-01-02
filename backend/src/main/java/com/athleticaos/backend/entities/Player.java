@@ -41,6 +41,9 @@ public class Player {
     @Column(name = "weight_kg")
     private Integer weightKg;
 
+    @Column(name = "photo_url")
+    private String photoUrl;
+
     @Column(unique = true)
     private String slug;
 

@@ -6,6 +6,7 @@ import '@/styles/globals.css'
 import { useUIStore } from "@/store/ui.store";
 import { Toaster } from 'react-hot-toast';
 import { IconContext } from '@phosphor-icons/react';
+import { HelmetProvider } from 'react-helmet-async';
 
 export const Root = () => {
     const { theme, getEffectiveTheme } = useUIStore();
@@ -16,24 +17,26 @@ export const Root = () => {
     }, [theme, getEffectiveTheme]);
 
     return (
-        <IconContext.Provider value={{
-            weight: "duotone",
-            className: "text-primary-900 dark:text-secondary-100"
-        }}>
-            <RouterProvider router={router} />
-            <Toaster
-                position="top-right"
-                toastOptions={{
-                    duration: 4000,
-                    style: {
-                        background: 'var(--glass-bg)',
-                        color: 'var(--text-color)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        backdropFilter: 'blur(24px)',
-                    },
-                }}
-            />
-        </IconContext.Provider>
+        <HelmetProvider>
+            <IconContext.Provider value={{
+                weight: "duotone",
+                className: "text-primary-900 dark:text-secondary-100"
+            }}>
+                <RouterProvider router={router} />
+                <Toaster
+                    position="top-right"
+                    toastOptions={{
+                        duration: 4000,
+                        style: {
+                            background: 'var(--glass-bg)',
+                            color: 'var(--text-color)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            backdropFilter: 'blur(24px)',
+                        },
+                    }}
+                />
+            </IconContext.Provider>
+        </HelmetProvider>
     );
 };
 

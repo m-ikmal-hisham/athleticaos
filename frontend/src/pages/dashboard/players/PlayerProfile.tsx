@@ -46,6 +46,7 @@ interface PlayerDetail {
     dateOfBirth?: string; // or dob
     dob?: string;
     notes?: string;
+    photoUrl?: string;
 }
 
 export const PlayerProfile = () => {
@@ -144,16 +145,24 @@ export const PlayerProfile = () => {
                 {/* Left Column: Profile Card */}
                 <GlassCard className="lg:col-span-1 h-fit p-6 space-y-6">
                     <div className="flex flex-col items-center text-center">
-                        <div className="w-24 h-24 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center text-3xl font-bold border border-primary-500/20 mb-4">
-                            {getInitials(player.firstName, player.lastName)}
-                        </div>
+                        {player.photoUrl ? (
+                            <img
+                                src={player.photoUrl.startsWith('http') ? player.photoUrl : `${import.meta.env.VITE_API_URL}${player.photoUrl}`}
+                                alt={`${player.firstName} ${player.lastName}`}
+                                className="w-24 h-24 rounded-full object-cover border-2 border-primary-500/20 mb-4"
+                            />
+                        ) : (
+                            <div className="w-24 h-24 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center text-3xl font-bold border border-primary-500/20 mb-4">
+                                {getInitials(player.firstName, player.lastName)}
+                            </div>
+                        )}
                         <h2 className="text-xl font-bold text-foreground">{player.firstName} {player.lastName}</h2>
                         <p className="text-muted-foreground text-sm">{player.email}</p>
 
                         <div className="flex items-center gap-2 mt-3">
                             <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${player.status === 'ACTIVE' ? 'bg-green-500/20 text-green-400' :
-                                    player.status === 'INACTIVE' ? 'bg-white/10 text-muted-foreground' :
-                                        'bg-red-500/20 text-red-400'
+                                player.status === 'INACTIVE' ? 'bg-white/10 text-muted-foreground' :
+                                    'bg-red-500/20 text-red-400'
                                 }`}>
                                 {player.status || 'ACTIVE'}
                             </span>

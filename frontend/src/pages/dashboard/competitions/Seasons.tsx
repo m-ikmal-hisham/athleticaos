@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { useNavigate } from 'react-router-dom';
 import { Plus, MagnifyingGlass } from '@phosphor-icons/react';
 import { PageHeader } from '@/components/PageHeader';
@@ -68,7 +69,7 @@ export const Seasons = () => {
                 title="Competitions & Seasons"
                 description="Manage and review national, state, and age-grade rugby seasons."
                 action={
-                    <Button onClick={() => { }}>
+                    <Button onClick={() => navigate('/dashboard/competitions/seasons/new')}>
                         <Plus className="w-4 h-4 mr-2" />
                         New Season
                     </Button>
@@ -92,33 +93,21 @@ export const Seasons = () => {
 
                     {/* Filters */}
                     <div className="p-4 border-b border-glass-border grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <select
-                            className="input-base w-full cursor-pointer"
+                        <SearchableSelect
+                            placeholder="All Levels"
                             value={filterLevel}
-                            onChange={(e) => setFilterLevel(e.target.value)}
-                            aria-label="Filter by Level"
-                        >
-                            <option value="ALL">All Levels</option>
-                            {Object.values(SeasonLevel).map((level) => (
-                                <option key={level} value={level}>
-                                    {level}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) => setFilterLevel(value as string)}
+                            options={[{ value: 'ALL', label: 'All Levels' }, ...Object.values(SeasonLevel).map(level => ({ value: level, label: level }))]}
+                            className="z-20" // Higher z-index for dropdown
+                        />
 
-                        <select
-                            className="input-base w-full cursor-pointer"
+                        <SearchableSelect
+                            placeholder="All Statuses"
                             value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                            aria-label="Filter by Status"
-                        >
-                            <option value="ALL">All Statuses</option>
-                            {Object.values(SeasonStatus).map((status) => (
-                                <option key={status} value={status}>
-                                    {status}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) => setFilterStatus(value as string)}
+                            options={[{ value: 'ALL', label: 'All Statuses' }, ...Object.values(SeasonStatus).map(status => ({ value: status, label: status }))]}
+                            className="z-10"
+                        />
                     </div>
 
                     {error && (

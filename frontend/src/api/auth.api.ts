@@ -26,4 +26,9 @@ export const authApi = {
         const response = await api.get('/auth/me/roles');
         return response;
     },
+
+    logout: async () => {
+        const response = await api.post('/auth/logout');
+        return response;
+    },
 };

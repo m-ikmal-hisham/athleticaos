@@ -96,6 +96,17 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logTeamDeleted(Team team, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TEAM_DELETED")
+                                .entityType("TEAM")
+                                .entityId(team.getId())
+                                .entitySummary(String.format("Team deleted: %s", team.getName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== TOURNAMENT ACTIONS ====================
 
         public void logTournamentCreated(Tournament tournament, HttpServletRequest request) {

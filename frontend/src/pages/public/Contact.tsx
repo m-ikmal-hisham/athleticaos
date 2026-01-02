@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Envelope, PaperPlaneTilt, Chats } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/Button';
@@ -6,6 +7,7 @@ import { Input } from '@/components/Input';
 
 export default function Contact() {
     const [submitted, setSubmitted] = useState(false);
+    const [subject, setSubject] = useState('General Inquiry');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,12 +95,18 @@ export default function Contact() {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Subject</label>
-                                <select aria-label="Subject" className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                                    <option>General Inquiry</option>
-                                    <option>Media & Press</option>
-                                    <option>Sponsorship</option>
-                                    <option>Tournament Organiser Support</option>
-                                </select>
+                                <SearchableSelect
+                                    label="Subject"
+                                    placeholder="Select a subject"
+                                    value={subject}
+                                    onChange={(val) => setSubject(val as string)}
+                                    options={[
+                                        { value: 'General Inquiry', label: 'General Inquiry' },
+                                        { value: 'Media & Press', label: 'Media & Press' },
+                                        { value: 'Sponsorship', label: 'Sponsorship' },
+                                        { value: 'Tournament Organiser Support', label: 'Tournament Organiser Support' }
+                                    ]}
+                                />
                             </div>
 
                             <div className="space-y-2">

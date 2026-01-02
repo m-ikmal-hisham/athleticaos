@@ -66,10 +66,13 @@ export const Signup = () => {
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
     const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
 
+    // Check if we are in development mode
+    const isDev = import.meta.env.DEV;
+
     return (
-        <div className="min-h-screen w-full flex bg-white">
+        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
             {/* Left Side - Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white relative z-10 transition-all duration-300">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10 transition-all duration-300">
                 <div className="w-full max-w-sm space-y-6">
                     {/* Header Section - Side by Side Centered */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -79,10 +82,10 @@ export const Signup = () => {
                             className="h-16 w-auto object-contain shrink-0"
                         />
                         <div className="flex flex-col items-start text-left">
-                            <h2 className="text-2xl font-bold tracking-tight text-gray-900 leading-none">
+                            <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
                                 Create Account
                             </h2>
-                            <p className="mt-1.5 text-xs text-gray-500 font-medium">
+                            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium">
                                 Join the future of rugby management
                             </p>
                         </div>
@@ -95,16 +98,16 @@ export const Signup = () => {
 
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200" />
+                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-gray-500">Or register with email</span>
+                            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">Or register with email</span>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                         {error && (
-                            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100">
+                            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/20">
                                 {error}
                             </div>
                         )}
@@ -114,14 +117,16 @@ export const Signup = () => {
                                 placeholder="First Name"
                                 error={errors.firstName?.message}
                                 {...register('firstName')}
-                                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                disabled={!isDev}
                             />
 
                             <Input
                                 placeholder="Last Name"
                                 error={errors.lastName?.message}
                                 {...register('lastName')}
-                                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                disabled={!isDev}
                             />
                         </div>
 
@@ -130,7 +135,8 @@ export const Signup = () => {
                             placeholder="Email"
                             error={errors.email?.message}
                             {...register('email')}
-                            className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            disabled={!isDev}
                         />
 
                         <Input
@@ -138,7 +144,8 @@ export const Signup = () => {
                             placeholder="Password"
                             error={errors.password?.message}
                             {...register('password')}
-                            className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            disabled={!isDev}
                         />
 
                         <Input
@@ -146,21 +153,31 @@ export const Signup = () => {
                             placeholder="Confirm Password"
                             error={errors.confirmPassword?.message}
                             {...register('confirmPassword')}
-                            className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            disabled={!isDev}
                         />
 
                         <Button
                             type="submit"
-                            className="w-full py-3 bg-[#6366f1] hover:bg-[#5558dd] text-white font-semibold rounded-lg shadow-md shadow-indigo-500/20 transition-all mt-2"
+                            className={`w-full py-3 font-semibold rounded-lg shadow-md transition-all mt-2 ${isDev
+                                ? 'bg-[#6366f1] hover:bg-[#5558dd] text-white shadow-indigo-500/20'
+                                : 'bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none'
+                                }`}
                             isLoading={isLoading}
+                            disabled={!isDev}
                         >
-                            Sign Up
+                            {isDev ? 'Sign Up' : 'Registration Closed'}
                         </Button>
+                        {!isDev && (
+                            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+                                New registrations are currently invite-only.
+                            </p>
+                        )}
                     </form>
 
-                    <div className="mt-8 text-center text-sm text-gray-500">
+                    <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+                        <Link to="/login" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
                             Sign in
                         </Link>
                     </div>
@@ -168,7 +185,7 @@ export const Signup = () => {
             </div>
 
             {/* Right Side - Abstract Art (Reused from Login) */}
-            <div className="hidden lg:flex flex-1 relative bg-white overflow-hidden items-center justify-center p-12 lg:w-1/2">
+            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12 lg:w-1/2">
                 <img
                     src={bgSrc}
                     alt="AthleticaOS Background"
@@ -176,18 +193,18 @@ export const Signup = () => {
                 />
 
                 <div className="relative z-20 max-w-lg text-right">
-                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 leading-[1.1]">
+                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
                         Join the<br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
                             Revolution
                         </span>
                     </h2>
-                    <p className="mt-6 text-lg text-gray-600 leading-relaxed max-w-md ml-auto">
+                    <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-md ml-auto">
                         Create your profile, manage teams, and compete at the highest level.
                         Your journey starts here.
                     </p>
 
-                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern">
+                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern dark:bg-dot-pattern-white">
                     </div>
                 </div>
             </div>

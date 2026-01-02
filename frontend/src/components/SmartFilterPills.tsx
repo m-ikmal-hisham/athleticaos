@@ -77,8 +77,8 @@ export const SmartFilterPills = ({
                     className={twMerge(
                         "flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border scale-100 active:scale-95 whitespace-nowrap",
                         selectedId === null
-                            ? "bg-foreground text-background border-foreground shadow-sm"
-                            : "bg-glass-bg border-glass-border text-muted-foreground hover:bg-glass-border/50 hover:text-foreground"
+                            ? "bg-primary-500 text-white border-primary-500 shadow-md shadow-primary-500/20"
+                            : "bg-glass-bg border-glass-border text-muted-foreground hover:bg-glass-border/50 hover:text-foreground hover:border-glass-border"
                     )}
                     {...{ "aria-selected": selectedId === null ? "true" : "false" }}
                     role="tab"

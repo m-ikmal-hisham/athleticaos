@@ -92,6 +92,12 @@ public class Tournament {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    @Column(name = "banner_url")
+    private String bannerUrl;
+
+    @Column(name = "background_url")
+    private String backgroundUrl;
+
     @Column(name = "livestream_url")
     private String livestreamUrl;
 

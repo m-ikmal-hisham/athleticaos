@@ -312,16 +312,6 @@ export const DashboardHome = () => {
                 </BentoItem>
 
                 {/* 7. Recent Activity (2x2) */}
-                <BentoItem colSpan={2} rowSpan={1} className="lg:col-span-1 lg:row-span-1">
-                    <RecentActivityWidget
-                        scope={activityScope}
-                        entityId={activityEntityId}
-                        limit={5}
-                        title="Recent Updates"
-                    />
-                </BentoItem>
-
-                {/* 8. Extra Space / Fallback */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
                         className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-orange-500"
@@ -337,6 +327,16 @@ export const DashboardHome = () => {
                             <div className="text-sm text-muted-foreground font-medium mt-1">Organisations</div>
                         </div>
                     </GlassCard>
+                </BentoItem>
+
+                {/* 8. Extra Space / Fallback */}
+                <BentoItem colSpan={2} rowSpan={1} className="lg:col-span-1 lg:row-span-1">
+                    <RecentActivityWidget
+                        scope={activityScope}
+                        entityId={activityEntityId}
+                        limit={5}
+                        title="Recent Updates"
+                    />
                 </BentoItem>
 
             </BentoGrid>

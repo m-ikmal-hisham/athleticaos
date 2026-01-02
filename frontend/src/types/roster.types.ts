@@ -19,6 +19,8 @@ export interface PlayerSuspensionDTO {
     teamName: string;
     playerId: string;
     playerName: string;
+    matchId?: string;
+    matchLabel?: string;
     reason: string;
     matchesRemaining: number;
     isActive: boolean;

@@ -17,6 +17,7 @@ public class UserUpdateRequest {
     private String lastName;
     private String email;
     private String phone;
+    private String avatarUrl;
     private Set<String> roles;
     private UUID organisationId;
     private Boolean isActive;

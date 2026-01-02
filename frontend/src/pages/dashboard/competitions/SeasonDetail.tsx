@@ -1,169 +1,221 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-    CalendarBlank,
-    Trophy,
-    Users,
-    Medal,
-    ArrowLeft,
-    Pulse,
-    Plus
-} from '@phosphor-icons/react';
+import { getSeasonById, updateSeasonStatus, getTournamentsBySeason, getSeasonOverview } from '@/api/seasons.api';
+import { Season, SeasonOverview } from '@/types/season.types';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { GlassCard } from '@/components/GlassCard';
+import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
-import { getSeasonOverview } from '@/api/seasons.api';
-import { SeasonOverview, SeasonStatus } from '@/types/season.types';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { ArrowLeft, Trophy, CalendarBlank, ArrowSquareOut, Plus, PencilSimple } from '@phosphor-icons/react';
+import toast from 'react-hot-toast';
+import { formatDate } from '@/utils/date';
 
 export const SeasonDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [season, setSeason] = useState<SeasonOverview | null>(null);
+    const [season, setSeason] = useState<Season | null>(null);
+    const [tournaments, setTournaments] = useState<any[]>([]);
+    const [stats, setStats] = useState<SeasonOverview | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (id) {
-            loadSeason(id);
-        }
+        loadData();
     }, [id]);
 
-    const loadSeason = async (seasonId: string) => {
+    const loadData = async () => {
+        if (!id) return;
+        setLoading(true);
         try {
-            setLoading(true);
-            const data = await getSeasonOverview(seasonId);
-            setSeason(data);
+            const [seasonRes, tournamentsRes, overviewRes] = await Promise.all([
+                getSeasonById(id),
+                getTournamentsBySeason(id),
+                getSeasonOverview(id)
+            ]);
+            setSeason(seasonRes);
+            setTournaments(tournamentsRes);
+            setStats(overviewRes);
         } catch (error) {
-            console.error('Failed to load season details', error);
+            console.error('Failed to load season details:', error);
+            toast.error("Failed to load season details");
+            navigate('/dashboard/competitions');
         } finally {
             setLoading(false);
         }
     };
 
-    const getStatusColor = (status: SeasonStatus) => {
-        switch (status) {
-            case SeasonStatus.ACTIVE:
-                return 'success';
-            case SeasonStatus.PLANNED:
-                return 'info';
-            case SeasonStatus.COMPLETED:
-                return 'warning';
-            case SeasonStatus.ARCHIVED:
-                return 'default';
-            default:
-                return 'default';
+    const handleStatusChange = async (newStatus: string) => {
+        if (!season) return;
+        try {
+            const updated = await updateSeasonStatus(season.id, newStatus);
+            setSeason(updated);
+            toast.success(`Season status updated to ${newStatus}`);
+        } catch (error) {
+            toast.error("Failed to update status");
         }
     };
 
     if (loading) {
         return (
-            <div className="flex justify-center py-12">
-                <LoadingSpinner />
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
             </div>
         );
     }
 
-    if (!season) {
-        return (
-            <div className="text-center py-12 text-muted">
-                Season not found.
-            </div>
-        );
-    }
+    if (!season) return null;
 
     return (
-        <div className="space-y-6">
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/competitions')}
-                className="mb-2"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Competitions
-            </Button>
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl font-display font-bold text-foreground">
-                            {season.name}
-                        </h1>
-                        <Badge variant={getStatusColor(season.status)}>{season.status}</Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-muted text-sm">
-                        <span className="font-mono">{season.code}</span>
-                        <span className="w-1 h-1 rounded-full bg-glass-border" />
-                        <div className="flex items-center gap-1.5">
-                            <Medal className="w-4 h-4" />
-                            <span>{season.level}</span>
-                        </div>
-                        {season.startDate && season.endDate && (
-                            <>
-                                <span className="w-1 h-1 rounded-full bg-glass-border" />
-                                <div className="flex items-center gap-1.5">
-                                    <CalendarBlank className="w-4 h-4" />
-                                    <span>{season.startDate} - {season.endDate}</span>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-                <Button onClick={() => { }}>Edit Season</Button>
-            </div>
-
-            {/* Overview Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4">
-                    <div className="flex items-center gap-3 text-muted mb-2">
-                        <Trophy className="w-4 h-4" />
-                        <span className="text-sm font-medium">Tournaments</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{season.totalTournaments}</p>
-                </Card>
-                <Card className="p-4">
-                    <div className="flex items-center gap-3 text-muted mb-2">
-                        <Pulse className="w-4 h-4" />
-                        <span className="text-sm font-medium">Matches</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-bold text-foreground">{season.totalMatches}</p>
-                        <span className="text-xs text-muted">({season.completedMatches} completed)</span>
-                    </div>
-                </Card>
-                <Card className="p-4">
-                    <div className="flex items-center gap-3 text-muted mb-2">
-                        <Users className="w-4 h-4" />
-                        <span className="text-sm font-medium">Teams</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{season.totalTeams}</p>
-                </Card>
-                <Card className="p-4">
-                    <div className="flex items-center gap-3 text-muted mb-2">
-                        <Users className="w-4 h-4" />
-                        <span className="text-sm font-medium">Players</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{season.totalPlayers}</p>
-                </Card>
-            </div>
-
-            {/* Tournaments List */}
-            <Card className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold text-foreground">Tournaments</h2>
-                    <Button size="sm" onClick={() => { }}>
-                        <Plus className="w-4 h-4" />
-                        Add Tournament
+        <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/seasons')}>
+                    <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <PageHeader
+                    title={season.name}
+                    description={`Season Code: ${season.code}`}
+                />
+                <div className="ml-auto flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/dashboard/competitions/seasons/${season.id}/edit`)}>
+                        <PencilSimple className="w-4 h-4 mr-2" />
+                        Edit Season
                     </Button>
+                    {season.status === 'PLANNED' && (
+                        <Button size="sm" onClick={() => handleStatusChange('ACTIVE')}>Activate Season</Button>
+                    )}
+                    {season.status === 'ACTIVE' && (
+                        <Button size="sm" variant="outline" onClick={() => handleStatusChange('COMPLETED')}>Complete Season</Button>
+                    )}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Info */}
+                <div className="lg:col-span-2 space-y-6">
+                    <GlassCard className="p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div>
+                                <p className="text-sm text-muted-foreground mb-1">Status</p>
+                                <Badge
+                                    variant={
+                                        season.status === 'ACTIVE' ? 'success' :
+                                            season.status === 'COMPLETED' ? 'default' : 'warning'
+                                    }
+                                >
+                                    {season.status}
+                                </Badge>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground mb-1">Start Date</p>
+                                <div className="flex items-center gap-2">
+                                    <CalendarBlank className="w-4 h-4 text-primary-500" />
+                                    <span>{season.startDate ? formatDate(season.startDate) : 'TBD'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground mb-1">End Date</p>
+                                <div className="flex items-center gap-2">
+                                    <CalendarBlank className="w-4 h-4 text-primary-500" />
+                                    <span>{season.endDate ? formatDate(season.endDate) : 'TBD'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground mb-1">Tournaments</p>
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-4 h-4 text-primary-500" />
+                                    <span>{tournaments.length}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {season.description && (
+                            <div className="mt-6 pt-6 border-t border-white/10">
+                                <h3 className="text-sm font-medium mb-2">Description</h3>
+                                <p className="text-sm text-muted-foreground">{season.description}</p>
+                            </div>
+                        )}
+                    </GlassCard>
+
+                    {/* Linked Tournaments */}
+                    <GlassCard className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <Trophy className="w-5 h-5 text-primary-500" />
+                                Tournaments
+                            </h3>
+                            <Button size="sm" variant="ghost" onClick={() => navigate('/dashboard/tournaments/new')}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Tournament
+                            </Button>
+                        </div>
+
+                        {tournaments.length > 0 ? (
+                            <div className="relative overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="text-xs uppercase bg-black/5 dark:bg-white/5 text-muted-foreground">
+                                        <tr>
+                                            <th className="px-4 py-3 rounded-l-lg">Name</th>
+                                            <th className="px-4 py-3">Dates</th>
+                                            <th className="px-4 py-3">Level</th>
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3 rounded-r-lg"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {tournaments.map((tournament) => (
+                                            <tr key={tournament.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                <td className="px-4 py-3 font-medium cursor-pointer" onClick={() => navigate(`/dashboard/tournaments/${tournament.id}`)}>
+                                                    {tournament.name}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant="outline">{tournament.level}</Badge>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant={tournament.status === 'Ongoing' ? 'success' : 'default'}>
+                                                        {tournament.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/tournaments/${tournament.id}`)}>
+                                                        <ArrowSquareOut className="w-4 h-4" />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground text-sm">
+                                No tournaments linked to this season yet.
+                            </div>
+                        )}
+                    </GlassCard>
                 </div>
 
-                {/* TODO: Fetch tournaments for this season and display in table */}
-                <div className="text-center py-8 text-muted text-sm">
-                    Tournaments list will be implemented here.
+                {/* Sidebar / Stats */}
+                <div className="space-y-6">
+                    <GlassCard className="p-6">
+                        <h3 className="text-sm font-semibold text-primary-500 uppercase tracking-wider mb-4">Season Stats</h3>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Total Matches</span>
+                                <span className="font-medium">{stats?.totalMatches ?? '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Total Teams</span>
+                                <span className="font-medium">{stats?.totalTeams ?? '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Total Players</span>
+                                <span className="font-medium">{stats?.totalPlayers ?? '-'}</span>
+                            </div>
+                        </div>
+                    </GlassCard>
                 </div>
-            </Card>
+            </div>
         </div>
     );
 };
-
-

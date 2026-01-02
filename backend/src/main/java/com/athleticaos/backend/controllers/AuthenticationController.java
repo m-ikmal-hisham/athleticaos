@@ -23,23 +23,51 @@ public class AuthenticationController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final com.athleticaos.backend.utils.CookieUtils cookieUtils;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody @Valid RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+        AuthResponse response = authService.register(request);
+        String token = response.getToken();
+        if (token == null) {
+            throw new IllegalStateException("Authentication failed: No token generated");
+        }
+        org.springframework.http.ResponseCookie cookie = cookieUtils.createSessionCookie(token);
+        // We can optionally clear the token from response body if we don't want JS to
+        // see it at all
+        // response.setToken(null);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(response);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+        AuthResponse response = authService.login(request);
+        String token = response.getToken();
+        if (token == null) {
+            throw new IllegalStateException("Authentication failed: No token generated");
+        }
+        org.springframework.http.ResponseCookie cookie = cookieUtils.createSessionCookie(token);
+        // response.setToken(null);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        org.springframework.http.ResponseCookie cookie = cookieUtils.cleanSessionCookie();
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
     }
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserRolesResponse> getCurrentUser() {
-        // Get current user and return their details with roles
+    public ResponseEntity<com.athleticaos.backend.dtos.user.UserResponse> getCurrentUser() {
         com.athleticaos.backend.entities.User user = userService.getCurrentUser();
-        return ResponseEntity.ok(userService.getUserRoles(user.getId()));
+        return ResponseEntity.ok(userService.getUserById(user.getId()));
     }
 
     @GetMapping("/me/roles")

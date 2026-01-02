@@ -51,6 +51,10 @@ export interface PublicMatchSummary {
     code?: string;
     homeTeamName: string;
     awayTeamName: string;
+    homeTeamLogoUrl?: string;
+    awayTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamShortName?: string;
     homeScore?: number;
     awayScore?: number;
     matchDate: string;
@@ -96,6 +100,8 @@ export interface PublicStanding {
     poolName: string;
     teamId: string;
     teamName: string;
+    teamLogoUrl?: string;
+    teamShortName?: string;
     played: number;
     won: number;
     drawn: number;

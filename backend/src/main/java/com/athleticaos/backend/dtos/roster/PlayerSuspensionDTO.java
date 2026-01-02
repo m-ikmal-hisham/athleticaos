@@ -18,6 +18,8 @@ public class PlayerSuspensionDTO {
     private String tournamentName;
     private UUID teamId;
     private String teamName;
+    private UUID matchId;
+    private String matchLabel;
     private UUID playerId;
     private String playerName;
     private String reason;

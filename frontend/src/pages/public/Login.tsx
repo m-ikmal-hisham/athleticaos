@@ -56,9 +56,9 @@ export const Login = () => {
     const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
 
     return (
-        <div className="min-h-screen w-full flex bg-white">
+        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
             {/* Left Side - Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white relative z-10">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10">
                 <div className="w-full max-w-sm space-y-8">
                     {/* Header Section - Side by Side Centered */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -68,10 +68,10 @@ export const Login = () => {
                             className="h-20 w-auto object-contain shrink-0"
                         />
                         <div className="flex flex-col items-start text-left">
-                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 leading-none">
+                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
                                 Login
                             </h2>
-                            <p className="mt-1.5 text-sm text-gray-500 font-medium">
+                            <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 font-medium">
                                 Or sign in with email
                             </p>
                         </div>
@@ -84,10 +84,10 @@ export const Login = () => {
 
                     <div className="relative my-8">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200" />
+                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">Or continue with</span>
                         </div>
                     </div>
 
@@ -101,7 +101,7 @@ export const Login = () => {
                                 placeholder="Email"
                                 error={errors.email?.message}
                                 {...register('email')}
-                                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
                             />
                         </div>
 
@@ -111,16 +111,16 @@ export const Login = () => {
                                 placeholder="Password"
                                 error={errors.password?.message}
                                 {...register('password')}
-                                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
                             />
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-purple-600 focus:ring-purple-500 bg-white dark:bg-gray-900" />
                                 Keep me logged in
                             </label>
-                            <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                            <Link to="/forgot-password" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
                                 Forgot password?
                             </Link>
                         </div>
@@ -134,9 +134,9 @@ export const Login = () => {
                         </Button>
                     </form>
 
-                    <div className="mt-8 text-center text-sm text-gray-500">
+                    <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
                         Don't have an account?{' '}
-                        <Link to="/signup" className="text-blue-600 font-semibold hover:underline">
+                        <Link to="/signup" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
                             Sign up
                         </Link>
                     </div>
@@ -144,7 +144,7 @@ export const Login = () => {
             </div>
 
             {/* Right Side - Abstract Art */}
-            <div className="hidden lg:flex flex-1 relative bg-white overflow-hidden items-center justify-center p-12">
+            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12">
                 <img
                     src={bgSrc}
                     alt="AthleticaOS Background"
@@ -153,19 +153,19 @@ export const Login = () => {
 
 
                 <div className="relative z-20 max-w-lg text-right">
-                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 leading-[1.1]">
+                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
                         Changing the way<br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
                             the world plays
                         </span>
                     </h2>
-                    <p className="mt-6 text-lg text-gray-600 leading-relaxed max-w-md ml-auto">
+                    <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-md ml-auto">
                         Experience the future of rugby management with AthleticaOS.
                         Streamlined, powerful, and built for champions.
                     </p>
 
                     {/* Decorative subtle grid or dots */}
-                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern">
+                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern dark:bg-dot-pattern-white">
                     </div>
                 </div>
             </div>

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { formatRoleName } from '@/utils/stringUtils';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -159,20 +161,16 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
                     disabled // Email usually shouldn't be changed easily or maybe it can? Let's allow it but be careful. Actually user said "edit Users", usually entails email too.
                 />
 
-                <div>
-                    <label className="block text-sm font-medium mb-2 text-muted-foreground">Role</label>
-                    <select
-                        aria-label="Role Selection"
-                        className="input-base h-10"
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        required
-                    >
-                        {getAvailableRoles().map(role => (
-                            <option key={role} value={role}>{role}</option>
-                        ))}
-                    </select>
-                </div>
+                <SearchableSelect
+                    label="Role"
+                    value={formData.role}
+                    onChange={(value) => setFormData({ ...formData, role: value as string })}
+                    options={getAvailableRoles().map(role => ({
+                        value: role,
+                        label: formatRoleName(role)
+                    }))}
+                    required
+                />
 
                 {isSuperAdmin && (
                     <div>

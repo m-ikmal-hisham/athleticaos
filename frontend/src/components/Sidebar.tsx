@@ -181,7 +181,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     className={clsx(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
                         isActive && !hasChildren
-                            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium'
+                            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium dark:bg-blue-600 dark:shadow-blue-900/40 dark:shadow-lg'
                             : 'text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground',
                         depth > 0 && 'ml-4'
                     )}

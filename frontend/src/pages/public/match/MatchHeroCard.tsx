@@ -116,13 +116,47 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-8 md:gap-12 py-2">
                     {/* Home Team */}
                     <div className="flex flex-col items-center md:items-end text-center md:text-right space-y-3 md:space-y-4 group">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 shadow-inner flex items-center justify-center text-2xl font-bold text-slate-400 mb-2 md:hidden">
-                            {match.homeTeamName.charAt(0)}
+                        {/* Mobile Logo */}
+                        <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-2">
+                            {match.homeTeamLogoUrl ? (
+                                <img
+                                    src={match.homeTeamLogoUrl.startsWith('http') ? match.homeTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.homeTeamLogoUrl}`}
+                                    alt={match.homeTeamName}
+                                    className="w-full h-full object-contain filter drop-shadow-lg"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                    <span className="text-2xl font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
+                                </div>
+                            )}
                         </div>
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none group-hover:scale-[1.02] transition-transform duration-300">
-                            {match.homeTeamName}
-                        </h2>
-                        <div className="h-1 w-12 bg-blue-500 rounded-full opacity-80 md:ml-0" />
+
+                        {/* Desktop Logo (Hidden on mobile, visible on md+) */}
+                        <div className="hidden md:flex w-32 h-32 items-center justify-center mb-4 transform group-hover:scale-105 transition-transform duration-300">
+                            {match.homeTeamLogoUrl ? (
+                                <img
+                                    src={match.homeTeamLogoUrl.startsWith('http') ? match.homeTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.homeTeamLogoUrl}`}
+                                    alt={match.homeTeamName}
+                                    className="w-full h-full object-contain filter drop-shadow-xl"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
+                                    <span className="text-4xl font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <h2 className="text-3xl md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                                {match.homeTeamShortName || match.homeTeamName}
+                            </h2>
+                            {match.homeTeamShortName && (
+                                <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                    {match.homeTeamName}
+                                </p>
+                            )}
+                        </div>
+                        <div className="h-1 w-12 bg-blue-500 rounded-full opacity-80 md:ml-0 mt-2" />
                     </div>
 
                     {/* Score Board */}
@@ -142,13 +176,47 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
                     {/* Away Team */}
                     <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-3 md:space-y-4 group">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 shadow-inner flex items-center justify-center text-2xl font-bold text-slate-400 mb-2 md:hidden">
-                            {match.awayTeamName.charAt(0)}
+                        {/* Mobile Logo */}
+                        <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-2">
+                            {match.awayTeamLogoUrl ? (
+                                <img
+                                    src={match.awayTeamLogoUrl.startsWith('http') ? match.awayTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.awayTeamLogoUrl}`}
+                                    alt={match.awayTeamName}
+                                    className="w-full h-full object-contain filter drop-shadow-lg"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                    <span className="text-2xl font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
+                                </div>
+                            )}
                         </div>
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none group-hover:scale-[1.02] transition-transform duration-300">
-                            {match.awayTeamName}
-                        </h2>
-                        <div className="h-1 w-12 bg-red-500 rounded-full opacity-80 md:mr-0" />
+
+                        {/* Desktop Logo (Hidden on mobile, visible on md+) */}
+                        <div className="hidden md:flex w-32 h-32 items-center justify-center mb-4 transform group-hover:scale-105 transition-transform duration-300">
+                            {match.awayTeamLogoUrl ? (
+                                <img
+                                    src={match.awayTeamLogoUrl.startsWith('http') ? match.awayTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.awayTeamLogoUrl}`}
+                                    alt={match.awayTeamName}
+                                    className="w-full h-full object-contain filter drop-shadow-xl"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
+                                    <span className="text-4xl font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <h2 className="text-3xl md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                                {match.awayTeamShortName || match.awayTeamName}
+                            </h2>
+                            {match.awayTeamShortName && (
+                                <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                    {match.awayTeamName}
+                                </p>
+                            )}
+                        </div>
+                        <div className="h-1 w-12 bg-red-500 rounded-full opacity-80 md:mr-0 mt-2" />
                     </div>
                 </div>
 

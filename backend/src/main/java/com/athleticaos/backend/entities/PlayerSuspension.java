@@ -40,6 +40,10 @@ public class PlayerSuspension {
     private Tournament tournament;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "match_id") // Nullable for existing records or manual suspensions
+    private Match match;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 

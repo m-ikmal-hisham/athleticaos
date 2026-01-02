@@ -14,7 +14,7 @@ public interface TeamService {
      * 
      * @return list of team responses
      */
-    List<TeamResponse> getAllTeams();
+    List<TeamResponse> getAllTeams(UUID organisationId);
 
     TeamResponse getTeamById(UUID id);
 
@@ -25,4 +25,6 @@ public interface TeamService {
     TeamResponse updateTeam(UUID id, TeamUpdateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
     List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId);
+
+    void deleteTeam(UUID id, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

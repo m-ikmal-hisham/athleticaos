@@ -297,6 +297,28 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public java.util.Set<UUID> getAllDescendantIds(UUID parentId) {
+        java.util.Set<UUID> descendantIds = new java.util.HashSet<>();
+        java.util.Queue<UUID> queue = new java.util.LinkedList<>();
+
+        queue.add(parentId);
+        descendantIds.add(parentId); // Include self
+
+        while (!queue.isEmpty()) {
+            UUID currentId = queue.poll();
+            List<Organisation> children = organisationRepository.findByParentOrgId(currentId);
+            for (Organisation child : children) {
+                if (!descendantIds.contains(child.getId())) {
+                    descendantIds.add(child.getId());
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return descendantIds;
+    }
+
+    @Override
     @SuppressWarnings("null")
     @Transactional(readOnly = true)
     public Object getTree(UUID countryId) {
@@ -383,5 +405,30 @@ public class OrganisationServiceImpl implements OrganisationService {
             slug = slug + "-" + suffix;
         }
         return slug;
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public void deleteOrganisation(UUID id) {
+        log.info("Deleting organisation: {}", id);
+        Organisation org = organisationRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + id));
+
+        // Check for child organisations
+        List<Organisation> children = organisationRepository.findByParentOrgId(id);
+        if (!children.isEmpty()) {
+            throw new IllegalStateException("Cannot delete organisation because it has " + children.size()
+                    + " sub-organisations. Please delete or move them first.");
+        }
+
+        // Check for teams
+        List<Team> teams = teamRepository.findByOrganisation_IdIn(java.util.Collections.singleton(id));
+        if (!teams.isEmpty()) {
+            throw new IllegalStateException("Cannot delete organisation because it has " + teams.size()
+                    + " teams associated with it. Please delete or move them first.");
+        }
+
+        organisationRepository.delete(org);
     }
 }

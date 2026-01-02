@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
@@ -11,6 +12,7 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { ArrowLeft, Trash, Plus } from '@phosphor-icons/react';
 import { updateTournament, getTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
+import { getActiveSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -24,7 +26,9 @@ const categorySchema = z.object({
 const tournamentSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters"),
     organiserOrgId: z.string().min(1, "Organisation is required"),
-    seasonName: z.string().min(1, "Season name is required"),
+    // Season can be ID (UUID) or Name (String) - we allow both via separate logic but schema handles "what we send"
+    // Actually we'll manage this manually in onSubmit, so let's make it optional here or string
+    seasonInput: z.string().min(1, "Season is required"),
     competitionType: z.string(),
     level: z.string(),
     venue: z.string().min(1, "Venue is required"),
@@ -32,6 +36,8 @@ const tournamentSchema = z.object({
     endDate: z.string().min(1, "End date is required"),
     categories: z.array(categorySchema).optional(),
     logoUrl: z.string().optional(),
+    bannerUrl: z.string().optional(),
+    backgroundUrl: z.string().optional(),
     livestreamUrl: z.string().optional()
 });
 
@@ -43,7 +49,7 @@ export const EditTournament = () => {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [organisations, setOrganisations] = useState<Organisation[]>([]);
-
+    const [seasons, setSeasons] = useState<any[]>([]);
     // State for the new category input
     const [newCategory, setNewCategory] = useState<CreateCategoryRequest>({
         name: '',
@@ -58,6 +64,7 @@ export const EditTournament = () => {
         setValue,
         watch,
         reset,
+        control,
         formState: { errors }
     } = useForm<TournamentFormData>({
         resolver: zodResolver(tournamentSchema),
@@ -78,17 +85,32 @@ export const EditTournament = () => {
         if (!id) return;
         setFetching(true);
         try {
-            const [orgsRes, tournamentRes] = await Promise.all([
+            const [orgsRes, tournamentRes, seasonsRes] = await Promise.all([
                 fetchOrganisations(),
-                getTournament(id)
+                getTournament(id),
+                getActiveSeasons()
             ]);
             setOrganisations(orgsRes as any);
+            setSeasons(seasonsRes);
 
             const tournament = tournamentRes.data;
+
+            // Set initial season value (Prefer ID if known/linked, else Name)
+            // The tournament response has 'seasonName', but we ideally want seasonId if it exists.
+            // backend 'getTournamentById' returns seasonName. Does it return seasonId?
+            // Checking TournamentResponse: it has seasonName. It might fallback to name matching.
+            // But if we want to bind to ID, we need to know which ID corresponds to that name in 'seasons' list.
+
+            let initialSeasonValue = tournament.seasonName;
+            if (tournament.seasonName) {
+                const matchedSeason = seasonsRes.find(s => s.name === tournament.seasonName);
+                if (matchedSeason) initialSeasonValue = matchedSeason.id;
+            }
+
             reset({
                 name: tournament.name,
                 organiserOrgId: tournament.organiserOrgId || (tournament.organiserBranding?.id),
-                seasonName: tournament.seasonName,
+                seasonInput: initialSeasonValue,
                 competitionType: tournament.competitionType,
                 level: tournament.level,
                 venue: tournament.venue,
@@ -101,6 +123,8 @@ export const EditTournament = () => {
                     maxAge: c.maxAge
                 })) || [],
                 logoUrl: tournament.logoUrl,
+                bannerUrl: tournament.bannerUrl,
+                backgroundUrl: tournament.backgroundUrl,
                 livestreamUrl: tournament.livestreamUrl
             });
 
@@ -131,7 +155,16 @@ export const EditTournament = () => {
         if (!id) return;
         setLoading(true);
         try {
-            await updateTournament(id, data);
+            // Determine if seasonInput is ID or Name
+            const isUuid = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/.test(data.seasonInput);
+
+            const payload = {
+                ...data,
+                seasonId: isUuid ? data.seasonInput : undefined,
+                seasonName: !isUuid ? data.seasonInput : undefined,
+            };
+
+            await updateTournament(id, payload);
             toast.success("Tournament updated successfully");
             navigate('/dashboard/tournaments');
         } catch (error: any) {
@@ -179,19 +212,45 @@ export const EditTournament = () => {
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                                    Organiser <span className="text-red-400 ml-1">*</span>
-                                </label>
-                                <select
-                                    {...register('organiserOrgId')}
-                                    className="input-base w-full"
-                                >
-                                    <option value="">Select Organisation</option>
-                                    {organisations.map(org => (
-                                        <option key={org.id} value={org.id}>{org.name}</option>
-                                    ))}
-                                </select>
-                                {errors.organiserOrgId && <p className="mt-1.5 text-xs text-red-500">{errors.organiserOrgId.message}</p>}
+                                <Controller
+                                    name="organiserOrgId"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Organiser"
+                                            required
+                                            placeholder="Select Organisation"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={organisations.map(org => ({
+                                                value: org.id,
+                                                label: org.name
+                                            }))}
+                                            error={errors.organiserOrgId?.message}
+                                        />
+                                    )}
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2">
+                                <Controller
+                                    name="seasonInput"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Season"
+                                            placeholder="Select or Create Season"
+                                            value={field.value}
+                                            onChange={(val) => {
+                                                setValue('seasonInput', val as string);
+                                            }}
+                                            options={seasons.map(s => ({ value: s.id, label: s.name }))}
+                                            creatable
+                                            error={errors.seasonInput?.message}
+                                            required
+                                        />
+                                    )}
+                                />
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
@@ -199,6 +258,24 @@ export const EditTournament = () => {
                                 <ImageUpload
                                     value={watch('logoUrl')}
                                     onChange={(url) => setValue('logoUrl', url)}
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Banner Image (Wide)</label>
+                                <ImageUpload
+                                    value={watch('bannerUrl')}
+                                    onChange={(url) => setValue('bannerUrl', url)}
+                                    aspectRatio="banner"
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Background Image</label>
+                                <ImageUpload
+                                    value={watch('backgroundUrl')}
+                                    onChange={(url) => setValue('backgroundUrl', url)}
+                                    aspectRatio="video"
                                 />
                             </div>
                         </div>
@@ -209,38 +286,43 @@ export const EditTournament = () => {
                         <h3 className="text-sm font-semibold text-primary-500 uppercase tracking-wider mb-4">Competition Format</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <Input
-                                    label="Season"
-                                    placeholder="e.g. 2024/2025"
-                                    {...register('seasonName')}
-                                    error={errors.seasonName?.message}
-                                    required
+                                <Controller
+                                    name="competitionType"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Type"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={[
+                                                { value: 'LEAGUE', label: 'League' },
+                                                { value: 'KNOCKOUT', label: 'Knockout' },
+                                                { value: 'GROUP_KNOCKOUT', label: 'Group + Knockout' }
+                                            ]}
+                                        />
+                                    )}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
-                                <select
-                                    {...register('competitionType')}
-                                    className="input-base w-full"
-                                >
-                                    <option value="LEAGUE">League</option>
-                                    <option value="KNOCKOUT">Knockout</option>
-                                    <option value="GROUP_KNOCKOUT">Group + Knockout</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">Level</label>
-                                <select
-                                    {...register('level')}
-                                    className="input-base w-full"
-                                >
-                                    <option value="INTERNATIONAL">International</option>
-                                    <option value="NATIONAL">National</option>
-                                    <option value="STATE">State</option>
-                                    <option value="DIVISION">Division</option>
-                                    <option value="CLUB">Club</option>
-                                    <option value="SCHOOL">School</option>
-                                </select>
+                                <Controller
+                                    name="level"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Level"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={[
+                                                { value: 'INTERNATIONAL', label: 'International' },
+                                                { value: 'NATIONAL', label: 'National' },
+                                                { value: 'STATE', label: 'State' },
+                                                { value: 'DIVISION', label: 'Division' },
+                                                { value: 'CLUB', label: 'Club' },
+                                                { value: 'SCHOOL', label: 'School' }
+                                            ]}
+                                        />
+                                    )}
+                                />
                             </div>
                         </div>
                     </div>
@@ -276,17 +358,17 @@ export const EditTournament = () => {
                                 />
                             </div>
                             <div className="col-span-12 md:col-span-3">
-                                <label className="text-xs text-muted-foreground mb-1 block">Gender</label>
-                                <select
+                                <SearchableSelect
+                                    label="Gender"
                                     value={newCategory.gender}
-                                    onChange={(e) => setNewCategory(prev => ({ ...prev, gender: e.target.value }))}
-                                    className="input-base w-full h-9 text-sm"
-                                    title="Gender"
-                                >
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="MIXED">Mixed</option>
-                                </select>
+                                    onChange={(value) => setNewCategory(prev => ({ ...prev, gender: value as string }))}
+                                    options={[
+                                        { value: 'MALE', label: 'Male' },
+                                        { value: 'FEMALE', label: 'Female' },
+                                        { value: 'MIXED', label: 'Mixed' }
+                                    ]}
+                                    className="h-full"
+                                />
                             </div>
                             <div className="col-span-5 md:col-span-2">
                                 <label className="text-xs text-muted-foreground mb-1 block">Min Age</label>

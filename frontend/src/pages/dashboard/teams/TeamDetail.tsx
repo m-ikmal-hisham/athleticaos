@@ -18,6 +18,7 @@ interface TeamDetail {
     status: string;
     organisationId: string;
     organisationName?: string;
+    logoUrl?: string;
 }
 
 interface TeamStats {
@@ -139,6 +140,13 @@ export default function TeamDetail() {
                     <ArrowLeft className="w-4 h-4" />
                     Back to Teams
                 </button>
+                {team.logoUrl && (
+                    <img
+                        src={team.logoUrl.startsWith('http') ? team.logoUrl : `${import.meta.env.VITE_API_URL}${team.logoUrl}`}
+                        alt={`${team.name} logo`}
+                        className="w-20 h-20 mb-4 object-contain"
+                    />
+                )}
                 <h1 className="text-4xl font-bold text-foreground mb-2">
                     {team.name}
                 </h1>

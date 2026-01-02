@@ -18,12 +18,14 @@ public class TeamResponse {
     private String organisationName;
     private String slug;
     private String name;
+    private String shortName;
     private String category;
     private String ageGroup;
     private String division;
     private String level;
     private String state;
     private String status;
+    private String logoUrl;
     private String poolNumber;
     private UUID tournamentCategoryId;
     private List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> players;

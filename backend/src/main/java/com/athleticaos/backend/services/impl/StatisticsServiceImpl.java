@@ -274,8 +274,8 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 // Top Players (Scorers): Tries desc, then Points desc
                 List<PlayerLeaderboardEntry> topPlayers = playerStats.stream()
-                                .sorted(Comparator.comparingInt(PlayerStatsResponse::tries).reversed()
-                                                .thenComparingInt(PlayerStatsResponse::totalPoints).reversed())
+                                .sorted(Comparator.comparingInt(PlayerStatsResponse::totalPoints).reversed()
+                                                .thenComparingInt(PlayerStatsResponse::tries).reversed())
                                 .limit(10)
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),

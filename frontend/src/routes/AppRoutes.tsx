@@ -16,6 +16,7 @@ import Players from '@/pages/dashboard/Players';
 import Teams from '@/pages/dashboard/Teams';
 import TeamDetail from '@/pages/dashboard/teams/TeamDetail';
 import Organisations from '@/pages/dashboard/Organisations';
+import OrganisationDetail from '@/pages/dashboard/organisations/OrganisationDetail';
 import Tournaments from '@/pages/dashboard/Tournaments';
 import Users from '@/pages/dashboard/Users';
 import { CreateUser } from '@/pages/dashboard/users/CreateUser';
@@ -29,6 +30,8 @@ import { MatchDetail } from '@/pages/dashboard/MatchDetail';
 import Stats from '@/pages/dashboard/Stats';
 import Officials from '@/pages/dashboard/Officials';
 import { Seasons } from '@/pages/dashboard/competitions/Seasons';
+import { CreateSeason } from '@/pages/dashboard/competitions/CreateSeason';
+import { EditSeason } from '@/pages/dashboard/competitions/EditSeason';
 import { SeasonDetail } from '@/pages/dashboard/competitions/SeasonDetail';
 import Activity from '@/pages/dashboard/Activity';
 import TournamentRosters from '@/pages/dashboard/TournamentRosters';
@@ -183,6 +186,10 @@ export const router = createBrowserRouter([
                 ),
             },
             {
+                path: 'organisations/:id',
+                element: <OrganisationDetail />,
+            },
+            {
                 path: 'organisations/:id/branding',
                 element: <BrandingSettings />,
             },
@@ -239,8 +246,24 @@ export const router = createBrowserRouter([
                 element: <Seasons />,
             },
             {
+                path: 'competitions/seasons/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <CreateSeason />
+                    </AuthGuard>
+                ),
+            },
+            {
                 path: 'competitions/seasons/:id',
                 element: <SeasonDetail />,
+            },
+            {
+                path: 'competitions/seasons/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <EditSeason />
+                    </AuthGuard>
+                ),
             },
             {
                 path: 'tournaments',
@@ -407,4 +430,13 @@ export const router = createBrowserRouter([
         path: '*',
         element: <NotFoundPage />,
     },
-]);
+], {
+    future: {
+
+        v7_relativeSplatPath: true,
+        v7_fetcherPersist: true,
+        v7_normalizeFormMethod: true,
+        v7_partialHydration: true,
+        v7_skipActionErrorRevalidation: true,
+    }
+});

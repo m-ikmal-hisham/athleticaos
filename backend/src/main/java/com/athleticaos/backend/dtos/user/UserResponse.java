@@ -21,6 +21,7 @@ public class UserResponse {
     private String lastName;
     private String email;
     private String phone;
+    private String avatarUrl;
 
     // Structured Address
     private String addressLine1;

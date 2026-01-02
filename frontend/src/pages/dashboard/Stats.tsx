@@ -350,7 +350,7 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                             <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                 <Trophy className="w-5 h-5" />
                             </div>
-                            <h3 className="font-bold text-lg text-foreground">Top Scorers</h3>
+                            <h3 className="font-bold text-lg text-foreground">Top Point Scorers</h3>
                         </div>
                     </div>
                     <div className="overflow-x-auto flex-1">

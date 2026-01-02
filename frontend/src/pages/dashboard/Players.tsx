@@ -12,6 +12,9 @@ import { useAuthStore } from "../../store/auth.store";
 import { Player } from "../../types";
 import { calculateAge } from "../../utils/date";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
+import { deletePlayer } from "../../api/players.api";
+import toast from "react-hot-toast";
+import { Trash } from "@phosphor-icons/react";
 
 export default function Players() {
     const navigate = useNavigate();
@@ -44,6 +47,20 @@ export default function Players() {
     const handleEdit = (player: Player, e: React.MouseEvent) => {
         e.stopPropagation();
         navigate(`/dashboard/players/${player.id}/edit`);
+    };
+
+    const handleDelete = async (player: Player, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm(`Are you sure you want to delete ${player.firstName} ${player.lastName}?`)) {
+            try {
+                await deletePlayer(player.id);
+                toast.success("Player deleted successfully");
+                getPlayers();
+            } catch (error) {
+                console.error("Failed to delete player", error);
+                toast.error("Failed to delete player");
+            }
+        }
     };
 
     const getStatusVariant = (status: string) => {
@@ -133,13 +150,22 @@ export default function Players() {
                                         {p.status}
                                     </Badge>
                                     {isAdmin && (
-                                        <button
-                                            onClick={(e) => handleEdit(p, e)}
-                                            className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-                                            aria-label="Edit player"
-                                        >
-                                            <DotsThree className="w-4 h-4" weight="bold" />
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={(e) => handleEdit(p, e)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                aria-label="Edit player"
+                                            >
+                                                <DotsThree className="w-4 h-4" weight="bold" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(p, e)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                aria-label="Delete player"
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             </div>

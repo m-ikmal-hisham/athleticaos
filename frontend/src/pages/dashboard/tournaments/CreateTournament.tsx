@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
@@ -11,6 +12,7 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { ArrowLeft, Trash, Plus } from '@phosphor-icons/react';
 import { createTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
+import { getActiveSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -24,7 +26,7 @@ const categorySchema = z.object({
 const tournamentSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters"),
     organiserOrgId: z.string().min(1, "Organisation is required"),
-    seasonName: z.string().min(1, "Season name is required"),
+    seasonInput: z.string().min(1, "Season is required"),
     competitionType: z.string(),
     level: z.string(),
     venue: z.string().min(1, "Venue is required"),
@@ -32,6 +34,8 @@ const tournamentSchema = z.object({
     endDate: z.string().min(1, "End date is required"),
     categories: z.array(categorySchema).optional(),
     logoUrl: z.string().optional(),
+    bannerUrl: z.string().optional(),
+    backgroundUrl: z.string().optional(),
     livestreamUrl: z.string().optional()
 });
 
@@ -41,6 +45,7 @@ export const CreateTournament = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [organisations, setOrganisations] = useState<Organisation[]>([]);
+    const [seasons, setSeasons] = useState<any[]>([]);
 
     // State for the new category input
     const [newCategory, setNewCategory] = useState<CreateCategoryRequest>({
@@ -55,6 +60,7 @@ export const CreateTournament = () => {
         handleSubmit,
         setValue,
         watch,
+        control,
         formState: { errors }
     } = useForm<TournamentFormData>({
         resolver: zodResolver(tournamentSchema),
@@ -68,18 +74,21 @@ export const CreateTournament = () => {
     const categories = watch('categories') || [];
 
     useEffect(() => {
-        loadOrganisations();
+        const loadData = async () => {
+            try {
+                const [orgsRes, seasonsRes] = await Promise.all([
+                    fetchOrganisations(),
+                    getActiveSeasons()
+                ]);
+                setOrganisations(orgsRes as any);
+                setSeasons(seasonsRes);
+            } catch (error) {
+                console.error("Failed to load initial data", error);
+                toast.error("Failed to load required data");
+            }
+        };
+        loadData();
     }, []);
-
-    const loadOrganisations = async () => {
-        try {
-            const data = await fetchOrganisations();
-            setOrganisations(data as any);
-        } catch (error) {
-            console.error('Failed to load organisations:', error);
-            toast.error("Failed to load organisations");
-        }
-    };
 
     const addCategory = () => {
         if (!newCategory.name) return;
@@ -98,7 +107,15 @@ export const CreateTournament = () => {
     const onSubmit = async (data: TournamentFormData) => {
         setLoading(true);
         try {
-            await createTournament(data);
+            const isUuid = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/.test(data.seasonInput);
+
+            const payload = {
+                ...data,
+                seasonId: isUuid ? data.seasonInput : undefined,
+                seasonName: !isUuid ? data.seasonInput : undefined,
+            };
+
+            await createTournament(payload);
             toast.success("Tournament created successfully");
             navigate('/dashboard/tournaments');
         } catch (error: any) {
@@ -138,19 +155,24 @@ export const CreateTournament = () => {
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                                    Organiser <span className="text-red-400 ml-1">*</span>
-                                </label>
-                                <select
-                                    {...register('organiserOrgId')}
-                                    className="input-base w-full"
-                                >
-                                    <option value="">Select Organisation</option>
-                                    {organisations.map(org => (
-                                        <option key={org.id} value={org.id}>{org.name}</option>
-                                    ))}
-                                </select>
-                                {errors.organiserOrgId && <p className="mt-1.5 text-xs text-red-500">{errors.organiserOrgId.message}</p>}
+                                <Controller
+                                    name="organiserOrgId"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Organiser"
+                                            required
+                                            placeholder="Select Organisation"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={organisations.map(org => ({
+                                                value: org.id,
+                                                label: org.name
+                                            }))}
+                                            error={errors.organiserOrgId?.message}
+                                        />
+                                    )}
+                                />
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
@@ -158,6 +180,24 @@ export const CreateTournament = () => {
                                 <ImageUpload
                                     value={watch('logoUrl')}
                                     onChange={(url) => setValue('logoUrl', url)}
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Banner Image (Wide)</label>
+                                <ImageUpload
+                                    value={watch('bannerUrl')}
+                                    onChange={(url) => setValue('bannerUrl', url)}
+                                    aspectRatio="banner"
+                                />
+                            </div>
+
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Background Image</label>
+                                <ImageUpload
+                                    value={watch('backgroundUrl')}
+                                    onChange={(url) => setValue('backgroundUrl', url)}
+                                    aspectRatio="video"
                                 />
                             </div>
                         </div>
@@ -168,38 +208,61 @@ export const CreateTournament = () => {
                         <h3 className="text-sm font-semibold text-primary-500 uppercase tracking-wider mb-4">Competition Format</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <Input
-                                    label="Season"
-                                    placeholder="e.g. 2024/2025"
-                                    {...register('seasonName')}
-                                    error={errors.seasonName?.message}
-                                    required
+                                <Controller
+                                    name="seasonInput"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Season"
+                                            placeholder="Select or Create Season"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={seasons.map(s => ({ value: s.id, label: s.name }))}
+                                            creatable
+                                            error={errors.seasonInput?.message}
+                                            required
+                                        />
+                                    )}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
-                                <select
-                                    {...register('competitionType')}
-                                    className="input-base w-full"
-                                >
-                                    <option value="LEAGUE">League</option>
-                                    <option value="KNOCKOUT">Knockout</option>
-                                    <option value="GROUP_KNOCKOUT">Group + Knockout</option>
-                                </select>
+                                <Controller
+                                    name="competitionType"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Type"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={[
+                                                { value: 'LEAGUE', label: 'League' },
+                                                { value: 'KNOCKOUT', label: 'Knockout' },
+                                                { value: 'GROUP_KNOCKOUT', label: 'Group + Knockout' }
+                                            ]}
+                                        />
+                                    )}
+                                />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">Level</label>
-                                <select
-                                    {...register('level')}
-                                    className="input-base w-full"
-                                >
-                                    <option value="INTERNATIONAL">International</option>
-                                    <option value="NATIONAL">National</option>
-                                    <option value="STATE">State</option>
-                                    <option value="DIVISION">Division</option>
-                                    <option value="CLUB">Club</option>
-                                    <option value="SCHOOL">School</option>
-                                </select>
+                                <Controller
+                                    name="level"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <SearchableSelect
+                                            label="Level"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            options={[
+                                                { value: 'INTERNATIONAL', label: 'International' },
+                                                { value: 'NATIONAL', label: 'National' },
+                                                { value: 'STATE', label: 'State' },
+                                                { value: 'DIVISION', label: 'Division' },
+                                                { value: 'CLUB', label: 'Club' },
+                                                { value: 'SCHOOL', label: 'School' }
+                                            ]}
+                                        />
+                                    )}
+                                />
                             </div>
                         </div>
                     </div>
@@ -235,17 +298,22 @@ export const CreateTournament = () => {
                                 />
                             </div>
                             <div className="col-span-12 md:col-span-3">
-                                <label className="text-xs text-muted-foreground mb-1 block">Gender</label>
-                                <select
+                                <SearchableSelect
+                                    label="Gender" // Adding label here for consistency, though original had it outside.
+                                    // Actually original had <label>Gender</label> outside. searchableselect has built-in label support.
+                                    // But the layout here is a grid, and the label was separate.
+                                    // I'll suppress the internal label or use it?
+                                    // The design has <label> above. SearchableSelect does the same.
+                                    // I will use SearchableSelect's label and remove the external one.
                                     value={newCategory.gender}
-                                    onChange={(e) => setNewCategory(prev => ({ ...prev, gender: e.target.value }))}
-                                    className="input-base w-full h-9 text-sm"
-                                    title="Gender"
-                                >
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="MIXED">Mixed</option>
-                                </select>
+                                    onChange={(value) => setNewCategory(prev => ({ ...prev, gender: value as string }))}
+                                    options={[
+                                        { value: 'MALE', label: 'Male' },
+                                        { value: 'FEMALE', label: 'Female' },
+                                        { value: 'MIXED', label: 'Mixed' }
+                                    ]}
+                                    className="h-full" // Ensure it fits
+                                />
                             </div>
                             <div className="col-span-5 md:col-span-2">
                                 <label className="text-xs text-muted-foreground mb-1 block">Min Age</label>

@@ -39,6 +39,9 @@ public class User {
 
     private String phone;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(name = "address_line1")
     private String addressLine1;
 

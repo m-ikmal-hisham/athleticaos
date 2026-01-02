@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { SearchableSelect } from "../../components/SearchableSelect";
 import { MagnifyingGlass, Funnel, Plus, MapPin, Buildings, PencilSimple } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../components/PageHeader";
@@ -7,12 +8,14 @@ import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
 import { Badge } from "../../components/Badge";
 import { useOrganisationsStore } from "../../store/organisations.store";
-import { getCountries, getStates, getDivisions, getDistricts, Organisation } from "../../api/organisations.api";
+import { getCountries, getStates, getDivisions, getDistricts, Organisation, deleteOrganisation } from "../../api/organisations.api";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
 import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
+import toast from "react-hot-toast";
+import { Trash } from "@phosphor-icons/react";
 
 export default function Organisations() {
     const navigate = useNavigate();
@@ -155,6 +158,24 @@ export default function Organisations() {
         return status === 'Active' ? 'green' : 'secondary';
     };
 
+    const formatOrgType = (type: string) => {
+        return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    };
+
+    const handleDelete = async (e: React.MouseEvent, orgId: string) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to delete this organisation? This action cannot be undone.")) {
+            try {
+                await deleteOrganisation(orgId);
+                toast.success("Organisation deleted successfully");
+                getOrganisations(); // Refresh list
+            } catch (error) {
+                console.error("Failed to delete organisation", error);
+                toast.error("Failed to delete organisation");
+            }
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
@@ -202,48 +223,40 @@ export default function Organisations() {
 
                 {/* Secondary Filters - Location Hierarchy */}
                 <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-300 ${showFilters ? 'block' : 'hidden md:grid'}`}>
-                    <select
+                    <SearchableSelect
+                        placeholder="All Countries"
                         value={selectedCountry}
-                        onChange={e => setSelectedCountry(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
-                        aria-label="Filter by Country"
-                    >
-                        <option value="">All Countries</option>
-                        {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                        onChange={(value) => setSelectedCountry(value as string)}
+                        options={[{ value: "", label: "All Countries" }, ...countries.map(c => ({ value: c.id, label: c.name }))]}
+                        className="z-40"
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All States"
                         value={selectedState}
-                        onChange={e => setSelectedState(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        onChange={(value) => setSelectedState(value as string)}
+                        options={[{ value: "", label: "All States" }, ...states.map(s => ({ value: s.id, label: s.name }))]}
                         disabled={!selectedCountry}
-                        aria-label="Filter by State"
-                    >
-                        <option value="">All States</option>
-                        {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                        className="z-30"
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All Divisions"
                         value={selectedDivision}
-                        onChange={e => setSelectedDivision(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        onChange={(value) => setSelectedDivision(value as string)}
+                        options={[{ value: "", label: "All Divisions" }, ...divisions.map(d => ({ value: d.id, label: d.name }))]}
                         disabled={!selectedState}
-                        aria-label="Filter by Division"
-                    >
-                        <option value="">All Divisions</option>
-                        {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
+                        className="z-20"
+                    />
 
-                    <select
+                    <SearchableSelect
+                        placeholder="All Districts"
                         value={selectedDistrict}
-                        onChange={e => setSelectedDistrict(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-glass-border bg-glass-bg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-shadow appearance-none"
+                        onChange={(value) => setSelectedDistrict(value as string)}
+                        options={[{ value: "", label: "All Districts" }, ...districts.map(d => ({ value: d.id, label: d.name }))]}
                         disabled={!selectedState}
-                        aria-label="Filter by District"
-                    >
-                        <option value="">All Districts</option>
-                        {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
+                        className="z-10"
+                    />
                 </div>
             </div>
 
@@ -272,7 +285,7 @@ export default function Organisations() {
                         <GlassCard
                             key={org.id}
                             className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
-                            onClick={() => { }} // Could navigate to detail if exists
+                            onClick={() => navigate(`/dashboard/organisations/${org.id}`)}
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
@@ -286,15 +299,26 @@ export default function Organisations() {
                                     <Badge variant={getStatusVariant(org.status || 'Active') as any} className="text-[10px] px-1.5 h-5">
                                         {org.status || 'Active'}
                                     </Badge>
-                                    {isAdmin && (
-                                        <button
-                                            onClick={(e) => handleEdit(e, org.id)}
-                                            className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
-                                            aria-label="Edit organisation"
-                                        >
-                                            <PencilSimple className="w-4 h-4" />
-                                        </button>
-                                    )}
+                                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                        {isAdmin && (
+                                            <>
+                                                <button
+                                                    onClick={(e) => handleEdit(e, org.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                    aria-label="Edit organisation"
+                                                >
+                                                    <PencilSimple className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDelete(e, org.id)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    aria-label="Delete organisation"
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -302,7 +326,7 @@ export default function Organisations() {
                                 <h3 className="font-semibold text-lg leading-tight truncate text-foreground group-hover:text-primary-400 transition-colors">
                                     {org.name}
                                 </h3>
-                                <p className="text-sm text-muted-foreground truncate">{org.type}</p>
+                                <p className="text-sm text-muted-foreground truncate">{formatOrgType(org.type)}</p>
                             </div>
 
                             <div className="flex items-center gap-1.5 pt-4 border-t border-white/5 text-xs text-muted-foreground">

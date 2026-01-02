@@ -26,8 +26,8 @@ public class TeamController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
-    public ResponseEntity<List<TeamResponse>> getAllTeams() {
-        return ResponseEntity.ok(teamService.getAllTeams());
+    public ResponseEntity<List<TeamResponse>> getAllTeams(@RequestParam(required = false) UUID organisationId) {
+        return ResponseEntity.ok(teamService.getAllTeams(organisationId));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -63,5 +63,13 @@ public class TeamController {
     @GetMapping("/{id}/players")
     public ResponseEntity<List<PlayerInTeamDTO>> getPlayersByTeam(@PathVariable UUID id) {
         return ResponseEntity.ok(teamService.getPlayersByTeam(id));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> deleteTeam(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        log.info("Request to delete team: {}", id);
+        teamService.deleteTeam(id, httpRequest);
+        return ResponseEntity.noContent().build();
     }
 }

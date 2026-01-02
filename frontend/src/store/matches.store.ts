@@ -23,6 +23,10 @@ export interface MatchItem {
     awayTeamId: string;
     awayTeamOrgId: string;
     awayTeamName: string;
+    homeTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamLogoUrl?: string;
+    awayTeamShortName?: string;
     matchDate: string;      // ISO date
     kickOffTime: string;    // e.g. "16:30:00"
     venue?: string | null;

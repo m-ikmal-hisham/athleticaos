@@ -12,9 +12,9 @@ import { Badge } from '@/components/Badge';
 import toast from 'react-hot-toast';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { GlassCard } from '@/components/GlassCard';
-import { BentoGrid, BentoItem } from '../../components/BentoGrid';
 import { UsersSummaryCards } from './components/UsersSummaryCards';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
+import { formatRoleName } from '@/utils/stringUtils';
+import { SEO } from '@/components/common/SEO';
 
 export default function Users() {
     const navigate = useNavigate();
@@ -52,6 +52,10 @@ export default function Users() {
 
     const activeUsersCount = users.filter(u => u.isActive).length;
 
+    const adminRolesCount = users.filter(u =>
+        u.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r))
+    ).length;
+
     const handleDeleteUser = async () => {
         if (!confirmDelete.userId) return;
         try {
@@ -87,7 +91,7 @@ export default function Users() {
         return (
             <Badge variant={color as any} className="gap-1 pl-1 pr-2">
                 <Icon className="w-3.5 h-3.5" weight="fill" />
-                {primaryRole}
+                {formatRoleName(primaryRole)}
             </Badge>
         );
     };
@@ -98,6 +102,11 @@ export default function Users() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <SEO
+                title="Users Management"
+                description="Manage users, roles, and permissions in your organisation."
+                url="/dashboard/users"
+            />
             <PageHeader
                 title="Users"
                 description="Manage users, roles, and permissions."
@@ -115,117 +124,110 @@ export default function Users() {
                 totalUsers={users.length}
                 activeUsers={activeUsersCount}
                 pendingInvites={0} // Placeholder until invite tracking is implemented
+                adminRolesCount={adminRolesCount}
             />
 
-            <BentoGrid>
-                <BentoItem colSpan={3}>
-                    <GlassCard className="overflow-hidden flex flex-col h-full">
-                        <div className="p-4 border-b border-glass-border flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/5">
-                            <div className="relative w-full sm:max-w-md">
-                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted border-glass-border" />
-                                <Input
-                                    placeholder="Search users by name or email..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 bg-glass-bg border-glass-border focus:border-primary-500/50 transition-colors"
-                                />
-                            </div>
-                            <div className="text-sm text-muted-foreground hidden sm:block">
-                                Showing {filteredUsers.length} of {users.length} users
-                            </div>
-                        </div>
+            {/* Controls */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="relative w-full md:w-96">
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted border-glass-border" />
+                    <Input
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 bg-glass-bg border-glass-border focus:border-primary-500/50 transition-colors"
+                    />
+                </div>
+                <div className="text-sm text-muted-foreground hidden sm:block">
+                    Showing {filteredUsers.length} of {users.length} users
+                </div>
+            </div>
 
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-white/5">
-                                    <TableRow className="hover:bg-transparent border-glass-border">
-                                        <TableHead className="text-muted-foreground font-medium">User</TableHead>
-                                        <TableHead className="text-muted-foreground font-medium">Role</TableHead>
-                                        <TableHead className="text-muted-foreground font-medium">Organisation</TableHead>
-                                        <TableHead className="text-muted-foreground font-medium">Status</TableHead>
-                                        {canManageUsers && <TableHead className="text-right text-muted-foreground font-medium">Actions</TableHead>}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {loading ? (
-                                        Array.from({ length: 5 }).map((_, i) => (
-                                            <TableRow key={i} className="animate-pulse border-glass-border">
-                                                <TableCell><div className="h-10 w-32 bg-white/5 rounded" /></TableCell>
-                                                <TableCell><div className="h-6 w-20 bg-white/5 rounded" /></TableCell>
-                                                <TableCell><div className="h-6 w-24 bg-white/5 rounded" /></TableCell>
-                                                <TableCell><div className="h-6 w-16 bg-white/5 rounded" /></TableCell>
-                                                <TableCell><div className="h-8 w-8 bg-white/5 rounded ml-auto" /></TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : filteredUsers.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                                                No users found matching your search.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        filteredUsers.map((user) => (
-                                            <TableRow key={user.id} className="hover:bg-white/5 border-glass-border transition-colors">
-                                                <TableCell>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500/20 to-blue-600/20 flex items-center justify-center text-primary-200 font-bold border border-white/10">
-                                                            {user.firstName[0]}{user.lastName[0]}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-medium text-foreground">{user.firstName} {user.lastName}</div>
-                                                            <div className="text-xs text-muted-foreground">{user.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>{getRoleBadge(Array.from(user.roles || []))}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        <Buildings className="w-4 h-4 opacity-50" />
-                                                        {user.organisationName || 'N/A'}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge
-                                                        variant={user.isActive ? 'success' : 'secondary'}
-                                                        className="h-6"
-                                                    >
-                                                        {user.isActive ? 'Active' : 'Inactive'}
-                                                    </Badge>
-                                                </TableCell>
-                                                {canManageUsers && (
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                                                                onClick={() => navigate(`/dashboard/users/${user.id}/edit`)}
-                                                            >
-                                                                <PencilSimple className="w-4 h-4" />
-                                                            </Button>
-                                                            {/* Only show delete if not self */}
-                                                            {currentUser?.id !== user.id && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
-                                                                    onClick={() => setConfirmDelete({ isOpen: true, userId: user.id })}
-                                                                >
-                                                                    <Trash className="w-4 h-4" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                )}
-                                            </TableRow>
-                                        ))
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <GlassCard key={i} className="h-48 animate-pulse flex flex-col p-6">
+                            <div className="w-12 h-12 rounded-full bg-white/5 mb-4" />
+                            <div className="w-3/4 h-5 bg-white/5 rounded mb-2" />
+                            <div className="w-1/2 h-4 bg-white/5 rounded" />
+                        </GlassCard>
+                    ))}
+                </div>
+            ) : filteredUsers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center min-h-[400px] border border-dashed border-white/10 rounded-xl bg-white/5 text-center p-8">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                        <MagnifyingGlass className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">No users found</h3>
+                    <p className="text-muted-foreground max-w-sm">
+                        No users match your search criteria. Try adjusting your search or add a new user.
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredUsers.map((user) => (
+                        <GlassCard
+                            key={user.id}
+                            className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
+                            onClick={() => navigate(`/dashboard/users/${user.id}/edit`)}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary-500/20 to-blue-600/20 text-primary-200 font-bold border border-white/10">
+                                    {user.firstName[0]}{user.lastName[0]}
+                                </div>
+                                <div className="flex gap-1">
+                                    <Badge
+                                        variant={user.isActive ? 'success' : 'secondary'}
+                                        className="h-5 text-[10px] px-1.5"
+                                    >
+                                        {user.isActive ? 'Active' : 'Inactive'}
+                                    </Badge>
+                                    {canManageUsers && (
+                                        <>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/users/${user.id}/edit`); }}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                aria-label="Edit user"
+                                            >
+                                                <PencilSimple className="w-4 h-4" />
+                                            </button>
+                                            {currentUser?.id !== user.id && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete({ isOpen: true, userId: user.id }); }}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    aria-label="Delete user"
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </>
                                     )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </GlassCard>
-                </BentoItem>
-            </BentoGrid>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1 mb-4 flex-1">
+                                <h3 className="font-semibold text-lg leading-tight truncate text-foreground group-hover:text-primary-400 transition-colors">
+                                    {user.firstName} {user.lastName}
+                                </h3>
+                                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/5 space-y-2">
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="uppercase tracking-wider opacity-60">Role</span>
+                                    {getRoleBadge(Array.from(user.roles || []))}
+                                </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="uppercase tracking-wider opacity-60">Org</span>
+                                    <span className="font-medium text-foreground truncate max-w-[120px]" title={user.organisationName}>
+                                        {user.organisationName || '-'}
+                                    </span>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={confirmDelete.isOpen}

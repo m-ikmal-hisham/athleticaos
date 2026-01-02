@@ -10,10 +10,8 @@ const api = axios.create({
 // Request interceptor to add JWT token
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('athos_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+        config.withCredentials = true;
+        // Token is now handled by HttpOnly cookie
         return config;
     },
     (error) => {
