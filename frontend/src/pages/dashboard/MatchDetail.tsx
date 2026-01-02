@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { MatchIntegrityConsole } from '@/components/admin/match/MatchIntegrityConsole';
@@ -23,6 +23,7 @@ import { Users, PresentationChart } from '@phosphor-icons/react';
 // Rugby scoring rules
 import { matchLineupService } from '@/services/matchLineupService';
 import { MatchLineupEntry } from '@/types';
+import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 
 const SCORING_RULES: Record<string, number> = {
     'TRY': 5,
@@ -392,25 +393,30 @@ export const MatchDetail = () => {
             }));
     };
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        { label: 'Matches', path: '/dashboard/matches' }
+    ];
+
+    if (selectedMatch.tournamentId) {
+        breadcrumbs.push({
+            label: selectedMatch.tournamentName || 'Tournament',
+            path: `/dashboard/tournaments/${selectedMatch.tournamentId}`
+        });
+    }
+
+    const matchLabel = selectedMatch.homeTeamName && selectedMatch.awayTeamName
+        ? `${selectedMatch.homeTeamName} vs ${selectedMatch.awayTeamName}`
+        : selectedMatch.matchCode || 'Match';
+
+    breadcrumbs.push({ label: matchLabel });
+
     return (
         <div className="space-y-6 max-w-[1600px] mx-auto pb-24">
 
             {/* Header & Controls */}
             <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
                 <div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Link to="/dashboard/matches" className="hover:text-foreground transition">Matches</Link>
-                        <span>/</span>
-                        {selectedMatch.tournamentId && (
-                            <>
-                                <Link to={`/dashboard/tournaments/${selectedMatch.tournamentId}`} className="hover:text-foreground transition">
-                                    {selectedMatch.tournamentName || 'Tournament'}
-                                </Link>
-                                <span>/</span>
-                            </>
-                        )}
-                        <span className="text-foreground font-medium">{selectedMatch.matchCode}</span>
-                    </div>
+                    <Breadcrumbs items={breadcrumbs} className="mb-2" />
                     <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                         {selectedMatch.homeTeamName} <span className="text-muted-foreground text-xl">vs</span> {selectedMatch.awayTeamName}
                     </h1>

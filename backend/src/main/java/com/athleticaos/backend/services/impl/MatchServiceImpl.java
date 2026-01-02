@@ -151,16 +151,24 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Tournament not found with ID: " + request.getTournamentId()));
 
-        Team homeTeam = teamRepository.findById(request.getHomeTeamId())
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Home Team not found with ID: " + request.getHomeTeamId()));
+        Team homeTeam = null;
+        if (request.getHomeTeamId() != null) {
+            homeTeam = teamRepository.findById(request.getHomeTeamId())
+                    .orElseThrow(
+                            () -> new EntityNotFoundException(
+                                    "Home Team not found with ID: " + request.getHomeTeamId()));
+        }
 
-        Team awayTeam = teamRepository.findById(request.getAwayTeamId())
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Away Team not found with ID: " + request.getAwayTeamId()));
+        Team awayTeam = null;
+        if (request.getAwayTeamId() != null) {
+            awayTeam = teamRepository.findById(request.getAwayTeamId())
+                    .orElseThrow(
+                            () -> new EntityNotFoundException(
+                                    "Away Team not found with ID: " + request.getAwayTeamId()));
+        }
 
-        // Validation: Home team != Away team
-        if (homeTeam.getId().equals(awayTeam.getId())) {
+        // Validation: Home team != Away team (only if both are present)
+        if (homeTeam != null && awayTeam != null && homeTeam.getId().equals(awayTeam.getId())) {
             throw new IllegalArgumentException("Home team and Away team cannot be the same.");
         }
 
@@ -172,6 +180,8 @@ public class MatchServiceImpl implements MatchService {
                 .tournament(tournament)
                 .homeTeam(homeTeam)
                 .awayTeam(awayTeam)
+                .homeTeamPlaceholder(request.getHomeTeamPlaceholder())
+                .awayTeamPlaceholder(request.getAwayTeamPlaceholder())
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
                 .venue(request.getVenue())
@@ -218,10 +228,17 @@ public class MatchServiceImpl implements MatchService {
                     .orElseThrow(() -> new EntityNotFoundException("Home Team not found"));
             match.setHomeTeam(homeTeam);
         }
+        if (request.getHomeTeamPlaceholder() != null) {
+            match.setHomeTeamPlaceholder(request.getHomeTeamPlaceholder());
+        }
+
         if (request.getAwayTeamId() != null) {
             Team awayTeam = teamRepository.findById(request.getAwayTeamId())
                     .orElseThrow(() -> new EntityNotFoundException("Away Team not found"));
             match.setAwayTeam(awayTeam);
+        }
+        if (request.getAwayTeamPlaceholder() != null) {
+            match.setAwayTeamPlaceholder(request.getAwayTeamPlaceholder());
         }
 
         // Set scores first if provided in the request
@@ -291,6 +308,7 @@ public class MatchServiceImpl implements MatchService {
         } else {
             builder.homeTeamName(match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD");
         }
+        builder.homeTeamPlaceholder(match.getHomeTeamPlaceholder());
 
         if (match.getAwayTeam() != null) {
             builder.awayTeamId(match.getAwayTeam().getId());
@@ -303,6 +321,7 @@ public class MatchServiceImpl implements MatchService {
         } else {
             builder.awayTeamName(match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD");
         }
+        builder.awayTeamPlaceholder(match.getAwayTeamPlaceholder());
 
         return builder.build();
     }

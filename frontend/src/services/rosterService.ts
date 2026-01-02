@@ -40,5 +40,19 @@ export const rosterService = {
     async getLineupHints(matchId: string): Promise<LineupHintsDTO> {
         const response = await axios.get<LineupHintsDTO>(`/api/matches/${matchId}/lineup/hints`);
         return response.data;
+    },
+
+    // Update Player Number
+    async updatePlayerNumber(
+        tournamentId: string,
+        teamId: string,
+        playerId: string,
+        tournamentJerseyNumber: number
+    ): Promise<TournamentPlayerDTO> {
+        const response = await axios.patch<TournamentPlayerDTO>(
+            `/api/tournaments/${tournamentId}/roster/${teamId}/players/${playerId}/number`,
+            { tournamentJerseyNumber }
+        );
+        return response.data;
     }
 };

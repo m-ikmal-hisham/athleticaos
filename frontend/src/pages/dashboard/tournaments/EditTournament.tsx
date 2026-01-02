@@ -35,9 +35,9 @@ const tournamentSchema = z.object({
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().min(1, "End date is required"),
     categories: z.array(categorySchema).optional(),
-    logoUrl: z.string().optional(),
-    bannerUrl: z.string().optional(),
-    backgroundUrl: z.string().optional(),
+    logoUrl: z.string().nullable().optional().or(z.literal('')),
+    bannerUrl: z.string().nullable().optional().or(z.literal('')),
+    backgroundUrl: z.string().nullable().optional().or(z.literal('')),
     livestreamUrl: z.string().optional()
 });
 
@@ -255,16 +255,18 @@ export const EditTournament = () => {
 
                             <div className="col-span-1 md:col-span-2">
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">Tournament Logo</label>
-                                <ImageUpload
-                                    value={watch('logoUrl')}
-                                    onChange={(url) => setValue('logoUrl', url)}
-                                />
+                                <div className="w-32">
+                                    <ImageUpload
+                                        value={watch('logoUrl') || undefined}
+                                        onChange={(url) => setValue('logoUrl', url)}
+                                    />
+                                </div>
                             </div>
 
                             <div className="col-span-1 md:col-span-2">
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">Banner Image (Wide)</label>
                                 <ImageUpload
-                                    value={watch('bannerUrl')}
+                                    value={watch('bannerUrl') || undefined}
                                     onChange={(url) => setValue('bannerUrl', url)}
                                     aspectRatio="banner"
                                 />
@@ -273,7 +275,7 @@ export const EditTournament = () => {
                             <div className="col-span-1 md:col-span-2">
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">Background Image</label>
                                 <ImageUpload
-                                    value={watch('backgroundUrl')}
+                                    value={watch('backgroundUrl') || undefined}
                                     onChange={(url) => setValue('backgroundUrl', url)}
                                     aspectRatio="video"
                                 />

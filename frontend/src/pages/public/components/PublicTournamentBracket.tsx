@@ -65,7 +65,9 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                     className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm p-3 relative"
                                 >
                                     <div className="flex justify-between items-center mb-2 text-xs text-slate-500">
-                                        <span>{match.code || 'TBD'}</span>
+                                        <span>
+                                            {match.code && match.code.length < 10 ? match.code : `Match`}
+                                        </span>
                                         <span>{new Date(match.matchDate).toLocaleDateString()}</span>
                                     </div>
                                     <div className="space-y-2">

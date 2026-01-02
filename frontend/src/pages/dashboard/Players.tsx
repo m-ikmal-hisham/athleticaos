@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass, DotsThree, UserMinus, Plus } from "@phosphor-icons/react";
+import { MagnifyingGlass, PencilSimple, UserMinus, Plus } from "@phosphor-icons/react";
 import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
@@ -156,7 +156,7 @@ export default function Players() {
                                                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                                                 aria-label="Edit player"
                                             >
-                                                <DotsThree className="w-4 h-4" weight="bold" />
+                                                <PencilSimple className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={(e) => handleDelete(p, e)}

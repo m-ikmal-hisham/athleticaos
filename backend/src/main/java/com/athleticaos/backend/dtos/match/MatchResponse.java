@@ -28,6 +28,8 @@ public class MatchResponse {
     private String homeTeamShortName;
     private String awayTeamLogoUrl;
     private String awayTeamShortName;
+    private String homeTeamPlaceholder;
+    private String awayTeamPlaceholder;
     private LocalDate matchDate;
     private LocalTime kickOffTime;
     private String venue;

@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock } from '@phosphor-icons/react';
+import { Clock } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicMatchDetail } from '../../api/public.api';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MatchHeroCard } from './match/MatchHeroCard';
 import { MatchStatsSection } from './match/MatchStatsSection';
 import { MatchMoments } from './match/MatchMoments';
@@ -113,13 +114,16 @@ export default function MatchCenter() {
         <div className="space-y-8 animate-fade-in pb-20">
             {/* Nav Back */}
             <div className="flex items-center justify-between">
-                <Link
-                    to={match.tournamentSlug ? `/tournaments/${match.tournamentSlug}` : '/tournaments'}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
-                >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span>{tournamentName ? `Back to ${tournamentName}` : (match.tournamentSlug ? 'Back to Tournament' : 'Back to Tournaments')}</span>
-                </Link>
+                <Breadcrumbs
+                    items={[
+                        { label: 'Tournaments', path: '/tournaments' },
+                        ...(match.tournamentSlug ? [{
+                            label: tournamentName || 'Tournament',
+                            path: `/tournaments/${match.tournamentSlug}`
+                        }] : []),
+                        { label: 'Match Center' }
+                    ]}
+                />
             </div>
 
             {/* Match Hero Container */}

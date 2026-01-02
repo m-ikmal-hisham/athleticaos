@@ -172,7 +172,7 @@ export default function TournamentDetail() {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             {tournament.seasonName && (
-                                <Badge variant="secondary" className="flex items-center gap-1">
+                                <Badge variant="outline" className="flex items-center gap-1 bg-white/50 dark:bg-black/50 backdrop-blur-sm border-primary-500/20 text-primary-700 dark:text-primary-300">
                                     <Trophy className="w-3 h-3" />
                                     {tournament.seasonName}
                                 </Badge>
@@ -236,8 +236,8 @@ export default function TournamentDetail() {
             />
 
             {/* Navigation Tabs */}
-            <div className="flex space-x-1 p-1 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/10 w-full overflow-x-auto">
-                <nav className="flex space-x-1 w-full" aria-label="Tabs">
+            <div className="flex space-x-1 p-1.5 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-xl border border-white/20 dark:border-white/10 w-full overflow-x-auto shadow-sm">
+                <nav className="flex space-x-1 w-full min-w-max" aria-label="Tabs">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -251,12 +251,12 @@ export default function TournamentDetail() {
                                 className={`
                                     flex-1 min-w-[120px] py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300
                                     ${isActive
-                                        ? 'bg-white dark:bg-white/10 text-primary-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                                        ? 'bg-blue-500/10 dark:bg-red-500/20 text-blue-700 dark:text-red-400 shadow-sm ring-1 ring-blue-500/20 dark:ring-red-500/20'
+                                        : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-slate-200'
                                     }
                                 `}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-500 dark:text-primary-400' : ''}`} />
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-red-400' : ''}`} />
                                 {tab.label}
                             </button>
                         );
@@ -291,7 +291,9 @@ export default function TournamentDetail() {
                                             {tournament.categories.map(cat => (
                                                 <div key={cat.id} className="flex justify-between items-center bg-black/5 dark:bg-white/5 p-2 rounded-lg text-sm border border-black/5 dark:border-white/5">
                                                     <span className="font-semibold text-foreground">{cat.name}</span>
-                                                    <Badge variant="secondary" className="text-[10px] h-5">{cat.gender}</Badge>
+                                                    <Badge variant="outline" className="text-[10px] h-5 bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10">
+                                                        {cat.gender}
+                                                    </Badge>
                                                 </div>
                                             ))}
                                         </div>

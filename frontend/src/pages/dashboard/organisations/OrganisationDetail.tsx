@@ -5,7 +5,8 @@ import { fetchPlayersByOrganisation } from '../../../api/players.api';
 import { usersApi } from '../../../api/users.api';
 import { RecentActivityWidget } from '../../../components/RecentActivityWidget';
 import { GlassCard } from '../../../components/GlassCard';
-import { Users, TShirt, ChartBar, TreeStructure, ArrowLeft, Buildings, MapPin } from '@phosphor-icons/react';
+import { Users, TShirt, ChartBar, TreeStructure, Buildings, MapPin } from '@phosphor-icons/react';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Badge } from '../../../components/Badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/Tabs';
 import { Button } from '../../../components/Button';
@@ -77,14 +78,13 @@ const OrganisationDetail = () => {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div>
-                <Button
-                    variant="ghost"
-                    onClick={() => navigate('/dashboard/organisations')}
-                    className="mb-4 pl-0 text-muted-foreground hover:text-foreground gap-2"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Organisations
-                </Button>
+                <Breadcrumbs
+                    items={[
+                        { label: 'Organisations', path: '/dashboard/organisations' },
+                        { label: organisation.name }
+                    ]}
+                    className="mb-4"
+                />
 
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                     <div className="w-24 h-24 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">

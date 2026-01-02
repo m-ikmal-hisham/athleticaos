@@ -18,11 +18,11 @@ public class MatchCreateRequest {
     @NotNull(message = "Tournament ID is required")
     private UUID tournamentId;
 
-    @NotNull(message = "Home Team ID is required")
     private UUID homeTeamId;
-
-    @NotNull(message = "Away Team ID is required")
     private UUID awayTeamId;
+
+    private String homeTeamPlaceholder;
+    private String awayTeamPlaceholder;
 
     @NotNull(message = "Match date is required")
     private LocalDate matchDate;

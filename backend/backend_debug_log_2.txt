@@ -1,0 +1,6096 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.athleticaos:backend >-----------------------
+[INFO] Building backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.0:run (default-cli) > test-compile @ backend >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 49 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ backend ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ backend ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ backend ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] <<< spring-boot:3.2.0:run (default-cli) < test-compile @ backend <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.0:run (default-cli) @ backend ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2026-01-02T18:36:46.208+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.b.AthleticaosBackendApplication      : Starting AthleticaosBackendApplication using Java 17.0.9 with PID 46435 (/Users/futureflash/Desktop/Projects/athleticaos/backend/target/classes started by futureflash in /Users/futureflash/Desktop/Projects/athleticaos/backend)
+2026-01-02T18:36:46.209+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.b.AthleticaosBackendApplication      : The following 1 profile is active: "dev"
+2026-01-02T18:36:46.675+08:00  INFO 46435 --- [athleticaos-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-02T18:36:46.741+08:00  INFO 46435 --- [athleticaos-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 62 ms. Found 31 JPA repository interfaces.
+2026-01-02T18:36:47.087+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-01-02T18:36:47.092+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-02T18:36:47.092+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2026-01-02T18:36:47.121+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-01-02T18:36:47.122+08:00  INFO 46435 --- [athleticaos-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 897 ms
+2026-01-02T18:36:47.245+08:00  INFO 46435 --- [athleticaos-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-02T18:36:47.348+08:00  INFO 46435 --- [athleticaos-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@3d8d52be
+2026-01-02T18:36:47.348+08:00  INFO 46435 --- [athleticaos-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-02T18:36:47.381+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-01-02T18:36:47.381+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-01-02T18:36:47.381+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-01-02T18:36:47.388+08:00  INFO 46435 --- [athleticaos-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/athleticaos (PostgreSQL 15.15)
+2026-01-02T18:36:47.440+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 108
+2026-01-02T18:36:47.441+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-01-02T18:36:47.490+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-02T18:36:47.516+08:00  INFO 46435 --- [athleticaos-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2026-01-02T18:36:47.529+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-02T18:36:47.620+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-02T18:36:48.229+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-02T18:36:48.470+08:00  INFO 46435 --- [athleticaos-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-02T18:36:48.604+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.b.services.TokenGenerationService    : Incrementing token generation on server startup...
+2026-01-02T18:36:48.633+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+Hibernate: 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+2026-01-02T18:36:48.645+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+Hibernate: 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+2026-01-02T18:36:48.663+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    update
+        token_generation 
+    set
+        generation=?,
+        updated_at=? 
+    where
+        id=?
+Hibernate: 
+    update
+        token_generation 
+    set
+        generation=?,
+        updated_at=? 
+    where
+        id=?
+2026-01-02T18:36:48.674+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.b.services.TokenGenerationService    : Token generation incremented to: 321
+2026-01-02T18:36:48.947+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-02T18:36:50.362+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint(s) beneath base path '/actuator'
+2026-01-02T18:36:50.419+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@50091386, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@3c4161d1, org.springframework.security.web.context.SecurityContextHolderFilter@711534f7, org.springframework.security.web.header.HeaderWriterFilter@4f401aac, org.springframework.web.filter.CorsFilter@3f94bd59, org.springframework.security.web.authentication.logout.LogoutFilter@3cfa429c, com.athleticaos.backend.security.JwtAuthenticationFilter@3e216fc9, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@dff0458, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@1d9f9c9d, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@136ee66d, org.springframework.security.web.session.SessionManagementFilter@2fb05142, org.springframework.security.web.access.ExceptionTranslationFilter@3e1c58c9, org.springframework.security.web.access.intercept.AuthorizationFilter@1175ae79]
+2026-01-02T18:36:50.808+08:00  INFO 46435 --- [athleticaos-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-01-02T18:36:50.818+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.b.AthleticaosBackendApplication      : Started AthleticaosBackendApplication in 4.777 seconds (process running for 4.916)
+2026-01-02T18:36:50.872+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.org_level=?
+Hibernate: 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.org_level=?
+2026-01-02T18:36:50.885+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.b.config.OrganisationSeedConfig      : Organisations already seeded.
+2026-01-02T18:36:50.885+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.backend.config.UserSeedConfig        : Seeding users...
+2026-01-02T18:36:50.886+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:36:50.887+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:36:50.889+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:36:50.890+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:36:50.891+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:36:50.893+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:50.901+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:50.905+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.backend.config.UserSeedConfig        : Super admin user already exists. Updating credentials and roles to ensure correctness.
+2026-01-02T18:36:50.905+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:50.906+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:50.989+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+2026-01-02T18:36:50.998+08:00 DEBUG 46435 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    update
+        users 
+    set
+        full_address_legacy=?,
+        address_line1=?,
+        address_line2=?,
+        avatar_url=?,
+        city=?,
+        country=?,
+        email=?,
+        first_name=?,
+        is_active=?,
+        last_name=?,
+        organisation_id=?,
+        password_hash=?,
+        phone=?,
+        postcode=?,
+        state=?,
+        updated_at=? 
+    where
+        id=?
+Hibernate: 
+    update
+        users 
+    set
+        full_address_legacy=?,
+        address_line1=?,
+        address_line2=?,
+        avatar_url=?,
+        city=?,
+        country=?,
+        email=?,
+        first_name=?,
+        is_active=?,
+        last_name=?,
+        organisation_id=?,
+        password_hash=?,
+        phone=?,
+        postcode=?,
+        state=?,
+        updated_at=? 
+    where
+        id=?
+2026-01-02T18:36:51.002+08:00  INFO 46435 --- [athleticaos-backend] [           main] c.a.backend.config.UserSeedConfig        : Super admin updated successfully.
+2026-01-02T18:36:56.881+08:00  INFO 46435 --- [athleticaos-backend] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-01-02T18:36:56.881+08:00  INFO 46435 --- [athleticaos-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-01-02T18:36:56.885+08:00  INFO 46435 --- [athleticaos-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+2026-01-02T18:36:56.950+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:56.950+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:56.955+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:56.959+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:56.965+08:00  WARN 46435 --- [athleticaos-backend] [nio-8080-exec-2] o.s.w.s.h.HandlerMappingIntrospector     : Cache miss for REQUEST dispatch to '/uploads/db5c0ede-ed3f-45b2-accb-48bb05aaa2c9_3.png' (previous null). Performing MatchableHandlerMapping lookup. This is logged once only at WARN level, and every time at TRACE.
+2026-01-02T18:36:56.985+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:56.987+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:56.988+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:56.990+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:57.982+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:57.982+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:57.985+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:57.985+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:57.985+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:57.991+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.000+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.000+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.002+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.002+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.008+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.010+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.011+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.013+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.035+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.037+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.046+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.048+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:36:58.051+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:36:58.052+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.709+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.709+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.709+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.726+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.726+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.727+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.745+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.746+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.748+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.750+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.750+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.751+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.755+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.756+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.765+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.766+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.779+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.779+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:02.780+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-4] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:02.780+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:05.789+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:05.789+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:05.794+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:05.794+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.311+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.315+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.474+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.476+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.559+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.560+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.602+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.is_published
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.is_published
+2026-01-02T18:37:10.611+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.614+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.615+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.617+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.617+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.626+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.626+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.628+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.629+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.629+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.631+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+2026-01-02T18:37:10.634+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+2026-01-02T18:37:10.634+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0
+2026-01-02T18:37:10.639+08:00  INFO 46435 --- [athleticaos-backend] [nio-8080-exec-2] c.a.b.s.impl.PlayerTeamServiceImpl       : Fetching teams for player 9a6b6f40-c8e5-414b-b673-f74624a239dd
+2026-01-02T18:37:10.643+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+Hibernate: 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+2026-01-02T18:37:10.643+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.645+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.646+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.647+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.648+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.650+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+2026-01-02T18:37:10.651+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        pt1_0.id,
+        pt1_0.created_at,
+        pt1_0.is_active,
+        pt1_0.jersey_number,
+        pt1_0.joined_date,
+        pt1_0.player_id,
+        pt1_0.position,
+        pt1_0.team_id 
+    from
+        player_teams pt1_0 
+    where
+        pt1_0.player_id=? 
+        and pt1_0.is_active=true
+Hibernate: 
+    select
+        pt1_0.id,
+        pt1_0.created_at,
+        pt1_0.is_active,
+        pt1_0.jersey_number,
+        pt1_0.joined_date,
+        pt1_0.player_id,
+        pt1_0.position,
+        pt1_0.team_id 
+    from
+        player_teams pt1_0 
+    where
+        pt1_0.player_id=? 
+        and pt1_0.is_active=true
+2026-01-02T18:37:10.657+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+2026-01-02T18:37:10.657+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.id=?
+Hibernate: 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.id=?
+Hibernate: 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+2026-01-02T18:37:10.659+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.is_published
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.is_published
+2026-01-02T18:37:10.662+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.665+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.665+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.670+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.675+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+2026-01-02T18:37:10.675+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.676+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.677+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.677+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.682+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-1] org.hibernate.SQL                        : 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+Hibernate: 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+2026-01-02T18:37:10.687+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.688+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:10.689+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.689+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:10.691+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+2026-01-02T18:37:10.691+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0
+2026-01-02T18:37:10.692+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.693+08:00  INFO 46435 --- [athleticaos-backend] [nio-8080-exec-5] c.a.b.s.impl.PlayerTeamServiceImpl       : Fetching teams for player 9a6b6f40-c8e5-414b-b673-f74624a239dd
+2026-01-02T18:37:10.694+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.696+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        pt1_0.id,
+        pt1_0.created_at,
+        pt1_0.is_active,
+        pt1_0.jersey_number,
+        pt1_0.joined_date,
+        pt1_0.player_id,
+        pt1_0.position,
+        pt1_0.team_id 
+    from
+        player_teams pt1_0 
+    where
+        pt1_0.player_id=? 
+        and pt1_0.is_active=true
+Hibernate: 
+    select
+        pt1_0.id,
+        pt1_0.created_at,
+        pt1_0.is_active,
+        pt1_0.jersey_number,
+        pt1_0.joined_date,
+        pt1_0.player_id,
+        pt1_0.position,
+        pt1_0.team_id 
+    from
+        player_teams pt1_0 
+    where
+        pt1_0.player_id=? 
+        and pt1_0.is_active=true
+2026-01-02T18:37:10.696+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.697+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.699+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:10.699+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-5] org.hibernate.SQL                        : 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.id=?
+Hibernate: 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.id=?
+2026-01-02T18:37:10.700+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+2026-01-02T18:37:10.701+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-9] org.hibernate.SQL                        : 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+Hibernate: 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+2026-01-02T18:37:12.747+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.747+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.747+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.757+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.757+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.757+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.773+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.775+08:00 DEBUG 46435 --- [athleticaos-backend] [io-8080-exec-10] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        s1_0.organiser_id,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    where
+        s1_0.status=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        s1_0.organiser_id,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    where
+        s1_0.status=?
+2026-01-02T18:37:12.775+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.779+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0
+Hibernate: 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0
+2026-01-02T18:37:12.791+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.id=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.id=?
+2026-01-02T18:37:12.792+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.793+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.794+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:12.799+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+2026-01-02T18:37:12.801+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-8] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        s1_0.organiser_id,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    where
+        s1_0.status=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        s1_0.organiser_id,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    where
+        s1_0.status=?
+2026-01-02T18:37:12.802+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-6] org.hibernate.SQL                        : 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+Hibernate: 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+2026-01-02T18:37:12.807+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.809+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.813+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.814+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.815+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:37:12.816+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-3] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.816+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.817+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:37:12.819+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-7] org.hibernate.SQL                        : 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0
+Hibernate: 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0
+2026-01-02T18:37:12.823+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.id=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.age_group_label,
+        t1_0.background_url,
+        t1_0.banner_url,
+        t1_0.competition_type,
+        t1_0.created_at,
+        t1_0.deleted,
+        t1_0.end_date,
+        t1_0.format,
+        t1_0.has_placement_stages,
+        t1_0.is_age_grade,
+        t1_0.is_published,
+        t1_0.level,
+        t1_0.livestream_url,
+        t1_0.logo_url,
+        t1_0.name,
+        t1_0.number_of_pools,
+        t1_0.organiser_org_id,
+        t1_0.season_id,
+        t1_0.slug,
+        t1_0.start_date,
+        t1_0.status,
+        t1_0.venue 
+    from
+        tournaments t1_0 
+    where
+        t1_0.id=?
+2026-01-02T18:37:12.833+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+Hibernate: 
+    select
+        tfc1_0.id,
+        tfc1_0.created_at,
+        tfc1_0.format_type,
+        tfc1_0.match_duration_minutes,
+        tfc1_0.max_bench_count,
+        tfc1_0.points_bonus_loss,
+        tfc1_0.points_bonus_try,
+        tfc1_0.points_draw,
+        tfc1_0.points_loss,
+        tfc1_0.points_win,
+        tfc1_0.pool_count,
+        tfc1_0.rugby_format,
+        tfc1_0.starters_count,
+        tfc1_0.team_count,
+        tfc1_0.tournament_id,
+        tfc1_0.updated_at 
+    from
+        tournament_format_configs tfc1_0 
+    where
+        tfc1_0.tournament_id=?
+2026-01-02T18:37:12.841+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.code,
+        s1_0.created_at,
+        s1_0.description,
+        s1_0.end_date,
+        s1_0.level,
+        s1_0.name,
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color,
+        s1_0.start_date,
+        s1_0.status,
+        s1_0.updated_at 
+    from
+        season s1_0 
+    left join
+        organisations o1_0 
+            on o1_0.id=s1_0.organiser_id 
+    where
+        s1_0.id=?
+2026-01-02T18:37:12.849+08:00 DEBUG 46435 --- [athleticaos-backend] [nio-8080-exec-2] org.hibernate.SQL                        : 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+Hibernate: 
+    select
+        c1_0.tournament_id,
+        c1_0.id,
+        c1_0.created_at,
+        c1_0.description,
+        c1_0.gender,
+        c1_0.max_age,
+        c1_0.min_age,
+        c1_0.name 
+    from
+        tournament_categories c1_0 
+    where
+        c1_0.tournament_id=?
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  03:15 min
+[INFO] Finished at: 2026-01-02T18:40:00+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.0:run (default-cli) on project backend: Process terminated with exit code: 137 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

@@ -15,6 +15,7 @@ import { fetchOrganisations } from '@/api/organisations.api';
 import { Organisation } from '@/types';
 import { SeasonLevel, SeasonStatus, SeasonUpdateRequest } from '@/types/season.types';
 import toast from 'react-hot-toast';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const seasonSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters"),
@@ -34,6 +35,7 @@ export const EditSeason = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [organisations, setOrganisations] = useState<Organisation[]>([]);
+    const [seasonName, setSeasonName] = useState('');
 
     const {
         register,
@@ -59,6 +61,7 @@ export const EditSeason = () => {
                     getSeasonById(id)
                 ]);
                 setOrganisations(orgs as any);
+                setSeasonName(season.name);
 
                 // Populate form
                 reset({
@@ -110,6 +113,13 @@ export const EditSeason = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <Breadcrumbs
+                items={[
+                    { label: 'Competitions', path: '/dashboard/competitions' },
+                    { label: seasonName, path: `/dashboard/competitions/seasons/${id}` },
+                    { label: 'Edit' }
+                ]}
+            />
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/competitions/seasons/${id}`)}>
                     <ArrowLeft className="w-5 h-5" />

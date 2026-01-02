@@ -356,6 +356,7 @@ export interface TournamentFormatConfig {
     pointsBonusLoss?: number;
     startersCount: number;
     maxBenchCount: number;
+    includePlacementStages?: boolean;
 }
 
 // ============================================
@@ -394,6 +395,8 @@ export interface Match {
     status: MatchStatus;
     homeScore?: number;
     awayScore?: number;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -409,6 +412,8 @@ export interface MatchCreateRequest {
     matchCode?: string;
     phase?: string;
     status?: MatchStatus;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
 }
 
 export interface MatchResponse extends Match {
@@ -422,6 +427,8 @@ export interface MatchResponse extends Match {
     awayTeamOrgId?: string;
     tournamentName?: string;
     tournamentSlug?: string;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
 }
 
 export interface TournamentStageResponse {

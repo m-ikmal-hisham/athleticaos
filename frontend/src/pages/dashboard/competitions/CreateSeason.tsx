@@ -16,6 +16,7 @@ import { Organisation } from '@/types';
 import { SeasonLevel, SeasonStatus, SeasonCreateRequest } from '@/types/season.types';
 import toast from 'react-hot-toast';
 import { slugify } from '@/utils/stringUtils';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const seasonSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters"),
@@ -102,6 +103,12 @@ export const CreateSeason = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <Breadcrumbs
+                items={[
+                    { label: 'Competitions', path: '/dashboard/competitions' },
+                    { label: 'Create Season' }
+                ]}
+            />
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/competitions')}>
                     <ArrowLeft className="w-5 h-5" />

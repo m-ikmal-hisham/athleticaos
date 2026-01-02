@@ -5,8 +5,9 @@ import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
 import { fetchTeamBySlug, fetchTeamById, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
 import { usePlayersStore } from '../../../store/players.store';
-import { ArrowLeft, Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
+import { Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 interface TeamDetail {
     id: string;
@@ -133,13 +134,13 @@ export default function TeamDetail() {
         <div className="container mx-auto max-w-[1400px]">
             {/* Header */}
             <div className="mb-8">
-                <button
-                    onClick={() => navigate('/dashboard/teams')}
-                    className="flex items-center gap-2 mb-4 text-sm text-primary hover:text-primary/80 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Teams
-                </button>
+                <Breadcrumbs
+                    items={[
+                        { label: 'Teams', path: '/dashboard/teams' },
+                        { label: team.name }
+                    ]}
+                    className="mb-4"
+                />
                 {team.logoUrl && (
                     <img
                         src={team.logoUrl.startsWith('http') ? team.logoUrl : `${import.meta.env.VITE_API_URL}${team.logoUrl}`}

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -36,4 +37,6 @@ public class TournamentUpdateRequest {
     private String bannerUrl;
     private String backgroundUrl;
     private String livestreamUrl;
+
+    private List<CreateCategoryRequest> categories;
 }

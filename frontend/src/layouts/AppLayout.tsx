@@ -306,7 +306,7 @@ export const AppLayout = () => {
                                                 'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
                                                 isCollapsed ? 'justify-center py-3 px-2' : 'px-4 py-3 mx-2',
                                                 isActive
-                                                    ? 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-blue-600 dark:to-blue-500 text-white shadow-lg shadow-blue-500/20 dark:shadow-blue-500/20'
+                                                    ? 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20'
                                                     : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
                                             )}
                                         >
@@ -383,7 +383,7 @@ export const AppLayout = () => {
 
             {/* Main Content */}
             <div className={clsx(
-                "flex-1 flex flex-col min-h-screen transition-all duration-300",
+                "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
                 isCollapsed ? "lg:ml-[100px]" : "lg:ml-[320px]" // Adjusted margin for collapsed state
             )}>
                 {/* Topbar - Mobile Only */}
@@ -406,7 +406,7 @@ export const AppLayout = () => {
                 </header>
 
                 {/* Page Content Container - Centered */}
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full">
+                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden">
                     <div className="max-w-7xl mx-auto w-full pb-32"> {/* Increased bottom padding for pill */}
                         <Outlet />
                     </div>

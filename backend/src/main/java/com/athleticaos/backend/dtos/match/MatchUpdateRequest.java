@@ -25,4 +25,6 @@ public class MatchUpdateRequest {
     private Integer awayScore;
     private java.util.UUID homeTeamId;
     private java.util.UUID awayTeamId;
+    private String homeTeamPlaceholder;
+    private String awayTeamPlaceholder;
 }

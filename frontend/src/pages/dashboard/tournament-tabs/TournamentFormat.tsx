@@ -198,7 +198,8 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 config.poolCount,
                 generateTimings,
                 useExistingGroups, // Use the manual pools!
-                selectedCategoryId || undefined
+                selectedCategoryId || undefined,
+                config.includePlacementStages
             );
             toast.success('Schedule generated!');
             if (onScheduleGenerated) onScheduleGenerated();
@@ -314,6 +315,25 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                         onChange={(e) => setConfig({ ...config, poolCount: parseInt(e.target.value) || 1 })}
                                     />
                                     <p className="text-xs text-muted-foreground">Number of groups for {currentCategory?.name || 'the tournament'}.</p>
+                                </div>
+                            )}
+
+                            {(config.formatType === 'KNOCKOUT') && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Placement Stages</label>
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <input
+                                            type="checkbox"
+                                            id="includePlacementStages"
+                                            className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
+                                            checked={config.includePlacementStages || false}
+                                            onChange={(e) => setConfig({ ...config, includePlacementStages: e.target.checked })}
+                                        />
+                                        <label htmlFor="includePlacementStages" className="text-sm cursor-pointer select-none">
+                                            Include Consolation Rounds (Plate, Bowl, etc.)
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Generate loser brackets for lower placements.</p>
                                 </div>
                             )}
                             <div className="space-y-2 flex items-end">

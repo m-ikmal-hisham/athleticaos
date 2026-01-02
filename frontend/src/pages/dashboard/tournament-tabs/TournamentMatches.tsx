@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CalendarBlank, Plus, MapPin, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
+import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
 import { matchService } from '@/services/matchService';
 import { tournamentService } from '@/services/tournamentService';
 import { Match, Team } from '@/types';
 import { Button } from '@/components/Button';
-import { GlassCard } from '@/components/GlassCard';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -34,7 +33,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         awayTeamId: '',
         matchDate: '',
         kickOffTime: '',
-        venue: ''
+        venue: '',
+        homeTeamPlaceholder: '',
+        awayTeamPlaceholder: ''
     });
 
     useEffect(() => {
@@ -43,8 +44,19 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
     useEffect(() => {
         // Split matches
-        setScheduledMatches(matches.filter(m => m.matchDate && m.kickOffTime));
-        setUnscheduledMatches(matches.filter(m => !m.matchDate || !m.kickOffTime));
+        // Split matches
+        const scheduled = matches.filter(m => m.matchDate && m.kickOffTime);
+        const unscheduled = matches.filter(m => !m.matchDate || !m.kickOffTime);
+
+        // Sort scheduled by Date then Time
+        scheduled.sort((a, b) => {
+            const dateA = new Date(`${a.matchDate}T${a.kickOffTime}`);
+            const dateB = new Date(`${b.matchDate}T${b.kickOffTime}`);
+            return dateA.getTime() - dateB.getTime();
+        });
+
+        setScheduledMatches(scheduled);
+        setUnscheduledMatches(unscheduled);
     }, [matches]);
 
     const loadData = async () => {
@@ -73,8 +85,10 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                     matchDate: matchForm.matchDate || undefined,
                     kickOffTime: matchForm.kickOffTime || undefined,
                     venue: matchForm.venue,
-                    homeTeamId: matchForm.homeTeamId as any,
-                    awayTeamId: matchForm.awayTeamId as any
+                    homeTeamId: (matchForm.homeTeamId || null) as any,
+                    awayTeamId: (matchForm.awayTeamId || null) as any,
+                    homeTeamPlaceholder: matchForm.homeTeamPlaceholder,
+                    awayTeamPlaceholder: matchForm.awayTeamPlaceholder
                 });
                 toast.success('Match updated');
             } else {
@@ -123,7 +137,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             awayTeamId: '',
             matchDate: '',
             kickOffTime: '',
-            venue: ''
+            venue: '',
+            homeTeamPlaceholder: '',
+            awayTeamPlaceholder: ''
         });
         setEditMatch(null);
         setShowCreateModal(true);
@@ -133,11 +149,13 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         e.stopPropagation();
         setEditMatch(match);
         setMatchForm({
-            homeTeamId: match.homeTeamId,
-            awayTeamId: match.awayTeamId,
+            homeTeamId: match.homeTeamId || '',
+            awayTeamId: match.awayTeamId || '',
             matchDate: match.matchDate || '',
             kickOffTime: match.kickOffTime || '',
-            venue: match.venue || ''
+            venue: match.venue || '',
+            homeTeamPlaceholder: match.homeTeamPlaceholder || '',
+            awayTeamPlaceholder: match.awayTeamPlaceholder || ''
         });
         setShowCreateModal(true);
     };
@@ -147,16 +165,17 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         setEditMatch(null);
     };
 
-    // Grouping Logic for Scheduled Matches
-    const matchesByStage: { [key: string]: Match[] } = {};
+    // Grouping Logic for Scheduled Matches (By Date)
+    const matchesByDate: { [key: string]: Match[] } = {};
     scheduledMatches.forEach(match => {
-        const stageName = match.stage?.name || 'Unassigned';
-        if (!matchesByStage[stageName]) {
-            matchesByStage[stageName] = [];
+        const dateKey = match.matchDate; // Assuming YYYY-MM-DD
+        if (!matchesByDate[dateKey]) {
+            matchesByDate[dateKey] = [];
         }
-        matchesByStage[stageName].push(match);
+        matchesByDate[dateKey].push(match);
     });
-    const sortedStageNames = Object.keys(matchesByStage).sort();
+    // Sort dates
+    const sortedDates = Object.keys(matchesByDate).sort();
 
     // Grouping Logic for Unscheduled Matches (Sidebar)
     const unscheduledByStage: { [key: string]: Match[] } = {};
@@ -246,14 +265,16 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <p className="text-slate-500">No scheduled matches.</p>
                             </div>
                         )}
-                        {sortedStageNames.map(stageName => (
-                            <div key={stageName} className="space-y-4">
-                                <h4 className="flex items-center gap-2 font-bold text-lg text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 pb-2">
-                                    <span className="w-2 h-2 rounded-full bg-primary/70"></span>
-                                    {stageName}
-                                </h4>
+                        {sortedDates.map(date => (
+                            <div key={date} className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
+                                        {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                    </h3>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+                                </div>
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                    {matchesByStage[stageName].map(match => (
+                                    {matchesByDate[date].map(match => (
                                         <MatchCard
                                             key={match.id}
                                             match={match}
@@ -328,31 +349,47 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Home Team</label>
                                     <select
                                         aria-label="Home Team"
-                                        required
                                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
                                         value={matchForm.homeTeamId}
                                         onChange={e => setMatchForm({ ...matchForm, homeTeamId: e.target.value })}
                                     >
-                                        <option value="">Select Team</option>
+                                        <option value="">TBD (Placeholder)</option>
                                         {teams.map(t => (
                                             <option key={t.id} value={t.id}>{t.name}</option>
                                         ))}
                                     </select>
+                                    {matchForm.homeTeamId === '' && (
+                                        <input
+                                            type="text"
+                                            className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm mt-1"
+                                            placeholder="Placeholder (e.g. Winner SF1)"
+                                            value={matchForm.homeTeamPlaceholder}
+                                            onChange={e => setMatchForm({ ...matchForm, homeTeamPlaceholder: e.target.value })}
+                                        />
+                                    )}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Away Team</label>
                                     <select
                                         aria-label="Away Team"
-                                        required
                                         className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
                                         value={matchForm.awayTeamId}
                                         onChange={e => setMatchForm({ ...matchForm, awayTeamId: e.target.value })}
                                     >
-                                        <option value="">Select Team</option>
+                                        <option value="">TBD (Placeholder)</option>
                                         {teams.map(t => (
                                             <option key={t.id} value={t.id}>{t.name}</option>
                                         ))}
                                     </select>
+                                    {matchForm.awayTeamId === '' && (
+                                        <input
+                                            type="text"
+                                            className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm mt-1"
+                                            placeholder="Placeholder (e.g. Winner SF2)"
+                                            value={matchForm.awayTeamPlaceholder}
+                                            onChange={e => setMatchForm({ ...matchForm, awayTeamPlaceholder: e.target.value })}
+                                        />
+                                    )}
                                 </div>
                             </div>
 
@@ -404,63 +441,86 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
 function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick: () => void, onEdit: (e: any) => void, onDelete: (e: any) => void }) {
     return (
-        <GlassCard
-            className="group relative p-4 hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer border-l-4 border-l-blue-500 dark:border-l-blue-400 bg-white dark:bg-slate-800"
+        <div
+            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
             onClick={onClick}
         >
+            {/* Admin Controls */}
+            <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                    onClick={onEdit}
+                    className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
+                    title="Edit Match"
+                >
+                    <PencilSimple className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    onClick={onDelete}
+                    className="p-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded text-red-500 dark:text-red-400"
+                    title="Delete Match"
+                >
+                    <Trash className="w-3.5 h-3.5" />
+                </button>
+            </div>
+
+            {/* Status Indicator */}
+            {['LIVE', 'ONGOING'].includes(match.status) && (
+                <div className="absolute top-0 right-0 px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded-bl-xl shadow-lg animate-pulse z-0">
+                    Live
+                </div>
+            )}
+
+            {/* Completed Indicator */}
+            {['COMPLETED'].includes(match.status) && (
+                <div className="absolute top-0 right-0 px-3 py-1 bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300 text-[10px] font-bold uppercase rounded-bl-xl z-0">
+                    Completed
+                </div>
+            )}
+
+
             <div className="flex justify-between items-center mb-4">
-                <div className="text-xs font-mono text-slate-500 dark:text-slate-400">{match.matchCode || 'TBS'}</div>
-                <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide
-                        ${match.status === 'COMPLETED' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300' :
-                            match.status === 'LIVE' ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' :
-                                'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}
-                    `}>
-                        {match.status}
-                    </span>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <button onClick={onEdit} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400" aria-label="Edit Match">
-                            <PencilSimple className="w-3 h-3" />
-                        </button>
-                        <button onClick={onDelete} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500 dark:text-red-400" aria-label="Delete Match">
-                            <Trash className="w-3 h-3" />
-                        </button>
-                    </div>
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <Clock className="w-3.5 h-3.5" />
+                    {match.kickOffTime}
+                    {match.venue && <span className="text-slate-500 ml-1">• {match.venue}</span>}
+                </div>
+                {/* Match Code or Stage for context */}
+                <div className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                    {match.matchCode && match.matchCode.length < 10 ? match.matchCode : match.stage?.name || 'Match'}
                 </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 mb-4">
-                <div className="flex-1 text-right min-w-0">
-                    <div className="font-bold text-slate-900 dark:text-white truncate text-sm md:text-base">
+            {/* Score Block */}
+            <div className="flex items-center justify-between gap-4">
+                {/* Home */}
+                <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
+                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.homeTeam?.name}>
                         {match.homeTeam?.name || 'TBD'}
-                    </div>
+                    </span>
+                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Home</span>
                 </div>
-                <div className="px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded text-slate-900 dark:text-white font-mono font-bold text-sm shrink-0">
-                    {match.status === 'SCHEDULED' ? 'vs' : `${match.homeScore ?? 0} - ${match.awayScore ?? 0}`}
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                    <div className="font-bold text-slate-900 dark:text-white truncate text-sm md:text-base">
-                        {match.awayTeam?.name || 'TBD'}
-                    </div>
-                </div>
-            </div>
 
-            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700/50 pt-3 mt-2">
-                <div className="flex items-center gap-1.5">
-                    <CalendarBlank className="w-3.5 h-3.5 opacity-70" />
-                    {match.matchDate ? new Date(match.matchDate).toLocaleDateString() : 'Date TBD'}
+                {/* Score */}
+                <div className="flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 min-w-[3.5rem] py-2 rounded-lg font-mono font-black text-xl text-slate-800 dark:text-white shrink-0">
+                    {(match.status !== 'SCHEDULED' && match.homeScore !== undefined && match.awayScore !== undefined) ? (
+                        <div className="flex gap-1">
+                            <span>{match.homeScore}</span>
+                            <span className="text-slate-400 opacity-50">:</span>
+                            <span>{match.awayScore}</span>
+                        </div>
+                    ) : (
+                        <span className="text-slate-400 text-sm">VS</span>
+                    )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 opacity-70" />
-                    {match.kickOffTime || 'Time TBD'}
+
+                {/* Away */}
+                <div className="flex-1 flex flex-col items-end gap-1 min-w-0 text-right">
+                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.awayTeam?.name}>
+                        {match.awayTeam?.name || 'TBD'}
+                    </span>
+                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Away</span>
                 </div>
-                {match.venue && (
-                    <div className="flex items-center gap-1.5 ml-auto">
-                        <MapPin className="w-3.5 h-3.5 opacity-70" />
-                        {match.venue}
-                    </div>
-                )}
             </div>
-        </GlassCard>
+        </div>
     );
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 @Data
@@ -24,6 +25,7 @@ public class PlayerSuspensionDTO {
     private String playerName;
     private String reason;
     private int matchesRemaining;
+    @JsonProperty("isActive")
     private boolean isActive;
     private LocalDateTime createdAt;
 }

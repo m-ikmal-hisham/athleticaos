@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, ArrowLeft, Clock, VideoCamera, ShareNetwork, CaretRight, Star } from '@phosphor-icons/react';
+import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, Star } from '@phosphor-icons/react';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
 
@@ -94,13 +95,13 @@ export default function TournamentDetail() {
         <div className="space-y-8 pb-20">
 
             {/* Nav & Context */}
-            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <Link to="/tournaments" className="hover:text-blue-500 transition-colors flex items-center gap-1">
-                    <ArrowLeft /> Tournaments
-                </Link>
-                <span className="opacity-30">/</span>
-                <span className="font-semibold text-slate-900 dark:text-white truncate">{tournament.name}</span>
-            </div>
+            <Breadcrumbs
+                items={[
+                    { label: 'Tournaments', path: '/tournaments' },
+                    { label: tournament.name }
+                ]}
+                className="mb-4"
+            />
 
             {/* Hero / Header Section */}
             <div className="relative">

@@ -27,4 +27,16 @@ public interface TournamentRosterService {
      * Gets lineup hints for a match (eligibility and suspension info).
      */
     LineupHintsDTO getLineupHints(UUID matchId);
+
+    /**
+     * Update a player's tournament-specific jersey number.
+     * 
+     * @param tournamentId The tournament ID
+     * @param teamId       The team ID
+     * @param playerId     The player ID
+     * @param jerseyNumber The new tournament jersey number (can be null to clear)
+     * @return Updated TournamentPlayerDTO
+     */
+    TournamentPlayerDTO updateTournamentJerseyNumber(UUID tournamentId, UUID teamId, UUID playerId,
+            Integer jerseyNumber);
 }

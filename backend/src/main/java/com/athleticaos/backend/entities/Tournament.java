@@ -101,7 +101,7 @@ public class Tournament {
     @Column(name = "livestream_url")
     private String livestreamUrl;
 
-    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private java.util.List<TournamentCategory> categories = new java.util.ArrayList<>();
 

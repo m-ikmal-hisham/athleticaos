@@ -51,6 +51,8 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
+    const [searchQuery, setSearchQuery] = useState('');
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -129,6 +131,27 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleUpdateNumber = (playerId: string, newNumber: number) => {
+        // Validate duplicates in Starters and Bench
+        const allActive = [...items[LineupRole.STARTER], ...items[LineupRole.BENCH]];
+        const isDuplicate = allActive.some(p => p.playerId !== playerId && p.jerseyNumber === newNumber);
+
+        if (isDuplicate) {
+            toast.error(`Jersey number ${newNumber} is already taken!`);
+            return;
+        }
+
+        setItems(prev => {
+            const updateList = (list: MatchLineupEntry[]) => list.map(p => p.playerId === playerId ? { ...p, jerseyNumber: newNumber } : p);
+            return {
+                ...prev,
+                [LineupRole.STARTER]: updateList(prev[LineupRole.STARTER]),
+                [LineupRole.BENCH]: updateList(prev[LineupRole.BENCH]),
+                [LineupRole.NOT_SELECTED]: updateList(prev[LineupRole.NOT_SELECTED]) // Allow updating in pool too if needed
+            };
+        });
     };
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -249,6 +272,12 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
         return <SortableItem key={item.playerId} id={item.playerId} item={item} isLocked={isLocked} />;
     };
 
+    const filteredSquad = items[LineupRole.NOT_SELECTED].filter(p =>
+        p.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.jerseyNumber && p.jerseyNumber.toString().includes(searchQuery)) ||
+        (p.positionDisplay && p.positionDisplay.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -273,14 +302,26 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Available Pool */}
                     <GlassCard className="p-4 bg-slate-50 dark:bg-slate-900/50">
-                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Squad</h3>
+                        <div className="flex flex-col gap-3 mb-4">
+                            <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Squad</h3>
+                            <div className="relative">
+                                <UserIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search squad..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                        </div>
                         <SortableContext
                             id={LineupRole.NOT_SELECTED}
-                            items={items[LineupRole.NOT_SELECTED].map(i => i.playerId)}
+                            items={filteredSquad.map(i => i.playerId)}
                             strategy={verticalListSortingStrategy}
                         >
                             <DroppableContainer id={LineupRole.NOT_SELECTED} className="space-y-2 min-h-[200px]">
-                                {items[LineupRole.NOT_SELECTED].map(renderSortableItem)}
+                                {filteredSquad.map(renderSortableItem)}
                             </DroppableContainer>
                         </SortableContext>
                     </GlassCard>
@@ -302,6 +343,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                         index={index + 1}
                                         isStarter
                                         isLocked={isLocked}
+                                        onUpdateNumber={handleUpdateNumber}
                                     />
                                 ))}
                             </DroppableContainer>
@@ -324,6 +366,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                         item={item}
                                         index={index + 16}
                                         isLocked={isLocked}
+                                        onUpdateNumber={handleUpdateNumber}
                                     />
                                 ))}
                             </DroppableContainer>
@@ -354,7 +397,7 @@ function DroppableContainer({ id, children, className }: { id: string, children:
     );
 }
 
-function SortableItem({ id, item, index, isStarter, isLocked }: { id: string, item: MatchLineupEntry, index?: number, isStarter?: boolean, isLocked?: boolean }) {
+function SortableItem({ id, item, index, isStarter, isLocked, onUpdateNumber }: { id: string, item: MatchLineupEntry, index?: number, isStarter?: boolean, isLocked?: boolean, onUpdateNumber?: (id: string, num: number) => void }) {
     const {
         attributes,
         listeners,
@@ -368,26 +411,56 @@ function SortableItem({ id, item, index, isStarter, isLocked }: { id: string, it
         transition,
     };
 
+    // Handler for number change
+    const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!onUpdateNumber) return;
+        const val = parseInt(e.target.value);
+        if (!isNaN(val)) {
+            onUpdateNumber(id, val);
+        }
+    };
+
     return (
         <div
             ref={setNodeRef}
             {...{ style }}
-            {...attributes}
-            {...listeners}
             className={`
                 flex items-center gap-3 p-2 rounded-lg border bg-card hover:border-primary/50 transition-colors
                 ${isStarter ? 'border-l-4 border-l-blue-500' : ''}
-                ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}
+                ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}
             `}
         >
-            {!isLocked && <DotsSixVertical className="w-4 h-4 text-muted-foreground shrink-0" />}
+            {!isLocked && (
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground">
+                    <DotsSixVertical className="w-4 h-4" />
+                </div>
+            )}
 
-            <div className="flex items-center justify-center w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-400 shrink-0">
-                {isStarter ? index : item.jerseyNumber || '-'}
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold shrink-0 ${isStarter || onUpdateNumber ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                {onUpdateNumber && !isLocked ? (
+                    <input
+                        type="number"
+                        value={item.jerseyNumber || ''}
+                        onChange={handleNumberChange}
+                        className="w-full h-full text-center bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded-full appearance-none p-0"
+                        onKeyDown={(e) => e.stopPropagation()} // Prevent drag trigger on input
+                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag trigger
+                        placeholder="#"
+                    />
+                ) : (
+                    <span>{item.jerseyNumber || (isStarter ? index : '-')}</span>
+                )}
             </div>
 
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.playerName}</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate">{item.playerName}</p>
+                    {isStarter && (
+                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                            #{index}
+                        </span>
+                    )}
+                </div>
                 {item.positionDisplay && <p className="text-xs text-muted-foreground truncate">{item.positionDisplay}</p>}
             </div>
 

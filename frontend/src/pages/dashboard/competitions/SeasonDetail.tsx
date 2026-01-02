@@ -9,6 +9,7 @@ import { Badge } from '@/components/Badge';
 import { ArrowLeft, Trophy, CalendarBlank, ArrowSquareOut, Plus, PencilSimple } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { formatDate } from '@/utils/date';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 export const SeasonDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -64,10 +65,16 @@ export const SeasonDetail = () => {
 
     if (!season) return null;
 
+    const breadcrumbs = [
+        { label: 'Competitions', path: '/dashboard/competitions' },
+        { label: season.name }
+    ];
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <Breadcrumbs items={breadcrumbs} />
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/seasons')}>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/competitions')}>
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <PageHeader

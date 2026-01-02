@@ -234,7 +234,7 @@ public class TournamentServiceImpl implements TournamentService {
     @SuppressWarnings("null")
     public TournamentResponse updateTournament(UUID id, TournamentUpdateRequest request,
             HttpServletRequest httpRequest) {
-        log.info("Updating tournament: {}", id);
+        log.info("Updating tournament: {}, request categories: {}", id, request.getCategories());
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
@@ -287,6 +287,26 @@ public class TournamentServiceImpl implements TournamentService {
             com.athleticaos.backend.entities.Season season = findOrCreateSeason(seasonName,
                     tournament.getOrganiserOrg());
             tournament.setSeason(season);
+        }
+
+        // Handle Category Updates
+        if (request.getCategories() != null) {
+            // Clear existing categories
+            tournament.getCategories().clear();
+
+            // Add new categories from request
+            List<com.athleticaos.backend.entities.TournamentCategory> newCategories = request.getCategories().stream()
+                    .map(catReq -> com.athleticaos.backend.entities.TournamentCategory.builder()
+                            .tournament(tournament)
+                            .name(catReq.getName())
+                            .description(catReq.getDescription())
+                            .gender(catReq.getGender())
+                            .minAge(catReq.getMinAge())
+                            .maxAge(catReq.getMaxAge())
+                            .build())
+                    .collect(Collectors.toList());
+
+            tournament.getCategories().addAll(newCategories);
         }
 
         // Validate dates after updates
