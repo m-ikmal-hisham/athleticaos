@@ -136,9 +136,9 @@ export const Login = () => {
 
                     <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
                         Don't have an account?{' '}
-                        <Link to="/signup" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                        <span className="text-gray-400 dark:text-gray-600 font-semibold cursor-not-allowed">
                             Sign up
-                        </Link>
+                        </span>
                     </div>
                 </div>
             </div>

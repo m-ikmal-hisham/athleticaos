@@ -2,6 +2,7 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.dtos.match.MatchEventCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchEventResponse;
+import com.athleticaos.backend.dtos.match.MatchEventUpdateRequest;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.MatchEvent;
 import com.athleticaos.backend.entities.PlayerSuspension;
@@ -235,6 +236,76 @@ public class MatchEventServiceImpl implements MatchEventService {
                                 }
                         }
                 }
+        }
+
+        @Override
+        @Transactional
+        @SuppressWarnings("null")
+        public MatchEventResponse updateEvent(UUID eventId,
+                        MatchEventUpdateRequest request,
+                        HttpServletRequest httpRequest) {
+                MatchEvent event = matchEventRepository.findById(eventId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Match Event not found with ID: " + eventId));
+
+                // Time-bound correction logic & Permissions
+                // Similar to delete logic: check if locked/timed out
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                boolean isTimeLocked = event.getCreatedAt().plusMinutes(5).isBefore(now);
+
+                com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
+                boolean isGlobalAdmin = currentUser.getRoles().stream()
+                                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN")
+                                                || r.getName().equals("ROLE_MATCH_MANAGER")
+                                                || r.getName().equals("ROLE_SUPERVISOR"));
+
+                // If event is locked/timed out, strict override required
+                if (event.isLocked() || isTimeLocked) {
+                        if (!isGlobalAdmin) {
+                                // Allow referees to edit if assigned (maybe they made a mistake)
+                                List<com.athleticaos.backend.entities.MatchOfficial> assignments = matchOfficialRepository
+                                                .findByMatchId(event.getMatch().getId());
+                                boolean isAssignedReferee = assignments.stream()
+                                                .anyMatch(mo -> mo.getOfficial().getUser().getId()
+                                                                .equals(currentUser.getId()) &&
+                                                                ("REFEREE".equalsIgnoreCase(mo.getAssignedRole()) ||
+                                                                                "MATCH_MANAGER".equalsIgnoreCase(
+                                                                                                mo.getAssignedRole())));
+
+                                if (!isAssignedReferee) {
+                                        throw new IllegalStateException(
+                                                        "Cannot edit event: Grace period expired and no override permissions.");
+                                }
+                        }
+                }
+
+                // Granular Check: If NOT global admin, valid official assignment required
+                if (!isGlobalAdmin) {
+                        List<com.athleticaos.backend.entities.MatchOfficial> assignments = matchOfficialRepository
+                                        .findByMatchId(event.getMatch().getId());
+                        boolean isAssigned = assignments.stream()
+                                        .anyMatch(mo -> mo.getOfficial().getUser().getId().equals(currentUser.getId()));
+
+                        if (!isAssigned) {
+                                throw new org.springframework.security.access.AccessDeniedException(
+                                                "User is not assigned to this match.");
+                        }
+                }
+
+                // Update fields
+                if (request.getMinute() != null) {
+                        event.setMinute(request.getMinute());
+                }
+                if (request.getNotes() != null) {
+                        event.setNotes(request.getNotes());
+                }
+
+                MatchEvent savedEvent = matchEventRepository.saveAndFlush(event);
+
+                // Recalculate scores
+                matchService.recalculateMatchScores(event.getMatch().getId());
+
+                return mapToResponse(savedEvent);
         }
 
         @Override

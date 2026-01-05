@@ -86,6 +86,7 @@ export interface PublicMatchEvent {
     playerName?: string;
     eventType: string;
     points?: number;
+    notes?: string; // Added for substitutions validation
 }
 
 export interface PublicTeamStats {

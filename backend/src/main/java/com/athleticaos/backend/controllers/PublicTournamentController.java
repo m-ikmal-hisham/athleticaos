@@ -268,6 +268,7 @@ public class PublicTournamentController {
                             .playerName(playerName)
                             .eventType(event.getEventType().name())
                             .points(getPointsForEventType(event.getEventType()))
+                            .notes(event.getNotes())
                             .build();
                 })
                 .collect(Collectors.toList());

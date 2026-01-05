@@ -10,8 +10,8 @@ interface Sponsor {
 // Mock Data for Phase 1 - In Phase 2 this will come from API
 const MOCK_SPONSORS: Sponsor[] = [
     { name: 'National Rugby', tier: 'TITLE', logoUrl: '/sponsors/title-placeholder.png' },
-    { name: 'TechPartner', tier: 'GOLD', logoUrl: '/sponsors/gold-1.png' },
-    { name: 'BeverageCo', tier: 'GOLD', logoUrl: '/sponsors/gold-2.png' },
+    { name: 'Ragbi Online', tier: 'GOLD', logoUrl: '/sponsors/gold-1.png' },
+    { name: 'Infiniteous Creative', tier: 'GOLD', logoUrl: '/sponsors/gold-2.png' },
     { name: 'LocalBank', tier: 'SILVER', logoUrl: '/sponsors/silver-1.png' },
     { name: 'CityCouncil', tier: 'SILVER', logoUrl: '/sponsors/silver-2.png' },
 ];

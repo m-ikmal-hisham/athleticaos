@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind } from '@phosphor-icons/react';
+import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail } from '../../../api/public.api';
 
@@ -251,6 +251,17 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
                     const style = getEventStyle(event.eventType);
                     const isScore = event.points && event.points > 0;
 
+                    // Parse substitution notes if available
+                    let subInName = '';
+                    let subOutName = event.playerName;
+
+                    if (event.eventType === 'SUBSTITUTION' && event.notes?.includes(' | IN: ')) {
+                        const parts = event.notes.split(' | IN: ');
+                        if (parts.length === 2) {
+                            subInName = parts[1];
+                        }
+                    }
+
                     return (
                         <div key={index} className="relative z-10 flex gap-4 group py-3 first:pt-0 last:pb-0 animate-fade-in-up">
                             {/* Time Badge */}
@@ -281,10 +292,23 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
                                             </span>
                                         </div>
 
-                                        {event.playerName && (
-                                            <div className="text-slate-600 dark:text-slate-300 font-medium">
-                                                {event.playerName}
+                                        {event.eventType === 'SUBSTITUTION' && subInName ? (
+                                            <div className="flex flex-col gap-1 mt-1">
+                                                <div className="flex items-center gap-1.5 text-sm text-red-500 dark:text-red-400">
+                                                    <ArrowDown className="w-3.5 h-3.5" weight="bold" />
+                                                    <span className="font-medium">{subOutName || 'Unknown'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+                                                    <ArrowUp className="w-3.5 h-3.5" weight="bold" />
+                                                    <span className="font-medium">{subInName}</span>
+                                                </div>
                                             </div>
+                                        ) : (
+                                            event.playerName && (
+                                                <div className="text-slate-600 dark:text-slate-300 font-medium">
+                                                    {event.playerName}
+                                                </div>
+                                            )
                                         )}
                                     </div>
 

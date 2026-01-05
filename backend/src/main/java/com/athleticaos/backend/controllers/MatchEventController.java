@@ -2,6 +2,7 @@ package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.match.MatchEventCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchEventResponse;
+import com.athleticaos.backend.dtos.match.MatchEventUpdateRequest;
 import com.athleticaos.backend.services.MatchEventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +42,15 @@ public class MatchEventController {
         MatchEventResponse response = matchEventService.addEventToMatch(matchId, request, httpRequest);
         // Score recalculation is now handled in the service
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/events/{eventId}")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @Operation(summary = "Update a match event")
+    public ResponseEntity<MatchEventResponse> updateMatchEvent(@PathVariable UUID eventId,
+            @RequestBody @Valid MatchEventUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchEventService.updateEvent(eventId, request, httpRequest));
     }
 
     @DeleteMapping("/events/{eventId}")

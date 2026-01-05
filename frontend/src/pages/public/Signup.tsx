@@ -66,8 +66,7 @@ export const Signup = () => {
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
     const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
 
-    // Check if we are in development mode
-    const isDev = import.meta.env.DEV;
+
 
     return (
         <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
@@ -118,7 +117,7 @@ export const Signup = () => {
                                 error={errors.firstName?.message}
                                 {...register('firstName')}
                                 className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
-                                disabled={!isDev}
+                                disabled={true}
                             />
 
                             <Input
@@ -126,7 +125,7 @@ export const Signup = () => {
                                 error={errors.lastName?.message}
                                 {...register('lastName')}
                                 className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
-                                disabled={!isDev}
+                                disabled={true}
                             />
                         </div>
 
@@ -136,7 +135,7 @@ export const Signup = () => {
                             error={errors.email?.message}
                             {...register('email')}
                             className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
-                            disabled={!isDev}
+                            disabled={true}
                         />
 
                         <Input
@@ -145,7 +144,7 @@ export const Signup = () => {
                             error={errors.password?.message}
                             {...register('password')}
                             className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
-                            disabled={!isDev}
+                            disabled={true}
                         />
 
                         <Input
@@ -154,25 +153,20 @@ export const Signup = () => {
                             error={errors.confirmPassword?.message}
                             {...register('confirmPassword')}
                             className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
-                            disabled={!isDev}
+                            disabled={true}
                         />
 
                         <Button
                             type="submit"
-                            className={`w-full py-3 font-semibold rounded-lg shadow-md transition-all mt-2 ${isDev
-                                ? 'bg-[#6366f1] hover:bg-[#5558dd] text-white shadow-indigo-500/20'
-                                : 'bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none'
-                                }`}
+                            className={`w-full py-3 font-semibold rounded-lg shadow-md transition-all mt-2 bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none`}
                             isLoading={isLoading}
-                            disabled={!isDev}
+                            disabled={true}
                         >
-                            {isDev ? 'Sign Up' : 'Registration Closed'}
+                            Registration Closed
                         </Button>
-                        {!isDev && (
-                            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                                New registrations are currently invite-only.
-                            </p>
-                        )}
+                        <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+                            New registrations are currently invite-only.
+                        </p>
                     </form>
 
                     <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">

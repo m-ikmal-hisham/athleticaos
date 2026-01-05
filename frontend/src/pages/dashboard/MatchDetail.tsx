@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController, Pencil } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController, Pencil, ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { MatchIntegrityConsole } from '@/components/admin/match/MatchIntegrityConsole';
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/GlassCard';
@@ -22,7 +22,7 @@ import { Users, PresentationChart } from '@phosphor-icons/react';
 
 // Rugby scoring rules
 import { matchLineupService } from '@/services/matchLineupService';
-import { MatchLineupEntry } from '@/types';
+import { MatchLineupEntry, LineupRole } from '@/types';
 import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 
 const SCORING_RULES: Record<string, number> = {
@@ -287,6 +287,32 @@ export const MatchDetail = () => {
                 minute: displayMinute, // Use the live timer minute
                 notes: eventNotes
             });
+
+            // --- Handle Automatic Lineup Adjustment for Substitution ---
+            if (action.type === 'SUBSTITUTION' && action.sub_in_playerId && action.teamId) {
+                const isHome = action.teamId === selectedMatch!.homeTeamId;
+                const currentLineup = isHome ? matchLineups.home : matchLineups.away;
+
+                // We need to clone to avoid mutating state directly, though we'll fetch fresh anyway
+                const updatedLineup = currentLineup.map(entry => {
+                    // OUT player -> Go to BENCH
+                    if (entry.playerId === action.playerId) {
+                        return { ...entry, role: LineupRole.BENCH, isStarter: false };
+                    }
+                    // IN player -> Go to STARTER
+                    if (entry.playerId === action.sub_in_playerId) {
+                        return { ...entry, role: LineupRole.STARTER, isStarter: true };
+                    }
+                    return entry;
+                });
+
+                // Optimistically update or just wait for fetch? 
+                // Let's send update to backend
+                await matchLineupService.updateLineup(selectedMatch!.id, action.teamId, updatedLineup);
+
+                // Refresh lineups to reflect changes in UI (e.g. picker)
+                await fetchLineups();
+            }
 
             await loadMatchDetail(selectedMatch!.id);
             showToast.success(`${action.type} recorded!`);
@@ -649,73 +675,103 @@ export const MatchDetail = () => {
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                [...events].reverse().map((event) => ( // Show newest first
-                                                    <TableRow key={event.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors">
-                                                        <TableCell className="font-mono text-slate-600 dark:text-slate-300 font-bold">
-                                                            {editingEvent?.id === event.id ? (
-                                                                <input
-                                                                    type="number"
-                                                                    aria-label="Edit match minute"
-                                                                    className="w-12 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-center text-sm"
-                                                                    value={editingEvent.minute}
-                                                                    onChange={(e) => setEditingEvent({ ...editingEvent, minute: parseInt(e.target.value) || 0 })}
-                                                                    onBlur={handleSaveEventMinute}
-                                                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEventMinute()}
-                                                                    autoFocus
-                                                                />
-                                                            ) : (
-                                                                <span>{event.minute}'</span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{event.teamName}</TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-3">
-                                                                {getEventIcon(event.eventType)}
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-semibold text-slate-800 dark:text-white">{event.eventType}</span>
-                                                                    {SCORING_RULES[event.eventType] > 0 && (
-                                                                        <span className="text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800 font-bold">
-                                                                            +{SCORING_RULES[event.eventType]}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="text-slate-500 dark:text-slate-400">{event.playerName || '-'}</TableCell>
-                                                        <TableCell>
-                                                            {isAdmin && !isMatchLocked && (
-                                                                <div className="flex items-center gap-1">
-                                                                    <button
-                                                                        title="Edit Minute"
-                                                                        onClick={() => setEditingEvent({ id: event.id, minute: event.minute || 0 })}
-                                                                        className="text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                                                    >
-                                                                        <Pencil className="w-4 h-4" />
-                                                                    </button>
-                                                                    <button
-                                                                        title="Delete Event"
-                                                                        onClick={() => {
-                                                                            setConfirmModal({
-                                                                                isOpen: true,
-                                                                                title: 'Delete Event',
-                                                                                message: 'Permanently delete this event?',
-                                                                                onConfirm: async () => {
-                                                                                    await removeEvent(event.id, selectedMatch.id);
-                                                                                    await loadMatchDetail(selectedMatch.id);
-                                                                                    showToast.success('Deleted');
-                                                                                }
-                                                                            })
-                                                                        }}
-                                                                        className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                                    >
-                                                                        <Trash className="w-4 h-4" />
-                                                                    </button>
+                                                [...events].reverse().map((event) => {
+                                                    // Parse substitution notes if available
+                                                    let subInName = '';
+                                                    let subOutName = event.playerName;
 
+                                                    if (event.eventType === 'SUBSTITUTION' && event.notes?.includes(' | IN: ')) {
+                                                        const parts = event.notes.split(' | IN: ');
+                                                        if (parts.length === 2) {
+                                                            subInName = parts[1];
+                                                            // Try to clean up "OUT: " prefix if present, though playerName is usually cleaner
+                                                            // referring to event.playerName is safer for the primary player (OUT player)
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <TableRow key={event.id} className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors">
+                                                            <TableCell className="font-mono text-slate-600 dark:text-slate-300 font-bold">
+                                                                {editingEvent?.id === event.id ? (
+                                                                    <input
+                                                                        type="number"
+                                                                        aria-label="Edit match minute"
+                                                                        className="w-12 px-1 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-center text-sm"
+                                                                        value={editingEvent.minute}
+                                                                        onChange={(e) => setEditingEvent({ ...editingEvent, minute: parseInt(e.target.value) || 0 })}
+                                                                        onBlur={handleSaveEventMinute}
+                                                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveEventMinute()}
+                                                                        autoFocus
+                                                                    />
+                                                                ) : (
+                                                                    <span>{event.minute}'</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{event.teamName}</TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-3">
+                                                                    {getEventIcon(event.eventType)}
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-semibold text-slate-800 dark:text-white">{event.eventType}</span>
+                                                                        {SCORING_RULES[event.eventType] > 0 && (
+                                                                            <span className="text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800 font-bold">
+                                                                                +{SCORING_RULES[event.eventType]}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
+                                                            </TableCell>
+                                                            <TableCell className="text-slate-500 dark:text-slate-400">
+                                                                {event.eventType === 'SUBSTITUTION' && subInName ? (
+                                                                    <div className="flex flex-col gap-1 text-xs">
+                                                                        <div className="flex items-center gap-1 text-red-500 dark:text-red-400">
+                                                                            <ArrowDown className="w-3 h-3" weight="bold" />
+                                                                            <span>{subOutName || 'Unknown'}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                                                            <ArrowUp className="w-3 h-3" weight="bold" />
+                                                                            <span>{subInName}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span>{event.playerName || '-'}</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {isAdmin && !isMatchLocked && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <button
+                                                                            title="Edit Minute"
+                                                                            onClick={() => setEditingEvent({ id: event.id, minute: event.minute || 0 })}
+                                                                            className="text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                                        >
+                                                                            <Pencil className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            title="Delete Event"
+                                                                            onClick={() => {
+                                                                                setConfirmModal({
+                                                                                    isOpen: true,
+                                                                                    title: 'Delete Event',
+                                                                                    message: 'Permanently delete this event?',
+                                                                                    onConfirm: async () => {
+                                                                                        await removeEvent(event.id, selectedMatch.id);
+                                                                                        await loadMatchDetail(selectedMatch.id);
+                                                                                        showToast.success('Deleted');
+                                                                                    }
+                                                                                })
+                                                                            }}
+                                                                            className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                                        >
+                                                                            <Trash className="w-4 h-4" />
+                                                                        </button>
+
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })
                                             )}
                                         </TableBody>
                                     </Table>
