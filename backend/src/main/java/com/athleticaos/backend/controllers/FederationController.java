@@ -37,7 +37,7 @@ public class FederationController {
     // --- Sanctioning ---
 
     @PostMapping("/sanctioning")
-    @PreAuthorize("hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_SUPER_ADMIN')")
     @Operation(summary = "Request sanctioning for a tournament")
     public ResponseEntity<SanctioningRequestResponse> requestSanctioning(
             @RequestBody @Valid SanctioningCreateRequest request) {
@@ -53,7 +53,7 @@ public class FederationController {
     }
 
     @GetMapping("/sanctioning/outgoing/{requesterOrgId}")
-    @PreAuthorize("hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_SUPER_ADMIN')")
     @Operation(summary = "Get outgoing sanctioning requests from an organization")
     public ResponseEntity<List<SanctioningRequestResponse>> getOutgoingRequests(@PathVariable UUID requesterOrgId) {
         validateUserIsOrgAdmin(requesterOrgId);

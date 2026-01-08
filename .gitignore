@@ -6,7 +6,10 @@ out/
 .idea/
 .vscode/
 target/
-target 2/
-*.log
+
+logs/*
+!logs/archive
+!logs/backendLogs
+!logs/frontendLogs
 .DS_Store
 .env

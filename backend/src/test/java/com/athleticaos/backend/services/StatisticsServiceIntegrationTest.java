@@ -144,6 +144,83 @@ public class StatisticsServiceIntegrationTest {
         }
 
         @Test
+        public void getTournamentLeaderboard_ShouldSortPlayersCorrectly() {
+                // Setup
+                Organisation org = Organisation.builder().name("Test Org").slug("test-org-sort").orgType("CLUB")
+                                .build();
+                entityManager.persist(org);
+
+                Tournament tournament = Tournament.builder().name("Sort Tournament").slug("sort-tournament")
+                                .organiserOrg(org)
+                                .startDate(LocalDate.now())
+                                .endDate(LocalDate.now().plusDays(7))
+                                .venue("Test Venue")
+                                .level("NATIONAL")
+                                .build();
+                entityManager.persist(tournament);
+
+                Team team = Team.builder().name("Test Team").slug("test-team-sort").organisation(org).category("MEN")
+                                .ageGroup("SENIOR").status("ACTIVE").build();
+                entityManager.persist(team);
+
+                // Player 1: 5 points (1 try)
+                createPlayerWithPoints(tournament, team, "Player", "One", MatchEventType.TRY);
+                // Player 2: 10 points (2 tries)
+                createPlayerWithPoints(tournament, team, "Player", "Two", MatchEventType.TRY,
+                                MatchEventType.TRY);
+                // Player 3: 3 points (1 penalty)
+                createPlayerWithPoints(tournament, team, "Player", "Three", MatchEventType.PENALTY);
+
+                entityManager.flush();
+                entityManager.clear();
+
+                // Act
+                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId());
+
+                // Assert
+                var players = response.topPlayers();
+                assertThat(players).hasSize(3);
+
+                // Should be P2 (10pts), P1 (5pts), P3 (3pts)
+                assertThat(players.get(0).firstName()).isEqualTo("Player");
+                assertThat(players.get(0).lastName()).isEqualTo("Two");
+                assertThat(players.get(0).totalPoints()).isEqualTo(10);
+
+                assertThat(players.get(1).lastName()).isEqualTo("One");
+                assertThat(players.get(1).totalPoints()).isEqualTo(5);
+
+                assertThat(players.get(2).lastName()).isEqualTo("Three");
+                assertThat(players.get(2).totalPoints()).isEqualTo(3);
+        }
+
+        private Player createPlayerWithPoints(Tournament t, Team team, String fName, String lName,
+                        MatchEventType... events) {
+                Person person = Person.builder().firstName(fName).lastName(lName).email(fName + lName + "@test.com")
+                                .dob(LocalDate.now().minusYears(20)).gender("MALE")
+                                .icOrPassport("123" + fName + lName)
+                                .nationality("Country")
+                                .build();
+                entityManager.persist(person);
+                Player player = Player.builder().person(person).status("ACTIVE").build();
+                entityManager.persist(player);
+
+                Match match = Match.builder().tournament(t).homeTeam(team).awayTeam(team)
+                                .matchDate(LocalDate.now()).status(MatchStatus.COMPLETED).build();
+                entityManager.persist(match);
+
+                MatchLineup lineup = MatchLineup.builder().match(match).team(team).player(player)
+                                .role(com.athleticaos.backend.enums.LineupRole.STARTER).build();
+                entityManager.persist(lineup);
+
+                for (MatchEventType type : events) {
+                        MatchEvent e = MatchEvent.builder().match(match).team(team).player(player).eventType(type)
+                                        .minute(10).build();
+                        entityManager.persist(e);
+                }
+                return player;
+        }
+
+        @Test
         public void getTournamentLeaderboard_ShouldIgnoreOrphanEvents() {
                 // Setup similar to above but with null player event
                 Organisation org = Organisation.builder().name("Test Org").slug("test-org-2").orgType("CLUB").build();

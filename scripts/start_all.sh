@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-cd "$(dirname "$0")"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 BACKEND_PORT=8080
 FRONTEND_PORT=5173
@@ -96,7 +97,7 @@ echo ""
 echo "🚀 Starting backend (logs -> backend.log)..."
 (
   cd "$BACKEND_DIR"
-  nohup $BACKEND_START_CMD > ../backend.log 2>&1 &
+  nohup $BACKEND_START_CMD > "$PROJECT_ROOT/logs/backendLogs/backend.log" 2>&1 &
   echo "   Backend PID: $!"
 )
 
@@ -104,7 +105,7 @@ echo ""
 echo "⚡ Starting frontend (logs -> frontend.log)..."
 (
   cd "$FRONTEND_DIR"
-  nohup $FRONTEND_START_CMD > ../frontend.log 2>&1 &
+  nohup $FRONTEND_START_CMD > "$PROJECT_ROOT/logs/frontendLogs/frontend.log" 2>&1 &
   echo "   Frontend PID: $!"
 )
 
@@ -114,5 +115,5 @@ echo "➡ Backend:  http://localhost:${BACKEND_PORT}"
 echo "➡ Frontend: http://localhost:${FRONTEND_PORT}"
 echo ""
 echo "📋 Logs:"
-echo "   Backend:  tail -f backend.log"
-echo "   Frontend: tail -f frontend.log"
+echo "   Backend:  tail -f logs/backendLogs/backend.log"
+echo "   Frontend: tail -f logs/frontendLogs/frontend.log"

@@ -20,9 +20,9 @@ const CustomToast = ({
         >
             {/* Accent Bar */}
             <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${type === 'success' ? 'bg-green-500' :
-                    type === 'error' ? 'bg-red-500' :
-                        type === 'loading' ? 'bg-blue-500' :
-                            'bg-slate-500'
+                type === 'error' ? 'bg-red-500' :
+                    type === 'loading' ? 'bg-blue-500' :
+                        'bg-slate-500'
                 }`} />
 
             <div className="flex-1 w-0 p-4 pl-5">

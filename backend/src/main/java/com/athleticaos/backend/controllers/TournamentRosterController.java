@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/tournaments/{tournamentIdOrSlug}/roster")
+@RequestMapping("/api/v1/tournaments/{tournamentIdOrSlug}/roster")
 @RequiredArgsConstructor
 public class TournamentRosterController {
 

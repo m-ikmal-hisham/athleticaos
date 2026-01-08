@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Project root directory
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  AthleticaOS Complete Restart Script  ${NC}"
@@ -116,11 +116,11 @@ fi
 
 # Start backend in background
 print_step "Starting Backend server..."
-nohup ./mvnw spring-boot:run > "$PROJECT_ROOT/backend.log" 2>&1 &
+nohup ./mvnw spring-boot:run > "$PROJECT_ROOT/logs/backendLogs/backend.log" 2>&1 &
 BACKEND_PID=$!
 
 print_success "Backend started (PID: $BACKEND_PID)"
-echo "Backend logs: $PROJECT_ROOT/backend.log"
+echo "Backend logs: $PROJECT_ROOT/logs/backendLogs/backend.log"
 
 echo ""
 
@@ -147,11 +147,11 @@ fi
 
 # Start frontend dev server in background
 print_step "Starting Frontend dev server..."
-nohup npm run dev > "$PROJECT_ROOT/frontend.log" 2>&1 &
+nohup npm run dev > "$PROJECT_ROOT/logs/frontendLogs/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 
 print_success "Frontend started (PID: $FRONTEND_PID)"
-echo "Frontend logs: $PROJECT_ROOT/frontend.log"
+echo "Frontend logs: $PROJECT_ROOT/logs/frontendLogs/frontend.log"
 
 echo ""
 
@@ -166,14 +166,14 @@ echo "  • Backend:   Running on http://localhost:8080 (PID: $BACKEND_PID)"
 echo "  • Frontend:  Running on http://localhost:5173 (PID: $FRONTEND_PID)"
 echo ""
 echo "Logs:"
-echo "  • Backend:   $PROJECT_ROOT/backend.log"
-echo "  • Frontend:  $PROJECT_ROOT/frontend.log"
+echo "  • Backend:   $PROJECT_ROOT/logs/backendLogs/backend.log"
+echo "  • Frontend:  $PROJECT_ROOT/logs/frontendLogs/frontend.log"
 echo ""
 echo "To view logs in real-time:"
-echo "  • Backend:   tail -f $PROJECT_ROOT/backend.log"
-echo "  • Frontend:  tail -f $PROJECT_ROOT/frontend.log"
+echo "  • Backend:   tail -f $PROJECT_ROOT/logs/backendLogs/backend.log"
+echo "  • Frontend:  tail -f $PROJECT_ROOT/logs/frontendLogs/frontend.log"
 echo ""
 echo "To stop services:"
-echo "  • Run:       ./stop_all.sh"
+echo "  • Run:       ./scripts/stop_all.sh"
 echo "  • Or kill:   kill $BACKEND_PID $FRONTEND_PID && docker-compose down"
 echo ""

@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/tournaments/{tournamentIdOrSlug}/suspensions")
+@RequestMapping("/api/v1/tournaments/{tournamentIdOrSlug}/suspensions")
 @RequiredArgsConstructor
 @Tag(name = "Player Suspensions", description = "Endpoints for managing player suspensions")
 public class PlayerSuspensionController {

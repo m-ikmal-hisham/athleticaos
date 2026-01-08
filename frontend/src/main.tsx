@@ -4,9 +4,11 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from '@/routes/AppRoutes'
 import '@/styles/globals.css'
 import { useUIStore } from "@/store/ui.store";
+import { useAuthStore } from '@/store/auth.store';
 import { Toaster } from 'react-hot-toast';
 import { IconContext } from '@phosphor-icons/react';
 import { HelmetProvider } from 'react-helmet-async';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const Root = () => {
     const { theme, getEffectiveTheme } = useUIStore();
@@ -16,27 +18,34 @@ export const Root = () => {
         document.documentElement.setAttribute("data-theme", effectiveTheme);
     }, [theme, getEffectiveTheme]);
 
+    // Check token validity on app start (once)
+    useEffect(() => {
+        useAuthStore.getState().checkTokenValidity();
+    }, []);
+
     return (
-        <HelmetProvider>
-            <IconContext.Provider value={{
-                weight: "duotone",
-                className: "text-primary-900 dark:text-secondary-100"
-            }}>
-                <RouterProvider router={router} />
-                <Toaster
-                    position="top-right"
-                    toastOptions={{
-                        duration: 4000,
-                        style: {
-                            background: 'var(--glass-bg)',
-                            color: 'var(--text-color)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            backdropFilter: 'blur(24px)',
-                        },
-                    }}
-                />
-            </IconContext.Provider>
-        </HelmetProvider>
+        <ErrorBoundary>
+            <HelmetProvider>
+                <IconContext.Provider value={{
+                    weight: "duotone",
+                    className: "text-primary-900 dark:text-secondary-100"
+                }}>
+                    <RouterProvider router={router} />
+                    <Toaster
+                        position="top-right"
+                        toastOptions={{
+                            duration: 4000,
+                            style: {
+                                background: 'var(--glass-bg)',
+                                color: 'var(--text-color)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                backdropFilter: 'blur(24px)',
+                            },
+                        }}
+                    />
+                </IconContext.Provider>
+            </HelmetProvider>
+        </ErrorBoundary>
     );
 };
 

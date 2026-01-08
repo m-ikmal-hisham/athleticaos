@@ -64,8 +64,16 @@ public class AuthenticationController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<com.athleticaos.backend.dtos.user.UserResponse> getCurrentUser() {
+        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+
+        if (authentication == null ||
+                !authentication.isAuthenticated() ||
+                authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+            return ResponseEntity.noContent().build();
+        }
+
         com.athleticaos.backend.entities.User user = userService.getCurrentUser();
         return ResponseEntity.ok(userService.getUserById(user.getId()));
     }

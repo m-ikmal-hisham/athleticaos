@@ -80,22 +80,34 @@ export const useAuthStore = create<AuthState>()(
             },
 
             checkTokenValidity: async () => {
-
+                console.log('Checking token validity...');
                 try {
                     // Fetch current user (Boot Check)
+                    console.log('Fetching /auth/me...');
                     const response = await authApi.getMe();
+                    console.log('Token check success:', response);
+                    if (response.status === 204) {
+                        console.debug('User is not authenticated (No Content)');
+                        set({ user: null, isAuthenticated: false, primaryRole: null });
+                        return;
+                    }
+
                     const user = response.data;
 
                     const primaryRole = user.roles && user.roles.length > 0
                         ? user.roles[0].replace('ROLE_', '')
                         : null;
 
-                    set({ user, isAuthenticated: true, primaryRole, isInitialized: true });
-                } catch (error: unknown) {
+                    set({ user, isAuthenticated: true, primaryRole });
+                } catch (error: any) {
+                    console.error('Token check FAILED:', error);
+                    console.error('Error config:', error?.config);
+                    console.error('Error response:', error?.response);
                     // Session invalid or expired
-                    set({ user: null, isAuthenticated: false, primaryRole: null, isInitialized: true });
-                    // We don't call logout() here to avoid redirect loop or double toast, 
-                    // just ensure state is clear. AuthGuard will handle redirect.
+                    set({ user: null, isAuthenticated: false, primaryRole: null });
+                } finally {
+                    console.log('EXECUTING FINALLY BLOCK - Setting isInitialized to true');
+                    set({ isInitialized: true });
                 }
             },
 
