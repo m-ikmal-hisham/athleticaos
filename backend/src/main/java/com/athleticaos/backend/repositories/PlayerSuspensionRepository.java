@@ -19,4 +19,8 @@ public interface PlayerSuspensionRepository extends JpaRepository<PlayerSuspensi
     List<PlayerSuspension> findByPlayerIdAndIsActiveTrue(UUID playerId);
 
     List<PlayerSuspension> findByTournamentId(UUID tournamentId);
+
+    void deleteByMatchId(UUID matchId);
+
+    void deleteByMatchIdIn(List<UUID> matchIds);
 }

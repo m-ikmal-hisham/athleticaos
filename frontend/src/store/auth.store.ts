@@ -80,14 +80,10 @@ export const useAuthStore = create<AuthState>()(
             },
 
             checkTokenValidity: async () => {
-                console.log('Checking token validity...');
                 try {
                     // Fetch current user (Boot Check)
-                    console.log('Fetching /auth/me...');
                     const response = await authApi.getMe();
-                    console.log('Token check success:', response);
                     if (response.status === 204) {
-                        console.debug('User is not authenticated (No Content)');
                         set({ user: null, isAuthenticated: false, primaryRole: null });
                         return;
                     }
@@ -101,12 +97,9 @@ export const useAuthStore = create<AuthState>()(
                     set({ user, isAuthenticated: true, primaryRole });
                 } catch (error: any) {
                     console.error('Token check FAILED:', error);
-                    console.error('Error config:', error?.config);
-                    console.error('Error response:', error?.response);
                     // Session invalid or expired
                     set({ user: null, isAuthenticated: false, primaryRole: null });
                 } finally {
-                    console.log('EXECUTING FINALLY BLOCK - Setting isInitialized to true');
                     set({ isInitialized: true });
                 }
             },

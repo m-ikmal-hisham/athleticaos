@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/Button';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, CircleNotch } from '@phosphor-icons/react';
 import { toast } from 'react-hot-toast';
 import axios from '@/lib/axios';
 
@@ -45,7 +45,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         formData.append('file', file);
 
         try {
-            const response = await axios.post('/api/v1/uploads', formData, {
+            const response = await axios.post('/uploads', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -115,7 +115,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 ) : (
                     <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                         {isUploading ? (
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <CircleNotch className="h-8 w-8 animate-spin text-primary" />
                         ) : (
                             <>
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-3">

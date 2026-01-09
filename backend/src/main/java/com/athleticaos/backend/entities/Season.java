@@ -46,6 +46,9 @@ public class Season {
     @JoinColumn(name = "organiser_id")
     private Organisation organiser;
 
+    @Builder.Default
+    private boolean deleted = false;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

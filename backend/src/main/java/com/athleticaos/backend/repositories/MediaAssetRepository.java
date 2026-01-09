@@ -10,4 +10,8 @@ import java.util.UUID;
 @Repository
 public interface MediaAssetRepository extends JpaRepository<MediaAsset, UUID> {
     List<MediaAsset> findByMatchId(UUID matchId);
+
+    void deleteByMatchId(UUID matchId);
+
+    void deleteByMatchIdIn(List<UUID> matchIds);
 }

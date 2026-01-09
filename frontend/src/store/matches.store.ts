@@ -6,7 +6,9 @@ import {
     fetchMatchEvents,
     createMatchEvent,
     deleteMatchEvent,
-    updateMatch
+    updateMatch,
+    deleteMatch as deleteMatchApi,
+    deleteMatches as deleteMatchesApi
 } from "../api/matches.api";
 import { fetchPlayers } from "../api/players.api";
 
@@ -79,6 +81,8 @@ interface MatchState {
     addEvent: (matchId: string, event: Omit<MatchEventItem, "id">) => Promise<void>;
     removeEvent: (eventId: string, matchId: string) => Promise<void>;
     cancelMatch: (matchId: string) => Promise<void>;
+    deleteMatch: (matchId: string) => Promise<void>;
+    deleteMatches: (matchIds: string[]) => Promise<void>;
     loadPlayers: () => Promise<void>;
 }
 
@@ -202,6 +206,34 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         } catch (error: any) {
             console.error("Failed to cancel match", error);
             set({ error: "Failed to cancel match" });
+        }
+    },
+
+    deleteMatch: async (matchId) => {
+        try {
+            await deleteMatchApi(matchId);
+            // Remove from local state
+            const { matches } = get();
+            const updatedMatches = matches.filter(m => m.id !== matchId);
+            set({ matches: updatedMatches });
+        } catch (error: any) {
+            console.error("Failed to delete match", error);
+            set({ error: "Failed to delete match" });
+            throw error;
+        }
+    },
+
+    deleteMatches: async (matchIds) => {
+        try {
+            await deleteMatchesApi(matchIds);
+            // Remove from local state
+            const { matches } = get();
+            const updatedMatches = matches.filter(m => !matchIds.includes(m.id));
+            set({ matches: updatedMatches });
+        } catch (error: any) {
+            console.error("Failed to delete matches", error);
+            set({ error: "Failed to delete matches" });
+            throw error;
         }
     }
 }));

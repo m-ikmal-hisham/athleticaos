@@ -38,11 +38,24 @@ public class MatchServiceImpl implements MatchService {
     private final AuditLogger auditLogger;
     private final PlayerSuspensionService suspensionService;
 
+    private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
+    private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
+    private final com.athleticaos.backend.repositories.PlayerSuspensionRepository playerSuspensionRepository;
+    private final com.athleticaos.backend.repositories.MediaAssetRepository mediaAssetRepository;
+    private final com.athleticaos.backend.repositories.EventRepository eventRepository;
+
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches() {
         return getAllMatches(null, null);
     }
+
+    // ... [omitted unchanged methods for brevity in tool call, but must be careful
+    // with offsets if not replacing whole block.
+    // Actually, I should use specific small replace calls for injection and for the
+    // methods to avoid large text matching issues.]
+    // I will replace fields and then separate replace calls for
+    // deleteMatch/deleteMatches.
 
     @Override
     @Transactional(readOnly = true)
@@ -278,7 +291,30 @@ public class MatchServiceImpl implements MatchService {
         if (!matchRepository.existsById(id)) {
             throw new EntityNotFoundException("Match not found with ID: " + id);
         }
+        matchEventRepository.deleteByMatchId(id);
+        matchLineupRepository.deleteByMatchId(id);
+        matchOfficialRepository.deleteByMatchId(id);
+        playerSuspensionRepository.deleteByMatchId(id);
+        mediaAssetRepository.deleteByMatchId(id);
+        eventRepository.deleteByLinkedMatchId(id);
+
         matchRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMatches(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        matchEventRepository.deleteByMatchIdIn(ids);
+        matchLineupRepository.deleteByMatchIdIn(ids);
+        matchOfficialRepository.deleteByMatchIdIn(ids);
+        playerSuspensionRepository.deleteByMatchIdIn(ids);
+        mediaAssetRepository.deleteByMatchIdIn(ids);
+        eventRepository.deleteByLinkedMatchIdIn(ids);
+
+        matchRepository.deleteAllById(ids);
     }
 
     private MatchResponse mapToResponse(Match match) {

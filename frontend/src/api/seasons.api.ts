@@ -44,3 +44,7 @@ export const getTournamentsBySeason = async (id: string): Promise<any[]> => {
     const response = await api.get(`${API_URL}/${id}/tournaments`);
     return response.data;
 };
+
+export const deleteSeason = async (id: string): Promise<void> => {
+    await api.delete(`${API_URL}/${id}`);
+};

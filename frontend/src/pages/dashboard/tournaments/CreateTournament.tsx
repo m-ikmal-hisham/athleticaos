@@ -12,7 +12,7 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { ArrowLeft, Trash, Plus } from '@phosphor-icons/react';
 import { createTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
-import { getActiveSeasons } from '@/api/seasons.api';
+import { getSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -78,7 +78,7 @@ export const CreateTournament = () => {
             try {
                 const [orgsRes, seasonsRes] = await Promise.all([
                     fetchOrganisations(),
-                    getActiveSeasons()
+                    getSeasons()
                 ]);
                 setOrganisations(orgsRes as any);
                 setSeasons(seasonsRes);

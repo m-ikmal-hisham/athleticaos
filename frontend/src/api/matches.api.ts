@@ -40,6 +40,14 @@ export const updateMatch = (id: string, data: any) => {
     return api.put(`/matches/${id}`, data);
 };
 
+export const deleteMatch = (matchId: string) => {
+    return api.delete(`/matches/${matchId}`);
+};
+
+export const deleteMatches = (ids: string[]) => {
+    return api.delete(`/matches/batch`, { data: ids });
+};
+
 // Soft delete (cancel match)
 export const cancelMatch = (matchId: string) => {
     // We will use updateMatch in the store to handle the full object update

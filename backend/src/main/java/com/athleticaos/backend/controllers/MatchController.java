@@ -75,10 +75,18 @@ public class MatchController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Delete a match")
     public ResponseEntity<Void> deleteMatch(@PathVariable UUID id) {
         matchService.deleteMatch(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/batch")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete multiple matches")
+    public ResponseEntity<Void> deleteMatches(@RequestBody List<UUID> ids) {
+        matchService.deleteMatches(ids);
         return ResponseEntity.noContent().build();
     }
 

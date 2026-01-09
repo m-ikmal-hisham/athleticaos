@@ -18,7 +18,8 @@ import { PrimaryActionGrid } from '@/components/match/operations/PrimaryActionGr
 import { SecondaryActionRow } from '@/components/match/operations/SecondaryActionRow';
 import { PlayerPicker } from '@/components/match/operations/PlayerPicker';
 import { MatchLineupEditor } from '@/components/MatchLineupEditor';
-import { Users, PresentationChart } from '@phosphor-icons/react';
+import { Users, PresentationChart, FilmStrip } from '@phosphor-icons/react';
+import { MatchMoments } from '@/pages/public/match/MatchMoments';
 
 // Rugby scoring rules
 import { matchLineupService } from '@/services/matchLineupService';
@@ -89,7 +90,7 @@ export const MatchDetail = () => {
 
     // Operations Interaction State
     const [interactionState, setInteractionState] = useState<'IDLE' | 'SELECT_TEAM' | 'SELECT_PLAYER'>('IDLE');
-    const [activeTab, setActiveTab] = useState<'overview' | 'lineups'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'lineups' | 'moments'>('overview');
     const [lineupViewTeam, setLineupViewTeam] = useState<'home' | 'away'>('home');
     const [matchLineups, setMatchLineups] = useState<Record<string, MatchLineupEntry[]>>({ home: [], away: [] }); // Local cache of lineups
     const [draftAction, setDraftAction] = useState<{
@@ -536,6 +537,19 @@ export const MatchDetail = () => {
                     <Users className="w-4 h-4" />
                     Lineups & Subs
                 </button>
+                <button
+                    onClick={() => setActiveTab('moments')}
+                    className={`
+                        px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all
+                        ${activeTab === 'moments'
+                            ? 'bg-white dark:bg-white/10 text-primary-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                        }
+                    `}
+                >
+                    <FilmStrip className="w-4 h-4" />
+                    Moments
+                </button>
             </div>
 
             {/* Overview Content */}
@@ -900,6 +914,31 @@ export const MatchDetail = () => {
                             </div>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Moments Tab */}
+            {activeTab === 'moments' && (
+                <div className="max-w-4xl mx-auto mt-6">
+                    <MatchMoments match={{
+                        ...selectedMatch,
+                        matchTime: "",
+                        venue: selectedMatch.venue || undefined,
+                        events: events.map(e => ({
+                            id: e.id,
+                            matchId: e.matchId,
+                            teamId: e.teamId,
+                            teamName: e.teamName,
+                            playerId: e.playerId || undefined,
+                            playerName: e.playerName || undefined,
+                            eventType: e.eventType,
+                            minute: e.minute === null ? undefined : e.minute,
+                            notes: e.notes || undefined,
+                            points: SCORING_RULES[e.eventType] || 0
+                        })),
+                        homeScore: calculatedScores.homeScore,
+                        awayScore: calculatedScores.awayScore
+                    }} />
                 </div>
             )}
 

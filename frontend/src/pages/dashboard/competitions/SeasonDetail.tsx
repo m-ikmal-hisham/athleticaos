@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getSeasonById, updateSeasonStatus, getTournamentsBySeason, getSeasonOverview } from '@/api/seasons.api';
+import { getSeasonById, updateSeasonStatus, getTournamentsBySeason, getSeasonOverview, deleteSeason } from '@/api/seasons.api';
 import { Season, SeasonOverview } from '@/types/season.types';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
-import { ArrowLeft, Trophy, CalendarBlank, ArrowSquareOut, Plus, PencilSimple } from '@phosphor-icons/react';
+import { ArrowLeft, Trophy, CalendarBlank, ArrowSquareOut, Plus, PencilSimple, Trash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { formatDate } from '@/utils/date';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -50,8 +50,21 @@ export const SeasonDetail = () => {
             const updated = await updateSeasonStatus(season.id, newStatus);
             setSeason(updated);
             toast.success(`Season status updated to ${newStatus}`);
+        } catch (error: any) {
+            console.error('Failed to update status:', error);
+            const message = error?.response?.data?.message || "Failed to update status";
+            toast.error(message);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!season || !window.confirm('Are you sure you want to delete this season? This action cannot be undone.')) return;
+        try {
+            await deleteSeason(season.id);
+            toast.success('Season deleted successfully');
+            navigate('/dashboard/competitions');
         } catch (error) {
-            toast.error("Failed to update status");
+            toast.error('Failed to delete season');
         }
     };
 
@@ -85,6 +98,14 @@ export const SeasonDetail = () => {
                     <Button size="sm" variant="outline" onClick={() => navigate(`/dashboard/competitions/seasons/${season.id}/edit`)}>
                         <PencilSimple className="w-4 h-4 mr-2" />
                         Edit Season
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="bg-red-600 hover:bg-red-700 text-white border-none"
+                        onClick={handleDelete}
+                    >
+                        <Trash className="w-4 h-4 mr-2" />
+                        Delete
                     </Button>
                     {season.status === 'PLANNED' && (
                         <Button size="sm" onClick={() => handleStatusChange('ACTIVE')}>Activate Season</Button>

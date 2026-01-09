@@ -61,6 +61,13 @@ public class SeasonController {
         return ResponseEntity.ok(seasonService.updateStatus(id, status));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    public ResponseEntity<Void> deleteSeason(@PathVariable UUID id) {
+        seasonService.deleteSeason(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/tournaments")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.TournamentResponse>> getTournamentsBySeason(

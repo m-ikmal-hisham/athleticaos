@@ -23,6 +23,8 @@ public interface MatchService {
 
         void deleteMatch(UUID id);
 
+        void deleteMatches(List<UUID> ids);
+
         List<MatchResponse> getMatchesByStatus(String status);
 
         void recalculateMatchScores(UUID matchId);

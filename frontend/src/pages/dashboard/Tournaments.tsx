@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin, PencilSimple } from "@phosphor-icons/react";
 import { TournamentStatus } from "@/types";
 import { useTournamentsStore } from "../../store/tournaments.store";
-import { StatusPill } from "../../components/StatusPill";
+
 import { useAuthStore } from "@/store/auth.store";
 import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "@/components/SmartFilterPills";
@@ -173,9 +173,10 @@ export default function Tournaments() {
                             {/* Top Banner / Image Placeholder */}
                             <div className="h-32 bg-gradient-to-br from-primary-500/10 to-blue-500/10 relative overflow-hidden">
                                 {t.logoUrl && <img src={getImageUrl(t.logoUrl)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />}
-                                <div className="absolute top-4 right-4">
-                                    <div className="shadow-lg backdrop-blur-md rounded-full">
-                                        <StatusPill status={t.status} />
+                                <div className="absolute top-2 right-2">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
+                                        <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-blue-500'}`} />
+                                        {t.status}
                                     </div>
                                 </div>
                                 <div className="absolute -bottom-6 left-6 w-16 h-16 rounded-xl bg-glass-bg border border-white/10 shadow-lg flex items-center justify-center overflow-hidden z-10">
