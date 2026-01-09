@@ -7,6 +7,7 @@ import { CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { TournamentFormatConfig, TournamentCategory, Team, TournamentStageResponse, BracketViewResponse } from '@/types';
 import { GroupingEditor } from '@/components/content/GroupingEditor';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
@@ -133,6 +134,13 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
             // Assuming user is working on one category at a time or they see all.
             setStages(rawStages);
 
+            // If we have existing stages, default to using them (preserving assignments)
+            if (rawStages.length > 0) {
+                setUseExistingGroups(true);
+            } else {
+                setUseExistingGroups(false);
+            }
+
             // Refresh teams to get latest pool assignments
             const latestTeams = await tournamentService.getTeams(tournamentId);
             setTeams(latestTeams);
@@ -158,11 +166,14 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         }
     };
 
-    const handleGenerateStructure = async () => {
-        if (!confirm('This will create empty pools based on your configuration. Any existing pools/matches for this category might be reset. Continue?')) {
-            return;
-        }
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
+    const handleGenerateStructureFn = async () => {
         try {
             setStructureLoading(true);
             // First save config
@@ -185,17 +196,22 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         }
     };
 
-    const handleGenerateMatches = async () => {
-        if (!confirm('Generate matches? This will lock the format.')) {
-            return;
-        }
+    const handleGenerateStructure = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Build Pools?',
+            message: 'This will create empty pools based on your configuration. Any existing pools/matches for this category might be reset.',
+            onConfirm: handleGenerateStructureFn
+        });
+    };
 
+    const handleGenerateMatchesFn = async () => {
         try {
             setGenerating(true);
             await tournamentService.generateSchedule(
                 tournamentId,
                 config.formatType,
-                config.poolCount,
+                config.poolCount || 1, // Ensure minimum 1 to pass validation
                 generateTimings,
                 useExistingGroups, // Use the manual pools!
                 selectedCategoryId || undefined,
@@ -208,6 +224,15 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         } finally {
             setGenerating(false);
         }
+    };
+
+    const handleGenerateMatches = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Generate Matches',
+            message: 'Are you sure you want to generate matches? This will finalize the format and create the schedule.',
+            onConfirm: handleGenerateMatchesFn
+        });
     };
 
     const handleAssignTeam = async (teamId: string, poolName: string | null) => {
@@ -254,20 +279,42 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                 </div>
                             </div>
                             {categories.length > 0 && (
-                                <div className="flex gap-2 p-1 bg-muted rounded-lg overflow-x-auto">
+                                <div className="flex gap-3 overflow-x-auto pb-2">
                                     {categories.map(cat => (
-                                        <button
+                                        <div
                                             key={cat.id}
                                             onClick={() => setSelectedCategoryId(cat.id)}
                                             className={clsx(
-                                                "px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors",
+                                                "cursor-pointer group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 min-w-[140px]",
                                                 selectedCategoryId === cat.id
-                                                    ? "bg-background shadow text-foreground"
-                                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                                                    ? "bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                                                    : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/5"
                                             )}
                                         >
-                                            {cat.name}
-                                        </button>
+                                            <div className={clsx(
+                                                "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                                                "bg-gradient-to-br from-white/10 to-transparent"
+                                            )} />
+
+                                            <div className="relative z-10 flex flex-col items-start gap-1">
+                                                <span className={clsx(
+                                                    "text-sm font-bold tracking-tight",
+                                                    selectedCategoryId === cat.id ? "text-primary" : "text-foreground/80"
+                                                )}>
+                                                    {cat.name}
+                                                </span>
+                                                <span className={clsx(
+                                                    "text-xs",
+                                                    selectedCategoryId === cat.id ? "text-primary/70" : "text-muted-foreground"
+                                                )}>
+                                                    Category
+                                                </span>
+                                            </div>
+
+                                            {selectedCategoryId === cat.id && (
+                                                <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary/50" />
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             )}
@@ -378,6 +425,8 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                             categoryId={selectedCategoryId || undefined}
                                             onAssign={handleAssignTeam}
                                             readonly={generating}
+                                            onRename={loadStructure}
+                                            tournamentId={tournamentId}
                                         />
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 py-12">
@@ -424,6 +473,15 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                     </CardContent>
                 </div>
             </GlassCard>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.title.includes('Generate') ? 'Generate' : 'Build'}
+            />
         </div>
     );
 }

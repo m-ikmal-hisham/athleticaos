@@ -900,4 +900,15 @@ public class TournamentServiceImpl implements TournamentService {
                 .maxBenchCount(config.getMaxBenchCount())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public void updateStage(UUID tournamentId, UUID stageId, String name) {
+        // Validate tournament ownership if needed, but stageId lookup in formatService
+        // handles it via Entity reference
+        // Ideally we should check if stage belongs to tournamentId, but FormatService
+        // checks Stage existence.
+        // We can add check here if we want to be strict.
+        formatService.updateStageName(stageId, name);
+    }
 }

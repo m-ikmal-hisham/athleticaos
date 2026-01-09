@@ -67,4 +67,6 @@ public interface TournamentService {
 
         TournamentResponse updateStatus(UUID id, com.athleticaos.backend.enums.TournamentStatus status,
                         jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        void updateStage(UUID tournamentId, UUID stageId, String name);
 }

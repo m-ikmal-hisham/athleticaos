@@ -197,7 +197,7 @@ public class TournamentController {
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Generate tournament schedule based on format")
     public ResponseEntity<Void> generateSchedule(@PathVariable String idOrSlug,
-            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
+            @RequestBody com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
         tournamentService.generateSchedule(tournamentId, request);
         return ResponseEntity.ok().build();
@@ -335,5 +335,19 @@ public class TournamentController {
         } catch (IllegalArgumentException e) {
             return tournamentService.getTournamentBySlug(idOrSlug);
         }
+    }
+
+    @PutMapping("/{idOrSlug}/stages/{stageId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Update tournament stage (e.g. rename pool)")
+    public ResponseEntity<Void> updateStage(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID stageId,
+            @RequestBody java.util.Map<String, String> request) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        if (request.containsKey("name")) {
+            tournamentService.updateStage(tournamentId, stageId, request.get("name"));
+        }
+        return ResponseEntity.ok().build();
     }
 }

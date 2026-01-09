@@ -311,9 +311,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                                         onClick={(e) => openEditModal(match, e)}
                                                     >
                                                         <div className="flex justify-between items-center text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                            <span>{match.homeTeam?.name || 'TBD'}</span>
+                                                            <span className="truncate max-w-[40%]" title={match.homeTeam?.name || match.homeTeamPlaceholder}>{match.homeTeam?.name || match.homeTeamPlaceholder || 'TBD'}</span>
                                                             <span className="text-xs text-slate-400">vs</span>
-                                                            <span>{match.awayTeam?.name || 'TBD'}</span>
+                                                            <span className="truncate max-w-[40%] text-right" title={match.awayTeam?.name || match.awayTeamPlaceholder}>{match.awayTeam?.name || match.awayTeamPlaceholder || 'TBD'}</span>
                                                         </div>
                                                         <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Clock className="w-3 h-3" />
@@ -494,8 +494,8 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
             <div className="flex items-center justify-between gap-4">
                 {/* Home */}
                 <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
-                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.homeTeam?.name}>
-                        {match.homeTeam?.name || 'TBD'}
+                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.homeTeam?.name || match.homeTeamPlaceholder}>
+                        {match.homeTeam?.name || match.homeTeamPlaceholder || 'TBD'}
                     </span>
                     <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Home</span>
                 </div>
@@ -515,8 +515,8 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
 
                 {/* Away */}
                 <div className="flex-1 flex flex-col items-end gap-1 min-w-0 text-right">
-                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.awayTeam?.name}>
-                        {match.awayTeam?.name || 'TBD'}
+                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.awayTeam?.name || match.awayTeamPlaceholder}>
+                        {match.awayTeam?.name || match.awayTeamPlaceholder || 'TBD'}
                     </span>
                     <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Away</span>
                 </div>

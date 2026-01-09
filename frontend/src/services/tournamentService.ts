@@ -112,6 +112,10 @@ export const tournamentService = {
         });
     },
 
+    async updateStage(id: string, stageId: string, data: { name: string }): Promise<void> {
+        await axios.put(`/tournaments/${id}/stages/${stageId}`, data);
+    },
+
     // Refactoring generateSchedule to include categoryId if needed
     async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean, categoryId?: string, includePlacementStages?: boolean): Promise<void> {
         await axios.post(`/tournaments/${id}/format/generate`, {

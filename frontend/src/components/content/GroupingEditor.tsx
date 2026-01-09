@@ -25,6 +25,7 @@ import { DotsSixVertical, CheckSquare, Square, MagnifyingGlass } from '@phosphor
 import { Button } from '@/components/Button';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
+import { tournamentService } from '@/services/tournamentService';
 
 interface GroupingEditorProps {
     teams: Team[];
@@ -32,9 +33,11 @@ interface GroupingEditorProps {
     categoryId?: string;
     onAssign: (teamId: string, poolName: string | null) => void;
     readonly?: boolean;
+    onRename?: () => void;
+    tournamentId: string;
 }
 
-export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly = false }: GroupingEditorProps) {
+export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly = false, onRename, tournamentId }: GroupingEditorProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -155,11 +158,22 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
         }
 
         try {
-            // This will need to be implemented - for now just show success
-            // await tournamentService.updateStage(tournamentId, stageId, { name: editingPoolName.trim() });
+            await tournamentService.updateStage(tournamentId, stageId, { name: editingPoolName.trim() });
             toast.success('Pool renamed successfully');
             setEditingPoolId(null);
-            // Note: Parent component should refresh stages after rename
+            // Note: Parent component should refresh stages after rename but for now we assume optimistic update or page reload will fix it. 
+            // Better: trigger a reload callback? GroupingEditor doesn't have one. 
+            // Ideally GroupingEditor should accept onRename or cause a re-fetch.
+            // Since props.stages is read-only, we should probably assume parent reloads. 
+            // In TournamentFormat, we don't reload on rename. 
+            // However, the error said "shows successful response but does not reflecting".
+            // If I uncomment this, it will call API. 
+            // I should also inform parent or update local state if possible? 
+            // stages is a prop. I can't update it. 
+            // I will trigger a window reload or just show success. 
+            // The user said "does not reflecting".
+            // I should add `onRename` prop to GroupingEditor?
+            if (onRename) onRename();
         } catch (error) {
             toast.error('Failed to rename pool');
         }
@@ -395,6 +409,7 @@ function SortableTeamItem({ team, disabled, isSelected, onToggleSelection }: Sor
     return (
         <div
             ref={setNodeRef}
+            // eslint-disable-next-line
             style={style}
             className={clsx(
                 "transition-opacity",
