@@ -51,6 +51,10 @@ export interface PublicMatchSummary {
     code?: string;
     homeTeamName: string;
     awayTeamName: string;
+    homeTeamLogoUrl?: string;
+    awayTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamShortName?: string;
     homeScore?: number;
     awayScore?: number;
     matchDate: string;
@@ -82,6 +86,7 @@ export interface PublicMatchEvent {
     playerName?: string;
     eventType: string;
     points?: number;
+    notes?: string; // Added for substitutions validation
 }
 
 export interface PublicTeamStats {
@@ -96,6 +101,8 @@ export interface PublicStanding {
     poolName: string;
     teamId: string;
     teamName: string;
+    teamLogoUrl?: string;
+    teamShortName?: string;
     played: number;
     won: number;
     drawn: number;
@@ -113,8 +120,8 @@ export const publicTournamentApi = {
         return response.data;
     },
 
-    getTournamentById: async (id: string): Promise<PublicTournamentDetail> => {
-        const response = await publicApi.get(`/tournaments/${id}`);
+    getTournament: async (idOrSlug: string): Promise<PublicTournamentDetail> => {
+        const response = await publicApi.get(`/tournaments/${idOrSlug}`);
         return response.data;
     },
 
@@ -128,8 +135,8 @@ export const publicTournamentApi = {
         return response.data;
     },
 
-    getMatchById: async (matchId: string): Promise<PublicMatchDetail> => {
-        const response = await publicApi.get(`/matches/${matchId}`);
+    getMatch: async (idOrSlug: string): Promise<PublicMatchDetail> => {
+        const response = await publicApi.get(`/matches/${idOrSlug}`);
         return response.data;
     },
 };

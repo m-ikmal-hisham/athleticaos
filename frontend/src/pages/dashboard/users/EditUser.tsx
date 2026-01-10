@@ -5,6 +5,7 @@ import { Input } from '@/components/Input';
 import { usersApi, UserUpdateRequest } from '@/api/users.api';
 import { useOrganisationsStore } from '@/store/organisations.store';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
+import { ImageUpload } from '@/components/common/ImageUpload';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/PageHeader';
 import { GlassCard } from '@/components/GlassCard';
@@ -34,6 +35,7 @@ export const EditUser = () => {
         country: string;
         stateCode: string;
         countryCode: string;
+        avatarUrl: string;
     }>({
         firstName: '',
         lastName: '',
@@ -47,7 +49,8 @@ export const EditUser = () => {
         state: '',
         country: '',
         stateCode: '',
-        countryCode: 'MY'
+        countryCode: 'MY',
+        avatarUrl: ''
     });
 
     const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPER_ADMIN');
@@ -82,7 +85,8 @@ export const EditUser = () => {
                     state: initialData.state || '',
                     country: initialData.country || '',
                     stateCode: initialData.stateCode || '',
-                    countryCode: initialData.countryCode || 'MY'
+                    countryCode: initialData.countryCode || 'MY',
+                    avatarUrl: initialData.avatarUrl || ''
                 });
 
                 if (isSuperAdmin) {
@@ -130,7 +134,8 @@ export const EditUser = () => {
                 city: formData.city,
                 postcode: formData.postcode,
                 state: formData.state,
-                country: formData.country
+                country: formData.country,
+                avatarUrl: formData.avatarUrl
             };
 
             await usersApi.updateUser(id, updateRequest);
@@ -167,6 +172,14 @@ export const EditUser = () => {
 
             <GlassCard className="max-w-3xl mx-auto p-8">
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="flex justify-center mb-6">
+                        <ImageUpload
+                            value={formData.avatarUrl}
+                            onChange={(url) => setFormData(prev => ({ ...prev, avatarUrl: url }))}
+                            label="Profile Photo"
+                            className="w-32"
+                        />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <Input
                             label="First Name"

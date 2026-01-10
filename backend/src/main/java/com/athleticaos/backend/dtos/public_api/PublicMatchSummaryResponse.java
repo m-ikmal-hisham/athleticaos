@@ -18,6 +18,10 @@ public class PublicMatchSummaryResponse {
     private String code;
     private String homeTeamName;
     private String awayTeamName;
+    private String homeTeamLogoUrl;
+    private String awayTeamLogoUrl;
+    private String homeTeamShortName;
+    private String awayTeamShortName;
     private Integer homeScore;
     private Integer awayScore;
     private LocalDate matchDate;

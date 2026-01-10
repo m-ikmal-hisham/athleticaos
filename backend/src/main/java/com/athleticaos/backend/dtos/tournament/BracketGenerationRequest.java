@@ -1,7 +1,7 @@
 package com.athleticaos.backend.dtos.tournament;
 
 import com.athleticaos.backend.enums.TournamentFormat;
-import jakarta.validation.constraints.Min;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +18,6 @@ public class BracketGenerationRequest {
 
     private TournamentFormat format;
 
-    @Min(value = 1, message = "Number of pools must be at least 1")
     private Integer numberOfPools; // used for ROUND_ROBIN or MIXED
 
     private Boolean includePlacementStages; // Plate/Bowl etc., optional

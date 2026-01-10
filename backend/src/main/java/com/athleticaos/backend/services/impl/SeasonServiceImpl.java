@@ -28,12 +28,12 @@ public class SeasonServiceImpl implements SeasonService {
 
     @Override
     public List<Season> getAllSeasons() {
-        return seasonRepository.findAll();
+        return seasonRepository.findByDeletedFalse();
     }
 
     @Override
     public List<Season> getActiveSeasons() {
-        return seasonRepository.findByStatus(SeasonStatus.ACTIVE);
+        return seasonRepository.findByStatusAndDeletedFalse(SeasonStatus.ACTIVE);
     }
 
     @Override
@@ -86,6 +86,15 @@ public class SeasonServiceImpl implements SeasonService {
         Season season = getSeasonById(id);
         season.setStatus(SeasonStatus.valueOf(status));
         return seasonRepository.save(season);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSeason(UUID id) {
+        log.info("Deleting season (soft): {}", id);
+        Season season = getSeasonById(id);
+        season.setDeleted(true);
+        seasonRepository.save(season);
     }
 
     @Override

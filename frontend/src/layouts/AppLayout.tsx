@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight, Wrench, Globe, Gavel, Eye, ShieldWarning, ChartLine, CurrencyDollar } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,68 +16,147 @@ interface NavItem {
     roles?: string[]; // Optional roles for role-based visibility
 }
 
-const navItems: NavItem[] = [
+interface NavSection {
+    title?: string;
+    items: NavItem[];
+    roles?: string[];
+}
+
+const navSections: NavSection[] = [
     {
-        label: 'Dashboard',
-        path: '/dashboard',
-        icon: <House className="w-5 h-5" />,
-        iconFilled: <House className="w-5 h-5" weight="fill" />
+        title: "Menu",
+        items: [
+            {
+                label: 'Dashboard',
+                path: '/dashboard',
+                icon: <House className="w-5 h-5" />,
+                iconFilled: <House className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Users',
+                path: '/dashboard/users',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+            },
+            {
+                label: 'Players',
+                path: '/dashboard/players',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Teams',
+                path: '/dashboard/teams',
+                icon: <UsersThree className="w-5 h-5" />,
+                iconFilled: <UsersThree className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Organisations',
+                path: '/dashboard/organisations',
+                icon: <Buildings className="w-5 h-5" />,
+                iconFilled: <Buildings className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Competitions',
+                path: '/dashboard/competitions',
+                icon: <Medal className="w-5 h-5" />,
+                iconFilled: <Medal className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Tournaments',
+                path: '/dashboard/tournaments',
+                icon: <Trophy className="w-5 h-5" />,
+                iconFilled: <Trophy className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Matches',
+                path: '/dashboard/matches',
+                icon: <CalendarBlank className="w-5 h-5" />,
+                iconFilled: <CalendarBlank className="w-5 h-5" weight="fill" />
+            }
+        ]
     },
     {
-        label: 'Users',
-        path: '/dashboard/users',
-        icon: <Users className="w-5 h-5" />,
-        iconFilled: <Users className="w-5 h-5" weight="fill" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+        title: "Federation",
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+        items: [
+            {
+                label: 'Dashboard',
+                path: '/dashboard/federation/dashboard',
+                icon: <Globe className="w-5 h-5" />,
+                iconFilled: <Globe className="w-5 h-5" weight="fill" />,
+            },
+            {
+                label: 'Sanctioning',
+                path: '/dashboard/federation/sanctioning',
+                icon: <Gavel className="w-5 h-5" />,
+                iconFilled: <Gavel className="w-5 h-5" weight="fill" />,
+            },
+            {
+                label: 'Oversight',
+                path: '/dashboard/federation/oversight',
+                icon: <Eye className="w-5 h-5" />,
+                iconFilled: <Eye className="w-5 h-5" weight="fill" />,
+            },
+            {
+                label: 'Discipline',
+                path: '/dashboard/federation/discipline',
+                icon: <ShieldWarning className="w-5 h-5" />,
+                iconFilled: <ShieldWarning className="w-5 h-5" weight="fill" />,
+            }
+        ]
     },
     {
-        label: 'Players',
-        path: '/dashboard/players',
-        icon: <Users className="w-5 h-5" />,
-        iconFilled: <Users className="w-5 h-5" weight="fill" />
+        title: "Analysis",
+        items: [
+            {
+                label: 'Stats & Leaderboards',
+                path: '/dashboard/stats',
+                icon: <ChartBar className="w-5 h-5" />,
+                iconFilled: <ChartBar className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Analytics',
+                path: '/dashboard/analytics/teams',
+                icon: <ChartLine className="w-5 h-5" />,
+                iconFilled: <ChartLine className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+            }
+        ]
     },
     {
-        label: 'Teams',
-        path: '/dashboard/teams',
-        icon: <UsersThree className="w-5 h-5" />,
-        iconFilled: <UsersThree className="w-5 h-5" weight="fill" />
-    },
-    {
-        label: 'Organisations',
-        path: '/dashboard/organisations',
-        icon: <Buildings className="w-5 h-5" />,
-        iconFilled: <Buildings className="w-5 h-5" weight="fill" />
-    },
-    {
-        label: 'Competitions',
-        path: '/dashboard/competitions',
-        icon: <Medal className="w-5 h-5" />,
-        iconFilled: <Medal className="w-5 h-5" weight="fill" />
-    },
-    {
-        label: 'Tournaments',
-        path: '/dashboard/tournaments',
-        icon: <Trophy className="w-5 h-5" />,
-        iconFilled: <Trophy className="w-5 h-5" weight="fill" />
-    },
-    {
-        label: 'Matches',
-        path: '/dashboard/matches',
-        icon: <CalendarBlank className="w-5 h-5" />,
-        iconFilled: <CalendarBlank className="w-5 h-5" weight="fill" />
-    },
-    {
-        label: 'Stats & Leaderboards',
-        path: '/dashboard/stats',
-        icon: <ChartBar className="w-5 h-5" />,
-        iconFilled: <ChartBar className="w-5 h-5" weight="fill" />
-    },
-    {
-        label: 'Activity & Logs',
-        path: '/dashboard/activity',
-        icon: <ActivityIcon className="w-5 h-5" />,
-        iconFilled: <ActivityIcon className="w-5 h-5" weight="fill" />
-    },
+        title: "Operations",
+        items: [
+            {
+                label: 'Operations',
+                path: '/dashboard/operations',
+                icon: <Wrench className="w-5 h-5" />,
+                iconFilled: <Wrench className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']
+            },
+            {
+                label: 'Officials',
+                path: '/dashboard/officials',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN']
+            },
+            {
+                label: 'Monetization',
+                path: '/dashboard/monetization/subscriptions',
+                icon: <CurrencyDollar className="w-5 h-5" />,
+                iconFilled: <CurrencyDollar className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+            },
+            {
+                label: 'Activity & Logs',
+                path: '/dashboard/activity',
+                icon: <ActivityIcon className="w-5 h-5" />,
+                iconFilled: <ActivityIcon className="w-5 h-5" weight="fill" />
+            }
+        ]
+    }
 ];
 
 import { useBrandingStore } from '@/store/branding.store';
@@ -162,16 +241,16 @@ export const AppLayout = () => {
             <aside
                 className={clsx(
                     'fixed z-50 transition-all duration-300',
-                    isCollapsed ? 'w-20' : 'w-72', // Width transition
+                    isCollapsed ? 'w-20' : 'w-60', // Width transition - narrower (240px)
                     'p-0 flex flex-col',
                     'border border-white/10 dark:border-white/5',
                     'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]',
-                    'lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[20px]',
+                    'lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[24px]',
                     'lg:translate-x-0',
                     sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                <div className="relative flex flex-col h-full bg-white/10 dark:bg-black/10 backdrop-blur-[2px] backdrop-saturate-[180%] rounded-[20px] overflow-hidden">
+                <div className="relative flex flex-col h-full bg-white/40 dark:bg-black/40 backdrop-blur-xl backdrop-saturate-[180%] rounded-[24px] overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl">
 
                     {/* Toggle Button (Desktop Only) */}
 
@@ -204,7 +283,7 @@ export const AppLayout = () => {
                                 <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
                                     AthleticaOS
                                 </span>
-                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mt-0.5 whitespace-nowrap">
+                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mt-0.5 whitespace-nowrap">
                                     Manager
                                 </span>
                             </div>
@@ -226,59 +305,71 @@ export const AppLayout = () => {
                             "hidden lg:flex w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-md items-center justify-center text-xs border border-slate-200 dark:border-slate-700 z-50 text-slate-500 hover:text-blue-600 transition-all duration-300 mb-2",
                             isCollapsed
                                 ? "relative mx-auto" // In flow when collapsed
-                                : "absolute top-8 right-6" // Floating when expanded
+                                : "absolute top-8 right-5" // Floating when expanded
                         )}
                     >
                         {isCollapsed ? <CaretRight weight="bold" /> : <CaretLeft weight="bold" />}
                     </button>
 
                     {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto px-2 py-2 custom-scrollbar">
-                        <ul className="space-y-1">
-                            {navItems.map((item) => {
-                                if (item.roles && item.roles.length > 0 && !item.roles.some(role => user?.roles?.includes(role))) {
-                                    return null;
-                                }
+                    <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
+                        {navSections.map((section, sectionIndex) => (
+                            <div key={section.title || sectionIndex} className={clsx("mb-6", isCollapsed && "mb-4")}>
+                                {section.title && !isCollapsed && (
+                                    <h3 className="px-3 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-2">
+                                        {section.title}
+                                    </h3>
+                                )}
+                                <ul className="space-y-0.5">
+                                    {section.items.map((item) => {
+                                        if (item.roles && item.roles.length > 0 && !item.roles.some(role => user?.roles?.includes(role))) {
+                                            return null;
+                                        }
 
-                                const isActive = location.pathname === item.path;
-                                return (
-                                    <li key={item.path}>
-                                        <Link
-                                            to={item.path}
-                                            onClick={() => setSidebarOpen(false)}
-                                            className={clsx(
-                                                'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
-                                                isCollapsed ? 'justify-center py-3 px-2' : 'px-4 py-3 mx-2',
-                                                isActive
-                                                    ? 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20'
-                                                    : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
-                                            )}
-                                        >
-                                            <span className={clsx("shrink-0", isActive ? "text-white" : "")}>
-                                                {isActive ? item.iconFilled : item.icon}
-                                            </span>
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <li key={item.path}>
+                                                <Link
+                                                    to={item.path}
+                                                    onClick={() => setSidebarOpen(false)}
+                                                    className={clsx(
+                                                        'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
+                                                        isCollapsed ? 'justify-center py-3 px-2' : 'px-3 py-1.5 mx-0',
+                                                        isActive
+                                                            ? 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 font-medium'
+                                                            : 'text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
+                                                    )}
+                                                >
+                                                    <span className={clsx("shrink-0", isActive ? "text-white" : "text-slate-400 dark:text-slate-500 group-hover:text-foreground")}>
+                                                        {isActive ? item.iconFilled : item.icon}
+                                                    </span>
 
-                                            {!isCollapsed && (
-                                                <span className="text-sm tracking-wide whitespace-nowrap overflow-hidden transition-all duration-300 delay-75">
-                                                    {item.label}
-                                                </span>
-                                            )}
+                                                    {!isCollapsed && (
+                                                        <span className="text-sm tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300">
+                                                            {item.label}
+                                                        </span>
+                                                    )}
 
-                                            {/* Tooltip for collapsed state */}
-                                            {isCollapsed && (
-                                                <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                                                    {item.label}
-                                                </div>
-                                            )}
-                                        </Link>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                                    {/* Tooltip for collapsed state */}
+                                                    {isCollapsed && (
+                                                        <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                                            {item.label}
+                                                        </div>
+                                                    )}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                {isCollapsed && sectionIndex < navSections.length - 1 && (
+                                    <div className="mx-2 my-2 border-b border-white/5" />
+                                )}
+                            </div>
+                        ))}
                     </nav>
 
                     {/* Bottom Section: Theme + Notifications + Profile */}
-                    <div className={clsx("m-4 mt-0 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 transition-all duration-300", isCollapsed ? "p-2" : "p-4")}>
+                    <div className={clsx("m-3 mt-0 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 transition-all duration-300", isCollapsed ? "p-2" : "p-3")}>
                         {!isCollapsed && (
                             <div className="text-[10px] text-muted-foreground px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
                                 <span>System</span>
@@ -302,15 +393,15 @@ export const AppLayout = () => {
                                 isCollapsed ? "justify-center p-1" : "gap-3 p-2"
                             )}
                         >
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
-                                <span className="font-bold text-white text-xs">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
+                                <span className="font-bold text-white text-[10px]">
                                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                                 </span>
                             </div>
                             {!isCollapsed && (
                                 <>
                                     <div className="flex-1 text-left overflow-hidden">
-                                        <p className="text-sm font-semibold text-foreground truncate leading-tight">
+                                        <p className="text-xs font-semibold text-foreground truncate leading-tight">
                                             {user?.firstName} {user?.lastName}
                                         </p>
                                         <p className="text-[10px] text-muted-foreground truncate">
@@ -327,8 +418,8 @@ export const AppLayout = () => {
 
             {/* Main Content */}
             <div className={clsx(
-                "flex-1 flex flex-col min-h-screen transition-all duration-300",
-                isCollapsed ? "lg:ml-[100px]" : "lg:ml-[320px]" // Adjusted margin for collapsed state
+                "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
+                isCollapsed ? "lg:ml-[100px]" : "lg:ml-[260px]" // Adjusted margin for wider sidebar
             )}>
                 {/* Topbar - Mobile Only */}
                 <header className="sticky top-0 z-30 glass-card border-b border-white/10 lg:hidden rounded-none">
@@ -350,7 +441,7 @@ export const AppLayout = () => {
                 </header>
 
                 {/* Page Content Container - Centered */}
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full">
+                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden">
                     <div className="max-w-7xl mx-auto w-full pb-32"> {/* Increased bottom padding for pill */}
                         <Outlet />
                     </div>
@@ -359,7 +450,8 @@ export const AppLayout = () => {
                 {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
                 <div className={clsx(
                     "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
-                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[320px]"
+                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[260px]",
+                    location.pathname.startsWith('/dashboard/matches/') ? "opacity-0 invisible" : "opacity-100 visible"
                 )}>
                     <div className="pointer-events-auto w-full max-w-3xl px-6">
                         <TournamentPill />

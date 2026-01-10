@@ -27,8 +27,8 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UserResponse>> getAllUsers(@RequestParam(required = false) UUID organisationId) {
+        return ResponseEntity.ok(userService.getAllUsers(organisationId));
     }
 
     @GetMapping("/{id}")
@@ -83,7 +83,7 @@ public class UserController {
     public ResponseEntity<List<PlayerResponse>> getUsersByRole(@RequestParam String role) {
         // Only support PLAYER role for now
         if ("PLAYER".equalsIgnoreCase(role)) {
-            return ResponseEntity.ok(playerService.getAllPlayers());
+            return ResponseEntity.ok(playerService.getAllPlayers(null, null));
         }
         return ResponseEntity.ok(List.of());
     }

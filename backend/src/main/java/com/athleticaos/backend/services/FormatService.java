@@ -21,4 +21,6 @@ public interface FormatService {
     void clearSchedule(UUID tournamentId);
 
     void clearSchedule(UUID tournamentId, boolean clearStructure);
+
+    void updateStageName(UUID stageId, String name);
 }

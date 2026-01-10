@@ -1,5 +1,0 @@
-.sortableItem {
-    transform: var(--dnd-transform);
-    transition: var(--dnd-transition);
-    touch-action: none;
-}

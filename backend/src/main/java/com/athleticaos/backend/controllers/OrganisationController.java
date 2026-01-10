@@ -77,6 +77,14 @@ public class OrganisationController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> deleteOrganisation(@PathVariable UUID id) {
+        log.info("Admin deleting organisation: {}", id);
+        organisationService.deleteOrganisation(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/hierarchy/countries")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<OrganisationResponse>> getCountries() {

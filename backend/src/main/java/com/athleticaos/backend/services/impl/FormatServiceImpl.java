@@ -39,51 +39,101 @@ public class FormatServiceImpl implements FormatService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId).stream()
-                .filter(TournamentTeam::isActive)
-                .filter(team -> request.getCategoryId() == null
-                        || (team.getCategory() != null && team.getCategory().getId().equals(request.getCategoryId())))
-                .collect(Collectors.toList());
-
-        if (teams.size() < 2) {
-            throw new RuntimeException("Need at least 2 teams to generate a schedule");
-        }
-
         // Update tournament format settings
         tournament.setFormat(request.getFormat());
         tournament.setNumberOfPools(request.getNumberOfPools());
         tournamentRepository.save(tournament);
 
+        // Unified logic for using existing groups
+        if (Boolean.TRUE.equals(request.getUseExistingGroups())) {
+            generateMatchesForExistingGroups(tournament, request);
+
+            // If format involves knockout (POOL_TO_KNOCKOUT/MIXED) and we reused pools,
+            // we might need to ensure knockout stages exist.
+            // For now, we trust the existing structure or assume user will generate
+            // knockout later.
+            // (Future improvement: check for knockout stages and generate if missing)
+            return;
+        }
+
         if (request.getFormat() == TournamentFormat.ROUND_ROBIN) {
-            if (Boolean.TRUE.equals(request.getUseExistingGroups())) {
-                generateMatchesForExistingGroups(tournament, request);
+            List<TournamentTeam> allTeams = tournamentTeamRepository.findByTournamentId(tournamentId);
+            List<TournamentTeam> teams;
+
+            if (request.getTeamIds() != null && !request.getTeamIds().isEmpty()) {
+                // Filter by provided Team IDs
+                teams = allTeams.stream()
+                        .filter(tt -> request.getTeamIds().contains(tt.getTeam().getId()))
+                        .filter(TournamentTeam::isActive)
+                        .collect(Collectors.toList());
             } else {
-                int poolCount = request.getNumberOfPools() != null && request.getNumberOfPools() > 0
-                        ? request.getNumberOfPools()
-                        : 1;
+                // Filter by Category
+                teams = allTeams.stream()
+                        .filter(TournamentTeam::isActive)
+                        .filter(team -> request.getCategoryId() == null
+                                || (team.getCategory() != null
+                                        && team.getCategory().getId().equals(request.getCategoryId())))
+                        .collect(Collectors.toList());
+            }
 
-                // 1. Generate Structure (Create Stages/Pools)
-                List<TournamentStage> stages = generateStructure(tournament, poolCount, request);
+            log.info("Found {} active teams for Round Robin generation (Category: {}, Explicit IDs: {})",
+                    teams.size(),
+                    request.getCategoryId(),
+                    request.getTeamIds() != null ? request.getTeamIds().size() : "None");
 
-                // 2. Assign Teams (Auto-distribute)
-                assignTeamsToPools(teams, stages);
+            if (teams.size() < 2) {
+                throw new IllegalArgumentException("Need at least 2 teams to generate a schedule (Found " + teams.size()
+                        + "). If using existing pools, ensure 'Preserve manual pool assignments' is checked.");
+            }
 
-                // 3. Generate Matches
-                for (TournamentStage stage : stages) {
-                    List<TournamentTeam> poolTeams = teams.stream()
-                            .filter(t -> stage.getName().equals(t.getPoolNumber()))
-                            .collect(Collectors.toList());
-                    if (!poolTeams.isEmpty()) {
-                        generateRoundRobinMatches(tournament, stage, poolTeams, request);
-                    }
+            int poolCount = request.getNumberOfPools() != null && request.getNumberOfPools() > 0
+                    ? request.getNumberOfPools()
+                    : 1;
+
+            // 1. Generate Structure (Create Stages/Pools)
+            List<TournamentStage> stages = generateStructure(tournament, poolCount, request);
+
+            // 2. Assign Teams (Auto-distribute)
+            assignTeamsToPools(teams, stages);
+
+            // 3. Generate Matches
+            for (TournamentStage stage : stages) {
+                List<TournamentTeam> poolTeams = teams.stream()
+                        .filter(t -> stage.getName().equals(t.getPoolNumber()))
+                        .collect(Collectors.toList());
+                if (!poolTeams.isEmpty()) {
+                    generateRoundRobinMatches(tournament, stage, poolTeams, request);
                 }
             }
         } else if (request.getFormat() == TournamentFormat.KNOCKOUT
                 || request.getFormat() == TournamentFormat.POOL_TO_KNOCKOUT
                 || request.getFormat() == TournamentFormat.MIXED) {
 
-            // Populate team IDs if missing (required by bracketService)
+            // For Knockout, we usually need teams to populate the bracket
+            // Fetch teams if not provided in request
             if (request.getTeamIds() == null || request.getTeamIds().isEmpty()) {
+                List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId).stream()
+                        .filter(TournamentTeam::isActive)
+                        .filter(team -> request.getCategoryId() == null
+                                || (team.getCategory() != null
+                                        && team.getCategory().getId().equals(request.getCategoryId())))
+                        .collect(Collectors.toList());
+
+                log.info("Found {} active teams for Bracket generation (Category: {})", teams.size(),
+                        request.getCategoryId());
+
+                if (teams.isEmpty()) {
+                    // Check if there are ANY teams in the tournament to give a better error
+                    long totalTeams = tournamentTeamRepository.findByTournamentId(tournamentId).size();
+                    if (totalTeams > 0) {
+                        throw new IllegalArgumentException(
+                                "Found 0 teams matching the criteria (Active + Category). Total teams in tournament: "
+                                        + totalTeams + ". Check category filters.");
+                    } else {
+                        throw new IllegalArgumentException("No teams found in tournament. Please add teams first.");
+                    }
+                }
+
                 List<UUID> teamIds = teams.stream()
                         .map(tt -> tt.getTeam().getId())
                         .collect(Collectors.toList());
@@ -242,6 +292,32 @@ public class FormatServiceImpl implements FormatService {
             for (TournamentTeam team : teams) {
                 if (team.getPoolNumber() != null) {
                     team.setPoolNumber(null);
+                    tournamentTeamRepository.save(team);
+                }
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public void updateStageName(UUID stageId, String name) {
+        TournamentStage stage = stageRepository.findById(stageId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Stage not found"));
+
+        String oldName = stage.getName();
+        if (oldName.equals(name))
+            return;
+
+        stage.setName(name);
+        stageRepository.save(stage);
+
+        // If this is a pool, update team assignments
+        if (stage.getStageType() == TournamentStageType.POOL) {
+            List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(stage.getTournament().getId());
+            for (TournamentTeam team : teams) {
+                if (oldName.equals(team.getPoolNumber())) {
+                    team.setPoolNumber(name);
                     tournamentTeamRepository.save(team);
                 }
             }

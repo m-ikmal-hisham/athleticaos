@@ -12,8 +12,8 @@ export const fetchMatchesByTournament = (tournamentId: string) => {
     return api.get(`/matches/by-tournament/${tournamentId}`);
 };
 
-export const fetchMatchById = (id: string) => {
-    return api.get(`/matches/${id}`);
+export const fetchMatch = (idOrSlug: string) => {
+    return api.get(`/matches/${idOrSlug}`);
 };
 
 // Match events
@@ -26,6 +26,11 @@ export const createMatchEvent = (matchId: string, body: any) => {
     return api.post(`/matches/${matchId}/events`, body);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateMatchEvent = (eventId: string, body: any) => {
+    return api.put(`/matches/events/${eventId}`, body);
+};
+
 export const deleteMatchEvent = (eventId: string) => {
     return api.delete(`/matches/events/${eventId}`);
 };
@@ -33,6 +38,14 @@ export const deleteMatchEvent = (eventId: string) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const updateMatch = (id: string, data: any) => {
     return api.put(`/matches/${id}`, data);
+};
+
+export const deleteMatch = (matchId: string) => {
+    return api.delete(`/matches/${matchId}`);
+};
+
+export const deleteMatches = (ids: string[]) => {
+    return api.delete(`/matches/batch`, { data: ids });
 };
 
 // Soft delete (cancel match)

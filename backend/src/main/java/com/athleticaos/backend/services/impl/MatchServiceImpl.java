@@ -3,6 +3,8 @@ package com.athleticaos.backend.services.impl;
 import com.athleticaos.backend.dtos.match.MatchCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.match.MatchUpdateRequest;
+import com.athleticaos.backend.dtos.match.MatchValidationDTO;
+import com.athleticaos.backend.dtos.match.OperationsDashboardDTO;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
@@ -36,11 +38,24 @@ public class MatchServiceImpl implements MatchService {
     private final AuditLogger auditLogger;
     private final PlayerSuspensionService suspensionService;
 
+    private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
+    private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
+    private final com.athleticaos.backend.repositories.PlayerSuspensionRepository playerSuspensionRepository;
+    private final com.athleticaos.backend.repositories.MediaAssetRepository mediaAssetRepository;
+    private final com.athleticaos.backend.repositories.EventRepository eventRepository;
+
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches() {
         return getAllMatches(null, null);
     }
+
+    // ... [omitted unchanged methods for brevity in tool call, but must be careful
+    // with offsets if not replacing whole block.
+    // Actually, I should use specific small replace calls for injection and for the
+    // methods to avoid large text matching issues.]
+    // I will replace fields and then separate replace calls for
+    // deleteMatch/deleteMatches.
 
     @Override
     @Transactional(readOnly = true)
@@ -149,16 +164,24 @@ public class MatchServiceImpl implements MatchService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Tournament not found with ID: " + request.getTournamentId()));
 
-        Team homeTeam = teamRepository.findById(request.getHomeTeamId())
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Home Team not found with ID: " + request.getHomeTeamId()));
+        Team homeTeam = null;
+        if (request.getHomeTeamId() != null) {
+            homeTeam = teamRepository.findById(request.getHomeTeamId())
+                    .orElseThrow(
+                            () -> new EntityNotFoundException(
+                                    "Home Team not found with ID: " + request.getHomeTeamId()));
+        }
 
-        Team awayTeam = teamRepository.findById(request.getAwayTeamId())
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Away Team not found with ID: " + request.getAwayTeamId()));
+        Team awayTeam = null;
+        if (request.getAwayTeamId() != null) {
+            awayTeam = teamRepository.findById(request.getAwayTeamId())
+                    .orElseThrow(
+                            () -> new EntityNotFoundException(
+                                    "Away Team not found with ID: " + request.getAwayTeamId()));
+        }
 
-        // Validation: Home team != Away team
-        if (homeTeam.getId().equals(awayTeam.getId())) {
+        // Validation: Home team != Away team (only if both are present)
+        if (homeTeam != null && awayTeam != null && homeTeam.getId().equals(awayTeam.getId())) {
             throw new IllegalArgumentException("Home team and Away team cannot be the same.");
         }
 
@@ -170,6 +193,8 @@ public class MatchServiceImpl implements MatchService {
                 .tournament(tournament)
                 .homeTeam(homeTeam)
                 .awayTeam(awayTeam)
+                .homeTeamPlaceholder(request.getHomeTeamPlaceholder())
+                .awayTeamPlaceholder(request.getAwayTeamPlaceholder())
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
                 .venue(request.getVenue())
@@ -216,10 +241,17 @@ public class MatchServiceImpl implements MatchService {
                     .orElseThrow(() -> new EntityNotFoundException("Home Team not found"));
             match.setHomeTeam(homeTeam);
         }
+        if (request.getHomeTeamPlaceholder() != null) {
+            match.setHomeTeamPlaceholder(request.getHomeTeamPlaceholder());
+        }
+
         if (request.getAwayTeamId() != null) {
             Team awayTeam = teamRepository.findById(request.getAwayTeamId())
                     .orElseThrow(() -> new EntityNotFoundException("Away Team not found"));
             match.setAwayTeam(awayTeam);
+        }
+        if (request.getAwayTeamPlaceholder() != null) {
+            match.setAwayTeamPlaceholder(request.getAwayTeamPlaceholder());
         }
 
         // Set scores first if provided in the request
@@ -259,7 +291,30 @@ public class MatchServiceImpl implements MatchService {
         if (!matchRepository.existsById(id)) {
             throw new EntityNotFoundException("Match not found with ID: " + id);
         }
+        matchEventRepository.deleteByMatchId(id);
+        matchLineupRepository.deleteByMatchId(id);
+        matchOfficialRepository.deleteByMatchId(id);
+        playerSuspensionRepository.deleteByMatchId(id);
+        mediaAssetRepository.deleteByMatchId(id);
+        eventRepository.deleteByLinkedMatchId(id);
+
         matchRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMatches(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        matchEventRepository.deleteByMatchIdIn(ids);
+        matchLineupRepository.deleteByMatchIdIn(ids);
+        matchOfficialRepository.deleteByMatchIdIn(ids);
+        playerSuspensionRepository.deleteByMatchIdIn(ids);
+        mediaAssetRepository.deleteByMatchIdIn(ids);
+        eventRepository.deleteByLinkedMatchIdIn(ids);
+
+        matchRepository.deleteAllById(ids);
     }
 
     private MatchResponse mapToResponse(Match match) {
@@ -278,25 +333,41 @@ public class MatchServiceImpl implements MatchService {
                 .phase(match.getPhase())
                 .matchCode(match.getMatchCode());
 
+        // Populate lineup configuration from tournament format config
+        if (match.getTournament() != null && match.getTournament().getFormatConfig() != null) {
+            builder.startersCount(match.getTournament().getFormatConfig().getStartersCount());
+            builder.maxBenchCount(match.getTournament().getFormatConfig().getMaxBenchCount());
+        } else {
+            // Fallback to XV defaults for backward compatibility
+            builder.startersCount(15);
+            builder.maxBenchCount(8);
+        }
+
         if (match.getHomeTeam() != null) {
             builder.homeTeamId(match.getHomeTeam().getId());
             builder.homeTeamName(match.getHomeTeam().getName());
+            builder.homeTeamLogoUrl(match.getHomeTeam().getLogoUrl());
+            builder.homeTeamShortName(match.getHomeTeam().getShortName());
             if (match.getHomeTeam().getOrganisation() != null) {
                 builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
             }
         } else {
             builder.homeTeamName(match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD");
         }
+        builder.homeTeamPlaceholder(match.getHomeTeamPlaceholder());
 
         if (match.getAwayTeam() != null) {
             builder.awayTeamId(match.getAwayTeam().getId());
             builder.awayTeamName(match.getAwayTeam().getName());
+            builder.awayTeamLogoUrl(match.getAwayTeam().getLogoUrl());
+            builder.awayTeamShortName(match.getAwayTeam().getShortName());
             if (match.getAwayTeam().getOrganisation() != null) {
                 builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
             }
         } else {
             builder.awayTeamName(match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD");
         }
+        builder.awayTeamPlaceholder(match.getAwayTeamPlaceholder());
 
         return builder.build();
     }
@@ -370,5 +441,53 @@ public class MatchServiceImpl implements MatchService {
 
         Match updatedMatch = matchRepository.save(match);
         return mapToResponse(updatedMatch);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsDashboardDTO getOperationsDashboard() {
+        // Reuse getAllMatches to ensure we only count accessible matches
+        List<MatchResponse> allMatches = getAllMatches();
+
+        long live = 0;
+        long pending = 0;
+        long completed = 0;
+        List<MatchValidationDTO> attentionRequired = new java.util.ArrayList<>();
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        for (MatchResponse m : allMatches) {
+            String status = m.getStatus();
+            if ("LIVE".equalsIgnoreCase(status) || "ONGOING".equalsIgnoreCase(status)) {
+                live++;
+            } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                completed++;
+            } else {
+                pending++;
+                // Check if overdue (Scheduled but in the past)
+                if ("SCHEDULED".equalsIgnoreCase(status) && m.getMatchDate() != null) {
+                    java.time.LocalDateTime startDateTime = m.getMatchDate().atTime(
+                            m.getKickOffTime() != null ? m.getKickOffTime() : java.time.LocalTime.MIN);
+
+                    if (startDateTime.isBefore(now)) {
+                        attentionRequired.add(MatchValidationDTO.builder()
+                                .matchId(m.getId())
+                                .matchCode(m.getMatchCode())
+                                .homeTeamName(m.getHomeTeamName())
+                                .awayTeamName(m.getAwayTeamName())
+                                .issues(java.util.Collections.singletonList("Match is SCHEDULED but past start time."))
+                                .build());
+                    }
+                }
+            }
+        }
+
+        return OperationsDashboardDTO.builder()
+                .totalMatches(allMatches.size())
+                .liveMatches(live)
+                .pendingMatches(pending)
+                .completedMatches(completed)
+                .attentionRequired(attentionRequired)
+                .build();
     }
 }

@@ -1,8 +1,11 @@
 import api from "./axios";
 import { PlayerCreateRequest, PlayerUpdateRequest } from "../types";
 
-export const fetchPlayers = () =>
-    api.get("/players");
+export const fetchPlayers = (params?: { teamId?: string; organisationId?: string }) =>
+    api.get("/players", { params });
+
+export const fetchPlayersByOrganisation = (organisationId: string) =>
+    api.get("/players", { params: { organisationId } });
 
 export const createPlayer = (payload: PlayerCreateRequest) =>
     api.post("/players", payload);

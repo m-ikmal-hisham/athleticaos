@@ -1,0 +1,526 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.athleticaos:backend >-----------------------
+[INFO] Building backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.0:run (default-cli) > test-compile @ backend >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 49 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ backend ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ backend ---
+[INFO] Copying 1 resource from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ backend ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] <<< spring-boot:3.2.0:run (default-cli) < test-compile @ backend <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.0:run (default-cli) @ backend ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2026-01-02T18:57:38.637+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.b.AthleticaosBackendApplication      : Starting AthleticaosBackendApplication using Java 17.0.9 with PID 50154 (/Users/futureflash/Desktop/Projects/athleticaos/backend/target/classes started by futureflash in /Users/futureflash/Desktop/Projects/athleticaos/backend)
+2026-01-02T18:57:38.638+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.b.AthleticaosBackendApplication      : The following 1 profile is active: "dev"
+2026-01-02T18:57:39.123+08:00  INFO 50154 --- [athleticaos-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-02T18:57:39.184+08:00  INFO 50154 --- [athleticaos-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 57 ms. Found 31 JPA repository interfaces.
+2026-01-02T18:57:39.543+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-01-02T18:57:39.548+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-02T18:57:39.548+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.16]
+2026-01-02T18:57:39.574+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-01-02T18:57:39.574+08:00  INFO 50154 --- [athleticaos-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 913 ms
+2026-01-02T18:57:39.696+08:00  INFO 50154 --- [athleticaos-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-02T18:57:39.800+08:00  INFO 50154 --- [athleticaos-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@645ba24a
+2026-01-02T18:57:39.801+08:00  INFO 50154 --- [athleticaos-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-02T18:57:39.845+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-01-02T18:57:39.845+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-01-02T18:57:39.845+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-01-02T18:57:39.853+08:00  INFO 50154 --- [athleticaos-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/athleticaos (PostgreSQL 15.15)
+2026-01-02T18:57:39.923+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 108
+2026-01-02T18:57:39.925+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-01-02T18:57:39.979+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-02T18:57:40.008+08:00  INFO 50154 --- [athleticaos-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2026-01-02T18:57:40.023+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-02T18:57:40.127+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-02T18:57:40.744+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-02T18:57:40.993+08:00  INFO 50154 --- [athleticaos-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-02T18:57:41.132+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.b.services.TokenGenerationService    : Incrementing token generation on server startup...
+2026-01-02T18:57:41.160+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+Hibernate: 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+2026-01-02T18:57:41.171+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+Hibernate: 
+    select
+        tg1_0.id,
+        tg1_0.generation,
+        tg1_0.updated_at 
+    from
+        token_generation tg1_0 
+    where
+        tg1_0.id=?
+2026-01-02T18:57:41.188+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    update
+        token_generation 
+    set
+        generation=?,
+        updated_at=? 
+    where
+        id=?
+Hibernate: 
+    update
+        token_generation 
+    set
+        generation=?,
+        updated_at=? 
+    where
+        id=?
+2026-01-02T18:57:41.195+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.b.services.TokenGenerationService    : Token generation incremented to: 324
+2026-01-02T18:57:41.465+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-02T18:57:42.789+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint(s) beneath base path '/actuator'
+2026-01-02T18:57:42.842+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6b0090ca, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@d5ef7c0, org.springframework.security.web.context.SecurityContextHolderFilter@7e75c292, org.springframework.security.web.header.HeaderWriterFilter@4ceb6854, org.springframework.web.filter.CorsFilter@3b44d95f, org.springframework.security.web.authentication.logout.LogoutFilter@250cbcb9, com.athleticaos.backend.security.JwtAuthenticationFilter@5409305f, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@ba1a239, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3a171ac9, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@12bc51f4, org.springframework.security.web.session.SessionManagementFilter@280de5ae, org.springframework.security.web.access.ExceptionTranslationFilter@11db4d00, org.springframework.security.web.access.intercept.AuthorizationFilter@3da1191b]
+2026-01-02T18:57:43.327+08:00  INFO 50154 --- [athleticaos-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-01-02T18:57:43.336+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.b.AthleticaosBackendApplication      : Started AthleticaosBackendApplication in 4.882 seconds (process running for 5.033)
+2026-01-02T18:57:43.401+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.org_level=?
+Hibernate: 
+    select
+        o1_0.id,
+        o1_0.accent_color,
+        o1_0.address_line1,
+        o1_0.address_line2,
+        o1_0.city,
+        o1_0.country_code,
+        o1_0.cover_image_url,
+        o1_0.created_at,
+        o1_0.logo_url,
+        o1_0.name,
+        o1_0.org_level,
+        o1_0.org_type,
+        o1_0.parent_org_id,
+        o1_0.postcode,
+        o1_0.primary_color,
+        o1_0.quaternary_color,
+        o1_0.secondary_color,
+        o1_0.slug,
+        o1_0.state,
+        o1_0.state_code,
+        o1_0.status,
+        o1_0.tertiary_color 
+    from
+        organisations o1_0 
+    where
+        o1_0.org_level=?
+2026-01-02T18:57:43.421+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.b.config.OrganisationSeedConfig      : Organisations already seeded.
+2026-01-02T18:57:43.421+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.backend.config.UserSeedConfig        : Seeding users...
+2026-01-02T18:57:43.423+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:57:43.425+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:57:43.427+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:57:43.428+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:57:43.429+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.name 
+    from
+        roles r1_0 
+    where
+        r1_0.name=?
+2026-01-02T18:57:43.432+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:57:43.442+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:57:43.448+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.backend.config.UserSeedConfig        : Super admin user already exists. Updating credentials and roles to ensure correctness.
+2026-01-02T18:57:43.448+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    where
+        u1_0.email=?
+2026-01-02T18:57:43.450+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+Hibernate: 
+    select
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name 
+    from
+        user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id 
+    where
+        r1_0.user_id=?
+2026-01-02T18:57:43.539+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.full_address_legacy,
+        u1_0.address_line1,
+        u1_0.address_line2,
+        u1_0.avatar_url,
+        u1_0.city,
+        u1_0.country,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.first_name,
+        u1_0.is_active,
+        u1_0.last_name,
+        u1_0.organisation_id,
+        u1_0.password_hash,
+        u1_0.phone,
+        u1_0.postcode,
+        r1_0.user_id,
+        r1_1.id,
+        r1_1.name,
+        u1_0.state,
+        u1_0.updated_at 
+    from
+        users u1_0 
+    left join
+        (user_roles r1_0 
+    join
+        roles r1_1 
+            on r1_1.id=r1_0.role_id) 
+        on u1_0.id=r1_0.user_id 
+    where
+        u1_0.id=?
+2026-01-02T18:57:43.551+08:00 DEBUG 50154 --- [athleticaos-backend] [           main] org.hibernate.SQL                        : 
+    update
+        users 
+    set
+        full_address_legacy=?,
+        address_line1=?,
+        address_line2=?,
+        avatar_url=?,
+        city=?,
+        country=?,
+        email=?,
+        first_name=?,
+        is_active=?,
+        last_name=?,
+        organisation_id=?,
+        password_hash=?,
+        phone=?,
+        postcode=?,
+        state=?,
+        updated_at=? 
+    where
+        id=?
+Hibernate: 
+    update
+        users 
+    set
+        full_address_legacy=?,
+        address_line1=?,
+        address_line2=?,
+        avatar_url=?,
+        city=?,
+        country=?,
+        email=?,
+        first_name=?,
+        is_active=?,
+        last_name=?,
+        organisation_id=?,
+        password_hash=?,
+        phone=?,
+        postcode=?,
+        state=?,
+        updated_at=? 
+    where
+        id=?
+2026-01-02T18:57:43.556+08:00  INFO 50154 --- [athleticaos-backend] [           main] c.a.backend.config.UserSeedConfig        : Super admin updated successfully.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  40.506 s
+[INFO] Finished at: 2026-01-02T18:58:17+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.0:run (default-cli) on project backend: Process terminated with exit code: 137 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

@@ -2,11 +2,13 @@
 import { create } from "zustand";
 import {
     fetchMatches,
-    fetchMatchById,
+    fetchMatch,
     fetchMatchEvents,
     createMatchEvent,
     deleteMatchEvent,
-    updateMatch
+    updateMatch,
+    deleteMatch as deleteMatchApi,
+    deleteMatches as deleteMatchesApi
 } from "../api/matches.api";
 import { fetchPlayers } from "../api/players.api";
 
@@ -23,6 +25,10 @@ export interface MatchItem {
     awayTeamId: string;
     awayTeamOrgId: string;
     awayTeamName: string;
+    homeTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamLogoUrl?: string;
+    awayTeamShortName?: string;
     matchDate: string;      // ISO date
     kickOffTime: string;    // e.g. "16:30:00"
     venue?: string | null;
@@ -31,6 +37,9 @@ export interface MatchItem {
     matchCode?: string | null;
     homeScore?: number;
     awayScore?: number;
+    // Lineup configuration from tournament format
+    startersCount?: number;
+    maxBenchCount?: number;
 }
 
 export interface MatchEventItem {
@@ -43,6 +52,8 @@ export interface MatchEventItem {
     eventType: string;  // "TRY", "CONVERSION", etc.
     minute?: number | null;
     notes?: string | null;
+    createdAt?: string;
+    isLocked?: boolean;
 }
 
 export interface PlayerItem {
@@ -73,6 +84,8 @@ interface MatchState {
     addEvent: (matchId: string, event: Omit<MatchEventItem, "id">) => Promise<void>;
     removeEvent: (eventId: string, matchId: string) => Promise<void>;
     cancelMatch: (matchId: string) => Promise<void>;
+    deleteMatch: (matchId: string) => Promise<void>;
+    deleteMatches: (matchIds: string[]) => Promise<void>;
     loadPlayers: () => Promise<void>;
 }
 
@@ -115,7 +128,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         set({ loadingDetail: true, error: null, selectedMatch: null, events: [] });
         try {
             const [matchRes, eventsRes] = await Promise.all([
-                fetchMatchById(matchId),
+                fetchMatch(matchId),
                 fetchMatchEvents(matchId)
             ]);
             set({ selectedMatch: matchRes.data, events: eventsRes.data });
@@ -196,6 +209,34 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
         } catch (error: any) {
             console.error("Failed to cancel match", error);
             set({ error: "Failed to cancel match" });
+        }
+    },
+
+    deleteMatch: async (matchId) => {
+        try {
+            await deleteMatchApi(matchId);
+            // Remove from local state
+            const { matches } = get();
+            const updatedMatches = matches.filter(m => m.id !== matchId);
+            set({ matches: updatedMatches });
+        } catch (error: any) {
+            console.error("Failed to delete match", error);
+            set({ error: "Failed to delete match" });
+            throw error;
+        }
+    },
+
+    deleteMatches: async (matchIds) => {
+        try {
+            await deleteMatchesApi(matchIds);
+            // Remove from local state
+            const { matches } = get();
+            const updatedMatches = matches.filter(m => !matchIds.includes(m.id));
+            set({ matches: updatedMatches });
+        } catch (error: any) {
+            console.error("Failed to delete matches", error);
+            set({ error: "Failed to delete matches" });
+            throw error;
         }
     }
 }));

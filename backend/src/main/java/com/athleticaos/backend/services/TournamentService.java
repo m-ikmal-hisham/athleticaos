@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface TournamentService {
         List<TournamentResponse> getAllTournaments(String level);
 
+        List<TournamentResponse> getTournamentsBySeason(java.util.UUID seasonId);
+
         List<TournamentResponse> getPublishedTournaments();
 
         TournamentResponse getTournamentById(java.util.UUID id);
@@ -65,4 +67,6 @@ public interface TournamentService {
 
         TournamentResponse updateStatus(UUID id, com.athleticaos.backend.enums.TournamentStatus status,
                         jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        void updateStage(UUID tournamentId, UUID stageId, String name);
 }

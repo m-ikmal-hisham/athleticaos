@@ -2,19 +2,18 @@ import api from "./axios";
 
 export const fetchTournaments = () => api.get("/tournaments");
 
-export const getTournamentById = (id: string) => api.get(`/tournaments/${id}`);
+export const getTournament = (idOrSlug: string) => api.get(`/tournaments/${idOrSlug}`);
 
 export const createTournament = (data: any) => api.post("/tournaments", data);
 
-export const getTournamentDashboard = (id: string) => api.get(`/tournaments/${id}/dashboard`);
+export const getTournamentDashboard = (idOrSlug: string) => api.get(`/tournaments/${idOrSlug}/dashboard`);
 
-export const exportMatches = (id: string) =>
-    api.get(`/tournaments/${id}/export/matches`, { responseType: 'blob' });
+export const exportMatches = (idOrSlug: string) =>
+    api.get(`/tournaments/${idOrSlug}/export/matches`, { responseType: 'blob' });
 
-export const exportResults = (id: string) =>
-    api.get(`/tournaments/${id}/export/results`, { responseType: 'blob' });
+export const exportResults = (idOrSlug: string) =>
+    api.get(`/tournaments/${idOrSlug}/export/results`, { responseType: 'blob' });
 
 export const deleteTournament = (id: string) => api.delete(`/tournaments/${id}`);
 
 export const updateTournament = (id: string, data: any) => api.put(`/tournaments/${id}`, data);
-

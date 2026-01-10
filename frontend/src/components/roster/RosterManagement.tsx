@@ -1,21 +1,32 @@
 import { useState, useEffect } from 'react';
 import { rosterService } from '@/services/rosterService';
 import { TournamentPlayerDTO } from '@/types/roster.types';
-import { Button } from '@/components/Button';
-import { WarningCircle, CheckCircle, ShieldWarning, UserPlus, X } from '@phosphor-icons/react';
+import { WarningCircle, CheckCircle, ShieldWarning, X, Question } from '@phosphor-icons/react';
 import { PlayerSelectionModal } from './PlayerSelectionModal';
+import { Tooltip } from '@/components/ui/Tooltip';
+
+import { ConfirmModal } from '@/components/ConfirmModal';
 
 interface RosterManagementProps {
     tournamentId: string;
     teamId: string;
     teamName: string;
+    isModalOpen: boolean;
+    onModalClose: () => void;
 }
 
-export function RosterManagement({ tournamentId, teamId, teamName }: RosterManagementProps) {
+export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClose }: RosterManagementProps) {
     const [roster, setRoster] = useState<TournamentPlayerDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     useEffect(() => {
         loadRoster();
@@ -40,22 +51,29 @@ export function RosterManagement({ tournamentId, teamId, teamName }: RosterManag
         try {
             await rosterService.addPlayersToRoster(tournamentId, teamId, playerIds);
             await loadRoster();
-            setIsModalOpen(false);
+            onModalClose();
         } catch (err) {
             console.error('Failed to add players:', err);
             // Ideally show a toast notification here
         }
     };
 
-    const handleRemovePlayer = async (tournamentPlayerId: string) => {
-        if (!confirm('Are you sure you want to remove this player from the roster?')) return;
-
-        try {
-            await rosterService.removePlayerFromRoster(tournamentId, tournamentPlayerId);
-            await loadRoster();
-        } catch (err) {
-            console.error('Failed to remove player:', err);
-        }
+    const handleRemovePlayer = (tournamentPlayerId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove Player',
+            message: 'Are you sure you want to remove this player from the roster?',
+            confirmText: 'Remove',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await rosterService.removePlayerFromRoster(tournamentId, tournamentPlayerId);
+                    await loadRoster();
+                } catch (err) {
+                    console.error('Failed to remove player:', err);
+                }
+            }
+        });
     };
 
     if (loading) return <div>Loading roster...</div>;
@@ -63,23 +81,16 @@ export function RosterManagement({ tournamentId, teamId, teamName }: RosterManag
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Roster for {teamName}</h3>
-                <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" />
-                    Add Players
-                </Button>
-            </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
+            <div className="w-full max-w-full overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg max-h-[600px] overflow-y-auto custom-scrollbar relative">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 shadow-sm">
                         <tr className="border-b border-slate-200 dark:border-slate-700">
-                            <th className="py-3 px-4">Player</th>
-                            <th className="py-3 px-4">Number</th>
-                            <th className="py-3 px-4">Eligibility</th>
-                            <th className="py-3 px-4">Status</th>
-                            <th className="py-3 px-4 text-right">Actions</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[30%]">Player</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[15%]">Number</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[25%]">Eligibility</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[20%]">Status</th>
+                            <th className="py-3 px-4 text-right whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[10%]">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,10 +112,19 @@ export function RosterManagement({ tournamentId, teamId, teamName }: RosterManag
                                                 Eligible
                                             </span>
                                         ) : (
-                                            <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-sm" title={player.eligibilityNote}>
-                                                <WarningCircle className="w-4 h-4" />
-                                                Ineligible
-                                            </span>
+                                            <div className="inline-flex items-center gap-2">
+                                                <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-sm">
+                                                    <WarningCircle className="w-4 h-4" />
+                                                    Ineligible
+                                                </span>
+                                                {player.eligibilityNote && (
+                                                    <Tooltip content={player.eligibilityNote} position="right">
+                                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-help">
+                                                            <Question className="w-3 h-3" weight="bold" />
+                                                        </span>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
                                         )}
                                     </td>
                                     <td className="py-3 px-4">
@@ -136,12 +156,22 @@ export function RosterManagement({ tournamentId, teamId, teamName }: RosterManag
             {isModalOpen && (
                 <PlayerSelectionModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={onModalClose}
                     onConfirm={handleAddPlayers}
                     teamId={teamId}
                     existingPlayerIds={roster.map(p => p.playerId)}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 }

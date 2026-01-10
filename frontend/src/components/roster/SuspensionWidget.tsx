@@ -75,9 +75,24 @@ export function SuspensionWidget({ tournamentId }: SuspensionWidgetProps) {
                                     <p className="text-xs text-slate-500 mt-0.5">
                                         {suspension.teamName}
                                     </p>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                        {suspension.reason}
-                                    </p>
+                                    <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                        {/* If we have match info, try to reconstruct a cleaner message or show link */}
+                                        {suspension.matchId && suspension.matchLabel ? (
+                                            <>
+                                                <span>{suspension.reason.split(' in match')[0]} in match </span>
+                                                <a
+                                                    href={`/dashboard/matches/${suspension.matchId}`}
+                                                    className="text-primary hover:underline font-medium"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    {suspension.matchLabel}
+                                                </a>
+                                            </>
+                                        ) : (
+                                            suspension.reason
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="ml-4 text-right">
                                     {suspension.isActive ? (

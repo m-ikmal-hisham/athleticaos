@@ -66,6 +66,18 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .mapToInt(this::getPointsForEvent)
                                 .sum();
 
+                long activeTeams = matches.stream()
+                                .flatMap(m -> java.util.stream.Stream.of(m.getHomeTeam(), m.getAwayTeam()))
+                                .filter(java.util.Objects::nonNull)
+                                .map(com.athleticaos.backend.entities.Team::getId)
+                                .distinct()
+                                .count();
+
+                long activePlayers = matchLineupRepository.findByMatch_Tournament_Id(tournamentId).stream()
+                                .map(l -> l.getPlayer().getId())
+                                .distinct()
+                                .count();
+
                 return new TournamentStatsSummaryResponse(
                                 tournament.getId(),
                                 tournament.getName(),
@@ -74,7 +86,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 totalTries,
                                 totalPoints,
                                 totalYellowCards,
-                                totalRedCards);
+                                totalRedCards,
+                                activeTeams,
+                                activePlayers,
+                                totalPoints);
         }
 
         @Override
@@ -257,10 +272,11 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<PlayerStatsResponse> playerStats = getPlayerStatsForTournament(tournamentId);
                 List<TeamStatsResponse> teamStats = getTeamStatsForTournament(tournamentId);
 
-                // Top Players (Scorers): Tries desc, then Points desc
+                // Top Players (Scorers): Total Points desc, then Tries desc
                 List<PlayerLeaderboardEntry> topPlayers = playerStats.stream()
-                                .sorted(Comparator.comparingInt(PlayerStatsResponse::tries).reversed()
-                                                .thenComparingInt(PlayerStatsResponse::totalPoints).reversed())
+                                .sorted(Comparator.comparingInt(PlayerStatsResponse::totalPoints).reversed()
+                                                .thenComparing(Comparator.comparingInt(PlayerStatsResponse::tries)
+                                                                .reversed()))
                                 .limit(10)
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
@@ -277,7 +293,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<PlayerLeaderboardEntry> topOffenders = playerStats.stream()
                                 .filter(p -> p.redCards() > 0 || p.yellowCards() > 0)
                                 .sorted(Comparator.comparingInt(PlayerStatsResponse::redCards).reversed()
-                                                .thenComparingInt(PlayerStatsResponse::yellowCards).reversed())
+                                                .thenComparing(Comparator.comparingInt(PlayerStatsResponse::yellowCards)
+                                                                .reversed()))
                                 .limit(10)
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
@@ -293,8 +310,11 @@ public class StatisticsServiceImpl implements StatisticsService {
                 // Top Teams: TablePoints desc, Wins desc, PointsDiff desc
                 List<TeamLeaderboardEntry> topTeams = teamStats.stream()
                                 .sorted(Comparator.comparingInt(TeamStatsResponse::tablePoints).reversed()
-                                                .thenComparingInt(TeamStatsResponse::wins).reversed()
-                                                .thenComparingInt(TeamStatsResponse::pointsDifference).reversed())
+                                                .thenComparing(Comparator.comparingInt(TeamStatsResponse::wins)
+                                                                .reversed())
+                                                .thenComparing(Comparator
+                                                                .comparingInt(TeamStatsResponse::pointsDifference)
+                                                                .reversed()))
                                 .map(t -> new TeamLeaderboardEntry(
                                                 t.teamId(),
                                                 t.teamName(),

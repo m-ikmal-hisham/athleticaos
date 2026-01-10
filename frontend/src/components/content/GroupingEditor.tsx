@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     DndContext,
     closestCenter,
@@ -21,9 +22,11 @@ import { CSS } from '@dnd-kit/utilities';
 import { Team, TournamentStageResponse } from '@/types';
 import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
-import { DotsSixVertical } from '@phosphor-icons/react';
+import { DotsSixVertical, CheckSquare, Square, MagnifyingGlass } from '@phosphor-icons/react';
+import { Button } from '@/components/Button';
 import clsx from 'clsx';
-import styles from './GroupingEditor.module.css';
+import toast from 'react-hot-toast';
+import { tournamentService } from '@/services/tournamentService';
 
 interface GroupingEditorProps {
     teams: Team[];
@@ -31,10 +34,21 @@ interface GroupingEditorProps {
     categoryId?: string;
     onAssign: (teamId: string, poolName: string | null) => void;
     readonly?: boolean;
+    onRename?: () => void;
+    tournamentId: string;
 }
 
-export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly = false }: GroupingEditorProps) {
+export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly = false, onRename, tournamentId }: GroupingEditorProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [searchQuery, setSearchQuery] = useState('');
+    const [editingPoolId, setEditingPoolId] = useState<string | null>(null);
+    const [editingPoolName, setEditingPoolName] = useState('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -52,6 +66,10 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
     }, [teams, categoryId]);
 
     const unassignedTeams = relevantTeams.filter(t => !t.poolNumber);
+    const filteredUnassigned = unassignedTeams.filter(t =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.organisationName && t.organisationName.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
     const handleDragStart = (event: DragStartEvent) => {
         if (readonly) return;
@@ -89,6 +107,89 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
         }
     };
 
+    const handleToggleSelection = (teamId: string) => {
+        if (readonly) return;
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(teamId)) next.delete(teamId);
+            else next.add(teamId);
+            return next;
+        });
+    };
+
+    const handleSelectAll = (poolName: string | null) => {
+        const poolTeams = poolName === null
+            ? filteredUnassigned
+            : relevantTeams.filter(t => t.poolNumber === poolName);
+
+        const allSelected = poolTeams.every(t => selectedIds.has(t.id));
+        const next = new Set(selectedIds);
+
+        if (allSelected) {
+            poolTeams.forEach(t => next.delete(t.id));
+        } else {
+            poolTeams.forEach(t => next.add(t.id));
+        }
+        setSelectedIds(next);
+    };
+
+    const handleBulkMove = (targetPoolName: string | null) => {
+        if (readonly || selectedIds.size === 0) return;
+
+        selectedIds.forEach(teamId => {
+            onAssign(teamId, targetPoolName);
+        });
+
+        toast.success(`Moved ${selectedIds.size} team(s)`);
+        setSelectedIds(new Set());
+    };
+
+    const handleStartRenaming = (stageId: string, currentName: string) => {
+        if (readonly) return;
+        setEditingPoolId(stageId);
+        setEditingPoolName(currentName);
+    };
+
+    const handleSaveRename = async (stageId: string) => {
+        if (!editingPoolName.trim()) {
+            toast.error('Pool name cannot be empty');
+            return;
+        }
+
+        // Check for duplicates
+        const isDuplicate = stages.some(s => s.id !== stageId && s.name.toLowerCase() === editingPoolName.trim().toLowerCase());
+        if (isDuplicate) {
+            toast.error('A pool with this name already exists');
+            return;
+        }
+
+        try {
+            await tournamentService.updateStage(tournamentId, stageId, { name: editingPoolName.trim() });
+            toast.success('Pool renamed successfully');
+            setEditingPoolId(null);
+            // Note: Parent component should refresh stages after rename but for now we assume optimistic update or page reload will fix it. 
+            // Better: trigger a reload callback? GroupingEditor doesn't have one. 
+            // Ideally GroupingEditor should accept onRename or cause a re-fetch.
+            // Since props.stages is read-only, we should probably assume parent reloads. 
+            // In TournamentFormat, we don't reload on rename. 
+            // However, the error said "shows successful response but does not reflecting".
+            // If I uncomment this, it will call API. 
+            // I should also inform parent or update local state if possible? 
+            // stages is a prop. I can't update it. 
+            // I will trigger a window reload or just show success. 
+            // The user said "does not reflecting".
+            // I should add `onRename` prop to GroupingEditor?
+            if (onRename) onRename();
+        } catch (error) {
+            toast.error('Failed to rename pool');
+        }
+    };
+
+    const handleCancelRename = () => {
+        setEditingPoolId(null);
+        setEditingPoolName('');
+    };
+
     const activeTeam = activeId ? teams.find(t => t.id === activeId) : null;
 
     return (
@@ -98,25 +199,72 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
+            {/* Bulk Actions Toolbar */}
+            {selectedIds.size > 0 && (
+                <div className="sticky top-4 z-20 bg-primary/10 backdrop-blur-md border border-primary/20 p-3 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-4 mb-4">
+                    <div className="flex items-center gap-2">
+                        <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-bold">{selectedIds.size}</span>
+                        <span className="text-sm font-medium">Selected</span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>Cancel</Button>
+                        <Button size="sm" variant="secondary" onClick={() => handleBulkMove(null)}>Unassign</Button>
+                        {stages.map(stage => (
+                            <Button
+                                key={stage.id}
+                                size="sm"
+                                onClick={() => handleBulkMove(stage.name)}
+                            >
+                                To {stage.name}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Unassigned Column */}
                 <div className="lg:col-span-1 space-y-4">
                     <GlassCard className="h-full border-dashed bg-muted/30">
                         <GlassCardHeader className="py-4">
-                            <GlassCardTitle className="text-sm font-medium flex justify-between items-center">
-                                Unassigned
-                                <Badge variant="secondary">{unassignedTeams.length}</Badge>
-                            </GlassCardTitle>
+                            <div className="flex items-center justify-between">
+                                <GlassCardTitle className="text-sm font-medium flex items-center gap-2">
+                                    Unassigned
+                                    <Badge variant="secondary">{unassignedTeams.length}</Badge>
+                                </GlassCardTitle>
+                                <button
+                                    onClick={() => handleSelectAll(null)}
+                                    className="text-xs text-blue-600 hover:underline"
+                                >
+                                    {unassignedTeams.every(t => selectedIds.has(t.id)) ? 'Deselect All' : 'Select All'}
+                                </button>
+                            </div>
+                            <div className="relative mt-3">
+                                <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <input
+                                    type="text"
+                                    placeholder="Search teams..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-1.5 text-sm bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                                />
+                            </div>
                         </GlassCardHeader>
                         <GlassCardContent className="p-2 min-h-[200px]">
-                            <SortableContext id="unassigned-container" items={unassignedTeams.map(t => t.id)} strategy={rectSortingStrategy}>
+                            <SortableContext id="unassigned-container" items={filteredUnassigned.map(t => t.id)} strategy={rectSortingStrategy}>
                                 <DroppableContainer id="unassigned-container" className="space-y-2 h-full">
-                                    {unassignedTeams.map((team) => (
-                                        <SortableTeamItem key={team.id} team={team} disabled={readonly} />
+                                    {filteredUnassigned.map((team) => (
+                                        <SortableTeamItem
+                                            key={team.id}
+                                            team={team}
+                                            disabled={readonly}
+                                            isSelected={selectedIds.has(team.id)}
+                                            onToggleSelection={() => handleToggleSelection(team.id)}
+                                        />
                                     ))}
-                                    {unassignedTeams.length === 0 && (
+                                    {filteredUnassigned.length === 0 && (
                                         <div className="text-center text-xs text-muted-foreground py-8">
-                                            No unassigned teams
+                                            {searchQuery ? 'No teams match your search' : 'No unassigned teams'}
                                         </div>
                                     )}
                                 </DroppableContainer>
@@ -129,19 +277,75 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                 <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {stages.map((stage) => {
                         const poolTeams = relevantTeams.filter(t => t.poolNumber === stage.name);
+                        const isEditing = editingPoolId === stage.id;
+
                         return (
                             <GlassCard key={stage.id} className="bg-card">
                                 <GlassCardHeader className="py-3 px-4 border-b">
                                     <div className="flex justify-between items-center">
-                                        <h3 className="font-semibold text-sm">{stage.name}</h3>
-                                        <Badge variant="outline" className="text-xs">{poolTeams.length} Teams</Badge>
+                                        <div className="flex items-center gap-2 flex-1">
+                                            {isEditing ? (
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <input
+                                                        type="text"
+                                                        value={editingPoolName}
+                                                        onChange={(e) => setEditingPoolName(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleSaveRename(stage.id);
+                                                            if (e.key === 'Escape') handleCancelRename();
+                                                        }}
+                                                        className="px-2 py-1 text-sm font-semibold border border-primary rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                                                        placeholder="Enter pool name"
+                                                        aria-label="Pool name"
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        onClick={() => handleSaveRename(stage.id)}
+                                                        className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelRename}
+                                                        className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/80"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <h3
+                                                        className="font-semibold text-sm cursor-pointer hover:text-primary transition-colors"
+                                                        onClick={() => handleStartRenaming(stage.id, stage.name)}
+                                                        title="Click to rename"
+                                                    >
+                                                        {stage.name}
+                                                    </h3>
+                                                    <Badge variant="outline" className="text-xs">{poolTeams.length} Teams</Badge>
+                                                </>
+                                            )}
+                                        </div>
+                                        {!isEditing && (
+                                            <button
+                                                onClick={() => handleSelectAll(stage.name)}
+                                                className="text-xs text-blue-600 hover:underline"
+                                            >
+                                                {poolTeams.every(t => selectedIds.has(t.id)) && poolTeams.length > 0 ? 'Deselect All' : 'Select All'}
+                                            </button>
+                                        )}
                                     </div>
                                 </GlassCardHeader>
                                 <GlassCardContent className="p-2 min-h-[150px]">
                                     <SortableContext id={stage.name} items={poolTeams.map(t => t.id)} strategy={rectSortingStrategy}>
                                         <DroppableContainer id={stage.name} className="space-y-2 h-full min-h-[100px]">
                                             {poolTeams.map((team) => (
-                                                <SortableTeamItem key={team.id} team={team} disabled={readonly} />
+                                                <SortableTeamItem
+                                                    key={team.id}
+                                                    team={team}
+                                                    disabled={readonly}
+                                                    isSelected={selectedIds.has(team.id)}
+                                                    onToggleSelection={() => handleToggleSelection(team.id)}
+                                                />
                                             ))}
                                             {poolTeams.length === 0 && (
                                                 <div className="h-full flex items-center justify-center text-xs text-muted-foreground text-center p-4 border-2 border-dashed rounded-lg border-muted/50">
@@ -157,11 +361,14 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                 </div>
             </div>
 
-            <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
-                {activeTeam ? (
-                    <TeamItem team={activeTeam} isOverlay />
-                ) : null}
-            </DragOverlay>
+            {mounted && createPortal(
+                <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
+                    {activeTeam ? (
+                        <TeamItem team={activeTeam} isOverlay />
+                    ) : null}
+                </DragOverlay>,
+                document.body
+            )}
         </DndContext>
     );
 }
@@ -189,9 +396,11 @@ function DroppableContainer({ id, children, className }: { id: string, children:
 interface SortableTeamItemProps {
     team: Team;
     disabled?: boolean;
+    isSelected?: boolean;
+    onToggleSelection?: () => void;
 }
 
-function SortableTeamItem({ team, disabled }: SortableTeamItemProps) {
+function SortableTeamItem({ team, disabled, isSelected, onToggleSelection }: SortableTeamItemProps) {
     const {
         attributes,
         listeners,
@@ -202,33 +411,75 @@ function SortableTeamItem({ team, disabled }: SortableTeamItemProps) {
     } = useSortable({ id: team.id, disabled });
 
     const style = {
-        '--dnd-transform': CSS.Transform.toString(transform),
-        '--dnd-transition': transition,
+        transform: CSS.Transform.toString(transform),
+        transition,
     } as React.CSSProperties;
 
     return (
         <div
             ref={setNodeRef}
+            // eslint-disable-next-line
             style={style}
-            className={clsx(styles.sortableItem, isDragging && "opacity-30")}
-            {...attributes}
-            {...listeners}
+            className={clsx(
+                "transition-opacity",
+                isDragging && "opacity-30"
+            )}
         >
-            <TeamItem team={team} />
+            <TeamItem
+                team={team}
+                isSelected={isSelected}
+                onToggleSelection={onToggleSelection}
+                dragHandleProps={{ ...attributes, ...listeners }}
+                disabled={disabled}
+            />
         </div>
     );
 }
 
-function TeamItem({ team, isOverlay }: { team: Team, isOverlay?: boolean }) {
+function TeamItem({
+    team,
+    isOverlay,
+    isSelected,
+    onToggleSelection,
+    dragHandleProps,
+    disabled
+}: {
+    team: Team;
+    isOverlay?: boolean;
+    isSelected?: boolean;
+    onToggleSelection?: () => void;
+    dragHandleProps?: any;
+    disabled?: boolean;
+}) {
     return (
         <div className={clsx(
-            "p-3 rounded-lg border bg-background shadow-sm flex items-center gap-3 select-none",
+            "p-3 rounded-lg border bg-background shadow-sm flex items-center gap-3 select-none transition-all",
             isOverlay && "cursor-grabbing shadow-xl scale-105 ring-2 ring-primary",
-            !isOverlay && "cursor-grab hover:border-primary/50"
+            !isOverlay && "hover:border-primary/50",
+            isSelected && "ring-2 ring-blue-500 border-blue-500"
         )}>
-            <div className="text-muted-foreground">
-                <DotsSixVertical className="w-4 h-4" />
-            </div>
+            {!disabled && !isOverlay && onToggleSelection && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleSelection(); }}
+                    className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                >
+                    {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-blue-600" weight="fill" />
+                    ) : (
+                        <Square className="w-5 h-5" />
+                    )}
+                </button>
+            )}
+            {!isOverlay && dragHandleProps && (
+                <div {...dragHandleProps} className="text-muted-foreground cursor-grab active:cursor-grabbing">
+                    <DotsSixVertical className="w-4 h-4" />
+                </div>
+            )}
+            {isOverlay && (
+                <div className="text-muted-foreground">
+                    <DotsSixVertical className="w-4 h-4" />
+                </div>
+            )}
             <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{team.name}</div>
                 <div className="text-xs text-muted-foreground truncate">{team.organisationName || 'Unknown Org'}</div>

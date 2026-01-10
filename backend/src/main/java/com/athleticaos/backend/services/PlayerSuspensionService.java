@@ -15,7 +15,8 @@ public interface PlayerSuspensionService {
     /**
      * Creates a new suspension for a player.
      */
-    PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, String reason, int matches);
+    PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, Match match, String reason,
+            int matches);
 
     /**
      * Decrements suspensions for teams involved in a completed match.

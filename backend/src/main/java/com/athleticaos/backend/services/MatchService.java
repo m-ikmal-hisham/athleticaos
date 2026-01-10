@@ -23,6 +23,8 @@ public interface MatchService {
 
         void deleteMatch(UUID id);
 
+        void deleteMatches(List<UUID> ids);
+
         List<MatchResponse> getMatchesByStatus(String status);
 
         void recalculateMatchScores(UUID matchId);
@@ -30,4 +32,6 @@ public interface MatchService {
         MatchResponse updateMatchStatus(UUID id, String status, jakarta.servlet.http.HttpServletRequest httpRequest);
 
         MatchResponse getMatchByCode(String matchCode);
+
+        com.athleticaos.backend.dtos.match.OperationsDashboardDTO getOperationsDashboard();
 }

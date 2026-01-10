@@ -20,6 +20,8 @@ public class TeamCreateRequest {
     @NotBlank(message = "Name is required")
     private String name;
 
+    private String shortName; // Optional, max 5 chars handled by entity/db or validation if needed
+
     @NotBlank(message = "Category is required")
     private String category;
 
@@ -29,4 +31,6 @@ public class TeamCreateRequest {
     private String division; // Optional
 
     private String state; // Optional
+
+    private String logoUrl;
 }

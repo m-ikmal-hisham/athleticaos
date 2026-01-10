@@ -31,6 +31,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     private final TeamRepository teamRepository;
     private final UserService userService;
 
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getAllOrganisations() {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
 
@@ -49,6 +50,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @SuppressWarnings("null")
+    @Transactional(readOnly = true)
     public OrganisationResponse getOrganisationById(UUID id) {
         return organisationRepository.findById(id)
                 .map(this::mapToResponse)
@@ -255,6 +257,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getCountries() {
         return organisationRepository.findByOrgLevel(OrganisationLevel.COUNTRY).stream()
                 .map(this::mapToResponse)
@@ -262,6 +265,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getStates(UUID countryId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.STATE, countryId).stream()
                 .map(this::mapToResponse)
@@ -269,6 +273,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getDivisions(UUID stateId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.DIVISION, stateId).stream()
                 .map(this::mapToResponse)
@@ -276,6 +281,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getDistricts(UUID stateId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.DISTRICT, stateId).stream()
                 .map(this::mapToResponse)
@@ -283,6 +289,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getChildren(UUID parentId) {
         return organisationRepository.findByParentOrgId(parentId).stream()
                 .map(this::mapToResponse)
@@ -290,7 +297,30 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public java.util.Set<UUID> getAllDescendantIds(UUID parentId) {
+        java.util.Set<UUID> descendantIds = new java.util.HashSet<>();
+        java.util.Queue<UUID> queue = new java.util.LinkedList<>();
+
+        queue.add(parentId);
+        descendantIds.add(parentId); // Include self
+
+        while (!queue.isEmpty()) {
+            UUID currentId = queue.poll();
+            List<Organisation> children = organisationRepository.findByParentOrgId(currentId);
+            for (Organisation child : children) {
+                if (!descendantIds.contains(child.getId())) {
+                    descendantIds.add(child.getId());
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return descendantIds;
+    }
+
+    @Override
     @SuppressWarnings("null")
+    @Transactional(readOnly = true)
     public Object getTree(UUID countryId) {
         Organisation country = organisationRepository.findById(countryId)
                 .orElseThrow(() -> new EntityNotFoundException("Country not found"));
@@ -375,5 +405,30 @@ public class OrganisationServiceImpl implements OrganisationService {
             slug = slug + "-" + suffix;
         }
         return slug;
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public void deleteOrganisation(UUID id) {
+        log.info("Deleting organisation: {}", id);
+        Organisation org = organisationRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + id));
+
+        // Check for child organisations
+        List<Organisation> children = organisationRepository.findByParentOrgId(id);
+        if (!children.isEmpty()) {
+            throw new IllegalStateException("Cannot delete organisation because it has " + children.size()
+                    + " sub-organisations. Please delete or move them first.");
+        }
+
+        // Check for teams
+        List<Team> teams = teamRepository.findByOrganisation_IdIn(java.util.Collections.singleton(id));
+        if (!teams.isEmpty()) {
+            throw new IllegalStateException("Cannot delete organisation because it has " + teams.size()
+                    + " teams associated with it. Please delete or move them first.");
+        }
+
+        organisationRepository.delete(org);
     }
 }

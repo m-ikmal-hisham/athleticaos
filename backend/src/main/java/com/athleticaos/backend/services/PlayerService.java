@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PlayerService {
-    List<PlayerResponse> getAllPlayers();
+    List<PlayerResponse> getAllPlayers(UUID organisationId, UUID teamId);
 
     PlayerResponse getPlayerById(UUID id);
 

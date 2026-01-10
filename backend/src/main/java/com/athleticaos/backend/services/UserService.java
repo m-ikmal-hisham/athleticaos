@@ -36,22 +36,61 @@ public class UserService {
     private final AuditLogger auditLogger;
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
+    public List<UserResponse> getAllUsers(UUID organisationId) {
         User currentUser = getCurrentUser();
         java.util.Set<UUID> accessibleOrgIds = resolveAccessibleOrganisationIds(currentUser);
+        java.util.Set<UUID> targetIds = new java.util.HashSet<>();
 
-        List<User> users;
-        if (accessibleOrgIds == null) {
-            users = userRepository.findAll();
-        } else if (accessibleOrgIds.isEmpty()) {
-            users = Collections.emptyList();
+        if (organisationId != null) {
+            // Filter mode
+            targetIds = resolveOrganisationHierarchy(organisationId);
+            if (accessibleOrgIds != null) {
+                targetIds.retainAll(accessibleOrgIds);
+            }
         } else {
-            users = userRepository.findByOrganisation_IdIn(accessibleOrgIds);
+            // Default mode
+            if (accessibleOrgIds != null) {
+                targetIds.addAll(accessibleOrgIds);
+            } else {
+                // Super Admin with no filter
+                return userRepository.findAll().stream()
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList());
+            }
         }
+
+        if (targetIds.isEmpty() && organisationId != null) {
+            return Collections.emptyList();
+        } else if (targetIds.isEmpty() && accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<User> users = userRepository.findByOrganisation_IdIn(targetIds);
 
         return users.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    private java.util.Set<UUID> resolveOrganisationHierarchy(UUID rootId) {
+        java.util.Set<UUID> hierarchy = new java.util.HashSet<>();
+        java.util.Queue<UUID> queue = new java.util.LinkedList<>();
+
+        queue.add(rootId);
+        hierarchy.add(rootId);
+
+        while (!queue.isEmpty()) {
+            UUID currentId = queue.poll();
+            List<com.athleticaos.backend.entities.Organisation> children = organisationRepository
+                    .findByParentOrgId(currentId);
+            for (com.athleticaos.backend.entities.Organisation child : children) {
+                if (!hierarchy.contains(child.getId())) {
+                    hierarchy.add(child.getId());
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return hierarchy;
     }
 
     @Transactional(readOnly = true)
@@ -100,6 +139,10 @@ public class UserService {
             user.setState(request.getState());
         if (request.getCountry() != null)
             user.setCountry(request.getCountry());
+
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
 
         // Update Organisation
         if (request.getOrganisationId() != null) {
@@ -325,6 +368,7 @@ public class UserService {
                 .state(user.getState())
                 .country(user.getCountry())
                 .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

@@ -131,20 +131,20 @@ export default function TournamentsList() {
                             <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10">
                                 <div className="p-6 space-y-4 relative z-10">
                                     {/* Status Badge */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
                                         {tournament.live && (
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium">
-                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
+                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                                                 LIVE
                                             </div>
                                         )}
                                         {tournament.completed && (
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 text-xs font-medium">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
                                                 COMPLETED
                                             </div>
                                         )}
                                         {!tournament.live && !tournament.completed && (
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
                                                 UPCOMING
                                             </div>
                                         )}

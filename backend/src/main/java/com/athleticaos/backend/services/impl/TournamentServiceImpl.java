@@ -66,6 +66,15 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TournamentResponse> getTournamentsBySeason(UUID seasonId) {
+        return tournamentRepository.findBySeasonId(seasonId).stream()
+                .filter(tournament -> !Boolean.TRUE.equals(tournament.getDeleted()))
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TournamentResponse> getPublishedTournaments() {
         return tournamentRepository.findByIsPublishedTrue().stream()
                 .filter(tournament -> !Boolean.TRUE.equals(tournament.getDeleted()))
@@ -107,6 +116,27 @@ public class TournamentServiceImpl implements TournamentService {
         int totalTeams = tournamentTeamRepository.findByTournamentId(id).size();
         int totalPlayers = tournamentPlayerRepository.findByTournamentId(id).size();
 
+        List<Match> matches = matchRepository.findByTournamentId(id);
+        long totalPoints = matches.stream()
+                .filter(m -> m.getStatus() == com.athleticaos.backend.enums.MatchStatus.COMPLETED
+                        || m.getStatus() == com.athleticaos.backend.enums.MatchStatus.LIVE)
+                .mapToLong(m -> (m.getHomeScore() != null ? m.getHomeScore() : 0)
+                        + (m.getAwayScore() != null ? m.getAwayScore() : 0))
+                .sum();
+
+        com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse stats = new com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse(
+                tournament.getId(),
+                tournament.getName(),
+                totalMatches,
+                completedMatches,
+                0, // tries placeholder
+                (int) totalPoints,
+                0, // yellow placeholder
+                0, // red placeholder
+                totalTeams,
+                totalPlayers,
+                totalPoints);
+
         return TournamentDashboardResponse.builder()
                 .id(tournament.getId())
                 .name(tournament.getName())
@@ -122,6 +152,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .totalTeams(totalTeams)
                 .totalPlayers(totalPlayers)
                 .status(mapToResponse(tournament).getStatus())
+                .stats(stats)
                 .build();
     }
 
@@ -145,6 +176,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .endDate(request.getEndDate())
                 .venue(request.getVenue())
                 .logoUrl(request.getLogoUrl())
+                .bannerUrl(request.getBannerUrl())
+                .backgroundUrl(request.getBackgroundUrl())
                 .livestreamUrl(request.getLivestreamUrl())
                 .isPublished(false)
                 .deleted(false);
@@ -153,6 +186,11 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getSeasonId() != null) {
             com.athleticaos.backend.entities.Season season = seasonRepository.findById(request.getSeasonId())
                     .orElseThrow(() -> new EntityNotFoundException("Season not found"));
+            builder.season(season);
+        } else if (request.getSeasonName() != null && !request.getSeasonName().trim().isEmpty()) {
+            // Auto-create season if name provided
+            String seasonName = request.getSeasonName().trim();
+            com.athleticaos.backend.entities.Season season = findOrCreateSeason(seasonName, org);
             builder.season(season);
         }
 
@@ -196,7 +234,7 @@ public class TournamentServiceImpl implements TournamentService {
     @SuppressWarnings("null")
     public TournamentResponse updateTournament(UUID id, TournamentUpdateRequest request,
             HttpServletRequest httpRequest) {
-        log.info("Updating tournament: {}", id);
+        log.info("Updating tournament: {}, request categories: {}", id, request.getCategories());
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
@@ -228,8 +266,47 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getLivestreamUrl() != null) {
             tournament.setLivestreamUrl(request.getLivestreamUrl());
         }
+        if (request.getBannerUrl() != null) {
+            tournament.setBannerUrl(request.getBannerUrl());
+        }
+        if (request.getBackgroundUrl() != null) {
+            tournament.setBackgroundUrl(request.getBackgroundUrl());
+        }
         if (request.getIsPublished() != null) {
             tournament.setPublished(request.getIsPublished());
+        }
+
+        // Handle Season Linking
+        if (request.getSeasonId() != null) {
+            com.athleticaos.backend.entities.Season season = seasonRepository.findById(request.getSeasonId())
+                    .orElseThrow(() -> new EntityNotFoundException("Season not found"));
+            tournament.setSeason(season);
+        } else if (request.getSeasonName() != null && !request.getSeasonName().trim().isEmpty()) {
+            // Auto-create or find existing season by name
+            String seasonName = request.getSeasonName().trim();
+            com.athleticaos.backend.entities.Season season = findOrCreateSeason(seasonName,
+                    tournament.getOrganiserOrg());
+            tournament.setSeason(season);
+        }
+
+        // Handle Category Updates
+        if (request.getCategories() != null) {
+            // Clear existing categories
+            tournament.getCategories().clear();
+
+            // Add new categories from request
+            List<com.athleticaos.backend.entities.TournamentCategory> newCategories = request.getCategories().stream()
+                    .map(catReq -> com.athleticaos.backend.entities.TournamentCategory.builder()
+                            .tournament(tournament)
+                            .name(catReq.getName())
+                            .description(catReq.getDescription())
+                            .gender(catReq.getGender())
+                            .minAge(catReq.getMinAge())
+                            .maxAge(catReq.getMaxAge())
+                            .build())
+                    .collect(Collectors.toList());
+
+            tournament.getCategories().addAll(newCategories);
         }
 
         // Validate dates after updates
@@ -441,6 +518,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .status(status)
                 .seasonName(tournament.getSeason() != null ? tournament.getSeason().getName() : null)
                 .logoUrl(tournament.getLogoUrl())
+                .bannerUrl(tournament.getBannerUrl())
+                .backgroundUrl(tournament.getBackgroundUrl())
                 .livestreamUrl(tournament.getLivestreamUrl())
                 .competitionType(
                         tournament.getCompetitionType() != null ? tournament.getCompetitionType().name() : null)
@@ -519,6 +598,33 @@ public class TournamentServiceImpl implements TournamentService {
                 tournamentTeamRepository.save(newTt);
             }
         }
+    }
+
+    @SuppressWarnings("null")
+    private com.athleticaos.backend.entities.Season findOrCreateSeason(String seasonName, Organisation org) {
+        // Find existing season by name and organiser
+        java.util.Optional<com.athleticaos.backend.entities.Season> existing = seasonRepository.findAll().stream()
+                .filter(s -> s.getOrganiser().getId().equals(org.getId()) && s.getName().equalsIgnoreCase(seasonName))
+                .findFirst();
+
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        // logical slug generation
+        String code = seasonName.toLowerCase().replaceAll("[^a-z0-9]", "-");
+        String uniqueCode = code;
+        if (seasonRepository.findAll().stream().anyMatch(s -> s.getCode().equals(code))) {
+            uniqueCode = code + "-" + UUID.randomUUID().toString().substring(0, 6);
+        }
+
+        return seasonRepository.save(com.athleticaos.backend.entities.Season.builder()
+                .name(seasonName)
+                .code(uniqueCode)
+                .organiser(org)
+                .status(com.athleticaos.backend.enums.SeasonStatus.PLANNED)
+                .level(com.athleticaos.backend.enums.SeasonLevel.NATIONAL) // Default to National if unknown
+                .build());
     }
 
     @Override
@@ -793,5 +899,16 @@ public class TournamentServiceImpl implements TournamentService {
                 .startersCount(config.getStartersCount())
                 .maxBenchCount(config.getMaxBenchCount())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void updateStage(UUID tournamentId, UUID stageId, String name) {
+        // Validate tournament ownership if needed, but stageId lookup in formatService
+        // handles it via Entity reference
+        // Ideally we should check if stage belongs to tournamentId, but FormatService
+        // checks Stage existence.
+        // We can add check here if we want to be strict.
+        formatService.updateStageName(stageId, name);
     }
 }

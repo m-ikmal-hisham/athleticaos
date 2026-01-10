@@ -29,8 +29,14 @@ public class Team {
     @Column(unique = true, length = 255)
     private String slug;
 
+    @Column(name = "logo_url")
+    private String logoUrl;
+
     @Column(nullable = false)
     private String name;
+
+    @Column(name = "short_name", length = 5)
+    private String shortName;
 
     @Column(nullable = false)
     private String category; // MENS, WOMENS, MIXED

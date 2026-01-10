@@ -5,12 +5,14 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { ArrowLeft } from '@phosphor-icons/react';
 import { fetchTournaments } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { createMatch } from '@/api/matches.api';
 import { Team, Tournament } from '@/types';
-import toast from 'react-hot-toast';
+
+import { showToast } from '@/lib/customToast';
 
 export const CreateMatch = () => {
     const navigate = useNavigate();
@@ -40,7 +42,7 @@ export const CreateMatch = () => {
                 setTeams(teamsRes.data as any);
             } catch (error) {
                 console.error("Failed to load form data", error);
-                toast.error("Failed to load options");
+                showToast.error("Failed to load options");
             }
         };
         loadData();
@@ -56,11 +58,11 @@ export const CreateMatch = () => {
 
         try {
             await createMatch(formData);
-            toast.success("Match created successfully");
+            showToast.success("Match created successfully");
             navigate('/dashboard/matches');
         } catch (error: any) {
             console.error('Failed to create match', error);
-            toast.error(error?.response?.data?.message || 'Failed to create match');
+            showToast.error(error?.response?.data?.message || 'Failed to create match');
         } finally {
             setLoading(false);
         }
@@ -83,51 +85,42 @@ export const CreateMatch = () => {
 
                     <div className="space-y-2">
                         <Label>Tournament</Label>
-                        <select
-                            className="w-full h-10 px-3 rounded-md glass-card border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                        <SearchableSelect
                             value={formData.tournamentId}
-                            onChange={(e) => handleChange('tournamentId', e.target.value)}
-                            required
-                            aria-label="Select Tournament"
-                        >
-                            <option value="">Select Tournament</option>
-                            {tournaments.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
+                            onChange={(value) => handleChange('tournamentId', value as string)}
+                            options={[
+                                { value: '', label: 'Select Tournament' },
+                                ...tournaments.map(t => ({ value: t.id, label: t.name }))
+                            ]}
+                            placeholder="Select tournament"
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label>Home Team</Label>
-                            <select
-                                className="w-full h-10 px-3 rounded-md glass-card border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                            <SearchableSelect
                                 value={formData.homeTeamId}
-                                onChange={(e) => handleChange('homeTeamId', e.target.value)}
-                                required
-                                aria-label="Select Home Team"
-                            >
-                                <option value="">Select Home Team</option>
-                                {teams.map(t => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                            </select>
+                                onChange={(value) => handleChange('homeTeamId', value as string)}
+                                options={[
+                                    { value: '', label: 'Select Home Team' },
+                                    ...teams.map(t => ({ value: t.id, label: t.name }))
+                                ]}
+                                placeholder="Select home team"
+                            />
                         </div>
 
                         <div className="space-y-2">
                             <Label>Away Team</Label>
-                            <select
-                                className="w-full h-10 px-3 rounded-md glass-card border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+                            <SearchableSelect
                                 value={formData.awayTeamId}
-                                onChange={(e) => handleChange('awayTeamId', e.target.value)}
-                                required
-                                aria-label="Select Away Team"
-                            >
-                                <option value="">Select Away Team</option>
-                                {teams.map(t => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                            </select>
+                                onChange={(value) => handleChange('awayTeamId', value as string)}
+                                options={[
+                                    { value: '', label: 'Select Away Team' },
+                                    ...teams.map(t => ({ value: t.id, label: t.name }))
+                                ]}
+                                placeholder="Select away team"
+                            />
                         </div>
                     </div>
 

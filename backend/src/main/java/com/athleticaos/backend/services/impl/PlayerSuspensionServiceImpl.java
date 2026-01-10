@@ -38,7 +38,8 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
     @Override
     @Transactional
     @SuppressWarnings("null")
-    public PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, String reason,
+    public PlayerSuspension createSuspension(Tournament tournament, Team team, Player player, Match match,
+            String reason,
             int matches) {
         log.info("Creating suspension for player {} in tournament {}: {}",
                 player.getId(), tournament.getId(), reason);
@@ -47,12 +48,51 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
                 .tournament(tournament)
                 .team(team)
                 .player(player)
+                .match(match)
                 .reason(reason)
                 .matchesRemaining(matches)
                 .isActive(true)
                 .build();
 
         return suspensionRepository.save(suspension);
+    }
+
+    // ... (rest of the file until toDTO)
+
+    private PlayerSuspensionDTO toDTO(PlayerSuspension suspension) {
+        String matchLabel = null;
+        UUID matchId = null;
+
+        if (suspension.getMatch() != null) {
+            matchId = suspension.getMatch().getId();
+            // Construct basic label if possible, or fetch names safely
+            // Using simple concatenation for now as we don't want to trigger N+1 if teams
+            // not fetched
+            // But mapToResponse usually implies transaction or fetch join
+            if (suspension.getMatch().getHomeTeam() != null && suspension.getMatch().getAwayTeam() != null) {
+                matchLabel = suspension.getMatch().getHomeTeam().getName() + " vs "
+                        + suspension.getMatch().getAwayTeam().getName();
+            }
+        }
+
+        return PlayerSuspensionDTO.builder()
+                .id(suspension.getId())
+                .tournamentId(suspension.getTournament().getId())
+                .tournamentName(suspension.getTournament().getName())
+                .teamId(suspension.getTeam().getId())
+                .teamName(suspension.getTeam().getName())
+                .playerId(suspension.getPlayer().getId())
+                .playerName(suspension.getPlayer().getPerson() != null
+                        ? suspension.getPlayer().getPerson().getFirstName() + " " +
+                                suspension.getPlayer().getPerson().getLastName()
+                        : "Unknown Player")
+                .matchId(matchId)
+                .matchLabel(matchLabel)
+                .reason(suspension.getReason())
+                .matchesRemaining(suspension.getMatchesRemaining())
+                .isActive(suspension.isActive())
+                .createdAt(suspension.getCreatedAt())
+                .build();
     }
 
     /**
@@ -150,22 +190,4 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
         return !suspensions.isEmpty();
     }
 
-    private PlayerSuspensionDTO toDTO(PlayerSuspension suspension) {
-        return PlayerSuspensionDTO.builder()
-                .id(suspension.getId())
-                .tournamentId(suspension.getTournament().getId())
-                .tournamentName(suspension.getTournament().getName())
-                .teamId(suspension.getTeam().getId())
-                .teamName(suspension.getTeam().getName())
-                .playerId(suspension.getPlayer().getId())
-                .playerName(suspension.getPlayer().getPerson() != null
-                        ? suspension.getPlayer().getPerson().getFirstName() + " " +
-                                suspension.getPlayer().getPerson().getLastName()
-                        : "Unknown Player")
-                .reason(suspension.getReason())
-                .matchesRemaining(suspension.getMatchesRemaining())
-                .isActive(suspension.isActive())
-                .createdAt(suspension.getCreatedAt())
-                .build();
-    }
 }

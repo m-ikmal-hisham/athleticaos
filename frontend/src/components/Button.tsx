@@ -14,7 +14,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 ref={ref}
                 className={clsx(
                     'btn inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-300',
-                    variant === 'primary' && 'bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-xl hover:shadow-blue-500/30 dark:hover:shadow-red-500/30',
+                    variant === 'primary' && 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-xl hover:shadow-blue-500/30 dark:hover:shadow-red-500/30',
                     variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
                     variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
                     variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',

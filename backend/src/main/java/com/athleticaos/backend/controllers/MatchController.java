@@ -75,10 +75,18 @@ public class MatchController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Delete a match")
     public ResponseEntity<Void> deleteMatch(@PathVariable UUID id) {
         matchService.deleteMatch(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/batch")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete multiple matches")
+    public ResponseEntity<Void> deleteMatches(@RequestBody List<UUID> ids) {
+        matchService.deleteMatches(ids);
         return ResponseEntity.noContent().build();
     }
 
@@ -97,6 +105,13 @@ public class MatchController {
     @Operation(summary = "Check if match can progress to next stage")
     public ResponseEntity<Boolean> canProgress(@PathVariable UUID id) {
         return ResponseEntity.ok(progressionService.canProgress(id));
+    }
+
+    @GetMapping("/operations/dashboard")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @Operation(summary = "Get aggregated operations dashboard data")
+    public ResponseEntity<com.athleticaos.backend.dtos.match.OperationsDashboardDTO> getOperationsDashboard() {
+        return ResponseEntity.ok(matchService.getOperationsDashboard());
     }
 
     // Helper method to fetch match by UUID or matchCode

@@ -1,6 +1,8 @@
 import api from "./axios";
 
-export const fetchTeams = () => api.get("/teams");
+export const fetchTeams = (params?: { organisationId?: string }) => api.get("/teams", { params });
+
+export const fetchTeamsByOrganisation = (organisationId: string) => api.get("/teams", { params: { organisationId } });
 
 export const createTeam = (payload: {
     name: string;
@@ -19,6 +21,8 @@ export const updateTeam = (id: string, payload: {
     state?: string;
     status?: string;
 }) => api.put(`/teams/${id}`, payload);
+
+export const deleteTeam = (id: string) => api.delete(`/teams/${id}`);
 
 export const fetchTeamById = (id: string) => api.get(`/teams/${id}`);
 

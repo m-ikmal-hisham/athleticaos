@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "../Button";
+import { SearchableSelect } from "../SearchableSelect";
 import { AddressInputs, AddressData } from "../AddressInputs";
 import { Modal } from "../Modal";
 import { Player, Gender, DominantSide } from "../../types";
@@ -299,30 +300,31 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">Gender *</label>
-                            <select
+                            <SearchableSelect
                                 value={gender}
-                                onChange={(e) => setGender(e.target.value as Gender)}
-                                className="input-base w-full"
-                                required
-                            >
-                                <option value={Gender.MALE}>Male</option>
-                                <option value={Gender.FEMALE}>Female</option>
-                            </select>
+                                onChange={(value) => setGender(value as Gender)}
+                                options={[
+                                    { value: Gender.MALE, label: 'Male' },
+                                    { value: Gender.FEMALE, label: 'Female' }
+                                ]}
+                                placeholder="Select gender"
+                            />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">Identification Type</label>
-                            <select
+                            <SearchableSelect
                                 value={identificationType}
-                                onChange={(e) => setIdentificationType(e.target.value)}
-                                className="input-base w-full"
-                            >
-                                <option value="IC">IC</option>
-                                <option value="PASSPORT">Passport</option>
-                                <option value="OTHER">Other</option>
-                            </select>
+                                onChange={(value) => setIdentificationType(value as string)}
+                                options={[
+                                    { value: 'IC', label: 'IC' },
+                                    { value: 'PASSPORT', label: 'Passport' },
+                                    { value: 'OTHER', label: 'Other' }
+                                ]}
+                                placeholder="Select ID type"
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">
@@ -386,15 +388,16 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">Status</label>
-                            <select
+                            <SearchableSelect
                                 value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="input-base w-full"
-                            >
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
-                                <option value="BANNED">Banned</option>
-                            </select>
+                                onChange={(value) => setStatus(value as string)}
+                                options={[
+                                    { value: 'ACTIVE', label: 'Active' },
+                                    { value: 'INACTIVE', label: 'Inactive' },
+                                    { value: 'BANNED', label: 'Banned' }
+                                ]}
+                                placeholder="Select status"
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">Height (cm)</label>
@@ -420,27 +423,29 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">Dominant Hand</label>
-                            <select
+                            <SearchableSelect
                                 value={dominantHand}
-                                onChange={(e) => setDominantHand(e.target.value as DominantSide)}
-                                className="input-base w-full"
-                            >
-                                <option value={DominantSide.RIGHT}>Right</option>
-                                <option value={DominantSide.LEFT}>Left</option>
-                                <option value={DominantSide.BOTH}>Both</option>
-                            </select>
+                                onChange={(value) => setDominantHand(value as DominantSide)}
+                                options={[
+                                    { value: DominantSide.RIGHT, label: 'Right' },
+                                    { value: DominantSide.LEFT, label: 'Left' },
+                                    { value: DominantSide.BOTH, label: 'Both' }
+                                ]}
+                                placeholder="Select hand"
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted">Dominant Leg</label>
-                            <select
+                            <SearchableSelect
                                 value={dominantLeg}
-                                onChange={(e) => setDominantLeg(e.target.value as DominantSide)}
-                                className="input-base w-full"
-                            >
-                                <option value={DominantSide.RIGHT}>Right</option>
-                                <option value={DominantSide.LEFT}>Left</option>
-                                <option value={DominantSide.BOTH}>Both</option>
-                            </select>
+                                onChange={(value) => setDominantLeg(value as DominantSide)}
+                                options={[
+                                    { value: DominantSide.RIGHT, label: 'Right' },
+                                    { value: DominantSide.LEFT, label: 'Left' },
+                                    { value: DominantSide.BOTH, label: 'Both' }
+                                ]}
+                                placeholder="Select leg"
+                            />
                         </div>
                     </div>
                 </div>
@@ -459,36 +464,35 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                         <div className="mt-4 space-y-4 p-4 bg-white/5 rounded-lg border border-white/10">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted">Filter by Organisation</label>
-                                <select
+                                <SearchableSelect
                                     value={selectedOrganisationId}
-                                    onChange={(e) => {
-                                        setSelectedOrganisationId(e.target.value);
-                                        setSelectedTeamId(""); // Reset team when org changes
+                                    onChange={(value) => {
+                                        setSelectedOrganisationId(value as string);
+                                        setSelectedTeamId("");
                                     }}
-                                    className="input-base w-full"
-                                >
-                                    <option value="">All Organisations</option>
-                                    {organisations.map(org => (
-                                        <option key={org.id} value={org.id}>{org.name}</option>
-                                    ))}
-                                </select>
+                                    options={[
+                                        { value: '', label: 'All Organisations' },
+                                        ...organisations.map(org => ({ value: org.id, label: org.name }))
+                                    ]}
+                                    placeholder="Select organisation"
+                                />
                             </div>
 
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted">Select Team</label>
-                                <select
+                                <SearchableSelect
                                     value={selectedTeamId}
-                                    onChange={(e) => setSelectedTeamId(e.target.value)}
-                                    className="input-base w-full"
+                                    onChange={(value) => setSelectedTeamId(value as string)}
+                                    options={[
+                                        { value: '', label: 'Choose a team...' },
+                                        ...filteredTeams.map(team => ({
+                                            value: team.id,
+                                            label: `${team.name}${team.organisationName ? ` (${team.organisationName})` : ''}`
+                                        }))
+                                    ]}
+                                    placeholder="Select team"
                                     disabled={teams.length === 0}
-                                >
-                                    <option value="">Choose a team...</option>
-                                    {filteredTeams.map(team => (
-                                        <option key={team.id} value={team.id}>
-                                            {team.name} {team.organisationName && `(${team.organisationName})`}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                                 {teams.length === 0 && <p className="text-xs text-muted">No teams found. Create a team first.</p>}
                             </div>
 

@@ -111,6 +111,8 @@ export interface Team {
     // Tournament context fields (optional)
     poolNumber?: string;
     tournamentCategoryId?: string;
+    logoUrl?: string;
+    shortName?: string;
 }
 
 export interface TeamCreateRequest {
@@ -118,6 +120,8 @@ export interface TeamCreateRequest {
     name: string;
     category: TeamCategory;
     ageGroup: AgeGroup;
+    logoUrl?: string;
+    shortName?: string;
 }
 
 // ============================================
@@ -168,6 +172,7 @@ export interface Player {
     organisationId?: string;
     organisationName?: string;
     teamNames?: string[];
+    photoUrl?: string;
     createdAt: string;
 }
 
@@ -202,6 +207,7 @@ export interface PlayerCreateRequest {
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
+    photoUrl?: string;
 }
 
 export interface PlayerUpdateRequest {
@@ -223,6 +229,7 @@ export interface PlayerUpdateRequest {
     dominantLeg?: string;
     heightCm?: number;
     weightKg?: number;
+    photoUrl?: string;
 }
 
 // ============================================
@@ -264,6 +271,8 @@ export interface Tournament {
     ageGroupLabel?: string;
     categories?: TournamentCategory[];
     logoUrl?: string;
+    bannerUrl?: string;
+    backgroundUrl?: string;
     livestreamUrl?: string;
     organiserBranding?: {
         id: string;
@@ -299,7 +308,37 @@ export interface TournamentCreateRequest {
     venue: string;
     categories?: CreateCategoryRequest[];
     logoUrl?: string;
+    bannerUrl?: string;
+    backgroundUrl?: string;
     livestreamUrl?: string;
+}
+
+export interface TournamentStatsSummary {
+    totalMatches: number;
+    completedMatches: number;
+    totalTeams: number;
+    totalPlayers: number;
+    totalGoals: number;
+}
+
+export interface TournamentDashboardResponse {
+    id: string;
+    name: string;
+    level: TournamentLevel;
+    competitionType: string;
+    ageGrade: boolean;
+    ageGroupLabel?: string;
+    startDate: string;
+    endDate: string;
+    venue: string;
+    totalMatches: number;
+    completedMatches: number;
+    totalTeams: number;
+    totalPlayers: number;
+    status: TournamentStatus;
+    stats: TournamentStatsSummary;
+    seasonName?: string;
+    categories?: TournamentCategory[];
 }
 
 export interface TournamentFormatConfig {
@@ -317,6 +356,7 @@ export interface TournamentFormatConfig {
     pointsBonusLoss?: number;
     startersCount: number;
     maxBenchCount: number;
+    includePlacementStages?: boolean;
 }
 
 // ============================================
@@ -355,6 +395,8 @@ export interface Match {
     status: MatchStatus;
     homeScore?: number;
     awayScore?: number;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -370,11 +412,26 @@ export interface MatchCreateRequest {
     matchCode?: string;
     phase?: string;
     status?: MatchStatus;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
 }
 
 export interface MatchResponse extends Match {
     homeTeamName?: string;
     awayTeamName?: string;
+    homeTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamLogoUrl?: string;
+    awayTeamShortName?: string;
+    homeTeamOrgId?: string;
+    awayTeamOrgId?: string;
+    tournamentName?: string;
+    tournamentSlug?: string;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
+    // Lineup configuration from tournament format
+    startersCount?: number;
+    maxBenchCount?: number;
 }
 
 export interface TournamentStageResponse {
@@ -401,6 +458,8 @@ export interface Standings {
     poolName: string;
     teamId: string;
     teamName: string;
+    teamLogoUrl?: string;
+    teamShortName?: string;
     played: number;
     won: number;
     drawn: number;

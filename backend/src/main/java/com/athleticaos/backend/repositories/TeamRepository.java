@@ -17,4 +17,6 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     java.util.List<Team> findByOrganisation_IdIn(java.util.Set<UUID> orgIds);
 
     java.util.List<Team> findByOrganisationId(UUID organisationId);
+
+    long countByStatus(String status);
 }

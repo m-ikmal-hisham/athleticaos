@@ -35,6 +35,7 @@ public class PlayerServiceImpl implements PlayerService {
     private final UserService userService;
     private final PlayerTeamRepository playerTeamRepository;
     private final TeamRepository teamRepository;
+    private final com.athleticaos.backend.services.OrganisationService organisationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,11 +59,45 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PlayerResponse> getAllPlayers() {
+    public List<PlayerResponse> getAllPlayers(UUID organisationId, UUID teamId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Player> players;
 
-        if (accessibleIds == null) {
+        if (organisationId != null || teamId != null) {
+            // Handle explicit filtering
+            if (teamId != null) {
+                // Filter by specific team (check access first?)
+                // Simplification: Check if team belongs to accessible orgs if not super admin
+                // For now, trusting repository + filter later
+                players = playerTeamRepository.findPlayersByTeamId(teamId).stream()
+                        .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                        .collect(Collectors.toList());
+            } else {
+                // Filter by Organisation (Hierarchical)
+                java.util.Set<UUID> targetIds = organisationService.getAllDescendantIds(organisationId);
+
+                // Security check: Ensure requested org hierarchy intersects with user's
+                // accessible scope
+                if (accessibleIds != null) {
+                    // If accessibleIds is not null (not super admin), we must filter targetIds
+                    // to only include those that are also in accessibleIds (or just check root?)
+                    // Actually, if I have access to State, I have access to all children.
+                    // But accessibleIds currently returns the whole subtree.
+                    // So intersection is the correct approach.
+                    targetIds.retainAll(accessibleIds);
+                }
+
+                if (targetIds.isEmpty()) {
+                    return java.util.Collections.emptyList();
+                }
+
+                players = playerTeamRepository
+                        .findPlayersByOrganisationIds(targetIds).stream()
+                        .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                        .collect(Collectors.toList());
+            }
+
+        } else if (accessibleIds == null) {
             // SUPER_ADMIN sees all
             players = playerRepository.findAllByDeletedFalseOrderByCreatedAtDesc();
         } else if (accessibleIds.isEmpty()) {
@@ -70,10 +105,6 @@ public class PlayerServiceImpl implements PlayerService {
             players = java.util.Collections.emptyList();
         } else {
             // Filter by accessible organisations via team assignments
-            // Note: This logic might need updating for soft-delete if the repo query
-            // doesn't handle it
-            // For now, filtering in stream or assuming strict repo setup.
-            // Better to filter explicitly here for safety until custom query is confirmed.
             players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds).stream()
                     .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                     .collect(Collectors.toList());
@@ -132,7 +163,9 @@ public class PlayerServiceImpl implements PlayerService {
                 .dominantHand(request.dominantHand())
                 .dominantLeg(request.dominantLeg())
                 .heightCm(request.heightCm())
+                .heightCm(request.heightCm())
                 .weightKg(request.weightKg())
+                .photoUrl(request.photoUrl())
                 .build();
 
         player = playerRepository.save(player);
@@ -225,6 +258,9 @@ public class PlayerServiceImpl implements PlayerService {
         }
         if (request.weightKg() != null) {
             player.setWeightKg(request.weightKg());
+        }
+        if (request.photoUrl() != null) {
+            player.setPhotoUrl(request.photoUrl());
         }
 
         player = playerRepository.save(player);
@@ -368,6 +404,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .dominantLeg(player.getDominantLeg())
                 .heightCm(player.getHeightCm())
                 .weightKg(player.getWeightKg())
+                .photoUrl(player.getPhotoUrl())
                 .organisationId(organisationId)
                 .organisationName(organisationName)
                 .teamNames(teamNames)

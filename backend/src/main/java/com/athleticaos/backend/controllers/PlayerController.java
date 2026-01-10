@@ -27,8 +27,10 @@ public class PlayerController {
     private final AuditLogger auditLogger;
 
     @GetMapping
-    public ResponseEntity<List<PlayerResponse>> getAllPlayers() {
-        return ResponseEntity.ok(playerService.getAllPlayers());
+    public ResponseEntity<List<PlayerResponse>> getAllPlayers(
+            @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) UUID teamId) {
+        return ResponseEntity.ok(playerService.getAllPlayers(organisationId, teamId));
     }
 
     @GetMapping("/{idOrSlug}")

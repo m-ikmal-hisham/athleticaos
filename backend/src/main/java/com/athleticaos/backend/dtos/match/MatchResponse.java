@@ -24,6 +24,12 @@ public class MatchResponse {
     private UUID awayTeamId;
     private UUID awayTeamOrgId;
     private String awayTeamName;
+    private String homeTeamLogoUrl;
+    private String homeTeamShortName;
+    private String awayTeamLogoUrl;
+    private String awayTeamShortName;
+    private String homeTeamPlaceholder;
+    private String awayTeamPlaceholder;
     private LocalDate matchDate;
     private LocalTime kickOffTime;
     private String venue;
@@ -37,6 +43,10 @@ public class MatchResponse {
 
     private TeamInfo homeTeam;
     private TeamInfo awayTeam;
+
+    // Lineup configuration from tournament format
+    private Integer startersCount;
+    private Integer maxBenchCount;
 
     @Data
     @Builder

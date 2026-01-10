@@ -19,5 +19,7 @@ public interface SeasonService {
 
     Season updateStatus(UUID id, String status);
 
+    void deleteSeason(UUID id);
+
     SeasonOverviewResponse getSeasonOverview(UUID seasonId);
 }

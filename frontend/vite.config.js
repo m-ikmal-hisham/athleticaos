@@ -23,13 +23,7 @@ export default defineConfig({
     build: {
         chunkSizeWarningLimit: 1000,
         rollupOptions: {
-            output: {
-                manualChunks: {
-                    vendor: ['react', 'react-dom', 'react-router-dom'],
-                    ui: ['lucide-react', 'clsx', 'tailwind-merge', 'react-hot-toast'],
-                    utils: ['axios', 'date-fns', 'zod', 'zustand', 'react-hook-form', '@hookform/resolvers']
-                }
-            }
+            output: {}
         }
     },
 });

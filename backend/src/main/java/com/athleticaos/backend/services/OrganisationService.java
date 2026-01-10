@@ -26,5 +26,9 @@ public interface OrganisationService {
 
     List<OrganisationResponse> getChildren(UUID parentId);
 
+    java.util.Set<UUID> getAllDescendantIds(UUID parentId);
+
     Object getTree(UUID countryId);
+
+    void deleteOrganisation(UUID id);
 }

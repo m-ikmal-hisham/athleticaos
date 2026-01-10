@@ -26,11 +26,11 @@ export const RosterList = ({ players, onPlayerClick, loading }: RosterListProps)
                 </tr>
             </thead>
             <tbody>
-                {players.map((player) => (
+                {players.map((player, index) => (
                     <tr
-                        key={player.id}
+                        key={`${player.id}-${index}`}
                         onClick={() => onPlayerClick?.(String(player.id))}
-                        style={{ cursor: onPlayerClick ? 'pointer' : 'default' }}
+                        className={onPlayerClick ? 'cursor-pointer hover:bg-white/5 transition-colors' : ''}
                     >
                         <td>{player.firstName} {player.lastName}</td>
                         <td>{(player as any).position || '—'}</td>

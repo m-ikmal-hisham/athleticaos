@@ -15,6 +15,8 @@ public class StandingsResponse {
     private String poolName;
     private UUID teamId;
     private String teamName;
+    private String teamLogoUrl;
+    private String teamShortName;
     private int played;
     private int won;
     private int drawn;

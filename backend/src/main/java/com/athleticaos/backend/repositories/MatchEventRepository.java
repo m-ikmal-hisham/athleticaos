@@ -17,6 +17,10 @@ public interface MatchEventRepository extends JpaRepository<MatchEvent, UUID> {
 
     void deleteByMatch_Tournament_Id(UUID tournamentId);
 
+    void deleteByMatchId(UUID matchId);
+
+    void deleteByMatchIdIn(List<UUID> matchIds);
+
     long countByMatchIdAndPlayerIdAndEventType(UUID matchId, UUID playerId,
             com.athleticaos.backend.enums.MatchEventType eventType);
 }

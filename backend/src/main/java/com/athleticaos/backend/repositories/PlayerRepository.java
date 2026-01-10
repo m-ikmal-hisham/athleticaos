@@ -19,4 +19,6 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
     boolean existsBySlug(String slug);
 
     Optional<Player> findBySlug(String slug);
+
+    long countByDeletedFalse();
 }

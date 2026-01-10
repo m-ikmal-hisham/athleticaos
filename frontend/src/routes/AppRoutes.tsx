@@ -8,11 +8,15 @@ import Home from '@/pages/public/Home';
 import TournamentsList from '@/pages/public/TournamentsList';
 import TournamentDetail from '@/pages/public/TournamentDetail';
 import MatchCenter from '@/pages/public/MatchCenter';
+import Contact from '@/pages/public/Contact';
+import HowItWorks from '@/pages/public/HowItWorks';
+import Sponsors from '@/pages/public/Sponsors';
 import { DashboardHome } from '@/pages/dashboard/DashboardHome';
 import Players from '@/pages/dashboard/Players';
 import Teams from '@/pages/dashboard/Teams';
 import TeamDetail from '@/pages/dashboard/teams/TeamDetail';
 import Organisations from '@/pages/dashboard/Organisations';
+import OrganisationDetail from '@/pages/dashboard/organisations/OrganisationDetail';
 import Tournaments from '@/pages/dashboard/Tournaments';
 import Users from '@/pages/dashboard/Users';
 import { CreateUser } from '@/pages/dashboard/users/CreateUser';
@@ -24,7 +28,10 @@ import Profile from '@/pages/dashboard/Profile';
 import { Matches } from '@/pages/dashboard/Matches';
 import { MatchDetail } from '@/pages/dashboard/MatchDetail';
 import Stats from '@/pages/dashboard/Stats';
+import Officials from '@/pages/dashboard/Officials';
 import { Seasons } from '@/pages/dashboard/competitions/Seasons';
+import { CreateSeason } from '@/pages/dashboard/competitions/CreateSeason';
+import { EditSeason } from '@/pages/dashboard/competitions/EditSeason';
 import { SeasonDetail } from '@/pages/dashboard/competitions/SeasonDetail';
 import Activity from '@/pages/dashboard/Activity';
 import TournamentRosters from '@/pages/dashboard/TournamentRosters';
@@ -41,6 +48,19 @@ import { CreateMatch } from '@/pages/dashboard/matches/CreateMatch';
 import { EditMatch } from '@/pages/dashboard/matches/EditMatch';
 import { EditProfile } from '@/pages/dashboard/profile/EditProfile';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import OperationsConsole from '@/pages/admin/operations/OperationsConsole';
+
+import { FederationDashboard } from '@/pages/admin/federation/FederationDashboard';
+import { SanctioningConsole } from '@/pages/admin/federation/SanctioningConsole';
+import { CompetitionOversight } from '@/pages/admin/federation/CompetitionOversight';
+import { ComplianceReports } from '@/pages/admin/federation/ComplianceReports';
+import { DisciplineTrends } from '@/pages/admin/federation/DisciplineTrends';
+import { TeamAnalyticsDashboard } from '@/pages/admin/analytics/TeamAnalyticsDashboard';
+import { DisciplineImpactAnalysis } from '@/pages/admin/analytics/DisciplineImpactAnalysis';
+import { SeasonSummaryReport } from '@/pages/admin/analytics/SeasonSummaryReport';
+import { SponsorPackages } from '@/pages/admin/monetization/SponsorPackages';
+import { SubscriptionManagement } from '@/pages/admin/monetization/SubscriptionManagement';
+import { MediaPortal } from '@/pages/public/MediaPortal';
 
 
 
@@ -64,6 +84,22 @@ export const router = createBrowserRouter([
             {
                 path: '/matches/:matchId',
                 element: <MatchCenter />,
+            },
+            {
+                path: '/contact',
+                element: <Contact />,
+            },
+            {
+                path: '/how-it-works',
+                element: <HowItWorks />,
+            },
+            {
+                path: '/sponsors',
+                element: <Sponsors />,
+            },
+            {
+                path: '/media/matches/:matchId',
+                element: <MediaPortal />,
             },
         ],
     },
@@ -150,6 +186,10 @@ export const router = createBrowserRouter([
                 ),
             },
             {
+                path: 'organisations/:id',
+                element: <OrganisationDetail />,
+            },
+            {
                 path: 'organisations/:id/branding',
                 element: <BrandingSettings />,
             },
@@ -206,8 +246,24 @@ export const router = createBrowserRouter([
                 element: <Seasons />,
             },
             {
+                path: 'competitions/seasons/new',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <CreateSeason />
+                    </AuthGuard>
+                ),
+            },
+            {
                 path: 'competitions/seasons/:id',
                 element: <SeasonDetail />,
+            },
+            {
+                path: 'competitions/seasons/:id/edit',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <EditSeason />
+                    </AuthGuard>
+                ),
             },
             {
                 path: 'tournaments',
@@ -269,10 +325,120 @@ export const router = createBrowserRouter([
                 path: 'activity',
                 element: <Activity />,
             },
+            {
+                path: 'officials',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                        <Officials />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'operations',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                        <OperationsConsole />
+                    </AuthGuard>
+                ),
+            },
+
+            {
+                path: 'federation/dashboard',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <FederationDashboard />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'federation/sanctioning',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <SanctioningConsole />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'federation/oversight',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <CompetitionOversight />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'federation/compliance',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <ComplianceReports />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'federation/discipline',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <DisciplineTrends />
+                    </AuthGuard>
+                ),
+            },
+            // Analytics
+            {
+                path: 'analytics/teams',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <TeamAnalyticsDashboard />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'analytics/impact',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <DisciplineImpactAnalysis />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'analytics/season',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <SeasonSummaryReport />
+                    </AuthGuard>
+                ),
+            },
+            // Monetization
+            {
+                path: 'monetization/sponsors',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <SponsorPackages />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'monetization/subscriptions',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                        <SubscriptionManagement />
+                    </AuthGuard>
+                ),
+            },
         ],
     },
     {
         path: '*',
         element: <NotFoundPage />,
     },
-]);
+], {
+    future: {
+
+        // @ts-ignore
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+        v7_fetcherPersist: true,
+        v7_normalizeFormMethod: true,
+        v7_partialHydration: true,
+        v7_skipActionErrorRevalidation: true,
+    }
+});

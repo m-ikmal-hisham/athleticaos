@@ -90,7 +90,8 @@ export const TournamentPill = () => {
         return (
             <div className={clsx(
                 "relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
-                "bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg",
+                "bg-white/10 dark:bg-black/20",
+                "backdrop-blur-[2px] backdrop-saturate-[150%] border border-white/20 dark:border-white/10 shadow-lg",
                 "w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-blue-500/20">
@@ -108,7 +109,8 @@ export const TournamentPill = () => {
         return (
             <div className={clsx(
                 "relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
-                "bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg",
+                "bg-white/10 dark:bg-black/20",
+                "backdrop-blur-[2px] backdrop-saturate-[150%] border border-white/20 dark:border-white/10 shadow-lg",
                 "w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-gray-500/20">
@@ -136,9 +138,10 @@ export const TournamentPill = () => {
         <div className="relative w-full">
             <div className={clsx(
                 "group relative flex items-center justify-between px-5 py-4 rounded-full", // True Pill shape
-                "bg-white/10 dark:bg-black/10 backdrop-blur-[2px] backdrop-saturate-[180%]", // True Apple Glass: Reduced transparency (30%)
-                "border border-white/20 dark:border-white/10",
-                "shadow-2xl shadow-black/20", // Soft deep shadow
+                "bg-white/10 dark:bg-black/20", // Glass Background (Glass Only, No Tint)
+                "backdrop-blur-[2px] backdrop-saturate-[150%]", // Stronger blur
+                "border border-white/20 dark:border-white/10", // Softer border
+                "shadow-lg shadow-black/10", // Softer shadow
                 "w-full transition-all duration-300 hover:scale-[1.005]"
             )}>
                 {/* Progress Bar (Visual only) - Top Edge - hidden for now to clean up look */}

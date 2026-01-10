@@ -25,14 +25,14 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardStatsResponse getDashboardStats() {
         log.info("Fetching dashboard statistics");
 
-        long totalPlayers = playerRepository.count();
-        long totalTeams = teamRepository.count();
+        long totalPlayers = playerRepository.countByDeletedFalse();
+        long totalTeams = teamRepository.countByStatus("Active");
         long totalMatches = matchRepository.count();
         long totalOrganisations = organisationRepository.count();
 
         // Count active tournaments (LIVE status)
         long activeTournaments = tournamentRepository
-                .countByStatus(com.athleticaos.backend.enums.TournamentStatus.LIVE);
+                .countByStatusAndDeletedFalse(com.athleticaos.backend.enums.TournamentStatus.LIVE);
 
         // Count upcoming matches (scheduled status)
         long upcomingMatches = matchRepository.countByStatus(MatchStatus.SCHEDULED);

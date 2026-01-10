@@ -2,6 +2,7 @@ package com.athleticaos.backend.audit;
 
 import com.athleticaos.backend.dtos.audit.AuditLogEntry;
 import com.athleticaos.backend.entities.*;
+import com.athleticaos.backend.entities.MatchOfficial;
 import com.athleticaos.backend.services.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -95,6 +96,17 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logTeamDeleted(Team team, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TEAM_DELETED")
+                                .entityType("TEAM")
+                                .entityId(team.getId())
+                                .entitySummary(String.format("Team deleted: %s", team.getName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== TOURNAMENT ACTIONS ====================
 
         public void logTournamentCreated(Tournament tournament, HttpServletRequest request) {
@@ -127,8 +139,8 @@ public class AuditLogger {
                                 .entityType("MATCH")
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match created: %s vs %s on %s",
-                                                match.getHomeTeam().getName(),
-                                                match.getAwayTeam().getName(),
+                                                getHomeTeamName(match),
+                                                getAwayTeamName(match),
                                                 match.getMatchDate()))
                                 .build();
 
@@ -141,8 +153,8 @@ public class AuditLogger {
                                 .entityType("MATCH")
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match updated: %s vs %s",
-                                                match.getHomeTeam().getName(),
-                                                match.getAwayTeam().getName()))
+                                                getHomeTeamName(match),
+                                                getAwayTeamName(match)))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -154,10 +166,10 @@ public class AuditLogger {
                                 .entityType("MATCH")
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match score updated: %s %d - %d %s",
-                                                match.getHomeTeam().getName(),
+                                                getHomeTeamName(match),
                                                 match.getHomeScore() != null ? match.getHomeScore() : 0,
                                                 match.getAwayScore() != null ? match.getAwayScore() : 0,
-                                                match.getAwayTeam().getName()))
+                                                getAwayTeamName(match)))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -170,8 +182,8 @@ public class AuditLogger {
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match status changed to %s: %s vs %s",
                                                 match.getStatus(),
-                                                match.getHomeTeam().getName(),
-                                                match.getAwayTeam().getName()))
+                                                getHomeTeamName(match),
+                                                getAwayTeamName(match)))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -297,6 +309,22 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        // ==================== OFFICIAL ACTIONS ====================
+
+        public void logOfficialAssigned(MatchOfficial assignment, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("OFFICIAL_ASSIGNED")
+                                .entityType("MATCH_OFFICIAL")
+                                .entityId(assignment.getId())
+                                .entitySummary(String.format("Official %s assigned as %s to match %s",
+                                                assignment.getOfficial().getUser().getLastName(),
+                                                assignment.getAssignedRole(),
+                                                assignment.getMatch().getMatchCode()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== HELPER METHODS ====================
 
         private String getIpAddress(HttpServletRequest request) {
@@ -316,5 +344,19 @@ public class AuditLogger {
                         return null;
                 }
                 return request.getHeader("User-Agent");
+        }
+
+        private String getHomeTeamName(Match match) {
+                if (match.getHomeTeam() != null) {
+                        return match.getHomeTeam().getName();
+                }
+                return match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD";
+        }
+
+        private String getAwayTeamName(Match match) {
+                if (match.getAwayTeam() != null) {
+                        return match.getAwayTeam().getName();
+                }
+                return match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD";
         }
 }

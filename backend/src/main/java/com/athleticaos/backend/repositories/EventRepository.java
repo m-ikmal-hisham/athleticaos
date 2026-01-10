@@ -8,4 +8,7 @@ import java.util.UUID;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, UUID> {
+    void deleteByLinkedMatchId(UUID linkedMatchId);
+
+    void deleteByLinkedMatchIdIn(java.util.List<UUID> linkedMatchIds);
 }

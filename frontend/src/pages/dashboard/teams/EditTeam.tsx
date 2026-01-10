@@ -3,12 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { ArrowLeft } from '@phosphor-icons/react';
 import { fetchTeamById, updateTeam } from '@/api/teams.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { MALAYSIA_STATES } from '@/constants/malaysia-geo';
 import toast from 'react-hot-toast';
 import { TeamCategory, AgeGroup } from '@/types';
+import { ImageUpload } from '@/components/common/ImageUpload';
 
 export const EditTeam = () => {
     const { id } = useParams<{ id: string }>();
@@ -19,6 +21,8 @@ export const EditTeam = () => {
 
     // Form Stats
     const [name, setName] = useState("");
+    const [shortName, setShortName] = useState("");
+    const [logoUrl, setLogoUrl] = useState("");
     const [organisationId, setOrganisationId] = useState("");
     const [division, setDivision] = useState("");
     const [category, setCategory] = useState<TeamCategory | "">("");
@@ -47,6 +51,8 @@ export const EditTeam = () => {
                 // Populate Form
                 if (teamData) {
                     setName(teamData.name || "");
+                    setShortName(teamData.shortName || "");
+                    setLogoUrl(teamData.logoUrl || "");
                     setOrganisationId(teamData.organisationId || "");
                     setDivision(teamData.division || "");
                     setCategory(teamData.category as TeamCategory || "");
@@ -67,6 +73,7 @@ export const EditTeam = () => {
 
     const validate = () => {
         if (!name.trim()) return "Team name is required";
+        if (shortName && shortName.length > 5) return "Short name must be at most 5 characters";
         if (!organisationId) return "Organisation is required";
         if (!category) return "Category is required";
         if (!ageGroup) return "Age group is required";
@@ -88,6 +95,8 @@ export const EditTeam = () => {
 
         const payload = {
             name,
+            shortName: shortName || undefined,
+            logoUrl: logoUrl || undefined,
             organisationId, // Often immutable for teams but including just in case backend allows transfer
             division,
             category: category as string,
@@ -146,24 +155,41 @@ export const EditTeam = () => {
                                 />
                             </div>
 
+                            <div className="flex justify-center mb-6">
+                                <ImageUpload
+                                    value={logoUrl}
+                                    onChange={setLogoUrl}
+                                    label="Team Logo"
+                                    className="w-32"
+                                />
+                            </div>
+
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Organisation</label>
-                                <select
+                                <label className="text-sm font-medium text-muted-foreground">Short Name (Max 5)</label>
+                                <input
+                                    type="text"
+                                    value={shortName}
+                                    onChange={(e) => setShortName(e.target.value.toUpperCase().slice(0, 5))}
+                                    className="input-base w-full uppercase"
+                                    placeholder="e.g. KLT"
+                                    maxLength={5}
+                                    aria-label="Short Name"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <SearchableSelect
+                                    label="Organisation"
                                     value={organisationId}
-                                    onChange={(e) => setOrganisationId(e.target.value)}
-                                    className="input-base w-full"
-                                    disabled // Disable updating Org if not needed, or enable if backend supports
-                                    aria-label="Select Organisation"
-                                >
-                                    <option value="">Select Organisation</option>
-                                    {organisations
+                                    onChange={(value) => setOrganisationId(value as string)}
+                                    options={organisations
                                         .sort((a, b) => a.name.localeCompare(b.name))
-                                        .map(org => (
-                                            <option key={org.id} value={org.id}>
-                                                {org.name} ({org.type})
-                                            </option>
-                                        ))}
-                                </select>
+                                        .map(org => ({
+                                            value: org.id,
+                                            label: `${org.name} (${org.type})`
+                                        }))}
+                                    disabled
+                                />
                             </div>
                         </div>
 
@@ -173,37 +199,33 @@ export const EditTeam = () => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-muted-foreground">Category *</label>
-                                    <select
-                                        value={category}
-                                        onChange={(e) => setCategory(e.target.value as TeamCategory)}
-                                        className="input-base w-full"
+                                    <SearchableSelect
+                                        label="Category"
                                         required
-                                        aria-label="Select Category"
-                                    >
-                                        <option value="">Select...</option>
-                                        <option value="MEN">Men's</option>
-                                        <option value="WOMEN">Women's</option>
-                                        <option value="MIXED">Mixed</option>
-                                    </select>
+                                        value={category}
+                                        onChange={(value) => setCategory(value as TeamCategory)}
+                                        options={[
+                                            { value: 'MEN', label: "Men's" },
+                                            { value: 'WOMEN', label: "Women's" },
+                                            { value: 'MIXED', label: "Mixed" }
+                                        ]}
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-muted-foreground">Age Group *</label>
-                                    <select
-                                        value={ageGroup}
-                                        onChange={(e) => setAgeGroup(e.target.value as AgeGroup)}
-                                        className="input-base w-full"
+                                    <SearchableSelect
+                                        label="Age Group"
                                         required
-                                        aria-label="Select Age Group"
-                                    >
-                                        <option value="">Select...</option>
-                                        <option value="SENIOR">Open (Senior)</option>
-                                        <option value="U23">Under 23</option>
-                                        <option value="U20">Under 20</option>
-                                        <option value="U18">Under 18</option>
-                                        <option value="U15">Under 15</option>
-                                        <option value="U12">Under 12</option>
-                                    </select>
+                                        value={ageGroup}
+                                        onChange={(value) => setAgeGroup(value as AgeGroup)}
+                                        options={[
+                                            { value: 'SENIOR', label: 'Open (Senior)' },
+                                            { value: 'U23', label: 'Under 23' },
+                                            { value: 'U20', label: 'Under 20' },
+                                            { value: 'U18', label: 'Under 18' },
+                                            { value: 'U15', label: 'Under 15' },
+                                            { value: 'U12', label: 'Under 12' }
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -214,43 +236,31 @@ export const EditTeam = () => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-muted-foreground">Division *</label>
-                                    <select
-                                        value={division}
-                                        onChange={(e) => setDivision(e.target.value)}
-                                        className="input-base w-full"
+                                    <SearchableSelect
+                                        label="Division"
                                         required
-                                        aria-label="Select Division"
-                                    >
-                                        <option value="">Select Division</option>
-                                        <optgroup label="Malaysia Rugby Leagues">
-                                            <option value="Premier">Premier</option>
-                                            <option value="Division 1">Division 1</option>
-                                            <option value="Division 2">Division 2</option>
-                                        </optgroup>
-                                        <optgroup label="Other">
-                                            <option value="State League">State League</option>
-                                            <option value="University">University / IPT</option>
-                                            <option value="School">School / MSSM</option>
-                                            <option value="Development">Development</option>
-                                            <option value="Social">Social</option>
-                                        </optgroup>
-                                    </select>
+                                        value={division}
+                                        onChange={(value) => setDivision(value as string)}
+                                        options={[
+                                            { value: 'Premier', label: 'Premier' },
+                                            { value: 'Division 1', label: 'Division 1' },
+                                            { value: 'Division 2', label: 'Division 2' },
+                                            { value: 'State League', label: 'State League' },
+                                            { value: 'University', label: 'University / IPT' },
+                                            { value: 'School', label: 'School / MSSM' },
+                                            { value: 'Development', label: 'Development' },
+                                            { value: 'Social', label: 'Social' }
+                                        ]}
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-muted-foreground">State *</label>
-                                    <select
-                                        value={state}
-                                        onChange={(e) => setState(e.target.value)}
-                                        className="input-base w-full"
+                                    <SearchableSelect
+                                        label="State"
                                         required
-                                        aria-label="Select State"
-                                    >
-                                        <option value="">Select State</option>
-                                        {MALAYSIA_STATES.map((s) => (
-                                            <option key={s.code} value={s.name}>{s.name}</option>
-                                        ))}
-                                    </select>
+                                        value={state}
+                                        onChange={(value) => setState(value as string)}
+                                        options={MALAYSIA_STATES.map(s => ({ value: s.name, label: s.name }))}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -260,17 +270,16 @@ export const EditTeam = () => {
                                 Status
                             </h3>
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Status</label>
-                                <select
+                                <SearchableSelect
+                                    label="Status"
                                     value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    className="input-base w-full"
-                                    aria-label="Status"
-                                >
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="INACTIVE">Inactive</option>
-                                    <option value="BANNED">Banned</option>
-                                </select>
+                                    onChange={(value) => setStatus(value as string)}
+                                    options={[
+                                        { value: 'ACTIVE', label: 'Active' },
+                                        { value: 'INACTIVE', label: 'Inactive' },
+                                        { value: 'BANNED', label: 'Banned' }
+                                    ]}
+                                />
                             </div>
                         </div>
                     </div>

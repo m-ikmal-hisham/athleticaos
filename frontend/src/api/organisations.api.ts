@@ -68,6 +68,8 @@ export const createOrganisation = (data: OrganisationCreateRequest) => api.post<
 
 export const updateOrganisation = (id: string, data: OrganisationUpdateRequest) => api.put<Organisation>(`/organisations/${id}`, data).then(res => res.data);
 
+export const deleteOrganisation = (id: string) => api.delete(`/organisations/${id}`).then(res => res.data);
+
 // Hierarchy endpoints
 export const getCountries = () => api.get<Organisation[]>("/organisations/hierarchy/countries").then(res => res.data);
 export const getStates = (countryId: string) => api.get<Organisation[]>(`/organisations/hierarchy/states?countryId=${countryId}`).then(res => res.data);
