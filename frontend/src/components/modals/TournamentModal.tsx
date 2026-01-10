@@ -268,16 +268,16 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                         </div>
                         <div className="col-span-3">
                             <label className="text-xs text-muted-foreground mb-1 block">Gender</label>
-                            <select
+                            <SearchableSelect
                                 value={newCategory.gender}
-                                onChange={(e) => setNewCategory(prev => ({ ...prev, gender: e.target.value }))}
-                                className="w-full h-9 px-3 rounded-lg bg-black/5 dark:bg-white/5 border border-white/10 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                title="Gender"
-                            >
-                                <option value="MALE">Male</option>
-                                <option value="FEMALE">Female</option>
-                                <option value="MIXED">Mixed</option>
-                            </select>
+                                onChange={(value) => setNewCategory(prev => ({ ...prev, gender: value as string }))}
+                                options={[
+                                    { value: 'MALE', label: 'Male' },
+                                    { value: 'FEMALE', label: 'Female' },
+                                    { value: 'MIXED', label: 'Mixed' }
+                                ]}
+                                placeholder="Select Gender"
+                            />
                         </div>
                         <div className="col-span-2">
                             <label className="text-xs text-muted-foreground mb-1 block">Min Age</label>

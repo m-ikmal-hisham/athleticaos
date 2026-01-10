@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { showToast } from '@/lib/customToast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface MatchOfficialAssignmentsProps {
     matchId: string;
@@ -125,29 +126,28 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                         <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
                             <h4 className="font-semibold mb-3 text-sm">Assign New Official</h4>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <select
-                                    className="p-2 rounded border border-input bg-background"
-                                    value={newAssignment.officialId}
-                                    onChange={(e) => setNewAssignment({ ...newAssignment, officialId: e.target.value })}
-                                    aria-label="Select Official"
-                                >
-                                    <option value="">Select Official...</option>
-                                    {unassignedOfficials.map(o => (
-                                        <option key={o.id} value={o.id}>
-                                            {o.user.firstName} {o.user.lastName} ({o.primaryRole})
-                                        </option>
-                                    ))}
-                                </select>
-                                <select
-                                    className="p-2 rounded border border-input bg-background"
-                                    value={newAssignment.role}
-                                    onChange={(e) => setNewAssignment({ ...newAssignment, role: e.target.value })}
-                                    aria-label="Select Role"
-                                >
-                                    {ROLE_OPTIONS.map(r => (
-                                        <option key={r.value} value={r.value}>{r.label}</option>
-                                    ))}
-                                </select>
+                                <div className="min-w-[200px]">
+                                    <SearchableSelect
+                                        value={newAssignment.officialId}
+                                        onChange={(value) => setNewAssignment({ ...newAssignment, officialId: value as string })}
+                                        options={[
+                                            { value: '', label: 'Select Official...' },
+                                            ...unassignedOfficials.map(o => ({
+                                                value: o.id,
+                                                label: `${o.user.firstName} ${o.user.lastName} (${o.primaryRole})`
+                                            }))
+                                        ]}
+                                        placeholder="Select Official"
+                                    />
+                                </div>
+                                <div className="min-w-[200px]">
+                                    <SearchableSelect
+                                        value={newAssignment.role}
+                                        onChange={(value) => setNewAssignment({ ...newAssignment, role: value as string })}
+                                        options={ROLE_OPTIONS}
+                                        placeholder="Select Role"
+                                    />
+                                </div>
                                 <div className="flex gap-2">
                                     <Button onClick={handleAssign} disabled={!newAssignment.officialId}>Assign</Button>
                                     <Button variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>

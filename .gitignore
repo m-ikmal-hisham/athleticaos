@@ -7,9 +7,8 @@ out/
 .vscode/
 target/
 
-logs/*
-!logs/archive
-!logs/backendLogs
-!logs/frontendLogs
+logs/
+*.log
+**/*.log
 .DS_Store
 .env

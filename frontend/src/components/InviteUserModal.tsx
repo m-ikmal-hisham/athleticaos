@@ -128,19 +128,17 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
 
                 {isSuperAdmin && (
                     <div>
-                        <label className="block text-sm font-medium mb-2">Organisation</label>
-                        <select
-                            aria-label="Organisation Selection"
-                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                        <SearchableSelect
+                            label="Organisation"
                             value={formData.organisationId}
-                            onChange={(e) => setFormData({ ...formData, organisationId: e.target.value })}
+                            onChange={(value) => setFormData({ ...formData, organisationId: value as string })}
+                            options={[
+                                { value: '', label: 'Select Organisation' },
+                                ...organisations.map(org => ({ value: org.id, label: org.name }))
+                            ]}
+                            placeholder="Select Organisation"
                             required
-                        >
-                            <option value="">Select Organisation</option>
-                            {organisations.map(org => (
-                                <option key={org.id} value={org.id}>{org.name}</option>
-                            ))}
-                        </select>
+                        />
                     </div>
                 )}
 
