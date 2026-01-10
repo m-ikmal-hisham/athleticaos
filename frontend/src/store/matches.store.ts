@@ -40,6 +40,8 @@ export interface MatchItem {
     // Lineup configuration from tournament format
     startersCount?: number;
     maxBenchCount?: number;
+    matchDuration?: number;
+    isOneWayMatch?: boolean;
 }
 
 export interface MatchEventItem {

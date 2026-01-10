@@ -13,7 +13,10 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
     boolean existsByEmail(String email);
 
+    @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE p.icOrPassport = :icOrPassport")
+    boolean existsByIcOrPassport(@org.springframework.data.repository.query.Param("icOrPassport") String icOrPassport);
+
     @org.springframework.data.jpa.repository.Query("SELECT p FROM Person p WHERE p.icOrPassport = :icOrPassport")
     Optional<Person> findByIcOrPassport(
-            @org.springframework.web.bind.annotation.RequestParam("icOrPassport") String icOrPassport);
+            @org.springframework.data.repository.query.Param("icOrPassport") String icOrPassport);
 }

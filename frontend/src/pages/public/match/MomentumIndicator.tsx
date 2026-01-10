@@ -18,12 +18,14 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
 
     // Calculate momentum data
     // Group events into 5-minute buckets
+    // Group events into buckets
     const data = useMemo(() => {
         if (!match.events || match.events.length === 0) return [];
 
+        const maxMinute = match.matchDuration || 80;
+        // Adaptive bucket size: 2 mins for short matches (e.g. 7s), 5 mins for full matches
+        const bucketSize = maxMinute <= 20 ? 2 : 5;
         const buckets: Record<number, number> = {};
-        const bucketSize = 5; // 5-minute intervals
-        const maxMinute = 80; // Standard rugby match time
 
         // Initialize buckets
         for (let i = 0; i <= maxMinute; i += bucketSize) {
@@ -31,20 +33,18 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
         }
 
         // Process events
-        // Simple heuristic: 
-        // Try = 5 momentum points
-        // Penalty/Drop Goal = 3 momentum points
-        // Conversion = 2 momentum points
-        // Yellow Card = -5 momentum points (gives momentum to opponent)
-        // Red Card = -10 momentum points
-
         match.events.forEach((event: PublicMatchEvent) => {
             const minute = event.minute || 0;
             // Find closest bucket
             const bucketKey = Math.floor(minute / bucketSize) * bucketSize;
 
+            // Ensure we don't go out of bounds (e.g. overtime events go into last bucket)
+            const safeKey = bucketKey > maxMinute ? (Math.floor(maxMinute / bucketSize) * bucketSize) : bucketKey;
+
             let momentumValue = 0;
             const isHome = event.teamName === match.homeTeamName;
+
+            // ... (rest of logic is fine)
 
             // Assign weight based on event type
             switch (event.eventType.toUpperCase()) {
@@ -53,28 +53,18 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
                 case 'CONVERSION': momentumValue = 2; break;
                 case 'YELLOW_CARD': momentumValue = -5; break;
                 case 'RED_CARD': momentumValue = -10; break;
-                default: momentumValue = 1; // Generic event (sub, etc) has small impact
+                default: momentumValue = 1;
             }
-
-            // If it's home team event, add to positive side. If away, subtract (unless it's a negative event like a card)
-            // Actually, cards are negative for THAT team, so implies momentum for OTHER team.
-            // Let's simplify:
-            // "Advantage" score: Positive = Home Dominance, Negative = Away Dominance
 
             let impact = momentumValue;
 
-            // Invert logic for negative events like cards
             if (event.eventType.includes('CARD')) {
-                // Card for Home Team -> Momentum shifts to Away (Negative)
-                // Card for Away Team -> Momentum shifts to Home (Positive)
                 if (isHome) {
-                    impact = -Math.abs(momentumValue); // Shift towards Away (negative)
+                    impact = -Math.abs(momentumValue);
                 } else {
-                    impact = Math.abs(momentumValue); // Shift towards Home (positive)
+                    impact = Math.abs(momentumValue);
                 }
             } else {
-                // Scoring event for Home Team -> Positive
-                // Scoring event for Away Team -> Negative
                 if (isHome) {
                     impact = Math.abs(momentumValue);
                 } else {
@@ -82,40 +72,39 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
                 }
             }
 
-            if (buckets[bucketKey] !== undefined) {
-                buckets[bucketKey] += impact;
+            if (buckets[safeKey] !== undefined) {
+                buckets[safeKey] += impact;
             }
         });
 
-        // Convert to array and smooth slightly (running average)
+        // Convert to array
         const rawData: MomentumDataPoint[] = Object.keys(buckets).map(key => ({
             minute: parseInt(key),
             value: buckets[parseInt(key)],
             label: `${key}'`
         }));
 
-        // Smoothing pass (optional, keeping simple for now)
         return rawData;
 
-    }, [match.events, match.homeTeamName]);
+    }, [match.events, match.homeTeamName, match.matchDuration]);
 
     if (data.length === 0) return null;
 
-    // Determine colors
-    const homeColor = match.organiserBranding?.primaryColor || '#3b82f6'; // Default Blue
-    const awayColor = match.organiserBranding?.secondaryColor || '#ef4444'; // Default Red
+    // Helper to get bucket size for tooltip
+    const getBucketSize = () => (match.matchDuration || 80) <= 20 ? 2 : 5;
+    const bucketSize = getBucketSize();
 
-    // Gradient definitions for the chart
+    // Determine colors
+    const homeColor = match.organiserBranding?.primaryColor || '#3b82f6';
+    const awayColor = match.organiserBranding?.secondaryColor || '#ef4444';
+
+    // Gradient definitions
     const gradientOffset = () => {
         const dataMax = Math.max(...data.map((i) => i.value));
         const dataMin = Math.min(...data.map((i) => i.value));
 
-        if (dataMax <= 0) {
-            return 0;
-        }
-        if (dataMin >= 0) {
-            return 1;
-        }
+        if (dataMax <= 0) return 0;
+        if (dataMin >= 0) return 1;
 
         return dataMax / (dataMax - dataMin);
     };
@@ -129,23 +118,14 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
                     <TrendUp className="w-4 h-4 text-blue-500" />
                     Match Momentum
                 </h3>
+                {/* ... Legend ... */}
                 <div className="flex items-center gap-3 text-xs font-medium">
                     <div className="flex items-center gap-1">
-                        <span
-                            className="w-2 h-2 rounded-full"
-                            ref={(el) => {
-                                if (el) el.style.backgroundColor = homeColor;
-                            }}
-                        />
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: homeColor }} />
                         <span className="text-slate-600 dark:text-slate-400">{match.homeTeamName}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <span
-                            className="w-2 h-2 rounded-full"
-                            ref={(el) => {
-                                if (el) el.style.backgroundColor = awayColor;
-                            }}
-                        />
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: awayColor }} />
                         <span className="text-slate-600 dark:text-slate-400">{match.awayTeamName}</span>
                     </div>
                 </div>
@@ -163,10 +143,7 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
                                 <stop offset={off} stopColor={awayColor} stopOpacity={0.6} />
                             </linearGradient>
                         </defs>
-                        <XAxis
-                            dataKey="minute"
-                            hide
-                        />
+                        <XAxis dataKey="minute" hide />
                         <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
                         <Tooltip
                             content={({ active, payload }) => {
@@ -176,7 +153,7 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
                                     const team = val > 0 ? match.homeTeamName : (val < 0 ? match.awayTeamName : 'Neutral');
                                     return (
                                         <div className="bg-slate-900/90 text-white text-xs px-2 py-1 rounded shadow-lg backdrop-blur-sm border border-white/10">
-                                            <p className="font-bold">{min}' - {min + 5}'</p>
+                                            <p className="font-bold">{min}' - {min + bucketSize}'</p>
                                             <p>{team} Dominance</p>
                                         </div>
                                     );

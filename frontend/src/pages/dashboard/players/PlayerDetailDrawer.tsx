@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { X, TrendUp, Medal, Target, Trash } from '@phosphor-icons/react';
 import { fetchPlayerById, fetchPlayerStats } from '../../../api/players.api';
 import { Button } from '../../../components/Button';
@@ -76,13 +77,14 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
         setIsDeleting(true);
         try {
             await deletePlayer(playerId);
+            toast.success('Player deleted successfully');
             // success is handled by closing drawer (logic in store or here)
             // But store logic closes drawer if active player is deleted.
             // We just need to ensure modal closes.
             setShowDeleteConfirm(false);
         } catch (err) {
             console.error('Failed to delete player:', err);
-            // Optional: Show toast error
+            toast.error('Failed to delete player');
         } finally {
             setIsDeleting(false);
         }

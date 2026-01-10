@@ -35,6 +35,14 @@ public class TournamentFormatConfigDTO {
     @Min(1)
     private Integer matchDurationMinutes;
 
+    @Min(0)
+    private Integer bufferTimeMinutes;
+
+    private String carnivalStartTime; // ISO LocalTime string format
+    private String carnivalEndTime;
+
+    private Boolean isOneWayMatch;
+
     // Scoring
     private Integer pointsWin;
     private Integer pointsDraw;

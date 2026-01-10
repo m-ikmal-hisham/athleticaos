@@ -521,6 +521,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .bannerUrl(tournament.getBannerUrl())
                 .backgroundUrl(tournament.getBackgroundUrl())
                 .livestreamUrl(tournament.getLivestreamUrl())
+                .rugbyFormat(
+                        tournament.getFormatConfig() != null ? tournament.getFormatConfig().getRugbyFormat() : null)
                 .competitionType(
                         tournament.getCompetitionType() != null ? tournament.getCompetitionType().name() : null)
                 .categories(tournament.getCategories().stream()
@@ -837,15 +839,14 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        // Validation: Cannot change format if matches are already generated for the
-        // tournament
-        // (unless we decide to allow it by clearing schedule, but requirements say
-        // "LOCKED")
+        // Validation: Matches exist check removed to allow fixing configuration/timing.
+        // Re-generation or manual adjustment will be needed to apply timing changes to
+        // actual matches.
         boolean hasMatches = !matchRepository.findByTournamentId(tournamentId).isEmpty();
         if (hasMatches) {
-            // Check if significant changes are being made? Requirements say "Cannot be
-            // edited after generation"
-            throw new IllegalStateException("Cannot update format rules after matches have been generated.");
+            log.warn(
+                    "Updating format parameters for tournament {} which already has calculated matches. User must regenerate or manually update matches to reflect timing changes.",
+                    tournamentId);
         }
 
         com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig();
@@ -859,6 +860,19 @@ public class TournamentServiceImpl implements TournamentService {
         config.setTeamCount(configDTO.getTeamCount());
         config.setPoolCount(configDTO.getPoolCount());
         config.setMatchDurationMinutes(configDTO.getMatchDurationMinutes());
+        config.setBufferTimeMinutes(configDTO.getBufferTimeMinutes());
+
+        if (configDTO.getCarnivalStartTime() != null) {
+            config.setCarnivalStartTime(java.time.LocalTime.parse(configDTO.getCarnivalStartTime()));
+        } else {
+            config.setCarnivalStartTime(null);
+        }
+
+        if (configDTO.getCarnivalEndTime() != null) {
+            config.setCarnivalEndTime(java.time.LocalTime.parse(configDTO.getCarnivalEndTime()));
+        } else {
+            config.setCarnivalEndTime(null);
+        }
 
         // Scoring
         config.setPointsWin(configDTO.getPointsWin() != null ? configDTO.getPointsWin() : 4);
@@ -868,8 +882,10 @@ public class TournamentServiceImpl implements TournamentService {
         config.setPointsBonusLoss(configDTO.getPointsBonusLoss() != null ? configDTO.getPointsBonusLoss() : 1);
 
         // Lineups
+        // Lineups
         config.setStartersCount(configDTO.getStartersCount());
         config.setMaxBenchCount(configDTO.getMaxBenchCount() != null ? configDTO.getMaxBenchCount() : 8);
+        config.setIsOneWayMatch(configDTO.getIsOneWayMatch());
 
         // Update main tournament format field as well for backward compatibility
         tournament.setFormat(configDTO.getFormatType());
@@ -891,6 +907,12 @@ public class TournamentServiceImpl implements TournamentService {
                 .teamCount(config.getTeamCount())
                 .poolCount(config.getPoolCount())
                 .matchDurationMinutes(config.getMatchDurationMinutes())
+                .bufferTimeMinutes(config.getBufferTimeMinutes())
+                .carnivalStartTime(
+                        config.getCarnivalStartTime() != null ? config.getCarnivalStartTime().toString() : null)
+                .carnivalEndTime(config.getCarnivalEndTime() != null ? config.getCarnivalEndTime().toString() : null)
+                .isOneWayMatch(config.getIsOneWayMatch()) // Ensure this getter exists (lombok @Data handles it or check
+                                                          // naming)
                 .pointsWin(config.getPointsWin())
                 .pointsDraw(config.getPointsDraw())
                 .pointsLoss(config.getPointsLoss())

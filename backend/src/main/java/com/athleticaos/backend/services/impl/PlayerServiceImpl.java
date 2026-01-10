@@ -59,6 +59,16 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional(readOnly = true)
+    public PlayerResponse getPlayerByEmail(String email) {
+        log.info("Fetching player by email: {}", email);
+        Player player = playerRepository.findByPerson_Email(email)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        return mapToPlayerResponse(player);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PlayerResponse> getAllPlayers(UUID organisationId, UUID teamId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Player> players;
@@ -121,9 +131,16 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
-        // Check if person with email already exists
-        if (personRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already exists");
+        // Check if person with IC/Passport already exists
+        if (personRepository.existsByIcOrPassport(request.icOrPassport())) {
+            throw new IllegalArgumentException("Person with this IC/Passport already exists");
+        }
+
+        // Check if person with email already exists (only if email provided)
+        if (request.email() != null && !request.email().isEmpty()) {
+            if (personRepository.existsByEmail(request.email())) {
+                throw new IllegalArgumentException("Email already exists");
+            }
         }
 
         // Create Person record (PII)

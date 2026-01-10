@@ -12,6 +12,8 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
     const impact = useMemo(() => {
         if (!match.events) return { home: { minutes: 0, pointsConceded: 0 }, away: { minutes: 0, pointsConceded: 0 } };
 
+        const duration = match.matchDuration || 80;
+
         const calculateTeamImpact = (teamName: string) => {
             let disadvantageMinutes = 0;
             let pointsConceded = 0;
@@ -25,7 +27,7 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
                         windows.push({ start, end: start + 10 });
                     } else if (event.eventType === 'RED_CARD') {
                         const start = event.minute || 0;
-                        windows.push({ start, end: 80 }); // Assumes 80min match
+                        windows.push({ start, end: duration });
                     }
                 }
             });
@@ -51,8 +53,8 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
 
             // Sum minutes
             mergedWindows.forEach(w => {
-                // Cap at 80 mins
-                const end = Math.min(w.end, 80);
+                // Cap at match duration
+                const end = Math.min(w.end, duration);
                 disadvantageMinutes += (end - w.start);
             });
 

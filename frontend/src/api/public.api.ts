@@ -78,6 +78,8 @@ export interface PublicMatchDetail extends PublicMatchSummary {
     };
     tournamentId?: string;
     tournamentSlug?: string;
+    matchDuration?: number;
+    isOneWayMatch?: boolean;
 }
 
 export interface PublicMatchEvent {

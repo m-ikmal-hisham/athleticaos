@@ -147,7 +147,11 @@ export default function MatchCenter() {
                     {/* Phase 2: Momentum Indicator */}
                     <MomentumIndicator match={match} />
 
-                    <MatchMoments match={match} />
+                    <MatchMoments
+                        match={match}
+                        fullTimeMinutes={match.matchDuration || 80}
+                        isOneWay={match.isOneWayMatch || false}
+                    />
                 </div>
 
                 {/* Right Column: Stats & Extras */}

@@ -33,6 +33,14 @@ public class PlayerController {
         return ResponseEntity.ok(playerService.getAllPlayers(organisationId, teamId));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<PlayerResponse> getCurrentPlayer(java.security.Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(playerService.getPlayerByEmail(principal.getName()));
+    }
+
     @GetMapping("/{idOrSlug}")
     public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable String idOrSlug) {
         if (isValidUUID(idOrSlug)) {

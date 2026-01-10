@@ -307,6 +307,9 @@ public class PublicTournamentController {
                 .organiserBranding(branding)
                 .tournamentId(m.getTournamentId())
                 .tournamentSlug(m.getTournamentSlug())
+                // Populate format fields (lazy approach: fetch config if tournamentId exists)
+                .matchDuration(getMatchDuration(m.getTournamentId()))
+                .isOneWayMatch(getIsOneWayMatch(m.getTournamentId()))
                 .build();
     }
 
@@ -366,6 +369,30 @@ public class PublicTournamentController {
                 return 3;
             default:
                 return 0;
+        }
+    }
+
+    private Integer getMatchDuration(UUID tournamentId) {
+        if (tournamentId == null)
+            return 80;
+        try {
+            com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO config = tournamentService
+                    .getFormatConfig(tournamentId);
+            return config != null ? config.getMatchDurationMinutes() : 80;
+        } catch (Exception e) {
+            return 80; // default
+        }
+    }
+
+    private boolean getIsOneWayMatch(UUID tournamentId) {
+        if (tournamentId == null)
+            return false;
+        try {
+            com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO config = tournamentService
+                    .getFormatConfig(tournamentId);
+            return config != null && Boolean.TRUE.equals(config.getIsOneWayMatch());
+        } catch (Exception e) {
+            return false;
         }
     }
 }

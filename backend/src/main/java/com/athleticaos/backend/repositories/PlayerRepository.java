@@ -20,5 +20,7 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
 
     Optional<Player> findBySlug(String slug);
 
+    Optional<Player> findByPerson_Email(String email);
+
     long countByDeletedFalse();
 }

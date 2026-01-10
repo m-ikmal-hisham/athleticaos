@@ -35,7 +35,7 @@ public class Person {
     @Column(nullable = false)
     private LocalDate dob;
 
-    @Column(name = "ic_or_passport", nullable = false)
+    @Column(name = "ic_or_passport", nullable = false, unique = true)
     private String icOrPassport; // Encrypted
 
     @Column(name = "identification_type")

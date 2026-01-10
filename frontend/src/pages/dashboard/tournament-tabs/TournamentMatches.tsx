@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
 import { matchService } from '@/services/matchService';
 import { tournamentService } from '@/services/tournamentService';
-import { Match, Team } from '@/types';
+import { Match } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
-import { SearchableSelect } from '@/components/SearchableSelect';
 import toast from 'react-hot-toast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { MatchModal } from '@/components/modals/MatchModal';
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -17,7 +17,6 @@ interface TournamentMatchesProps {
 export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const navigate = useNavigate();
     const [matches, setMatches] = useState<Match[]>([]);
-    const [teams, setTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -36,17 +35,6 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         onConfirm: () => { },
         variant: 'primary' as 'primary' | 'destructive',
         confirmText: 'Confirm'
-    });
-
-    // Create/Edit Form State
-    const [matchForm, setMatchForm] = useState({
-        homeTeamId: '',
-        awayTeamId: '',
-        matchDate: '',
-        kickOffTime: '',
-        venue: '',
-        homeTeamPlaceholder: '',
-        awayTeamPlaceholder: ''
     });
 
     useEffect(() => {
@@ -73,12 +61,8 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [matchesData, teamsData] = await Promise.all([
-                matchService.getByTournament(tournamentId),
-                tournamentService.getTeams(tournamentId)
-            ]);
+            const matchesData = await matchService.getByTournament(tournamentId);
             setMatches(matchesData);
-            setTeams(teamsData);
         } catch (error) {
             console.error('Failed to load data:', error);
             toast.error('Failed to load matches');
@@ -87,35 +71,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         }
     };
 
-    const handleSaveMatch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            if (editMatch) {
-                // Update
-                await matchService.update(editMatch.id, {
-                    matchDate: matchForm.matchDate || undefined,
-                    kickOffTime: matchForm.kickOffTime || undefined,
-                    venue: matchForm.venue,
-                    homeTeamId: (matchForm.homeTeamId || null) as any,
-                    awayTeamId: (matchForm.awayTeamId || null) as any,
-                    homeTeamPlaceholder: matchForm.homeTeamPlaceholder,
-                    awayTeamPlaceholder: matchForm.awayTeamPlaceholder
-                });
-                toast.success('Match updated');
-            } else {
-                // Create
-                await tournamentService.createMatch(tournamentId, {
-                    ...matchForm,
-                    matchCode: `M${matches.length + 1}`
-                });
-                toast.success('Match created');
-            }
-            closeModal();
-            setRefreshTrigger(prev => prev + 1);
-        } catch (error) {
-            console.error('Failed to save match:', error);
-            toast.error('Failed to save match');
-        }
+    const handleMatchSaved = () => {
+        setRefreshTrigger(prev => prev + 1);
+        closeModal();
     };
 
     const handleDeleteMatch = (id: string, e: React.MouseEvent) => {
@@ -152,15 +110,6 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     };
 
     const openCreateModal = () => {
-        setMatchForm({
-            homeTeamId: '',
-            awayTeamId: '',
-            matchDate: '',
-            kickOffTime: '',
-            venue: '',
-            homeTeamPlaceholder: '',
-            awayTeamPlaceholder: ''
-        });
         setEditMatch(null);
         setShowCreateModal(true);
     };
@@ -168,15 +117,6 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const openEditModal = (match: Match, e: React.MouseEvent) => {
         e.stopPropagation();
         setEditMatch(match);
-        setMatchForm({
-            homeTeamId: match.homeTeamId || '',
-            awayTeamId: match.awayTeamId || '',
-            matchDate: match.matchDate || '',
-            kickOffTime: match.kickOffTime || '',
-            venue: match.venue || '',
-            homeTeamPlaceholder: match.homeTeamPlaceholder || '',
-            awayTeamPlaceholder: match.awayTeamPlaceholder || ''
-        });
         setShowCreateModal(true);
     };
 
@@ -352,105 +292,14 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             )}
 
             {/* Create/Edit Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-                        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                                {editMatch ? 'Edit Match' : 'Create Manual Match'}
-                            </h3>
-                            <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" aria-label="Close">
-                                ×
-                            </button>
-                        </div>
-                        <form onSubmit={handleSaveMatch} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Home Team</label>
-                                    <SearchableSelect
-                                        value={matchForm.homeTeamId}
-                                        onChange={(value) => setMatchForm({ ...matchForm, homeTeamId: value as string })}
-                                        options={[
-                                            { value: '', label: 'TBD (Placeholder)' },
-                                            ...teams.map(t => ({ value: t.id, label: t.name }))
-                                        ]}
-                                        placeholder="Select home team"
-                                    />
-                                    {matchForm.homeTeamId === '' && (
-                                        <input
-                                            type="text"
-                                            className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm mt-1"
-                                            placeholder="Placeholder (e.g. Winner SF1)"
-                                            value={matchForm.homeTeamPlaceholder}
-                                            onChange={e => setMatchForm({ ...matchForm, homeTeamPlaceholder: e.target.value })}
-                                        />
-                                    )}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Away Team</label>
-                                    <SearchableSelect
-                                        value={matchForm.awayTeamId}
-                                        onChange={(value) => setMatchForm({ ...matchForm, awayTeamId: value as string })}
-                                        options={[
-                                            { value: '', label: 'TBD (Placeholder)' },
-                                            ...teams.map(t => ({ value: t.id, label: t.name }))
-                                        ]}
-                                        placeholder="Select away team"
-                                    />
-                                    {matchForm.awayTeamId === '' && (
-                                        <input
-                                            type="text"
-                                            className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm mt-1"
-                                            placeholder="Placeholder (e.g. Winner SF2)"
-                                            value={matchForm.awayTeamPlaceholder}
-                                            onChange={e => setMatchForm({ ...matchForm, awayTeamPlaceholder: e.target.value })}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</label>
-                                    <input
-                                        aria-label="Match Date"
-                                        type="date"
-                                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
-                                        value={matchForm.matchDate}
-                                        onChange={e => setMatchForm({ ...matchForm, matchDate: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Time</label>
-                                    <input
-                                        aria-label="Kick Off Time"
-                                        type="time"
-                                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
-                                        value={matchForm.kickOffTime}
-                                        onChange={e => setMatchForm({ ...matchForm, kickOffTime: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Venue</label>
-                                <input
-                                    type="text"
-                                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
-                                    value={matchForm.venue}
-                                    onChange={e => setMatchForm({ ...matchForm, venue: e.target.value })}
-                                    placeholder="e.g. Field 1"
-                                />
-                            </div>
-
-                            <div className="pt-4 flex justify-end gap-3">
-                                <Button type="button" variant="cancel" onClick={closeModal}>Cancel</Button>
-                                <Button type="submit">{editMatch ? 'Save Changes' : 'Create Match'}</Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            <MatchModal
+                isOpen={showCreateModal}
+                onClose={closeModal}
+                onSuccess={handleMatchSaved}
+                mode={editMatch ? 'edit' : 'create'}
+                initialMatch={editMatch || undefined}
+                defaultTournamentId={tournamentId}
+            />
 
             <ConfirmModal
                 isOpen={confirmModal.isOpen}

@@ -22,5 +22,7 @@ public interface PlayerService {
 
     PlayerResponse getPlayerBySlug(String slug);
 
+    PlayerResponse getPlayerByEmail(String email);
+
     void regenerateAllSlugs();
 }

@@ -422,6 +422,13 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 }
                                         }
 
+                                        int duration = 80; // Default
+                                        if (match.getTournament() != null
+                                                        && match.getTournament().getFormatConfig() != null) {
+                                                duration = match.getTournament().getFormatConfig()
+                                                                .getMatchDurationMinutes();
+                                        }
+
                                         return new PlayerMatchStatsDTO(
                                                         match.getId(),
                                                         match.getMatchDate(),
@@ -432,7 +439,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                         mYellow,
                                                         mRed,
                                                         lineup.getRole() == com.athleticaos.backend.enums.LineupRole.STARTER
-                                                                        ? "80"
+                                                                        ? String.valueOf(duration)
                                                                         : "Sub" // Simplified minutes
                                         );
                                 })

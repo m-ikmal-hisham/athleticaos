@@ -274,6 +274,7 @@ export interface Tournament {
     bannerUrl?: string;
     backgroundUrl?: string;
     livestreamUrl?: string;
+    rugbyFormat?: string;
     organiserBranding?: {
         id: string;
         name: string;
@@ -357,6 +358,10 @@ export interface TournamentFormatConfig {
     startersCount: number;
     maxBenchCount: number;
     includePlacementStages?: boolean;
+    bufferTimeMinutes?: number;
+    carnivalStartTime?: string;
+    carnivalEndTime?: string;
+    isOneWayMatch?: boolean;
 }
 
 // ============================================
@@ -432,6 +437,8 @@ export interface MatchResponse extends Match {
     // Lineup configuration from tournament format
     startersCount?: number;
     maxBenchCount?: number;
+    matchDuration?: number;
+    isOneWayMatch?: boolean;
 }
 
 export interface TournamentStageResponse {

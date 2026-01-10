@@ -222,11 +222,11 @@ public class FormatServiceImpl implements FormatService {
     private void generateRoundRobinMatches(Tournament tournament, TournamentStage stage, List<TournamentTeam> teams,
             BracketGenerationRequest request) {
         int n = teams.size();
-        int totalMatches = (n * (n - 1)) / 2;
+        // int totalMatches = (n * (n - 1)) / 2;
 
-        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
-                tournament.getStartDate(),
-                tournament.getEndDate());
+        // long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
+        // tournament.getStartDate(),
+        // tournament.getEndDate());
 
         int matchCounter = 0;
         boolean generateTimings = request.getGenerateTimings() == null || request.getGenerateTimings();
@@ -240,20 +240,41 @@ public class FormatServiceImpl implements FormatService {
                 java.time.LocalTime kickOffTime = null;
 
                 if (generateTimings) {
-                    if (daysBetween <= 0 || totalMatches == 1) {
-                        matchDate = tournament.getStartDate();
-                    } else {
-                        long daysToAdd = (matchCounter * daysBetween) / (totalMatches - 1);
-                        matchDate = tournament.getStartDate().plusDays(daysToAdd);
+                    com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig();
+
+                    // Defaults
+                    java.time.LocalTime startTime = java.time.LocalTime.of(9, 0);
+                    java.time.LocalTime endTime = java.time.LocalTime.of(17, 0);
+                    int duration = 80;
+                    int buffer = 10;
+
+                    if (config != null) {
+                        if (config.getCarnivalStartTime() != null)
+                            startTime = config.getCarnivalStartTime();
+                        if (config.getCarnivalEndTime() != null)
+                            endTime = config.getCarnivalEndTime();
+                        if (config.getMatchDurationMinutes() != null)
+                            duration = config.getMatchDurationMinutes();
+                        if (config.getBufferTimeMinutes() != null)
+                            buffer = config.getBufferTimeMinutes();
                     }
 
-                    int timeSlot = matchCounter % 4;
-                    kickOffTime = switch (timeSlot) {
-                        case 0 -> java.time.LocalTime.of(9, 0);
-                        case 1 -> java.time.LocalTime.of(11, 0);
-                        case 2 -> java.time.LocalTime.of(14, 0);
-                        default -> java.time.LocalTime.of(16, 0);
-                    };
+                    int slotMinutes = duration + buffer;
+                    long minutesAvailable = java.time.temporal.ChronoUnit.MINUTES.between(startTime, endTime);
+                    // Avoid div by zero
+                    if (minutesAvailable <= 0)
+                        minutesAvailable = 480; // 8 hours default if weird
+
+                    int matchesPerDay = (int) (minutesAvailable / slotMinutes);
+                    if (matchesPerDay < 1)
+                        matchesPerDay = 1;
+
+                    // Calculate position
+                    int dayIndex = matchCounter / matchesPerDay;
+                    int matchInDay = matchCounter % matchesPerDay;
+
+                    matchDate = tournament.getStartDate().plusDays(dayIndex);
+                    kickOffTime = startTime.plusMinutes(matchInDay * slotMinutes);
                 }
 
                 Match match = Match.builder()

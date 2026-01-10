@@ -30,4 +30,5 @@ public class TournamentResponse {
     private String bannerUrl;
     private String backgroundUrl;
     private String livestreamUrl;
+    private String rugbyFormat;
 }

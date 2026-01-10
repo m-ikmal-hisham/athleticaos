@@ -5,11 +5,13 @@ import { PublicMatchDetail } from '../../../api/public.api';
 
 interface MatchMomentsProps {
     match: PublicMatchDetail;
+    fullTimeMinutes?: number;
+    isOneWay?: boolean;
 }
 
-export const MatchMoments = ({ match }: MatchMomentsProps) => {
+export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: MatchMomentsProps) => {
     const [replayMode, setReplayMode] = useState(false);
-    const [currentMinute, setCurrentMinute] = useState(80);
+    const [currentMinute, setCurrentMinute] = useState(fullTimeMinutes);
     const [isPlaying, setIsPlaying] = useState(false);
     const timerRef = useRef<number | null>(null);
 
@@ -18,9 +20,9 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
         if (isPlaying) {
             timerRef.current = window.setInterval(() => {
                 setCurrentMinute(prev => {
-                    if (prev >= 80) {
+                    if (prev >= fullTimeMinutes) {
                         setIsPlaying(false);
-                        return 80;
+                        return fullTimeMinutes;
                     }
                     return prev + 1;
                 });
@@ -31,7 +33,7 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [isPlaying]);
+    }, [isPlaying, fullTimeMinutes]);
 
     // Reset minute when entering replay mode
     useEffect(() => {
@@ -39,10 +41,10 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
             setCurrentMinute(0);
             setIsPlaying(true);
         } else {
-            setCurrentMinute(80);
+            setCurrentMinute(fullTimeMinutes);
             setIsPlaying(false);
         }
-    }, [replayMode]);
+    }, [replayMode, fullTimeMinutes]);
 
     const sortedEvents = useMemo(() => {
         if (!match.events) return [];
@@ -147,6 +149,8 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
                 };
         }
     };
+    // ... (lines 80-216 are mostly unchanged styling logic, except we keep them to maintain context if needed, but tool allows skipping if we target cleanly.
+    // I will target the slider section which is around lines 218-235)
 
     return (
         <GlassCard className="p-6 md:p-8">
@@ -218,7 +222,7 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
                             <input
                                 type="range"
                                 min="0"
-                                max="80"
+                                max={fullTimeMinutes}
                                 value={currentMinute}
                                 onChange={(e) => {
                                     setCurrentMinute(Number(e.target.value));
@@ -229,13 +233,14 @@ export const MatchMoments = ({ match }: MatchMomentsProps) => {
                             />
                             <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
                                 <span>Kick Off</span>
-                                <span>Half Time</span>
-                                <span>Full Time</span>
+                                {!isOneWay && fullTimeMinutes > 0 && <span>Half Time ({Math.floor(fullTimeMinutes / 2)}')</span>}
+                                <span>Full Time ({fullTimeMinutes}')</span>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+
 
             <div className="relative space-y-0">
                 {/* Vertical Timeline Line */}

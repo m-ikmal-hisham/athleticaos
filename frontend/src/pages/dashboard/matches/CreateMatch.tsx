@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
@@ -6,10 +6,11 @@ import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, Info } from '@phosphor-icons/react';
 import { fetchTournaments } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { createMatch } from '@/api/matches.api';
+import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
 import { Team, Tournament } from '@/types';
 
 import { showToast } from '@/lib/customToast';
@@ -21,6 +22,7 @@ export const CreateMatch = () => {
 
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [formatTemplates, setFormatTemplates] = useState<MatchFormatTemplate[]>([]);
 
     const [formData, setFormData] = useState({
         tournamentId: searchParams.get('tournamentId') || '',
@@ -34,12 +36,14 @@ export const CreateMatch = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [tournamentsRes, teamsRes] = await Promise.all([
+                const [tournamentsRes, teamsRes, formatsRes] = await Promise.all([
                     fetchTournaments(),
-                    fetchTeams()
+                    fetchTeams(),
+                    fetchMatchFormatTemplates()
                 ]);
                 setTournaments(tournamentsRes.data as any);
                 setTeams(teamsRes.data as any);
+                setFormatTemplates(formatsRes.data as any);
             } catch (error) {
                 console.error("Failed to load form data", error);
                 showToast.error("Failed to load options");
@@ -68,6 +72,24 @@ export const CreateMatch = () => {
         }
     };
 
+    // Derive format configuration
+    const selectedFormatConfig = useMemo(() => {
+        if (!formData.tournamentId) return null;
+        const tournament = tournaments.find(t => t.id === formData.tournamentId);
+        if (!tournament?.rugbyFormat) return null;
+
+        // Map backend format to template code
+        const mapCode = (code: string) => {
+            if (code === 'XV') return 'RUGBY_XV';
+            if (code === 'SEVENS') return 'RUGBY_7S';
+            if (code === 'TENS') return 'RUGBY_10S';
+            return code;
+        };
+
+        const targetCode = mapCode(tournament.rugbyFormat);
+        return formatTemplates.find(f => f.formatCode === targetCode);
+    }, [formData.tournamentId, tournaments, formatTemplates]);
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
@@ -94,6 +116,21 @@ export const CreateMatch = () => {
                             ]}
                             placeholder="Select tournament"
                         />
+                        {/* Dynamic Format Placeholder Display */}
+                        {selectedFormatConfig && (
+                            <div className="mt-2 p-3 bg-blue-50/10 border border-blue-500/20 rounded-md flex items-start gap-3 text-sm text-blue-200 animate-in fade-in slide-in-from-top-1">
+                                <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <div className="font-semibold text-blue-400 mb-0.5">
+                                        Match Format: {selectedFormatConfig.label}
+                                    </div>
+                                    <div className="text-xs text-blue-300/70">
+                                        Using placeholder structure: {selectedFormatConfig.startingPlayers} starters, {selectedFormatConfig.substitutes} subs per team.
+                                        Matches structured as {selectedFormatConfig.periods} x {selectedFormatConfig.periodDuration} mins.
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

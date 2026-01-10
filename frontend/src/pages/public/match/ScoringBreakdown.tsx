@@ -13,15 +13,21 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
     const data = useMemo(() => {
         if (!match.events) return { typeData: [], halfData: [] };
 
+        const duration = match.matchDuration || 80;
+        const isOneWay = match.isOneWayMatch || false;
+        const halfTime = isOneWay ? duration : duration / 2;
+
         const stats = {
-            home: { tries: 0, pens: 0, cons: 0, h1: 0, h2: 0, name: match.homeTeamName },
-            away: { tries: 0, pens: 0, cons: 0, h1: 0, h2: 0, name: match.awayTeamName }
+            home: { tries: 0, pens: 0, cons: 0, p1: 0, p2: 0, name: match.homeTeamName },
+            away: { tries: 0, pens: 0, cons: 0, p1: 0, p2: 0, name: match.awayTeamName }
         };
 
         match.events.forEach((event: PublicMatchEvent) => {
             const isHome = event.teamName === match.homeTeamName;
             const minutes = event.minute || 0;
-            const isFirstHalf = minutes <= 40;
+            // For One Way, everything is in "Period 1". 
+            // For Two Halves, check if min <= halfTime.
+            const isFirstPeriod = isOneWay ? true : minutes <= halfTime;
 
             let points = 0;
             switch (event.eventType.toUpperCase()) {
@@ -35,7 +41,7 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
                     break;
                 case 'DROP_GOAL':
                     points = 3;
-                    if (isHome) stats.home.pens += 3; else stats.away.pens += 3; // Group drop goals with pens for simplicity
+                    if (isHome) stats.home.pens += 3; else stats.away.pens += 3;
                     break;
                 case 'CONVERSION':
                     points = 2;
@@ -43,14 +49,14 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
                     break;
                 case 'PENALTY_TRY':
                     points = 7;
-                    if (isHome) stats.home.tries += 7; else stats.away.tries += 7; // Count as try points
+                    if (isHome) stats.home.tries += 7; else stats.away.tries += 7;
                     break;
             }
 
-            if (isFirstHalf) {
-                if (isHome) stats.home.h1 += points; else stats.away.h1 += points;
+            if (isFirstPeriod) {
+                if (isHome) stats.home.p1 += points; else stats.away.p1 += points;
             } else {
-                if (isHome) stats.home.h2 += points; else stats.away.h2 += points;
+                if (isHome) stats.home.p2 += points; else stats.away.p2 += points;
             }
         });
 
@@ -59,7 +65,7 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
             {
                 name: match.homeTeamName,
                 Tries: stats.home.tries,
-                Kicks: stats.home.pens + stats.home.cons, // Combine kicks for cleaner UI
+                Kicks: stats.home.pens + stats.home.cons,
             },
             {
                 name: match.awayTeamName,
@@ -68,22 +74,32 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
             }
         ];
 
-        // Shape for Half Breakdown
-        const halfData = [
-            {
-                name: '1st Half',
-                [match.homeTeamName]: stats.home.h1,
-                [match.awayTeamName]: stats.away.h1,
-            },
-            {
-                name: '2nd Half',
-                [match.homeTeamName]: stats.home.h2,
-                [match.awayTeamName]: stats.away.h2,
-            }
-        ];
+        // Shape for Period Breakdown
+        const halfData = [];
+
+        if (isOneWay) {
+            halfData.push({
+                name: 'Full Match',
+                [match.homeTeamName]: stats.home.p1,
+                [match.awayTeamName]: stats.away.p1,
+            });
+        } else {
+            halfData.push(
+                {
+                    name: '1st Half',
+                    [match.homeTeamName]: stats.home.p1,
+                    [match.awayTeamName]: stats.away.p1,
+                },
+                {
+                    name: '2nd Half',
+                    [match.homeTeamName]: stats.home.p2,
+                    [match.awayTeamName]: stats.away.p2,
+                }
+            );
+        }
 
         return { typeData, halfData };
-    }, [match.events, match.homeTeamName, match.awayTeamName]);
+    }, [match.events, match.homeTeamName, match.awayTeamName, match.matchDuration, match.isOneWayMatch]);
 
     if (!match.events || match.events.length === 0) return null;
 

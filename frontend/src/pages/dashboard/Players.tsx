@@ -22,6 +22,7 @@ export default function Players() {
     const {
         filteredPlayers,
         loading,
+        error,
         getPlayers,
         statusFilter,
         searchQuery,
@@ -48,6 +49,12 @@ export default function Players() {
     useEffect(() => {
         getPlayers();
     }, [getPlayers]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
 
     // Navigation handlers
     const handleCardClick = (player: Player) => {

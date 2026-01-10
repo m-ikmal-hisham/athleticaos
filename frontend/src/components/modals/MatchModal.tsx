@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { Info } from '@phosphor-icons/react';
 import { fetchTournaments } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { createMatch, updateMatch } from '@/api/matches.api';
-import { Team, Match } from '@/types';
+import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
+import { Team, Match, Tournament } from '@/types';
 
 interface MatchModalProps {
     isOpen: boolean;
@@ -15,15 +17,17 @@ interface MatchModalProps {
     onSuccess: () => void;
     mode?: 'create' | 'edit';
     initialMatch?: Match;
+    defaultTournamentId?: string;
 }
 
-export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initialMatch }: MatchModalProps) => {
+export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initialMatch, defaultTournamentId }: MatchModalProps) => {
     const [loading, setLoading] = useState(false);
-    const [tournaments, setTournaments] = useState<any[]>([]);
+    const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [formatTemplates, setFormatTemplates] = useState<MatchFormatTemplate[]>([]);
 
     const [formData, setFormData] = useState({
-        tournamentId: '',
+        tournamentId: defaultTournamentId || '',
         homeTeamId: '',
         awayTeamId: '',
         matchDate: '',
@@ -36,7 +40,7 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             // Pre-populate form in edit mode
             if (mode === 'edit' && initialMatch) {
                 setFormData({
-                    tournamentId: initialMatch.tournamentId || '',
+                    tournamentId: initialMatch.tournamentId || defaultTournamentId || '',
                     homeTeamId: initialMatch.homeTeamId || '',
                     awayTeamId: initialMatch.awayTeamId || '',
                     matchDate: initialMatch.matchDate || '',
@@ -46,7 +50,7 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             } else {
                 // Reset form in create mode
                 setFormData({
-                    tournamentId: '',
+                    tournamentId: defaultTournamentId || '',
                     homeTeamId: '',
                     awayTeamId: '',
                     matchDate: '',
@@ -57,12 +61,14 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
 
             const loadData = async () => {
                 try {
-                    const [tournamentsRes, teamsRes] = await Promise.all([
+                    const [tournamentsRes, teamsRes, formatsRes] = await Promise.all([
                         fetchTournaments(),
-                        fetchTeams()
+                        fetchTeams(),
+                        fetchMatchFormatTemplates()
                     ]);
-                    setTournaments(tournamentsRes.data);
-                    setTeams(teamsRes.data);
+                    setTournaments(tournamentsRes.data as any);
+                    setTeams(teamsRes.data as any);
+                    setFormatTemplates(formatsRes.data as any);
                 } catch (error) {
                     console.error("Failed to load form data", error);
                 }
@@ -99,6 +105,23 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             setLoading(false);
         }
     };
+
+    // Derive format configuration
+    const selectedFormatConfig = useMemo(() => {
+        if (!formData.tournamentId) return null;
+        const tournament = tournaments.find(t => t.id === formData.tournamentId);
+        if (!tournament?.rugbyFormat) return null;
+
+        const mapCode = (code: string) => {
+            if (code === 'XV') return 'RUGBY_XV';
+            if (code === 'SEVENS') return 'RUGBY_7S';
+            if (code === 'TENS') return 'RUGBY_10S';
+            return code;
+        };
+
+        const targetCode = mapCode(tournament.rugbyFormat);
+        return formatTemplates.find(f => f.formatCode === targetCode);
+    }, [formData.tournamentId, tournaments, formatTemplates]);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={mode === 'edit' ? 'Edit Match' : 'New Match'}>
@@ -143,6 +166,20 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                 ]}
                                 placeholder="Select tournament"
                             />
+                            {/* Dynamic Format Placeholder Display */}
+                            {selectedFormatConfig && (
+                                <div className="mt-2 p-3 bg-blue-50/10 border border-blue-500/20 rounded-md flex items-start gap-3 text-sm text-blue-200 animate-in fade-in slide-in-from-top-1">
+                                    <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                    <div>
+                                        <div className="font-semibold text-blue-400 mb-0.5">
+                                            Match Format: {selectedFormatConfig.label}
+                                        </div>
+                                        <div className="text-xs text-blue-300/70">
+                                            {selectedFormatConfig.startingPlayers} starters per side.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -43,6 +44,21 @@ public class TournamentFormatConfig {
 
     @Column(name = "match_duration_minutes", nullable = false)
     private Integer matchDurationMinutes;
+
+    @Column(name = "buffer_time_minutes")
+    private Integer bufferTimeMinutes;
+
+    @Column(name = "carnival_start_time")
+    private LocalTime carnivalStartTime; // Using LocalDateTime or LocalTime? User said "Select start time and end
+                                         // time of the tournament is a carnival". Usually daily start/end. Let's
+                                         // use LocalTime for daily carnival hours.
+
+    @Column(name = "carnival_end_time")
+    private LocalTime carnivalEndTime;
+
+    @Column(name = "is_one_way_match")
+    @Builder.Default
+    private Boolean isOneWayMatch = false;
 
     // Scoring Rules
     @Column(name = "points_win", nullable = false)

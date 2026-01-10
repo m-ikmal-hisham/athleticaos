@@ -19,6 +19,10 @@ export const togglePlayerStatus = (id: string) =>
 export const fetchPlayerById = (id: string) =>
     api.get(`/players/${id}`);
 
+export const fetchCurrentPlayer = () =>
+    api.get(`/players/me`);
+
+
 export const fetchPlayerStats = (playerId: string) =>
     api.get(`/stats/players/${playerId}`);
 

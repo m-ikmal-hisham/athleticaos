@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Gear, Play, FloppyDisk, Layout, Question } from '@phosphor-icons/react';
+import { Gear, Play, FloppyDisk, Layout, Question, Trophy } from '@phosphor-icons/react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tournamentService } from '@/services/tournamentService';
 import { Button } from '@/components/Button';
@@ -394,6 +394,125 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                 <FloppyDisk className="w-4 h-4 mr-2" />
                                 Save Globals
                             </Button>
+                        </div>
+                    </div>
+
+                    {/* Match Timing Configuration */}
+                    <div className="p-4 border rounded-lg bg-card/50 space-y-4">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Play className="w-4 h-4" />
+                            Match Timing & Schedule Defaults
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Match Duration (Total Mins)</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.matchDurationMinutes || 0}
+                                    onChange={(e) => setConfig({ ...config, matchDurationMinutes: parseInt(e.target.value) || 0 })}
+                                />
+                                <p className="text-xs text-muted-foreground">E.g. 80 for XVs, 14 for 7s.</p>
+
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <input
+                                        type="checkbox"
+                                        id="isOneWayMatch"
+                                        className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
+                                        checked={config.isOneWayMatch || false}
+                                        onChange={(e) => setConfig({ ...config, isOneWayMatch: e.target.checked })}
+                                    />
+                                    <label htmlFor="isOneWayMatch" className="text-sm cursor-pointer select-none">
+                                        One Way Match
+                                    </label>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground pl-5">Single period, no half time.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Buffer Time (Mins)</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.bufferTimeMinutes || 0}
+                                    onChange={(e) => setConfig({ ...config, bufferTimeMinutes: parseInt(e.target.value) || 0 })}
+                                />
+                                <p className="text-xs text-muted-foreground">Break between matches.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Daily Start Time</label>
+                                <Input
+                                    type="time"
+                                    value={config.carnivalStartTime || ''}
+                                    onChange={(e) => setConfig({ ...config, carnivalStartTime: e.target.value })}
+                                />
+                                <p className="text-xs text-muted-foreground">First match kick-off.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Daily End Time</label>
+                                <Input
+                                    type="time"
+                                    value={config.carnivalEndTime || ''}
+                                    onChange={(e) => setConfig({ ...config, carnivalEndTime: e.target.value })}
+                                />
+                                <p className="text-xs text-muted-foreground">Last match end by.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Scoring Rules Configuration */}
+                    <div className="p-4 border rounded-lg bg-card/50 space-y-4">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                            <Trophy className="w-4 h-4" />
+                            Scoring Rules
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Win Points</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.pointsWin !== undefined ? config.pointsWin : 4}
+                                    onChange={(e) => setConfig({ ...config, pointsWin: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Draw Points</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.pointsDraw !== undefined ? config.pointsDraw : 2}
+                                    onChange={(e) => setConfig({ ...config, pointsDraw: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Loss Points</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.pointsLoss !== undefined ? config.pointsLoss : 0}
+                                    onChange={(e) => setConfig({ ...config, pointsLoss: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Bonus (Try)</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.pointsBonusTry !== undefined ? config.pointsBonusTry : 1}
+                                    onChange={(e) => setConfig({ ...config, pointsBonusTry: parseInt(e.target.value) || 0 })}
+                                />
+                                <p className="text-[10px] text-muted-foreground">e.g. 4+ tries</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Bonus (Loss)</label>
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={config.pointsBonusLoss !== undefined ? config.pointsBonusLoss : 1}
+                                    onChange={(e) => setConfig({ ...config, pointsBonusLoss: parseInt(e.target.value) || 0 })}
+                                />
+                                <p className="text-[10px] text-muted-foreground">e.g. within 7 pts</p>
+                            </div>
                         </div>
                     </div>
 

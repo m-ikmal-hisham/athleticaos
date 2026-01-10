@@ -20,4 +20,6 @@ public class PublicMatchDetailResponse extends PublicMatchSummaryResponse {
     private PublicTeamStatsResponse homeStats;
     private PublicTeamStatsResponse awayStats;
     private PublicOrganisationBranding organiserBranding;
+    private Integer matchDuration;
+    private Boolean isOneWayMatch;
 }

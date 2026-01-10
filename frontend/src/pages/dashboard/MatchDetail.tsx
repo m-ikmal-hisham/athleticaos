@@ -22,8 +22,9 @@ import { Users, PresentationChart, FilmStrip } from '@phosphor-icons/react';
 import { MatchMoments } from '@/pages/public/match/MatchMoments';
 
 // Rugby scoring rules
+import { tournamentService } from '@/services/tournamentService';
 import { matchLineupService } from '@/services/matchLineupService';
-import { MatchLineupEntry, LineupRole } from '@/types';
+import { MatchLineupEntry, LineupRole, TournamentFormatConfig } from '@/types';
 import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 
 const SCORING_RULES: Record<string, number> = {
@@ -77,8 +78,23 @@ export const MatchDetail = () => {
         isOpen: boolean;
         title: string;
         message: string;
-        onConfirm: () => void;
-    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+        onConfirm: () => Promise<void> | void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const [formatConfig, setFormatConfig] = useState<TournamentFormatConfig | null>(null);
+
+    useEffect(() => {
+        if (selectedMatch?.tournamentId) {
+            tournamentService.getFormatConfig(selectedMatch.tournamentId)
+                .then(setFormatConfig)
+                .catch(err => console.error("Failed to load format config", err));
+        }
+    }, [selectedMatch?.tournamentId]);
 
     // Timer State
     const [isHalfTime, setIsHalfTime] = useState<boolean>(false);
@@ -426,6 +442,27 @@ export const MatchDetail = () => {
         return { homeScore, awayScore };
     }, [events, selectedMatch]);
 
+    // Breadcrumbs Config
+    const breadcrumbs = useMemo(() => {
+        const items: BreadcrumbItem[] = [
+            { label: 'Tournaments', path: '/dashboard/tournaments' }
+        ];
+
+        if (selectedMatch?.tournamentId) {
+            items.push({
+                label: selectedMatch.tournamentName || 'Tournament',
+                path: `/dashboard/tournaments/${selectedMatch.tournamentId}?tab=matches`
+            });
+        }
+
+        const matchLabel = selectedMatch?.homeTeamName && selectedMatch?.awayTeamName
+            ? `${selectedMatch.homeTeamName} vs ${selectedMatch.awayTeamName}`
+            : selectedMatch?.matchCode || 'Match';
+
+        items.push({ label: matchLabel });
+        return items;
+    }, [selectedMatch]);
+
     if (loadingDetail) return <div className="p-12 text-center text-slate-400">Loading Match Interface...</div>;
     if (error || !selectedMatch) return <div className="p-12 text-center text-red-400">Match not found.</div>;
 
@@ -472,22 +509,7 @@ export const MatchDetail = () => {
         return { starters: [], bench: [], other: all };
     };
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { label: 'Matches', path: '/dashboard/matches' }
-    ];
 
-    if (selectedMatch.tournamentId) {
-        breadcrumbs.push({
-            label: selectedMatch.tournamentName || 'Tournament',
-            path: `/dashboard/tournaments/${selectedMatch.tournamentId}`
-        });
-    }
-
-    const matchLabel = selectedMatch.homeTeamName && selectedMatch.awayTeamName
-        ? `${selectedMatch.homeTeamName} vs ${selectedMatch.awayTeamName}`
-        : selectedMatch.matchCode || 'Match';
-
-    breadcrumbs.push({ label: matchLabel });
 
     return (
         <div className="space-y-6 max-w-[1600px] mx-auto pb-24">
@@ -633,6 +655,15 @@ export const MatchDetail = () => {
                                 onTimerPause={handleTimerPause}
                                 onTimerAdjust={handleTimerAdjust}
                                 onTimeUpdate={(newSeconds) => setMatchTimeSeconds(newSeconds)}
+                                canStartMatch={
+                                    matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
+                                    matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)
+                                }
+                                startMatchDisabledReason={
+                                    (!(matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) && matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)))
+                                        ? "Lineups & Subs must be filled with registered players."
+                                        : undefined
+                                }
                             />
                         </div>
 
@@ -942,7 +973,22 @@ export const MatchDetail = () => {
                         })),
                         homeScore: calculatedScores.homeScore,
                         awayScore: calculatedScores.awayScore
-                    }} />
+                    }}
+                        fullTimeMinutes={(() => {
+                            if (formatConfig?.matchDurationMinutes) return formatConfig.matchDurationMinutes;
+
+                            const starters = selectedMatch.startersCount || 15;
+                            switch (starters) {
+                                case 7: return 14; // Sevens (7 min halves)
+                                case 10: return 20; // Tens (10 min halves)
+                                case 15: return 80; // Union (40 min halves)
+                                case 13: return 80; // League (40 min halves)
+                                case 6: return 40; // Touch (20 min halves) - common international format
+                                default: return 80;
+                            }
+                        })()}
+                        isOneWay={formatConfig?.isOneWayMatch || false}
+                    />
                 </div>
             )}
 

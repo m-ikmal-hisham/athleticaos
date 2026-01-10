@@ -14,6 +14,8 @@ import { BentoGrid, BentoItem } from '@/components/dashboard/BentoGrid';
 import { TrendChart } from '@/components/dashboard/TrendChart';
 import { FeaturedTournamentCard } from '@/components/dashboard/FeaturedTournamentCard';
 
+import { fetchCurrentPlayer, fetchPlayerStats } from '@/api/players.api';
+
 // Custom hook for counter animation
 const useCountUp = (end: number, duration: number = 2000) => {
     const [count, setCount] = useState(0);
@@ -52,6 +54,15 @@ interface GlobalDashboardStats {
     upcomingMatches: number;
 }
 
+interface PlayerStats {
+    totalMatches: number;
+    totalPoints: number;
+    tries: number;
+    yellowCards: number;
+    redCards: number;
+    recentMatches: Array<{ minutesPlayed: string }>;
+}
+
 export const DashboardHome = () => {
     const { user } = useAuthStore();
     const { activeTournamentId } = useUIStore();
@@ -60,6 +71,9 @@ export const DashboardHome = () => {
 
     // Global Stats State
     const [globalStats, setGlobalStats] = useState<GlobalDashboardStats | null>(null);
+
+    // Player Stats State
+    const [myPlayerStats, setMyPlayerStats] = useState<PlayerStats | null>(null);
 
     // Tournament Specific Stores
     const { summary: tournamentSummary, loadStatsForTournament } = useStatsStore();
@@ -128,6 +142,31 @@ export const DashboardHome = () => {
                 value: count
             }));
     }, [matches]);
+
+    // 4. Fetch My Player Stats
+    useEffect(() => {
+        const loadPlayerStats = async () => {
+            // Check if user has role PLAYER or SUPER_ADMIN (for testing)
+            if (user?.roles?.some(r => r.includes('PLAYER') || r.includes('SUPER_ADMIN'))) {
+                try {
+                    // Attempt to fetch current player
+                    const res = await fetchCurrentPlayer();
+                    if (res.data && res.data.id) {
+                        // If linked player found, fetch stats
+                        const statsRes = await fetchPlayerStats(res.data.id);
+                        setMyPlayerStats(statsRes.data);
+                    }
+                } catch (e) {
+                    // Silent failure: user might be admin without player profile, or API not ready
+                    console.log("Could not fetch player stats for user", e);
+                }
+            }
+        };
+
+        if (!activeTournamentId) {
+            loadPlayerStats();
+        }
+    }, [user, activeTournamentId]);
 
 
     // Determine scope for Recent Activity
@@ -229,7 +268,6 @@ export const DashboardHome = () => {
                         </div>
 
                         <div className="flex-1 w-full min-h-[160px] flex items-end pb-0 relative">
-                            {/* Subtle grid background */}
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
                             {activeTournamentId && matchTrendData.length > 0 ? (
@@ -238,6 +276,43 @@ export const DashboardHome = () => {
                                     height={200}
                                     color={effectiveTheme === 'dark' ? '#ef4444' : '#3b82f6'}
                                 />
+                            ) : myPlayerStats ? (
+                                <div className="w-full h-full p-6 flex flex-col justify-center gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-3 rounded-full bg-primary-500/10 text-primary-500">
+                                            <ChartLineUp className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold">{myPlayerStats.totalMatches}</p>
+                                            <p className="text-xs text-muted-foreground">Matches Played</p>
+                                        </div>
+                                        <div className="w-px h-10 bg-border mx-2" />
+                                        <div>
+                                            <p className="text-2xl font-bold">{myPlayerStats.totalPoints}</p>
+                                            <p className="text-xs text-muted-foreground">Total Points</p>
+                                        </div>
+                                        <div className="w-px h-10 bg-border mx-2" />
+                                        <div>
+                                            <p className="text-2xl font-bold">{myPlayerStats.tries}</p>
+                                            <p className="text-xs text-muted-foreground">Tries Scored</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                        <div className="p-3 bg-white/5 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Minutes Played</p>
+                                            {/* Sum minutes from recent matches? Or just show last match mins? */}
+                                            <p className="text-lg font-semibold">
+                                                {myPlayerStats.recentMatches?.[0]?.minutesPlayed || '-'} <span className="text-xs font-normal text-muted-foreground">Last Match</span>
+                                            </p>
+                                        </div>
+                                        <div className="p-3 bg-white/5 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Discipline</p>
+                                            <p className="text-lg font-semibold text-yellow-500">
+                                                {myPlayerStats.yellowCards} YC <span className="text-red-500 ml-2">{myPlayerStats.redCards} RC</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground text-sm p-8 bg-black/5 dark:bg-white/5 backdrop-blur-sm z-10">
                                     <ChartLineUp className="w-12 h-12 opacity-20 mb-3" />
