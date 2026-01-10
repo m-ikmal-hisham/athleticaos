@@ -896,6 +896,8 @@ export const MatchDetail = () => {
                                     teamId={selectedMatch.homeTeamId}
                                     homeTeamId={selectedMatch.homeTeamId}
                                     isLocked={!isAdmin}
+                                    maxStarters={selectedMatch.startersCount || 15}
+                                    maxBench={selectedMatch.maxBenchCount || 8}
                                     onLineupUpdate={fetchLineups}
                                 />
                             </div>
@@ -909,6 +911,8 @@ export const MatchDetail = () => {
                                     teamId={selectedMatch.awayTeamId}
                                     homeTeamId={selectedMatch.homeTeamId} // Always pass home team ID to identifying logic
                                     isLocked={!isAdmin}
+                                    maxStarters={selectedMatch.startersCount || 15}
+                                    maxBench={selectedMatch.maxBenchCount || 8}
                                     onLineupUpdate={fetchLineups}
                                 />
                             </div>

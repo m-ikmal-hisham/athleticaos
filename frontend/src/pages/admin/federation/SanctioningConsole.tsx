@@ -10,12 +10,22 @@ import { showToast } from '@/lib/customToast';
 import { Check, X, Clock } from '@phosphor-icons/react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/Tabs';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 export const SanctioningConsole = () => {
     const { user } = useAuthStore();
     const [incomingRequests, setIncomingRequests] = useState<SanctioningRequest[]>([]);
     const [outgoingRequests, setOutgoingRequests] = useState<SanctioningRequest[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     // Assume user's primary organisation is the one they represent for sanctioning
     // In a real multi-org setup, we might need a context selector.
@@ -59,20 +69,26 @@ export const SanctioningConsole = () => {
         }
     };
 
-    const handleReject = async (requestId: string) => {
-        // ideally prompt for reason
-        if (!confirm("Are you sure you want to reject this request?")) return;
-
-        setProcessingId(requestId);
-        try {
-            await rejectSanctioning(requestId, "Rejected via Console");
-            showToast.success('Request rejected');
-            loadRequests();
-        } catch (error) {
-            showToast.error('Failed to reject request');
-        } finally {
-            setProcessingId(null);
-        }
+    const handleReject = (requestId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Reject Request',
+            message: 'Are you sure you want to reject this request?',
+            confirmText: 'Reject',
+            variant: 'destructive',
+            onConfirm: async () => {
+                setProcessingId(requestId);
+                try {
+                    await rejectSanctioning(requestId, "Rejected via Console");
+                    showToast.success('Request rejected');
+                    loadRequests();
+                } catch (error) {
+                    showToast.error('Failed to reject request');
+                } finally {
+                    setProcessingId(null);
+                }
+            }
+        });
     };
 
     const getStatusBadge = (status: string) => {
@@ -196,6 +212,16 @@ export const SanctioningConsole = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 };

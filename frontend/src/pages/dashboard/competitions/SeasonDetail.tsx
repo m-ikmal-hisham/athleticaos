@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 import { formatDate } from '@/utils/date';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 export const SeasonDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -18,6 +20,14 @@ export const SeasonDetail = () => {
     const [tournaments, setTournaments] = useState<any[]>([]);
     const [stats, setStats] = useState<SeasonOverview | null>(null);
     const [loading, setLoading] = useState(true);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     useEffect(() => {
         loadData();
@@ -57,15 +67,25 @@ export const SeasonDetail = () => {
         }
     };
 
-    const handleDelete = async () => {
-        if (!season || !window.confirm('Are you sure you want to delete this season? This action cannot be undone.')) return;
-        try {
-            await deleteSeason(season.id);
-            toast.success('Season deleted successfully');
-            navigate('/dashboard/competitions');
-        } catch (error) {
-            toast.error('Failed to delete season');
-        }
+    const handleDelete = () => {
+        if (!season) return;
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Season',
+            message: 'Are you sure you want to delete this season? This action cannot be undone.',
+            confirmText: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await deleteSeason(season.id);
+                    toast.success('Season deleted successfully');
+                    navigate('/dashboard/competitions');
+                } catch (error) {
+                    toast.error('Failed to delete season');
+                }
+            }
+        });
     };
 
     if (loading) {
@@ -224,6 +244,7 @@ export const SeasonDetail = () => {
                 </div>
 
                 {/* Sidebar / Stats */}
+                {/* Sidebar / Stats */}
                 <div className="space-y-6">
                     <GlassCard className="p-6">
                         <h3 className="text-sm font-semibold text-primary-500 uppercase tracking-wider mb-4">Season Stats</h3>
@@ -244,6 +265,16 @@ export const SeasonDetail = () => {
                     </GlassCard>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 };

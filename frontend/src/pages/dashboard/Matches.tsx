@@ -14,6 +14,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { clsx } from 'clsx';
 import { showToast } from '@/lib/customToast';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 export const Matches = () => {
     const navigate = useNavigate();
     const { matches, loadingList, filters, setFilters, loadMatches, deleteMatch, deleteMatches } = useMatchesStore();
@@ -21,6 +23,14 @@ export const Matches = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     useEffect(() => {
         loadMatches();
@@ -45,32 +55,37 @@ export const Matches = () => {
         }
     };
 
-    const handleStartMatch = async (matchId: string, e: React.MouseEvent) => {
+    const handleStartMatch = (matchId: string, e: React.MouseEvent) => {
         e.stopPropagation();
 
-        if (!window.confirm('Start this match? This will change the status to ONGOING.')) {
-            return;
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Start Match',
+            message: 'Start this match? This will change the status to ONGOING.',
+            confirmText: 'Start Match',
+            variant: 'primary',
+            onConfirm: async () => {
+                try {
+                    const match = matches.find(m => m.id === matchId);
+                    if (!match) return;
 
-        try {
-            const match = matches.find(m => m.id === matchId);
-            if (!match) return;
+                    await updateMatch(matchId, {
+                        matchDate: match.matchDate,
+                        kickOffTime: match.kickOffTime,
+                        venue: match.venue,
+                        status: 'ONGOING',
+                        homeScore: 0,
+                        awayScore: 0,
+                        phase: match.phase,
+                        matchCode: match.matchCode
+                    });
 
-            await updateMatch(matchId, {
-                matchDate: match.matchDate,
-                kickOffTime: match.kickOffTime,
-                venue: match.venue,
-                status: 'ONGOING',
-                homeScore: 0,
-                awayScore: 0,
-                phase: match.phase,
-                matchCode: match.matchCode
-            });
-
-            await loadMatches();
-        } catch (error) {
-            console.error('Failed to start match', error);
-        }
+                    await loadMatches();
+                } catch (error) {
+                    console.error('Failed to start match', error);
+                }
+            }
+        });
     };
 
     const handleEdit = (matchId: string, e: React.MouseEvent) => {
@@ -111,33 +126,44 @@ export const Matches = () => {
         }
     };
 
-    const handleBulkDelete = async () => {
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} matches? This action cannot be undone.`)) {
-            return;
-        }
-
-        try {
-            await deleteMatches(Array.from(selectedIds));
-            setSelectedIds(new Set());
-            setIsSelectionMode(false);
-            showToast.success('Matches deleted successfully');
-        } catch (error) {
-            console.error('Failed to bulk delete', error);
-            showToast.error('Failed to delete matches');
-        }
+    const handleBulkDelete = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Matches',
+            message: `Are you sure you want to delete ${selectedIds.size} matches? This action cannot be undone.`,
+            confirmText: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await deleteMatches(Array.from(selectedIds));
+                    setSelectedIds(new Set());
+                    setIsSelectionMode(false);
+                    showToast.success('Matches deleted successfully');
+                } catch (error) {
+                    console.error('Failed to bulk delete', error);
+                    showToast.error('Failed to delete matches');
+                }
+            }
+        });
     };
 
-    const handleDelete = async (matchId: string, e: React.MouseEvent) => {
+    const handleDelete = (matchId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!window.confirm('Are you sure you want to delete this match? This action cannot be undone.')) {
-            return;
-        }
-        try {
-            await deleteMatch(matchId);
-            // Toast is handled by store or we can add here if store doesn't
-        } catch (error) {
-            console.error('Failed to delete match', error);
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Match',
+            message: 'Are you sure you want to delete this match? This action cannot be undone.',
+            confirmText: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await deleteMatch(matchId);
+                    // Toast is handled by store or we can add here if store doesn't
+                } catch (error) {
+                    console.error('Failed to delete match', error);
+                }
+            }
+        });
     };
 
     // Filter Options
@@ -383,6 +409,16 @@ export const Matches = () => {
                     </div>
                 </>
             )}
+            {/* Other existing modals/content */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 };

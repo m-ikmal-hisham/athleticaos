@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { ArrowLeft } from '@phosphor-icons/react';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { fetchPlayerById, updatePlayer } from '@/api/players.api';
 import { assignPlayerToTeam } from '@/api/playerTeams.api';
 import { fetchTeams } from '@/api/teams.api';
@@ -300,32 +301,31 @@ export const EditPlayer = () => {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Gender *</label>
-                                <select
+                                <SearchableSelect
                                     value={gender}
-                                    onChange={(e) => setGender(e.target.value as Gender)}
-                                    className="input-base w-full"
-                                    required
-                                    aria-label="Gender"
-                                >
-                                    <option value={Gender.MALE}>Male</option>
-                                    <option value={Gender.FEMALE}>Female</option>
-                                </select>
+                                    onChange={(value) => setGender(value as Gender)}
+                                    options={[
+                                        { value: Gender.MALE, label: 'Male' },
+                                        { value: Gender.FEMALE, label: 'Female' }
+                                    ]}
+                                    placeholder="Select gender"
+                                />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Identification Type</label>
-                                <select
+                                <SearchableSelect
                                     value={identificationType}
-                                    onChange={(e) => setIdentificationType(e.target.value)}
-                                    className="input-base w-full"
-                                    aria-label="Identification Type"
-                                >
-                                    <option value="IC">IC</option>
-                                    <option value="PASSPORT">Passport</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
+                                    onChange={(value) => setIdentificationType(value as string)}
+                                    options={[
+                                        { value: 'IC', label: 'IC' },
+                                        { value: 'PASSPORT', label: 'Passport' },
+                                        { value: 'OTHER', label: 'Other' }
+                                    ]}
+                                    placeholder="Select ID type"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">
@@ -393,16 +393,16 @@ export const EditPlayer = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Status</label>
-                                <select
+                                <SearchableSelect
                                     value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    className="input-base w-full"
-                                    aria-label="Status"
-                                >
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="INACTIVE">Inactive</option>
-                                    <option value="BANNED">Banned</option>
-                                </select>
+                                    onChange={(value) => setStatus(value as string)}
+                                    options={[
+                                        { value: 'ACTIVE', label: 'Active' },
+                                        { value: 'INACTIVE', label: 'Inactive' },
+                                        { value: 'BANNED', label: 'Banned' }
+                                    ]}
+                                    placeholder="Select status"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Height (cm)</label>
@@ -431,29 +431,29 @@ export const EditPlayer = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Dominant Hand</label>
-                                <select
+                                <SearchableSelect
                                     value={dominantHand}
-                                    onChange={(e) => setDominantHand(e.target.value as DominantSide)}
-                                    className="input-base w-full"
-                                    aria-label="Dominant Hand"
-                                >
-                                    <option value={DominantSide.RIGHT}>Right</option>
-                                    <option value={DominantSide.LEFT}>Left</option>
-                                    <option value={DominantSide.BOTH}>Both</option>
-                                </select>
+                                    onChange={(value) => setDominantHand(value as DominantSide)}
+                                    options={[
+                                        { value: DominantSide.RIGHT, label: 'Right' },
+                                        { value: DominantSide.LEFT, label: 'Left' },
+                                        { value: DominantSide.BOTH, label: 'Both' }
+                                    ]}
+                                    placeholder="Select hand"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Dominant Leg</label>
-                                <select
+                                <SearchableSelect
                                     value={dominantLeg}
-                                    onChange={(e) => setDominantLeg(e.target.value as DominantSide)}
-                                    className="input-base w-full"
-                                    aria-label="Dominant Leg"
-                                >
-                                    <option value={DominantSide.RIGHT}>Right</option>
-                                    <option value={DominantSide.LEFT}>Left</option>
-                                    <option value={DominantSide.BOTH}>Both</option>
-                                </select>
+                                    onChange={(value) => setDominantLeg(value as DominantSide)}
+                                    options={[
+                                        { value: DominantSide.RIGHT, label: 'Right' },
+                                        { value: DominantSide.LEFT, label: 'Left' },
+                                        { value: DominantSide.BOTH, label: 'Both' }
+                                    ]}
+                                    placeholder="Select leg"
+                                />
                             </div>
                         </div>
                     </div>
@@ -472,38 +472,35 @@ export const EditPlayer = () => {
                             <div className="mt-4 space-y-4 p-6 bg-white/5 rounded-2xl border border-white/10">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-muted-foreground">Filter by Organisation</label>
-                                    <select
+                                    <SearchableSelect
                                         value={selectedOrganisationId}
-                                        onChange={(e) => {
-                                            setSelectedOrganisationId(e.target.value);
+                                        onChange={(value) => {
+                                            setSelectedOrganisationId(value as string);
                                             setSelectedTeamId(""); // Reset team when org changes
                                         }}
-                                        className="input-base w-full"
-                                        aria-label="Filter by Organisation"
-                                    >
-                                        <option value="">All Organisations</option>
-                                        {organisations.map(org => (
-                                            <option key={org.id} value={org.id}>{org.name}</option>
-                                        ))}
-                                    </select>
+                                        options={[
+                                            { value: '', label: 'All Organisations' },
+                                            ...organisations.map(org => ({ value: org.id, label: org.name }))
+                                        ]}
+                                        placeholder="Select organisation"
+                                    />
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-muted-foreground">Select Team</label>
-                                    <select
+                                    <SearchableSelect
                                         value={selectedTeamId}
-                                        onChange={(e) => setSelectedTeamId(e.target.value)}
-                                        className="input-base w-full"
+                                        onChange={(value) => setSelectedTeamId(value as string)}
+                                        options={[
+                                            { value: '', label: 'Choose a team...' },
+                                            ...filteredTeams.map(team => ({
+                                                value: team.id,
+                                                label: `${team.name}${team.organisationName ? ` (${team.organisationName})` : ''}`
+                                            }))
+                                        ]}
+                                        placeholder="Select team"
                                         disabled={teams.length === 0}
-                                        aria-label="Select Team"
-                                    >
-                                        <option value="">Choose a team...</option>
-                                        {filteredTeams.map(team => (
-                                            <option key={team.id} value={team.id}>
-                                                {team.name} {team.organisationName && `(${team.organisationName})`}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    />
                                     {teams.length === 0 && <p className="text-xs text-muted-foreground">No teams found.</p>}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">

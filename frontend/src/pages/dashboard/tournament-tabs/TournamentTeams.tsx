@@ -6,6 +6,8 @@ import { Team } from '@/types';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 interface TournamentTeamsProps {
     tournamentId: string;
 }
@@ -19,6 +21,14 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
     const [availableTeams, setAvailableTeams] = useState<Team[]>([]);
     const [selectedTeamIds, setSelectedTeamIds] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState('');
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     useEffect(() => {
         loadTeams();
@@ -66,14 +76,22 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
         }
     };
 
-    const handleRemoveTeam = async (teamId: string) => {
-        if (!confirm('Are you sure you want to remove this team from the tournament?')) return;
-        try {
-            await tournamentService.removeTeam(tournamentId, teamId);
-            setRefreshTrigger(prev => prev + 1);
-        } catch (error) {
-            console.error('Failed to remove team:', error);
-        }
+    const handleRemoveTeam = (teamId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove Team',
+            message: 'Are you sure you want to remove this team from the tournament?',
+            confirmText: 'Remove',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await tournamentService.removeTeam(tournamentId, teamId);
+                    setRefreshTrigger(prev => prev + 1);
+                } catch (error) {
+                    console.error('Failed to remove team:', error);
+                }
+            }
+        });
     };
 
     const filteredAvailableTeams = availableTeams.filter(team =>
@@ -192,6 +210,16 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 }

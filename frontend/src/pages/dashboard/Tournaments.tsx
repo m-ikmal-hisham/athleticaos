@@ -4,8 +4,8 @@ import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin, PencilSimple } from "@phosphor-icons/react";
-import { TournamentStatus } from "@/types";
+import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin, PencilSimple, Trash } from "@phosphor-icons/react";
+import { Tournament, TournamentStatus } from "@/types";
 import { useTournamentsStore } from "../../store/tournaments.store";
 
 import { useAuthStore } from "@/store/auth.store";
@@ -13,6 +13,8 @@ import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "@/components/SmartFilterPills";
 import { EmptyState } from "@/components/EmptyState";
 import { getImageUrl } from "../../utils/image";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import { deleteTournament } from "@/api/tournaments.api";
 
 export default function Tournaments() {
     const { tournaments, loading, getTournaments } = useTournamentsStore();
@@ -24,6 +26,11 @@ export default function Tournaments() {
     const [levelFilter, setLevelFilter] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+
+    // Delete State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [tournamentToDelete, setTournamentToDelete] = useState<Tournament | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         getTournaments();
@@ -71,6 +78,27 @@ export default function Tournaments() {
     const handleEdit = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         navigate(`/dashboard/tournaments/${id}/edit`);
+    };
+
+    const handleDeleteClick = (e: React.MouseEvent, tournament: Tournament) => {
+        e.stopPropagation();
+        setTournamentToDelete(tournament);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!tournamentToDelete) return;
+        try {
+            setIsDeleting(true);
+            await deleteTournament(tournamentToDelete.id);
+            await getTournaments(); // Refresh list
+            setDeleteModalOpen(false);
+            setTournamentToDelete(null);
+        } catch (error) {
+            console.error("Failed to delete tournament", error);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     return (
@@ -179,19 +207,21 @@ export default function Tournaments() {
                                         {t.status}
                                     </div>
                                 </div>
-                                <div className="absolute -bottom-6 left-6 w-16 h-16 rounded-xl bg-glass-bg border border-white/10 shadow-lg flex items-center justify-center overflow-hidden z-10">
-                                    {t.logoUrl ? (
-                                        <img src={getImageUrl(t.logoUrl)} alt={t.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Trophy className="w-8 h-8 text-primary-400" weight="duotone" />
-                                    )}
-                                </div>
                             </div>
 
-                            <div className="pt-8 p-6 flex-1 flex flex-col">
+                            {/* Logo - Moved out of overflow-hidden header to prevent clipping */}
+                            <div className="absolute top-24 left-6 w-16 h-16 rounded-xl bg-glass-bg border border-white/10 shadow-lg flex items-center justify-center overflow-hidden z-20">
+                                {t.logoUrl ? (
+                                    <img src={getImageUrl(t.logoUrl)} alt={t.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <Trophy className="w-8 h-8 text-primary-400" weight="duotone" />
+                                )}
+                            </div>
+
+                            <div className="pt-10 p-6 flex-1 flex flex-col">
                                 <div className="mb-4">
                                     <div className="text-xs font-semibold text-primary-400 mb-1 uppercase tracking-wider">{t.seasonName}</div>
-                                    <h3 className="text-xl font-bold text-white group-hover:text-primary-400 transition-colors line-clamp-2">{t.name}</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-primary-400 transition-colors line-clamp-2">{t.name}</h3>
                                     <div className="text-sm text-muted-foreground mt-1">{t.level} • {t.competitionType}</div>
                                 </div>
 
@@ -207,14 +237,21 @@ export default function Tournaments() {
                                 </div>
 
                                 {isAdmin && (
-                                    <div className="absolute top-4 right-auto left-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button
-                                            size="sm"
-                                            className="h-8 bg-black/50 hover:bg-black/70 backdrop-blur-md border hover:border-white/20 text-white"
+                                    <div className="absolute top-4 right-auto left-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                        <button
                                             onClick={(e) => handleEdit(e, t.id)}
+                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-white/20 text-white transition-colors border border-white/10"
+                                            title="Edit Tournament"
                                         >
                                             <PencilSimple className="w-4 h-4" />
-                                        </Button>
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteClick(e, t)}
+                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-red-500/80 text-white hover:border-red-500/50 transition-colors border border-white/10"
+                                            title="Delete Tournament"
+                                        >
+                                            <Trash className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -222,6 +259,18 @@ export default function Tournaments() {
                     ))}
                 </div>
             )}
+
+            <ConfirmDeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setTournamentToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Tournament"
+                message={`Are you sure you want to delete "${tournamentToDelete?.name}"? This action cannot be undone and will remove all matches, teams, and stats associated with this tournament.`}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }

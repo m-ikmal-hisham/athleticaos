@@ -13,14 +13,21 @@ import { PageHeader } from "../../components/PageHeader";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuthStore } from "../../store/auth.store";
+import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
+import { Team } from "../../types";
 
 export default function Teams() {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
 
     const [searchQuery, setSearchQuery] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const {
         filteredTeams,
         loading,
@@ -34,6 +41,13 @@ export default function Teams() {
         setAgeGroupFilter,
         setStateFilter
     } = useTeamsStore();
+
+    // RBAC: Check if user can delete a specific team
+    const canDeleteTeam = (team: Team) => {
+        if (isSuperAdmin) return true;
+        if (!user?.organisationId) return false;
+        return team.organisationId === user.organisationId;
+    };
 
     useEffect(() => {
         getTeams();
@@ -72,17 +86,26 @@ export default function Teams() {
         navigate(`/dashboard/teams/${teamId}/edit`);
     };
 
-    const handleDelete = async (e: React.MouseEvent, teamId: string) => {
+    const handleDeleteClick = (e: React.MouseEvent, team: Team) => {
         e.stopPropagation();
-        if (window.confirm("Are you sure you want to delete this team?")) {
-            try {
-                await deleteTeam(teamId);
-                toast.success("Team deleted successfully");
-                getTeams();
-            } catch (error) {
-                console.error("Failed to delete team", error);
-                toast.error("Failed to delete team");
-            }
+        setTeamToDelete(team);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!teamToDelete) return;
+        try {
+            setIsDeleting(true);
+            await deleteTeam(teamToDelete.id);
+            toast.success("Team deleted successfully");
+            await getTeams();
+            setDeleteModalOpen(false);
+            setTeamToDelete(null);
+        } catch (error) {
+            console.error("Failed to delete team", error);
+            toast.error("Failed to delete team");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -218,13 +241,15 @@ export default function Teams() {
                                             >
                                                 <PencilSimple className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                onClick={(e) => handleDelete(e, t.id)}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
-                                                aria-label="Delete team"
-                                            >
-                                                <Trash className="w-4 h-4" />
-                                            </button>
+                                            {canDeleteTeam(t) && (
+                                                <button
+                                                    onClick={(e) => handleDeleteClick(e, t)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    aria-label="Delete team"
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </>
                                     )}
                                 </div>
@@ -251,6 +276,18 @@ export default function Teams() {
                     ))}
                 </div>
             )}
+
+            <ConfirmDeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setTeamToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Team"
+                message={`Are you sure you want to delete "${teamToDelete?.name}"? This action cannot be undone.`}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }

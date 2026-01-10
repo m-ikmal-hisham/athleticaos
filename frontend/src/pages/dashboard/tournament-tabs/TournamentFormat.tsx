@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Gear, Play, FloppyDisk, Layout } from '@phosphor-icons/react';
+import { Gear, Play, FloppyDisk, Layout, Question } from '@phosphor-icons/react';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { tournamentService } from '@/services/tournamentService';
 import { Button } from '@/components/Button';
-import { GlassCard } from '@/components/GlassCard';
-import { CardHeader, CardTitle, CardContent } from '@/components/Card';
+import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent, GlassCardDescription } from '@/components/GlassCard';
 import { Input } from '@/components/Input';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { TournamentFormatConfig, TournamentCategory, Team, TournamentStageResponse, BracketViewResponse } from '@/types';
 import { GroupingEditor } from '@/components/content/GroupingEditor';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -215,7 +216,8 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 generateTimings,
                 useExistingGroups, // Use the manual pools!
                 selectedCategoryId || undefined,
-                config.includePlacementStages
+                config.includePlacementStages,
+                teams.filter(t => !selectedCategoryId || !t.tournamentCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned').map(t => t.id)
             );
             toast.success('Schedule generated!');
             if (onScheduleGenerated) onScheduleGenerated();
@@ -238,10 +240,9 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
     const handleAssignTeam = async (teamId: string, poolName: string | null) => {
         try {
             // Optimistic update
-            const updatedTeams = teams.map(t =>
+            setTeams(prevTeams => prevTeams.map(t =>
                 t.id === teamId ? { ...t, poolNumber: poolName || undefined } : t
-            );
-            setTeams(updatedTeams);
+            ));
 
             await tournamentService.updateTeamPool(tournamentId, teamId, poolName);
         } catch (error) {
@@ -262,216 +263,217 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
     return (
         <div className="space-y-6">
             <GlassCard>
-                <div className="p-0">
-                    <CardHeader>
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <Gear className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <CardTitle>Format Configuration</CardTitle>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {categories.length > 0
-                                            ? "Configure format and pools for each category."
-                                            : "Define rules and structure for the tournament."}
-                                    </p>
-                                </div>
+                <GlassCardHeader>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <Gear className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            {categories.length > 0 && (
-                                <div className="flex gap-3 overflow-x-auto pb-2">
-                                    {categories.map(cat => (
-                                        <div
-                                            key={cat.id}
-                                            onClick={() => setSelectedCategoryId(cat.id)}
-                                            className={clsx(
-                                                "cursor-pointer group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 min-w-[140px]",
-                                                selectedCategoryId === cat.id
-                                                    ? "bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)]"
-                                                    : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/5"
-                                            )}
-                                        >
-                                            <div className={clsx(
-                                                "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                                                "bg-gradient-to-br from-white/10 to-transparent"
-                                            )} />
-
-                                            <div className="relative z-10 flex flex-col items-start gap-1">
-                                                <span className={clsx(
-                                                    "text-sm font-bold tracking-tight",
-                                                    selectedCategoryId === cat.id ? "text-primary" : "text-foreground/80"
-                                                )}>
-                                                    {cat.name}
-                                                </span>
-                                                <span className={clsx(
-                                                    "text-xs",
-                                                    selectedCategoryId === cat.id ? "text-primary/70" : "text-muted-foreground"
-                                                )}>
-                                                    Category
-                                                </span>
-                                            </div>
-
-                                            {selectedCategoryId === cat.id && (
-                                                <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary/50" />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            <div>
+                                <GlassCardTitle>Format Configuration</GlassCardTitle>
+                                <GlassCardDescription className="mt-1">
+                                    {categories.length > 0
+                                        ? "Configure format and pools for each category."
+                                        : "Define rules and structure for the tournament."}
+                                </GlassCardDescription>
+                            </div>
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-8">
+                        {categories.length > 0 && (
+                            <div className="flex gap-3 overflow-x-auto pb-2">
+                                {categories.map(cat => (
+                                    <div
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategoryId(cat.id)}
+                                        className={clsx(
+                                            "cursor-pointer group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 min-w-[140px]",
+                                            selectedCategoryId === cat.id
+                                                ? "bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                                                : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/5"
+                                        )}
+                                    >
+                                        <div className={clsx(
+                                            "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                                            "bg-gradient-to-br from-white/10 to-transparent"
+                                        )} />
 
-                        {/* Format Rules (Shared or Global currently) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-card/50">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Competition Format</label>
-                                <select
-                                    className="w-full p-2 rounded-md border border-input bg-background"
-                                    value={config.formatType}
-                                    onChange={(e) => setConfig({ ...config, formatType: e.target.value })}
-                                    title="Competition Format"
-                                >
-                                    <option value="ROUND_ROBIN">Round Robin</option>
-                                    <option value="POOL_TO_KNOCKOUT">Pools + Knockout</option>
-                                    <option value="KNOCKOUT">Knockout</option>
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Rugby Variation</label>
-                                <select
-                                    className="w-full p-2 rounded-md border border-input bg-background"
-                                    value={config.rugbyFormat}
-                                    onChange={(e) => setConfig({ ...config, rugbyFormat: e.target.value as any })}
-                                    title="Rugby Variation"
-                                >
-                                    <option value="XV">XV (15s)</option>
-                                    <option value="SEVENS">Sevens (7s)</option>
-                                    <option value="TENS">Tens (10s)</option>
-                                    <option value="TOUCH">Touch</option>
-                                </select>
-                            </div>
-                            {(config.formatType === 'ROUND_ROBIN' || config.formatType === 'POOL_TO_KNOCKOUT') && (
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Pool Count {currentCategory ? `(${currentCategory.name})` : ''}</label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={16}
-                                        value={config.poolCount || 1}
-                                        onChange={(e) => setConfig({ ...config, poolCount: parseInt(e.target.value) || 1 })}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Number of groups for {currentCategory?.name || 'the tournament'}.</p>
-                                </div>
-                            )}
+                                        <div className="relative z-10 flex flex-col items-start gap-1">
+                                            <span className={clsx(
+                                                "text-sm font-bold tracking-tight",
+                                                selectedCategoryId === cat.id ? "text-primary" : "text-foreground/80"
+                                            )}>
+                                                {cat.name}
+                                            </span>
+                                            <span className={clsx(
+                                                "text-xs",
+                                                selectedCategoryId === cat.id ? "text-primary/70" : "text-muted-foreground"
+                                            )}>
+                                                Category
+                                            </span>
+                                        </div>
 
-                            {(config.formatType === 'KNOCKOUT') && (
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Placement Stages</label>
-                                    <div className="flex items-center space-x-2 pt-2">
-                                        <input
-                                            type="checkbox"
-                                            id="includePlacementStages"
-                                            className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
-                                            checked={config.includePlacementStages || false}
-                                            onChange={(e) => setConfig({ ...config, includePlacementStages: e.target.checked })}
-                                        />
-                                        <label htmlFor="includePlacementStages" className="text-sm cursor-pointer select-none">
-                                            Include Consolation Rounds (Plate, Bowl, etc.)
-                                        </label>
+                                        {selectedCategoryId === cat.id && (
+                                            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary/50" />
+                                        )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Generate loser brackets for lower placements.</p>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </GlassCardHeader>
+                <GlassCardContent className="space-y-8">
+
+                    {/* Format Rules (Shared or Global currently) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-card/50">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Competition Format</label>
+                            <SearchableSelect
+                                value={config.formatType}
+                                onChange={(value) => setConfig({ ...config, formatType: value as string })}
+                                options={[
+                                    { value: 'ROUND_ROBIN', label: 'Round Robin' },
+                                    { value: 'POOL_TO_KNOCKOUT', label: 'Pools + Knockout' },
+                                    { value: 'KNOCKOUT', label: 'Knockout' }
+                                ]}
+                                placeholder="Select format"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Rugby Variation</label>
+                            <SearchableSelect
+                                value={config.rugbyFormat}
+                                onChange={(value) => setConfig({ ...config, rugbyFormat: value as any })}
+                                options={[
+                                    { value: 'XV', label: 'XV (15s)' },
+                                    { value: 'SEVENS', label: 'Sevens (7s)' },
+                                    { value: 'TENS', label: 'Tens (10s)' },
+                                    { value: 'TOUCH', label: 'Touch' }
+                                ]}
+                                placeholder="Select variation"
+                            />
+                        </div>
+                        {(config.formatType === 'ROUND_ROBIN' || config.formatType === 'POOL_TO_KNOCKOUT') && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Pool Count {currentCategory ? `(${currentCategory.name})` : ''}</label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={16}
+                                    value={config.poolCount || 1}
+                                    onChange={(e) => setConfig({ ...config, poolCount: parseInt(e.target.value) || 1 })}
+                                />
+                                <p className="text-xs text-muted-foreground">Number of groups for {currentCategory?.name || 'the tournament'}.</p>
+                            </div>
+                        )}
+
+                        {(config.formatType === 'KNOCKOUT') && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Placement Stages</label>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <input
+                                        type="checkbox"
+                                        id="includePlacementStages"
+                                        className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
+                                        checked={config.includePlacementStages || false}
+                                        onChange={(e) => setConfig({ ...config, includePlacementStages: e.target.checked })}
+                                    />
+                                    <label htmlFor="includePlacementStages" className="text-sm cursor-pointer select-none">
+                                        Include Consolation Rounds (Plate, Bowl, etc.)
+                                    </label>
                                 </div>
-                            )}
-                            <div className="space-y-2 flex items-end">
+                                <p className="text-xs text-muted-foreground">Generate loser brackets for lower placements.</p>
+                            </div>
+                        )}
+                        <div className="space-y-2 flex items-end">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="w-full"
+                                onClick={handleSaveConfig}
+                                disabled={loading}
+                            >
+                                <FloppyDisk className="w-4 h-4 mr-2" />
+                                Save Globals
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                <Layout className="w-4 h-4" />
+                                Pool Structure & Assignments
+                            </h3>
+                            <div className="flex gap-2">
                                 <Button
-                                    variant="secondary"
+                                    variant="outline"
                                     size="sm"
-                                    className="w-full"
-                                    onClick={handleSaveConfig}
-                                    disabled={loading}
+                                    onClick={handleGenerateStructure}
+                                    disabled={structureLoading || generating}
                                 >
-                                    <FloppyDisk className="w-4 h-4 mr-2" />
-                                    Save Globals
+                                    {structureLoading ? 'Building...' : `Build Pools ${currentCategory ? 'for ' + currentCategory.name : ''}`}
                                 </Button>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                    <Layout className="w-4 h-4" />
-                                    Pool Structure & Assignments
-                                </h3>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleGenerateStructure}
-                                        disabled={structureLoading || generating}
-                                    >
-                                        {structureLoading ? 'Building...' : `Build Pools ${currentCategory ? 'for ' + currentCategory.name : ''}`}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Grouping Editor Area */}
-                            {(config.formatType !== 'KNOCKOUT') && (
-                                <div className="min-h-[300px] border rounded-lg bg-muted/10 p-4">
-                                    {stages.length > 0 ? (
-                                        <GroupingEditor
-                                            teams={teams}
-                                            stages={stages}
-                                            categoryId={selectedCategoryId || undefined}
-                                            onAssign={handleAssignTeam}
-                                            readonly={generating}
-                                            onRename={loadStructure}
-                                            tournamentId={tournamentId}
-                                        />
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 py-12">
-                                            <Layout className="w-12 h-12 opacity-20" />
-                                            <p>No pools generated yet.</p>
-                                            <p className="text-sm">Set the "Pool Count" and click <b>Build Pools</b> to start assigning teams.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="h-px bg-border my-6" />
-
-                        <div className="flex items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/10">
-                            <div className="space-y-1">
-                                <h4 className="font-semibold text-primary">Finalize & Generate Matches</h4>
-                                <p className="text-sm text-muted-foreground">Once teams are assigned, generate the match schedule.</p>
-                                <div className="flex items-center space-x-2 pt-1">
-                                    <input
-                                        type="checkbox"
-                                        id="useExistingGroups"
-                                        className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
-                                        checked={useExistingGroups}
-                                        onChange={(e) => setUseExistingGroups(e.target.checked)}
+                        {/* Grouping Editor Area */}
+                        {(config.formatType !== 'KNOCKOUT') && (
+                            <div className="min-h-[300px] border rounded-lg bg-muted/10 p-4">
+                                {stages.length > 0 ? (
+                                    <GroupingEditor
+                                        teams={teams}
+                                        stages={stages}
+                                        categoryId={selectedCategoryId || undefined}
+                                        onAssign={handleAssignTeam}
+                                        readonly={generating}
+                                        onRename={loadStructure}
+                                        tournamentId={tournamentId}
                                     />
-                                    <label htmlFor="useExistingGroups" className="text-xs cursor-pointer select-none">
-                                        Preserve manual pool assignments
-                                    </label>
-                                </div>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2 py-12">
+                                        <Layout className="w-12 h-12 opacity-20" />
+                                        <p>No pools generated yet.</p>
+                                        <p className="text-sm">Set the "Pool Count" and click <b>Build Pools</b> to start assigning teams.</p>
+                                    </div>
+                                )}
                             </div>
-                            <Button
-                                onClick={handleGenerateMatches}
-                                disabled={loading || generating || stages.length === 0}
-                                variant="primary"
-                                size="lg"
-                                className="flex items-center gap-2"
-                            >
-                                <Play className="w-4 h-4" />
-                                {generating ? 'Generating Matches...' : 'Generate Matches'}
-                            </Button>
-                        </div>
+                        )}
+                    </div>
 
-                    </CardContent>
-                </div>
+                    <div className="h-px bg-border my-6" />
+
+                    <div className="flex items-center justify-between bg-primary/5 p-4 rounded-lg border border-primary/10">
+                        <div className="space-y-1">
+                            <h4 className="font-semibold text-primary">Finalize & Generate Matches</h4>
+                            <p className="text-sm text-muted-foreground">Once teams are assigned, generate the match schedule.</p>
+                            <div className="flex items-center space-x-2 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="useExistingGroups"
+                                    className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
+                                    checked={useExistingGroups}
+                                    onChange={(e) => setUseExistingGroups(e.target.checked)}
+                                />
+                                <label htmlFor="useExistingGroups" className="text-xs cursor-pointer select-none flex items-center gap-1.5">
+                                    Preserve manual pool assignments
+                                    <Tooltip content="If checked, the match generator will respect the current team positions in pools. If unchecked, teams may be reshuffled." position="top">
+                                        <Question className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors cursor-help" />
+                                    </Tooltip>
+                                </label>
+                            </div>
+                        </div>
+                        <Button
+                            onClick={handleGenerateMatches}
+                            disabled={loading || generating || stages.length === 0}
+                            variant="primary"
+                            size="lg"
+                            className="flex items-center gap-2"
+                        >
+                            <Play className="w-4 h-4" />
+                            {generating ? 'Generating Matches...' : 'Generate Matches'}
+                        </Button>
+                    </div>
+
+                </GlassCardContent>
             </GlassCard>
 
             <ConfirmModal
@@ -482,6 +484,6 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 message={confirmModal.message}
                 confirmText={confirmModal.title.includes('Generate') ? 'Generate' : 'Build'}
             />
-        </div>
+        </div >
     );
 }

@@ -57,15 +57,29 @@ public class FormatServiceImpl implements FormatService {
         }
 
         if (request.getFormat() == TournamentFormat.ROUND_ROBIN) {
-            List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId).stream()
-                    .filter(TournamentTeam::isActive)
-                    .filter(team -> request.getCategoryId() == null
-                            || (team.getCategory() != null
-                                    && team.getCategory().getId().equals(request.getCategoryId())))
-                    .collect(Collectors.toList());
+            List<TournamentTeam> allTeams = tournamentTeamRepository.findByTournamentId(tournamentId);
+            List<TournamentTeam> teams;
 
-            log.info("Found {} active teams for Round Robin generation (Category: {})", teams.size(),
-                    request.getCategoryId());
+            if (request.getTeamIds() != null && !request.getTeamIds().isEmpty()) {
+                // Filter by provided Team IDs
+                teams = allTeams.stream()
+                        .filter(tt -> request.getTeamIds().contains(tt.getTeam().getId()))
+                        .filter(TournamentTeam::isActive)
+                        .collect(Collectors.toList());
+            } else {
+                // Filter by Category
+                teams = allTeams.stream()
+                        .filter(TournamentTeam::isActive)
+                        .filter(team -> request.getCategoryId() == null
+                                || (team.getCategory() != null
+                                        && team.getCategory().getId().equals(request.getCategoryId())))
+                        .collect(Collectors.toList());
+            }
+
+            log.info("Found {} active teams for Round Robin generation (Category: {}, Explicit IDs: {})",
+                    teams.size(),
+                    request.getCategoryId(),
+                    request.getTeamIds() != null ? request.getTeamIds().size() : "None");
 
             if (teams.size() < 2) {
                 throw new IllegalArgumentException("Need at least 2 teams to generate a schedule (Found " + teams.size()

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { Organisation, OrganisationLevel, fetchOrganisations } from '@/api/organisations.api';
 import { fetchTeams } from '@/api/teams.api';
@@ -211,35 +212,35 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
-                        <select
+                        <SearchableSelect
                             value={formData.orgType}
-                            onChange={(e) => setFormData({ ...formData, orgType: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            aria-label="Organisation Type"
-                        >
-                            <option value="CLUB">Club</option>
-                            <option value="SCHOOL">School</option>
-                            <option value="UNION">Union</option>
-                            <option value="STATE_UNION">State Union</option>
-                            <option value="DIVISION">Division</option>
-                            <option value="DISTRICT">District</option>
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, orgType: value as string })}
+                            options={[
+                                { value: 'CLUB', label: 'Club' },
+                                { value: 'SCHOOL', label: 'School' },
+                                { value: 'UNION', label: 'Union' },
+                                { value: 'STATE_UNION', label: 'State Union' },
+                                { value: 'DIVISION', label: 'Division' },
+                                { value: 'DISTRICT', label: 'District' }
+                            ]}
+                            placeholder="Select type"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Level</label>
-                        <select
+                        <SearchableSelect
                             value={formData.orgLevel}
-                            onChange={(e) => setFormData({ ...formData, orgLevel: e.target.value as any })}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            aria-label="Organisation Level"
-                        >
-                            <option value="COUNTRY">Country</option>
-                            <option value="STATE">State</option>
-                            <option value="DIVISION">Division</option>
-                            <option value="DISTRICT">District</option>
-                            <option value="CLUB">Club</option>
-                            <option value="SCHOOL">School</option>
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, orgLevel: value as any })}
+                            options={[
+                                { value: 'COUNTRY', label: 'Country' },
+                                { value: 'STATE', label: 'State' },
+                                { value: 'DIVISION', label: 'Division' },
+                                { value: 'DISTRICT', label: 'District' },
+                                { value: 'CLUB', label: 'Club' },
+                                { value: 'SCHOOL', label: 'School' }
+                            ]}
+                            placeholder="Select level"
+                        />
                     </div>
                 </div>
 
@@ -281,23 +282,20 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                         </div>
                     )}
 
-                    <select
+                    <SearchableSelect
                         value={formData.parentOrgId}
-                        onChange={(e) => setFormData({ ...formData, parentOrgId: e.target.value })}
-                        className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        aria-label="Parent Organisation"
-                    >
-                        <option value="">None (Top Level)</option>
-                        {/* Improved Filtering: Map State or National orgs for Clubs */}
-                        {availableOrganisations
-                            // Optional: Filter logic could go here if we wanted to be strict, but requirements say "Soft filter only"
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map(org => (
-                                <option key={org.id} value={org.id}>
-                                    {org.name} ({org.orgLevel}) {org.state ? `- ${org.state}` : ''}
-                                </option>
-                            ))}
-                    </select>
+                        onChange={(value) => setFormData({ ...formData, parentOrgId: value as string })}
+                        options={[
+                            { value: '', label: 'None (Top Level)' },
+                            ...availableOrganisations
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map(org => ({
+                                    value: org.id,
+                                    label: `${org.name} (${org.orgLevel})${org.state ? ` - ${org.state}` : ''}`
+                                }))
+                        ]}
+                        placeholder="Select parent organisation"
+                    />
                     {formData.parentOrgId && (
                         <p className="text-xs text-muted-foreground mt-1">
                             Selected: {getParentOrgName()}

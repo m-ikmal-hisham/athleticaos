@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Team } from '@/types';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { MALAYSIA_STATES } from '@/constants/malaysia-geo';
@@ -108,20 +109,20 @@ export const TeamModal = ({ isOpen, mode, initialData, onClose, onSubmit, onSucc
 
                     <div className="col-span-2">
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Organisation</label>
-                        <select
+                        <SearchableSelect
                             value={formData.organisationId}
-                            onChange={(e) => setFormData({ ...formData, organisationId: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        >
-                            <option value="">Select Organisation</option>
-                            {organisations
-                                .sort((a, b) => a.name.localeCompare(b.name))
-                                .map(org => (
-                                    <option key={org.id} value={org.id}>
-                                        {org.name} ({org.orgLevel}) {org.state ? `- ${org.state}` : ''}
-                                    </option>
-                                ))}
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, organisationId: value as string })}
+                            options={[
+                                { value: '', label: 'Select Organisation' },
+                                ...organisations
+                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                    .map(org => ({
+                                        value: org.id,
+                                        label: `${org.name} (${org.orgLevel})${org.state ? ` - ${org.state}` : ''}`
+                                    }))
+                            ]}
+                            placeholder="Select organisation"
+                        />
                         {errors.organisationId && <p className="text-xs text-red-500 mt-1">{errors.organisationId}</p>}
                     </div>
                 </div>
@@ -131,36 +132,38 @@ export const TeamModal = ({ isOpen, mode, initialData, onClose, onSubmit, onSucc
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
-                            <select
+                            <SearchableSelect
                                 value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            >
-                                <option value="">Select...</option>
-                                <option value="MENS">Men's</option>
-                                <option value="WOMENS">Women's</option>
-                                <option value="MIXED">Mixed</option>
-                            </select>
+                                onChange={(value) => setFormData({ ...formData, category: value as string })}
+                                options={[
+                                    { value: '', label: 'Select...' },
+                                    { value: 'MENS', label: "Men's" },
+                                    { value: 'WOMENS', label: "Women's" },
+                                    { value: 'MIXED', label: 'Mixed' }
+                                ]}
+                                placeholder="Select category"
+                            />
                             {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Age Group</label>
-                            <select
+                            <SearchableSelect
                                 value={formData.ageGroup}
-                                onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            >
-                                <option value="">Select...</option>
-                                <option value="Open">Open (Senior)</option>
-                                <option value="U23">Under 23</option>
-                                <option value="U21">Under 21</option>
-                                <option value="U19">Under 19</option>
-                                <option value="U18">Under 18</option>
-                                <option value="U16">Under 16</option>
-                                <option value="U14">Under 14</option>
-                                <option value="U12">Under 12</option>
-                                <option value="Veterans">Veterans (+35)</option>
-                            </select>
+                                onChange={(value) => setFormData({ ...formData, ageGroup: value as string })}
+                                options={[
+                                    { value: '', label: 'Select...' },
+                                    { value: 'Open', label: 'Open (Senior)' },
+                                    { value: 'U23', label: 'Under 23' },
+                                    { value: 'U21', label: 'Under 21' },
+                                    { value: 'U19', label: 'Under 19' },
+                                    { value: 'U18', label: 'Under 18' },
+                                    { value: 'U16', label: 'Under 16' },
+                                    { value: 'U14', label: 'Under 14' },
+                                    { value: 'U12', label: 'Under 12' },
+                                    { value: 'Veterans', label: 'Veterans (+35)' }
+                                ]}
+                                placeholder="Select age group"
+                            />
                             {errors.ageGroup && <p className="text-xs text-red-500 mt-1">{errors.ageGroup}</p>}
                         </div>
                     </div>
@@ -171,39 +174,35 @@ export const TeamModal = ({ isOpen, mode, initialData, onClose, onSubmit, onSucc
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Division</label>
-                            <select
+                            <SearchableSelect
                                 value={formData.division}
-                                onChange={(e) => setFormData({ ...formData, division: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            >
-                                <option value="">Select Division</option>
-                                <optgroup label="Malaysia Rugby Leagues">
-                                    <option value="Premier">Premier</option>
-                                    <option value="Division 1">Division 1</option>
-                                    <option value="Division 2">Division 2</option>
-                                </optgroup>
-                                <optgroup label="Other">
-                                    <option value="State League">State League</option>
-                                    <option value="University">University / IPT</option>
-                                    <option value="School">School / MSSM</option>
-                                    <option value="Development">Development</option>
-                                    <option value="Social">Social</option>
-                                </optgroup>
-                            </select>
+                                onChange={(value) => setFormData({ ...formData, division: value as string })}
+                                options={[
+                                    { value: '', label: 'Select Division' },
+                                    { value: 'Premier', label: 'Premier' },
+                                    { value: 'Division 1', label: 'Division 1' },
+                                    { value: 'Division 2', label: 'Division 2' },
+                                    { value: 'State League', label: 'State League' },
+                                    { value: 'University', label: 'University / IPT' },
+                                    { value: 'School', label: 'School / MSSM' },
+                                    { value: 'Development', label: 'Development' },
+                                    { value: 'Social', label: 'Social' }
+                                ]}
+                                placeholder="Select division"
+                            />
                             {errors.division && <p className="text-xs text-red-500 mt-1">{errors.division}</p>}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-muted-foreground mb-1">State</label>
-                            <select
+                            <SearchableSelect
                                 value={formData.state}
-                                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            >
-                                <option value="">Select State</option>
-                                {MALAYSIA_STATES.map((s) => (
-                                    <option key={s.code} value={s.name}>{s.name}</option>
-                                ))}
-                            </select>
+                                onChange={(value) => setFormData({ ...formData, state: value as string })}
+                                options={[
+                                    { value: '', label: 'Select State' },
+                                    ...MALAYSIA_STATES.map(s => ({ value: s.name, label: s.name }))
+                                ]}
+                                placeholder="Select state"
+                            />
                             {errors.state && <p className="text-xs text-red-500 mt-1">{errors.state}</p>}
                         </div>
                     </div>

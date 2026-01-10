@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     DndContext,
     closestCenter,
@@ -43,6 +44,11 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
     const [searchQuery, setSearchQuery] = useState('');
     const [editingPoolId, setEditingPoolId] = useState<string | null>(null);
     const [editingPoolName, setEditingPoolName] = useState('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -355,11 +361,14 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                 </div>
             </div>
 
-            <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
-                {activeTeam ? (
-                    <TeamItem team={activeTeam} isOverlay />
-                ) : null}
-            </DragOverlay>
+            {mounted && createPortal(
+                <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }}>
+                    {activeTeam ? (
+                        <TeamItem team={activeTeam} isOverlay />
+                    ) : null}
+                </DragOverlay>,
+                document.body
+            )}
         </DndContext>
     );
 }

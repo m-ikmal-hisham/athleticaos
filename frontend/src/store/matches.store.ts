@@ -37,6 +37,9 @@ export interface MatchItem {
     matchCode?: string | null;
     homeScore?: number;
     awayScore?: number;
+    // Lineup configuration from tournament format
+    startersCount?: number;
+    maxBenchCount?: number;
 }
 
 export interface MatchEventItem {

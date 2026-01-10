@@ -44,6 +44,10 @@ public class MatchResponse {
     private TeamInfo homeTeam;
     private TeamInfo awayTeam;
 
+    // Lineup configuration from tournament format
+    private Integer startersCount;
+    private Integer maxBenchCount;
+
     @Data
     @Builder
     @AllArgsConstructor

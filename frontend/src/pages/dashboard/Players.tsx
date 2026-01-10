@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MagnifyingGlass, PencilSimple, UserMinus, Plus } from "@phosphor-icons/react";
 import { EmptyState } from "../../components/EmptyState";
@@ -15,6 +15,7 @@ import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPill
 import { deletePlayer } from "../../api/players.api";
 import toast from "react-hot-toast";
 import { Trash } from "@phosphor-icons/react";
+import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 
 export default function Players() {
     const navigate = useNavigate();
@@ -30,6 +31,19 @@ export default function Players() {
 
     const { user } = useAuthStore();
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
+
+    // Delete modal state
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // RBAC: Check if user can delete a specific player
+    const canDeletePlayer = (player: Player) => {
+        if (isSuperAdmin) return true;
+        if (!user?.organisationId) return false;
+        return player.organisationId === user.organisationId;
+    };
 
     useEffect(() => {
         getPlayers();
@@ -49,17 +63,26 @@ export default function Players() {
         navigate(`/dashboard/players/${player.id}/edit`);
     };
 
-    const handleDelete = async (player: Player, e: React.MouseEvent) => {
+    const handleDeleteClick = (player: Player, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (window.confirm(`Are you sure you want to delete ${player.firstName} ${player.lastName}?`)) {
-            try {
-                await deletePlayer(player.id);
-                toast.success("Player deleted successfully");
-                getPlayers();
-            } catch (error) {
-                console.error("Failed to delete player", error);
-                toast.error("Failed to delete player");
-            }
+        setPlayerToDelete(player);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!playerToDelete) return;
+        try {
+            setIsDeleting(true);
+            await deletePlayer(playerToDelete.id);
+            toast.success("Player deleted successfully");
+            await getPlayers();
+            setDeleteModalOpen(false);
+            setPlayerToDelete(null);
+        } catch (error) {
+            console.error("Failed to delete player", error);
+            toast.error("Failed to delete player");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -158,13 +181,15 @@ export default function Players() {
                                             >
                                                 <PencilSimple className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                onClick={(e) => handleDelete(p, e)}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
-                                                aria-label="Delete player"
-                                            >
-                                                <Trash className="w-4 h-4" />
-                                            </button>
+                                            {canDeletePlayer(p) && (
+                                                <button
+                                                    onClick={(e) => handleDeleteClick(p, e)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    aria-label="Delete player"
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </>
                                     )}
                                 </div>
@@ -191,6 +216,18 @@ export default function Players() {
                     ))}
                 </div>
             )}
+
+            <ConfirmDeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setPlayerToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Player"
+                message={`Are you sure you want to delete "${playerToDelete?.firstName} ${playerToDelete?.lastName}"? This action cannot be undone.`}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }

@@ -5,6 +5,8 @@ import { WarningCircle, CheckCircle, ShieldWarning, X, Question } from '@phospho
 import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { Tooltip } from '@/components/ui/Tooltip';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 interface RosterManagementProps {
     tournamentId: string;
     teamId: string;
@@ -17,6 +19,14 @@ export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClo
     const [roster, setRoster] = useState<TournamentPlayerDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     useEffect(() => {
         loadRoster();
@@ -48,15 +58,22 @@ export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClo
         }
     };
 
-    const handleRemovePlayer = async (tournamentPlayerId: string) => {
-        if (!confirm('Are you sure you want to remove this player from the roster?')) return;
-
-        try {
-            await rosterService.removePlayerFromRoster(tournamentId, tournamentPlayerId);
-            await loadRoster();
-        } catch (err) {
-            console.error('Failed to remove player:', err);
-        }
+    const handleRemovePlayer = (tournamentPlayerId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove Player',
+            message: 'Are you sure you want to remove this player from the roster?',
+            confirmText: 'Remove',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await rosterService.removePlayerFromRoster(tournamentId, tournamentPlayerId);
+                    await loadRoster();
+                } catch (err) {
+                    console.error('Failed to remove player:', err);
+                }
+            }
+        });
     };
 
     if (loading) return <div>Loading roster...</div>;
@@ -145,6 +162,16 @@ export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClo
                     existingPlayerIds={roster.map(p => p.playerId)}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 }

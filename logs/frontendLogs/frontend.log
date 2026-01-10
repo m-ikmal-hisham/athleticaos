@@ -3,7 +3,11 @@
 > vite
 
 
-  VITE v5.4.21  ready in 129 ms
+  VITE v5.4.21  ready in 120 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
+9:35:50 AM [vite] hmr update /src/components/content/GroupingEditor.tsx, /src/styles/globals.css
+9:35:51 AM [vite] hmr update /src/components/content/GroupingEditor.tsx, /src/styles/globals.css
+9:40:10 AM [vite] hmr update /src/pages/dashboard/tournament-tabs/TournamentFormat.tsx, /src/styles/globals.css
+9:40:23 AM [vite] hmr update /src/pages/dashboard/tournament-tabs/TournamentFormat.tsx, /src/styles/globals.css

@@ -23,10 +23,20 @@ import {
 } from '@/api/monetization.api';
 import { toast } from 'react-hot-toast';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 export const SponsorPackages = () => {
     const [packages, setPackages] = useState<SponsorPackage[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     // Simple form state
     const [formData, setFormData] = useState({
@@ -79,16 +89,24 @@ export const SponsorPackages = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this package?')) return;
-        try {
-            await deleteSponsorPackage(id);
-            toast.success('Package deleted');
-            loadPackages();
-        } catch (e) {
-            console.error(e);
-            toast.error('Failed to delete package');
-        }
+    const handleDelete = (id: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Package',
+            message: 'Are you sure you want to delete this package?',
+            confirmText: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await deleteSponsorPackage(id);
+                    toast.success('Package deleted');
+                    loadPackages();
+                } catch (e) {
+                    console.error(e);
+                    toast.error('Failed to delete package');
+                }
+            }
+        });
     };
 
     if (loading) return <div>Loading...</div>;
@@ -198,6 +216,16 @@ export const SponsorPackages = () => {
                     </TableBody>
                 </Table>
             </Card>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 };

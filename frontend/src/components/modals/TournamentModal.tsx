@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { ImageUpload } from '@/components/common/ImageUpload';
 import { createTournament, updateTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
@@ -171,15 +172,15 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                         <label className="block text-sm font-medium text-muted-foreground mb-1">
                             Organiser <span className="text-red-400 ml-1">*</span>
                         </label>
-                        <select
-                            {...register('organiserOrgId')}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        >
-                            <option value="">Select Organisation</option>
-                            {organisations.map(org => (
-                                <option key={org.id} value={org.id}>{org.name}</option>
-                            ))}
-                        </select>
+                        <SearchableSelect
+                            value={watch('organiserOrgId')}
+                            onChange={(value) => setValue('organiserOrgId', value as string)}
+                            options={[
+                                { value: '', label: 'Select Organisation' },
+                                ...organisations.map(org => ({ value: org.id, label: org.name }))
+                            ]}
+                            placeholder="Select organiser"
+                        />
                         {errors.organiserOrgId && <p className="mt-1.5 text-sm text-red-400">{errors.organiserOrgId.message}</p>}
                     </div>
 
@@ -206,28 +207,32 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
-                            <select
-                                {...register('competitionType')}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            >
-                                <option value="LEAGUE">League</option>
-                                <option value="KNOCKOUT">Knockout</option>
-                                <option value="GROUP_KNOCKOUT">Group + Knockout</option>
-                            </select>
+                            <SearchableSelect
+                                value={watch('competitionType')}
+                                onChange={(value) => setValue('competitionType', value as string)}
+                                options={[
+                                    { value: 'LEAGUE', label: 'League' },
+                                    { value: 'KNOCKOUT', label: 'Knockout' },
+                                    { value: 'GROUP_KNOCKOUT', label: 'Group + Knockout' }
+                                ]}
+                                placeholder="Select type"
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-muted-foreground mb-1">Level</label>
-                            <select
-                                {...register('level')}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            >
-                                <option value="INTERNATIONAL">International</option>
-                                <option value="NATIONAL">National</option>
-                                <option value="STATE">State</option>
-                                <option value="DIVISION">Division</option>
-                                <option value="CLUB">Club</option>
-                                <option value="SCHOOL">School</option>
-                            </select>
+                            <SearchableSelect
+                                value={watch('level')}
+                                onChange={(value) => setValue('level', value as string)}
+                                options={[
+                                    { value: 'INTERNATIONAL', label: 'International' },
+                                    { value: 'NATIONAL', label: 'National' },
+                                    { value: 'STATE', label: 'State' },
+                                    { value: 'DIVISION', label: 'Division' },
+                                    { value: 'CLUB', label: 'Club' },
+                                    { value: 'SCHOOL', label: 'School' }
+                                ]}
+                                placeholder="Select level"
+                            />
                         </div>
                     </div>
                 </div>

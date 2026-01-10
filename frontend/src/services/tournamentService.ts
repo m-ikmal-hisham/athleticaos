@@ -117,14 +117,15 @@ export const tournamentService = {
     },
 
     // Refactoring generateSchedule to include categoryId if needed
-    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean, categoryId?: string, includePlacementStages?: boolean): Promise<void> {
+    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean, categoryId?: string, includePlacementStages?: boolean, teamIds?: string[]): Promise<void> {
         await axios.post(`/tournaments/${id}/format/generate`, {
             format,
             numberOfPools,
             generateTimings,
             useExistingGroups,
             categoryId,
-            includePlacementStages
+            includePlacementStages,
+            teamIds
         });
     },
 };

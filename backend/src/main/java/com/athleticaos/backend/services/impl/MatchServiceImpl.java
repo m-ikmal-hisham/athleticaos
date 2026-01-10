@@ -333,6 +333,16 @@ public class MatchServiceImpl implements MatchService {
                 .phase(match.getPhase())
                 .matchCode(match.getMatchCode());
 
+        // Populate lineup configuration from tournament format config
+        if (match.getTournament() != null && match.getTournament().getFormatConfig() != null) {
+            builder.startersCount(match.getTournament().getFormatConfig().getStartersCount());
+            builder.maxBenchCount(match.getTournament().getFormatConfig().getMaxBenchCount());
+        } else {
+            // Fallback to XV defaults for backward compatibility
+            builder.startersCount(15);
+            builder.maxBenchCount(8);
+        }
+
         if (match.getHomeTeam() != null) {
             builder.homeTeamId(match.getHomeTeam().getId());
             builder.homeTeamName(match.getHomeTeam().getName());

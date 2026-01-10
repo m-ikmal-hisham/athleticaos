@@ -429,6 +429,9 @@ export interface MatchResponse extends Match {
     tournamentSlug?: string;
     homeTeamPlaceholder?: string;
     awayTeamPlaceholder?: string;
+    // Lineup configuration from tournament format
+    startersCount?: number;
+    maxBenchCount?: number;
 }
 
 export interface TournamentStageResponse {

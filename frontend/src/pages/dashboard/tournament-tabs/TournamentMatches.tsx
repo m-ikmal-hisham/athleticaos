@@ -5,7 +5,10 @@ import { tournamentService } from '@/services/tournamentService';
 import { Match, Team } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import toast from 'react-hot-toast';
+
+import { ConfirmModal } from '@/components/ConfirmModal';
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -26,6 +29,14 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editMatch, setEditMatch] = useState<Match | null>(null); // If set, shows Edit Modal
     const [clearScheduleStep, setClearScheduleStep] = useState<'NONE' | 'CONFIRM'>('NONE');
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     // Create/Edit Form State
     const [matchForm, setMatchForm] = useState({
@@ -107,16 +118,25 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         }
     };
 
-    const handleDeleteMatch = async (id: string, e: React.MouseEvent) => {
+    const handleDeleteMatch = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm('Delete this match?')) return;
-        try {
-            await matchService.delete(id);
-            toast.success('Match deleted');
-            setRefreshTrigger(prev => prev + 1);
-        } catch (error) {
-            toast.error('Failed to delete match');
-        }
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Match',
+            message: 'Are you sure you want to delete this match?',
+            confirmText: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await matchService.delete(id);
+                    toast.success('Match deleted');
+                    setRefreshTrigger(prev => prev + 1);
+                } catch (error) {
+                    toast.error('Failed to delete match');
+                }
+            }
+        });
     };
 
     const handleClearSchedule = async (keepStructure: boolean) => {
@@ -347,17 +367,15 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Home Team</label>
-                                    <select
-                                        aria-label="Home Team"
-                                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
+                                    <SearchableSelect
                                         value={matchForm.homeTeamId}
-                                        onChange={e => setMatchForm({ ...matchForm, homeTeamId: e.target.value })}
-                                    >
-                                        <option value="">TBD (Placeholder)</option>
-                                        {teams.map(t => (
-                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(value) => setMatchForm({ ...matchForm, homeTeamId: value as string })}
+                                        options={[
+                                            { value: '', label: 'TBD (Placeholder)' },
+                                            ...teams.map(t => ({ value: t.id, label: t.name }))
+                                        ]}
+                                        placeholder="Select home team"
+                                    />
                                     {matchForm.homeTeamId === '' && (
                                         <input
                                             type="text"
@@ -370,17 +388,15 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Away Team</label>
-                                    <select
-                                        aria-label="Away Team"
-                                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-sm"
+                                    <SearchableSelect
                                         value={matchForm.awayTeamId}
-                                        onChange={e => setMatchForm({ ...matchForm, awayTeamId: e.target.value })}
-                                    >
-                                        <option value="">TBD (Placeholder)</option>
-                                        {teams.map(t => (
-                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(value) => setMatchForm({ ...matchForm, awayTeamId: value as string })}
+                                        options={[
+                                            { value: '', label: 'TBD (Placeholder)' },
+                                            ...teams.map(t => ({ value: t.id, label: t.name }))
+                                        ]}
+                                        placeholder="Select away team"
+                                    />
                                     {matchForm.awayTeamId === '' && (
                                         <input
                                             type="text"
@@ -435,6 +451,16 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 }

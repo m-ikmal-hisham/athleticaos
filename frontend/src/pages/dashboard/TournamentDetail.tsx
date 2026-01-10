@@ -18,6 +18,7 @@ import BracketView from '@/components/content/BracketView';
 import { BracketViewResponse, StandingsResponse } from '@/types';
 // Removed unused lucide import
 import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { deleteTournament } from '@/api/tournaments.api';
 import TournamentRosters from './TournamentRosters';
 
@@ -36,6 +37,14 @@ export default function TournamentDetail() {
     const [bracket, setBracket] = useState<BracketViewResponse | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     useEffect(() => {
         if (id) {
@@ -101,19 +110,27 @@ export default function TournamentDetail() {
         }
     };
 
-    const handleStatusChange = async (newStatus: string) => {
+    const handleStatusChange = (newStatus: string) => {
         if (!tournament?.id) return;
-        if (!confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
 
-        try {
-            setLoading(true);
-            await tournamentService.updateStatus(tournament.id, newStatus);
-            await loadTournament();
-        } catch (err) {
-            console.error('Failed to update status:', err);
-            setError('Failed to update status');
-            setLoading(false);
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: `Change Status to ${newStatus}?`,
+            message: `Are you sure you want to change the tournament status to ${newStatus}? This may affect visibility and team interactions.`,
+            confirmText: 'Change Status',
+            variant: 'primary',
+            onConfirm: async () => {
+                try {
+                    setLoading(true);
+                    await tournamentService.updateStatus(tournament.id, newStatus);
+                    await loadTournament();
+                } catch (err) {
+                    console.error('Failed to update status:', err);
+                    setError('Failed to update status');
+                    setLoading(false);
+                }
+            }
+        });
     };
 
     const handleDeleteTournament = async () => {
@@ -233,6 +250,16 @@ export default function TournamentDetail() {
                 title="Delete Tournament"
                 message={`Are you sure you want to delete "${tournament.name}"? This action cannot be undone and will remove all matches, teams, and stats associated with this tournament.`}
                 isDeleting={isDeleting}
+            />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
             />
 
             {/* Navigation Tabs */}

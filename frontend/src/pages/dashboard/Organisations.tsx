@@ -16,6 +16,7 @@ import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPill
 import { EmptyState } from "../../components/EmptyState";
 import toast from "react-hot-toast";
 import { Trash } from "@phosphor-icons/react";
+import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 
 export default function Organisations() {
     const navigate = useNavigate();
@@ -37,6 +38,15 @@ export default function Organisations() {
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
+
+    // Delete modal state
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [orgToDelete, setOrgToDelete] = useState<Organisation | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // RBAC: Only Super Admin can delete organisations
+    const canDeleteOrg = () => isSuperAdmin;
 
     useEffect(() => {
         getOrganisations();
@@ -162,17 +172,26 @@ export default function Organisations() {
         return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
     };
 
-    const handleDelete = async (e: React.MouseEvent, orgId: string) => {
+    const handleDeleteClick = (e: React.MouseEvent, org: Organisation) => {
         e.stopPropagation();
-        if (window.confirm("Are you sure you want to delete this organisation? This action cannot be undone.")) {
-            try {
-                await deleteOrganisation(orgId);
-                toast.success("Organisation deleted successfully");
-                getOrganisations(); // Refresh list
-            } catch (error) {
-                console.error("Failed to delete organisation", error);
-                toast.error("Failed to delete organisation");
-            }
+        setOrgToDelete(org);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!orgToDelete) return;
+        try {
+            setIsDeleting(true);
+            await deleteOrganisation(orgToDelete.id);
+            toast.success("Organisation deleted successfully");
+            await getOrganisations();
+            setDeleteModalOpen(false);
+            setOrgToDelete(null);
+        } catch (error) {
+            console.error("Failed to delete organisation", error);
+            toast.error("Failed to delete organisation");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -309,13 +328,15 @@ export default function Organisations() {
                                                 >
                                                     <PencilSimple className="w-4 h-4" />
                                                 </button>
-                                                <button
-                                                    onClick={(e) => handleDelete(e, org.id)}
-                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
-                                                    aria-label="Delete organisation"
-                                                >
-                                                    <Trash className="w-4 h-4" />
-                                                </button>
+                                                {canDeleteOrg() && (
+                                                    <button
+                                                        onClick={(e) => handleDeleteClick(e, org)}
+                                                        className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                        aria-label="Delete organisation"
+                                                    >
+                                                        <Trash className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </>
                                         )}
                                     </div>
@@ -341,6 +362,18 @@ export default function Organisations() {
                     ))}
                 </div>
             )}
+
+            <ConfirmDeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setOrgToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Organisation"
+                message={`Are you sure you want to delete "${orgToDelete?.name}"? This action cannot be undone and will remove all associated data.`}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }

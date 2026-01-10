@@ -7,6 +7,8 @@ import { Trash, Plus, UserCircle } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { showToast } from '@/lib/customToast';
 
+import { ConfirmModal } from '@/components/ConfirmModal';
+
 interface MatchOfficialAssignmentsProps {
     matchId: string;
     isLocked: boolean;
@@ -19,6 +21,14 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [newAssignment, setNewAssignment] = useState({ officialId: '', role: 'REFEREE' });
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'primary' as 'primary' | 'destructive',
+        confirmText: 'Confirm'
+    });
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
@@ -57,16 +67,24 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
         }
     };
 
-    const handleRemove = async (assignmentId: string) => {
-        if (!confirm('Are you sure you want to remove this official?')) return;
-        try {
-            await removeOfficial(assignmentId);
-            showToast.success('Official removed');
-            loadData();
-        } catch (error) {
-            console.error("Failed to remove official", error);
-            showToast.error('Failed to remove official');
-        }
+    const handleRemove = (assignmentId: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove Official',
+            message: 'Are you sure you want to remove this official?',
+            confirmText: 'Remove',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await removeOfficial(assignmentId);
+                    showToast.success('Official removed');
+                    loadData();
+                } catch (error) {
+                    console.error("Failed to remove official", error);
+                    showToast.error('Failed to remove official');
+                }
+            }
+        });
     };
 
     // Filter out already assigned officials from dropdown
@@ -188,6 +206,16 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                     </Table>
                 </CardContent>
             </Card>
-        </div>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                variant={confirmModal.variant}
+            />
+        </div >
     );
 };

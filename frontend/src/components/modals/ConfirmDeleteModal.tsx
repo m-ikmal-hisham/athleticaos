@@ -34,7 +34,7 @@ export default function ConfirmDeleteModal({
                     </div>
                     <div>
                         <h3 className="text-lg font-medium text-red-500 mb-1">Warning</h3>
-                        <p className="text-sm text-red-200/80 leading-relaxed">
+                        <p className="text-sm text-red-700 dark:text-red-200 leading-relaxed">
                             {message}
                         </p>
                     </div>
