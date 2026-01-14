@@ -183,6 +183,16 @@ public class TournamentController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{idOrSlug}/teams/remove")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Remove multiple teams from tournament")
+    public ResponseEntity<Void> removeTeamsFromTournament(@PathVariable String idOrSlug,
+            @RequestBody com.athleticaos.backend.dtos.tournament.TeamListRequest request) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        tournamentService.removeTeamsFromTournament(tournamentId, request.getTeamIds());
+        return ResponseEntity.ok().build();
+    }
+
     @PatchMapping("/{idOrSlug}/teams/{teamId}/pool")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Update team pool assignment")
@@ -269,9 +279,10 @@ public class TournamentController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get tournament format configuration")
     public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO> getFormatConfig(
-            @PathVariable String idOrSlug) {
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
-        return ResponseEntity.ok(tournamentService.getFormatConfig(tournamentId));
+        return ResponseEntity.ok(tournamentService.getFormatConfig(tournamentId, categoryId));
     }
 
     @PostMapping("/{idOrSlug}/format")

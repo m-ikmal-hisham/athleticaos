@@ -16,7 +16,7 @@ import { TournamentMatches } from './tournament-tabs/TournamentMatches';
 import StandingsTable from '@/components/content/StandingsTable';
 import BracketView from '@/components/content/BracketView';
 import { BracketViewResponse, StandingsResponse } from '@/types';
-// Removed unused lucide import
+import { SearchableSelect } from '@/components/SearchableSelect';
 import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { deleteTournament } from '@/api/tournaments.api';
@@ -29,12 +29,13 @@ export default function TournamentDetail() {
     const { user } = useAuthStore();
 
     const [tournament, setTournament] = useState<Tournament | null>(null);
-    const [stats, setStats] = useState<any>(null); // Using any temporarily to avoid deep type changes, or update import
+    const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [standings, setStandings] = useState<StandingsResponse[]>([]);
     const [bracket, setBracket] = useState<BracketViewResponse | null>(null);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmModal, setConfirmModal] = useState({
@@ -363,30 +364,61 @@ export default function TournamentDetail() {
                     </div>
                 )}
 
-                {activeTab === 'teams' && id && (
-                    <TournamentTeams tournamentId={id} />
+                {activeTab === 'teams' && tournament && (
+                    <TournamentTeams tournamentId={tournament.id} />
                 )}
 
-                {activeTab === 'format' && id && (
-                    <TournamentFormat tournamentId={id} onScheduleGenerated={() => setActiveTab('matches')} />
+                {activeTab === 'format' && tournament && (
+                    <TournamentFormat tournamentId={tournament.id} onScheduleGenerated={() => setActiveTab('matches')} />
                 )}
 
-                {activeTab === 'matches' && id && (
-                    <TournamentMatches tournamentId={id} />
+                {activeTab === 'matches' && tournament && (
+                    <TournamentMatches tournamentId={tournament.id} />
                 )}
 
                 {activeTab === 'standings' && (
                     <div className="space-y-6">
-                        <StandingsTable standings={standings} />
+                        <div className="flex justify-end">
+                            <div className="w-64">
+                                <SearchableSelect
+                                    options={[{ value: '', label: 'All Categories' }, ...(tournament?.categories?.map(c => ({ value: c.id, label: c.name })) || [])]}
+                                    value={selectedCategoryId || ''}
+                                    onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
+                                    placeholder="Filter by Category"
+                                    className="bg-white dark:bg-slate-800"
+                                />
+                            </div>
+                        </div>
+                        <StandingsTable standings={standings.filter(s => !selectedCategoryId || s.categoryId === selectedCategoryId)} />
                     </div>
                 )}
 
                 {activeTab === 'bracket' && bracket && (
-                    <BracketView stages={bracket.stages.map(s => s.stage)} matches={bracket.stages.flatMap(s => s.matches)} />
+                    <div className="space-y-6">
+                        <div className="flex justify-end">
+                            <div className="w-64">
+                                <SearchableSelect
+                                    options={[{ value: '', label: 'All Categories' }, ...(tournament?.categories?.map(c => ({ value: c.id, label: c.name })) || [])]}
+                                    value={selectedCategoryId || ''}
+                                    onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
+                                    placeholder="Filter by Category"
+                                    className="bg-white dark:bg-slate-800"
+                                />
+                            </div>
+                        </div>
+                        <BracketView
+                            stages={bracket.stages
+                                .filter(s => !selectedCategoryId || s.stage.categoryId === selectedCategoryId)
+                                .map(s => s.stage)}
+                            matches={bracket.stages
+                                .filter(s => !selectedCategoryId || s.stage.categoryId === selectedCategoryId)
+                                .flatMap(s => s.matches)}
+                        />
+                    </div>
                 )}
 
-                {activeTab === 'rosters' && id && (
-                    <TournamentRosters tournamentId={id} />
+                {activeTab === 'rosters' && tournament && (
+                    <TournamentRosters tournamentId={tournament.id} />
                 )}
             </div>
         </div >

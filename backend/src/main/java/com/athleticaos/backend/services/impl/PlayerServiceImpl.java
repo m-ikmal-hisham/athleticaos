@@ -131,9 +131,14 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
-        // Check if person with IC/Passport already exists
-        if (personRepository.existsByIcOrPassport(request.icOrPassport())) {
-            throw new IllegalArgumentException("Person with this IC/Passport already exists");
+        // Normalize IC/Passport (Strict Alpha-Numeric)
+        String normalizedIc = null;
+        if (request.icOrPassport() != null) {
+            normalizedIc = normalizeIc(request.icOrPassport());
+        }
+
+        if (normalizedIc != null && !normalizedIc.isEmpty()) {
+            checkDuplicateIc(normalizedIc, null);
         }
 
         // Check if person with email already exists (only if email provided)
@@ -149,7 +154,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .lastName(request.lastName())
                 .gender(request.gender())
                 .dob(request.dob())
-                .icOrPassport(request.icOrPassport())
+                .icOrPassport(normalizedIc)
                 .identificationType(request.identificationType())
                 .identificationValue(request.identificationValue())
                 .nationality(request.nationality())
@@ -202,11 +207,16 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request) {
         log.info("Updating player: {}", id);
 
-        Player player = playerRepository.findById(id)
+        Player player = playerRepository.findByIdWithPerson(id)
                 .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
-        Person person = player.getPerson();
+        // Explicitly load Person to avoid LazyInitializationException
+        Person person = playerRepository.findPersonByPlayerId(id)
+                .orElseThrow(() -> new EntityNotFoundException("Person details not found for player"));
+
+        // Force initialization (double safety, though implicit load should suffice)
+        log.debug("Loaded person for update: {}", person.getId());
 
         // Update Person (PII) fields
         if (request.firstName() != null) {
@@ -222,7 +232,18 @@ public class PlayerServiceImpl implements PlayerService {
             person.setDob(request.dob());
         }
         if (request.icOrPassport() != null) {
-            person.setIcOrPassport(request.icOrPassport());
+            String normalizedIcUpdate = normalizeIc(request.icOrPassport());
+
+            // Validate only if different or new (though duplicate check handles
+            // self-exclusion)
+            if (normalizedIcUpdate != null && !normalizedIcUpdate.isEmpty()) {
+                checkDuplicateIc(normalizedIcUpdate, person.getId());
+                person.setIcOrPassport(normalizedIcUpdate);
+            } else {
+                // If explicitly cleared (empty), allow setting to null or empty?
+                // Assuming empty string means clear.
+                person.setIcOrPassport(normalizedIcUpdate);
+            }
         }
         if (request.identificationType() != null) {
             person.setIdentificationType(request.identificationType());
@@ -284,6 +305,40 @@ public class PlayerServiceImpl implements PlayerService {
         log.info("Updated player: {}", id);
 
         return mapToPlayerResponse(player);
+    }
+
+    // ... (keeping other methods unchanged, skipping to checkDuplicateIc
+    // replacement)
+
+    private String normalizeIc(String ic) {
+        if (ic == null)
+            return null;
+        return ic.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+    }
+
+    /**
+     * Helper method to perform robust duplicate checking for IC/Passport.
+     * Uses strict normalization and Database uniqueness check.
+     *
+     * @param ic              The normalized (strict alphanumeric) input string
+     * @param excludePersonId The Person ID to exclude from the check (for updates)
+     */
+    private void checkDuplicateIc(String ic, UUID excludePersonId) {
+        log.debug("Checking for duplicate IC: {} (excluding: {})", ic, excludePersonId);
+        if (ic == null || ic.isEmpty())
+            return;
+
+        boolean exists;
+        if (excludePersonId == null) {
+            exists = personRepository.existsByIcOrPassport(ic);
+        } else {
+            exists = personRepository.existsByIcOrPassportAndIdNot(ic, excludePersonId);
+        }
+
+        if (exists) {
+            log.warn("Duplicate IC/Passport detected: {}", ic);
+            throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC number already exists");
+        }
     }
 
     @Override
@@ -428,4 +483,5 @@ public class PlayerServiceImpl implements PlayerService {
                 .createdAt(player.getCreatedAt())
                 .build();
     }
+
 }

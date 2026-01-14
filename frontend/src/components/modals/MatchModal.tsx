@@ -5,8 +5,7 @@ import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Info } from '@phosphor-icons/react';
-import { fetchTournaments } from '@/api/tournaments.api';
-import { fetchTeams } from '@/api/teams.api';
+import { fetchTournaments, getTournamentTeams } from '@/api/tournaments.api';
 import { createMatch, updateMatch } from '@/api/matches.api';
 import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
 import { Team, Match, Tournament } from '@/types';
@@ -59,23 +58,42 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 });
             }
 
-            const loadData = async () => {
+            const loadReferenceData = async () => {
                 try {
-                    const [tournamentsRes, teamsRes, formatsRes] = await Promise.all([
+                    const [tournamentsRes, formatsRes] = await Promise.all([
                         fetchTournaments(),
-                        fetchTeams(),
                         fetchMatchFormatTemplates()
                     ]);
                     setTournaments(tournamentsRes.data as any);
-                    setTeams(teamsRes.data as any);
                     setFormatTemplates(formatsRes.data as any);
                 } catch (error) {
-                    console.error("Failed to load form data", error);
+                    console.error("Failed to load reference data", error);
                 }
             };
-            loadData();
+            loadReferenceData();
         }
-    }, [isOpen, mode, initialMatch]);
+    }, [isOpen, mode, initialMatch, defaultTournamentId]);
+
+    // Fetch teams when tournamentId changes
+    useEffect(() => {
+        const loadTeams = async () => {
+            if (!formData.tournamentId) {
+                setTeams([]);
+                return;
+            }
+
+            try {
+                // Try fetching tournament specific teams
+                const res = await getTournamentTeams(formData.tournamentId);
+                setTeams(res.data as any);
+            } catch (error) {
+                console.error("Failed to load tournament teams", error);
+                // Fallback? Maybe not needed if requirement is strict.
+                setTeams([]);
+            }
+        };
+        loadTeams();
+    }, [formData.tournamentId]);
 
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));

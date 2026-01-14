@@ -55,7 +55,15 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         if (categories.length > 0 && !selectedCategoryId) {
             setSelectedCategoryId(categories[0].id);
         }
-    }, [categories]);
+    }, [categories, selectedCategoryId]);
+
+    // Fetch config and stages when category changes
+    useEffect(() => {
+        // Only load if we have categories loaded (or if tournament has no categories)
+        if (!loading && (selectedCategoryId || categories.length === 0)) {
+            loadConfigAndStructure();
+        }
+    }, [tournamentId, selectedCategoryId]);
 
     useEffect(() => {
         // Auto-update default durations and starters when rugby format changes
@@ -68,23 +76,15 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         }
     }, [config.rugbyFormat]);
 
-    // Fetch stages when category changes
-    useEffect(() => {
-        if (selectedCategoryId || (categories.length === 0 && !loading)) {
-            loadStructure();
-        }
-    }, [tournamentId, selectedCategoryId]);
-
     const loadData = async () => {
         try {
             setLoading(true);
-            const [configData, categoriesData, teamsData] = await Promise.all([
-                tournamentService.getFormatConfig(tournamentId),
+            // Initial load of categories and teams
+            const [categoriesData, teamsData] = await Promise.all([
                 tournamentService.getCategories(tournamentId),
                 tournamentService.getTeams(tournamentId)
             ]);
 
-            if (configData) setConfig(configData);
             setCategories(categoriesData);
             setTeams(teamsData);
         } catch (error) {
@@ -94,71 +94,70 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         }
     };
 
-    const loadStructure = async () => {
+    const loadConfigAndStructure = async () => {
         try {
             setStructureLoading(true);
+
+            // Load Config for this category
+            const configData = await tournamentService.getFormatConfig(tournamentId, selectedCategoryId || undefined);
+            if (configData) setConfig(configData);
+
             // Fetch bracket/structure to see existing pools
             // TODO: If category API supports filtering bracket/stages by category, use it.
             // Currently getBracket returns all.
             const bracketData: BracketViewResponse = await tournamentService.getBracket(tournamentId);
 
-            // Filter stages by category (assuming stages link to category, or infer from somewhere?)
-            // Wait, TournamentStage entity has category now. Backend endpoint returns TournamentStageResponse.
-            // But types/index.ts TournamentStageResponse does NOT have categoryId yet?
-            // Let's assume backend populates stages correctly.
-            // For now, if no category ID on stage response, we might show all? NO.
-            // We need to request adding categoryId to StageResponse if not present.
-            // OR the getBracket endpoint should filter?
-            // Actually getBracket returns entire tournament view.
-
-            // Assuming stages returned are relevant.
-            // We should filter client side if possible or rely on naming conventions if lacking IDs.
-            // Let's blindly use stages for now or filter properly if we had the field.
-            // To be safe, if categories exist, stages should belong to them.
-            // Wait, earlier I added @ManyToOne to TournamentStage.
-            // But did I update TournamentStageResponse? Let's check.
-            // Step 252: TournamentStageResponse does NOT have categoryId.
-            // For this implementation, I will assume stages are either global (no category) or relevant.
-            // BUT, if I generate structure for Category A, I want to see Category A's pools.
-
-            // For now, let's just use bracketData.stages.map(s => s.stage)
-            // And hope backend handles filtering or we iterate.
-
-            // Actually, if we have categories, we should really ensure we only show that category's stages.
-            // Since I can't easily change backend DTO right now without context switch, 
-            // I'll rely on the fact that if I just generated them, they should be there.
-            // (Or maybe they have names like "U16 Pool A"?)
-
+            // Filter stages by selected category
             const rawStages = bracketData?.stages?.map(s => s.stage) || [];
-            // If we have categories, try to match? 
-            // For MVP manual grouping, let's just show all stages found. 
-            // Assuming user is working on one category at a time or they see all.
-            setStages(rawStages);
+            const filteredStages = selectedCategoryId
+                ? rawStages.filter(s => !s.categoryId || s.categoryId === selectedCategoryId)
+                : rawStages;
+
+            setStages(filteredStages);
 
             // If we have existing stages, default to using them (preserving assignments)
-            if (rawStages.length > 0) {
+            if (filteredStages.length > 0) {
                 setUseExistingGroups(true);
             } else {
                 setUseExistingGroups(false);
             }
 
             // Refresh teams to get latest pool assignments
-            const latestTeams = await tournamentService.getTeams(tournamentId);
-            setTeams(latestTeams);
+            // const latestTeams = await tournamentService.getTeams(tournamentId);
+            // setTeams(latestTeams); 
+            // Skipping team reload for performance unless needed.
 
         } catch (error) {
-            console.error('Failed to load structure', error);
+            console.error('Failed to load structure/config', error);
         } finally {
             setStructureLoading(false);
         }
     };
 
+    // LoadStructure removed in favor of loadConfigAndStructure
+    // But we might need re-loading structure when renaming pools (GroupingEditor onRename).
+    // So let's alias it or keep it simple.
+    const reloadStructure = async () => {
+        await loadConfigAndStructure();
+    };
+
     const handleSaveConfig = async () => {
+        // SAFETY CHECK: If categories exist, prevent saving Global Defaults blindly
+        if (categories.length > 0 && !selectedCategoryId) {
+            toast.error("Please select a category before saving.");
+            return;
+        }
+
         try {
             setLoading(true);
-            const saved = await tournamentService.updateFormatConfig(tournamentId, config);
+            const configToSave = {
+                ...config,
+                categoryId: selectedCategoryId || undefined, // Explicitly send undefined for global (TS fix)
+                tournamentId: tournamentId // Ensure this is the UUID prop, not taken from potentially messy state
+            };
+            const saved = await tournamentService.updateFormatConfig(tournamentId, configToSave);
             setConfig(saved);
-            toast.success('Format configuration saved successfully');
+            toast.success(selectedCategoryId ? 'Category format saved successfully' : 'Global defaults saved successfully');
         } catch (error: any) {
             console.error('Failed to save config:', error);
             toast.error(error.response?.data?.message || 'Failed to save configuration');
@@ -188,7 +187,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
             );
 
             toast.success('Pool structure generated!');
-            await loadStructure();
+            await loadConfigAndStructure();
             setUseExistingGroups(true); // Switch to using these groups for matches
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to generate structure');
@@ -365,7 +364,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                             </div>
                         )}
 
-                        {(config.formatType === 'KNOCKOUT') && (
+                        {(config.formatType === 'KNOCKOUT' || config.formatType === 'POOL_TO_KNOCKOUT') && (
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Placement Stages</label>
                                 <div className="flex items-center space-x-2 pt-2">
@@ -385,14 +384,16 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                         )}
                         <div className="space-y-2 flex items-end">
                             <Button
-                                variant="secondary"
+                                variant={selectedCategoryId ? "primary" : "secondary"}
                                 size="sm"
                                 className="w-full"
                                 onClick={handleSaveConfig}
                                 disabled={loading}
                             >
                                 <FloppyDisk className="w-4 h-4 mr-2" />
-                                Save Globals
+                                {selectedCategoryId && currentCategory
+                                    ? `Save ${currentCategory.name} Format`
+                                    : "Save Global Defaults"}
                             </Button>
                         </div>
                     </div>
@@ -544,7 +545,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                         categoryId={selectedCategoryId || undefined}
                                         onAssign={handleAssignTeam}
                                         readonly={generating}
-                                        onRename={loadStructure}
+                                        onRename={reloadStructure}
                                         tournamentId={tournamentId}
                                     />
                                 ) : (

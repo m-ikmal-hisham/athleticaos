@@ -18,5 +18,6 @@ public class TournamentStageResponse {
     private String stageType;
     private Integer displayOrder;
     private boolean groupStage;
+    private UUID categoryId;
     private boolean knockoutStage;
 }

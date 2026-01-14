@@ -19,8 +19,8 @@ import toast from 'react-hot-toast';
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required"),
     gender: z.string().optional(),
-    minAge: z.number().optional(),
-    maxAge: z.number().optional()
+    minAge: z.number().nullable().optional(),
+    maxAge: z.number().nullable().optional()
 });
 
 const tournamentSchema = z.object({
@@ -196,7 +196,10 @@ export const EditTournament = () => {
             </div>
 
             <GlassCard className="max-w-4xl mx-auto p-8">
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                <form onSubmit={handleSubmit(onSubmit, (errors) => {
+                    console.error("Form validation errors:", errors);
+                    toast.error("Please check the form for errors");
+                })} className="space-y-8">
 
                     {/* Basic Info */}
                     <div className="space-y-6">

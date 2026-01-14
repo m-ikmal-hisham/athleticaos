@@ -188,7 +188,7 @@ export const EditTeam = () => {
                                             value: org.id,
                                             label: `${org.name} (${org.type})`
                                         }))}
-                                    disabled
+                                    placeholder="Select Organisation"
                                 />
                             </div>
                         </div>

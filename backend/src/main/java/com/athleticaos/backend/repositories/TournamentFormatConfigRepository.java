@@ -10,4 +10,8 @@ import java.util.UUID;
 @Repository
 public interface TournamentFormatConfigRepository extends JpaRepository<TournamentFormatConfig, UUID> {
     Optional<TournamentFormatConfig> findByTournamentId(UUID tournamentId);
+
+    Optional<TournamentFormatConfig> findByTournamentIdAndCategoryId(UUID tournamentId, UUID categoryId);
+
+    Optional<TournamentFormatConfig> findByTournamentIdAndCategoryIsNull(UUID tournamentId);
 }

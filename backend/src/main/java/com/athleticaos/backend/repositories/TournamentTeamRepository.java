@@ -19,4 +19,6 @@ public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, 
     @org.springframework.data.jpa.repository.Query("SELECT tt FROM TournamentTeam tt JOIN FETCH tt.team t LEFT JOIN FETCH t.organisation WHERE tt.tournament.id = :tournamentId")
     java.util.List<TournamentTeam> findByTournamentIdWithTeamAndOrganisation(
             @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+    long countByTournamentIdAndIsActiveTrueAndDeletedFalse(UUID tournamentId);
 }

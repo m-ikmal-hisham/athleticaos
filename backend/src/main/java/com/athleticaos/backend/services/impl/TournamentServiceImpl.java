@@ -43,6 +43,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.services.FormatService formatService;
     private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
     private final com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
+    private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository tournamentFormatConfigRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -113,7 +114,8 @@ public class TournamentServiceImpl implements TournamentService {
         int totalMatches = matchRepository.findByTournamentId(id).size();
         int completedMatches = matchRepository
                 .findByTournamentIdAndStatus(id, com.athleticaos.backend.enums.MatchStatus.COMPLETED).size();
-        int totalTeams = tournamentTeamRepository.findByTournamentId(id).size();
+        // Fix: Only count active and non-deleted teams
+        int totalTeams = (int) tournamentTeamRepository.countByTournamentIdAndIsActiveTrueAndDeletedFalse(id);
         int totalPlayers = tournamentPlayerRepository.findByTournamentId(id).size();
 
         List<Match> matches = matchRepository.findByTournamentId(id);
@@ -573,33 +575,117 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         for (UUID teamId : teamIds) {
+            // Fetch the Team entity to access its fields for category matching
+            com.athleticaos.backend.entities.Team team = teamRepository.findById(teamId)
+                    .orElseThrow(() -> new EntityNotFoundException("Team not found: " + teamId));
+
+            // Auto-assign category if possible
+            com.athleticaos.backend.entities.TournamentCategory assignedCategory = findMatchingCategory(tournament,
+                    team);
+
             java.util.Optional<com.athleticaos.backend.entities.TournamentTeam> existing = tournamentTeamRepository
                     .findFirstByTournamentIdAndTeamId(tournamentId, teamId);
 
             if (existing.isPresent()) {
                 com.athleticaos.backend.entities.TournamentTeam tt = existing.get();
+                boolean changed = false;
+
                 if (!tt.isActive()) {
                     tt.setActive(true);
+                    changed = true;
+                }
+
+                // If category is missing, try to update it
+                if (tt.getCategory() == null && assignedCategory != null) {
+                    tt.setCategory(assignedCategory);
+                    changed = true;
+                }
+
+                if (changed) {
                     tournamentTeamRepository.save(tt);
                 }
             } else {
-                // Proxy reference enough for relation? Check if need full fetch.
-                // Better to fetch or assume existing reference if we trust ID. EntityNotFound
-                // if not?
-                // Using proxy reference for now to avoid N+1 fetches if many teams.
-                // Actually JpaRepository.getReferenceById is better but let's stick to safe
-                // entity creation.
-                // Assuming teamId valid constraints.
-
                 com.athleticaos.backend.entities.TournamentTeam newTt = com.athleticaos.backend.entities.TournamentTeam
                         .builder()
                         .tournament(tournament)
-                        .team(teamRepository.getReferenceById(teamId))
+                        .team(team)
+                        .category(assignedCategory)
                         .isActive(true)
                         .build();
                 tournamentTeamRepository.save(newTt);
             }
         }
+    }
+
+    private com.athleticaos.backend.entities.TournamentCategory findMatchingCategory(Tournament tournament,
+            com.athleticaos.backend.entities.Team team) {
+        if (tournament.getCategories() == null || tournament.getCategories().isEmpty()) {
+            return null;
+        }
+
+        // 1. Filter by Gender
+        List<com.athleticaos.backend.entities.TournamentCategory> genderMatches = tournament.getCategories().stream()
+                .filter(cat -> isGenderMatch(team.getCategory(), cat.getGender()))
+                .collect(Collectors.toList());
+
+        if (genderMatches.isEmpty()) {
+            return null;
+        }
+
+        if (genderMatches.size() == 1) {
+            return genderMatches.get(0);
+        }
+
+        // 2. If multiple gender matches, filter by Age Group / Name
+        // Try to match Age Group string in Category Name (e.g. "U12" in "U12 Boys")
+        String ageGroup = team.getAgeGroup();
+        if (ageGroup != null) {
+            String normalizeAge = ageGroup.replace(" ", "").toLowerCase(); // "senior", "u12"
+            List<com.athleticaos.backend.entities.TournamentCategory> ageMatches = genderMatches.stream()
+                    .filter(cat -> {
+                        String catName = cat.getName().toLowerCase().replace(" ", "");
+                        // Simple contains check
+                        if (catName.contains(normalizeAge))
+                            return true;
+                        // Handle "Open" for "Senior"
+                        if (normalizeAge.equals("senior") && catName.contains("open"))
+                            return true;
+                        return false;
+                    })
+                    .collect(Collectors.toList());
+
+            if (ageMatches.size() == 1) {
+                return ageMatches.get(0);
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isGenderMatch(String teamCategory, String catGender) {
+        if (teamCategory == null || catGender == null)
+            return false;
+        String tc = teamCategory.toUpperCase();
+        String cg = catGender.toUpperCase();
+
+        boolean teamMixed = tc.contains("MIXED");
+        boolean catMixed = cg.contains("MIXED");
+
+        if (teamMixed && catMixed)
+            return true;
+        // Prioritize explicit Male/Female
+        // Note: "WOMEN" contains "MEN", so check Female first or use refined logic
+        // Actually "WOMEN" contains "MEN".
+        // Logic fix:
+        if (tc.contains("WOMEN") || tc.contains("FEMALE")) {
+            return cg.contains("WOMEN") || cg.contains("FEMALE");
+        }
+        if (tc.equals("MEN") || tc.equals("MENS") || tc.equals("MALE")) {
+            return cg.equals("MEN") || cg.equals("MENS") || cg.equals("MALE")
+                    || (cg.contains("MEN") && !cg.contains("WOMEN"));
+        }
+
+        return false;
     }
 
     @SuppressWarnings("null")
@@ -638,6 +724,24 @@ public class TournamentServiceImpl implements TournamentService {
 
         tt.setActive(false);
         tournamentTeamRepository.save(tt);
+    }
+
+    @Override
+    @Transactional
+    public void removeTeamsFromTournament(UUID tournamentId, List<UUID> teamIds) {
+        // Find all active teams for this tournament that match the IDs
+        // Note: findFirstBy... implies list.
+        // Let's iterate for now to ensure we handle "not found" gracefully or just
+        // ignore if not found (idempotent)
+        // Ideally we fetch all relevant TTEs in one query.
+        // But for simplicity/reuse:
+        for (UUID teamId : teamIds) {
+            tournamentTeamRepository.findFirstByTournamentIdAndTeamId(tournamentId, teamId)
+                    .ifPresent(tt -> {
+                        tt.setActive(false);
+                        tournamentTeamRepository.save(tt);
+                    });
+        }
     }
 
     @Override
@@ -823,11 +927,19 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
-    public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId) {
+    public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId,
+            UUID categoryId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        return tournament.getFormatConfig() != null ? mapToConfigDTO(tournament.getFormatConfig()) : null;
+        com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig(categoryId);
+        return config != null ? mapToConfigDTO(config) : null;
+    }
+
+    // Kept for backward compatibility if needed, but redirects to global (null
+    // category)
+    public com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId) {
+        return getFormatConfig(tournamentId, null);
     }
 
     @Override
@@ -849,49 +961,69 @@ public class TournamentServiceImpl implements TournamentService {
                     tournamentId);
         }
 
-        com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig();
-        if (config == null) {
-            config = new com.athleticaos.backend.entities.TournamentFormatConfig();
-            config.setTournament(tournament);
+        // Strict lookup to avoid updating Global config when a specific category config
+        // Fix: Use direct repository lookup to handle Unique Constraint correctly
+        // Instead of traversing tournament.getFormatConfigs(), we query the DB
+        // directly.
+        com.athleticaos.backend.entities.TournamentFormatConfig config;
+
+        if (configDTO.getCategoryId() != null) {
+            config = tournamentFormatConfigRepository
+                    .findByTournamentIdAndCategoryId(tournamentId, configDTO.getCategoryId())
+                    .orElse(null);
+        } else {
+            config = tournamentFormatConfigRepository
+                    .findByTournamentIdAndCategoryIsNull(tournamentId)
+                    .orElse(null);
         }
 
+        if (config == null) {
+            // Create new
+            config = new com.athleticaos.backend.entities.TournamentFormatConfig();
+            config.setTournament(tournament);
+
+            if (configDTO.getCategoryId() != null) {
+                com.athleticaos.backend.entities.TournamentCategory cat = tournament.getCategories().stream()
+                        .filter(c -> c.getId().equals(configDTO.getCategoryId()))
+                        .findFirst()
+                        .orElseThrow(() -> new EntityNotFoundException("Category not found"));
+                config.setCategory(cat);
+            }
+        }
+
+        // Apply updates
         config.setFormatType(configDTO.getFormatType());
         config.setRugbyFormat(configDTO.getRugbyFormat());
         config.setTeamCount(configDTO.getTeamCount());
         config.setPoolCount(configDTO.getPoolCount());
         config.setMatchDurationMinutes(configDTO.getMatchDurationMinutes());
-        config.setBufferTimeMinutes(configDTO.getBufferTimeMinutes());
-
-        if (configDTO.getCarnivalStartTime() != null) {
-            config.setCarnivalStartTime(java.time.LocalTime.parse(configDTO.getCarnivalStartTime()));
-        } else {
-            config.setCarnivalStartTime(null);
-        }
-
-        if (configDTO.getCarnivalEndTime() != null) {
-            config.setCarnivalEndTime(java.time.LocalTime.parse(configDTO.getCarnivalEndTime()));
-        } else {
-            config.setCarnivalEndTime(null);
-        }
-
-        // Scoring
-        config.setPointsWin(configDTO.getPointsWin() != null ? configDTO.getPointsWin() : 4);
-        config.setPointsDraw(configDTO.getPointsDraw() != null ? configDTO.getPointsDraw() : 2);
-        config.setPointsLoss(configDTO.getPointsLoss() != null ? configDTO.getPointsLoss() : 0);
-        config.setPointsBonusTry(configDTO.getPointsBonusTry() != null ? configDTO.getPointsBonusTry() : 1);
-        config.setPointsBonusLoss(configDTO.getPointsBonusLoss() != null ? configDTO.getPointsBonusLoss() : 1);
-
-        // Lineups
-        // Lineups
+        config.setPointsWin(configDTO.getPointsWin());
+        config.setPointsDraw(configDTO.getPointsDraw());
+        config.setPointsLoss(configDTO.getPointsLoss());
+        config.setPointsBonusTry(configDTO.getPointsBonusTry());
+        config.setPointsBonusLoss(configDTO.getPointsBonusLoss());
         config.setStartersCount(configDTO.getStartersCount());
-        config.setMaxBenchCount(configDTO.getMaxBenchCount() != null ? configDTO.getMaxBenchCount() : 8);
+        config.setMaxBenchCount(configDTO.getMaxBenchCount());
+        config.setBufferTimeMinutes(configDTO.getBufferTimeMinutes());
+        config.setCarnivalStartTime(
+                configDTO.getCarnivalStartTime() != null ? java.time.LocalTime.parse(configDTO.getCarnivalStartTime())
+                        : null);
+        config.setCarnivalEndTime(
+                configDTO.getCarnivalEndTime() != null ? java.time.LocalTime.parse(configDTO.getCarnivalEndTime())
+                        : null);
         config.setIsOneWayMatch(configDTO.getIsOneWayMatch());
+        config.setIncludePlacementStages(configDTO.getIncludePlacementStages());
 
-        // Update main tournament format field as well for backward compatibility
-        tournament.setFormat(configDTO.getFormatType());
-        tournament.setNumberOfPools(configDTO.getPoolCount());
+        // Save directly via repo
+        config = tournamentFormatConfigRepository.save(config);
 
-        tournament.setFormatConfig(config); // Should cascade save
+        // Update main tournament format field if updating GLOBAL config
+        if (configDTO.getCategoryId() == null) {
+            tournament.setFormat(configDTO.getFormatType());
+            tournament.setNumberOfPools(configDTO.getPoolCount());
+        }
+
+        tournament.addFormatConfig(config); // Use helper to add/replace
         tournamentRepository.save(tournament);
 
         return mapToConfigDTO(config);
@@ -902,6 +1034,7 @@ public class TournamentServiceImpl implements TournamentService {
         return com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO.builder()
                 .id(config.getId())
                 .tournamentId(config.getTournament().getId())
+                .categoryId(config.getCategory() != null ? config.getCategory().getId() : null)
                 .formatType(config.getFormatType())
                 .rugbyFormat(config.getRugbyFormat())
                 .teamCount(config.getTeamCount())
@@ -911,8 +1044,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .carnivalStartTime(
                         config.getCarnivalStartTime() != null ? config.getCarnivalStartTime().toString() : null)
                 .carnivalEndTime(config.getCarnivalEndTime() != null ? config.getCarnivalEndTime().toString() : null)
-                .isOneWayMatch(config.getIsOneWayMatch()) // Ensure this getter exists (lombok @Data handles it or check
-                                                          // naming)
+                .isOneWayMatch(config.getIsOneWayMatch())
+                .includePlacementStages(config.getIncludePlacementStages())
                 .pointsWin(config.getPointsWin())
                 .pointsDraw(config.getPointsDraw())
                 .pointsLoss(config.getPointsLoss())

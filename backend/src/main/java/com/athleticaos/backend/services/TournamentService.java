@@ -43,6 +43,8 @@ public interface TournamentService {
 
         void removeTeamFromTournament(UUID tournamentId, UUID teamId);
 
+        void removeTeamsFromTournament(UUID tournamentId, List<UUID> teamIds);
+
         void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber);
 
         void generateSchedule(UUID tournamentId,
@@ -61,6 +63,9 @@ public interface TournamentService {
         void clearSchedule(UUID tournamentId, boolean clearStructure);
 
         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId,
+                        UUID categoryId);
 
         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO updateFormatConfig(UUID tournamentId,
                         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO configDTO);

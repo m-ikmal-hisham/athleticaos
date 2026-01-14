@@ -25,9 +25,13 @@ public class TournamentFormatConfig {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tournament_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private TournamentCategory category;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "format_type", nullable = false)
@@ -59,6 +63,10 @@ public class TournamentFormatConfig {
     @Column(name = "is_one_way_match")
     @Builder.Default
     private Boolean isOneWayMatch = false;
+
+    @Column(name = "include_placement_stages")
+    @Builder.Default
+    private Boolean includePlacementStages = false;
 
     // Scoring Rules
     @Column(name = "points_win", nullable = false)

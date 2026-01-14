@@ -37,6 +37,13 @@ export interface PublicTournamentSummary {
 export interface PublicTournamentDetail extends PublicTournamentSummary {
     teams: PublicTeamSummary[];
     stages: string[];
+    categories: PublicCategorySummary[];
+}
+
+export interface PublicCategorySummary {
+    id: string;
+    name: string;
+    description?: string;
 }
 
 export interface PublicTeamSummary {
@@ -101,6 +108,8 @@ export interface PublicTeamStats {
 
 export interface PublicStanding {
     poolName: string;
+    poolId?: string; // Phase?
+    categoryId?: string;
     teamId: string;
     teamName: string;
     teamLogoUrl?: string;
@@ -127,13 +136,17 @@ export const publicTournamentApi = {
         return response.data;
     },
 
-    getTournamentMatches: async (id: string): Promise<PublicMatchSummary[]> => {
-        const response = await publicApi.get(`/tournaments/${id}/matches`);
+    getTournamentMatches: async (id: string, categoryId?: string): Promise<PublicMatchSummary[]> => {
+        const response = await publicApi.get(`/tournaments/${id}/matches`, {
+            params: { categoryId }
+        });
         return response.data;
     },
 
-    getTournamentStandings: async (id: string): Promise<PublicStanding[]> => {
-        const response = await publicApi.get(`/tournaments/${id}/standings`);
+    getTournamentStandings: async (id: string, categoryId?: string): Promise<PublicStanding[]> => {
+        const response = await publicApi.get(`/tournaments/${id}/standings`, {
+            params: { categoryId }
+        });
         return response.data;
     },
 

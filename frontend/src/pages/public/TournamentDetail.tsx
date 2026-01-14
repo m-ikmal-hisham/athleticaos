@@ -23,10 +23,17 @@ export default function TournamentDetail() {
     const [standings, setStandings] = useState<PublicStanding[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'fixtures' | 'results' | 'standings' | 'bracket'>('fixtures');
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
     useEffect(() => {
         if (id) loadTournamentData();
     }, [id]);
+
+    useEffect(() => {
+        if (id && tournament) { // Only fetch if tournament is loaded
+            loadCategoryData();
+        }
+    }, [selectedCategoryId]);
 
     // Apply branding
     useEffect(() => {
@@ -47,16 +54,40 @@ export default function TournamentDetail() {
     const loadTournamentData = async () => {
         if (!id) return;
         try {
-            const [tournamentData, matchesData, standingsData] = await Promise.all([
-                publicTournamentApi.getTournament(id),
-                publicTournamentApi.getTournamentMatches(id),
-                publicTournamentApi.getTournamentStandings(id).catch(() => []),
-            ]);
+            const tournamentData = await publicTournamentApi.getTournament(id);
             setTournament(tournamentData);
+
+            // Set default category if available
+            if (tournamentData.categories && tournamentData.categories.length > 0) {
+                setSelectedCategoryId(tournamentData.categories[0].id);
+            } else {
+                // Load all if no categories
+                const [matchesData, standingsData] = await Promise.all([
+                    publicTournamentApi.getTournamentMatches(id),
+                    publicTournamentApi.getTournamentStandings(id).catch(() => []),
+                ]);
+                setMatches(matchesData);
+                setStandings(standingsData || []);
+            }
+        } catch (error) {
+            console.error('Failed to load tournament:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadCategoryData = async () => {
+        if (!id) return;
+        setLoading(true); // Maybe use a separate loading state for data refresh?
+        try {
+            const [matchesData, standingsData] = await Promise.all([
+                publicTournamentApi.getTournamentMatches(id, selectedCategoryId || undefined),
+                publicTournamentApi.getTournamentStandings(id, selectedCategoryId || undefined).catch(() => []),
+            ]);
             setMatches(matchesData);
             setStandings(standingsData || []);
         } catch (error) {
-            console.error('Failed to load tournament:', error);
+            console.error('Failed to load category data:', error);
         } finally {
             setLoading(false);
         }
@@ -88,7 +119,7 @@ export default function TournamentDetail() {
     });
 
 
-    if (loading) return <div className="space-y-6 animate-pulse p-8"><div className="h-64 bg-slate-800/10 rounded-2xl"></div></div>;
+    if (loading && !tournament) return <div className="space-y-6 animate-pulse p-8"><div className="h-64 bg-slate-800/10 rounded-2xl"></div></div>;
     if (!tournament) return <div className="text-center py-20 text-slate-500">Tournament not found</div>;
 
     return (
@@ -163,6 +194,26 @@ export default function TournamentDetail() {
                 </GlassCard>
             </div>
 
+            {/* Category Filter */}
+            {tournament.categories && tournament.categories.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                    {tournament.categories.map(category => (
+                        <button
+                            key={category.id}
+                            onClick={() => setSelectedCategoryId(category.id)}
+                            className={`
+                                px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors
+                                ${selectedCategoryId === category.id
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}
+                            `}
+                        >
+                            {category.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Main Content Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
@@ -201,8 +252,13 @@ export default function TournamentDetail() {
                 {/* Right Content Area - spans 3 */}
                 <div className="lg:col-span-3 min-h-[500px]">
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-                        {activeTab === 'standings' ? (
+                        {loading ? (
+                            <div className="space-y-6 animate-pulse pt-4">
+                                <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+                                <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+                                <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl"></div>
+                            </div>
+                        ) : activeTab === 'standings' ? (
                             <PublicTournamentPools standings={standings} />
                         ) : activeTab === 'bracket' ? (
                             <PublicTournamentBracket matches={matches} />

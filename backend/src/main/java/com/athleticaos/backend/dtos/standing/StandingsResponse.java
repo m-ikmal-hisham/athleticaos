@@ -25,4 +25,5 @@ public class StandingsResponse {
     private int pointsAgainst;
     private int pointsDiff;
     private int points; // Tournament Points
+    private UUID categoryId;
 }

@@ -53,6 +53,7 @@ public class StandingsServiceImpl implements StandingsService {
                             .pointsAgainst(0)
                             .pointsDiff(0)
                             .points(0)
+                            .categoryId(tt.getCategory() != null ? tt.getCategory().getId() : null)
                             .build());
                 } else {
                     log.warn("TournamentTeam {} has null Team reference", tt.getId());

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash, MagnifyingGlass, Users } from '@phosphor-icons/react';
 import { teamService } from '@/services/teamService';
 import { tournamentService } from '@/services/tournamentService';
-import { Team } from '@/types';
+import { Team, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 
@@ -14,6 +14,8 @@ interface TournamentTeamsProps {
 
 export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
     const [teams, setTeams] = useState<Team[]>([]);
+    const [categories, setCategories] = useState<TournamentCategory[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Modal state
@@ -30,16 +32,27 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
         confirmText: 'Confirm'
     });
 
+    const [selectedRegisteredTeamIds, setSelectedRegisteredTeamIds] = useState<Set<string>>(new Set());
+
     useEffect(() => {
-        loadTeams();
+        loadData();
     }, [tournamentId, refreshTrigger]);
 
-    const loadTeams = async () => {
+    // Reset selection when category changes
+    useEffect(() => {
+        setSelectedRegisteredTeamIds(new Set());
+    }, [selectedCategoryId, teams]);
+
+    const loadData = async () => {
         try {
-            const data = await tournamentService.getTeams(tournamentId);
-            setTeams(data);
+            const [teamsData, categoriesData] = await Promise.all([
+                tournamentService.getTeams(tournamentId),
+                tournamentService.getCategories(tournamentId)
+            ]);
+            setTeams(teamsData);
+            setCategories(categoriesData);
         } catch (error) {
-            console.error('Failed to load tournament teams:', error);
+            console.error('Failed to load tournament data:', error);
         }
     };
 
@@ -66,6 +79,24 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
         setSelectedTeamIds(newSelected);
     };
 
+    const handleToggleRegisteredTeamSelection = (teamId: string) => {
+        const newSelected = new Set(selectedRegisteredTeamIds);
+        if (newSelected.has(teamId)) {
+            newSelected.delete(teamId);
+        } else {
+            newSelected.add(teamId);
+        }
+        setSelectedRegisteredTeamIds(newSelected);
+    };
+
+    const handleSelectAllRegisteredTeams = () => {
+        if (selectedRegisteredTeamIds.size === filteredTeams.length && filteredTeams.length > 0) {
+            setSelectedRegisteredTeamIds(new Set());
+        } else {
+            setSelectedRegisteredTeamIds(new Set(filteredTeams.map(t => t.id)));
+        }
+    };
+
     const handleAddTeams = async () => {
         try {
             await tournamentService.addTeams(tournamentId, Array.from(selectedTeamIds));
@@ -87,8 +118,32 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                 try {
                     await tournamentService.removeTeam(tournamentId, teamId);
                     setRefreshTrigger(prev => prev + 1);
+                    setSelectedRegisteredTeamIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(teamId);
+                        return next;
+                    });
                 } catch (error) {
                     console.error('Failed to remove team:', error);
+                }
+            }
+        });
+    };
+
+    const handleBulkRemove = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove Teams',
+            message: `Are you sure you want to remove ${selectedRegisteredTeamIds.size} teams from the tournament?`,
+            confirmText: 'Remove Selected',
+            variant: 'destructive',
+            onConfirm: async () => {
+                try {
+                    await tournamentService.removeTeams(tournamentId, Array.from(selectedRegisteredTeamIds));
+                    setRefreshTrigger(prev => prev + 1);
+                    setSelectedRegisteredTeamIds(new Set());
+                } catch (error) {
+                    console.error('Failed to remove teams:', error);
                 }
             }
         });
@@ -98,35 +153,123 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
         team.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const filteredTeams = selectedCategoryId
+        ? teams.filter(t => t.tournamentCategoryId === selectedCategoryId)
+        : teams;
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                     <Users className="w-5 h-5" />
-                    Participating Teams ({teams.length})
+                    Participating Teams ({filteredTeams.length})
                 </h3>
-                <Button onClick={handleOpenAddModal} className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add Teams
-                </Button>
+                <div className="flex gap-2 w-full md:w-auto items-center">
+                    {/* Bulk Actions */}
+                    {selectedRegisteredTeamIds.size > 0 && (
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleBulkRemove}
+                            className="mr-2"
+                        >
+                            Remove ({selectedRegisteredTeamIds.size})
+                        </Button>
+                    )}
+
+                    {/* Category Filter */}
+                    {categories.length > 0 && (
+                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                            <button
+                                onClick={() => setSelectedCategoryId(null)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!selectedCategoryId
+                                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                All
+                            </button>
+                            {categories.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategoryId(cat.id)}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${selectedCategoryId === cat.id
+                                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <Button onClick={handleOpenAddModal} className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Teams
+                    </Button>
+                </div>
             </div>
 
+            {/* Select All Bar */}
+            {filteredTeams.length > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                    <input
+                        type="checkbox"
+                        checked={filteredTeams.length > 0 && selectedRegisteredTeamIds.size === filteredTeams.length}
+                        onChange={handleSelectAllRegisteredTeams}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        aria-label="Select all teams"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                        Select All
+                        {selectedCategoryId ? ' in Category' : ''}
+                    </span>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teams.length === 0 ? (
+                {filteredTeams.length === 0 ? (
                     <div className="col-span-full p-8 text-center text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                        No teams registered yet. Add teams to start.
+                        {teams.length === 0 ? 'No teams registered yet. Add teams to start.' : 'No teams in this category.'}
                     </div>
                 ) : (
-                    teams.map(team => (
-                        <GlassCard key={team.id} className="p-4 flex justify-between items-center group">
-                            <div>
-                                <h4 className="font-medium text-slate-900 dark:text-white">{team.name}</h4>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{team.organisationName}</p>
+                    filteredTeams.map(team => (
+                        <GlassCard key={team.id} className={`p-4 flex justify-between items-center group cursor-pointer transition-colors ${selectedRegisteredTeamIds.has(team.id) ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''
+                            }`}
+                            onClick={(e) => {
+                                // Prevent toggle if clicking delete button
+                                if ((e.target as HTMLElement).closest('button')) return;
+                                handleToggleRegisteredTeamSelection(team.id);
+                            }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedRegisteredTeamIds.has(team.id)}
+                                    onChange={() => handleToggleRegisteredTeamSelection(team.id)}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    onClick={(e) => e.stopPropagation()}
+                                    aria-label={`Select team ${team.name}`}
+                                />
+                                <div>
+                                    <h4 className="font-medium text-slate-900 dark:text-white">{team.name}</h4>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{team.organisationName}</p>
+                                    {/* Show category name if displaying All */}
+                                    {!selectedCategoryId && team.category && team.category !== 'Unassigned' && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 mt-1">
+                                            {team.category}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleRemoveTeam(team.id)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTeam(team.id);
+                                }}
                                 className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
                                 <Trash className="w-4 h-4" />

@@ -56,6 +56,7 @@ public class MatchResponse {
         private String id;
         private String name;
         private String stageType;
+        private UUID categoryId;
     }
 
     @Data

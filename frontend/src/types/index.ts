@@ -345,6 +345,7 @@ export interface TournamentDashboardResponse {
 export interface TournamentFormatConfig {
     id?: string;
     tournamentId?: string;
+    categoryId?: string;
     formatType: string;
     rugbyFormat: 'XV' | 'SEVENS' | 'TENS' | 'TOUCH';
     teamCount: number;
@@ -372,6 +373,7 @@ export interface MatchStage {
     id: string; // Changed from enum to object/interface if needed, but keeping simple for now. Actually backend returns object.
     name: string;
     stageType: string;
+    categoryId?: string;
 }
 
 export enum MatchStatus {
@@ -449,6 +451,7 @@ export interface TournamentStageResponse {
     displayOrder: number;
     groupStage: boolean;
     knockoutStage: boolean;
+    categoryId?: string;
 }
 
 export interface TournamentStageBracket {
@@ -475,6 +478,7 @@ export interface Standings {
     pointsAgainst: number;
     pointsDiff: number;
     points: number;
+    categoryId?: string;
 }
 
 export type StandingsResponse = Standings;

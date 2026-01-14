@@ -23,6 +23,7 @@ interface MatchControlsProps {
     // Validation
     canStartMatch?: boolean;
     startMatchDisabledReason?: string;
+    isOneWayMatch?: boolean;
 }
 
 export const MatchControls = ({
@@ -41,7 +42,8 @@ export const MatchControls = ({
     onTimerAdjust,
     onTimeUpdate,
     canStartMatch = true,
-    startMatchDisabledReason
+    startMatchDisabledReason,
+    isOneWayMatch = false
 }: MatchControlsProps) => {
     if (!isAdmin) return null;
 
@@ -135,8 +137,8 @@ export const MatchControls = ({
                     </div>
                 )}
 
-                {/* Half Time */}
-                {isOngoing && (
+                {/* Half Time - Hidden for One Way Matches */}
+                {(isOngoing && !isOneWayMatch) && (
                     <Button
                         variant="outline"
                         size="sm"

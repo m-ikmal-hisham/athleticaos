@@ -146,8 +146,8 @@ export const DashboardHome = () => {
     // 4. Fetch My Player Stats
     useEffect(() => {
         const loadPlayerStats = async () => {
-            // Check if user has role PLAYER or SUPER_ADMIN (for testing)
-            if (user?.roles?.some(r => r.includes('PLAYER') || r.includes('SUPER_ADMIN'))) {
+            // Check if user has role PLAYER only
+            if (user?.roles?.some(r => r.includes('PLAYER'))) {
                 try {
                     // Attempt to fetch current player
                     const res = await fetchCurrentPlayer();

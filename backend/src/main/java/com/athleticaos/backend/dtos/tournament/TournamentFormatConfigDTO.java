@@ -18,6 +18,7 @@ public class TournamentFormatConfigDTO {
 
     private UUID id;
     private UUID tournamentId;
+    private UUID categoryId;
 
     @NotNull
     private TournamentFormat formatType;
@@ -42,6 +43,7 @@ public class TournamentFormatConfigDTO {
     private String carnivalEndTime;
 
     private Boolean isOneWayMatch;
+    private Boolean includePlacementStages;
 
     // Scoring
     private Integer pointsWin;

@@ -176,6 +176,8 @@ export const MatchDetail = () => {
 
     const isAdmin = canManageEvents;
 
+    const isOneWayMatch = selectedMatch?.isOneWayMatch || formatConfig?.isOneWayMatch;
+
     // --- Robust Timer Logic ---
     // Using a ref to track the interval ID to ensure clear cleanup
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -392,6 +394,13 @@ export const MatchDetail = () => {
 
     const handleResume = () => {
         setIsHalfTime(false);
+        // Reset to second half start time (Half Duration)
+        const duration = selectedMatch?.matchDuration || formatConfig?.matchDurationMinutes || 14;
+        // Only reset if it makes sense (e.g. standard 2-half match)
+        // If it's a one-way match, half-time shouldn't exist, but if it does, maybe don't jump time?
+        // Assuming standard behavior for resumption:
+        setMatchTimeSeconds((duration / 2) * 60);
+
         setIsTimerRunning(true);
         showToast.success('Resumed');
     };
@@ -655,6 +664,7 @@ export const MatchDetail = () => {
                                 onTimerPause={handleTimerPause}
                                 onTimerAdjust={handleTimerAdjust}
                                 onTimeUpdate={(newSeconds) => setMatchTimeSeconds(newSeconds)}
+                                isOneWayMatch={!!isOneWayMatch}
                                 canStartMatch={
                                     matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
                                     matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)

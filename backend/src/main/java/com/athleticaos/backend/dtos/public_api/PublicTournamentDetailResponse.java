@@ -15,5 +15,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class PublicTournamentDetailResponse extends PublicTournamentSummaryResponse {
     private List<PublicTeamSummary> teams;
+    private List<PublicCategorySummary> categories;
     private List<String> stages; // e.g. "Pool A", "Quarter Finals"
 }

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
 import { matchService } from '@/services/matchService';
 import { tournamentService } from '@/services/tournamentService';
-import { Match } from '@/types';
+import { Match, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -17,6 +18,8 @@ interface TournamentMatchesProps {
 export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const navigate = useNavigate();
     const [matches, setMatches] = useState<Match[]>([]);
+    const [categories, setCategories] = useState<TournamentCategory[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -42,10 +45,15 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     }, [tournamentId, refreshTrigger]);
 
     useEffect(() => {
+        // Filter matches by category if selected
+        let filtered = matches;
+        if (selectedCategoryId) {
+            filtered = matches.filter(m => m.stage?.categoryId === selectedCategoryId);
+        }
+
         // Split matches
-        // Split matches
-        const scheduled = matches.filter(m => m.matchDate && m.kickOffTime);
-        const unscheduled = matches.filter(m => !m.matchDate || !m.kickOffTime);
+        const scheduled = filtered.filter(m => m.matchDate && m.kickOffTime);
+        const unscheduled = filtered.filter(m => !m.matchDate || !m.kickOffTime);
 
         // Sort scheduled by Date then Time
         scheduled.sort((a, b) => {
@@ -56,13 +64,17 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
         setScheduledMatches(scheduled);
         setUnscheduledMatches(unscheduled);
-    }, [matches]);
+    }, [matches, selectedCategoryId]);
 
     const loadData = async () => {
         try {
             setLoading(true);
-            const matchesData = await matchService.getByTournament(tournamentId);
+            const [matchesData, categoriesData] = await Promise.all([
+                matchService.getByTournament(tournamentId),
+                tournamentService.getCategories(tournamentId)
+            ]);
             setMatches(matchesData);
+            setCategories(categoriesData);
         } catch (error) {
             console.error('Failed to load data:', error);
             toast.error('Failed to load matches');
@@ -99,6 +111,12 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
     const handleClearSchedule = async (keepStructure: boolean) => {
         try {
+            // TODO: Ideally clearSchedule should support categoryId too, 
+            // but for now let's assume global clear or updated service invocation if supported.
+            // Backend supports it now, but frontend service needs update? 
+            // Let's stick to global clear for safety or full reset, 
+            // unless user specifically wants "Clear This Category".
+            // Current UI is "Clear Schedule", implying global.
             await tournamentService.clearSchedule(tournamentId, keepStructure);
             toast.success(keepStructure ? 'Matches cleared (Structure kept)' : 'Schedule fully reset');
             setClearScheduleStep('NONE');
@@ -146,14 +164,33 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     });
     const sortedUnscheduledStages = Object.keys(unscheduledByStage).sort();
 
+    const categoryOptions = [
+        { value: '', label: 'All Categories' },
+        ...categories.map(c => ({ value: c.id, label: c.name }))
+    ];
+
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <CalendarBlank className="w-6 h-6 text-primary" />
-                    Matches ({matches.length})
-                </h3>
+                <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <CalendarBlank className="w-6 h-6 text-primary" />
+                        Matches ({matches.length})
+                    </h3>
+
+                    {/* Category Filter */}
+                    <div className="w-64">
+                        <SearchableSelect
+                            options={categoryOptions}
+                            value={selectedCategoryId || ''}
+                            onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
+                            placeholder="Filter by Category"
+                            className="bg-white dark:bg-slate-800"
+                        />
+                    </div>
+                </div>
+
                 <div className="flex gap-2">
                     {matches.length > 0 && (
                         <div className="relative">
@@ -222,7 +259,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                     <div className="lg:col-span-3 space-y-8">
                         {scheduledMatches.length === 0 && (
                             <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                <p className="text-slate-500">No scheduled matches.</p>
+                                <p className="text-slate-500">No scheduled matches{selectedCategoryId ? ' for this category' : ''}.</p>
                             </div>
                         )}
                         {sortedDates.map(date => (

@@ -53,6 +53,12 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
 
         void deleteByTournamentId(UUID tournamentId);
 
+        @org.springframework.data.jpa.repository.Modifying
+        @org.springframework.data.jpa.repository.Query("DELETE FROM Match m WHERE m.tournament.id = :tournamentId AND m.stage.id IN (SELECT s.id FROM TournamentStage s WHERE s.tournament.id = :tournamentId AND s.category.id = :categoryId)")
+        void deleteByTournamentIdAndCategoryId(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+                        @org.springframework.data.repository.query.Param("categoryId") UUID categoryId);
+
         @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
                         "LEFT JOIN FETCH m.homeTeam ht " +
                         "LEFT JOIN FETCH ht.organisation hto " +

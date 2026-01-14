@@ -29,6 +29,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.repositories.TournamentTeamRepository tournamentTeamRepository;
     private final com.athleticaos.backend.repositories.MatchEventRepository matchEventRepository;
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
+    private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
 
     @GetMapping("/tournaments")
     @Transactional(readOnly = true)
@@ -69,7 +70,8 @@ public class PublicTournamentController {
     @Transactional(readOnly = true)
     public ResponseEntity<List<PublicMatchSummaryResponse>> getTournamentMatches(
             @PathVariable String idOrSlug,
-            @RequestParam(required = false) String stage) {
+            @RequestParam(required = false) String stage,
+            @RequestParam(required = false) UUID categoryId) {
 
         try {
             // Verify tournament is published
@@ -79,6 +81,13 @@ public class PublicTournamentController {
             }
 
             List<MatchResponse> matches = matchService.getMatchesByTournament(tournament.getId());
+
+            if (categoryId != null) {
+                matches = matches.stream()
+                        .filter(m -> m.getStage() == null || m.getStage().getCategoryId() == null ||
+                                m.getStage().getCategoryId().equals(categoryId))
+                        .collect(Collectors.toList());
+            }
 
             List<PublicMatchSummaryResponse> response = matches.stream()
                     .map(this::mapToPublicMatchSummary)
@@ -118,7 +127,9 @@ public class PublicTournamentController {
 
     @GetMapping("/tournaments/{idOrSlug}/standings")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<StandingsResponse>> getTournamentStandings(@PathVariable String idOrSlug) {
+    public ResponseEntity<List<StandingsResponse>> getTournamentStandings(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
         try {
             // Verify tournament is published
             TournamentResponse tournament = fetchTournament(idOrSlug);
@@ -127,6 +138,12 @@ public class PublicTournamentController {
             }
 
             List<StandingsResponse> standings = standingsService.getStandings(tournament.getId());
+
+            if (categoryId != null) {
+                standings = standings.stream()
+                        .filter(s -> s.getCategoryId() == null || s.getCategoryId().equals(categoryId))
+                        .collect(Collectors.toList());
+            }
             return ResponseEntity.ok(standings);
         } catch (Exception e) {
             log.error("Error fetching standings for tournament {}", idOrSlug, e);
@@ -194,6 +211,15 @@ public class PublicTournamentController {
             }
         }
 
+        // Fetch categories
+        List<PublicCategorySummary> categories = categoryService.getCategoriesByTournament(t.getId()).stream()
+                .map(c -> PublicCategorySummary.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .description(c.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+
         return PublicTournamentDetailResponse.builder()
                 .id(t.getId())
                 .name(t.getName())
@@ -209,6 +235,7 @@ public class PublicTournamentController {
                 .organiserBranding(getOrganiserBranding(t.getOrganiserOrgId()))
                 .competitionType(t.getCompetitionType())
                 .teams(teams)
+                .categories(categories)
                 .stages(List.of()) // Stages can be populated if TournamentStage is used
                 .logoUrl(t.getLogoUrl())
                 .livestreamUrl(t.getLivestreamUrl())
@@ -307,9 +334,11 @@ public class PublicTournamentController {
                 .organiserBranding(branding)
                 .tournamentId(m.getTournamentId())
                 .tournamentSlug(m.getTournamentSlug())
-                // Populate format fields (lazy approach: fetch config if tournamentId exists)
-                .matchDuration(getMatchDuration(m.getTournamentId()))
-                .isOneWayMatch(getIsOneWayMatch(m.getTournamentId()))
+                // Populate format fields using tournament match logic
+                .matchDuration(getMatchDuration(m.getTournamentId(),
+                        m.getStage() != null ? m.getStage().getCategoryId() : null))
+                .isOneWayMatch(getIsOneWayMatch(m.getTournamentId(),
+                        m.getStage() != null ? m.getStage().getCategoryId() : null))
                 .build();
     }
 
@@ -372,24 +401,24 @@ public class PublicTournamentController {
         }
     }
 
-    private Integer getMatchDuration(UUID tournamentId) {
+    private Integer getMatchDuration(UUID tournamentId, UUID categoryId) {
         if (tournamentId == null)
             return 80;
         try {
             com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO config = tournamentService
-                    .getFormatConfig(tournamentId);
+                    .getFormatConfig(tournamentId, categoryId);
             return config != null ? config.getMatchDurationMinutes() : 80;
         } catch (Exception e) {
             return 80; // default
         }
     }
 
-    private boolean getIsOneWayMatch(UUID tournamentId) {
+    private boolean getIsOneWayMatch(UUID tournamentId, UUID categoryId) {
         if (tournamentId == null)
             return false;
         try {
             com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO config = tournamentService
-                    .getFormatConfig(tournamentId);
+                    .getFormatConfig(tournamentId, categoryId);
             return config != null && Boolean.TRUE.equals(config.getIsOneWayMatch());
         } catch (Exception e) {
             return false;

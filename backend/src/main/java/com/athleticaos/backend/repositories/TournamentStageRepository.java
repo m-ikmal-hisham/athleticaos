@@ -13,4 +13,12 @@ public interface TournamentStageRepository extends JpaRepository<TournamentStage
     List<TournamentStage> findByTournamentIdOrderByDisplayOrderAsc(UUID tournamentId);
 
     void deleteByTournamentId(UUID tournamentId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM TournamentStage s WHERE s.tournament.id = :tournamentId AND s.category.id = :categoryId")
+    void deleteByTournamentIdAndCategoryId(
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+            @org.springframework.data.repository.query.Param("categoryId") UUID categoryId);
+
+    void deleteByTournamentIdAndCategoryIsNull(UUID tournamentId);
 }

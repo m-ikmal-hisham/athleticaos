@@ -22,5 +22,12 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
 
     Optional<Player> findByPerson_Email(String email);
 
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Player p JOIN FETCH p.person WHERE p.id = :id")
+    Optional<Player> findByIdWithPerson(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Query("SELECT p.person FROM Player p WHERE p.id = :id")
+    Optional<com.athleticaos.backend.entities.Person> findPersonByPlayerId(
+            @org.springframework.data.repository.query.Param("id") UUID id);
+
     long countByDeletedFalse();
 }

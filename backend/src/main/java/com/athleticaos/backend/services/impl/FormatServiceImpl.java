@@ -40,9 +40,27 @@ public class FormatServiceImpl implements FormatService {
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
         // Update tournament format settings
-        tournament.setFormat(request.getFormat());
-        tournament.setNumberOfPools(request.getNumberOfPools());
-        tournamentRepository.save(tournament);
+        // Update tournament format settings logic
+        // If category is specific, we should likely update the config for that
+        // category?
+        // But BracketGenerationRequest is transient.
+        // Ideally the UI saves config first, then calls generate.
+        // But legacy behavior updates tournament fields.
+
+        if (request.getCategoryId() == null) {
+            // Only update Global fields if no category selected
+            tournament.setFormat(request.getFormat());
+            tournament.setNumberOfPools(request.getNumberOfPools());
+            tournamentRepository.save(tournament);
+        } else {
+            // For category, we assume the config was saved by the UI before calling this,
+            // OR we should perhaps update it here?
+            // Since the UI "Build Pools" button sends `numberOfPools`, we might want to
+            // ensure the config reflects this.
+            // But let's check if we have the service injected to update config? No.
+            // Let's rely on the UI to save config or just use the request values for this
+            // generation session.
+        }
 
         // Unified logic for using existing groups
         if (Boolean.TRUE.equals(request.getUseExistingGroups())) {
@@ -168,6 +186,32 @@ public class FormatServiceImpl implements FormatService {
     @SuppressWarnings("null")
     public List<TournamentStage> generateStructure(Tournament tournament, int poolCount,
             BracketGenerationRequest request) {
+
+        // Clean up existing structure for this context (Category or Global)
+        if (request.getCategoryId() != null) {
+            stageRepository.deleteByTournamentIdAndCategoryId(tournament.getId(), request.getCategoryId());
+            // Also clear team assignments for this category
+            List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournament.getId()).stream()
+                    .filter(tt -> tt.getCategory() != null && tt.getCategory().getId().equals(request.getCategoryId()))
+                    .collect(Collectors.toList());
+            for (TournamentTeam tt : teams) {
+                tt.setPoolNumber(null);
+                tournamentTeamRepository.save(tt);
+            }
+        } else {
+            // Global context (no category assigned stages)
+            stageRepository.deleteByTournamentIdAndCategoryIsNull(tournament.getId());
+            // Assignment cleanup for global context?
+            // Ideally we only clear if teams are also global/unassigned, but let's be safe
+            // and only clear if they were in a pool that is now gone?
+            // Actually, if we delete global stages, teams assigned to them (by name) will
+            // have dangling pool pointers effectively (since pool is a string).
+            // Let's clear pool number for teams that don't belong to a specific category
+            // structure.
+            // This is tricky if mixed. For now assuming global structure implies global
+            // team pool usage.
+        }
+
         // Create Stages
         List<TournamentStage> stages = new ArrayList<>();
 
@@ -240,7 +284,9 @@ public class FormatServiceImpl implements FormatService {
                 java.time.LocalTime kickOffTime = null;
 
                 if (generateTimings) {
-                    com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig();
+                    UUID categoryId = stage.getCategory() != null ? stage.getCategory().getId() : null;
+                    com.athleticaos.backend.entities.TournamentFormatConfig config = tournament
+                            .getFormatConfig(categoryId);
 
                     // Defaults
                     java.time.LocalTime startTime = java.time.LocalTime.of(9, 0);

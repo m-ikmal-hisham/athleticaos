@@ -36,6 +36,7 @@ export const CreatePlayer = () => {
     const [identificationValue, setIdentificationValue] = useState("");
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
+    const [duplicateIcError, setDuplicateIcError] = useState("");
 
     // Address
     const [addressLine1, setAddressLine1] = useState("");
@@ -120,7 +121,12 @@ export const CreatePlayer = () => {
             navigate('/dashboard/players');
         } catch (error: any) {
             console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to create player');
+            if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
+                setDuplicateIcError("This IC/Passport number is already registered.");
+                toast.error("Duplicate IC found");
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to create player');
+            }
         } finally {
             setLoading(false);
         }
@@ -255,12 +261,18 @@ export const CreatePlayer = () => {
                                 <input
                                     type="text"
                                     value={identificationValue}
-                                    onChange={(e) => setIdentificationValue(e.target.value)}
+                                    onChange={(e) => {
+                                        setIdentificationValue(e.target.value);
+                                        if (duplicateIcError) setDuplicateIcError("");
+                                    }}
                                     required
                                     className="input-base w-full"
                                     placeholder="ID / Passport Number"
                                     aria-label="Identification Value"
                                 />
+                                {duplicateIcError && (
+                                    <p className="text-xs text-red-500 mt-1">{duplicateIcError}</p>
+                                )}
                             </div>
                         </div>
 

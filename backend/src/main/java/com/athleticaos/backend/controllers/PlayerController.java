@@ -52,14 +52,13 @@ public class PlayerController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
-    @SuppressWarnings("null")
     public ResponseEntity<PlayerResponse> createPlayer(
             @RequestBody @Valid PlayerCreateRequest request,
             HttpServletRequest httpRequest) {
         PlayerResponse response = playerService.createPlayer(request);
 
         // Audit log
-        Player player = playerRepository.findById(response.id()).orElse(null);
+        Player player = playerRepository.findByIdWithPerson(response.id()).orElse(null);
         if (player != null) {
             auditLogger.logPlayerCreated(player, httpRequest);
         }
@@ -69,7 +68,6 @@ public class PlayerController {
 
     @PutMapping("/{idOrSlug}")
     @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
-    @SuppressWarnings("null")
     public ResponseEntity<PlayerResponse> updatePlayer(
             @PathVariable String idOrSlug,
             @RequestBody @Valid PlayerUpdateRequest request,
@@ -78,7 +76,7 @@ public class PlayerController {
         PlayerResponse response = playerService.updatePlayer(id, request);
 
         // Audit log
-        Player player = playerRepository.findById(id).orElse(null);
+        Player player = playerRepository.findByIdWithPerson(id).orElse(null);
         if (player != null) {
             auditLogger.logPlayerUpdated(player, httpRequest);
         }
@@ -88,13 +86,12 @@ public class PlayerController {
 
     @DeleteMapping("/{idOrSlug}")
     @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
-    @SuppressWarnings("null")
     public ResponseEntity<Void> deletePlayer(
             @PathVariable String idOrSlug,
             HttpServletRequest httpRequest) {
 
         UUID id = resolveId(idOrSlug);
-        Player player = playerRepository.findById(id).orElse(null);
+        Player player = playerRepository.findByIdWithPerson(id).orElse(null);
 
         playerService.deletePlayer(id);
 

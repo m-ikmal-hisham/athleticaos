@@ -60,8 +60,9 @@ public class Tournament {
     @Column(name = "format")
     private TournamentFormat format;
 
-    @OneToOne(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private TournamentFormatConfig formatConfig;
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TournamentFormatConfig> formatConfigs = new java.util.ArrayList<>();
 
     @Column(name = "number_of_pools")
     private Integer numberOfPools;
@@ -108,4 +109,46 @@ public class Tournament {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    // Helper methods for Format Configs
+
+    public TournamentFormatConfig getFormatConfig() {
+        return getFormatConfig(null);
+    }
+
+    public TournamentFormatConfig getFormatConfig(UUID categoryId) {
+        if (formatConfigs == null || formatConfigs.isEmpty()) {
+            return null;
+        }
+        // Try specific category
+        if (categoryId != null) {
+            TournamentFormatConfig config = formatConfigs.stream()
+                    .filter(c -> c.getCategory() != null && c.getCategory().getId().equals(categoryId))
+                    .findFirst()
+                    .orElse(null);
+            if (config != null) {
+                return config;
+            }
+        }
+        // Fallback to global (category is null)
+        return formatConfigs.stream()
+                .filter(c -> c.getCategory() == null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void addFormatConfig(TournamentFormatConfig config) {
+        if (this.formatConfigs == null) {
+            this.formatConfigs = new java.util.ArrayList<>();
+        }
+        // Remove existing if any for same category (to avoid dupes in list before save,
+        // though DB constrains it)
+        UUID catId = config.getCategory() != null ? config.getCategory().getId() : null;
+        this.formatConfigs.removeIf(c -> {
+            UUID cId = c.getCategory() != null ? c.getCategory().getId() : null;
+            return java.util.Objects.equals(catId, cId);
+        });
+
+        config.setTournament(this);
+        this.formatConfigs.add(config);
+    }
 }

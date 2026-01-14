@@ -44,10 +44,14 @@ export const tournamentService = {
         await axios.delete(`/tournaments/${id}/teams/${teamId}`);
     },
 
+    async removeTeams(id: string, teamIds: string[]): Promise<void> {
+        await axios.post(`/tournaments/${id}/teams/remove`, { teamIds });
+    },
 
-
-    async getFormatConfig(id: string): Promise<TournamentFormatConfig> {
-        const response = await axios.get<TournamentFormatConfig>(`/tournaments/${id}/format`);
+    async getFormatConfig(id: string, categoryId?: string): Promise<TournamentFormatConfig> {
+        const response = await axios.get<TournamentFormatConfig>(`/tournaments/${id}/format`, {
+            params: { categoryId }
+        });
         return response.data;
     },
 

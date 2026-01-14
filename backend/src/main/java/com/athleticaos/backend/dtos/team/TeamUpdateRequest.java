@@ -18,4 +18,5 @@ public class TeamUpdateRequest {
     private String state;
     private String status;
     private String logoUrl;
+    private java.util.UUID organisationId;
 }

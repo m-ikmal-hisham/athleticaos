@@ -78,7 +78,7 @@ public class BracketServiceImpl implements BracketService {
         }
 
         // Clear existing bracket if any
-        clearExistingBracket(tournamentId);
+        clearExistingBracket(tournamentId, request.getCategoryId());
 
         // Update tournament format settings
         tournament.setFormat(request.getFormat());
@@ -121,15 +121,22 @@ public class BracketServiceImpl implements BracketService {
 
     @Transactional
     @SuppressWarnings("null")
-    protected void clearExistingBracket(UUID tournamentId) {
-        log.info("Clearing existing bracket for tournament: {}", tournamentId);
+    protected void clearExistingBracket(UUID tournamentId, UUID categoryId) {
+        log.info("Clearing existing bracket for tournament: {}, category: {}", tournamentId, categoryId);
 
-        // Delete all matches for this tournament
-        List<Match> existingMatches = matchRepository.findByTournamentId(tournamentId);
-        matchRepository.deleteAll(existingMatches);
+        if (categoryId != null) {
+            // Delete matches for this category
+            matchRepository.deleteByTournamentIdAndCategoryId(tournamentId, categoryId);
+            // Delete stages for this category
+            stageRepository.deleteByTournamentIdAndCategoryId(tournamentId, categoryId);
+        } else {
+            // Delete all matches for this tournament
+            List<Match> existingMatches = matchRepository.findByTournamentId(tournamentId);
+            matchRepository.deleteAll(existingMatches);
 
-        // Delete all stages for this tournament
-        stageRepository.deleteByTournamentId(tournamentId);
+            // Delete all stages for this tournament
+            stageRepository.deleteByTournamentId(tournamentId);
+        }
     }
 
     @SuppressWarnings("null")
@@ -919,6 +926,8 @@ public class BracketServiceImpl implements BracketService {
                         .id(match.getStage().getId().toString())
                         .name(match.getStage().getName())
                         .stageType(match.getStage().getStageType().name())
+                        .categoryId(
+                                match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
                         .build() : null)
                 .phase(match.getPhase())
                 .homeScore(match.getHomeScore())
@@ -937,6 +946,7 @@ public class BracketServiceImpl implements BracketService {
                 .displayOrder(stage.getDisplayOrder())
                 .groupStage(stage.getIsGroupStage() != null ? stage.getIsGroupStage() : false)
                 .knockoutStage(stage.getIsKnockoutStage() != null ? stage.getIsKnockoutStage() : false)
+                .categoryId(stage.getCategory() != null ? stage.getCategory().getId() : null)
                 .build();
     }
 

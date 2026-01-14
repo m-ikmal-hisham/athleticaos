@@ -16,4 +16,7 @@ export const exportResults = (idOrSlug: string) =>
 
 export const deleteTournament = (id: string) => api.delete(`/tournaments/${id}`);
 
+
 export const updateTournament = (id: string, data: any) => api.put(`/tournaments/${id}`, data);
+
+export const getTournamentTeams = (idOrSlug: string) => api.get(`/tournaments/${idOrSlug}/teams`);

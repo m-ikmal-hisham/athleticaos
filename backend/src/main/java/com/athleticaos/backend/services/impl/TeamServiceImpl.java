@@ -168,6 +168,11 @@ public class TeamServiceImpl implements TeamService {
         if (request.getShortName() != null) {
             team.setShortName(request.getShortName());
         }
+        if (request.getOrganisationId() != null) {
+            Organisation newOrg = organisationRepository.findById(request.getOrganisationId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+            team.setOrganisation(newOrg);
+        }
 
         Team savedTeam = teamRepository.save(team);
         auditLogger.logTeamUpdated(savedTeam, httpRequest);
