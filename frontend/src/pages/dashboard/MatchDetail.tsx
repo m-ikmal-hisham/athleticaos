@@ -26,6 +26,7 @@ import { tournamentService } from '@/services/tournamentService';
 import { matchLineupService } from '@/services/matchLineupService';
 import { MatchLineupEntry, LineupRole, TournamentFormatConfig } from '@/types';
 import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
+import { getImageUrl } from '@/utils/image';
 
 const SCORING_RULES: Record<string, number> = {
     'TRY': 5,
@@ -600,7 +601,7 @@ export const MatchDetail = () => {
                                     <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">HOME</h3>
                                     {selectedMatch.homeTeamLogoUrl && (
                                         <img
-                                            src={selectedMatch.homeTeamLogoUrl.startsWith('http') ? selectedMatch.homeTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${selectedMatch.homeTeamLogoUrl}`}
+                                            src={getImageUrl(selectedMatch.homeTeamLogoUrl)}
                                             alt={`${selectedMatch.homeTeamName} logo`}
                                             className="w-16 h-16 mx-auto mb-2 object-contain"
                                         />
@@ -630,7 +631,7 @@ export const MatchDetail = () => {
                                     <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">AWAY</h3>
                                     {selectedMatch.awayTeamLogoUrl && (
                                         <img
-                                            src={selectedMatch.awayTeamLogoUrl.startsWith('http') ? selectedMatch.awayTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${selectedMatch.awayTeamLogoUrl}`}
+                                            src={getImageUrl(selectedMatch.awayTeamLogoUrl)}
                                             alt={`${selectedMatch.awayTeamName} logo`}
                                             className="w-16 h-16 mx-auto mb-2 object-contain"
                                         />

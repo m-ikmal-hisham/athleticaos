@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/Button';
 import { Upload, X, Image as ImageIcon, CircleNotch } from '@phosphor-icons/react';
-import { toast } from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import axios from '@/lib/axios';
 
 interface ImageUploadProps {
@@ -30,13 +30,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            toast.error('Please upload an image file');
+            showToast.error('Please upload an image file');
             return;
         }
 
         // Validate file size (e.g., 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            toast.error('Image size should be less than 5MB');
+            showToast.error('Image size should be less than 5MB');
             return;
         }
 
@@ -53,10 +53,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
             const url = response.data.url;
             onChange(url);
-            toast.success('Image uploaded successfully');
+            showToast.success('Image uploaded successfully');
         } catch (error) {
             console.error('Upload failed', error);
-            toast.error('Failed to upload image');
+            showToast.error('Failed to upload image');
         } finally {
             setIsUploading(false);
             // Reset input

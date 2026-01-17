@@ -14,7 +14,7 @@ import { createTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { getSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required"),
@@ -84,7 +84,7 @@ export const CreateTournament = () => {
                 setSeasons(seasonsRes);
             } catch (error) {
                 console.error("Failed to load initial data", error);
-                toast.error("Failed to load required data");
+                showToast.error("Failed to load required data");
             }
         };
         loadData();
@@ -116,11 +116,11 @@ export const CreateTournament = () => {
             };
 
             await createTournament(payload);
-            toast.success("Tournament created successfully");
+            showToast.success("Tournament created successfully");
             navigate('/dashboard/tournaments');
         } catch (error: any) {
             console.error('Failed to create tournament', error);
-            toast.error(error?.response?.data?.message || 'Failed to create tournament');
+            showToast.error(error?.response?.data?.message || 'Failed to create tournament');
         } finally {
             setLoading(false);
         }

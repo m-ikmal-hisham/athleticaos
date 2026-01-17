@@ -15,6 +15,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { useAuthStore } from "../../store/auth.store";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import { Team } from "../../types";
+import { getImageUrl } from "../../utils/image";
 
 export default function Teams() {
     const navigate = useNavigate();
@@ -220,7 +221,7 @@ export default function Teams() {
                                 <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden">
                                     {t.logoUrl ? (
                                         <img
-                                            src={t.logoUrl.startsWith('http') ? t.logoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${t.logoUrl}`}
+                                            src={getImageUrl(t.logoUrl)}
                                             alt={t.name}
                                             className="w-full h-full object-cover"
                                         />

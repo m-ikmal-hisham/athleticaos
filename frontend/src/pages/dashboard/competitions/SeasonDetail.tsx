@@ -7,7 +7,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/Badge';
 import { ArrowLeft, Trophy, CalendarBlank, ArrowSquareOut, Plus, PencilSimple, Trash } from '@phosphor-icons/react';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { formatDate } from '@/utils/date';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
@@ -47,7 +47,7 @@ export const SeasonDetail = () => {
             setStats(overviewRes);
         } catch (error) {
             console.error('Failed to load season details:', error);
-            toast.error("Failed to load season details");
+            showToast.error("Failed to load season details");
             navigate('/dashboard/competitions');
         } finally {
             setLoading(false);
@@ -59,11 +59,11 @@ export const SeasonDetail = () => {
         try {
             const updated = await updateSeasonStatus(season.id, newStatus);
             setSeason(updated);
-            toast.success(`Season status updated to ${newStatus}`);
+            showToast.success(`Season status updated to ${newStatus}`);
         } catch (error: any) {
             console.error('Failed to update status:', error);
             const message = error?.response?.data?.message || "Failed to update status";
-            toast.error(message);
+            showToast.error(message);
         }
     };
 
@@ -79,10 +79,10 @@ export const SeasonDetail = () => {
             onConfirm: async () => {
                 try {
                     await deleteSeason(season.id);
-                    toast.success('Season deleted successfully');
+                    showToast.success('Season deleted successfully');
                     navigate('/dashboard/competitions');
                 } catch (error) {
-                    toast.error('Failed to delete season');
+                    showToast.error('Failed to delete season');
                 }
             }
         });

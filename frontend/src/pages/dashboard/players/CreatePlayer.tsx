@@ -11,7 +11,7 @@ import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { Gender, DominantSide } from '@/types';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { ImageUpload } from '@/components/common/ImageUpload';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 
 interface Team {
@@ -74,7 +74,7 @@ export const CreatePlayer = () => {
             setTeams(teamsData);
         }).catch(err => {
             console.error("Failed to load reference data:", err);
-            toast.error("Failed to load organisations and teams");
+            showToast.error("Failed to load organisations and teams");
         });
     }, []);
 
@@ -117,15 +117,15 @@ export const CreatePlayer = () => {
 
         try {
             await createPlayer(payload);
-            toast.success("Player created successfully");
+            showToast.success("Player created successfully");
             navigate('/dashboard/players');
         } catch (error: any) {
             console.error(error);
             if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
-                toast.error("Duplicate IC found");
+                showToast.error("Duplicate IC found");
             } else {
-                toast.error(error.response?.data?.message || 'Failed to create player');
+                showToast.error(error.response?.data?.message || 'Failed to create player');
             }
         } finally {
             setLoading(false);

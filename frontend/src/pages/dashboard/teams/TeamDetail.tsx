@@ -8,6 +8,7 @@ import { usePlayersStore } from '../../../store/players.store';
 import { Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { getImageUrl } from '@/utils/image';
 
 interface TeamDetail {
     id: string;
@@ -141,9 +142,11 @@ export default function TeamDetail() {
                     ]}
                     className="mb-4"
                 />
+
+
                 {team.logoUrl && (
                     <img
-                        src={team.logoUrl.startsWith('http') ? team.logoUrl : `${import.meta.env.VITE_API_URL}${team.logoUrl}`}
+                        src={getImageUrl(team.logoUrl)}
                         alt={`${team.name} logo`}
                         className="w-20 h-20 mb-4 object-contain"
                     />

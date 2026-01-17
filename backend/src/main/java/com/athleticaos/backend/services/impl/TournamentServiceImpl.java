@@ -918,6 +918,7 @@ public class TournamentServiceImpl implements TournamentService {
                     .id(match.getStage().getId().toString())
                     .name(match.getStage().getName())
                     .stageType(stageType)
+                    .categoryId(match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
                     .build());
         }
 

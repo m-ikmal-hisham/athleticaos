@@ -9,7 +9,7 @@ import { SearchableSelect } from '@/components/SearchableSelect';
 import { TournamentFormatConfig, TournamentCategory, Team, TournamentStageResponse, BracketViewResponse } from '@/types';
 import { GroupingEditor } from '@/components/content/GroupingEditor';
 import { ConfirmModal } from '@/components/ConfirmModal';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import clsx from 'clsx';
 
 interface TournamentFormatProps {
@@ -110,7 +110,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
             // Filter stages by selected category
             const rawStages = bracketData?.stages?.map(s => s.stage) || [];
             const filteredStages = selectedCategoryId
-                ? rawStages.filter(s => !s.categoryId || s.categoryId === selectedCategoryId)
+                ? rawStages.filter(s => s.categoryId === selectedCategoryId)
                 : rawStages;
 
             setStages(filteredStages);
@@ -144,7 +144,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
     const handleSaveConfig = async () => {
         // SAFETY CHECK: If categories exist, prevent saving Global Defaults blindly
         if (categories.length > 0 && !selectedCategoryId) {
-            toast.error("Please select a category before saving.");
+            showToast.error("Please select a category before saving.");
             return;
         }
 
@@ -157,10 +157,10 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
             };
             const saved = await tournamentService.updateFormatConfig(tournamentId, configToSave);
             setConfig(saved);
-            toast.success(selectedCategoryId ? 'Category format saved successfully' : 'Global defaults saved successfully');
+            showToast.success(selectedCategoryId ? 'Category format saved successfully' : 'Global defaults saved successfully');
         } catch (error: any) {
             console.error('Failed to save config:', error);
-            toast.error(error.response?.data?.message || 'Failed to save configuration');
+            showToast.error(error.response?.data?.message || 'Failed to save configuration');
         } finally {
             setLoading(false);
         }
@@ -186,11 +186,11 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 selectedCategoryId || undefined
             );
 
-            toast.success('Pool structure generated!');
+            showToast.success('Pool structure generated!');
             await loadConfigAndStructure();
             setUseExistingGroups(true); // Switch to using these groups for matches
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to generate structure');
+            showToast.error(error.response?.data?.message || 'Failed to generate structure');
         } finally {
             setStructureLoading(false);
         }
@@ -218,10 +218,10 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 config.includePlacementStages,
                 teams.filter(t => !selectedCategoryId || !t.tournamentCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned').map(t => t.id)
             );
-            toast.success('Schedule generated!');
+            showToast.success('Schedule generated!');
             if (onScheduleGenerated) onScheduleGenerated();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to generate schedule');
+            showToast.error(error.response?.data?.message || 'Failed to generate schedule');
         } finally {
             setGenerating(false);
         }
@@ -246,7 +246,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
             await tournamentService.updateTeamPool(tournamentId, teamId, poolName);
         } catch (error) {
             console.error('Failed to assign team', error);
-            toast.error('Failed to move team. Please retry.');
+            showToast.error('Failed to move team. Please retry.');
             // Revert on failure
             const latest = await tournamentService.getTeams(tournamentId);
             setTeams(latest);

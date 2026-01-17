@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ShareNetwork, Check, FacebookLogo, XLogo, WhatsappLogo, Link as LinkIcon, TiktokLogo, InstagramLogo } from '@phosphor-icons/react';
 import { Button } from '@/components/Button';
-import { toast } from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { clsx } from 'clsx';
 
 interface ShareButtonProps {
@@ -83,12 +83,12 @@ export const ShareButton = ({
         try {
             await navigator.clipboard.writeText(url);
             setCopied(true);
-            toast.success('Link copied!');
+            showToast.success('Link copied!');
             setTimeout(() => setCopied(false), 2000);
             setIsOpen(false);
         } catch (error) {
             console.error('Failed to copy', error);
-            toast.error('Failed to copy link');
+            showToast.error('Failed to copy link');
         }
     };
 
@@ -117,7 +117,7 @@ export const ShareButton = ({
             case 'tiktok':
             case 'instagram':
                 await navigator.clipboard.writeText(url);
-                toast.success('Link copied! Opening ' + (platform === 'tiktok' ? 'TikTok' : 'Instagram') + '...');
+                showToast.success('Link copied! Opening ' + (platform === 'tiktok' ? 'TikTok' : 'Instagram') + '...');
                 setTimeout(() => {
                     const domain = platform === 'tiktok' ? 'tiktok.com' : 'instagram.com';
                     window.open(`https://www.${domain}/`, '_blank', 'noopener,noreferrer');

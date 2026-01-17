@@ -9,7 +9,7 @@ import { Input } from '@/components/Input';
 import { PageHeader } from '@/components/PageHeader';
 import { MagnifyingGlass, UserPlus, PencilSimple, Trash, Shield, Crown, User as UserIcon, Buildings } from '@phosphor-icons/react';
 import { Badge } from '@/components/Badge';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { GlassCard } from '@/components/GlassCard';
 import { UsersSummaryCards } from './components/UsersSummaryCards';
@@ -34,7 +34,7 @@ export default function Users() {
             setUsers(data);
         } catch (error) {
             console.error('Failed to fetch users:', error);
-            toast.error('Failed to load users');
+            showToast.error('Failed to load users');
         } finally {
             setLoading(false);
         }
@@ -60,12 +60,12 @@ export default function Users() {
         if (!confirmDelete.userId) return;
         try {
             await userService.delete(confirmDelete.userId);
-            toast.success('User deactivated successfully');
+            showToast.success('User deactivated successfully');
             fetchUsers();
             setConfirmDelete({ isOpen: false, userId: null });
         } catch (error) {
             console.error('Failed to deactivate user:', error);
-            toast.error('Failed to deactivate user');
+            showToast.error('Failed to deactivate user');
         }
     };
 

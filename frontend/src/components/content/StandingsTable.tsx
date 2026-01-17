@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StandingsResponse } from '../../types';
 import { CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react';
+import { getImageUrl } from '../../utils/image';
 
 interface StandingsTableProps {
     standings: StandingsResponse[];
@@ -115,7 +116,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                                     <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
                                                         {team.teamLogoUrl ? (
                                                             <img
-                                                                src={team.teamLogoUrl.startsWith('http') ? team.teamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${team.teamLogoUrl}`}
+                                                                src={getImageUrl(team.teamLogoUrl)}
                                                                 alt={team.teamName}
                                                                 className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300"
                                                             />

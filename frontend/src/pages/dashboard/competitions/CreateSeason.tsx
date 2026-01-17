@@ -14,7 +14,7 @@ import { createSeason } from '@/api/seasons.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { Organisation } from '@/types';
 import { SeasonLevel, SeasonStatus, SeasonCreateRequest } from '@/types/season.types';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { slugify } from '@/utils/stringUtils';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
@@ -61,7 +61,7 @@ export const CreateSeason = () => {
                 setOrganisations(orgs as any);
             } catch (error) {
                 console.error("Failed to load organisations", error);
-                toast.error("Failed to load organisations");
+                showToast.error("Failed to load organisations");
             }
         };
         loadOrgs();
@@ -91,11 +91,11 @@ export const CreateSeason = () => {
             };
 
             await createSeason(payload);
-            toast.success("Season created successfully");
+            showToast.success("Season created successfully");
             navigate('/dashboard/competitions');
         } catch (error: any) {
             console.error('Failed to create season', error);
-            toast.error(error?.response?.data?.message || 'Failed to create season');
+            showToast.error(error?.response?.data?.message || 'Failed to create season');
         } finally {
             setLoading(false);
         }

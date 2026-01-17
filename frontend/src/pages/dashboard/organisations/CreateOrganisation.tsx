@@ -11,7 +11,7 @@ import { fetchOrganisations, createOrganisation, Organisation, OrganisationLevel
 
 import { uploadFile } from '@/api/upload.api';
 import { getImageUrl } from '@/utils/image';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const CreateOrganisation = () => {
     const navigate = useNavigate();
@@ -52,7 +52,7 @@ export const CreateOrganisation = () => {
                 setAvailableOrganisations(orgsRes);
             } catch (error) {
                 console.error("Failed to load reference data", error);
-                toast.error("Failed to load reference data");
+                showToast.error("Failed to load reference data");
             }
         };
         loadData();
@@ -103,7 +103,7 @@ export const CreateOrganisation = () => {
                     finalLogoUrl = await uploadFile(logoFile);
                 } catch (uploadErr) {
                     console.error('Failed to upload logo', uploadErr);
-                    toast.error('Failed to upload logo image');
+                    showToast.error('Failed to upload logo image');
                     setLoading(false);
                     return;
                 }
@@ -120,11 +120,11 @@ export const CreateOrganisation = () => {
             };
 
             await createOrganisation(submitData as any); // Casting as API types might be slightly loose
-            toast.success("Organisation created successfully");
+            showToast.success("Organisation created successfully");
             navigate('/dashboard/organisations');
         } catch (error: any) {
             console.error(error);
-            toast.error(error?.response?.data?.message || 'Failed to create organisation');
+            showToast.error(error?.response?.data?.message || 'Failed to create organisation');
         } finally {
             setLoading(false);
         }

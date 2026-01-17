@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { PublicMatchDetail } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
+import { getImageUrl } from '@/utils/image';
 
 interface MatchHeroCardProps {
     match: PublicMatchDetail;
@@ -120,7 +121,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-2">
                             {match.homeTeamLogoUrl ? (
                                 <img
-                                    src={match.homeTeamLogoUrl.startsWith('http') ? match.homeTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.homeTeamLogoUrl}`}
+                                    src={getImageUrl(match.homeTeamLogoUrl)}
                                     alt={match.homeTeamName}
                                     className="w-full h-full object-contain filter drop-shadow-lg"
                                 />
@@ -135,7 +136,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="hidden md:flex w-32 h-32 items-center justify-center mb-4 transform group-hover:scale-105 transition-transform duration-300">
                             {match.homeTeamLogoUrl ? (
                                 <img
-                                    src={match.homeTeamLogoUrl.startsWith('http') ? match.homeTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.homeTeamLogoUrl}`}
+                                    src={getImageUrl(match.homeTeamLogoUrl)}
                                     alt={match.homeTeamName}
                                     className="w-full h-full object-contain filter drop-shadow-xl"
                                 />
@@ -180,7 +181,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-2">
                             {match.awayTeamLogoUrl ? (
                                 <img
-                                    src={match.awayTeamLogoUrl.startsWith('http') ? match.awayTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.awayTeamLogoUrl}`}
+                                    src={getImageUrl(match.awayTeamLogoUrl)}
                                     alt={match.awayTeamName}
                                     className="w-full h-full object-contain filter drop-shadow-lg"
                                 />
@@ -195,7 +196,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="hidden md:flex w-32 h-32 items-center justify-center mb-4 transform group-hover:scale-105 transition-transform duration-300">
                             {match.awayTeamLogoUrl ? (
                                 <img
-                                    src={match.awayTeamLogoUrl.startsWith('http') ? match.awayTeamLogoUrl : `${(import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace('/api/v1', '')}${match.awayTeamLogoUrl}`}
+                                    src={getImageUrl(match.awayTeamLogoUrl)}
                                     alt={match.awayTeamName}
                                     className="w-full h-full object-contain filter drop-shadow-xl"
                                 />

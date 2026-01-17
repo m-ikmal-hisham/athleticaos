@@ -10,7 +10,7 @@ import { UploadSimple, ArrowLeft } from '@phosphor-icons/react';
 import { fetchOrganisations, updateOrganisation, getOrganisationById, Organisation, OrganisationLevel } from '@/api/organisations.api';
 import { uploadFile } from '@/api/upload.api';
 import { getImageUrl } from '@/utils/image';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const EditOrganisation = () => {
     const { id } = useParams<{ id: string }>();
@@ -83,7 +83,7 @@ export const EditOrganisation = () => {
                 }
             } catch (error) {
                 console.error("Failed to load organisation data", error);
-                toast.error("Failed to load organisation details");
+                showToast.error("Failed to load organisation details");
                 navigate('/dashboard/organisations');
             } finally {
                 setLoading(false);
@@ -138,7 +138,7 @@ export const EditOrganisation = () => {
                     finalLogoUrl = await uploadFile(logoFile);
                 } catch (uploadErr) {
                     console.error('Failed to upload logo', uploadErr);
-                    toast.error('Failed to upload logo image');
+                    showToast.error('Failed to upload logo image');
                     setSaving(false);
                     return;
                 }
@@ -151,11 +151,11 @@ export const EditOrganisation = () => {
             };
 
             await updateOrganisation(id, submitData as any);
-            toast.success("Organisation updated successfully");
+            showToast.success("Organisation updated successfully");
             navigate('/dashboard/organisations');
         } catch (error: any) {
             console.error(error);
-            toast.error(error?.response?.data?.message || 'Failed to update organisation');
+            showToast.error(error?.response?.data?.message || 'Failed to update organisation');
         } finally {
             setSaving(false);
         }

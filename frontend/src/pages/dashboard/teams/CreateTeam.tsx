@@ -8,7 +8,7 @@ import { ArrowLeft } from '@phosphor-icons/react';
 import { createTeam } from '@/api/teams.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { MALAYSIA_STATES } from '@/constants/malaysia-geo';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { TeamCategory, AgeGroup } from '@/types';
 import { ImageUpload } from '@/components/common/ImageUpload';
 
@@ -34,7 +34,7 @@ export const CreateTeam = () => {
                 setOrganisations(orgsRes);
             } catch (err) {
                 console.error("Failed to load reference data:", err);
-                toast.error("Failed to load organisations");
+                showToast.error("Failed to load organisations");
             }
         };
         loadReferenceData();
@@ -55,7 +55,7 @@ export const CreateTeam = () => {
         e.preventDefault();
         const error = validate();
         if (error) {
-            toast.error(error);
+            showToast.error(error);
             return;
         }
 
@@ -74,11 +74,11 @@ export const CreateTeam = () => {
 
         try {
             await createTeam(payload);
-            toast.success("Team created successfully");
+            showToast.success("Team created successfully");
             navigate('/dashboard/teams');
         } catch (error: any) {
             console.error(error);
-            toast.error(error?.response?.data?.message || 'Failed to create team');
+            showToast.error(error?.response?.data?.message || 'Failed to create team');
         } finally {
             setLoading(false);
         }

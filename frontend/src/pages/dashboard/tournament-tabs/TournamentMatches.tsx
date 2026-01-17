@@ -5,7 +5,7 @@ import { tournamentService } from '@/services/tournamentService';
 import { Match, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
@@ -77,7 +77,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             setCategories(categoriesData);
         } catch (error) {
             console.error('Failed to load data:', error);
-            toast.error('Failed to load matches');
+            showToast.error('Failed to load matches');
         } finally {
             setLoading(false);
         }
@@ -100,10 +100,10 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             onConfirm: async () => {
                 try {
                     await matchService.delete(id);
-                    toast.success('Match deleted');
+                    showToast.success('Match deleted');
                     setRefreshTrigger(prev => prev + 1);
                 } catch (error) {
-                    toast.error('Failed to delete match');
+                    showToast.error('Failed to delete match');
                 }
             }
         });
@@ -118,12 +118,12 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             // unless user specifically wants "Clear This Category".
             // Current UI is "Clear Schedule", implying global.
             await tournamentService.clearSchedule(tournamentId, keepStructure);
-            toast.success(keepStructure ? 'Matches cleared (Structure kept)' : 'Schedule fully reset');
+            showToast.success(keepStructure ? 'Matches cleared (Structure kept)' : 'Schedule fully reset');
             setClearScheduleStep('NONE');
             setRefreshTrigger(prev => prev + 1);
         } catch (error) {
             console.error('Failed to clear schedule:', error);
-            toast.error('Failed to clear schedule');
+            showToast.error('Failed to clear schedule');
         }
     };
 

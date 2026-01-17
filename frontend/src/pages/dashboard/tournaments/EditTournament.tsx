@@ -14,7 +14,7 @@ import { updateTournament, getTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { getActiveSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required"),
@@ -130,7 +130,7 @@ export const EditTournament = () => {
 
         } catch (error) {
             console.error('Failed to load data:', error);
-            toast.error("Failed to load tournament data");
+            showToast.error("Failed to load tournament data");
             navigate('/dashboard/tournaments');
         } finally {
             setFetching(false);
@@ -165,11 +165,11 @@ export const EditTournament = () => {
             };
 
             await updateTournament(id, payload);
-            toast.success("Tournament updated successfully");
+            showToast.success("Tournament updated successfully");
             navigate('/dashboard/tournaments');
         } catch (error: any) {
             console.error('Failed to update tournament', error);
-            toast.error(error?.response?.data?.message || 'Failed to update tournament');
+            showToast.error(error?.response?.data?.message || 'Failed to update tournament');
         } finally {
             setLoading(false);
         }
@@ -198,7 +198,7 @@ export const EditTournament = () => {
             <GlassCard className="max-w-4xl mx-auto p-8">
                 <form onSubmit={handleSubmit(onSubmit, (errors) => {
                     console.error("Form validation errors:", errors);
-                    toast.error("Please check the form for errors");
+                    showToast.error("Please check the form for errors");
                 })} className="space-y-8">
 
                     {/* Basic Info */}

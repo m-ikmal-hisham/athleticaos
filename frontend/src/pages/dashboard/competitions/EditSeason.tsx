@@ -14,7 +14,7 @@ import { getSeasonById, updateSeason } from '@/api/seasons.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { Organisation } from '@/types';
 import { SeasonLevel, SeasonStatus, SeasonUpdateRequest } from '@/types/season.types';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const seasonSchema = z.object({
@@ -76,7 +76,7 @@ export const EditSeason = () => {
                 });
             } catch (error) {
                 console.error("Failed to load data", error);
-                toast.error("Failed to load season details");
+                showToast.error("Failed to load season details");
                 navigate('/dashboard/competitions');
             }
         };
@@ -101,11 +101,11 @@ export const EditSeason = () => {
 
 
             await updateSeason(id, payload);
-            toast.success("Season updated successfully");
+            showToast.success("Season updated successfully");
             navigate(`/dashboard/competitions/seasons/${id}`);
         } catch (error: any) {
             console.error('Failed to update season', error);
-            toast.error(error?.response?.data?.message || 'Failed to update season');
+            showToast.error(error?.response?.data?.message || 'Failed to update season');
         } finally {
             setLoading(false);
         }

@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/Button';
 import { Check } from '@phosphor-icons/react';
 import { getSubscriptionTiers, SubscriptionTier } from '@/api/monetization.api';
-import { toast } from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const SubscriptionManagement = () => {
     const [tiers, setTiers] = useState<SubscriptionTier[]>([]);
@@ -34,7 +34,7 @@ export const SubscriptionManagement = () => {
 
     const handleSelect = (id: string) => {
         setSelectedTierId(id);
-        toast.success('Subscription updated (Mock)');
+        showToast.success('Subscription updated (Mock)');
     };
 
     if (loading) return <div>Loading...</div>;

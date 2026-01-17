@@ -21,7 +21,7 @@ import {
     deleteSponsorPackage,
     SponsorPackage
 } from '@/api/monetization.api';
-import { toast } from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 
@@ -54,7 +54,7 @@ export const SponsorPackages = () => {
             setPackages(data);
         } catch (e) {
             console.error(e);
-            toast.error('Failed to load packages');
+            showToast.error('Failed to load packages');
         } finally {
             setLoading(false);
         }
@@ -72,7 +72,7 @@ export const SponsorPackages = () => {
                 price: parseFloat(formData.price),
                 active: true
             });
-            toast.success('Package created');
+            showToast.success('Package created');
             setIsCreating(false);
             setFormData({
                 name: '',
@@ -85,7 +85,7 @@ export const SponsorPackages = () => {
             loadPackages();
         } catch (e) {
             console.error(e);
-            toast.error('Failed to create package');
+            showToast.error('Failed to create package');
         }
     };
 
@@ -99,11 +99,11 @@ export const SponsorPackages = () => {
             onConfirm: async () => {
                 try {
                     await deleteSponsorPackage(id);
-                    toast.success('Package deleted');
+                    showToast.success('Package deleted');
                     loadPackages();
                 } catch (e) {
                     console.error(e);
-                    toast.error('Failed to delete package');
+                    showToast.error('Failed to delete package');
                 }
             }
         });

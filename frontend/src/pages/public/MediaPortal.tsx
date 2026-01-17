@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { DownloadSimple, Image, VideoCamera } from '@phosphor-icons/react';
 import { getMatchMedia, MediaAsset } from '@/api/media.api';
-import { toast } from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const MediaPortal = () => {
     const { matchId } = useParams<{ matchId: string }>();
@@ -23,7 +23,7 @@ export const MediaPortal = () => {
             setAssets(data);
         } catch (e) {
             console.error(e);
-            toast.error('Failed to load media assets');
+            showToast.error('Failed to load media assets');
         } finally {
             setLoading(false);
         }

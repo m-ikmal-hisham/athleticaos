@@ -8,7 +8,7 @@ import { ArrowLeft } from '@phosphor-icons/react';
 import { usersApi, UserUpdateRequest } from '@/api/users.api';
 import { useAuthStore } from '@/store/auth.store';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const EditProfile = () => {
     const navigate = useNavigate();
@@ -87,7 +87,7 @@ export const EditProfile = () => {
             };
 
             await usersApi.updateUser(user.id, updateRequest);
-            toast.success('Profile updated successfully');
+            showToast.success('Profile updated successfully');
 
             // Update local auth store
             setUser({
@@ -104,7 +104,7 @@ export const EditProfile = () => {
 
         } catch (error: any) {
             console.error('Failed to update profile', error);
-            toast.error(error.response?.data?.message || 'Failed to update profile');
+            showToast.error(error.response?.data?.message || 'Failed to update profile');
         } finally {
             setLoading(false);
         }

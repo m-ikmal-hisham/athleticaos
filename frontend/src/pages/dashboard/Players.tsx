@@ -12,6 +12,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { Player } from "../../types";
 import { calculateAge } from "../../utils/date";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
+import { getImageUrl } from "../../utils/image";
 import { deletePlayer } from "../../api/players.api";
 import toast from "react-hot-toast";
 import { Trash } from "@phosphor-icons/react";
@@ -172,8 +173,16 @@ export default function Players() {
                             onClick={() => handleCardClick(p)}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 text-lg font-bold border border-primary-500/20">
-                                    {p.firstName[0]}{p.lastName[0]}
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 text-lg font-bold border border-primary-500/20 overflow-hidden">
+                                    {p.photoUrl ? (
+                                        <img
+                                            src={getImageUrl(p.photoUrl)}
+                                            alt={`${p.firstName} ${p.lastName}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span>{p.firstName[0]}{p.lastName[0]}</span>
+                                    )}
                                 </div>
                                 <div className="flex gap-1">
                                     <Badge variant={getStatusVariant(p.status) as any} className="text-[10px] px-1.5 h-5">

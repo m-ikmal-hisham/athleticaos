@@ -12,7 +12,7 @@ import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { Gender, DominantSide } from '@/types';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { ImageUpload } from '@/components/common/ImageUpload';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 
 interface Team {
@@ -115,7 +115,7 @@ export const EditPlayer = () => {
 
             } catch (error) {
                 console.error("Failed to load player data", error);
-                toast.error("Failed to load player details");
+                showToast.error("Failed to load player details");
                 navigate('/dashboard/players');
             } finally {
                 setLoading(false);
@@ -163,15 +163,15 @@ export const EditPlayer = () => {
 
         try {
             await updatePlayer(id, payload);
-            toast.success("Player updated successfully");
+            showToast.success("Player updated successfully");
             navigate('/dashboard/players');
         } catch (error: any) {
             console.error(error);
             if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
-                toast.error("Duplicate IC found");
+                showToast.error("Duplicate IC found");
             } else {
-                toast.error(error.response?.data?.message || 'Failed to update player');
+                showToast.error(error.response?.data?.message || 'Failed to update player');
             }
         } finally {
             setSaving(false);
@@ -180,7 +180,7 @@ export const EditPlayer = () => {
 
     const handleAssignTeamDirectly = async () => {
         if (!id || !selectedTeamId) {
-            toast.error("Please select a team");
+            showToast.error("Please select a team");
             return;
         }
 
@@ -191,14 +191,14 @@ export const EditPlayer = () => {
                 jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : undefined,
                 position: position || undefined
             });
-            toast.success("Player assigned to team successfully!");
+            showToast.success("Player assigned to team successfully!");
             setSelectedTeamId("");
             setJerseyNumber("");
             setPosition("");
             setShowTeamAssignment(false);
         } catch (err: any) {
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to assign player to team";
-            toast.error(errorMsg);
+            showToast.error(errorMsg);
             console.error("Assignment error:", err);
         }
     };

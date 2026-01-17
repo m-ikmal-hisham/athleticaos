@@ -7,7 +7,8 @@ import { ArrowLeft, Target, TrendUp, Medal, Trash, PencilSimple } from '@phospho
 import { fetchPlayerById, fetchPlayerStats, deletePlayer } from '@/api/players.api';
 import { useAuthStore } from '@/store/auth.store';
 import { calculateAge } from '@/utils/date';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
+import { getImageUrl } from '@/utils/image';
 
 interface PlayerStats {
     totalMatches: number;
@@ -75,7 +76,7 @@ export const PlayerProfile = () => {
                 setStats(statsRes.data);
             } catch (error) {
                 console.error("Failed to load player profile", error);
-                toast.error("Failed to load player profile");
+                showToast.error("Failed to load player profile");
                 navigate('/dashboard/players');
             } finally {
                 setLoading(false);
@@ -89,11 +90,11 @@ export const PlayerProfile = () => {
         setIsDeleting(true);
         try {
             await deletePlayer(id);
-            toast.success("Player deleted successfully");
+            showToast.success("Player deleted successfully");
             navigate('/dashboard/players');
         } catch (error) {
             console.error("Failed to delete player", error);
-            toast.error("Failed to delete player");
+            showToast.error("Failed to delete player");
             setIsDeleting(false);
             setShowDeleteConfirm(false); // Close modal on error to allow retry
         }
@@ -147,7 +148,7 @@ export const PlayerProfile = () => {
                     <div className="flex flex-col items-center text-center">
                         {player.photoUrl ? (
                             <img
-                                src={player.photoUrl.startsWith('http') ? player.photoUrl : `${import.meta.env.VITE_API_URL}${player.photoUrl}`}
+                                src={getImageUrl(player.photoUrl)}
                                 alt={`${player.firstName} ${player.lastName}`}
                                 className="w-24 h-24 rounded-full object-cover border-2 border-primary-500/20 mb-4"
                             />

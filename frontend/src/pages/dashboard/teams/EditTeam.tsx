@@ -8,7 +8,7 @@ import { ArrowLeft } from '@phosphor-icons/react';
 import { fetchTeamById, updateTeam } from '@/api/teams.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { MALAYSIA_STATES } from '@/constants/malaysia-geo';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { TeamCategory, AgeGroup } from '@/types';
 import { ImageUpload } from '@/components/common/ImageUpload';
 
@@ -62,7 +62,7 @@ export const EditTeam = () => {
                 }
             } catch (error) {
                 console.error("Failed to load team data", error);
-                toast.error("Failed to load team details");
+                showToast.error("Failed to load team details");
                 navigate('/dashboard/teams');
             } finally {
                 setLoading(false);
@@ -87,7 +87,7 @@ export const EditTeam = () => {
         if (!id) return;
         const error = validate();
         if (error) {
-            toast.error(error);
+            showToast.error(error);
             return;
         }
 
@@ -107,11 +107,11 @@ export const EditTeam = () => {
 
         try {
             await updateTeam(id, payload);
-            toast.success("Team updated successfully");
+            showToast.success("Team updated successfully");
             navigate('/dashboard/teams');
         } catch (error: any) {
             console.error(error);
-            toast.error(error?.response?.data?.message || 'Failed to update team');
+            showToast.error(error?.response?.data?.message || 'Failed to update team');
         } finally {
             setSaving(false);
         }

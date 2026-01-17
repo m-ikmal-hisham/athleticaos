@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { SmartFilterPills, FilterOption } from '@/components/SmartFilterPills';
 import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
 import { useAuthStore } from '@/store/auth.store';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 
 export const Seasons = () => {
     const navigate = useNavigate();
@@ -68,13 +68,13 @@ export const Seasons = () => {
         try {
             setIsDeleting(true);
             await deleteSeason(seasonToDelete.id);
-            toast.success('Season deleted successfully');
+            showToast.success('Season deleted successfully');
             await loadSeasons();
             setDeleteModalOpen(false);
             setSeasonToDelete(null);
         } catch (error) {
             console.error('Failed to delete season', error);
-            toast.error('Failed to delete season');
+            showToast.error('Failed to delete season');
         } finally {
             setIsDeleting(false);
         }

@@ -9,7 +9,7 @@ import { useOrganisationsStore } from '@/store/organisations.store';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/PageHeader';
 import { GlassCard } from '@/components/GlassCard';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 export const CreateUser = () => {
@@ -63,13 +63,13 @@ export const CreateUser = () => {
             const response = await usersApi.inviteUser(formData);
 
             if (response.data.inviteStatus === 'EXISTS') {
-                toast.error(response.data.message || 'User already exists');
+                showToast.error(response.data.message || 'User already exists');
             } else {
-                toast.success(response.data.message || 'User invited successfully!');
+                showToast.success(response.data.message || 'User invited successfully!');
                 navigate('/dashboard/users');
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to invite user');
+            showToast.error(error.response?.data?.message || 'Failed to invite user');
         } finally {
             setLoading(false);
         }

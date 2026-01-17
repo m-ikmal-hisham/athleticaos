@@ -8,7 +8,7 @@ import { usersApi, UserUpdateRequest } from '@/api/users.api';
 import { useOrganisationsStore } from '@/store/organisations.store';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { useAuthStore } from '@/store/auth.store';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { User } from '@/types';
 
 interface EditUserModalProps {
@@ -122,13 +122,13 @@ export const EditUserModal = ({ isOpen, onClose, onSuccess, initialData }: EditU
             };
 
             await usersApi.updateUser(initialData.id, updateRequest);
-            toast.success('User updated successfully');
+            showToast.success('User updated successfully');
             onSuccess?.();
             onClose();
 
         } catch (error: any) {
             console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to update user');
+            showToast.error(error.response?.data?.message || 'Failed to update user');
         } finally {
             setLoading(false);
         }

@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { X, TrendUp, Medal, Target, Trash } from '@phosphor-icons/react';
 import { fetchPlayerById, fetchPlayerStats } from '../../../api/players.api';
 import { Button } from '../../../components/Button';
 import { usePlayersStore } from '../../../store/players.store';
 import { useAuthStore } from '../../../store/auth.store';
 import { calculateAge } from '../../../utils/date';
+import { getImageUrl } from '@/utils/image';
 
 interface PlayerDetailDrawerProps {
     playerId: string | null;
@@ -52,6 +53,7 @@ interface PlayerDetail {
     gender?: string;
     dateOfBirth?: string;
     notes?: string;
+    photoUrl?: string;
 }
 
 export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDrawerProps) => {
@@ -77,14 +79,14 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
         setIsDeleting(true);
         try {
             await deletePlayer(playerId);
-            toast.success('Player deleted successfully');
+            showToast.success('Player deleted successfully');
             // success is handled by closing drawer (logic in store or here)
             // But store logic closes drawer if active player is deleted.
             // We just need to ensure modal closes.
             setShowDeleteConfirm(false);
         } catch (err) {
             console.error('Failed to delete player:', err);
-            toast.error('Failed to delete player');
+            showToast.error('Failed to delete player');
         } finally {
             setIsDeleting(false);
         }
@@ -186,8 +188,16 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                         <div className="space-y-6">
                             {/* Avatar & Basic Info */}
                             <div className="flex items-start gap-4">
-                                <div className="player-avatar">
-                                    {getInitials(player.firstName, player.lastName)}
+                                <div className="player-avatar overflow-hidden">
+                                    {player.photoUrl ? (
+                                        <img
+                                            src={getImageUrl(player.photoUrl)}
+                                            alt={`${player.firstName} ${player.lastName}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        getInitials(player.firstName, player.lastName)
+                                    )}
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-2xl font-bold text-foreground">

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
     DndContext,
@@ -25,7 +25,7 @@ import { Badge } from '@/components/Badge';
 import { DotsSixVertical, CheckSquare, Square, MagnifyingGlass } from '@phosphor-icons/react';
 import { Button } from '@/components/Button';
 import clsx from 'clsx';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { tournamentService } from '@/services/tournamentService';
 
 interface GroupingEditorProps {
@@ -140,7 +140,7 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
             onAssign(teamId, targetPoolName);
         });
 
-        toast.success(`Moved ${selectedIds.size} team(s)`);
+        showToast.success(`Moved ${selectedIds.size} team(s)`);
         setSelectedIds(new Set());
     };
 
@@ -152,20 +152,20 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
 
     const handleSaveRename = async (stageId: string) => {
         if (!editingPoolName.trim()) {
-            toast.error('Pool name cannot be empty');
+            showToast.error('Pool name cannot be empty');
             return;
         }
 
         // Check for duplicates
         const isDuplicate = stages.some(s => s.id !== stageId && s.name.toLowerCase() === editingPoolName.trim().toLowerCase());
         if (isDuplicate) {
-            toast.error('A pool with this name already exists');
+            showToast.error('A pool with this name already exists');
             return;
         }
 
         try {
             await tournamentService.updateStage(tournamentId, stageId, { name: editingPoolName.trim() });
-            toast.success('Pool renamed successfully');
+            showToast.success('Pool renamed successfully');
             setEditingPoolId(null);
             // Note: Parent component should refresh stages after rename but for now we assume optimistic update or page reload will fix it. 
             // Better: trigger a reload callback? GroupingEditor doesn't have one. 
@@ -181,7 +181,7 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
             // I should add `onRename` prop to GroupingEditor?
             if (onRename) onRename();
         } catch (error) {
-            toast.error('Failed to rename pool');
+            showToast.error('Failed to rename pool');
         }
     };
 
@@ -410,16 +410,24 @@ function SortableTeamItem({ team, disabled, isSelected, onToggleSelection }: Sor
         isDragging,
     } = useSortable({ id: team.id, disabled });
 
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-    } as React.CSSProperties;
+    const [element, setElement] = useState<HTMLElement | null>(null);
+
+    const handleRef = useCallback((node: HTMLElement | null) => {
+        setNodeRef(node);
+        setElement(node);
+    }, [setNodeRef]);
+
+    useLayoutEffect(() => {
+        if (!element) return;
+
+        element.style.transform = CSS.Transform.toString(transform) ?? '';
+        element.style.transition = transition ?? '';
+
+    }, [element, transform, transition]);
 
     return (
         <div
-            ref={setNodeRef}
-            // eslint-disable-next-line
-            style={style}
+            ref={handleRef}
             className={clsx(
                 "transition-opacity",
                 isDragging && "opacity-30"

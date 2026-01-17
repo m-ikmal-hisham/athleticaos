@@ -9,7 +9,7 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/PageHeader';
 import { GlassCard } from '@/components/GlassCard';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 export const EditUser = () => {
@@ -94,7 +94,7 @@ export const EditUser = () => {
                 }
             } catch (error) {
                 console.error("Failed to load user", error);
-                toast.error("Failed to load user details");
+                showToast.error("Failed to load user details");
                 navigate('/dashboard/users');
             } finally {
                 setLoading(false);
@@ -139,12 +139,12 @@ export const EditUser = () => {
             };
 
             await usersApi.updateUser(id, updateRequest);
-            toast.success('User updated successfully');
+            showToast.success('User updated successfully');
             navigate('/dashboard/users');
 
         } catch (error: any) {
             console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to update user');
+            showToast.error(error.response?.data?.message || 'Failed to update user');
         } finally {
             setSaving(false);
         }

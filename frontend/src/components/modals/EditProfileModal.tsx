@@ -5,7 +5,7 @@ import { Input } from '@/components/Input';
 import { usersApi, UserUpdateRequest } from '@/api/users.api';
 import { useAuthStore } from '@/store/auth.store';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { User } from '@/types';
 
 interface EditProfileModalProps {
@@ -83,7 +83,7 @@ export const EditProfileModal = ({ isOpen, onClose, onSuccess, initialData }: Ed
             // Note: We don't send emails or roles updates here.
 
             await usersApi.updateUser(initialData.id, updateRequest);
-            toast.success('Profile updated successfully');
+            showToast.success('Profile updated successfully');
 
             // Update local auth store if we are editing the current user (which we are)
             setUser({
@@ -104,7 +104,7 @@ export const EditProfileModal = ({ isOpen, onClose, onSuccess, initialData }: Ed
 
         } catch (error: any) {
             console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to update profile');
+            showToast.error(error.response?.data?.message || 'Failed to update profile');
         } finally {
             setLoading(false);
         }
