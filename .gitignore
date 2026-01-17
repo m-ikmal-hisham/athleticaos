@@ -12,3 +12,8 @@ logs/
 **/*.log
 .DS_Store
 .env
+
+# Uploads
+uploads/
+**/uploads/
+
