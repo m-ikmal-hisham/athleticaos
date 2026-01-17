@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, Star } from '@phosphor-icons/react';
+import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, Star, Table } from '@phosphor-icons/react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
@@ -15,6 +15,7 @@ import {
 } from '../../api/public.api';
 import { PublicTournamentPools } from './components/PublicTournamentPools';
 import { PublicTournamentBracket } from './components/PublicTournamentBracket';
+import { PublicStats } from './components/PublicStats';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -22,7 +23,7 @@ export default function TournamentDetail() {
     const [matches, setMatches] = useState<PublicMatchSummary[]>([]);
     const [standings, setStandings] = useState<PublicStanding[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'fixtures' | 'results' | 'standings' | 'bracket'>('fixtures');
+    const [activeTab, setActiveTab] = useState<'fixtures' | 'results' | 'standings' | 'bracket' | 'stats'>('fixtures');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -150,13 +151,13 @@ export default function TournamentDetail() {
                         </div>
 
                         {/* Content Overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 flex flex-col md:flex-row items-end md:items-center gap-6">
+                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
                             {/* Logo */}
-                            <div className="relative -mb-12 md:mb-0 shrink-0">
+                            <div className="relative mb-4 md:mb-0 shrink-0">
                                 <TournamentLogo
                                     tournamentId={tournament.id}
                                     logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
-                                    className="w-24 h-24 md:w-32 md:h-32 bg-white dark:bg-slate-950 rounded-2xl shadow-xl p-2 object-contain border-4 border-white dark:border-slate-900"
+                                    className="w-20 h-20 md:w-32 md:h-32 bg-white dark:bg-slate-950 rounded-2xl shadow-xl p-2 object-contain border-4 border-white dark:border-slate-900"
                                 />
                             </div>
 
@@ -223,7 +224,8 @@ export default function TournamentDetail() {
                         {[
                             { id: 'fixtures', label: 'Fixtures', icon: Calendar, count: fixturesMatches.length },
                             { id: 'results', label: 'Results', icon: Trophy, count: resultsMatches.length },
-                            ...(showPoolTab ? [{ id: 'standings', label: 'Standings', icon: Star, count: null }] : []),
+                            { id: 'stats', label: 'Stats', icon: Star, count: null },
+                            ...(showPoolTab ? [{ id: 'standings', label: 'Standings', icon: Table, count: null }] : []),
                             ...(hasKnockoutMatches ? [{ id: 'bracket', label: 'Bracket', icon: ShareNetwork, count: null }] : []),
                         ].map((tab) => (
                             <button
@@ -260,6 +262,8 @@ export default function TournamentDetail() {
                             </div>
                         ) : activeTab === 'standings' ? (
                             <PublicTournamentPools standings={standings} />
+                        ) : activeTab === 'stats' ? (
+                            <PublicStats tournamentId={tournament.id} categoryId={selectedCategoryId || undefined} />
                         ) : activeTab === 'bracket' ? (
                             <PublicTournamentBracket matches={matches} />
                         ) : (

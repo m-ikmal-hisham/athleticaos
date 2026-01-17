@@ -28,29 +28,33 @@ public class StatisticsController {
     @GetMapping("/tournaments/{tournamentId}/summary")
     @PreAuthorize("isAuthenticated()")
     public TournamentStatsSummaryResponse getTournamentSummary(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getTournamentSummary(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getTournamentSummary(tournamentId, categoryId);
     }
 
     @GetMapping("/tournaments/{tournamentId}/players")
     @PreAuthorize("isAuthenticated()")
     public List<PlayerStatsResponse> getTournamentPlayerStats(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getPlayerStatsForTournament(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getPlayerStatsForTournament(tournamentId, categoryId);
     }
 
     @GetMapping("/tournaments/{tournamentId}/teams")
     @PreAuthorize("isAuthenticated()")
     public List<TeamStatsResponse> getTournamentTeamStats(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getTeamStatsForTournament(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getTeamStatsForTournament(tournamentId, categoryId);
     }
 
     @GetMapping("/tournaments/{tournamentId}/leaderboard")
     @PreAuthorize("isAuthenticated()")
     public TournamentLeaderboardResponse getTournamentLeaderboard(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getTournamentLeaderboard(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getTournamentLeaderboard(tournamentId, categoryId);
     }
 
     @GetMapping("/players/{id}")

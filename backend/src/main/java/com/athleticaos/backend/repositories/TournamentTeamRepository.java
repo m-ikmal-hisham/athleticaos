@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, UUID> {
     java.util.List<TournamentTeam> findByTournamentId(UUID tournamentId);
 
+    java.util.Optional<TournamentTeam> findByTournamentIdAndTeamId(UUID tournamentId, UUID teamId);
+
     java.util.Optional<TournamentTeam> findFirstByTournamentIdAndTeamId(UUID tournamentId, UUID teamId);
 
     @org.springframework.data.jpa.repository.Modifying

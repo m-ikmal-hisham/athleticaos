@@ -36,14 +36,31 @@ public class StatisticsServiceImpl implements StatisticsService {
         private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
 
         @Override
-        public TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId) {
+        public TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId, UUID categoryId) {
                 Tournament tournament = tournamentRepository
                                 .findById(java.util.Objects.requireNonNull(tournamentId,
                                                 "Tournament ID must not be null"))
                                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
+
+                // Filter matches by category if provided
+                if (categoryId != null) {
+                        matches = matches.stream()
+                                        .filter(m -> m.getStage() == null || m.getStage().getCategory() == null ||
+                                                        m.getStage().getCategory().getId().equals(categoryId))
+                                        .collect(Collectors.toList());
+                }
+
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
+
+                // Filter events by filtered matches
+                if (categoryId != null) {
+                        Set<UUID> matchIds = matches.stream().map(Match::getId).collect(Collectors.toSet());
+                        events = events.stream()
+                                        .filter(e -> matchIds.contains(e.getMatch().getId()))
+                                        .collect(Collectors.toList());
+                }
 
                 int totalMatches = matches.size();
                 int completedMatches = (int) matches.stream()
@@ -73,7 +90,14 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .distinct()
                                 .count();
 
+                // Active players based on filtered matches
+                // Note: matchLineupRepository.findByMatch_Tournament_Id fetches all. We need to
+                // filter manually if repo doesn't support match list.
+                // Or we can rely on matches list.
                 long activePlayers = matchLineupRepository.findByMatch_Tournament_Id(tournamentId).stream()
+                                .filter(l -> categoryId == null || (l.getMatch().getStage() == null ||
+                                                l.getMatch().getStage().getCategory() == null ||
+                                                l.getMatch().getStage().getCategory().getId().equals(categoryId)))
                                 .map(l -> l.getPlayer().getId())
                                 .distinct()
                                 .count();
@@ -93,11 +117,28 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         @Override
-        public List<PlayerStatsResponse> getPlayerStatsForTournament(UUID tournamentId) {
+        public List<PlayerStatsResponse> getPlayerStatsForTournament(UUID tournamentId, UUID categoryId) {
                 java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
                 List<com.athleticaos.backend.entities.MatchLineup> lineups = matchLineupRepository
                                 .findByMatch_Tournament_Id(tournamentId);
+
+                // Filter by category
+                if (categoryId != null) {
+                        events = events.stream()
+                                        .filter(e -> e.getMatch().getStage() == null ||
+                                                        e.getMatch().getStage().getCategory() == null ||
+                                                        e.getMatch().getStage().getCategory().getId()
+                                                                        .equals(categoryId))
+                                        .collect(Collectors.toList());
+
+                        lineups = lineups.stream()
+                                        .filter(l -> l.getMatch().getStage() == null ||
+                                                        l.getMatch().getStage().getCategory() == null ||
+                                                        l.getMatch().getStage().getCategory().getId()
+                                                                        .equals(categoryId))
+                                        .collect(Collectors.toList());
+                }
 
                 // Collect all unique player IDs involved in the tournament (via events or
                 // lineups)
@@ -176,10 +217,26 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         @Override
-        public List<TeamStatsResponse> getTeamStatsForTournament(UUID tournamentId) {
+        public List<TeamStatsResponse> getTeamStatsForTournament(UUID tournamentId, UUID categoryId) {
                 java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
+
+                // Filter matches
+                if (categoryId != null) {
+                        matches = matches.stream()
+                                        .filter(m -> m.getStage() == null || m.getStage().getCategory() == null ||
+                                                        m.getStage().getCategory().getId().equals(categoryId))
+                                        .collect(Collectors.toList());
+                }
+
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
+                // Filter events
+                if (categoryId != null) {
+                        Set<UUID> matchIds = matches.stream().map(Match::getId).collect(Collectors.toSet());
+                        events = events.stream()
+                                        .filter(e -> matchIds.contains(e.getMatch().getId()))
+                                        .collect(Collectors.toList());
+                }
 
                 // Identify all teams in the tournament from matches (filter out nulls)
                 Set<Team> teams = new HashSet<>();
@@ -266,11 +323,11 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         @Override
-        public TournamentLeaderboardResponse getTournamentLeaderboard(UUID tournamentId) {
+        public TournamentLeaderboardResponse getTournamentLeaderboard(UUID tournamentId, UUID categoryId) {
                 java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
-                TournamentStatsSummaryResponse summary = getTournamentSummary(tournamentId);
-                List<PlayerStatsResponse> playerStats = getPlayerStatsForTournament(tournamentId);
-                List<TeamStatsResponse> teamStats = getTeamStatsForTournament(tournamentId);
+                TournamentStatsSummaryResponse summary = getTournamentSummary(tournamentId, categoryId);
+                List<PlayerStatsResponse> playerStats = getPlayerStatsForTournament(tournamentId, categoryId);
+                List<TeamStatsResponse> teamStats = getTeamStatsForTournament(tournamentId, categoryId);
 
                 // Top Players (Scorers): Total Points desc, then Tries desc
                 List<PlayerLeaderboardEntry> topPlayers = playerStats.stream()
@@ -339,7 +396,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<MatchEvent> events = matchEventRepository.findByPlayer_Id(playerId);
 
                 // 3. Aggregate Career Stats
-                int matchesPlayed = lineups.size(); // Simplified: assuming 1 lineup entry per match played
+                // matchesPlayed will be calculated after processing recentMatches
                 int tries = countEvents(events, MatchEventType.TRY);
                 int conversions = countEvents(events, MatchEventType.CONVERSION);
                 int penalties = countEvents(events, MatchEventType.PENALTY);
@@ -348,10 +405,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 int redCards = countEvents(events, MatchEventType.RED_CARD);
                 int totalPoints = events.stream().mapToInt(this::getPointsForEvent).sum();
 
-                // 4. Get Player Details from one of the entries (or fetch from repo if needed,
-                // but we likely have it)
-                // If no data, we might need to fetch player manually. Let's try to get from
-                // first lineup/event.
+                // 4. Get Player Details
                 String firstName = "";
                 String lastName = "";
                 String currentTeamName = null;
@@ -360,7 +414,6 @@ public class StatisticsServiceImpl implements StatisticsService {
                         Player p = lineups.get(0).getPlayer();
                         firstName = p.getPerson().getFirstName();
                         lastName = p.getPerson().getLastName();
-                        // Most recent team? Sort lineups? For now, take the last one or just null
                         currentTeamName = lineups.get(lineups.size() - 1).getTeam().getName();
                 } else if (!events.isEmpty()) {
                         Player p = events.get(0).getPlayer();
@@ -369,13 +422,6 @@ public class StatisticsServiceImpl implements StatisticsService {
                 } else {
                         // No stats, fetch player name manually or return empty stats
                         // For now returning empty stats with placeholder name if not found in cache
-                        // Ideally we inject PlayerRepository but avoiding modifying constructor for now
-                        // if possible
-                        // But wait, constructor injection is fine.
-
-                        // NOTE: Since I cannot easily add PlayerRepository without regenerating the
-                        // whole file or verifying imports,
-                        // I will assume for MVP that if no stats exist, we return basic 0 stats.
                         // Ideally fetching player via playerRepository is better.
                 }
 
@@ -388,7 +434,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .map(lineup -> {
                                         Match match = lineup.getMatch();
                                         List<MatchEvent> matchEvents = eventsByMatch.getOrDefault(match.getId(),
-                                                        Collections.emptyList());
+                                                        new ArrayList<>());
 
                                         int mPoints = matchEvents.stream().mapToInt(this::getPointsForEvent).sum();
                                         int mTries = (int) matchEvents.stream()
@@ -429,6 +475,17 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                                 .getMatchDurationMinutes();
                                         }
 
+                                        int minutesPlayedVal = calculateMinutesPlayed(match, playerId, lineup.getRole(),
+                                                        matchEvents, duration);
+                                        String minutesStr = String.valueOf(minutesPlayedVal);
+                                        if (lineup.getRole() != com.athleticaos.backend.enums.LineupRole.STARTER
+                                                        && minutesPlayedVal > 0) {
+                                                minutesStr += " (Sub)";
+                                        } else if (minutesPlayedVal == 0 && lineup
+                                                        .getRole() == com.athleticaos.backend.enums.LineupRole.BENCH) {
+                                                minutesStr = "DNP";
+                                        }
+
                                         return new PlayerMatchStatsDTO(
                                                         match.getId(),
                                                         match.getMatchDate(),
@@ -438,10 +495,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                         mPoints,
                                                         mYellow,
                                                         mRed,
-                                                        lineup.getRole() == com.athleticaos.backend.enums.LineupRole.STARTER
-                                                                        ? String.valueOf(duration)
-                                                                        : "Sub" // Simplified minutes
-                                        );
+                                                        minutesStr);
                                 })
                                 .sorted((m1, m2) -> {
                                         if (m1.matchDate() == null || m2.matchDate() == null)
@@ -449,6 +503,11 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         return m2.matchDate().compareTo(m1.matchDate()); // Descending
                                 })
                                 .collect(Collectors.toList());
+
+                // Calculate accurate matches played (excluding DNP)
+                int matchesPlayed = (int) recentMatches.stream()
+                                .filter(m -> !m.minutesPlayed().equals("DNP"))
+                                .count();
 
                 return new PlayerStatsResponse(
                                 playerId,
@@ -464,6 +523,55 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 redCards,
                                 totalPoints,
                                 recentMatches);
+        }
+
+        private int calculateMinutesPlayed(Match match, UUID playerId, com.athleticaos.backend.enums.LineupRole role,
+                        List<MatchEvent> events, int matchDuration) {
+                boolean isOn = role == com.athleticaos.backend.enums.LineupRole.STARTER;
+                int lastTime = 0;
+                int totalMinutes = 0;
+
+                // Sort events by minute (create copy to avoid mutating original list if shared)
+                List<MatchEvent> sortedEvents = new ArrayList<>(events);
+                sortedEvents.sort(Comparator.comparingInt(e -> e.getMinute() != null ? e.getMinute() : 0));
+
+                for (MatchEvent event : sortedEvents) {
+                        if (event.getMinute() == null)
+                                continue;
+                        int eventTime = event.getMinute();
+
+                        if (isOn) {
+                                // Check if player is coming OFF
+                                if (event.getEventType() == MatchEventType.SUBSTITUTION && event.getPlayer() != null
+                                                && event.getPlayer().getId().equals(playerId)) {
+                                        totalMinutes += (eventTime - lastTime);
+                                        isOn = false;
+                                        lastTime = eventTime;
+                                } else if (event.getEventType() == MatchEventType.RED_CARD && event.getPlayer() != null
+                                                && event.getPlayer().getId().equals(playerId)) {
+                                        totalMinutes += (eventTime - lastTime);
+                                        isOn = false;
+                                        lastTime = eventTime;
+                                }
+                        } else {
+                                // Check if player is coming ON (via Related Player in Substitution)
+                                if (event.getEventType() == MatchEventType.SUBSTITUTION
+                                                && event.getRelatedPlayer() != null
+                                                && event.getRelatedPlayer().getId().equals(playerId)) {
+                                        isOn = true;
+                                        lastTime = eventTime;
+                                }
+                        }
+                }
+
+                // If still on at end of match
+                if (isOn) {
+                        totalMinutes += (matchDuration - lastTime);
+                        if (totalMinutes > matchDuration)
+                                totalMinutes = matchDuration; // Clamp
+                }
+
+                return totalMinutes;
         }
 
         @Override

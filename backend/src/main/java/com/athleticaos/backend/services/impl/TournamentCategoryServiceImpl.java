@@ -38,6 +38,8 @@ public class TournamentCategoryServiceImpl implements TournamentCategoryService 
                 .gender(request.getGender())
                 .minAge(request.getMinAge())
                 .maxAge(request.getMaxAge())
+                .minYear(request.getMinYear())
+                .maxYear(request.getMaxYear())
                 .build();
 
         category = categoryRepository.save(category);
@@ -70,6 +72,8 @@ public class TournamentCategoryServiceImpl implements TournamentCategoryService 
         category.setGender(request.getGender());
         category.setMinAge(request.getMinAge());
         category.setMaxAge(request.getMaxAge());
+        category.setMinYear(request.getMinYear());
+        category.setMaxYear(request.getMaxYear());
 
         category = categoryRepository.save(category);
         return mapToDTO(category);
@@ -84,6 +88,8 @@ public class TournamentCategoryServiceImpl implements TournamentCategoryService 
                 .gender(category.getGender())
                 .minAge(category.getMinAge())
                 .maxAge(category.getMaxAge())
+                .minYear(category.getMinYear())
+                .maxYear(category.getMaxYear())
                 .build();
     }
 }

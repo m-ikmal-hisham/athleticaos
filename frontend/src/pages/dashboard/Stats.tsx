@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useStatsStore } from '@/store/stats.store';
 import { useUIStore } from '@/store/ui.store';
 import { fetchTournaments } from '@/api/tournaments.api';
-import { Trophy, Users, Pulse, WarningCircle, Flag, Medal, CaretUp, CaretDown, Check, MagnifyingGlass } from '@phosphor-icons/react';
+import { Trophy, Users, Pulse, WarningCircle, Flag, Medal, CaretUp, CaretDown } from '@phosphor-icons/react';
 import { BentoGrid, BentoItem } from '@/components/dashboard/BentoGrid';
 import { GlassCard } from '@/components/GlassCard';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface Tournament {
     id: string;
@@ -27,38 +28,20 @@ export default function Stats() {
 
     const { activeTournamentId, setActiveTournamentId } = useUIStore();
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
-    const [tournamentsLoading, setTournamentsLoading] = useState(true);
 
     // Local state for the dropdown / search
     const [localTournamentId, setLocalTournamentId] = useState<string>('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Sync global active tournament to local stats selection on mount/update
-    // Only if we haven't selected anything locally yet or if the global one changes significantly?
-    // Actually, if we want to default to the global one, we should set it when activeTournamentId changes.
-    // But we don't want to override user's pending selection if they haven't clicked search yet.
-    // A simple approach: When activeTournamentId changes (e.g. from sidebar), update local and trigger load.
-    // But the user issue was "Changing to different tournament manually ... causing infinite loop".
-    // So we decouple the dropdown from the store execution.
 
     useEffect(() => {
         if (activeTournamentId) {
             setLocalTournamentId(activeTournamentId);
-            // Pre-fill search query with the name if available
-            const t = tournaments.find((t: Tournament) => t.id === activeTournamentId);
-            if (t) setSearchQuery(t.name);
 
-            // If it's a fresh mount or external change, we might want to ensure store matches.
-            // But let's rely on the manual search logic or initial load logic.
-            // If the store is empty, we load it.
             if (activeTournamentId !== selectedTournamentId || !summary) {
                 setSelectedTournamentId(activeTournamentId);
                 loadStatsForTournament(activeTournamentId);
             }
         }
-    }, [activeTournamentId, tournaments]); // Depend on tournaments to get name correctly
+    }, [activeTournamentId, tournaments]);
 
     // Load tournaments on mount
     useEffect(() => {
@@ -66,42 +49,14 @@ export default function Stats() {
             try {
                 const res = await fetchTournaments();
                 setTournaments(res.data);
-                // Also set initial search query if we have a local Id but no query (page reload case)
-                if (localTournamentId && !searchQuery) {
-                    const t = res.data.find((t: Tournament) => t.id === localTournamentId);
-                    if (t) setSearchQuery(t.name);
-                }
             } catch (err) {
                 console.error("Failed to load tournaments", err);
             } finally {
-                setTournamentsLoading(false);
+                // Done
             }
         };
         loadTournaments();
     }, []);
-
-    // Close dropdown involved clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false);
-                // Reset query to selected tournament name if we didn't select anything new
-                const t = tournaments.find(t => t.id === localTournamentId);
-                if (t && searchQuery !== t.name) {
-                    setSearchQuery(t.name);
-                }
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [localTournamentId, tournaments, searchQuery]);
-
-    // REMOVED: Auto-load effect on selectedTournamentId change
-    // useEffect(() => {
-    //     if (selectedTournamentId) {
-    //         loadStatsForTournament(selectedTournamentId);
-    //     }
-    // }, [selectedTournamentId, loadStatsForTournament]);
 
     const handleSearch = () => {
         if (localTournamentId) {
@@ -113,13 +68,7 @@ export default function Stats() {
 
     const handleSelectTournament = (t: Tournament) => {
         setLocalTournamentId(t.id);
-        setSearchQuery(t.name);
-        setIsDropdownOpen(false);
     };
-
-    const filteredTournaments = tournaments.filter((t: Tournament) =>
-        t.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
         <div className="space-y-6 pt-2 pb-12 animate-in fade-in duration-500">
@@ -131,67 +80,26 @@ export default function Stats() {
                 </div>
 
                 <div className="w-full md:w-auto flex items-center gap-2">
-                    {/* Searchable Combobox */}
-                    <div className="relative flex-1 md:w-72" ref={dropdownRef}>
-                        <div
-                            className="relative w-full group"
-                            onClick={() => setIsDropdownOpen(true)}
-                        >
-                            <input
-                                type="text"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 pl-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                placeholder="Select tournament..."
-                                value={searchQuery}
-                                disabled={tournamentsLoading}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setIsDropdownOpen(true);
-                                }}
-                                onFocus={() => setIsDropdownOpen(true)}
-                            />
-                            <MagnifyingGlass className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                <CaretDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                            </div>
-                        </div>
-
-                        {/* Dropdown List */}
-                        {isDropdownOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto overflow-x-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                {filteredTournaments.length === 0 ? (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">
-                                        No tournaments found.
-                                    </div>
-                                ) : (
-                                    <div className="p-1">
-                                        {filteredTournaments.map((t) => (
-                                            <button
-                                                key={t.id}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSelectTournament(t);
-                                                }}
-                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-colors ${localTournamentId === t.id
-                                                    ? 'bg-primary/20 text-primary'
-                                                    : 'text-foreground hover:bg-white/5'
-                                                    }`}
-                                            >
-                                                <span className="truncate">{t.name}</span>
-                                                {localTournamentId === t.id && (
-                                                    <Check className="w-4 h-4 flex-shrink-0 ml-2" />
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                    {/* Searchable Select */}
+                    <div className="flex-1 md:w-72">
+                        <SearchableSelect
+                            options={tournaments.map(t => ({ value: t.id, label: t.name }))}
+                            value={localTournamentId}
+                            onChange={(val) => {
+                                const t = tournaments.find(tour => tour.id === val);
+                                if (t) {
+                                    handleSelectTournament(t);
+                                }
+                            }}
+                            placeholder="Select tournament..."
+                            className="w-full"
+                        />
                     </div>
 
                     <button
                         onClick={handleSearch}
                         disabled={loading || !localTournamentId || localTournamentId === selectedTournamentId}
-                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-primary/20"
+                        className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-primary/20 h-[46px]"
                     >
                         Search
                     </button>
@@ -523,7 +431,7 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
 
 function SummaryCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
     return (
-        <GlassCard className="h-full flex flex-col items-center justify-center text-center p-6 border-white/5 hover:border-white/10 transition-colors">
+        <GlassCard hover={true} className="h-full flex flex-col items-center justify-center text-center p-6 border-white/5 hover:border-blue-500/50 transition-colors">
             <div className="mb-3 p-3 rounded-2xl bg-white/[0.03]">
                 {icon}
             </div>

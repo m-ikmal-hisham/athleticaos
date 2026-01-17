@@ -290,6 +290,8 @@ export interface TournamentCategory {
     gender?: string;
     minAge?: number;
     maxAge?: number;
+    minYear?: number;
+    maxYear?: number;
 }
 
 export interface CreateCategoryRequest {
@@ -298,6 +300,8 @@ export interface CreateCategoryRequest {
     gender?: string;
     minAge?: number;
     maxAge?: number;
+    minYear?: number;
+    maxYear?: number;
 }
 
 export interface TournamentCreateRequest {

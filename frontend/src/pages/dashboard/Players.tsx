@@ -169,7 +169,8 @@ export default function Players() {
                     {filteredPlayers.map((p) => (
                         <GlassCard
                             key={p.id}
-                            className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
+                            hover={true}
+                            className="group relative flex flex-col p-5 transition-all duration-300 cursor-pointer"
                             onClick={() => handleCardClick(p)}
                         >
                             <div className="flex justify-between items-start mb-4">

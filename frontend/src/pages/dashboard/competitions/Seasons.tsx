@@ -179,7 +179,8 @@ export const Seasons = () => {
                     {filteredSeasons.map((season) => (
                         <GlassCard
                             key={season.id}
-                            className="group relative flex flex-col hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10 overflow-hidden"
+                            hover={true}
+                            className="group relative flex flex-col transition-all duration-300 cursor-pointer overflow-hidden"
                             onClick={() => navigate(`/dashboard/competitions/seasons/${season.id}`)}
                         >
                             {/* Gradient Top Banner */}

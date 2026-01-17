@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TournamentRosterServiceImpl implements TournamentRosterService {
 
+        private final TournamentTeamRepository tournamentTeamRepository;
         private final TournamentPlayerRepository tournamentPlayerRepository;
         private final TournamentRepository tournamentRepository;
         private final TeamRepository teamRepository;
@@ -44,6 +45,12 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
                 Team team = teamRepository.findById(teamId)
                                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+
+                // Get TournamentTeam to identify Category
+                TournamentTeam tournamentTeam = tournamentTeamRepository
+                                .findByTournamentIdAndTeamId(tournamentId, teamId)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Team is not registered in this tournament"));
 
                 List<TournamentPlayerDTO> addedPlayers = new ArrayList<>();
 
@@ -70,8 +77,9 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 continue;
                         }
 
-                        // Check eligibility
-                        EligibilityResult eligibility = eligibilityService.checkPlayerEligibility(tournament, player);
+                        // Check eligibility with Category context
+                        EligibilityResult eligibility = eligibilityService.checkPlayerEligibility(tournament,
+                                        tournamentTeam.getCategory(), player);
 
                         // Create roster entry
                         TournamentPlayer tournamentPlayer = TournamentPlayer.builder()

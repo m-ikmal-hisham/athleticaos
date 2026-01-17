@@ -24,7 +24,40 @@ public class EligibilityServiceImpl implements EligibilityService {
     /**
      * {@inheritDoc}
      */
-    public EligibilityResult checkPlayerEligibility(Tournament tournament, Player player) {
+    public EligibilityResult checkPlayerEligibility(Tournament tournament,
+            com.athleticaos.backend.entities.TournamentCategory category, Player player) {
+        // 1. Check if category rules apply (Year based)
+        if (category != null && (category.getMinYear() != null || category.getMaxYear() != null)) {
+            if (player.getPerson() == null || player.getPerson().getDob() == null) {
+                return EligibilityResult.builder()
+                        .eligible(false)
+                        .reason("Missing date of birth for age verification")
+                        .build();
+            }
+
+            int birthYear = player.getPerson().getDob().getYear();
+
+            if (category.getMinYear() != null && birthYear < category.getMinYear()) {
+                return EligibilityResult.builder()
+                        .eligible(false)
+                        .reason(String.format("Born too early (%d). Min Year: %d", birthYear, category.getMinYear()))
+                        .build();
+            }
+
+            if (category.getMaxYear() != null && birthYear > category.getMaxYear()) {
+                return EligibilityResult.builder()
+                        .eligible(false)
+                        .reason(String.format("Born too late (%d). Max Year: %d", birthYear, category.getMaxYear()))
+                        .build();
+            }
+
+            return EligibilityResult.builder()
+                    .eligible(true)
+                    .reason("Eligible by Birth Year")
+                    .build();
+        }
+
+        // 2. Fallback to Legacy Tournament Age Grade Logic
         // If not an age-grade tournament, player is eligible
         if (!tournament.isAgeGrade()) {
             return EligibilityResult.builder()

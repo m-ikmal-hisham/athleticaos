@@ -19,4 +19,6 @@ public class TournamentCategoryDTO {
     private String gender;
     private Integer minAge;
     private Integer maxAge;
+    private Integer minYear;
+    private Integer maxYear;
 }

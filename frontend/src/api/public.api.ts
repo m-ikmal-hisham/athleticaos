@@ -124,6 +124,31 @@ export interface PublicStanding {
     points: number;
 }
 
+export interface PublicPlayerStatEntry {
+    playerId: string;
+    name: string;
+    teamName: string;
+    tries: number;
+    totalPoints: number;
+    yellowCards: number;
+    redCards: number;
+}
+
+export interface PublicTeamStatEntry {
+    teamId: string;
+    teamName: string;
+    organisationName: string;
+    wins: number;
+    triesScored: number;
+    tablePoints: number;
+}
+
+export interface PublicTournamentStats {
+    topScorers: PublicPlayerStatEntry[];
+    topOffenders: PublicPlayerStatEntry[];
+    topTeams: PublicTeamStatEntry[];
+}
+
 // API Functions
 export const publicTournamentApi = {
     getTournaments: async (): Promise<PublicTournamentSummary[]> => {
@@ -145,6 +170,13 @@ export const publicTournamentApi = {
 
     getTournamentStandings: async (id: string, categoryId?: string): Promise<PublicStanding[]> => {
         const response = await publicApi.get(`/tournaments/${id}/standings`, {
+            params: { categoryId }
+        });
+        return response.data;
+    },
+
+    getTournamentStats: async (id: string, categoryId?: string): Promise<PublicTournamentStats> => {
+        const response = await publicApi.get(`/tournaments/${id}/stats`, {
             params: { categoryId }
         });
         return response.data;

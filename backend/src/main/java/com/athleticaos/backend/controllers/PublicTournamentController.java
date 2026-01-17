@@ -30,6 +30,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.repositories.MatchEventRepository matchEventRepository;
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
+    private final com.athleticaos.backend.services.StatisticsService statisticsService;
 
     @GetMapping("/tournaments")
     @Transactional(readOnly = true)
@@ -147,6 +148,28 @@ public class PublicTournamentController {
             return ResponseEntity.ok(standings);
         } catch (Exception e) {
             log.error("Error fetching standings for tournament {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/tournaments/{idOrSlug}/stats")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicTournamentStatsResponse> getTournamentStats(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
+        try {
+            TournamentResponse tournament = fetchTournament(idOrSlug);
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard = statisticsService
+                    .getTournamentLeaderboard(tournament.getId(), categoryId);
+
+            PublicTournamentStatsResponse response = mapToPublicStats(leaderboard);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching stats for tournament {}", idOrSlug, e);
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -423,5 +446,49 @@ public class PublicTournamentController {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private PublicTournamentStatsResponse mapToPublicStats(
+            com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard) {
+        List<PublicPlayerStatEntry> topScorers = leaderboard.topPlayers().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<PublicPlayerStatEntry> topOffenders = leaderboard.topOffenders().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<PublicTeamStatEntry> topTeams = leaderboard.topTeams().stream()
+                .map(t -> PublicTeamStatEntry.builder()
+                        .teamId(t.teamId())
+                        .teamName(t.teamName())
+                        .organisationName(t.organisationName())
+                        .wins(t.wins())
+                        .triesScored(t.triesScored())
+                        .tablePoints(t.tablePoints())
+                        .build())
+                .collect(Collectors.toList());
+
+        return PublicTournamentStatsResponse.builder()
+                .topScorers(topScorers)
+                .topOffenders(topOffenders)
+                .topTeams(topTeams)
+                .build();
     }
 }

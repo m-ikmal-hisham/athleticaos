@@ -303,7 +303,8 @@ export default function Organisations() {
                     {filteredOrganisations.map((org) => (
                         <GlassCard
                             key={org.id}
-                            className="group relative flex flex-col p-5 hover:bg-white/5 transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-glass-lg border-white/10"
+                            hover={true}
+                            className="group relative flex flex-col p-5 transition-all duration-300 cursor-pointer"
                             onClick={() => navigate(`/dashboard/organisations/${org.id}`)}
                         >
                             <div className="flex justify-between items-start mb-4">

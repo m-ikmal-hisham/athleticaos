@@ -4,6 +4,7 @@ import com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardRespo
 import com.athleticaos.backend.entities.*;
 import com.athleticaos.backend.enums.MatchEventType;
 import com.athleticaos.backend.enums.MatchStatus;
+import com.athleticaos.backend.enums.LineupRole;
 import com.athleticaos.backend.repositories.*;
 import com.athleticaos.backend.services.impl.StatisticsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,7 +103,7 @@ public class StatisticsServiceIntegrationTest {
                                 .match(match)
                                 .team(team)
                                 .player(player)
-                                .role(com.athleticaos.backend.enums.LineupRole.STARTER)
+                                .role(LineupRole.STARTER)
                                 .isStarter(true)
                                 .build();
                 entityManager.persist(lineup);
@@ -132,7 +133,8 @@ public class StatisticsServiceIntegrationTest {
                 entityManager.clear();
 
                 // 4. Act
-                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId());
+                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId(),
+                                null);
 
                 // 5. Assert
                 assertThat(response.topPlayers()).hasSize(1);
@@ -175,7 +177,8 @@ public class StatisticsServiceIntegrationTest {
                 entityManager.clear();
 
                 // Act
-                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId());
+                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId(),
+                                null);
 
                 // Assert
                 var players = response.topPlayers();
@@ -209,7 +212,7 @@ public class StatisticsServiceIntegrationTest {
                 entityManager.persist(match);
 
                 MatchLineup lineup = MatchLineup.builder().match(match).team(team).player(player)
-                                .role(com.athleticaos.backend.enums.LineupRole.STARTER).build();
+                                .role(LineupRole.STARTER).build();
                 entityManager.persist(lineup);
 
                 for (MatchEventType type : events) {
@@ -263,7 +266,8 @@ public class StatisticsServiceIntegrationTest {
                 entityManager.clear();
 
                 // Act
-                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId());
+                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId(),
+                                null);
 
                 // Assert
                 assertThat(response.topPlayers()).isEmpty(); // Should be empty as no player linked

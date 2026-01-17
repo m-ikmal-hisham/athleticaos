@@ -149,10 +149,24 @@ public class MatchEventServiceImpl implements MatchEventService {
                         throw new IllegalArgumentException("Team is not part of this match.");
                 }
 
+                if (request.getRelatedPlayerId() != null) {
+                        playerRepository.findById(request.getRelatedPlayerId())
+                                        .orElseThrow(() -> new EntityNotFoundException(
+                                                        "Related Player not found with ID: "
+                                                                        + request.getRelatedPlayerId()));
+                        // Optional: Validate related player is in the same team? Or can be dependent on
+                        // event (e.g. Tackle by opp?)
+                        // For SUBSTITUTION, they are same team.
+                        // We skip strict validation for now to be flexible.
+                }
+
                 MatchEvent event = MatchEvent.builder()
                                 .match(match)
                                 .team(team)
                                 .player(player)
+                                .relatedPlayer(request.getRelatedPlayerId() != null
+                                                ? playerRepository.getReferenceById(request.getRelatedPlayerId())
+                                                : null)
                                 .eventType(request.getEventType())
                                 .minute(request.getMinute())
                                 .notes(request.getNotes())
@@ -399,6 +413,12 @@ public class MatchEventServiceImpl implements MatchEventService {
                                 .playerName(event.getPlayer() != null
                                                 ? event.getPlayer().getPerson().getFirstName() + " "
                                                                 + event.getPlayer().getPerson().getLastName()
+                                                : null)
+                                .relatedPlayerId(event.getRelatedPlayer() != null ? event.getRelatedPlayer().getId()
+                                                : null)
+                                .relatedPlayerName(event.getRelatedPlayer() != null
+                                                ? event.getRelatedPlayer().getPerson().getFirstName() + " "
+                                                                + event.getRelatedPlayer().getPerson().getLastName()
                                                 : null)
                                 .eventType(event.getEventType().name())
                                 .minute(event.getMinute())

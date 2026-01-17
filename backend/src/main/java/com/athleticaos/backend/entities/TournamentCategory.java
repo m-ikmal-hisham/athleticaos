@@ -41,6 +41,12 @@ public class TournamentCategory {
     @Column(name = "max_age")
     private Integer maxAge;
 
+    @Column(name = "min_year")
+    private Integer minYear;
+
+    @Column(name = "max_year")
+    private Integer maxYear;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

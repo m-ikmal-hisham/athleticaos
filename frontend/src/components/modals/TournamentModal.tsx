@@ -15,8 +15,8 @@ import { Plus, Trash } from '@phosphor-icons/react';
 const categorySchema = z.object({
     name: z.string().min(1, "Category name is required"),
     gender: z.string().optional(),
-    minAge: z.number().optional(),
-    maxAge: z.number().optional()
+    minYear: z.number().optional(),
+    maxYear: z.number().optional()
 });
 
 const tournamentSchema = z.object({
@@ -52,8 +52,8 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
     const [newCategory, setNewCategory] = useState<CreateCategoryRequest>({
         name: '',
         gender: 'MALE',
-        minAge: undefined,
-        maxAge: undefined
+        minYear: undefined,
+        maxYear: undefined
     });
 
     const {
@@ -91,8 +91,8 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                     categories: tournament.categories?.map(c => ({
                         name: c.name,
                         gender: c.gender,
-                        minAge: c.minAge,
-                        maxAge: c.maxAge
+                        minYear: c.minYear,
+                        maxYear: c.maxYear
                     })) || [],
                     logoUrl: tournament.logoUrl,
                     livestreamUrl: tournament.livestreamUrl
@@ -141,7 +141,7 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
         const currentCategories = watch('categories') || [];
         setValue('categories', [...currentCategories, { ...newCategory }]);
 
-        setNewCategory({ name: '', gender: 'MALE', minAge: undefined, maxAge: undefined });
+        setNewCategory({ name: '', gender: 'MALE', minYear: undefined, maxYear: undefined });
     };
 
     const removeCategory = (index: number) => {
@@ -246,7 +246,29 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                                 <div>
                                     <span className="font-medium text-foreground">{cat.name}</span>
                                     <div className="text-xs text-muted-foreground mt-0.5">
-                                        {cat.gender} • {cat.minAge && cat.maxAge ? `${cat.minAge}-${cat.maxAge} years` : 'Open Age'}
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                            {(() => {
+                                                const sd = watch('startDate');
+                                                const refYear = sd ? new Date(sd).getFullYear() : new Date().getFullYear();
+                                                const minAgeVal = cat.maxYear ? refYear - cat.maxYear : null;
+                                                const maxAgeVal = cat.minYear ? refYear - cat.minYear : null;
+
+                                                let ageText = '';
+                                                if (minAgeVal !== null && maxAgeVal !== null) {
+                                                    ageText = `(Age ${minAgeVal}-${maxAgeVal})`;
+                                                } else if (minAgeVal !== null) {
+                                                    ageText = `(Age ${minAgeVal}+)`;
+                                                } else if (maxAgeVal !== null) {
+                                                    ageText = `(Age U${maxAgeVal})`;
+                                                }
+
+                                                return (
+                                                    <span>
+                                                        {cat.gender} • {cat.minYear ? `Born after ${cat.minYear}` : ''} {cat.maxYear ? `Before ${cat.maxYear}` : ''} {ageText}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
                                 <button type="button" onClick={() => removeCategory(idx)} className="text-red-500 hover:text-red-400" aria-label="Remove category">
@@ -280,22 +302,44 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                             />
                         </div>
                         <div className="col-span-2">
-                            <label className="text-xs text-muted-foreground mb-1 block">Min Age</label>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="text-xs text-muted-foreground block">Min Year</label>
+                                {newCategory.minYear && (
+                                    <span className="text-[10px] text-primary-400">
+                                        {(() => {
+                                            const sd = watch('startDate');
+                                            const refYear = sd ? new Date(sd).getFullYear() : new Date().getFullYear();
+                                            return `Age ${refYear - newCategory.minYear}`;
+                                        })()}
+                                    </span>
+                                )}
+                            </div>
                             <Input
                                 type="number"
-                                value={newCategory.minAge || ''}
-                                onChange={(e) => setNewCategory(prev => ({ ...prev, minAge: e.target.value ? parseInt(e.target.value) : undefined }))}
-                                placeholder="Min"
+                                value={newCategory.minYear || ''}
+                                onChange={(e) => setNewCategory(prev => ({ ...prev, minYear: e.target.value ? parseInt(e.target.value) : undefined }))}
+                                placeholder="e.g. 2008"
                                 className="h-9 text-sm"
                             />
                         </div>
                         <div className="col-span-2">
-                            <label className="text-xs text-muted-foreground mb-1 block">Max Age</label>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="text-xs text-muted-foreground block">Max Year</label>
+                                {newCategory.maxYear && (
+                                    <span className="text-[10px] text-primary-400">
+                                        {(() => {
+                                            const sd = watch('startDate');
+                                            const refYear = sd ? new Date(sd).getFullYear() : new Date().getFullYear();
+                                            return `Age ${refYear - newCategory.maxYear}`;
+                                        })()}
+                                    </span>
+                                )}
+                            </div>
                             <Input
                                 type="number"
-                                value={newCategory.maxAge || ''}
-                                onChange={(e) => setNewCategory(prev => ({ ...prev, maxAge: e.target.value ? parseInt(e.target.value) : undefined }))}
-                                placeholder="Max"
+                                value={newCategory.maxYear || ''}
+                                onChange={(e) => setNewCategory(prev => ({ ...prev, maxYear: e.target.value ? parseInt(e.target.value) : undefined }))}
+                                placeholder="e.g. 2006"
                                 className="h-9 text-sm"
                             />
                         </div>

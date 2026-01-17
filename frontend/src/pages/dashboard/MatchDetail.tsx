@@ -305,7 +305,8 @@ export const MatchDetail = () => {
                 playerName: selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : null,
                 eventType: action.type,
                 minute: displayMinute, // Use the live timer minute
-                notes: eventNotes
+                notes: eventNotes,
+                relatedPlayerId: action.type === 'SUBSTITUTION' ? action.sub_in_playerId : null
             });
 
             // --- Handle Automatic Lineup Adjustment for Substitution ---

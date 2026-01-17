@@ -51,6 +51,7 @@ export interface MatchEventItem {
     teamName: string;
     playerId?: string | null;
     playerName?: string | null;
+    relatedPlayerId?: string | null;
     eventType: string;  // "TRY", "CONVERSION", etc.
     minute?: number | null;
     notes?: string | null;

@@ -35,6 +35,10 @@ public class MatchEvent {
     @JoinColumn(name = "player_id")
     private Player player;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_player_id")
+    private Player relatedPlayer;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
     private MatchEventType eventType;

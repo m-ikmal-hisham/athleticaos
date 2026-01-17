@@ -10,13 +10,13 @@ import java.util.UUID;
 
 public interface StatisticsService {
 
-    TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId);
+    TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId, UUID categoryId);
 
-    List<PlayerStatsResponse> getPlayerStatsForTournament(UUID tournamentId);
+    List<PlayerStatsResponse> getPlayerStatsForTournament(UUID tournamentId, UUID categoryId);
 
-    List<TeamStatsResponse> getTeamStatsForTournament(UUID tournamentId);
+    List<TeamStatsResponse> getTeamStatsForTournament(UUID tournamentId, UUID categoryId);
 
-    TournamentLeaderboardResponse getTournamentLeaderboard(UUID tournamentId);
+    TournamentLeaderboardResponse getTournamentLeaderboard(UUID tournamentId, UUID categoryId);
 
     PlayerStatsResponse getPlayerStatsAcrossTournaments(UUID playerId);
 

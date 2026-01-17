@@ -18,6 +18,8 @@ public class MatchEventResponse {
     private UUID playerId;
     private String teamName;
     private String playerName;
+    private UUID relatedPlayerId;
+    private String relatedPlayerName;
     private String eventType;
     private Integer minute;
     private String notes;

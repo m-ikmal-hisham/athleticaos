@@ -19,6 +19,8 @@ public class MatchEventCreateRequest {
 
     private UUID playerId;
 
+    private UUID relatedPlayerId;
+
     @NotNull(message = "Event type is required")
     private MatchEventType eventType;
 
