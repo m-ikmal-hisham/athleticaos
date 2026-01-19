@@ -124,12 +124,12 @@ export default function PublicLayout() {
             </nav>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32 relative z-10">
                 <Outlet />
             </main>
 
             {/* Footer */}
-            <footer className="mt-16 border-t border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl relative z-10">
+            <footer className="mt-16 border-t border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl relative z-10 mb-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="text-sm text-slate-600 dark:text-slate-400">

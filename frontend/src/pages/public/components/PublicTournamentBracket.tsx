@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { PublicMatchSummary } from '../../../api/public.api';
 import { Trophy } from '@phosphor-icons/react';
+import { formatEnum } from '@/utils/formatters';
 
 interface PublicTournamentBracketProps {
     matches: PublicMatchSummary[];
@@ -56,7 +57,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                 {sortedStageNames.map(stageName => (
                     <div key={stageName} className="flex flex-col gap-4 min-w-[280px]">
                         <div className="text-center font-bold text-slate-900 dark:text-white uppercase tracking-wider text-sm border-b pb-2 border-slate-200 dark:border-slate-800">
-                            {stageName}
+                            {formatEnum(stageName)}
                         </div>
                         <div className="flex flex-col justify-center gap-6 h-full">
                             {grouped[stageName].map(match => (

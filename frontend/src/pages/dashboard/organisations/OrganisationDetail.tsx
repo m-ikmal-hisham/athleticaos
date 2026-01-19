@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatOrgType } from '@/utils/formatters';
 import { getOrganisationById, Organisation } from '../../../api/organisations.api';
 import { fetchTeamsByOrganisation } from '../../../api/teams.api';
 import { fetchPlayersByOrganisation } from '../../../api/players.api';
@@ -58,9 +59,7 @@ const OrganisationDetail = () => {
         }
     };
 
-    const formatOrgType = (type: string) => {
-        return type?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') || type;
-    };
+    // Local formatOrgType removed in favor of utility
 
     if (loading) {
         return <div className="p-8 text-center text-muted-foreground">Loading organisation details...</div>;

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trophy, ArrowRight } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
 import { GlassCard } from '@/components/GlassCard';
+import { formatTournamentLevel, formatCompetitionType } from '@/utils/formatters';
 
 export default function Home() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
@@ -111,8 +112,8 @@ export default function Home() {
                                                 {tournament.name}
                                             </h3>
                                             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                                {tournament.level}
-                                                {tournament.competitionType && ` • ${tournament.competitionType}`}
+                                                {formatTournamentLevel(tournament.level)}
+                                                {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType)}`}
                                             </p>
                                         </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { formatCompetitionType, formatTournamentStatus } from '@/utils/formatters';
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
@@ -204,7 +205,7 @@ export default function Tournaments() {
                                 <div className="absolute top-2 right-2">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
                                         <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-blue-500'}`} />
-                                        {t.status}
+                                        {formatTournamentStatus(t.status)}
                                     </div>
                                 </div>
                             </div>
@@ -222,7 +223,7 @@ export default function Tournaments() {
                                 <div className="mb-4">
                                     <div className="text-xs font-semibold text-primary-400 mb-1 uppercase tracking-wider">{t.seasonName}</div>
                                     <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-primary-400 transition-colors line-clamp-2">{t.name}</h3>
-                                    <div className="text-sm text-muted-foreground mt-1">{t.level} • {t.competitionType}</div>
+                                    <div className="text-sm text-muted-foreground mt-1">{t.level} • {formatCompetitionType(t.competitionType)}</div>
                                 </div>
 
                                 <div className="mt-auto space-y-3 pt-4 border-t border-white/5">

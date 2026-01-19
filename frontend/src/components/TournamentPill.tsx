@@ -1,4 +1,4 @@
-import { Trophy, SkipForward, SkipBack, Play, VideoCamera } from '@phosphor-icons/react';
+import { Trophy, SkipForward, SkipBack, VideoCamera } from '@phosphor-icons/react';
 import { ShareButton } from '@/components/common/ShareButton';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { clsx } from 'clsx';
@@ -137,7 +137,7 @@ export const TournamentPill = () => {
     return (
         <div className="relative w-full">
             <div className={clsx(
-                "group relative flex items-center justify-between px-5 py-4 rounded-full", // True Pill shape
+                "group relative flex items-center justify-between px-3 md:px-5 py-3 md:py-4 rounded-full", // True Pill shape
                 "bg-white/10 dark:bg-black/20", // Glass Background (Glass Only, No Tint)
                 "backdrop-blur-[2px] backdrop-saturate-[150%]", // Stronger blur
                 "border border-white/20 dark:border-white/10", // Softer border
@@ -150,7 +150,7 @@ export const TournamentPill = () => {
                 </div> */}
 
                 {/* Left Controls - Previous */}
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
                     <button
                         onClick={handlePrevious}
                         disabled={!hasMultipleTournaments}
@@ -167,11 +167,11 @@ export const TournamentPill = () => {
                 {/* Center Info - Tournament Details (Clickable) */}
                 <Link
                     to={getTournamentLink()}
-                    className="flex-1 flex items-center gap-5 mx-6 min-w-0 group/info cursor-pointer justify-center md:justify-start"
+                    className="flex-1 flex items-center gap-3 md:gap-5 mx-2 md:mx-6 min-w-0 group/info cursor-pointer justify-start"
                 >
                     {/* Album Art Style Logo */}
                     <div className={clsx(
-                        "w-12 h-12 rounded-lg shrink-0 overflow-hidden shadow-md relative",
+                        "w-10 h-10 md:w-12 md:h-12 rounded-lg shrink-0 overflow-hidden shadow-md relative",
                         "bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border border-white/10"
                     )}>
                         <TournamentLogo
@@ -190,15 +190,15 @@ export const TournamentPill = () => {
 
                     {/* Meta Data */}
                     <div className="flex flex-col min-w-0 justify-center">
-                        <span className="text-base font-semibold text-foreground truncate group-hover/info:text-primary transition-colors leading-tight">
+                        <span className="text-sm md:text-base font-semibold text-foreground truncate group-hover/info:text-primary transition-colors leading-tight">
                             {tournament.name}
                         </span>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80 mt-0.5 truncate font-medium">
-                            <span className="truncate">{tournament.organiserName || 'Athletica'}</span>
+                            <span className="truncate max-w-[100px] md:max-w-none">{tournament.organiserName || 'Athletica'}</span>
                             <span className="mx-1 opacity-50">•</span>
                             {status === 'LIVE' ? (
                                 <span className="text-red-500 font-bold flex items-center gap-1">
-                                    Live Now
+                                    Live
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-1">
@@ -210,46 +210,52 @@ export const TournamentPill = () => {
                 </Link>
 
                 {/* Right Controls - Next & Play */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 md:gap-3">
                     {/* Live Stream Button if available */}
                     {tournament.livestreamUrl && (
                         <a
                             href={tournament.livestreamUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors flex items-center justify-center shadow-lg shadow-red-500/20"
+                            className="bg-red-600 hover:bg-red-700 text-white p-1.5 md:p-2 rounded-full transition-colors flex items-center justify-center shadow-lg shadow-red-500/20"
                             title="Watch Live Stream"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <VideoCamera className="w-5 h-5" weight="fill" />
+                            <VideoCamera className="w-4 h-4 md:w-5 md:h-5" weight="fill" />
                         </a>
                     )}
 
-                    {/* Share Button */}
-                    <ShareButton
-                        title={tournament.name}
-                        url={`${window.location.origin}/tournaments/${tournament.slug || tournament.id}`}
-                        variant="ghost"
-                        size="sm"
-                        direction="up"
-                        className="rounded-full w-10 h-10 p-0 text-foreground/70 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
-                    />
+                    {/* Share Button - hidden on mobile to save space if needed, or keep small */}
+                    <div className="hidden sm:block">
+                        <ShareButton
+                            title={tournament.name}
+                            url={`${window.location.origin}/tournaments/${tournament.slug || tournament.id}`}
+                            variant="ghost"
+                            size="sm"
+                            direction="up"
+                            className="rounded-full w-10 h-10 p-0 text-foreground/70 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+                        />
+                    </div>
 
-                    {/* View Action (Play Button equivalent) */}
-                    <Link
-                        to={getTournamentLink()}
-                        className="w-10 h-10 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground flex items-center justify-center transition-all"
-                        title="View Tournament"
-                    >
-                        {/* Using a more subtle icon for 'View' rather than Play which implies media */}
-                        <Play className="w-4 h-4 fill-current ml-0.5" weight="fill" />
-                    </Link>
 
                     <button
                         onClick={handleNext}
                         disabled={!hasMultipleTournaments}
                         className={clsx(
-                            "p-2 rounded-full text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors",
+                            "p-2 rounded-full text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors hidden sm:block",
+                            !hasMultipleTournaments && "opacity-30 cursor-not-allowed"
+                        )}
+                        title="Next tournament"
+                    >
+                        <SkipForward className="w-5 h-5 fill-current" weight="fill" />
+                    </button>
+
+                    {/* Mobile Next Button (Replaces the hidden group above on mobile) */}
+                    <button
+                        onClick={handleNext}
+                        disabled={!hasMultipleTournaments}
+                        className={clsx(
+                            "p-1.5 rounded-full text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors sm:hidden",
                             !hasMultipleTournaments && "opacity-30 cursor-not-allowed"
                         )}
                         title="Next tournament"

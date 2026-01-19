@@ -9,6 +9,7 @@ import { Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
+import { formatTeamCategory, formatAgeGroup, formatMatchStatus } from "@/utils/formatters";
 
 interface TeamDetail {
     id: string;
@@ -155,7 +156,7 @@ export default function TeamDetail() {
                     {team.name}
                 </h1>
                 <p className="text-muted-foreground">
-                    {team.category} • {team.ageGroup} • {team.division} • {team.state}
+                    {formatTeamCategory(team.category)} • {formatAgeGroup(team.ageGroup)} • {team.division} • {team.state}
                 </p>
             </div>
 
@@ -300,7 +301,7 @@ export default function TeamDetail() {
                                                     {match.homeScore} - {match.awayScore}
                                                 </p>
                                                 <span className={`status-pill status-${match.status.toLowerCase()} text-[0.7rem]`}>
-                                                    {match.status}
+                                                    {formatMatchStatus(match.status)}
                                                 </span>
                                             </div>
                                         </div>

@@ -9,9 +9,11 @@ import { useAuthStore } from '@/store/auth.store';
 import { calculateAge } from '@/utils/date';
 import { showToast } from '@/lib/customToast';
 import { getImageUrl } from '@/utils/image';
+import { formatGender } from '@/utils/formatters';
 
 interface PlayerStats {
-    totalMatches: number;
+    matchesPlayed: number;
+    totalMinutesPlayed: number;
     totalPoints: number;
     tries: number;
     conversions: number;
@@ -206,7 +208,7 @@ export const PlayerProfile = () => {
                         {player.gender && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Gender</span>
-                                <span className="text-foreground font-medium capitalize">{player.gender.toLowerCase()}</span>
+                                <span className="text-foreground font-medium">{formatGender(player.gender)}</span>
                             </div>
                         )}
                         {dobValue && (
@@ -249,7 +251,7 @@ export const PlayerProfile = () => {
                                                 <Target className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <p className="text-2xl font-bold text-foreground">{stats.totalMatches}</p>
+                                                <p className="text-2xl font-bold text-foreground">{stats.matchesPlayed}</p>
                                                 <p className="text-sm text-muted-foreground">Matches</p>
                                             </div>
                                         </GlassCard>
@@ -360,7 +362,11 @@ export const PlayerProfile = () => {
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                         <div className="space-y-1">
                                             <p className="text-sm text-muted-foreground">Matches Played</p>
-                                            <p className="text-xl font-bold text-foreground">{stats.totalMatches}</p>
+                                            <p className="text-xl font-bold text-foreground">{stats.matchesPlayed}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-sm text-muted-foreground">Total Minutes</p>
+                                            <p className="text-xl font-bold text-foreground">{stats.totalMinutesPlayed}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm text-muted-foreground">Tries Scored</p>

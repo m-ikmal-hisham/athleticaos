@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { formatGender } from '@/utils/formatters';
 import * as z from 'zod';
 import { Button } from '@/components/Button';
 import { SearchableSelect } from '@/components/SearchableSelect';
@@ -359,7 +360,7 @@ export const EditTournament = () => {
 
                                                 return (
                                                     <span>
-                                                        {cat.gender} • {cat.minYear ? `Born after ${cat.minYear}` : ''} {cat.maxYear ? `Before ${cat.maxYear}` : ''} {ageText}
+                                                        {formatGender(cat.gender)} • {cat.minYear ? `Born after ${cat.minYear}` : ''} {cat.maxYear ? `Before ${cat.maxYear}` : ''} {ageText}
                                                     </span>
                                                 );
                                             })()}

@@ -9,6 +9,7 @@ import { Badge } from '@/components/Badge';
 import { ArrowLeft, Trophy, CalendarBlank, ArrowSquareOut, Plus, PencilSimple, Trash } from '@phosphor-icons/react';
 import { showToast } from '@/lib/customToast';
 import { formatDate } from '@/utils/date';
+import { formatTournamentStatus, formatTournamentLevel } from '@/utils/formatters';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -218,11 +219,11 @@ export const SeasonDetail = () => {
                                                     {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <Badge variant="outline">{tournament.level}</Badge>
+                                                    <Badge variant="outline">{formatTournamentLevel(tournament.level)}</Badge>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <Badge variant={tournament.status === 'Ongoing' ? 'success' : 'default'}>
-                                                        {tournament.status}
+                                                        {formatTournamentStatus(tournament.status)}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">

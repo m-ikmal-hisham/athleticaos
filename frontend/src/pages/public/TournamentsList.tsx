@@ -5,13 +5,14 @@ import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.a
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
+import { formatCompetitionType, formatTournamentLevel } from '@/utils/formatters';
 
 export default function TournamentsList() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
     const [filteredTournaments, setFilteredTournaments] = useState<PublicTournamentSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'upcoming' | 'completed'>('all');
+    const [statusFilter, setStatusFilter] = useState<'live' | 'upcoming' | 'completed' | null>(null);
 
     useEffect(() => {
         loadTournaments();
@@ -44,7 +45,7 @@ export default function TournamentsList() {
         }
 
         // Status filter
-        if (statusFilter !== 'all') {
+        if (statusFilter) {
             filtered = filtered.filter(t => {
                 if (statusFilter === 'live') return t.live;
                 if (statusFilter === 'upcoming') return !t.live && !t.completed;
@@ -85,7 +86,6 @@ export default function TournamentsList() {
                 {/* Status Filter */}
                 <SmartFilterPills
                     options={[
-                        { id: 'all', label: 'All' },
                         { id: 'live', label: 'Live' },
                         { id: 'upcoming', label: 'Upcoming' },
                         { id: 'completed', label: 'Completed' },
@@ -157,8 +157,8 @@ export default function TournamentsList() {
                                                 {tournament.name}
                                             </h3>
                                             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                                {tournament.level}
-                                                {tournament.competitionType && ` • ${tournament.competitionType}`}
+                                                {formatTournamentLevel(tournament.level)}
+                                                {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType)}`}
                                             </p>
                                             {tournament.seasonName && (
                                                 <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">

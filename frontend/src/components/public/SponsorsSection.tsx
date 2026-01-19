@@ -51,13 +51,13 @@ export const SponsorsSection = ({ variant = 'default', className = '' }: Sponsor
                     <TrackedSponsor key={idx} sponsor={sponsor} location="match-footer-compact">
                         <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all cursor-default">
                             {/* Placeholder Logo */}
-                            <div className="h-6 w-auto px-2 flex items-center font-bold text-xs uppercase tracking-widest text-white/70">
+                            <div className="h-6 w-auto px-2 flex items-center font-bold text-xs uppercase tracking-widest text-slate-600 dark:text-white/70">
                                 {sponsor.name}
                             </div>
                         </div>
                     </TrackedSponsor>
                 ))}
-                <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">Official Partners</span>
+                <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-white/40 font-semibold">Official Partners</span>
             </div>
         );
     }

@@ -14,6 +14,7 @@ import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { ImageUpload } from '@/components/common/ImageUpload';
 import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
+import { formatGender } from '@/utils/formatters';
 
 interface Team {
     id: string;
@@ -311,8 +312,8 @@ export const EditPlayer = () => {
                                     value={gender}
                                     onChange={(value) => setGender(value as Gender)}
                                     options={[
-                                        { value: Gender.MALE, label: 'Male' },
-                                        { value: Gender.FEMALE, label: 'Female' }
+                                        { value: Gender.MALE, label: formatGender(Gender.MALE) },
+                                        { value: Gender.FEMALE, label: formatGender(Gender.FEMALE) }
                                     ]}
                                     placeholder="Select gender"
                                 />

@@ -210,6 +210,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         yellowCards,
                                         redCards,
                                         totalPoints,
+                                        0, // totalMinutesPlayed not calculated for tournament summary view
                                         Collections.emptyList()));
                 }
 
@@ -509,6 +510,21 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .filter(m -> !m.minutesPlayed().equals("DNP"))
                                 .count();
 
+                // Calculate total minutes played
+                int totalMinutesPlayed = recentMatches.stream()
+                                .mapToInt(m -> {
+                                        try {
+                                                String minStr = m.minutesPlayed().split(" ")[0]; // Handle "20 (Sub)" or
+                                                                                                 // "DNP"
+                                                if (minStr.equals("DNP"))
+                                                        return 0;
+                                                return Integer.parseInt(minStr);
+                                        } catch (NumberFormatException e) {
+                                                return 0;
+                                        }
+                                })
+                                .sum();
+
                 return new PlayerStatsResponse(
                                 playerId,
                                 firstName,
@@ -522,6 +538,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 yellowCards,
                                 redCards,
                                 totalPoints,
+                                totalMinutesPlayed,
                                 recentMatches);
         }
 

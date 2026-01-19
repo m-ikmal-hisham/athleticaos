@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, Star, Table } from '@phosphor-icons/react';
@@ -16,6 +15,7 @@ import {
 import { PublicTournamentPools } from './components/PublicTournamentPools';
 import { PublicTournamentBracket } from './components/PublicTournamentBracket';
 import { PublicStats } from './components/PublicStats';
+import { formatTournamentLevel } from '@/utils/formatters';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -140,20 +140,20 @@ export default function TournamentDetail() {
                 {/* Background Decoration */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl -z-10" />
 
-                <GlassCard className="p-0 overflow-hidden border-0 shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
-                    <div className="relative">
+                <GlassCard className="p-0 overflow-hidden border-0 shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl group">
+                    <div className="relative min-h-[16rem] flex flex-col justify-end">
                         {/* Cover Image or Gradient */}
-                        <div className="h-48 md:h-64 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 overflow-hidden">
                             {tournament.organiserBranding?.coverImageUrl && (
                                 <img src={tournament.organiserBranding.coverImageUrl} alt="Cover" className="w-full h-full object-cover opacity-60" />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
                         </div>
 
                         {/* Content Overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+                        <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
                             {/* Logo */}
-                            <div className="relative mb-4 md:mb-0 shrink-0">
+                            <div className="relative shrink-0">
                                 <TournamentLogo
                                     tournamentId={tournament.id}
                                     logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
@@ -162,15 +162,15 @@ export default function TournamentDetail() {
                             </div>
 
                             {/* Text Info */}
-                            <div className="flex-1 pb-2">
+                            <div className="flex-1">
                                 <div className="flex flex-wrap items-center gap-3 mb-2">
                                     <Badge variant="outline" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                                        {tournament.level}
+                                        {formatTournamentLevel(tournament.level)}
                                     </Badge>
                                     {tournament.live && <Badge variant="destructive" className="animate-pulse">LIVE NOW</Badge>}
                                     {tournament.completed && <Badge variant="secondary">Completed</Badge>}
                                 </div>
-                                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg mb-2">
+                                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg mb-2 leading-tight">
                                     {tournament.name}
                                 </h1>
                                 <div className="flex flex-wrap items-center gap-4 text-slate-300 text-sm font-medium">

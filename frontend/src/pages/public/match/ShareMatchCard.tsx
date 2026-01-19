@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShareNetwork, Copy, XLogo, FacebookLogo, WhatsappLogo, Check } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
+import { formatMatchStatus } from '@/utils/formatters';
 import { PublicMatchDetail } from '../../../api/public.api';
 
 interface ShareMatchCardProps {
@@ -71,7 +72,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                                 <span>{match.awayScore ?? 0}</span>
                             </div>
                             <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                                {match.status?.replace('_', ' ') || 'FULL TIME'}
+                                {formatMatchStatus(match.status) || 'Full Time'}
                             </div>
                         </div>
 

@@ -8,6 +8,7 @@ import {
 import { PublicMatchDetail } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
 import { getImageUrl } from '@/utils/image';
+import { formatEnum } from '@/utils/formatters';
 
 interface MatchHeroCardProps {
     match: PublicMatchDetail;
@@ -72,8 +73,8 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         {(match.stage || match.code) && (
                             <div className="hidden md:flex px-3 py-1.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm text-xs text-slate-500 dark:text-slate-400 font-medium">
                                 {[
-                                    match.stage,
-                                    match.round,
+                                    formatEnum(match.stage),
+                                    formatEnum(match.round),
                                     formatMatchCode(match.code)
                                 ].filter(Boolean).join(' • ')}
                             </div>
@@ -114,11 +115,11 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 </div>
 
                 {/* Score Section */}
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-8 md:gap-12 py-2">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-12 py-2">
                     {/* Home Team */}
-                    <div className="flex flex-col items-center md:items-end text-center md:text-right space-y-3 md:space-y-4 group">
+                    <div className="flex flex-col items-center md:items-end text-center md:text-right space-y-1 md:space-y-4 group min-w-0">
                         {/* Mobile Logo */}
-                        <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-2">
+                        <div className="w-12 h-12 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-1">
                             {match.homeTeamLogoUrl ? (
                                 <img
                                     src={getImageUrl(match.homeTeamLogoUrl)}
@@ -127,7 +128,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                                 />
                             ) : (
                                 <div className="w-full h-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
+                                    <span className="text-sm font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
                                 </div>
                             )}
                         </div>
@@ -147,38 +148,38 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             )}
                         </div>
 
-                        <div>
-                            <h2 className="text-3xl md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                        <div className="w-full">
+                            <h2 className="text-sm sm:text-lg md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
                                 {match.homeTeamShortName || match.homeTeamName}
                             </h2>
                             {match.homeTeamShortName && (
-                                <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                <p className="hidden md:block text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
                                     {match.homeTeamName}
                                 </p>
                             )}
                         </div>
-                        <div className="h-1 w-12 bg-blue-500 rounded-full opacity-80 md:ml-0 mt-2" />
+                        <div className="h-0.5 md:h-1 w-8 md:w-12 bg-blue-500 rounded-full opacity-80 md:ml-0 mt-1" />
                     </div>
 
                     {/* Score Board */}
-                    <div className="relative flex items-center justify-center gap-6 md:gap-10 px-6 py-4 md:px-12 md:py-6 rounded-3xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
-                        <div className="text-6xl md:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                    <div className="relative flex items-center justify-center gap-2 md:gap-10 px-2 py-2 md:px-12 md:py-6 rounded-xl md:rounded-3xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
+                        <div className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
                             {match.homeScore ?? 0}
                         </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-px h-12 bg-slate-300 dark:bg-white/10" />
-                            <span className="text-slate-400 font-medium text-sm md:text-base">VS</span>
-                            <div className="w-px h-12 bg-slate-300 dark:bg-white/10" />
+                        <div className="flex flex-col items-center gap-0.5 md:gap-2">
+                            <div className="w-px h-6 md:h-12 bg-slate-300 dark:bg-white/10" />
+                            <span className="text-slate-400 font-medium text-[10px] md:text-base">VS</span>
+                            <div className="w-px h-6 md:h-12 bg-slate-300 dark:bg-white/10" />
                         </div>
-                        <div className="text-6xl md:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                        <div className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
                             {match.awayScore ?? 0}
                         </div>
                     </div>
 
                     {/* Away Team */}
-                    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-3 md:space-y-4 group">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-1 md:space-y-4 group min-w-0">
                         {/* Mobile Logo */}
-                        <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-2">
+                        <div className="w-12 h-12 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-1">
                             {match.awayTeamLogoUrl ? (
                                 <img
                                     src={getImageUrl(match.awayTeamLogoUrl)}
@@ -187,7 +188,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                                 />
                             ) : (
                                 <div className="w-full h-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
+                                    <span className="text-sm font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
                                 </div>
                             )}
                         </div>
@@ -207,17 +208,17 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             )}
                         </div>
 
-                        <div>
-                            <h2 className="text-3xl md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                        <div className="w-full">
+                            <h2 className="text-sm sm:text-lg md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
                                 {match.awayTeamShortName || match.awayTeamName}
                             </h2>
                             {match.awayTeamShortName && (
-                                <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                <p className="hidden md:block text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
                                     {match.awayTeamName}
                                 </p>
                             )}
                         </div>
-                        <div className="h-1 w-12 bg-red-500 rounded-full opacity-80 md:mr-0 mt-2" />
+                        <div className="h-0.5 md:h-1 w-8 md:w-12 bg-red-500 rounded-full opacity-80 md:mr-0 mt-1" />
                     </div>
                 </div>
 

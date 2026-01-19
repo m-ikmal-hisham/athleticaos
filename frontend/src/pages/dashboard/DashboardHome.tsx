@@ -55,7 +55,7 @@ interface GlobalDashboardStats {
 }
 
 interface PlayerStats {
-    totalMatches: number;
+    matchesPlayed: number;
     totalPoints: number;
     tries: number;
     yellowCards: number;
@@ -283,7 +283,7 @@ export const DashboardHome = () => {
                                             <ChartLineUp className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold">{myPlayerStats.totalMatches}</p>
+                                            <p className="text-2xl font-bold">{myPlayerStats.matchesPlayed}</p>
                                             <p className="text-xs text-muted-foreground">Matches Played</p>
                                         </div>
                                         <div className="w-px h-10 bg-border mx-2" />

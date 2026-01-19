@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail } from '../../../api/public.api';
+import { formatEventType } from '@/utils/formatters';
 
 interface MatchMomentsProps {
     match: PublicMatchDetail;
@@ -203,7 +204,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                             title={isPlaying ? 'Pause Replay' : 'Play Replay'}
                             className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition"
                         >
-                            {isPlaying ? <Pause weight="fill" /> : <Play weight="fill" />}
+                            {isPlaying ? <Pause className="w-5 h-5" weight="fill" /> : <Play className="w-5 h-5" weight="fill" />}
                         </button>
 
                         <button
@@ -293,7 +294,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                                 {event.teamName}
                                             </span>
                                             <span className={`text-xs px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${style.text} border-current opacity-70`}>
-                                                {event.eventType.replace(/_/g, ' ')}
+                                                {formatEventType(event.eventType)}
                                             </span>
                                         </div>
 

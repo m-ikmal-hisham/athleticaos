@@ -16,6 +16,7 @@ import { useAuthStore } from "../../store/auth.store";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import { Team } from "../../types";
 import { getImageUrl } from "../../utils/image";
+import { formatTeamCategory, formatAgeGroup } from "../../utils/formatters";
 
 export default function Teams() {
     const navigate = useNavigate();
@@ -267,7 +268,7 @@ export default function Teams() {
                             <div className="grid grid-cols-2 gap-2 pt-4 border-t border-white/5 text-xs text-muted-foreground">
                                 <div>
                                     <span className="block text-[10px] uppercase tracking-wider opacity-60">Category</span>
-                                    <span className="font-medium text-foreground">{t.category} ({t.ageGroup})</span>
+                                    <span className="font-medium text-foreground">{formatTeamCategory(t.category)} ({formatAgeGroup(t.ageGroup)})</span>
                                 </div>
                                 <div className="text-right">
                                     <span className="block text-[10px] uppercase tracking-wider opacity-60">State</span>

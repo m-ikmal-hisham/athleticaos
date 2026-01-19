@@ -6,6 +6,7 @@ import { Match, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '@/lib/customToast';
+import { formatMatchStatus } from '@/utils/formatters';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
@@ -378,14 +379,14 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
             {/* Status Indicator */}
             {['LIVE', 'ONGOING'].includes(match.status) && (
                 <div className="absolute top-0 right-0 px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded-bl-xl shadow-lg animate-pulse z-0">
-                    Live
+                    {formatMatchStatus(match.status)}
                 </div>
             )}
 
             {/* Completed Indicator */}
             {['COMPLETED'].includes(match.status) && (
                 <div className="absolute top-0 right-0 px-3 py-1 bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300 text-[10px] font-bold uppercase rounded-bl-xl z-0">
-                    Completed
+                    {formatMatchStatus(match.status)}
                 </div>
             )}
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatCompetitionType, formatTournamentLevel, formatGender, formatTournamentStatus } from '@/utils/formatters';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStructure } from '@phosphor-icons/react';
 import { tournamentService } from '@/services/tournamentService';
@@ -29,6 +30,9 @@ export default function TournamentDetail() {
     const { user } = useAuthStore();
 
     const [tournament, setTournament] = useState<Tournament | null>(null);
+
+    // formatCompetitionType removed
+
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -196,7 +200,7 @@ export default function TournamentDetail() {
                                 </Badge>
                             )}
                             <Badge variant={tournament.status === TournamentStatus.ONGOING ? 'primary' : 'secondary'} className="uppercase">
-                                {tournament.status}
+                                {formatTournamentStatus(tournament.status)}
                             </Badge>
                         </div>
                         <h1 className="text-4xl font-bold text-foreground mb-4 tracking-tight">
@@ -213,7 +217,7 @@ export default function TournamentDetail() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Gear className="w-4 h-4 text-primary-400" />
-                                <span>{tournament.level} • {tournament.competitionType}</span>
+                                <span>{formatTournamentLevel(tournament.level)} • {formatCompetitionType(tournament.competitionType)}</span>
                             </div>
                         </div>
                     </div>
@@ -320,7 +324,7 @@ export default function TournamentDetail() {
                                                 <div key={cat.id} className="flex justify-between items-center bg-black/5 dark:bg-white/5 p-2 rounded-lg text-sm border border-black/5 dark:border-white/5">
                                                     <span className="font-semibold text-foreground">{cat.name}</span>
                                                     <Badge variant="outline" className="text-[10px] h-5 bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10">
-                                                        {cat.gender}
+                                                        {formatGender(cat.gender)}
                                                     </Badge>
                                                 </div>
                                             ))}

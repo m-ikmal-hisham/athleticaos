@@ -3,6 +3,7 @@ import { showToast } from '@/lib/customToast';
 import { X, TrendUp, Medal, Target, Trash } from '@phosphor-icons/react';
 import { fetchPlayerById, fetchPlayerStats } from '../../../api/players.api';
 import { Button } from '../../../components/Button';
+import { formatGender } from '@/utils/formatters';
 import { usePlayersStore } from '../../../store/players.store';
 import { useAuthStore } from '../../../store/auth.store';
 import { calculateAge } from '../../../utils/date';
@@ -17,7 +18,7 @@ interface PlayerDetailDrawerProps {
 interface PlayerStats {
     playerId: string;
     playerName: string;
-    totalMatches: number;
+    matchesPlayed: number;
     totalPoints: number;
     tries: number;
     conversions: number;
@@ -251,7 +252,7 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                         {player.gender && (
                                             <div className="flex justify-between">
                                                 <span className="text-muted-foreground">Gender</span>
-                                                <span className="text-foreground">{player.gender}</span>
+                                                <span className="text-foreground">{formatGender(player.gender)}</span>
                                             </div>
                                         )}
                                         {player.dateOfBirth && (
@@ -299,7 +300,7 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                                     <Target className="w-5 h-5 text-primary" />
                                                     <div>
                                                         <p className="text-2xl font-bold text-foreground">
-                                                            {stats.totalMatches}
+                                                            {stats.matchesPlayed}
                                                         </p>
                                                         <p className="text-sm text-muted-foreground">Matches</p>
                                                     </div>
@@ -430,7 +431,7 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                             <div className="space-y-3">
                                                 <div className="flex justify-between p-2 hover:bg-white/5 rounded">
                                                     <span className="text-muted-foreground">Matches Played</span>
-                                                    <span className="text-foreground font-medium">{stats.totalMatches}</span>
+                                                    <span className="text-foreground font-medium">{stats.matchesPlayed}</span>
                                                 </div>
                                                 <div className="flex justify-between p-2 hover:bg-white/5 rounded">
                                                     <span className="text-muted-foreground">Tries Scored</span>

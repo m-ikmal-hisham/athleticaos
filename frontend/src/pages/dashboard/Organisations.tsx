@@ -11,6 +11,7 @@ import { useOrganisationsStore } from "../../store/organisations.store";
 import { getCountries, getStates, getDivisions, getDistricts, Organisation, deleteOrganisation } from "../../api/organisations.api";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
+import { formatOrgType } from "../../utils/formatters";
 import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
@@ -168,9 +169,6 @@ export default function Organisations() {
         return status === 'Active' ? 'green' : 'secondary';
     };
 
-    const formatOrgType = (type: string) => {
-        return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-    };
 
     const handleDeleteClick = (e: React.MouseEvent, org: Organisation) => {
         e.stopPropagation();
