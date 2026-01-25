@@ -309,7 +309,7 @@ export default function TournamentDetail() {
                                     </div>
                                     <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Competition Level</h3>
                                     <p className="text-2xl font-bold text-foreground">{tournament.level}</p>
-                                    <Badge variant="outline" className="mt-2">{tournament.competitionType || 'Standard'}</Badge>
+                                    <Badge variant="outline" className="mt-2">{formatCompetitionType(tournament.competitionType) || 'Standard'}</Badge>
                                 </GlassCard>
 
                                 <GlassCard className="p-6">

@@ -12,6 +12,8 @@ public interface TournamentStageRepository extends JpaRepository<TournamentStage
 
     List<TournamentStage> findByTournamentIdOrderByDisplayOrderAsc(UUID tournamentId);
 
+    List<TournamentStage> findByTournamentIdAndCategoryId(UUID tournamentId, UUID categoryId);
+
     void deleteByTournamentId(UUID tournamentId);
 
     @org.springframework.data.jpa.repository.Modifying

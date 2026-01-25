@@ -59,6 +59,17 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
                         @org.springframework.data.repository.query.Param("categoryId") UUID categoryId);
 
+        @org.springframework.data.jpa.repository.Modifying
+        @org.springframework.data.jpa.repository.Query("UPDATE Match m SET m.nextMatchIdForWinner = NULL, m.nextMatchIdForLoser = NULL WHERE m.tournament.id = :tournamentId")
+        void clearNextMatchReferences(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+        @org.springframework.data.jpa.repository.Modifying
+        @org.springframework.data.jpa.repository.Query("UPDATE Match m SET m.nextMatchIdForWinner = NULL, m.nextMatchIdForLoser = NULL WHERE m.tournament.id = :tournamentId AND m.stage.category.id = :categoryId")
+        void clearNextMatchReferencesForCategory(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+                        @org.springframework.data.repository.query.Param("categoryId") UUID categoryId);
+
         @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
                         "LEFT JOIN FETCH m.homeTeam ht " +
                         "LEFT JOIN FETCH ht.organisation hto " +

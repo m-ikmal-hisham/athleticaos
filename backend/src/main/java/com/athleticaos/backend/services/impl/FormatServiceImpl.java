@@ -64,14 +64,14 @@ public class FormatServiceImpl implements FormatService {
 
         // Unified logic for using existing groups
         if (Boolean.TRUE.equals(request.getUseExistingGroups())) {
-            generateMatchesForExistingGroups(tournament, request);
-
-            // If format involves knockout (POOL_TO_KNOCKOUT/MIXED) and we reused pools,
-            // we might need to ensure knockout stages exist.
-            // For now, we trust the existing structure or assume user will generate
-            // knockout later.
-            // (Future improvement: check for knockout stages and generate if missing)
-            return;
+            // If Round Robin, we can handle it here or let specific logic handle it.
+            // But for Mixed/Knockout, we MUST delegate to bracketService to generate the
+            // knockout part.
+            if (request.getFormat() == TournamentFormat.ROUND_ROBIN) {
+                generateMatchesForExistingGroups(tournament, request);
+                return;
+            }
+            // For others, fall through to bracketService which now handles preservation.
         }
 
         if (request.getFormat() == TournamentFormat.ROUND_ROBIN) {

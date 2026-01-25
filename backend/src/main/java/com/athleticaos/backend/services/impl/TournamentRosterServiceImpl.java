@@ -140,26 +140,32 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Team awayTeam = match.getAwayTeam();
 
                 // Get rosters for both teams (Home)
-                List<TournamentPlayer> homeRoster = tournamentPlayerRepository
-                                .findByTournamentIdAndTeamIdAndIsActiveTrue(
-                                                tournament.getId(), homeTeam.getId());
+                List<LineupPlayerDTO> homePlayers = new ArrayList<>();
+                if (homeTeam != null) {
+                        List<TournamentPlayer> homeRoster = tournamentPlayerRepository
+                                        .findByTournamentIdAndTeamIdAndIsActiveTrue(
+                                                        tournament.getId(), homeTeam.getId());
 
-                List<LineupPlayerDTO> homePlayers = homeRoster.stream()
-                                .filter(com.athleticaos.backend.utils.StreamUtils
-                                                .distinctByKey(tp -> tp.getPlayer().getId()))
-                                .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
-                                .collect(Collectors.toList());
+                        homePlayers = homeRoster.stream()
+                                        .filter(com.athleticaos.backend.utils.StreamUtils
+                                                        .distinctByKey(tp -> tp.getPlayer().getId()))
+                                        .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
+                                        .collect(Collectors.toList());
+                }
 
                 // Get rosters for both teams (Away)
-                List<TournamentPlayer> awayRoster = tournamentPlayerRepository
-                                .findByTournamentIdAndTeamIdAndIsActiveTrue(
-                                                tournament.getId(), awayTeam.getId());
+                List<LineupPlayerDTO> awayPlayers = new ArrayList<>();
+                if (awayTeam != null) {
+                        List<TournamentPlayer> awayRoster = tournamentPlayerRepository
+                                        .findByTournamentIdAndTeamIdAndIsActiveTrue(
+                                                        tournament.getId(), awayTeam.getId());
 
-                List<LineupPlayerDTO> awayPlayers = awayRoster.stream()
-                                .filter(com.athleticaos.backend.utils.StreamUtils
-                                                .distinctByKey(tp -> tp.getPlayer().getId()))
-                                .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
-                                .collect(Collectors.toList());
+                        awayPlayers = awayRoster.stream()
+                                        .filter(com.athleticaos.backend.utils.StreamUtils
+                                                        .distinctByKey(tp -> tp.getPlayer().getId()))
+                                        .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
+                                        .collect(Collectors.toList());
+                }
 
                 return LineupHintsDTO.builder()
                                 .homeTeamPlayers(homePlayers)

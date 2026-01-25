@@ -16,4 +16,6 @@ public interface MatchOfficialRepository extends JpaRepository<MatchOfficial, UU
     void deleteByMatchId(UUID matchId);
 
     void deleteByMatchIdIn(List<UUID> matchIds);
+
+    void deleteByMatch_Tournament_Id(UUID tournamentId);
 }
