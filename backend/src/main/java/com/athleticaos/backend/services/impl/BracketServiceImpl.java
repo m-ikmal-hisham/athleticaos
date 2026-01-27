@@ -31,7 +31,6 @@ public class BracketServiceImpl implements BracketService {
     private final MatchLineupRepository matchLineupRepository;
     private final MatchOfficialRepository matchOfficialRepository;
     private final PlayerSuspensionRepository playerSuspensionRepository;
-    private final TournamentFormatConfigRepository tournamentFormatConfigRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -127,7 +126,7 @@ public class BracketServiceImpl implements BracketService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
+
     protected void clearExistingBracket(UUID tournamentId, UUID categoryId) {
         clearExistingBracket(tournamentId, categoryId, true);
     }
