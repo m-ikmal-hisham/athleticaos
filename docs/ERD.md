@@ -6,7 +6,9 @@ The system uses a recursive hierarchy for organisations.
 -   **Relationships**:
     -   `parentOrg`: Self-referencing Many-to-One. Allows structures like Country -> State -> Zone -> Club.
     -   `orgType`: ENUM (e.g., STATE_UNION, CLUB).
+    -   `orgType`: ENUM (e.g., STATE_UNION, CLUB).
     -   `orgLevel`: ENUM (e.g., CLUB vs ORGANISER).
+    -   **Audit Fields**: `createdAt`, `updatedAt`, `deleted` (Soft Delete).
 
 ## 2. Tournament & Competition Structure
 -   **Entity**: `Tournament`

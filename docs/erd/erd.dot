@@ -1,0 +1,44 @@
+digraph AthleticaOS_ERD {
+    // Styling
+    graph [rankdir=LR, splines=ortho, nodesep=0.8, ranksep=1.0];
+    node [shape=record, style=filled, fillcolor="#f9f9f9", fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=9, color="#666666"];
+
+    // Entities
+    Organisation [label="{Organisation|id: UUID\lparent_org_id: UUID\lname: String\lorg_type: Enum\lorg_level: Enum\lcreated_at: DateTime\lupdated_at: DateTime\ldeleted: Boolean\l}"];
+
+    User [label="{User|id: UUID\lorganisation_id: UUID\lemail: String\lfirst_name: String\llast_name: String\lroles: EnumSet\l}"];
+
+    Tournament [label="{Tournament|id: UUID\lorganiser_org_id: UUID\lseason_id: UUID\lname: String\lstart_date: Date\lend_date: Date\lstatus: Enum\l}"];
+
+    TournamentStage [label="{TournamentStage|id: UUID\ltournament_id: UUID\lcategory_id: UUID\lname: String\lstage_type: Enum\l}"];
+
+    TournamentCategory [label="{TournamentCategory|id: UUID\ltournament_id: UUID\lname: String\lage_group: String\l}"];
+
+    Match [label="{Match|id: UUID\ltournament_id: UUID\lstage_id: UUID\lhome_team_id: UUID\laway_team_id: UUID\lstatus: Enum\lhome_score: Int\laway_score: Int\lmatch_date: DateTime\l}"];
+
+    Team [label="{Team|id: UUID\lorganisation_id: UUID\lname: String\llogo_url: String\l}"];
+
+    Player [label="{Player|id: UUID\lperson_id: UUID\lcurrent_team_id: UUID\l}"];
+
+    MatchEvent [label="{MatchEvent|id: UUID\lmatch_id: UUID\lplayer_id: UUID\lteam_id: UUID\levent_type: Enum\lminute: Int\l}"];
+
+    // Relationships
+    Organisation -> Organisation [label="parent"];
+    Organisation -> User [label="has members"];
+    Organisation -> Tournament [label="organises"];
+    Organisation -> Team [label="owns"];
+
+    Tournament -> TournamentCategory [label="has"];
+    Tournament -> TournamentStage [label="has"];
+    Tournament -> Match [label="contains"];
+
+    TournamentCategory -> TournamentStage [label="filters"];
+    TournamentStage -> Match [label="grouping"];
+
+    Team -> Match [label="home/away"];
+    Team -> Player [label="roster"];
+
+    Match -> MatchEvent [label="events"];
+    Player -> MatchEvent [label="performs"];
+}

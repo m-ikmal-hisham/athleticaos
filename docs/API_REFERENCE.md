@@ -35,6 +35,14 @@ Requires Valid JWT and appropriate Role.
     -   `POST /api/matches/{id}/events`: Add card/try/conversion.
 -   **Organisations** (`OrganisationController`)
     -   `POST /api/organisations`: Onboard new club/union.
+    
+    ## 6. Statistics API
+    -   **Controller**: `StatisticsController`
+    -   **Endpoints**:
+        -   `GET /api/public/tournaments/{id}/stats`: Tournament Summary (Tries, Cards, Standings).
+        -   `GET /api/public/tournaments/{id}/leaderboard`: Top Scorer, Top Try Scorer, Discipline table.
+        -   `GET /api/public/players/{id}/stats`: Career stats and match history.
+        -   `GET /api/public/teams/{id}/stats`: Team performance metrics.
 
 ## 5. Error Handling
 Standard HTTP Status Codes are used:

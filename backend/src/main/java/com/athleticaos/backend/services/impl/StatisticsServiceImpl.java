@@ -42,65 +42,25 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 "Tournament ID must not be null"))
                                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-                List<Match> matches = matchRepository.findByTournamentId(tournamentId);
+                // Efficiently count matches via SQL
+                int totalMatches = (int) matchRepository.countMatchesByTournamentId(tournamentId, categoryId);
+                int completedMatches = (int) matchRepository.countCompletedMatchesByTournamentId(tournamentId,
+                                categoryId);
 
-                // Filter matches by category if provided
-                if (categoryId != null) {
-                        matches = matches.stream()
-                                        .filter(m -> m.getStage() == null || m.getStage().getCategory() == null ||
-                                                        m.getStage().getCategory().getId().equals(categoryId))
-                                        .collect(Collectors.toList());
-                }
+                // Efficiently count events via SQL
+                int totalTries = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
+                                MatchEventType.TRY, categoryId);
+                int totalYellowCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
+                                MatchEventType.YELLOW_CARD, categoryId);
+                int totalRedCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
+                                MatchEventType.RED_CARD, categoryId);
 
-                List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
+                // Efficiently sum points via SQL
+                int totalPoints = (int) matchEventRepository.sumPointsByTournamentId(tournamentId, categoryId);
 
-                // Filter events by filtered matches
-                if (categoryId != null) {
-                        Set<UUID> matchIds = matches.stream().map(Match::getId).collect(Collectors.toSet());
-                        events = events.stream()
-                                        .filter(e -> matchIds.contains(e.getMatch().getId()))
-                                        .collect(Collectors.toList());
-                }
-
-                int totalMatches = matches.size();
-                int completedMatches = (int) matches.stream()
-                                .filter(m -> m.getStatus() == MatchStatus.COMPLETED)
-                                .count();
-
-                int totalTries = (int) events.stream()
-                                .filter(e -> e.getEventType() == MatchEventType.TRY)
-                                .count();
-
-                int totalYellowCards = (int) events.stream()
-                                .filter(e -> e.getEventType() == MatchEventType.YELLOW_CARD)
-                                .count();
-
-                int totalRedCards = (int) events.stream()
-                                .filter(e -> e.getEventType() == MatchEventType.RED_CARD)
-                                .count();
-
-                int totalPoints = events.stream()
-                                .mapToInt(this::getPointsForEvent)
-                                .sum();
-
-                long activeTeams = matches.stream()
-                                .flatMap(m -> java.util.stream.Stream.of(m.getHomeTeam(), m.getAwayTeam()))
-                                .filter(java.util.Objects::nonNull)
-                                .map(com.athleticaos.backend.entities.Team::getId)
-                                .distinct()
-                                .count();
-
-                // Active players based on filtered matches
-                // Note: matchLineupRepository.findByMatch_Tournament_Id fetches all. We need to
-                // filter manually if repo doesn't support match list.
-                // Or we can rely on matches list.
-                long activePlayers = matchLineupRepository.findByMatch_Tournament_Id(tournamentId).stream()
-                                .filter(l -> categoryId == null || (l.getMatch().getStage() == null ||
-                                                l.getMatch().getStage().getCategory() == null ||
-                                                l.getMatch().getStage().getCategory().getId().equals(categoryId)))
-                                .map(l -> l.getPlayer().getId())
-                                .distinct()
-                                .count();
+                // Efficiently count active participants via SQL
+                long activeTeams = matchRepository.countActiveTeamsByTournamentId(tournamentId, categoryId);
+                long activePlayers = matchLineupRepository.countDistinctPlayersByTournamentId(tournamentId, categoryId);
 
                 return new TournamentStatsSummaryResponse(
                                 tournament.getId(),
