@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
-import { matchService } from '@/services/matchService';
+import { useMatchesStore } from '@/store/matches.store';
 import { tournamentService } from '@/services/tournamentService';
 import { Match, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
@@ -18,10 +18,9 @@ interface TournamentMatchesProps {
 
 export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const navigate = useNavigate();
-    const [matches, setMatches] = useState<Match[]>([]);
+    const { matches, loadMatchesByTournament, deleteMatch, loadingList } = useMatchesStore();
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Filtered matches
@@ -69,18 +68,14 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
     const loadData = async () => {
         try {
-            setLoading(true);
-            const [matchesData, categoriesData] = await Promise.all([
-                matchService.getByTournament(tournamentId),
+            await Promise.all([
+                loadMatchesByTournament(tournamentId),
                 tournamentService.getCategories(tournamentId)
+                    .then(cats => setCategories(cats))
             ]);
-            setMatches(matchesData);
-            setCategories(categoriesData);
         } catch (error) {
             console.error('Failed to load data:', error);
             showToast.error('Failed to load matches');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -100,9 +95,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
             variant: 'destructive',
             onConfirm: async () => {
                 try {
-                    await matchService.delete(id);
+                    await deleteMatch(id);
                     showToast.success('Match deleted');
-                    setRefreshTrigger(prev => prev + 1);
+                    // No need to trigger refresh as store updates automatically
                 } catch (error) {
                     showToast.error('Failed to delete match');
                 }
@@ -246,7 +241,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                 </div>
             </div>
 
-            {loading ? (
+            {loadingList ? (
                 <div className="text-center py-12 text-slate-500 animate-pulse">Loading matches...</div>
             ) : matches.length === 0 ? (
                 <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">

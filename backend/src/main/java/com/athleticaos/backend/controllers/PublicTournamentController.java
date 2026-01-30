@@ -317,15 +317,15 @@ public class PublicTournamentController {
                             .teamName(event.getTeam().getName())
                             .playerName(playerName)
                             .eventType(event.getEventType().name())
-                            .points(getPointsForEventType(event.getEventType()))
+                            .points(statisticsService.getPointsForEventType(event.getEventType()))
                             .notes(event.getNotes())
                             .build();
                 })
                 .collect(Collectors.toList());
 
         // Calculate team stats
-        PublicTeamStatsResponse homeStats = calculateTeamStats(matchEvents, m.getHomeTeamName());
-        PublicTeamStatsResponse awayStats = calculateTeamStats(matchEvents, m.getAwayTeamName());
+        PublicTeamStatsResponse homeStats = statisticsService.calculateTeamMatchStats(matchEvents, m.getHomeTeamName());
+        PublicTeamStatsResponse awayStats = statisticsService.calculateTeamMatchStats(matchEvents, m.getAwayTeamName());
 
         // Fetch tournament to get organiser branding
         UUID tournamentId = m.getTournamentId();
@@ -363,65 +363,6 @@ public class PublicTournamentController {
                 .isOneWayMatch(getIsOneWayMatch(m.getTournamentId(),
                         m.getStage() != null ? m.getStage().getCategoryId() : null))
                 .build();
-    }
-
-    private PublicTeamStatsResponse calculateTeamStats(List<com.athleticaos.backend.entities.MatchEvent> events,
-            String teamName) {
-        int tries = 0;
-        int conversions = 0;
-        int penalties = 0;
-        int yellowCards = 0;
-        int redCards = 0;
-
-        for (com.athleticaos.backend.entities.MatchEvent event : events) {
-            // Null safety for team
-            if (teamName != null && event.getTeam() != null && teamName.equals(event.getTeam().getName())) {
-                switch (event.getEventType()) {
-                    case TRY:
-                        tries++;
-                        break;
-                    case CONVERSION:
-                        conversions++;
-                        break;
-                    case PENALTY:
-                        penalties++;
-                        break;
-                    case YELLOW_CARD:
-                        yellowCards++;
-                        break;
-                    case RED_CARD:
-                        redCards++;
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-        return PublicTeamStatsResponse.builder()
-                .tries(tries)
-                .conversions(conversions)
-                .penalties(penalties)
-                .yellowCards(yellowCards)
-                .redCards(redCards)
-                .build();
-    }
-
-    private int getPointsForEventType(com.athleticaos.backend.enums.MatchEventType eventType) {
-        if (eventType == null)
-            return 0;
-        switch (eventType) {
-            case TRY:
-                return 5;
-            case CONVERSION:
-                return 2;
-            case PENALTY:
-                return 3;
-            case DROP_GOAL:
-                return 3;
-            default:
-                return 0;
-        }
     }
 
     private Integer getMatchDuration(UUID tournamentId, UUID categoryId) {

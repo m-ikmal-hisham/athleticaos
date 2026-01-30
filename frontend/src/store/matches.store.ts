@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import {
     fetchMatches,
+    fetchMatchesByTournament,
     fetchMatch,
     fetchMatchEvents,
     createMatchEvent,
@@ -12,37 +13,9 @@ import {
 } from "../api/matches.api";
 import { fetchPlayers } from "../api/players.api";
 
-export type MatchStatus = "SCHEDULED" | "ONGOING" | "COMPLETED" | "CANCELLED";
+import { MatchResponse, MatchStatus } from "@/types";
 
-export interface MatchItem {
-    id: string;
-    tournamentId: string;
-    tournamentName: string;
-    tournamentSlug?: string;
-    homeTeamId: string;
-    homeTeamOrgId: string;
-    homeTeamName: string;
-    awayTeamId: string;
-    awayTeamOrgId: string;
-    awayTeamName: string;
-    homeTeamLogoUrl?: string;
-    homeTeamShortName?: string;
-    awayTeamLogoUrl?: string;
-    awayTeamShortName?: string;
-    matchDate: string;      // ISO date
-    kickOffTime: string;    // e.g. "16:30:00"
-    venue?: string | null;
-    status: MatchStatus;
-    phase?: string | null;
-    matchCode?: string | null;
-    homeScore?: number;
-    awayScore?: number;
-    // Lineup configuration from tournament format
-    startersCount?: number;
-    maxBenchCount?: number;
-    matchDuration?: number;
-    isOneWayMatch?: boolean;
-}
+export type MatchItem = MatchResponse; // Alias for backward compatibility or ease of migration
 
 export interface MatchEventItem {
     id: string;
@@ -83,6 +56,7 @@ interface MatchState {
     error?: string | null;
     setFilters: (partial: Partial<MatchFilter>) => void;
     loadMatches: () => Promise<void>;
+    loadMatchesByTournament: (tournamentId: string) => Promise<void>;
     loadMatchDetail: (matchId: string) => Promise<void>;
     addEvent: (matchId: string, event: Omit<MatchEventItem, "id">) => Promise<void>;
     removeEvent: (eventId: string, matchId: string) => Promise<void>;
@@ -121,6 +95,19 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to load matches", error);
+            set({ error: "Failed to load matches" });
+        } finally {
+            set({ loadingList: false });
+        }
+    },
+
+    loadMatchesByTournament: async (tournamentId: string) => {
+        set({ loadingList: true, error: null });
+        try {
+            const response = await fetchMatchesByTournament(tournamentId);
+            set({ matches: response.data });
+        } catch (error: any) {
+            console.error("Failed to load matches by tournament", error);
             set({ error: "Failed to load matches" });
         } finally {
             set({ loadingList: false });
@@ -191,7 +178,7 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
                 matchDate: selectedMatch.matchDate,
                 kickOffTime: selectedMatch.kickOffTime,
                 venue: selectedMatch.venue,
-                status: 'CANCELLED',
+                status: MatchStatus.CANCELLED,
                 homeScore: selectedMatch.homeScore,
                 awayScore: selectedMatch.awayScore,
                 phase: selectedMatch.phase,
@@ -201,11 +188,11 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
             await updateMatch(matchId, updatePayload);
 
             // Update local state
-            set({ selectedMatch: { ...selectedMatch, status: 'CANCELLED' } });
+            set({ selectedMatch: { ...selectedMatch, status: MatchStatus.CANCELLED } });
 
             // Update in list as well
             const { matches } = get();
-            const updatedMatches = matches.map(m => m.id === matchId ? { ...m, status: 'CANCELLED' as MatchStatus } : m);
+            const updatedMatches = matches.map(m => m.id === matchId ? { ...m, status: MatchStatus.CANCELLED } : m);
             set({ matches: updatedMatches });
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

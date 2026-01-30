@@ -383,6 +383,7 @@ export interface MatchStage {
 export enum MatchStatus {
     SCHEDULED = 'SCHEDULED',
     LIVE = 'LIVE',
+    ONGOING = 'ONGOING',
     COMPLETED = 'COMPLETED',
     POSTPONED = 'POSTPONED',
     CANCELLED = 'CANCELLED',

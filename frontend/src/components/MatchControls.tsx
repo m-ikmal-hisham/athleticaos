@@ -1,5 +1,6 @@
 import { Button } from '@/components/Button';
 import { MatchItem } from '@/store/matches.store';
+import { MatchStatus } from '@/types';
 import { Play, Pause, StopCircle, XCircle, FastForward, Rewind } from '@phosphor-icons/react';
 
 interface MatchControlsProps {
@@ -47,10 +48,10 @@ export const MatchControls = ({
 }: MatchControlsProps) => {
     if (!isAdmin) return null;
 
-    const isScheduled = match.status === 'SCHEDULED';
-    const isOngoing = match.status === 'ONGOING' && !isHalfTime;
-    const isCompleted = match.status === 'COMPLETED';
-    const isCancelled = match.status === 'CANCELLED';
+    const isScheduled = match.status === MatchStatus.SCHEDULED;
+    const isOngoing = match.status === MatchStatus.ONGOING && !isHalfTime;
+    const isCompleted = match.status === MatchStatus.COMPLETED;
+    const isCancelled = match.status === MatchStatus.CANCELLED;
 
     return (
 

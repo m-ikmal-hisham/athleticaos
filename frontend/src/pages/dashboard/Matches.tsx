@@ -6,7 +6,8 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
-import { useMatchesStore, MatchStatus } from '@/store/matches.store';
+import { useMatchesStore } from '@/store/matches.store';
+import { MatchStatus } from '@/types';
 import { useAuthStore } from '@/store/auth.store';
 import { updateMatch } from '@/api/matches.api';
 import { SmartFilterPills, FilterOption } from '@/components/SmartFilterPills';
@@ -40,8 +41,8 @@ export const Matches = () => {
     const canDelete = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'].includes(r));
 
     const filteredMatches = matches.filter(m =>
-        m.homeTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.awayTeamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (m.homeTeamName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (m.awayTeamName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (m.venue && m.venue.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 

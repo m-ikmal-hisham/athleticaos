@@ -557,17 +557,67 @@ public class StatisticsServiceImpl implements StatisticsService {
                 return null;
         }
 
+        @Override
+        public com.athleticaos.backend.dtos.public_api.PublicTeamStatsResponse calculateTeamMatchStats(
+                        List<MatchEvent> events, String teamName) {
+                int tries = 0;
+                int conversions = 0;
+                int penalties = 0;
+                int yellowCards = 0;
+                int redCards = 0;
+
+                for (MatchEvent event : events) {
+                        // Null safety for team
+                        if (teamName != null && event.getTeam() != null && teamName.equals(event.getTeam().getName())) {
+                                switch (event.getEventType()) {
+                                        case TRY:
+                                                tries++;
+                                                break;
+                                        case CONVERSION:
+                                                conversions++;
+                                                break;
+                                        case PENALTY:
+                                                penalties++;
+                                                break;
+                                        case YELLOW_CARD:
+                                                yellowCards++;
+                                                break;
+                                        case RED_CARD:
+                                                redCards++;
+                                                break;
+                                        default:
+                                                break;
+                                }
+                        }
+                }
+
+                return com.athleticaos.backend.dtos.public_api.PublicTeamStatsResponse.builder()
+                                .tries(tries)
+                                .conversions(conversions)
+                                .penalties(penalties)
+                                .yellowCards(yellowCards)
+                                .redCards(redCards)
+                                .build();
+        }
+
         private int countEvents(List<MatchEvent> events, MatchEventType type) {
                 return (int) events.stream().filter(e -> e.getEventType() == type).count();
         }
 
-        private int getPointsForEvent(MatchEvent event) {
-                return switch (event.getEventType()) {
+        @Override
+        public int getPointsForEventType(MatchEventType eventType) { // Changed signature to match Interface (public)
+                if (eventType == null)
+                        return 0;
+                return switch (eventType) {
                         case TRY -> 5;
                         case CONVERSION -> 2;
                         case PENALTY -> 3;
                         case DROP_GOAL -> 3;
                         default -> 0;
                 };
+        }
+
+        private int getPointsForEvent(MatchEvent event) {
+                return getPointsForEventType(event.getEventType());
         }
 }

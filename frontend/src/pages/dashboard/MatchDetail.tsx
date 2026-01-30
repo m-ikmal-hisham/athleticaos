@@ -612,7 +612,7 @@ export const MatchDetail = () => {
                                     </div>
                                     {selectedMatch.homeTeamShortName && (
                                         <div className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-[150px] md:max-w-[200px] truncate mx-auto leading-tight">
-                                            {selectedMatch.homeTeamName}
+                                            {selectedMatch.homeTeamName || ''}
                                         </div>
                                     )}
                                 </div>
@@ -969,6 +969,9 @@ export const MatchDetail = () => {
                 <div className="max-w-4xl mx-auto mt-6">
                     <MatchMoments match={{
                         ...selectedMatch,
+                        homeTeamName: selectedMatch.homeTeamName || '',
+                        awayTeamName: selectedMatch.awayTeamName || '',
+                        stage: selectedMatch.stage?.name,
                         matchTime: "",
                         venue: selectedMatch.venue || undefined,
                         events: events.map(e => ({
@@ -1013,7 +1016,7 @@ export const MatchDetail = () => {
                         <h2 className="text-2xl font-bold text-white text-center mb-8">Select Team</h2>
 
                         <button
-                            onClick={() => handleTeamSelect(selectedMatch.homeTeamId, selectedMatch.homeTeamName)}
+                            onClick={() => handleTeamSelect(selectedMatch.homeTeamId, selectedMatch.homeTeamName || '')}
                             className="w-full bg-blue-600 hover:bg-blue-500 text-white p-6 rounded-2xl text-xl font-black uppercase tracking-wider shadow-lg flex justify-between items-center group transition-all hover:scale-[1.02]"
                         >
                             <span>{selectedMatch.homeTeamName}</span>
@@ -1021,7 +1024,7 @@ export const MatchDetail = () => {
                         </button>
 
                         <button
-                            onClick={() => handleTeamSelect(selectedMatch.awayTeamId, selectedMatch.awayTeamName)}
+                            onClick={() => handleTeamSelect(selectedMatch.awayTeamId, selectedMatch.awayTeamName || '')}
                             className="w-full bg-red-600 hover:bg-red-500 text-white p-6 rounded-2xl text-xl font-black uppercase tracking-wider shadow-lg flex justify-between items-center group transition-all hover:scale-[1.02]"
                         >
                             <span>{selectedMatch.awayTeamName}</span>

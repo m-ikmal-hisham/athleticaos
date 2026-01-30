@@ -43,6 +43,7 @@ public class MatchServiceImpl implements MatchService {
     private final com.athleticaos.backend.repositories.PlayerSuspensionRepository playerSuspensionRepository;
     private final com.athleticaos.backend.repositories.MediaAssetRepository mediaAssetRepository;
     private final com.athleticaos.backend.repositories.EventRepository eventRepository;
+    private final com.athleticaos.backend.services.StatisticsService statisticsService;
 
     @Override
     @Transactional(readOnly = true)
@@ -385,10 +386,12 @@ public class MatchServiceImpl implements MatchService {
         int awayScore = 0;
 
         for (com.athleticaos.backend.entities.MatchEvent event : events) {
-            int points = getPointsForEventType(event.getEventType());
-            if (match.getHomeTeam() != null && event.getTeam().getId().equals(match.getHomeTeam().getId())) {
+            int points = statisticsService.getPointsForEventType(event.getEventType());
+            if (match.getHomeTeam() != null && event.getTeam() != null
+                    && event.getTeam().getId().equals(match.getHomeTeam().getId())) {
                 homeScore += points;
-            } else if (match.getAwayTeam() != null && event.getTeam().getId().equals(match.getAwayTeam().getId())) {
+            } else if (match.getAwayTeam() != null && event.getTeam() != null
+                    && event.getTeam().getId().equals(match.getAwayTeam().getId())) {
                 awayScore += points;
             }
         }
@@ -396,23 +399,6 @@ public class MatchServiceImpl implements MatchService {
         match.setHomeScore(homeScore);
         match.setAwayScore(awayScore);
         matchRepository.save(match);
-    }
-
-    private int getPointsForEventType(com.athleticaos.backend.enums.MatchEventType eventType) {
-        if (eventType == null)
-            return 0;
-        switch (eventType) {
-            case TRY:
-                return 5;
-            case CONVERSION:
-                return 2;
-            case PENALTY:
-                return 3;
-            case DROP_GOAL:
-                return 3;
-            default:
-                return 0;
-        }
     }
 
     @Override

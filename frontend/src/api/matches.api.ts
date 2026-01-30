@@ -8,8 +8,9 @@ export const fetchMatches = (params?: {
     return api.get("/matches", { params });
 };
 
+
 export const fetchMatchesByTournament = (tournamentId: string) => {
-    return api.get(`/matches/by-tournament/${tournamentId}`);
+    return api.get(`/tournaments/${tournamentId}/matches`);
 };
 
 export const fetchMatch = (idOrSlug: string) => {
