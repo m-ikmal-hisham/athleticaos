@@ -29,8 +29,9 @@ public interface MatchLineupRepository extends JpaRepository<MatchLineup, UUID> 
 
     void deleteByMatchIdIn(List<UUID> matchIds);
 
-    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT l.player.id) FROM MatchLineup l WHERE l.match.tournament.id = :tournamentId AND (:categoryId IS NULL OR l.match.stage.category.id = :categoryId)")
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT l.player.id) FROM MatchLineup l LEFT JOIN l.match m LEFT JOIN m.stage s LEFT JOIN s.category c WHERE m.tournament.id = :tournamentId AND (:isCategoryIdNull = true OR c.id = :categoryId)")
     long countDistinctPlayersByTournamentId(
             @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
-            @org.springframework.data.repository.query.Param("categoryId") UUID categoryId);
+            @org.springframework.data.repository.query.Param("categoryId") UUID categoryId,
+            @org.springframework.data.repository.query.Param("isCategoryIdNull") boolean isCategoryIdNull);
 }

@@ -43,24 +43,28 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
                 // Efficiently count matches via SQL
-                int totalMatches = (int) matchRepository.countMatchesByTournamentId(tournamentId, categoryId);
+                int totalMatches = (int) matchRepository.countMatchesByTournamentId(tournamentId, categoryId,
+                                categoryId == null);
                 int completedMatches = (int) matchRepository.countCompletedMatchesByTournamentId(tournamentId,
-                                categoryId);
+                                categoryId, categoryId == null);
 
                 // Efficiently count events via SQL
                 int totalTries = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
-                                MatchEventType.TRY, categoryId);
+                                MatchEventType.TRY, categoryId, categoryId == null);
                 int totalYellowCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
-                                MatchEventType.YELLOW_CARD, categoryId);
+                                MatchEventType.YELLOW_CARD, categoryId, categoryId == null);
                 int totalRedCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
-                                MatchEventType.RED_CARD, categoryId);
+                                MatchEventType.RED_CARD, categoryId, categoryId == null);
 
                 // Efficiently sum points via SQL
-                int totalPoints = (int) matchEventRepository.sumPointsByTournamentId(tournamentId, categoryId);
+                int totalPoints = (int) matchEventRepository.sumPointsByTournamentId(tournamentId, categoryId,
+                                categoryId == null);
 
                 // Efficiently count active participants via SQL
-                long activeTeams = matchRepository.countActiveTeamsByTournamentId(tournamentId, categoryId);
-                long activePlayers = matchLineupRepository.countDistinctPlayersByTournamentId(tournamentId, categoryId);
+                long activeTeams = matchRepository.countActiveTeamsByTournamentId(tournamentId, categoryId,
+                                categoryId == null);
+                long activePlayers = matchLineupRepository.countDistinctPlayersByTournamentId(tournamentId, categoryId,
+                                categoryId == null);
 
                 return new TournamentStatsSummaryResponse(
                                 tournament.getId(),
