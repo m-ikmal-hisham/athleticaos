@@ -1,12 +1,31 @@
 spring:
-  config:
-    activate:
-      on-profile: staging
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:athleticaos_staging}
-    username: ${DB_USER:staging_user}
-    password: ${DB_PASSWORD:staging_pass}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
   jpa:
-    show-sql: false
     hibernate:
       ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT}
+
+logging:
+  level:
+    root: INFO
+    com.athleticaos: DEBUG
+    org.hibernate.SQL: DEBUG
+
+application:
+  security:
+    cors:
+      allowed-origins: http://localhost:5173,http://localhost:3000,http://localhost:5174
