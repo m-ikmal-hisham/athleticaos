@@ -11,6 +11,9 @@ public class CookieUtils {
     @org.springframework.beans.factory.annotation.Value("${application.security.cookie.secure:false}")
     private boolean isCookieSecure;
 
+    @org.springframework.beans.factory.annotation.Value("${application.security.cookie.same-site:Strict}")
+    private String sameSitePolicy;
+
     /**
      * Create a HttpOnly cookie for the JWT.
      * Max-Age is not set, making it a session cookie (clears on browser close).
@@ -19,7 +22,7 @@ public class CookieUtils {
         return ResponseCookie.from(COOKIE_NAME, token)
                 .httpOnly(true)
                 .secure(isCookieSecure)
-                .sameSite("Strict")
+                .sameSite(sameSitePolicy)
                 .path("/")
                 .build();
     }
@@ -31,7 +34,7 @@ public class CookieUtils {
         return ResponseCookie.from(COOKIE_NAME, "")
                 .httpOnly(true)
                 .secure(isCookieSecure)
-                .sameSite("Strict")
+                .sameSite(sameSitePolicy)
                 .path("/")
                 .maxAge(0)
                 .build();

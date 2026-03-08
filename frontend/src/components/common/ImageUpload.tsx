@@ -74,7 +74,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     const getDisplayUrl = (url: string) => {
         if (!url) return '';
         if (url.startsWith('http')) return url;
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+        const apiUrl = import.meta.env.VITE_API_URL || '';
         const baseUrl = apiUrl.replace('/api/v1', '');
         return `${baseUrl}${url}`;
     };

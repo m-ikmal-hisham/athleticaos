@@ -25,7 +25,7 @@ export const AuthGuard = ({ children, requiredRoles }: AuthGuardProps) => {
                     <div className="text-xs text-gray-500 mt-4 font-mono">
                         Validating Session... <br />
                         Env: {import.meta.env.MODE} <br />
-                        API: {import.meta.env.VITE_API_BASE_URL || '/api/v1'}
+                        API: {import.meta.env.VITE_API_URL || '/api/v1'}
                     </div>
                 </div>
             </div>

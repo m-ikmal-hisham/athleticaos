@@ -28,4 +28,12 @@ logging:
 application:
   security:
     cors:
-      allowed-origins: http://localhost:5173,http://localhost:3000,http://localhost:5174
+      allowed-origins: ${FRONTEND_URL:http://localhost:5173},${PUBLIC_URL:http://localhost:3000}
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION:86400000}
+      refresh-token:
+        expiration: 604800000
+    cookie:
+      secure: true
+      same-site: Lax

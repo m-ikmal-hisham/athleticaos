@@ -7,11 +7,11 @@ export const getImageUrl = (path?: string) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
 
-    // Get API URL from env or default
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    // Get API URL from env or default to relative path
+    const apiUrl = import.meta.env.VITE_API_URL || '';
 
     // Strip '/api/v1' or '/api' from the end to get the base URL
-    // This assumes uploads are served from the root context, e.g. http://localhost:8080/uploads/
+    // This assumes uploads are served from the root context, e.g. {baseUrl}/uploads/
     const baseUrl = apiUrl.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '');
 
     // Ensure path starts with /
