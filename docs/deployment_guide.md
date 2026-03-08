@@ -1,567 +1,539 @@
-# AthleticaOS Rugby - Staging Deployment Guide
+# AthleticaOS Staging Deployment Guide
 
-## Environment Configuration
+Complete guide: codebase preparation → AWS infrastructure → CI/CD automation.
 
-### Required Environment Variables
-
-```bash
-# Database Configuration
-SPRING_DATASOURCE_URL=jdbc:postgresql://staging-db-host:5432/athleticaos_rugby
-SPRING_DATASOURCE_USERNAME=athleticaos_user
-SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-
-# JPA/Hibernate
-SPRING_JPA_HIBERNATE_DDL_AUTO=validate
-SPRING_JPA_SHOW_SQL=false
-SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
-
-# Flyway Migrations
-SPRING_FLYWAY_ENABLED=true
-SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
-SPRING_FLYWAY_LOCATIONS=classpath:db/migration
-
-# JWT Configuration
-JWT_SECRET=${JWT_SECRET_KEY}
-JWT_EXPIRATION=86400000
-
-# Server Configuration
-SERVER_PORT=8080
-SPRING_PROFILES_ACTIVE=staging
-
-# CORS Configuration
-CORS_ALLOWED_ORIGINS=https://staging.athleticaos.com,https://admin-staging.athleticaos.com
-
-# Logging
-LOGGING_LEVEL_ROOT=INFO
-LOGGING_LEVEL_COM_ATHLETICAOS=DEBUG
-```
-
-### Staging-Specific Configuration
-
-Create `src/main/resources/application-staging.yml`:
-
-```yaml
-spring:
-  datasource:
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-  
-  jpa:
-    properties:
-      hibernate:
-        format_sql: false
-        use_sql_comments: false
-  
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    validate-on-migrate: true
-
-server:
-  error:
-    include-message: always
-    include-stacktrace: never
-
-logging:
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-  file:
-    name: /var/log/athleticaos/application.log
-    max-size: 10MB
-    max-history: 30
-```
+> **Architecture**: Frontend on S3 + CloudFront · Backend on EC2 (Docker) · RDS PostgreSQL · Domain on GoDaddy
+> **Last updated**: 2026-03-08
 
 ---
 
-## Pre-Deployment Checklist
+## Master Sequence Checklist
 
-### 1. Code Verification
-- ✅ All tests passing locally
-- ✅ Build successful: `mvn clean package -DskipTests`
-- ✅ No compilation errors
-- ✅ Swagger documentation complete
+Follow this exact order:
 
-### 2. Database Preparation
-- ✅ Staging database created
-- ✅ Database user created with appropriate permissions
-- ✅ Network access configured
-- ✅ Backup of production data (if applicable)
+### PHASE A: CODE PREPARATION (do first, before any AWS work)
+- [x] A1. Fix hardcoded API URL in frontend `axios.ts`
+- [x] A2. Update `application-staging.yml` (CORS, JWT, cookie)
+- [x] A3. Update frontend `.env.staging` with staging URL placeholder
+- [x] A4. Improve backend Dockerfile
+- [x] A5. Commit and push all changes to `staging` branch
 
-### 3. Migration Verification
-```bash
-# Check migration files
-ls -la src/main/resources/db/migration/
+### PHASE B: AWS INFRASTRUCTURE (one-time setup)
+- [ ] B1. Create IAM user for deployments
+- [ ] B2. Create RDS PostgreSQL database
+- [ ] B3. Create EC2 instance for backend
+- [ ] B4. Create S3 bucket for frontend
+- [ ] B5. Create CloudFront distribution (with SPA error page routing)
+- [ ] B6. Configure security groups and networking
+- [ ] B7. Request ACM SSL certificates + GoDaddy DNS validation
+- [ ] B8. Point GoDaddy DNS records to AWS resources
 
-# Expected files:
-V1__initial_schema.sql
-V2__seed_roles.sql
-V3__seed_admin_user.sql
-V4__add_organisation_state_status.sql
-V5__add_teams_division_state_status.sql
-V6__fix_match_events_schema.sql
-V7__fix_matches_schema.sql
-V8__add_venue_to_matches.sql
-V9__add_deleted_to_tournaments.sql
-V10__add_organisation_id_to_users.sql
-V11__add_tournament_bracket_fields.sql
-V12__create_tournament_stages_table.sql
-V13__add_stage_to_matches.sql
-```
+### PHASE C: FIRST MANUAL DEPLOY (validate everything works)
+- [ ] C1. Build and deploy backend JAR to EC2
+- [ ] C2. Verify Flyway migrations run on RDS
+- [ ] C3. Build frontend with staging env vars
+- [ ] C4. Upload frontend to S3
+- [ ] C5. Smoke test: login, navigate, verify API calls
 
-### 4. Security Configuration
-- ✅ JWT secret generated (strong, random)
-- ✅ Database password secured
-- ✅ CORS origins configured
-- ✅ SSL/TLS certificates ready
+### PHASE D: CI/CD AUTOMATION (after manual deploy is validated)
+- [ ] D1. Create GitHub Actions workflow for backend (build → push Docker image → deploy to EC2)
+- [ ] D2. Create GitHub Actions workflow for frontend (build → sync to S3 → invalidate CloudFront)
+- [ ] D3. Store AWS credentials as GitHub Secrets
+- [ ] D4. Test full CI/CD pipeline with a test commit
 
 ---
 
-## Deployment Steps
+## Phase A: Completed Changes Summary
 
-### Option 1: Docker Deployment
+| Item | What was done |
+|------|---------------|
+| A1 | All 7 frontend files now use `import.meta.env.VITE_API_URL` — zero hardcoded `localhost:8080` |
+| A2 | `application-staging.yml` has env-driven CORS (`FRONTEND_URL`, `PUBLIC_URL`), JWT config, `cookie.secure=true`, `SameSite=Lax` |
+| A3 | `frontend/.env.staging` → `VITE_API_URL=https://staging-api.athleticaos.com` |
+| A4 | Multi-stage Dockerfile: Alpine images, non-root user, health check, JVM container tuning, `.dockerignore` |
+| A5 | Committed on `staging` branch, pushed to `origin/staging` |
 
-#### 1. Create Dockerfile
+---
 
-```dockerfile
-FROM eclipse-temurin:21-jdk-alpine AS build
-WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN apk add --no-cache maven
-RUN mvn clean package -DskipTests
+## Phase B: AWS Infrastructure — Detailed Steps
 
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
-COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+### B1. Create IAM User for Deployments
+
+1. AWS Console → **IAM** → **Users** → **Create User**
+2. Username: `athleticaos-deployer`
+3. Attach policies:
+   - `AmazonS3FullAccess` (for frontend uploads)
+   - `CloudFrontFullAccess` (for cache invalidation)
+   - `AmazonEC2ContainerRegistryFullAccess` (if using ECR later)
+4. Create access key → Save `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+5. Install AWS CLI locally:
+   ```bash
+   aws configure --profile athleticaos-staging
+   ```
+
+### B2. Create RDS PostgreSQL Database
+
+1. AWS Console → **RDS** → **Create Database**
+2. Settings:
+   | Setting | Value |
+   |---------|-------|
+   | Engine | PostgreSQL 15 |
+   | Template | Free Tier (or Dev/Test for staging) |
+   | DB instance identifier | `athleticaos-staging-db` |
+   | Master username | `athleticaos` |
+   | Master password | *(generate strong password)* |
+   | DB name | `athleticaos_staging` |
+   | Instance class | `db.t3.micro` |
+   | Storage | 20 GB GP3 |
+   | Public access | **No** |
+   | VPC | Same VPC as EC2 |
+
+3. After creation, note the **Endpoint** — this becomes `DB_HOST` in `.env.staging`
+
+### B3. Create EC2 Instance for Backend
+
+1. AWS Console → **EC2** → **Launch Instance**
+2. Settings:
+   | Setting | Value |
+   |---------|-------|
+   | Name | `athleticaos-staging-backend` |
+   | AMI | Amazon Linux 2023 |
+   | Instance type | `t3.small` (2 vCPU, 2 GB) |
+   | Key pair | Create or use existing |
+   | VPC | Same VPC as RDS |
+
+3. Allocate **Elastic IP** and associate with the instance
+4. Note the Elastic IP → this becomes the `staging-api` A record in GoDaddy
+5. SSH in and install Docker:
+   ```bash
+   sudo yum update -y
+   sudo yum install -y docker git
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   sudo usermod -aG docker ec2-user
+   # Log out and back in for group change to take effect
+   ```
+
+### B4. Create S3 Bucket for Frontend
+
+1. AWS Console → **S3** → **Create Bucket**
+2. Settings:
+   | Setting | Value |
+   |---------|-------|
+   | Bucket name | `athleticaos-staging-frontend` |
+   | Region | Same as EC2/RDS |
+   | Block all public access | **Yes** (CloudFront will access via OAC) |
+
+3. No need to enable static website hosting — CloudFront handles everything
+
+### B5. Create CloudFront Distribution
+
+1. AWS Console → **CloudFront** → **Create Distribution**
+2. Settings:
+   | Setting | Value |
+   |---------|-------|
+   | Origin domain | `athleticaos-staging-frontend.s3.amazonaws.com` |
+   | Origin access | **Origin Access Control (OAC)** — create new |
+   | Viewer protocol policy | **Redirect HTTP to HTTPS** |
+   | Alternate domain name (CNAME) | `staging.athleticaos.com` |
+   | SSL certificate | *(select ACM cert from B7 — do B7 first if needed)* |
+   | Default root object | `index.html` |
+
+3. **Critical — SPA routing**: Create custom error responses:
+   | HTTP Error Code | Response Page Path | HTTP Response Code | Cache TTL |
+   |-----------------|--------------------|--------------------|-----------|
+   | 403 | `/index.html` | 200 | 0 |
+   | 404 | `/index.html` | 200 | 0 |
+
+   > Without this, direct navigation to `staging.athleticaos.com/dashboard` will return a 404.
+
+4. Copy the S3 **bucket policy** that CloudFront shows you → Apply it to the S3 bucket
+
+5. Note the **Distribution domain name** (e.g., `d1234abcdef.cloudfront.net`)
+
+### B6. Configure Security Groups and Networking
+
+**EC2 Backend SG** (`athleticaos-staging-backend-sg`):
+
+| Port | Protocol | Source | Purpose |
+|------|----------|--------|---------|
+| 22 | TCP | Your IP only | SSH access |
+| 8080 | TCP | 0.0.0.0/0 | Backend API |
+
+**RDS PostgreSQL SG** (`athleticaos-staging-rds-sg`):
+
+| Port | Protocol | Source | Purpose |
+|------|----------|--------|---------|
+| 5432 | TCP | `athleticaos-staging-backend-sg` | DB access from EC2 only |
+
+> [!WARNING]
+> Never open RDS port 5432 to `0.0.0.0/0`. Restrict it to the EC2 security group.
+
+### B7. Request ACM SSL Certificates + GoDaddy DNS Validation
+
+> [!IMPORTANT]
+> ACM certificates for CloudFront **must** be in `us-east-1` region regardless of where your other resources are.
+
+1. AWS Console → **Certificate Manager** (switch to `us-east-1`) → **Request certificate**
+2. Add domain names:
+   - `staging.athleticaos.com`
+   - `staging-api.athleticaos.com`
+3. Choose **DNS validation**
+4. AWS will show CNAME records needed for validation
+5. **Add these in GoDaddy**:
+   - Log in to [GoDaddy DNS Management](https://dcc.godaddy.com/manage-dns)
+   - Select `athleticaos.com`
+   - For each CNAME record that ACM provides:
+     - Click **Add New Record** → Type: **CNAME**
+     - Name: The `_<hash>` part only (GoDaddy auto-appends `.athleticaos.com`)
+     - Value: The `_<hash>.acm-validations.aws.` target
+     - TTL: 600
+
+> [!WARNING]
+> **GoDaddy gotcha**: If ACM says to add `_abc123.staging.athleticaos.com`, enter only `_abc123.staging` as the Name in GoDaddy — it auto-appends the domain.
+
+6. Wait for ACM status to show **Issued** (usually 5–30 minutes)
+
+### B8. Point GoDaddy DNS Records to AWS Resources
+
+Add these records in GoDaddy DNS Management:
+
+**Frontend → CloudFront:**
+| Type | Name | Value | TTL |
+|------|------|-------|-----|
+| CNAME | `staging` | `d1234abcdef.cloudfront.net` | 3600 |
+
+**Backend → EC2:**
+| Type | Name | Value | TTL |
+|------|------|-------|-----|
+| A | `staging-api` | `x.x.x.x` (EC2 Elastic IP) | 3600 |
+
+Verify DNS propagation:
+```bash
+dig staging.athleticaos.com CNAME +short
+# Expected: d1234abcdef.cloudfront.net
+
+dig staging-api.athleticaos.com A +short
+# Expected: x.x.x.x
+
+# Or check global propagation:
+# https://dnschecker.org
 ```
 
-#### 2. Create docker-compose.yml
+> [!TIP]
+> GoDaddy DNS typically propagates within 5–30 minutes. Worst case is 48 hours.
 
-```yaml
-version: '3.8'
+---
 
-services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: athleticaos_rugby
-      POSTGRES_USER: athleticaos_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U athleticaos_user"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+## Phase C: First Manual Deploy — Detailed Steps
 
-  backend:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/athleticaos_rugby
-      SPRING_DATASOURCE_USERNAME: athleticaos_user
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      SPRING_PROFILES_ACTIVE: staging
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-```
-
-#### 3. Deploy
+### C1. Build and Deploy Backend to EC2
 
 ```bash
-# Set environment variables
-export DB_PASSWORD="your_secure_password"
-export JWT_SECRET="your_jwt_secret_key"
+# SSH into EC2
+ssh -i your-key.pem ec2-user@staging-api.athleticaos.com
 
-# Build and start
-docker-compose up -d
+# Clone repo
+git clone https://github.com/your-org/athleticaos.git
+cd athleticaos
+git checkout staging
 
-# Check logs
-docker-compose logs -f backend
+# Update backend/.env.staging with real values:
+#   DB_HOST       → RDS endpoint
+#   DB_PASSWORD   → RDS password
+#   JWT_SECRET    → generate with: openssl rand -base64 32
+#   FRONTEND_URL  → https://staging.athleticaos.com
+#   PUBLIC_URL    → https://staging.athleticaos.com
+nano backend/.env.staging
+
+# Build and run
+cd backend
+docker build -t athleticaos-backend .
+docker run -d \
+  --name athleticaos-backend \
+  --restart unless-stopped \
+  --env-file .env.staging \
+  -p 8080:8080 \
+  -v athleticaos-uploads:/app/uploads \
+  athleticaos-backend
+```
+
+### C2. Verify Flyway Migrations on RDS
+
+```bash
+# Check container logs for migration output
+docker logs athleticaos-backend 2>&1 | grep -i flyway
 
 # Verify health
 curl http://localhost:8080/actuator/health
+# Expected: {"status":"UP"}
 ```
 
-### Option 2: Traditional Deployment
-
-#### 1. Build Application
+### C3. Build Frontend with Staging Env Vars
 
 ```bash
-# Build JAR
-mvn clean package -DskipTests
+# On your LOCAL machine (not EC2)
+cd frontend
 
-# Verify JAR created
-ls -lh target/backend-0.0.1-SNAPSHOT.jar
+# Verify .env.staging has the correct API URL
+cat .env.staging
+# VITE_API_URL=https://staging-api.athleticaos.com
+# VITE_ENV=staging
+
+# Build
+npm run build -- --mode staging
 ```
 
-#### 2. Deploy to Server
+### C4. Upload Frontend to S3
 
 ```bash
-# Copy JAR to server
-scp target/backend-0.0.1-SNAPSHOT.jar user@staging-server:/opt/athleticaos/
+# Using AWS CLI configured in B1
+aws s3 sync dist/ s3://athleticaos-staging-frontend --delete --profile athleticaos-staging
 
-# SSH to server
-ssh user@staging-server
-
-# Create systemd service
-sudo nano /etc/systemd/system/athleticaos-backend.service
+# Invalidate CloudFront cache
+aws cloudfront create-invalidation \
+  --distribution-id <DISTRIBUTION_ID> \
+  --paths "/*" \
+  --profile athleticaos-staging
 ```
 
-#### 3. Systemd Service Configuration
-
-```ini
-[Unit]
-Description=AthleticaOS Rugby Backend
-After=network.target postgresql.service
-
-[Service]
-Type=simple
-User=athleticaos
-WorkingDirectory=/opt/athleticaos
-ExecStart=/usr/bin/java -jar /opt/athleticaos/backend-0.0.1-SNAPSHOT.jar
-Restart=on-failure
-RestartSec=10
-
-Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/athleticaos_rugby"
-Environment="SPRING_DATASOURCE_USERNAME=athleticaos_user"
-Environment="SPRING_DATASOURCE_PASSWORD=your_password"
-Environment="JWT_SECRET=your_jwt_secret"
-Environment="SPRING_PROFILES_ACTIVE=staging"
-
-[Install]
-WantedBy=multi-user.target
-```
-
-#### 4. Start Service
+### C5. Smoke Test
 
 ```bash
-# Reload systemd
-sudo systemctl daemon-reload
+# Backend health check
+curl https://staging-api.athleticaos.com/actuator/health
 
-# Enable service
-sudo systemctl enable athleticaos-backend
+# Auth test
+curl -X POST https://staging-api.athleticaos.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@athleticaos.com", "password": "password123"}'
 
-# Start service
-sudo systemctl start athleticaos-backend
+# Swagger UI
+open https://staging-api.athleticaos.com/swagger-ui/index.html
 
-# Check status
-sudo systemctl status athleticaos-backend
-
-# View logs
-sudo journalctl -u athleticaos-backend -f
+# Frontend
+open https://staging.athleticaos.com
 ```
+
+**Manual checks:**
+- [ ] Login/register flow works
+- [ ] Tournament CRUD operations
+- [ ] Match scoring + public live view
+- [ ] Image uploads display correctly
+- [ ] Browser console shows no CORS errors
 
 ---
 
-## Post-Deployment Verification
+## Environment Files Reference
 
-### 1. Health Check
-
-```bash
-# Check application health
-curl http://staging-server:8080/actuator/health
-
-# Expected response:
-{
-  "status": "UP"
-}
-```
-
-### 2. Database Migrations
+### Backend: `.env.staging`
 
 ```bash
-# Check Flyway schema history
-psql -h staging-db-host -U athleticaos_user -d athleticaos_rugby \
-  -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;"
-
-# Expected: All 13 migrations applied successfully
+SPRING_PROFILES_ACTIVE=staging
+SERVER_PORT=8080
+DB_HOST=<RDS-ENDPOINT>           # e.g. athleticaos-staging-db.abc123.ap-southeast-1.rds.amazonaws.com
+DB_PORT=5432
+DB_NAME=athleticaos_staging
+DB_USER=athleticaos
+DB_PASSWORD=<RDS-PASSWORD>
+JWT_SECRET=<GENERATED-SECRET>    # openssl rand -base64 32
+JWT_EXPIRATION=86400000
+FRONTEND_URL=https://staging.athleticaos.com
+PUBLIC_URL=https://staging.athleticaos.com
 ```
 
-### 3. Swagger UI
+### Frontend: `.env.staging`
 
 ```bash
-# Access Swagger UI
-open http://staging-server:8080/swagger-ui/index.html
-
-# Verify all endpoints visible:
-- Auth Controller
-- Tournament Controller (with bracket endpoints)
-- Match Controller (with progression endpoints)
-- Team Controller
-- Organisation Controller
-- Player Controller
+VITE_API_URL=https://staging-api.athleticaos.com
+VITE_ENV=staging
 ```
 
-### 4. Authentication Test
+### Backend: `application-staging.yml` (key settings)
 
-```bash
-# Test sign-in
-curl -X POST http://staging-server:8080/api/v1/auth/signin \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@athleticaos.com",
-    "password": "admin123"
-  }'
-
-# Expected: JWT token returned
-```
-
-### 5. Bracket Generation Test
-
-```bash
-# Test bracket generation (use token from auth)
-curl -X POST http://staging-server:8080/api/v1/tournaments/{id}/bracket/generate \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "format": "KNOCKOUT",
-    "includePlacementStages": true,
-    "teamIds": ["uuid1", "uuid2", "uuid3", "uuid4"]
-  }'
-
-# Expected: Bracket structure returned
-```
+| Property | Value | Source |
+|----------|-------|--------|
+| `cors.allowed-origins` | `${FRONTEND_URL}`, `${PUBLIC_URL}` | Env var |
+| `jwt.secret-key` | `${JWT_SECRET}` | Env var |
+| `jwt.expiration` | `${JWT_EXPIRATION:86400000}` | Env var |
+| `cookie.secure` | `true` | Hardcoded (HTTPS) |
+| `cookie.same-site` | `Lax` | Hardcoded (cross-origin S3↔EC2) |
 
 ---
 
-## Monitoring & Logging
+## Phase D: CI/CD Automation — Detailed Steps
 
-### Application Logs
+> [!NOTE]
+> Only set up CI/CD **after** Phase C (manual deploy) is validated and working. CI/CD automates what you already know works.
 
-```bash
-# View live logs (Docker)
-docker-compose logs -f backend
+### D1. GitHub Actions — Backend Workflow
 
-# View live logs (Systemd)
-sudo journalctl -u athleticaos-backend -f
+Create `.github/workflows/deploy-backend-staging.yml`:
 
-# Search for errors
-sudo journalctl -u athleticaos-backend | grep ERROR
+```yaml
+name: Deploy Backend to Staging
 
-# View specific time range
-sudo journalctl -u athleticaos-backend --since "1 hour ago"
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build JAR
+        working-directory: backend
+        run: ./mvnw package -DskipTests -B
+
+      - name: Build Docker image
+        working-directory: backend
+        run: docker build -t athleticaos-backend:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
+
+      - name: Copy image to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: backend-image.tar.gz
+          target: /home/ec2-user/
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker load < /home/ec2-user/backend-image.tar.gz
+            docker stop athleticaos-backend || true
+            docker rm athleticaos-backend || true
+            docker run -d \
+              --name athleticaos-backend \
+              --restart unless-stopped \
+              --env-file /home/ec2-user/athleticaos/backend/.env.staging \
+              -p 8080:8080 \
+              -v athleticaos-uploads:/app/uploads \
+              athleticaos-backend:${{ github.sha }}
+            rm /home/ec2-user/backend-image.tar.gz
 ```
 
-### Database Monitoring
+### D2. GitHub Actions — Frontend Workflow
 
-```bash
-# Check active connections
-psql -h staging-db-host -U athleticaos_user -d athleticaos_rugby \
-  -c "SELECT count(*) FROM pg_stat_activity WHERE datname='athleticaos_rugby';"
+Create `.github/workflows/deploy-frontend-staging.yml`:
 
-# Check table sizes
-psql -h staging-db-host -U athleticaos_user -d athleticaos_rugby \
-  -c "SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size 
-      FROM pg_tables 
-      WHERE schemaname = 'public' 
-      ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;"
+```yaml
+name: Deploy Frontend to Staging
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build -- --mode staging
+
+      - name: Deploy to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.STAGING_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: frontend/dist
+
+      - name: Invalidate CloudFront
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ secrets.STAGING_CF_DISTRIBUTION_ID }}
+          PATHS: '/*'
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 ```
 
-### Performance Metrics
+### D3. GitHub Secrets to Configure
+
+Go to **GitHub Repo → Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+|--------|-------|
+| `EC2_HOST` | EC2 Elastic IP (e.g., `x.x.x.x`) |
+| `EC2_SSH_KEY` | Contents of your `.pem` key file |
+| `AWS_ACCESS_KEY_ID` | From IAM user (B1) |
+| `AWS_SECRET_ACCESS_KEY` | From IAM user (B1) |
+| `AWS_REGION` | e.g., `ap-southeast-1` |
+| `STAGING_S3_BUCKET` | `athleticaos-staging-frontend` |
+| `STAGING_CF_DISTRIBUTION_ID` | CloudFront distribution ID |
+
+### D4. Test CI/CD Pipeline
 
 ```bash
-# Check JVM memory
-curl http://staging-server:8080/actuator/metrics/jvm.memory.used
+# Make a minor change and push
+git checkout staging
+echo "<!-- CI test -->" >> frontend/index.html
+git add . && git commit -m "test: CI/CD pipeline"
+git push origin staging
 
-# Check HTTP requests
-curl http://staging-server:8080/actuator/metrics/http.server.requests
-
-# Check database connections
-curl http://staging-server:8080/actuator/metrics/hikaricp.connections.active
+# Monitor in GitHub → Actions tab
 ```
 
 ---
 
 ## Rollback Plan
 
-### If Deployment Fails
-
-#### 1. Stop New Version
-
+### Backend
 ```bash
-# Docker
-docker-compose down
-
-# Systemd
-sudo systemctl stop athleticaos-backend
+docker stop athleticaos-backend && docker rm athleticaos-backend
+docker run -d --name athleticaos-backend --env-file .env.staging -p 8080:8080 athleticaos-backend:previous
 ```
 
-#### 2. Restore Previous Version
-
+### Frontend
 ```bash
-# Copy previous JAR
-sudo cp /opt/athleticaos/backup/backend-previous.jar /opt/athleticaos/backend-0.0.1-SNAPSHOT.jar
-
-# Restart service
-sudo systemctl start athleticaos-backend
+aws s3 sync ./dist-backup s3://athleticaos-staging-frontend --delete
+aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
 ```
 
-#### 3. Rollback Database (if needed)
-
+### Database
 ```bash
-# Restore from backup
-pg_restore -h staging-db-host -U athleticaos_user -d athleticaos_rugby backup.dump
-
-# Or use Flyway repair
-mvn flyway:repair -Dflyway.url=jdbc:postgresql://staging-db-host:5432/athleticaos_rugby
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier athleticaos-staging-restored \
+  --db-snapshot-identifier <snapshot-id>
 ```
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Database Connection Failed
-
-```bash
-# Check database is running
-pg_isready -h staging-db-host -p 5432
-
-# Check credentials
-psql -h staging-db-host -U athleticaos_user -d athleticaos_rugby
-
-# Check network connectivity
-telnet staging-db-host 5432
-```
-
-#### 2. Migration Failed
-
-```bash
-# Check Flyway schema history
-SELECT * FROM flyway_schema_history WHERE success = false;
-
-# Repair Flyway
-mvn flyway:repair
-
-# Re-run migrations
-mvn flyway:migrate
-```
-
-#### 3. Application Won't Start
-
-```bash
-# Check logs for errors
-sudo journalctl -u athleticaos-backend -n 100
-
-# Common issues:
-- Port 8080 already in use
-- Insufficient memory
-- Missing environment variables
-- Database not accessible
-```
-
-#### 4. Swagger UI Not Loading
-
-```bash
-# Check if application is running
-curl http://localhost:8080/actuator/health
-
-# Check Swagger endpoint
-curl http://localhost:8080/v3/api-docs
-
-# Clear browser cache
-# Try incognito mode
-```
-
----
-
-## Security Hardening
-
-### 1. Firewall Configuration
-
-```bash
-# Allow only necessary ports
-sudo ufw allow 8080/tcp
-sudo ufw allow 5432/tcp
-sudo ufw enable
-```
-
-### 2. Database Security
-
-```bash
-# Create read-only user for reporting
-CREATE USER athleticaos_readonly WITH PASSWORD 'readonly_password';
-GRANT CONNECT ON DATABASE athleticaos_rugby TO athleticaos_readonly;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO athleticaos_readonly;
-```
-
-### 3. Application Security
-
-```yaml
-# Add to application-staging.yml
-server:
-  ssl:
-    enabled: true
-    key-store: classpath:keystore.p12
-    key-store-password: ${KEYSTORE_PASSWORD}
-    key-store-type: PKCS12
-```
-
----
-
-## Maintenance
-
-### Regular Tasks
-
-#### Daily
-- Check application logs for errors
-- Monitor database connections
-- Verify backup completion
-
-#### Weekly
-- Review performance metrics
-- Check disk space
-- Update dependencies (security patches)
-
-#### Monthly
-- Database vacuum and analyze
-- Log rotation
-- Security audit
-
-### Backup Strategy
-
-```bash
-# Daily database backup
-0 2 * * * pg_dump -h staging-db-host -U athleticaos_user athleticaos_rugby > /backups/daily/athleticaos_$(date +\%Y\%m\%d).sql
-
-# Weekly full backup
-0 3 * * 0 tar -czf /backups/weekly/athleticaos_$(date +\%Y\%m\%d).tar.gz /opt/athleticaos /backups/daily
-
-# Retention: 7 daily, 4 weekly
-find /backups/daily -name "*.sql" -mtime +7 -delete
-find /backups/weekly -name "*.tar.gz" -mtime +28 -delete
-```
-
----
-
-## Success Criteria
-
-✅ Application starts without errors
-✅ All database migrations applied
-✅ Swagger UI accessible
-✅ Authentication working
-✅ Bracket generation successful
-✅ Match progression functional
-✅ Pool standings calculated correctly
-✅ Loser routing working
-✅ No errors in logs
-✅ Performance acceptable (<500ms response time)
 
 ---
 
@@ -569,5 +541,4 @@ find /backups/weekly -name "*.tar.gz" -mtime +28 -delete
 
 - **Development Team**: dev@athleticaos.com
 - **DevOps**: devops@athleticaos.com
-- **Database Admin**: dba@athleticaos.com
 - **On-Call**: +60-XXX-XXXXXXX
