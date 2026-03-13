@@ -1,6 +1,7 @@
 package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.season.SeasonOverviewResponse;
+import com.athleticaos.backend.dtos.season.SeasonResponse;
 import com.athleticaos.backend.entities.Season;
 import com.athleticaos.backend.services.SeasonService;
 import lombok.RequiredArgsConstructor;
@@ -21,19 +22,19 @@ public class SeasonController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Season>> getAllSeasons() {
+    public ResponseEntity<List<SeasonResponse>> getAllSeasons() {
         return ResponseEntity.ok(seasonService.getAllSeasons());
     }
 
     @GetMapping("/active")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Season>> getActiveSeasons() {
+    public ResponseEntity<List<SeasonResponse>> getActiveSeasons() {
         return ResponseEntity.ok(seasonService.getActiveSeasons());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Season> getSeasonById(@PathVariable UUID id) {
+    public ResponseEntity<SeasonResponse> getSeasonById(@PathVariable UUID id) {
         return ResponseEntity.ok(seasonService.getSeasonById(id));
     }
 
@@ -45,19 +46,19 @@ public class SeasonController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
-    public ResponseEntity<Season> createSeason(@RequestBody Season season) {
+    public ResponseEntity<SeasonResponse> createSeason(@RequestBody Season season) {
         return ResponseEntity.ok(seasonService.createSeason(season));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
-    public ResponseEntity<Season> updateSeason(@PathVariable UUID id, @RequestBody Season season) {
+    public ResponseEntity<SeasonResponse> updateSeason(@PathVariable UUID id, @RequestBody Season season) {
         return ResponseEntity.ok(seasonService.updateSeason(id, season));
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
-    public ResponseEntity<Season> updateStatus(@PathVariable UUID id, @RequestParam String status) {
+    public ResponseEntity<SeasonResponse> updateStatus(@PathVariable UUID id, @RequestParam String status) {
         return ResponseEntity.ok(seasonService.updateStatus(id, status));
     }
 

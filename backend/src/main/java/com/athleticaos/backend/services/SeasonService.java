@@ -1,23 +1,24 @@
 package com.athleticaos.backend.services;
 
 import com.athleticaos.backend.dtos.season.SeasonOverviewResponse;
+import com.athleticaos.backend.dtos.season.SeasonResponse;
 import com.athleticaos.backend.entities.Season;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface SeasonService {
-    List<Season> getAllSeasons();
+    List<SeasonResponse> getAllSeasons();
 
-    List<Season> getActiveSeasons();
+    List<SeasonResponse> getActiveSeasons();
 
-    Season getSeasonById(UUID id);
+    SeasonResponse getSeasonById(UUID id);
 
-    Season createSeason(Season season);
+    SeasonResponse createSeason(Season season);
 
-    Season updateSeason(UUID id, Season season);
+    SeasonResponse updateSeason(UUID id, Season season);
 
-    Season updateStatus(UUID id, String status);
+    SeasonResponse updateStatus(UUID id, String status);
 
     void deleteSeason(UUID id);
 
