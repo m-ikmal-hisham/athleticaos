@@ -152,15 +152,24 @@ export const TeamModal = ({ isOpen, mode, initialData, onClose, onSubmit, onSucc
                                 onChange={(value) => setFormData({ ...formData, ageGroup: value as string })}
                                 options={[
                                     { value: '', label: 'Select...' },
-                                    { value: 'Open', label: 'Open (Senior)' },
-                                    { value: 'U23', label: 'Under 23' },
-                                    { value: 'U21', label: 'Under 21' },
-                                    { value: 'U19', label: 'Under 19' },
-                                    { value: 'U18', label: 'Under 18' },
-                                    { value: 'U16', label: 'Under 16' },
-                                    { value: 'U14', label: 'Under 14' },
+                                    { value: 'SENIOR', label: 'Open (Senior)' },
+                                    { value: 'U6', label: 'Under 6' },
+                                    { value: 'U7', label: 'Under 7' },
+                                    { value: 'U8', label: 'Under 8' },
+                                    { value: 'U9', label: 'Under 9' },
+                                    { value: 'U10', label: 'Under 10' },
                                     { value: 'U12', label: 'Under 12' },
-                                    { value: 'Veterans', label: 'Veterans (+35)' }
+                                    { value: 'U14', label: 'Under 14' },
+                                    { value: 'U15', label: 'Under 15' },
+                                    { value: 'U16', label: 'Under 16' },
+                                    { value: 'U18', label: 'Under 18' },
+                                    { value: 'U19', label: 'Under 19' },
+                                    { value: 'U20', label: 'Under 20' },
+                                    { value: 'U21', label: 'Under 21' },
+                                    { value: 'U23', label: 'Under 23' },
+                                    { value: 'O35', label: 'Over 35' },
+                                    { value: 'O38', label: 'Over 38' },
+                                    { value: 'O40', label: 'Over 40' },
                                 ]}
                                 placeholder="Select age group"
                             />

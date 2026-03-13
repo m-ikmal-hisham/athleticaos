@@ -79,6 +79,7 @@ public class UserSeedConfig {
         };
     }
 
+    @SuppressWarnings("null")
     private void seedSuperAdmin(String email, String firstName, String lastName, String password, Role superAdminRole) {
         if (userRepository.findByEmail(email).isEmpty()) {
             log.info("Creating super admin user: {}", email);

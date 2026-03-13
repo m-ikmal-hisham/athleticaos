@@ -27,11 +27,13 @@ public class SeasonServiceImpl implements SeasonService {
     private final OrganisationRepository organisationRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Season> getAllSeasons() {
         return seasonRepository.findByDeletedFalse();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Season> getActiveSeasons() {
         return seasonRepository.findByStatusAndDeletedFalse(SeasonStatus.ACTIVE);
     }

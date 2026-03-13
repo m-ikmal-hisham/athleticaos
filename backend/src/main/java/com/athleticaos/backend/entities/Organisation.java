@@ -1,5 +1,6 @@
 package com.athleticaos.backend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,6 +40,7 @@ public class Organisation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_org_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "parentOrg"})
     private Organisation parentOrg;
 
     @Column(name = "primary_color")

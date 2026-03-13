@@ -41,7 +41,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         pointsBonusTry: 1,
         pointsBonusLoss: 1,
         startersCount: 15,
-        maxBenchCount: 8
+        maxBenchCount: 10
     });
 
     const [generateTimings] = useState(true);
@@ -66,13 +66,13 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
     }, [tournamentId, selectedCategoryId]);
 
     useEffect(() => {
-        // Auto-update default durations and starters when rugby format changes
+        // Auto-update default durations, starters, and bench count when rugby format changes
         if (config.rugbyFormat === 'XV') {
-            setConfig(prev => ({ ...prev, matchDurationMinutes: 80, startersCount: 15 }));
+            setConfig(prev => ({ ...prev, matchDurationMinutes: 80, startersCount: 15, maxBenchCount: 10 }));
         } else if (config.rugbyFormat === 'SEVENS') {
-            setConfig(prev => ({ ...prev, matchDurationMinutes: 14, startersCount: 7 }));
+            setConfig(prev => ({ ...prev, matchDurationMinutes: 14, startersCount: 7, maxBenchCount: 5 }));
         } else if (config.rugbyFormat === 'TENS') {
-            setConfig(prev => ({ ...prev, matchDurationMinutes: 20, startersCount: 10 }));
+            setConfig(prev => ({ ...prev, matchDurationMinutes: 20, startersCount: 10, maxBenchCount: 7 }));
         }
     }, [config.rugbyFormat]);
 
