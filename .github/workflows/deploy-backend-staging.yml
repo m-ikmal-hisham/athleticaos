@@ -57,13 +57,21 @@ jobs:
               -v athleticaos-uploads:/app/uploads \
               athleticaos-backend:${{ github.sha }}
 
-            # Wait for Spring Boot to start
+            # Health check with retries (Spring Boot + Flyway can take 30-60s)
             echo "Waiting for backend to start..."
-            sleep 15
-
-            # Health check
-            curl -f http://localhost:8080/actuator/health || exit 1
-            echo "Backend health check passed!"
+            for i in $(seq 1 9); do
+              if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+                echo "Backend health check passed on attempt $i!"
+                break
+              fi
+              if [ $i -eq 9 ]; then
+                echo "Health check failed after 9 attempts (90s). Checking logs..."
+                docker logs --tail 30 athleticaos-backend
+                exit 1
+              fi
+              echo "Attempt $i/9 failed, retrying in 10s..."
+              sleep 10
+            done
 
             # Clean up
             rm /home/ec2-user/backend-image.tar.gz
