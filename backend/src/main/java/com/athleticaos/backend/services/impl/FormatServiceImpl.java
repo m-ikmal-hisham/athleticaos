@@ -30,6 +30,8 @@ public class FormatServiceImpl implements FormatService {
     private final MatchRepository matchRepository;
     private final MatchEventRepository matchEventRepository;
     private final MatchLineupRepository matchLineupRepository;
+    private final MatchOfficialRepository matchOfficialRepository;
+    private final PlayerSuspensionRepository playerSuspensionRepository;
     private final BracketService bracketService;
 
     @Override
@@ -187,10 +189,31 @@ public class FormatServiceImpl implements FormatService {
     public List<TournamentStage> generateStructure(Tournament tournament, int poolCount,
             BracketGenerationRequest request) {
 
-        // Clean up existing structure for this context (Category or Global)
+        // Clean up existing matches and their dependencies before deleting structure
+        // This prevents FK constraint violations (matches reference stages)
         if (request.getCategoryId() != null) {
+            // Category-scoped cleanup: find matches for this category and clean deps
+            List<Match> categoryMatches = matchRepository.findByTournamentId(tournament.getId()).stream()
+                    .filter(m -> m.getStage() != null && m.getStage().getCategory() != null
+                            && m.getStage().getCategory().getId().equals(request.getCategoryId()))
+                    .collect(Collectors.toList());
+
+            for (Match match : categoryMatches) {
+                playerSuspensionRepository.deleteByMatchId(match.getId());
+                matchOfficialRepository.deleteByMatchId(match.getId());
+                matchEventRepository.deleteByMatchId(match.getId());
+                matchLineupRepository.deleteByMatchId(match.getId());
+            }
+
+            // Clear self-referencing next-match links for this category
+            matchRepository.clearNextMatchReferencesForCategory(tournament.getId(), request.getCategoryId());
+            // Delete matches for this category
+            matchRepository.deleteByTournamentIdAndCategoryId(tournament.getId(), request.getCategoryId());
+
+            // Delete stages for this category
             stageRepository.deleteByTournamentIdAndCategoryId(tournament.getId(), request.getCategoryId());
-            // Also clear team assignments for this category
+
+            // Clear team pool assignments for this category
             List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournament.getId()).stream()
                     .filter(tt -> tt.getCategory() != null && tt.getCategory().getId().equals(request.getCategoryId()))
                     .collect(Collectors.toList());
@@ -199,17 +222,20 @@ public class FormatServiceImpl implements FormatService {
                 tournamentTeamRepository.save(tt);
             }
         } else {
-            // Global context (no category assigned stages)
+            // Global context: clean up all match dependencies first
+            playerSuspensionRepository.deleteByMatch_Tournament_Id(tournament.getId());
+            matchOfficialRepository.deleteByMatch_Tournament_Id(tournament.getId());
+            matchEventRepository.deleteByMatch_Tournament_Id(tournament.getId());
+            matchLineupRepository.deleteByMatch_Tournament_Id(tournament.getId());
+
+            // Clear self-referencing next-match links
+            matchRepository.clearNextMatchReferences(tournament.getId());
+            // Delete all matches
+            List<Match> existingMatches = matchRepository.findByTournamentId(tournament.getId());
+            matchRepository.deleteAll(existingMatches);
+
+            // Delete global stages
             stageRepository.deleteByTournamentIdAndCategoryIsNull(tournament.getId());
-            // Assignment cleanup for global context?
-            // Ideally we only clear if teams are also global/unassigned, but let's be safe
-            // and only clear if they were in a pool that is now gone?
-            // Actually, if we delete global stages, teams assigned to them (by name) will
-            // have dangling pool pointers effectively (since pool is a string).
-            // Let's clear pool number for teams that don't belong to a specific category
-            // structure.
-            // This is tricky if mixed. For now assuming global structure implies global
-            // team pool usage.
         }
 
         // Create Stages
@@ -348,8 +374,14 @@ public class FormatServiceImpl implements FormatService {
     public void clearSchedule(UUID tournamentId, boolean clearStructure) {
         log.info("Clearing schedule for tournament {} (clearStructure={})", tournamentId, clearStructure);
 
+        // Delete all match-dependent entities first
+        playerSuspensionRepository.deleteByMatch_Tournament_Id(tournamentId);
+        matchOfficialRepository.deleteByMatch_Tournament_Id(tournamentId);
         matchEventRepository.deleteByMatch_Tournament_Id(tournamentId);
         matchLineupRepository.deleteByMatch_Tournament_Id(tournamentId);
+
+        // Clear self-referencing next-match links before deleting matches
+        matchRepository.clearNextMatchReferences(tournamentId);
         matchRepository.deleteByTournamentId(tournamentId);
 
         if (clearStructure) {
