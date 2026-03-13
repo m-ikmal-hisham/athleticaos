@@ -1,0 +1,73 @@
+name: Deploy Backend to Staging
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        working-directory: backend
+        run: docker build -t athleticaos-backend:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
+
+      - name: Copy image to EC2
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: backend-image.tar.gz
+          target: /home/ec2-user/
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Load the new Docker image
+            docker load < /home/ec2-user/backend-image.tar.gz
+
+            # Stop and remove old container (|| true prevents error if not running)
+            docker stop athleticaos-backend || true
+            docker rm athleticaos-backend || true
+
+            # Start new container with existing env file and uploads volume
+            docker run -d \
+              --name athleticaos-backend \
+              --restart unless-stopped \
+              --env-file /home/ec2-user/athleticaos/backend/.env.staging \
+              -p 8080:8080 \
+              -v athleticaos-uploads:/app/uploads \
+              athleticaos-backend:${{ github.sha }}
+
+            # Wait for Spring Boot to start
+            echo "Waiting for backend to start..."
+            sleep 15
+
+            # Health check
+            curl -f http://localhost:8080/actuator/health || exit 1
+            echo "Backend health check passed!"
+
+            # Clean up
+            rm /home/ec2-user/backend-image.tar.gz
+
+            # Remove old Docker images (keep only the latest 2)
+            docker image prune -f
+            echo "Deployment complete!"
