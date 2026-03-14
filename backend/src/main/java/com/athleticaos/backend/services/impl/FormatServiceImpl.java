@@ -41,6 +41,9 @@ public class FormatServiceImpl implements FormatService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
+        // Clear existing matches before generating new ones (preserve structure/pools)
+        clearSchedule(tournamentId, false);
+
         // Update tournament format settings
         // Update tournament format settings logic
         // If category is specific, we should likely update the config for that
@@ -165,6 +168,8 @@ public class FormatServiceImpl implements FormatService {
     }
 
     private void generateMatchesForExistingGroups(Tournament tournament, BracketGenerationRequest request) {
+        // We already cleared matches at the start of generateSchedule(), so we can safely generate new ones.
+        
         // Fetch existing stages/pools
         List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournament.getId());
         List<TournamentTeam> allTeams = tournamentTeamRepository.findByTournamentId(tournament.getId());

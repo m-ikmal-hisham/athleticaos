@@ -95,7 +95,7 @@ public class TournamentFormatConfig {
 
     @Column(name = "max_bench_count", nullable = false)
     @Builder.Default
-    private Integer maxBenchCount = 8;
+    private Integer maxBenchCount = 10;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

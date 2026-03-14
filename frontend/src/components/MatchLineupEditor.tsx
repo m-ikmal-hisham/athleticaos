@@ -46,7 +46,7 @@ import {
     Square
 } from '@phosphor-icons/react';
 
-export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = false, maxStarters = 15, maxBench = 8, onLineupUpdate }: Props) {
+export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = false, maxStarters = 15, maxBench = 10, onLineupUpdate }: Props) {
     const [items, setItems] = useState<{
         [key in LineupRole]: MatchLineupEntry[];
     }>({

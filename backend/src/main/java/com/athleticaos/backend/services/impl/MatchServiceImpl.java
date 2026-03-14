@@ -8,6 +8,7 @@ import com.athleticaos.backend.dtos.match.OperationsDashboardDTO;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
+import com.athleticaos.backend.entities.TournamentFormatConfig;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
@@ -335,13 +336,25 @@ public class MatchServiceImpl implements MatchService {
                 .matchCode(match.getMatchCode());
 
         // Populate lineup configuration from tournament format config
-        if (match.getTournament() != null && match.getTournament().getFormatConfig() != null) {
-            builder.startersCount(match.getTournament().getFormatConfig().getStartersCount());
-            builder.maxBenchCount(match.getTournament().getFormatConfig().getMaxBenchCount());
+        if (match.getTournament() != null) {
+            UUID categoryId = null;
+            if (match.getStage() != null && match.getStage().getCategory() != null) {
+                categoryId = match.getStage().getCategory().getId();
+            }
+            TournamentFormatConfig config = match.getTournament().getFormatConfig(categoryId);
+            
+            if (config != null) {
+                builder.startersCount(config.getStartersCount());
+                builder.maxBenchCount(config.getMaxBenchCount());
+            } else {
+                // Fallback to XV defaults for backward compatibility
+                builder.startersCount(15);
+                builder.maxBenchCount(10);
+            }
         } else {
             // Fallback to XV defaults for backward compatibility
             builder.startersCount(15);
-            builder.maxBenchCount(8);
+            builder.maxBenchCount(10);
         }
 
         if (match.getHomeTeam() != null) {

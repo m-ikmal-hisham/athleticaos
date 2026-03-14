@@ -31,6 +31,8 @@ public class BracketServiceImpl implements BracketService {
     private final MatchLineupRepository matchLineupRepository;
     private final MatchOfficialRepository matchOfficialRepository;
     private final PlayerSuspensionRepository playerSuspensionRepository;
+    private final MediaAssetRepository mediaAssetRepository;
+    private final EventRepository eventRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -151,6 +153,8 @@ public class BracketServiceImpl implements BracketService {
                     matchOfficialRepository.deleteByMatchId(match.getId());
                     matchEventRepository.deleteByMatchId(match.getId());
                     matchLineupRepository.deleteByMatchId(match.getId());
+                    mediaAssetRepository.deleteByMatchId(match.getId());
+                    eventRepository.deleteByLinkedMatchId(match.getId());
                 }
             }
 
@@ -179,6 +183,15 @@ public class BracketServiceImpl implements BracketService {
             matchOfficialRepository.deleteByMatch_Tournament_Id(tournamentId);
             matchEventRepository.deleteByMatch_Tournament_Id(tournamentId);
             matchLineupRepository.deleteByMatch_Tournament_Id(tournamentId);
+
+            // For MediaAsset and Event
+            List<UUID> matchIds = matchRepository.findByTournamentId(tournamentId).stream()
+                    .map(Match::getId)
+                    .collect(Collectors.toList());
+            if (!matchIds.isEmpty()) {
+                mediaAssetRepository.deleteByMatchIdIn(matchIds);
+                eventRepository.deleteByLinkedMatchIdIn(matchIds);
+            }
 
             // Break self-references first
             matchRepository.clearNextMatchReferences(tournamentId);
