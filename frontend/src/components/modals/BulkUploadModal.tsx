@@ -25,6 +25,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     const [headers, setHeaders] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [errors, setErrors] = useState<string[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!isOpen) return null;
@@ -34,6 +35,28 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         if (selectedFile) {
             setFile(selectedFile);
             parseCSV(selectedFile);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const droppedFile = e.dataTransfer.files?.[0];
+        if (droppedFile && (droppedFile.type === 'text/csv' || droppedFile.name.endsWith('.csv'))) {
+            setFile(droppedFile);
+            parseCSV(droppedFile);
+        } else {
+            setErrors(['Please upload a valid CSV file.']);
         }
     };
 
@@ -123,8 +146,13 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                             {/* File Upload Area */}
                             {!parsedData.length && !errors.length && (
                                 <div 
-                                    className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10 cursor-pointer hover:bg-gray-50 transition-colors"
+                                    className={`mt-2 flex justify-center rounded-lg border border-dashed px-6 py-10 cursor-pointer transition-colors ${
+                                        isDragging ? 'border-primary-500 bg-primary-50' : 'border-gray-900/25 hover:bg-gray-50'
+                                    }`}
                                     onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
                                 >
                                     <div className="text-center">
                                         <TableIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { StandingsResponse } from '../../types';
 import { CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react';
 import { getImageUrl } from '../../utils/image';
+import { Link } from 'react-router-dom';
 
 interface StandingsTableProps {
     standings: StandingsResponse[];
@@ -111,7 +112,10 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                                 {idx + 1}
                                             </td>
                                             <td className="px-3 py-4">
-                                                <div className="flex items-center gap-4">
+                                                <Link
+                                                    to={`/dashboard/teams/${team.teamId}`}
+                                                    className="flex items-center gap-4 group/link"
+                                                >
                                                     {/* Transparent Logo Placeholder */}
                                                     <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
                                                         {team.teamLogoUrl ? (
@@ -129,7 +133,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
 
                                                     {/* Text Logic: Priority Short Name, Small Full Name */}
                                                     <div className="flex flex-col">
-                                                        <span className="text-lg font-black text-slate-800 dark:text-white leading-none">
+                                                        <span className="text-lg font-black text-slate-800 dark:text-white leading-none group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400 transition-colors">
                                                             {team.teamShortName || team.teamName}
                                                         </span>
                                                         {team.teamShortName && (
@@ -138,7 +142,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                </div>
+                                                </Link>
                                             </td>
                                             <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400 font-medium">{team.played}</td>
                                             <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.won}</td>

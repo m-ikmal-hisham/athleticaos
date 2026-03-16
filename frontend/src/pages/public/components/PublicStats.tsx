@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { publicTournamentApi, PublicTournamentStats } from '../../../api/public.api';
 import { Loader2, Trophy, Medal, AlertTriangle, Shield } from 'lucide-react';
 
@@ -8,6 +9,7 @@ interface PublicStatsProps {
 }
 
 export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, categoryId }) => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<PublicTournamentStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -72,7 +74,11 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
 
                     <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {stats.topTeams.map((team, idx) => (
-                            <div key={team.teamId} className="flex items-center justify-between p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/5 hover:bg-white/50 dark:hover:bg-white/10 transition-colors">
+                            <div 
+                                key={team.teamId} 
+                                className="flex items-center justify-between p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/5 hover:bg-white/50 dark:hover:bg-white/10 transition-colors cursor-pointer group"
+                                onClick={() => navigate(`/dashboard/teams/${team.teamId}`)}
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm
                                         ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
@@ -104,7 +110,11 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {stats.topScorers.slice(0, 6).map((player) => (
-                            <div key={player.playerId} className="flex items-center gap-4 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/10">
+                            <div 
+                                key={player.playerId} 
+                                className="flex items-center gap-4 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/10 hover:bg-white/40 dark:hover:bg-white/10 transition-colors cursor-pointer group"
+                                onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
+                            >
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-skin-base truncate">{player.name}</div>
                                     <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
@@ -136,7 +146,11 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                     ) : (
                         <div className="space-y-3">
                             {stats.topOffenders.slice(0, 5).map((player) => (
-                                <div key={player.playerId} className="flex items-center justify-between text-sm">
+                                <div 
+                                    key={player.playerId} 
+                                    className="flex items-center justify-between text-sm p-2 -mx-2 rounded-lg hover:bg-white/30 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                                    onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
+                                >
                                     <div className="truncate pr-2">
                                         <div className="font-medium text-skin-base">{player.name}</div>
                                         <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
@@ -173,7 +187,11 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                             .sort((a, b) => b.tries - a.tries) // Re-sort by tries just in case
                             .slice(0, 5)
                             .map((player) => (
-                                <div key={player.playerId + 'tries'} className="flex items-center justify-between text-sm">
+                                <div 
+                                    key={player.playerId + 'tries'} 
+                                    className="flex items-center justify-between text-sm p-2 -mx-2 rounded-lg hover:bg-white/30 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                                    onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
+                                >
                                     <div className="truncate pr-2">
                                         <div className="font-medium text-skin-base">{player.name}</div>
                                         <div className="text-xs text-skin-muted truncate">{player.teamName}</div>

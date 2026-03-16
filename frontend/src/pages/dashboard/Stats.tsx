@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStatsStore } from '@/store/stats.store';
 import { useUIStore } from '@/store/ui.store';
 import { fetchTournaments } from '@/api/tournaments.api';
@@ -136,6 +137,7 @@ export default function Stats() {
 
 // Sub-component to handle sorting logic cleanly
 function StatsContent({ summary, loading, playerStats, disciplineStats, teamStats }: any) {
+    const navigate = useNavigate();
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc'; type: 'scorers' | 'discipline' | 'teams' } | null>(null);
 
     const handleSort = (key: string, type: 'scorers' | 'discipline' | 'teams') => {
@@ -284,7 +286,7 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                         <tr
                                             key={player.playerId}
                                             className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                            onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
+                                            onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
                                         >
                                             <td className="px-6 py-3.5 font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                                                 {idx + 1}
@@ -344,7 +346,7 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                         <tr
                                             key={`disc-${player.playerId}`}
                                             className="hover:bg-white/5 transition-colors cursor-pointer group"
-                                            onClick={() => window.location.href = `/dashboard/players?player=${player.playerId}`}
+                                            onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
                                         >
                                             <td className="px-6 py-3.5 font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                                                 {idx + 1}
@@ -401,7 +403,11 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                     </tr>
                                 ) : (
                                     sortedTeams.slice(0, 10).map((team: any, idx: number) => (
-                                        <tr key={team.teamId} className="hover:bg-white/5 transition-colors">
+                                        <tr 
+                                            key={team.teamId} 
+                                            className="hover:bg-white/5 transition-colors cursor-pointer group"
+                                            onClick={() => navigate(`/dashboard/teams/${team.teamId}`)}
+                                        >
                                             <td className="px-6 py-3.5 font-medium text-muted-foreground">
                                                 {idx + 1}
                                             </td>
