@@ -11,6 +11,8 @@ import MatchCenter from '@/pages/public/MatchCenter';
 import Contact from '@/pages/public/Contact';
 import HowItWorks from '@/pages/public/HowItWorks';
 import Sponsors from '@/pages/public/Sponsors';
+import { PublicTeamProfile } from '@/pages/public/PublicTeamProfile';
+import { PublicPlayerProfile } from '@/pages/public/PublicPlayerProfile';
 import { DashboardHome } from '@/pages/dashboard/DashboardHome';
 import Players from '@/pages/dashboard/Players';
 import Teams from '@/pages/dashboard/Teams';
@@ -100,6 +102,14 @@ export const router = createBrowserRouter([
             {
                 path: '/media/matches/:matchId',
                 element: <MediaPortal />,
+            },
+            {
+                path: '/teams/:id',
+                element: <PublicTeamProfile />,
+            },
+            {
+                path: '/players/:id',
+                element: <PublicPlayerProfile />,
             },
         ],
     },

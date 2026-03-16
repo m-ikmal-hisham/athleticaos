@@ -113,7 +113,7 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                                             </td>
                                             <td className="px-3 py-4">
                                                 <Link 
-                                                    to={`/dashboard/teams/${team.teamId}`} 
+                                                    to={`/teams/${team.teamId}`} 
                                                     className="flex items-center gap-4 group/link"
                                                 >
                                                     {/* Transparent Logo Placeholder */}

@@ -77,7 +77,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                             <div 
                                 key={team.teamId} 
                                 className="flex items-center justify-between p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/5 hover:bg-white/50 dark:hover:bg-white/10 transition-colors cursor-pointer group"
-                                onClick={() => navigate(`/dashboard/teams/${team.teamId}`)}
+                                onClick={() => navigate(`/teams/${team.teamId}`)}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm
@@ -113,7 +113,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                             <div 
                                 key={player.playerId} 
                                 className="flex items-center gap-4 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/10 hover:bg-white/40 dark:hover:bg-white/10 transition-colors cursor-pointer group"
-                                onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
+                                onClick={() => navigate(`/players/${player.playerId}`)}
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-skin-base truncate">{player.name}</div>
@@ -149,7 +149,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 <div 
                                     key={player.playerId} 
                                     className="flex items-center justify-between text-sm p-2 -mx-2 rounded-lg hover:bg-white/30 dark:hover:bg-white/5 transition-colors cursor-pointer group"
-                                    onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
+                                    onClick={() => navigate(`/players/${player.playerId}`)}
                                 >
                                     <div className="truncate pr-2">
                                         <div className="font-medium text-skin-base">{player.name}</div>

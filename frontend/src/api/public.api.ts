@@ -187,3 +187,61 @@ export const publicTournamentApi = {
         return response.data;
     },
 };
+export interface PublicPlayerSummary {
+    id: string;
+    firstName: string;
+    lastName: string;
+    idType: string;
+    idNumber: string;
+    dateOfBirth?: string;
+    position?: string;
+    position2?: string;
+    profilePictureUrl?: string;
+}
+
+export interface PublicTeamDetailResponse {
+    id: string;
+    name: string;
+    shortName?: string;
+    slug: string;
+    logoUrl?: string;
+    category: string;
+    ageGroup: string;
+    division?: string;
+    state?: string;
+    organisationName?: string;
+    players: PublicPlayerSummary[];
+}
+
+export interface PublicPlayerDetailResponse {
+    id: string;
+    firstName: string;
+    lastName: string;
+    idType: string;
+    idNumber: string;
+    dateOfBirth?: string;
+    gender?: string;
+    country?: string;
+    state?: string;
+    city?: string;
+    bloodGroup?: string;
+    emergencyContactName?: string;
+    emergencyContactNumber?: string;
+    emergencyContactRelationship?: string;
+    position?: string;
+    position2?: string;
+    profilePictureUrl?: string;
+    currentTeamName?: string;
+    currentTeamId?: string;
+}
+
+export const publicProfileApi = {
+    getTeam: async (idOrSlug: string): Promise<PublicTeamDetailResponse> => {
+        const response = await publicApi.get(`/teams/${idOrSlug}`);
+        return response.data;
+    },
+    getPlayer: async (idOrSlug: string): Promise<PublicPlayerDetailResponse> => {
+        const response = await publicApi.get(`/players/${idOrSlug}`);
+        return response.data;
+    }
+};
