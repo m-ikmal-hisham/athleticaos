@@ -187,6 +187,9 @@ export const CreateOrganisation = () => {
                                     value={formData.orgLevel}
                                     onChange={(value) => setFormData({ ...formData, orgLevel: value as any })}
                                     options={[
+                                        { value: 'WORLD', label: 'World' },
+                                        { value: 'CONTINENTAL', label: 'Continental' },
+                                        { value: 'REGIONAL', label: 'Regional' },
                                         { value: 'COUNTRY', label: 'Country' },
                                         { value: 'STATE', label: 'State' },
                                         { value: 'DIVISION', label: 'Division' },

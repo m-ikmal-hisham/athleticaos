@@ -13,6 +13,8 @@ export const createTeam = (payload: {
     organisationId: string;
 }) => api.post("/teams", payload);
 
+export const createBulkTeams = (payload: any[]) => api.post("/teams/bulk", payload);
+
 export const updateTeam = (id: string, payload: {
     name?: string;
     category?: string;

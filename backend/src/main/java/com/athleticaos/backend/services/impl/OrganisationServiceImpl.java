@@ -121,6 +121,14 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Transactional
+    public List<OrganisationResponse> createBulkOrganisations(List<OrganisationCreateRequest> requests) {
+        log.info("Creating bulk organisations: {} items", requests.size());
+        return requests.stream()
+                .map(this::createOrganisation)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     @SuppressWarnings("null")
     public OrganisationResponse updateOrganisation(UUID id, OrganisationUpdateRequest request) {
         log.info("Updating organisation: {}", id);
@@ -357,9 +365,24 @@ public class OrganisationServiceImpl implements OrganisationService {
             return;
 
         switch (level) {
-            case COUNTRY -> {
+            case WORLD -> {
                 if (parent != null) {
-                    throw new IllegalArgumentException("COUNTRY may not have a parent organisation.");
+                    throw new IllegalArgumentException("WORLD may not have a parent organisation.");
+                }
+            }
+            case CONTINENTAL -> {
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.WORLD) {
+                    throw new IllegalArgumentException("CONTINENTAL may only have a WORLD organisation as parent.");
+                }
+            }
+            case REGIONAL -> {
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.CONTINENTAL && parent.getOrgLevel() != OrganisationLevel.WORLD) {
+                    throw new IllegalArgumentException("REGIONAL may only have a CONTINENTAL or WORLD organisation as parent.");
+                }
+            }
+            case COUNTRY -> {
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.REGIONAL && parent.getOrgLevel() != OrganisationLevel.CONTINENTAL && parent.getOrgLevel() != OrganisationLevel.WORLD) {
+                    throw new IllegalArgumentException("COUNTRY may only have a REGIONAL, CONTINENTAL or WORLD organisation as parent.");
                 }
             }
             case STATE -> {

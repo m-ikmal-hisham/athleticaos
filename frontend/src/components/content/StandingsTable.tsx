@@ -94,7 +94,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                     <tr>
                                         <th className="px-4 py-3 text-left w-12">Pos</th>
                                         <SortableHeader field="teamName" label="Team" align="left" />
-                                        <SortableHeader field="played" label="Pwd" />
+                                        <SortableHeader field="played" label="PLD" />
                                         <SortableHeader field="won" label="W" />
                                         <SortableHeader field="drawn" label="D" />
                                         <SortableHeader field="lost" label="L" />

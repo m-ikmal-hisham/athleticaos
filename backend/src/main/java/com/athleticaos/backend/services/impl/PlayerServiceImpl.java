@@ -203,6 +203,15 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
+    public List<PlayerResponse> createBulkPlayers(List<PlayerCreateRequest> requests) {
+        log.info("Creating bulk players: {} items", requests.size());
+        return requests.stream()
+                .map(this::createPlayer)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
     @SuppressWarnings("deprecation")
     public PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request) {
         log.info("Updating player: {}", id);

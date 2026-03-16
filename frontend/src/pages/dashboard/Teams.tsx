@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { SearchableSelect } from "../../components/SearchableSelect";
-import { deleteTeam } from "../../api/teams.api";
+import { deleteTeam, createBulkTeams } from "../../api/teams.api";
+import { BulkUploadModal } from "../../components/modals/BulkUploadModal";
 import { useNavigate } from "react-router-dom";
 import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
@@ -29,6 +30,9 @@ export default function Teams() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Bulk upload state
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
     const {
         filteredTeams,
@@ -83,6 +87,11 @@ export default function Teams() {
         navigate('/dashboard/teams/new');
     };
 
+    const handleUpload = async (data: any[]) => {
+        await createBulkTeams(data);
+        await getTeams();
+    };
+
     const handleEdit = (e: React.MouseEvent, teamId: string) => {
         e.stopPropagation();
         navigate(`/dashboard/teams/${teamId}/edit`);
@@ -128,10 +137,16 @@ export default function Teams() {
                 description="Manage rugby teams and squads"
                 action={
                     isAdmin && (
-                        <Button onClick={handleAdd} className="gap-2">
-                            <Plus className="w-4 h-4" />
-                            Add Team
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setUploadModalOpen(true)} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Bulk Upload
+                            </Button>
+                            <Button onClick={handleAdd} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Add Team
+                            </Button>
+                        </div>
                     )
                 }
             />
@@ -290,6 +305,15 @@ export default function Teams() {
                 title="Delete Team"
                 message={`Are you sure you want to delete "${teamToDelete?.name}"? This action cannot be undone.`}
                 isDeleting={isDeleting}
+            />
+
+            <BulkUploadModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                title="Bulk Upload Teams"
+                expectedColumns={["name", "category", "ageGroup", "organisationId"]}
+                onUpload={handleUpload}
+                sampleCsvHeader="name,category,ageGroup,division,state,organisationId\nExample Rugby Club,Men,Senior,Div 1,Selangor,UUID-HERE"
             />
         </div>
     );

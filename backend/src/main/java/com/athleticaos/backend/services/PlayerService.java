@@ -14,6 +14,8 @@ public interface PlayerService {
 
     PlayerResponse createPlayer(PlayerCreateRequest request);
 
+    List<PlayerResponse> createBulkPlayers(List<PlayerCreateRequest> requests);
+
     PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request);
 
     PlayerResponse toggleStatus(UUID id);

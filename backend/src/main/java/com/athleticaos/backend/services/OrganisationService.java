@@ -14,6 +14,8 @@ public interface OrganisationService {
 
     OrganisationResponse createOrganisation(OrganisationCreateRequest request);
 
+    List<OrganisationResponse> createBulkOrganisations(List<OrganisationCreateRequest> requests);
+
     OrganisationResponse updateOrganisation(UUID id, OrganisationUpdateRequest request);
 
     List<OrganisationResponse> getCountries();

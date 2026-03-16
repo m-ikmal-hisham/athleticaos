@@ -51,6 +51,16 @@ public class TeamController {
         return ResponseEntity.ok(teamService.createTeam(request, httpRequest));
     }
 
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<TeamResponse>> createBulkTeams(
+            @RequestBody @Valid List<TeamCreateRequest> requests,
+            HttpServletRequest httpRequest) {
+        log.info("Admin creating bulk teams (size: {})", requests.size());
+        List<TeamResponse> responses = teamService.createBulkTeams(requests, httpRequest);
+        return ResponseEntity.ok(responses);
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<TeamResponse> updateTeam(@PathVariable UUID id,

@@ -255,14 +255,15 @@ export const EditTeam = () => {
                                         value={division}
                                         onChange={(value) => setDivision(value as string)}
                                         options={[
-                                            { value: 'Premier', label: 'Premier' },
+                                            { value: 'Super League', label: 'Super League' },
+                                            { value: 'Premier League', label: 'Premier League' },
+                                            { value: 'National Rugby Championship', label: 'National Rugby Championship' },
+                                            { value: 'Super School Rugby', label: 'Super School Rugby' },
+                                            { value: 'Sukma', label: 'Sukma' },
+                                            { value: 'MSSM', label: 'MSSM' },
+                                            { value: 'Club Championship', label: 'Club Championship' },
                                             { value: 'Division 1', label: 'Division 1' },
                                             { value: 'Division 2', label: 'Division 2' },
-                                            { value: 'State League', label: 'State League' },
-                                            { value: 'University', label: 'University / IPT' },
-                                            { value: 'School', label: 'School / MSSM' },
-                                            { value: 'Development', label: 'Development' },
-                                            { value: 'Social', label: 'Social' }
                                         ]}
                                     />
                                 </div>

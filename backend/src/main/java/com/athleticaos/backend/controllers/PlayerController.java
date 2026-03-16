@@ -10,6 +10,7 @@ import com.athleticaos.backend.services.PlayerService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/players")
 @RequiredArgsConstructor
+@Slf4j
 public class PlayerController {
 
     private final PlayerService playerService;
@@ -64,6 +66,16 @@ public class PlayerController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<PlayerResponse>> createBulkPlayers(
+            @RequestBody @Valid List<PlayerCreateRequest> requests,
+            HttpServletRequest httpRequest) {
+        log.info("Admin creating bulk players (size: {})", requests.size());
+        List<PlayerResponse> responses = playerService.createBulkPlayers(requests);
+        return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{idOrSlug}")

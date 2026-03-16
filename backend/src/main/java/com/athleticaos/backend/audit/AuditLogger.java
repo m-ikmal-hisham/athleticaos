@@ -325,6 +325,15 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logBulkAction(String actionType, String entityType, String summary, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType(actionType)
+                                .entityType(entityType)
+                                .entitySummary(summary)
+                                .build();
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== HELPER METHODS ====================
 
         private String getIpAddress(HttpServletRequest request) {

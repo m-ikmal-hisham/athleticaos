@@ -8,7 +8,8 @@ import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
 import { Badge } from "../../components/Badge";
 import { useOrganisationsStore } from "../../store/organisations.store";
-import { getCountries, getStates, getDivisions, getDistricts, Organisation, deleteOrganisation } from "../../api/organisations.api";
+import { getCountries, getStates, getDivisions, getDistricts, Organisation, deleteOrganisation, createBulkOrganisations } from "../../api/organisations.api";
+import { BulkUploadModal } from "../../components/modals/BulkUploadModal";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
 import { formatOrgType } from "../../utils/formatters";
@@ -45,6 +46,9 @@ export default function Organisations() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [orgToDelete, setOrgToDelete] = useState<Organisation | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Bulk upload state
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
     // RBAC: Only Super Admin can delete organisations
     const canDeleteOrg = () => isSuperAdmin;
@@ -160,6 +164,12 @@ export default function Organisations() {
         navigate('/dashboard/organisations/new');
     };
 
+    const handleUpload = async (data: any[]) => {
+        // Map raw CSV data to expected interface if necessary
+        await createBulkOrganisations(data);
+        await getOrganisations(); // Refresh list
+    };
+
     const handleEdit = (e: React.MouseEvent, orgId: string) => {
         e.stopPropagation();
         navigate(`/dashboard/organisations/${orgId}/edit`);
@@ -200,10 +210,16 @@ export default function Organisations() {
                 description="Unions, state associations, clubs and schools"
                 action={
                     isAdmin && (
-                        <Button onClick={handleAdd} className="gap-2">
-                            <Plus className="w-4 h-4" />
-                            Add Organisation
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setUploadModalOpen(true)} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Bulk Upload
+                            </Button>
+                            <Button onClick={handleAdd} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Add Organisation
+                            </Button>
+                        </div>
                     )
                 }
             />
@@ -372,6 +388,15 @@ export default function Organisations() {
                 title="Delete Organisation"
                 message={`Are you sure you want to delete "${orgToDelete?.name}"? This action cannot be undone and will remove all associated data.`}
                 isDeleting={isDeleting}
+            />
+
+            <BulkUploadModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                title="Bulk Upload Organisations"
+                expectedColumns={["name", "orgType", "orgLevel"]}
+                onUpload={handleUpload}
+                sampleCsvHeader="name,orgType,orgLevel,parentOrgId\nExample Rugby Union,Union,COUNTRY,UUID-HERE"
             />
         </div>
     );

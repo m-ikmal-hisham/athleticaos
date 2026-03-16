@@ -138,6 +138,14 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Transactional
+    public List<TeamResponse> createBulkTeams(List<TeamCreateRequest> requests, HttpServletRequest httpRequest) {
+        log.info("Creating bulk teams: {} items", requests.size());
+        return requests.stream()
+                .map(req -> this.createTeam(req, httpRequest))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     @SuppressWarnings("null")
     public TeamResponse updateTeam(UUID id, TeamUpdateRequest request, HttpServletRequest httpRequest) {
         log.info("Updating team: {}", id);

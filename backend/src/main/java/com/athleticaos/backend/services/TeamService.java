@@ -22,6 +22,8 @@ public interface TeamService {
 
     TeamResponse createTeam(TeamCreateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
+    List<TeamResponse> createBulkTeams(List<TeamCreateRequest> requests, jakarta.servlet.http.HttpServletRequest httpRequest);
+
     TeamResponse updateTeam(UUID id, TeamUpdateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
     List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId);

@@ -13,7 +13,8 @@ import { Player } from "../../types";
 import { calculateAge } from "../../utils/date";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { getImageUrl } from "../../utils/image";
-import { deletePlayer } from "../../api/players.api";
+import { deletePlayer, createBulkPlayers } from "../../api/players.api";
+import { BulkUploadModal } from "../../components/modals/BulkUploadModal";
 import toast from "react-hot-toast";
 import { Trash } from "@phosphor-icons/react";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
@@ -40,6 +41,9 @@ export default function Players() {
     const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Bulk upload state
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
     // RBAC: Check if user can delete a specific player
     const canDeletePlayer = (player: Player) => {
         if (isSuperAdmin) return true;
@@ -64,6 +68,11 @@ export default function Players() {
 
     const handleAdd = () => {
         navigate('/dashboard/players/new');
+    };
+
+    const handleUpload = async (data: any[]) => {
+        await createBulkPlayers(data as any[]);
+        await getPlayers();
     };
 
     const handleEdit = (player: Player, e: React.MouseEvent) => {
@@ -117,10 +126,16 @@ export default function Players() {
                 description="Manage all registered rugby players"
                 action={
                     isAdmin && (
-                        <Button onClick={handleAdd} className="gap-2">
-                            <Plus className="w-4 h-4" />
-                            Add Player
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setUploadModalOpen(true)} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Bulk Upload
+                            </Button>
+                            <Button onClick={handleAdd} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Add Player
+                            </Button>
+                        </div>
                     )
                 }
             />
@@ -244,6 +259,15 @@ export default function Players() {
                 title="Delete Player"
                 message={`Are you sure you want to delete "${playerToDelete?.firstName} ${playerToDelete?.lastName}"? This action cannot be undone.`}
                 isDeleting={isDeleting}
+            />
+
+            <BulkUploadModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                title="Bulk Upload Players"
+                expectedColumns={["firstName", "lastName", "dob", "gender", "email", "teamId", "organisationId"]}
+                onUpload={handleUpload}
+                sampleCsvHeader="firstName,lastName,dob,gender,email,teamId,organisationId,nationality,state,medicalNotes\nJohn,Doe,1995-05-12,MALE,john@example.com,UUID-HERE,UUID-HERE,Malaysia,Selangor,"
             />
         </div>
     );

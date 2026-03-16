@@ -10,6 +10,9 @@ export const fetchPlayersByOrganisation = (organisationId: string) =>
 export const createPlayer = (payload: PlayerCreateRequest) =>
     api.post("/players", payload);
 
+export const createBulkPlayers = (payload: PlayerCreateRequest[]) =>
+    api.post("/players/bulk", payload);
+
 export const updatePlayer = (id: string, payload: PlayerUpdateRequest) =>
     api.put(`/players/${id}`, payload);
 

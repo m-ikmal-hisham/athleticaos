@@ -1,6 +1,6 @@
 import api from "./axios";
 
-export type OrganisationLevel = 'COUNTRY' | 'STATE' | 'DIVISION' | 'DISTRICT' | 'CLUB' | 'SCHOOL';
+export type OrganisationLevel = 'WORLD' | 'CONTINENTAL' | 'REGIONAL' | 'COUNTRY' | 'STATE' | 'DIVISION' | 'DISTRICT' | 'CLUB' | 'SCHOOL';
 
 export interface Organisation {
     id: string;
@@ -65,6 +65,8 @@ export const fetchOrganisations = () => api.get<Organisation[]>("/organisations"
 export const getOrganisationById = (id: string) => api.get<Organisation>(`/organisations/${id}`).then(res => res.data);
 
 export const createOrganisation = (data: OrganisationCreateRequest) => api.post<Organisation>("/organisations", data).then(res => res.data);
+
+export const createBulkOrganisations = (data: OrganisationCreateRequest[]) => api.post<Organisation[]>("/organisations/bulk", data).then(res => res.data);
 
 export const updateOrganisation = (id: string, data: OrganisationUpdateRequest) => api.put<Organisation>(`/organisations/${id}`, data).then(res => res.data);
 

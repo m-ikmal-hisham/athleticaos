@@ -58,6 +58,20 @@ public class OrganisationController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<OrganisationResponse>> createBulkOrganisations(
+            @RequestBody @Valid List<OrganisationCreateRequest> requests,
+            HttpServletRequest httpRequest) {
+        log.info("Admin creating bulk organisations (size: {})", requests.size());
+        List<OrganisationResponse> responses = organisationService.createBulkOrganisations(requests);
+        
+        // Audit log for bulk action
+        auditLogger.logBulkAction("BULK_CREATE_ORGANISATIONS", "ORGANISATION", "Bulk imported " + requests.size() + " organisations", httpRequest);
+
+        return ResponseEntity.ok(responses);
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @SuppressWarnings("null")
