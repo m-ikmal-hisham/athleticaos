@@ -436,6 +436,7 @@ export interface MatchCreateRequest {
     pitch?: string;
     matchCode?: string;
     phase?: string;
+    stageId?: string;
     status?: MatchStatus;
     homeTeamPlaceholder?: string;
     awayTeamPlaceholder?: string;

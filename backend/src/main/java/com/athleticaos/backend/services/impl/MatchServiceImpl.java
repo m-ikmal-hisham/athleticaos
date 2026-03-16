@@ -45,6 +45,7 @@ public class MatchServiceImpl implements MatchService {
     private final com.athleticaos.backend.repositories.MediaAssetRepository mediaAssetRepository;
     private final com.athleticaos.backend.repositories.EventRepository eventRepository;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
+    private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -187,6 +188,12 @@ public class MatchServiceImpl implements MatchService {
             throw new IllegalArgumentException("Home team and Away team cannot be the same.");
         }
 
+        com.athleticaos.backend.entities.TournamentStage stage = null;
+        if (request.getStageId() != null) {
+            stage = stageRepository.findById(request.getStageId())
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + request.getStageId()));
+        }
+
         // Basic Scheduling Logic: Check if match date is valid (optional soft rule,
         // keeping it simple for now)
         // We could check if matchDate is within tournament start/end dates here.
@@ -202,6 +209,7 @@ public class MatchServiceImpl implements MatchService {
                 .venue(request.getVenue())
                 .pitch(request.getPitch())
                 .phase(request.getPhase())
+                .stage(stage)
                 .matchCode(request.getMatchCode())
                 .status(MatchStatus.SCHEDULED) // Default status
                 .build();
@@ -232,6 +240,11 @@ public class MatchServiceImpl implements MatchService {
         }
         if (request.getPhase() != null) {
             match.setPhase(request.getPhase());
+        }
+        if (request.getStageId() != null) {
+            com.athleticaos.backend.entities.TournamentStage stage = stageRepository.findById(request.getStageId())
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + request.getStageId()));
+            match.setStage(stage);
         }
         if (request.getMatchCode() != null) {
             match.setMatchCode(request.getMatchCode());
@@ -332,8 +345,16 @@ public class MatchServiceImpl implements MatchService {
                 .status(match.getStatus().name())
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
-                .phase(match.getPhase())
+                .phase(match.getPhase() != null ? match.getPhase() : (match.getStage() != null ? match.getStage().getName() : null))
                 .matchCode(match.getMatchCode());
+
+        if (match.getStage() != null) {
+            builder.stage(MatchResponse.StageInfo.builder()
+                    .id(match.getStage().getId().toString())
+                    .name(match.getStage().getName())
+                    .stageType(match.getStage().getStageType() != null ? match.getStage().getStageType().name() : null)
+                    .build());
+        }
 
         // Populate lineup configuration from tournament format config
         if (match.getTournament() != null) {

@@ -63,6 +63,7 @@ export const createMatch = (data: {
     kickOffTime: string;
     venue: string;
     description?: string;
+    stageId?: string;
 }) => {
     return api.post("/matches", data);
 };

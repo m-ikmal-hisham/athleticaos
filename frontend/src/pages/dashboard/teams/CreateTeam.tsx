@@ -191,6 +191,7 @@ export const CreateTeam = () => {
                                             { value: 'U14', label: 'Under 14' },
                                             { value: 'U15', label: 'Under 15' },
                                             { value: 'U16', label: 'Under 16' },
+                                            { value: 'U17', label: 'Under 17' },
                                             { value: 'U18', label: 'Under 18' },
                                             { value: 'U19', label: 'Under 19' },
                                             { value: 'U20', label: 'Under 20' },

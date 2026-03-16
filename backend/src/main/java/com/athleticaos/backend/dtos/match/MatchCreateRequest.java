@@ -20,6 +20,7 @@ public class MatchCreateRequest {
 
     private UUID homeTeamId;
     private UUID awayTeamId;
+    private UUID stageId;
 
     private String homeTeamPlaceholder;
     private String awayTeamPlaceholder;

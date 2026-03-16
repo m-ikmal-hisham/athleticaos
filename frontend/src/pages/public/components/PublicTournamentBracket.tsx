@@ -11,9 +11,10 @@ interface PublicTournamentBracketProps {
 // Groups matches by knockout stage name
 export function PublicTournamentBracket({ matches }: PublicTournamentBracketProps) {
     const bracketMatches = useMemo(() => {
-        // Filter out pool matches usually
+        // Filter out pool matches and unassigned matches
         return matches.filter(m => {
-            const stage = m.stage?.toLowerCase() || '';
+            if (!m.stage) return false;
+            const stage = m.stage.toLowerCase();
             return !stage.includes('pool') && !stage.includes('group');
         });
     }, [matches]);

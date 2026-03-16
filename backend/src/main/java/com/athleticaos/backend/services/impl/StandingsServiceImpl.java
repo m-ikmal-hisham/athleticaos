@@ -78,8 +78,8 @@ public class StandingsServiceImpl implements StandingsService {
                 continue;
             }
 
-            // Consider only Completed matches for points
-            if (match.getStatus() != MatchStatus.COMPLETED) {
+            // Consider Completed and Ongoing matches for points
+            if (match.getStatus() != MatchStatus.COMPLETED && match.getStatus() != MatchStatus.ONGOING) {
                 continue;
             }
 

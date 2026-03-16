@@ -5,7 +5,7 @@ import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Info } from '@phosphor-icons/react';
-import { fetchTournaments, getTournamentTeams } from '@/api/tournaments.api';
+import { fetchTournaments, getTournamentTeams, getTournamentBracket } from '@/api/tournaments.api';
 import { createMatch, updateMatch } from '@/api/matches.api';
 import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
 import { Team, Match, Tournament } from '@/types';
@@ -31,7 +31,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         awayTeamId: '',
         matchDate: '',
         kickOffTime: '',
-        venue: ''
+        venue: '',
+        stageId: ''
     });
 
     useEffect(() => {
@@ -44,7 +45,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     awayTeamId: initialMatch.awayTeamId || '',
                     matchDate: initialMatch.matchDate || '',
                     kickOffTime: initialMatch.kickOffTime || '',
-                    venue: initialMatch.venue || ''
+                    venue: initialMatch.venue || '',
+                    stageId: initialMatch.stage?.id || ''
                 });
             } else {
                 // Reset form in create mode
@@ -54,7 +56,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     awayTeamId: '',
                     matchDate: '',
                     kickOffTime: '',
-                    venue: ''
+                    venue: '',
+                    stageId: ''
                 });
             }
 
@@ -95,6 +98,30 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         loadTeams();
     }, [formData.tournamentId]);
 
+    // Fetch stages when tournamentId changes
+    const [stages, setStages] = useState<{id: string, name: string}[]>([]);
+    useEffect(() => {
+        const loadStages = async () => {
+            if (!formData.tournamentId) {
+                setStages([]);
+                return;
+            }
+
+            try {
+                const res = await getTournamentBracket(formData.tournamentId);
+                const bracketStages = res.data?.stages?.map((s: any) => ({
+                    id: s.stage.id,
+                    name: s.stage.name
+                })) || [];
+                setStages(bracketStages);
+            } catch (error) {
+                console.error("Failed to load tournament bracket stages", error);
+                setStages([]);
+            }
+        };
+        loadStages();
+    }, [formData.tournamentId]);
+
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
@@ -109,11 +136,12 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 await updateMatch(initialMatch.id, {
                     matchDate: formData.matchDate,
                     kickOffTime: formData.kickOffTime,
-                    venue: formData.venue
+                    venue: formData.venue,
+                    stageId: formData.stageId || undefined
                 });
             } else {
                 // Create new match
-                await createMatch(formData);
+                await createMatch({...formData, stageId: formData.stageId || undefined});
             }
             onSuccess();
             onClose();
@@ -258,6 +286,19 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                         value={formData.venue}
                         onChange={(e) => handleChange('venue', e.target.value)}
                         required
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Stage (Optional)</Label>
+                    <SearchableSelect
+                        value={formData.stageId}
+                        onChange={(value) => handleChange('stageId', value as string)}
+                        options={[
+                            { value: '', label: 'Unassigned' },
+                            ...stages.map(s => ({ value: s.id, label: s.name }))
+                        ]}
+                        placeholder="Select stage"
                     />
                 </div>
 
