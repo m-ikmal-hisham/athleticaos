@@ -20,6 +20,7 @@ public class OrganisationCreateRequest {
     private String orgType;
 
     private UUID parentOrgId;
+    private String state;
     private String addressLine1;
     private String addressLine2;
     private String postcode;

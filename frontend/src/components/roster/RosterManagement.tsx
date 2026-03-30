@@ -11,11 +11,12 @@ interface RosterManagementProps {
     tournamentId: string;
     teamId: string;
     teamName: string;
+    organisationLevel?: string;
     isModalOpen: boolean;
     onModalClose: () => void;
 }
 
-export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClose }: RosterManagementProps) {
+export function RosterManagement({ tournamentId, teamId, organisationLevel, isModalOpen, onModalClose }: RosterManagementProps) {
     const [roster, setRoster] = useState<TournamentPlayerDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -86,9 +87,10 @@ export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClo
                 <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 shadow-sm">
                         <tr className="border-b border-slate-200 dark:border-slate-700">
-                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[30%]">Player</th>
-                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[15%]">Number</th>
-                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[25%]">Eligibility</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[25%]">Player</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[10%]">Number</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[15%]">Position</th>
+                            <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[20%]">Eligibility</th>
                             <th className="py-3 px-4 whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[20%]">Status</th>
                             <th className="py-3 px-4 text-right whitespace-nowrap bg-slate-50 dark:bg-slate-800/50 w-[10%]">Actions</th>
                         </tr>
@@ -105,6 +107,7 @@ export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClo
                                 <tr key={player.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                     <td className="py-3 px-4 font-medium">{player.playerName}</td>
                                     <td className="py-3 px-4">{player.playerNumber || '-'}</td>
+                                    <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">{player.position || '-'}</td>
                                     <td className="py-3 px-4">
                                         {player.isEligible ? (
                                             <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
@@ -159,6 +162,7 @@ export function RosterManagement({ tournamentId, teamId, isModalOpen, onModalClo
                     onClose={onModalClose}
                     onConfirm={handleAddPlayers}
                     teamId={teamId}
+                    organisationLevel={organisationLevel}
                     existingPlayerIds={roster.map(p => p.playerId)}
                 />
             )}

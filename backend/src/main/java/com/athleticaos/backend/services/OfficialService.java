@@ -1,32 +1,32 @@
 package com.athleticaos.backend.services;
 
-import com.athleticaos.backend.entities.MatchOfficial;
-import com.athleticaos.backend.entities.OfficialRegistry;
+import com.athleticaos.backend.dtos.official.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public interface OfficialService {
 
         // Registry Management
-        OfficialRegistry registerOfficial(UUID userId, String accreditationLevel, String primaryRole,
-                        String badgeNumber,
-                        LocalDateTime expiryDate);
+        OfficialRegistryDTO registerOfficial(RegisterOfficialRequest request);
 
-        OfficialRegistry updateOfficial(UUID officialId, String accreditationLevel, String primaryRole,
-                        LocalDateTime expiryDate);
+        OfficialRegistryDTO updateOfficial(UUID officialId, RegisterOfficialRequest request);
 
-        List<OfficialRegistry> getAllOfficials();
+        List<OfficialRegistryDTO> getAllOfficials();
 
-        OfficialRegistry getOfficialById(UUID officialId);
+        OfficialRegistryDTO getOfficialById(UUID officialId);
 
-        // Assignment Management
-        MatchOfficial assignOfficialToMatch(UUID matchId, UUID officialId, String role);
+        // Match Assignment Management
+        MatchOfficialDTO assignOfficialToMatch(UUID matchId, AssignOfficialRequest request);
 
         void removeOfficialFromMatch(UUID assignmentId);
 
-        List<MatchOfficial> getOfficialsForMatch(UUID matchId);
+        List<MatchOfficialDTO> getOfficialsForMatch(UUID matchId);
 
-        List<MatchOfficial> getOfficialHistory(UUID officialId);
+        // Tournament Official Panel Management
+        TournamentOfficialDTO addOfficialToTournament(UUID tournamentId, AddTournamentOfficialRequest request);
+
+        void removeOfficialFromTournament(UUID tournamentOfficialId);
+
+        List<TournamentOfficialDTO> getTournamentOfficials(UUID tournamentId);
 }

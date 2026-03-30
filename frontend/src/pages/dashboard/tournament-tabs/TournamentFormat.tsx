@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Gear, Play, FloppyDisk, Layout, Question, Trophy } from '@phosphor-icons/react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tournamentService } from '@/services/tournamentService';
@@ -236,14 +236,14 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         });
     };
 
-    const handleAssignTeam = async (teamId: string, poolName: string | null) => {
+    const handleAssignTeam = async (teamId: string, poolName: string | null, poolSlot?: number | null) => {
         try {
             // Optimistic update
             setTeams(prevTeams => prevTeams.map(t =>
-                t.id === teamId ? { ...t, poolNumber: poolName || undefined } : t
+                t.id === teamId ? { ...t, poolNumber: poolName || undefined, poolSlot: poolSlot || undefined } : t
             ));
 
-            await tournamentService.updateTeamPool(tournamentId, teamId, poolName);
+            await tournamentService.updateTeamPool(tournamentId, teamId, poolName, poolSlot);
         } catch (error) {
             console.error('Failed to assign team', error);
             showToast.error('Failed to move team. Please retry.');
@@ -252,6 +252,29 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
             setTeams(latest);
         }
     };
+
+    const hasEmptyPools = useMemo(() => {
+        if (config.formatType === 'KNOCKOUT') {
+            // For KNOCKOUT, check if there are any relevant teams
+            const relevantTeams = teams.filter(t => !selectedCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned');
+            return relevantTeams.length === 0;
+        }
+
+        const poolStages = stages.filter(s => s.stageType === 'POOL' || s.name.toLowerCase().includes('pool'));
+        
+        // If there are no pools built yet, it is considered empty
+        if (poolStages.length === 0) return true;
+
+        // Check if ANY pool has no teams assigned
+        for (const pool of poolStages) {
+             const teamsInPool = teams.filter(t => t.poolNumber === pool.name);
+             if (teamsInPool.length === 0) {
+                 return true;
+             }
+        }
+        
+        return false;
+    }, [stages, teams, selectedCategoryId, config.formatType]);
 
     if (loading && !config.id) {
         return <div className="p-8 text-center text-muted-foreground">Loading format configuration...</div>;
@@ -583,10 +606,11 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                         </div>
                         <Button
                             onClick={handleGenerateMatches}
-                            disabled={loading || generating || stages.length === 0}
+                            disabled={loading || generating || stages.length === 0 || hasEmptyPools}
                             variant="primary"
                             size="lg"
                             className="flex items-center gap-2"
+                            title={hasEmptyPools ? "Please assign at least one team to every pool before generating matches" : ""}
                         >
                             <Play className="w-4 h-4" />
                             {generating ? 'Generating Matches...' : 'Generate Matches'}

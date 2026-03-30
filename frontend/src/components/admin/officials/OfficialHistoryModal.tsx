@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { getOfficialHistory, MatchOfficial } from '@/api/officials.api';
 import { Modal } from '@/components/Modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { Badge } from '@/components/Badge';
 import { CalendarBlank, MapPin } from '@phosphor-icons/react';
+import api from '@/api/axios';
 
 interface OfficialHistoryModalProps {
     isOpen: boolean;
@@ -12,8 +12,23 @@ interface OfficialHistoryModalProps {
     officialName: string;
 }
 
+interface HistoryEntry {
+    id: string;
+    assignedRole: string;
+    officialRoleName?: string;
+    isConfirmed: boolean;
+    match?: {
+        homeTeamName?: string;
+        awayTeamName?: string;
+        matchDate?: string;
+        kickOffTime?: string;
+        venue?: string;
+        status?: string;
+    };
+}
+
 export const OfficialHistoryModal: React.FC<OfficialHistoryModalProps> = ({ isOpen, onClose, officialId, officialName }) => {
-    const [history, setHistory] = useState<MatchOfficial[]>([]);
+    const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -25,13 +40,17 @@ export const OfficialHistoryModal: React.FC<OfficialHistoryModalProps> = ({ isOp
     const loadHistory = async (id: string) => {
         setLoading(true);
         try {
-            const data = await getOfficialHistory(id);
-            setHistory(data);
+            const response = await api.get(`/officials/${id}/history`);
+            setHistory(response.data);
         } catch (error) {
             console.error("Failed to load history", error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const formatRoleName = (name: string) => {
+        return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     };
 
     return (
@@ -91,7 +110,11 @@ export const OfficialHistoryModal: React.FC<OfficialHistoryModalProps> = ({ isOp
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">{assignment.assignedRole}</Badge>
+                                                <Badge variant="outline">
+                                                    {assignment.officialRoleName
+                                                        ? formatRoleName(assignment.officialRoleName)
+                                                        : formatRoleName(assignment.assignedRole)}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant={match?.status === 'COMPLETED' ? 'secondary' : 'default'} className="text-xs">

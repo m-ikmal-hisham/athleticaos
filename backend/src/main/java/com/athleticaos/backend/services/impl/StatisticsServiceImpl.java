@@ -434,10 +434,16 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         }
 
                                         int duration = 80; // Default
-                                        if (match.getTournament() != null
-                                                        && match.getTournament().getFormatConfig() != null) {
-                                                duration = match.getTournament().getFormatConfig()
-                                                                .getMatchDurationMinutes();
+                                        if (match.getTournament() != null) {
+                                                UUID catId = (match.getStage() != null && match.getStage().getCategory() != null)
+                                                                ? match.getStage().getCategory().getId()
+                                                                : (match.getCategory() != null ? match.getCategory().getId()
+                                                                                : null);
+                                                com.athleticaos.backend.entities.TournamentFormatConfig config = match
+                                                                .getTournament().getFormatConfig(catId);
+                                                if (config != null) {
+                                                        duration = config.getMatchDurationMinutes();
+                                                }
                                         }
 
                                         int minutesPlayedVal = calculateMinutesPlayed(match, playerId, lineup.getRole(),

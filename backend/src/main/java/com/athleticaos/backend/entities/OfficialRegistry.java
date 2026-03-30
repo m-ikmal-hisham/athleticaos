@@ -19,8 +19,16 @@ public class OfficialRegistry {
     private UUID id;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "person_id")
+    private Person person;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organisation_id")
+    private Organisation organisation;
 
     @Column(nullable = false)
     private String accreditationLevel; // e.g., "LEVEL_1", "FIFA", "WORLD_RUGBY_L2"
@@ -36,6 +44,9 @@ public class OfficialRegistry {
     @Column(columnDefinition = "boolean default true")
     @Builder.Default
     private boolean isActive = true;
+
+    @Column(name = "is_world_rugby_certified")
+    private boolean isWorldRugbyCertified;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

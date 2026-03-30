@@ -25,4 +25,5 @@ public class TournamentPlayerDTO {
     private boolean hasActiveSuspension;
     private String suspensionReason;
     private Integer suspensionMatchesRemaining;
+    private String position;
 }

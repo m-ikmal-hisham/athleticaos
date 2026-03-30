@@ -30,4 +30,7 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
             @org.springframework.data.repository.query.Param("id") UUID id);
 
     long countByDeletedFalse();
+
+    @org.springframework.data.jpa.repository.Query("SELECT p.person.id FROM Player p WHERE p.deleted = false")
+    java.util.Set<UUID> findAllPersonIds();
 }

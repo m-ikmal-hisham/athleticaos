@@ -11,6 +11,8 @@ import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import com.athleticaos.backend.entities.OrganisationPerson;
 import com.athleticaos.backend.services.PlayerService;
 import com.athleticaos.backend.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -35,6 +37,7 @@ public class PlayerServiceImpl implements PlayerService {
     private final UserService userService;
     private final PlayerTeamRepository playerTeamRepository;
     private final TeamRepository teamRepository;
+    private final OrganisationPersonRepository organisationPersonRepository;
     private final com.athleticaos.backend.services.OrganisationService organisationService;
 
     @Override
@@ -426,6 +429,18 @@ public class PlayerServiceImpl implements PlayerService {
                 .build();
 
         playerTeamRepository.save(playerTeam);
+
+        // Auto-link person to organisation
+        if (team.getOrganisation() != null) {
+            if (!organisationPersonRepository.existsByOrganisationIdAndPersonId(team.getOrganisation().getId(), player.getPerson().getId())) {
+                OrganisationPerson op = OrganisationPerson.builder()
+                        .organisation(team.getOrganisation())
+                        .person(player.getPerson())
+                        .build();
+                organisationPersonRepository.save(op);
+            }
+        }
+
         log.info("Assigned player {} to team {}", player.getId(), team.getId());
     }
 

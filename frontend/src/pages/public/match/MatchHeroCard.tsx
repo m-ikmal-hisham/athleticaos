@@ -8,7 +8,7 @@ import {
 import { PublicMatchDetail } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
 import { getImageUrl } from '@/utils/image';
-import { formatEnum } from '@/utils/formatters';
+import { formatEnum, formatTeamShortName } from '@/utils/formatters';
 
 interface MatchHeroCardProps {
     match: PublicMatchDetail;
@@ -150,7 +150,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
                         <div className="w-full">
                             <h2 className="text-sm sm:text-lg md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
-                                {match.homeTeamShortName || match.homeTeamName}
+                                {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
                             </h2>
                             {match.homeTeamShortName && (
                                 <p className="hidden md:block text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
@@ -210,7 +210,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
                         <div className="w-full">
                             <h2 className="text-sm sm:text-lg md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
-                                {match.awayTeamShortName || match.awayTeamName}
+                                {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
                             </h2>
                             {match.awayTeamShortName && (
                                 <p className="hidden md:block text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
@@ -221,6 +221,20 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="h-0.5 md:h-1 w-8 md:w-12 bg-red-500 rounded-full opacity-80 md:mr-0 mt-1" />
                     </div>
                 </div>
+
+                {/* Match Officials */}
+                {match.officials && match.officials.length > 0 && (
+                    <div className="flex justify-center pt-2 md:pt-4">
+                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
+                            {match.officials.map((official, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{official.officialRoleName}:</span>
+                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{official.officialName}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Meta Details Footer */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/50 dark:border-white/5">

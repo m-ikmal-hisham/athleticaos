@@ -68,6 +68,9 @@ public class TournamentPlayer {
         @Column(name = "tournament_jersey_number")
         private Integer tournamentJerseyNumber;
 
+        @Column(name = "position")
+        private String position;
+
         @CreationTimestamp
         @Column(name = "created_at", nullable = false, updatable = false)
         private LocalDateTime createdAt;

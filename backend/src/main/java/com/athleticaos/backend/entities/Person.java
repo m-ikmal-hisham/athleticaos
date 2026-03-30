@@ -77,4 +77,15 @@ public class Person {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "national_player_status")
+    @Builder.Default
+    private String nationalPlayerStatus = "NONE";
+
+    @Column(name = "user_id")
+    private UUID userId;
+
+    @Column(name = "is_staff")
+    @Builder.Default
+    private Boolean isStaff = false;
 }

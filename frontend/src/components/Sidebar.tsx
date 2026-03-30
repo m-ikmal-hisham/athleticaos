@@ -54,6 +54,12 @@ const navItems: NavItem[] = [
         roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
     },
     {
+        label: 'People',
+        path: '/dashboard/people',
+        icon: <Users className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+    },
+    {
         label: 'Federation',
         path: '/dashboard/federation/dashboard',
         icon: <Buildings className="w-5 h-5" />,

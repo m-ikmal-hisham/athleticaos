@@ -33,4 +33,8 @@ public interface OrganisationService {
     Object getTree(UUID countryId);
 
     void deleteOrganisation(UUID id);
+
+    com.athleticaos.backend.dtos.team.PersonSummaryDTO registerPerson(UUID organisationId, com.athleticaos.backend.dtos.person.RegisterPersonRequest request);
+
+    List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getPersonsByOrganisation(UUID organisationId);
 }

@@ -36,8 +36,8 @@ export const tournamentService = {
         return response.data;
     },
 
-    async addTeams(id: string, teamIds: string[]): Promise<void> {
-        await axios.post(`/tournaments/${id}/teams`, { teamIds });
+    async addTeams(id: string, teamIds: string[], categoryId?: string): Promise<void> {
+        await axios.post(`/tournaments/${id}/teams`, { teamIds, categoryId });
     },
 
     async removeTeam(id: string, teamId: string): Promise<void> {
@@ -110,9 +110,9 @@ export const tournamentService = {
         return response.data;
     },
 
-    async updateTeamPool(id: string, teamId: string, poolNumber: string | null): Promise<void> {
+    async updateTeamPool(id: string, teamId: string, poolNumber: string | null, poolSlot?: number | null): Promise<void> {
         await axios.patch(`/tournaments/${id}/teams/${teamId}/pool`, null, {
-            params: { poolNumber }
+            params: { poolNumber, poolSlot }
         });
     },
 

@@ -14,4 +14,5 @@ import java.util.UUID;
 @NoArgsConstructor
 public class TeamListRequest {
     private List<UUID> teamIds;
+    private UUID categoryId;
 }

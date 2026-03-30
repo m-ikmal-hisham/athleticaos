@@ -9,7 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface MatchRepository extends JpaRepository<Match, UUID> {
-        List<Match> findByTournamentId(UUID tournamentId);
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.tournament.id = :tournamentId AND m.deleted = false")
+        List<Match> findByTournamentId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m " +
                         "LEFT JOIN FETCH m.homeTeam " +
@@ -20,16 +21,21 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         List<Match> findByTournamentIdWithTeams(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
-        List<Match> findByStageId(UUID stageId);
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.stage.id = :stageId AND m.deleted = false")
+        List<Match> findByStageId(@org.springframework.data.repository.query.Param("stageId") UUID stageId);
 
         // Find matches where the team is either home or away
-        List<Match> findByHomeTeamIdOrAwayTeamId(UUID homeTeamId, UUID awayTeamId);
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE (m.homeTeam.id = :homeTeamId OR m.awayTeam.id = :awayTeamId) AND m.deleted = false")
+        List<Match> findByHomeTeamIdOrAwayTeamId(@org.springframework.data.repository.query.Param("homeTeamId") UUID homeTeamId, @org.springframework.data.repository.query.Param("awayTeamId") UUID awayTeamId);
 
-        List<Match> findByTournamentIdAndStatus(UUID tournamentId, com.athleticaos.backend.enums.MatchStatus status);
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.tournament.id = :tournamentId AND m.status = :status AND m.deleted = false")
+        List<Match> findByTournamentIdAndStatus(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 
-        List<Match> findByStatus(com.athleticaos.backend.enums.MatchStatus status);
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.status = :status AND m.deleted = false")
+        List<Match> findByStatus(@org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 
-        long countByStatus(com.athleticaos.backend.enums.MatchStatus status);
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.status = :status AND m.deleted = false")
+        long countByStatus(@org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 
         @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
                         "LEFT JOIN m.homeTeam ht " +
@@ -109,21 +115,21 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         // m.homeTeam.id FROM Match m WHERE ...) OR t.id IN (SELECT m.awayTeam.id FROM
         // Match m WHERE ...)"
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT t) FROM Team t WHERE " +
-                        "t.id IN (SELECT mh.homeTeam.id FROM Match mh LEFT JOIN mh.stage sh LEFT JOIN sh.category ch WHERE mh.tournament.id = :tournamentId AND (:isCategoryIdNull = true OR ch.id = :categoryId)) OR "
+                        "t.id IN (SELECT mh.homeTeam.id FROM Match mh LEFT JOIN mh.stage sh LEFT JOIN sh.category ch WHERE mh.tournament.id = :tournamentId AND mh.deleted = false AND (:isCategoryIdNull = true OR ch.id = :categoryId)) OR "
                         +
-                        "t.id IN (SELECT ma.awayTeam.id FROM Match ma LEFT JOIN ma.stage sa LEFT JOIN sa.category ca WHERE ma.tournament.id = :tournamentId AND (:isCategoryIdNull = true OR ca.id = :categoryId))")
+                        "t.id IN (SELECT ma.awayTeam.id FROM Match ma LEFT JOIN ma.stage sa LEFT JOIN sa.category ca WHERE ma.tournament.id = :tournamentId AND ma.deleted = false AND (:isCategoryIdNull = true OR ca.id = :categoryId))")
         long countActiveTeamsByTournamentId(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
                         @org.springframework.data.repository.query.Param("categoryId") UUID categoryId,
                         @org.springframework.data.repository.query.Param("isCategoryIdNull") boolean isCategoryIdNull);
 
-        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m LEFT JOIN m.stage s LEFT JOIN s.category c WHERE m.tournament.id = :tournamentId AND (:isCategoryIdNull = true OR c.id = :categoryId)")
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m LEFT JOIN m.stage s LEFT JOIN s.category c WHERE m.tournament.id = :tournamentId AND m.deleted = false AND (:isCategoryIdNull = true OR c.id = :categoryId)")
         long countMatchesByTournamentId(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
                         @org.springframework.data.repository.query.Param("categoryId") UUID categoryId,
                         @org.springframework.data.repository.query.Param("isCategoryIdNull") boolean isCategoryIdNull);
 
-        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m LEFT JOIN m.stage s LEFT JOIN s.category c WHERE m.tournament.id = :tournamentId AND m.status = com.athleticaos.backend.enums.MatchStatus.COMPLETED AND (:isCategoryIdNull = true OR c.id = :categoryId)")
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m LEFT JOIN m.stage s LEFT JOIN s.category c WHERE m.tournament.id = :tournamentId AND m.status = com.athleticaos.backend.enums.MatchStatus.COMPLETED AND m.deleted = false AND (:isCategoryIdNull = true OR c.id = :categoryId)")
         long countCompletedMatchesByTournamentId(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
                         @org.springframework.data.repository.query.Param("categoryId") UUID categoryId,

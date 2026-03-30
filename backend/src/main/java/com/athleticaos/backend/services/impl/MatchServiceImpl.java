@@ -381,7 +381,13 @@ public class MatchServiceImpl implements MatchService {
         if (match.getHomeTeam() != null) {
             builder.homeTeamId(match.getHomeTeam().getId());
             builder.homeTeamName(match.getHomeTeam().getName());
-            builder.homeTeamLogoUrl(match.getHomeTeam().getLogoUrl());
+            
+            String homeLogo = match.getHomeTeam().getLogoUrl();
+            if (homeLogo == null && match.getHomeTeam().getOrganisation() != null) {
+                homeLogo = match.getHomeTeam().getOrganisation().getLogoUrl();
+            }
+            builder.homeTeamLogoUrl(homeLogo);
+            
             builder.homeTeamShortName(match.getHomeTeam().getShortName());
             if (match.getHomeTeam().getOrganisation() != null) {
                 builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
@@ -394,7 +400,13 @@ public class MatchServiceImpl implements MatchService {
         if (match.getAwayTeam() != null) {
             builder.awayTeamId(match.getAwayTeam().getId());
             builder.awayTeamName(match.getAwayTeam().getName());
-            builder.awayTeamLogoUrl(match.getAwayTeam().getLogoUrl());
+            
+            String awayLogo = match.getAwayTeam().getLogoUrl();
+            if (awayLogo == null && match.getAwayTeam().getOrganisation() != null) {
+                awayLogo = match.getAwayTeam().getOrganisation().getLogoUrl();
+            }
+            builder.awayTeamLogoUrl(awayLogo);
+            
             builder.awayTeamShortName(match.getAwayTeam().getShortName());
             if (match.getAwayTeam().getOrganisation() != null) {
                 builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());

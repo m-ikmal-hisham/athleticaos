@@ -79,3 +79,5 @@ export const getDivisions = (stateId: string) => api.get<Organisation[]>(`/organ
 export const getDistricts = (stateId: string) => api.get<Organisation[]>(`/organisations/hierarchy/districts?stateId=${stateId}`).then(res => res.data);
 export const getChildren = (parentId: string) => api.get<Organisation[]>(`/organisations/hierarchy/children?parentId=${parentId}`).then(res => res.data);
 export const getOrganisationTree = (countryId: string) => api.get<OrganisationTreeNode>(`/organisations/hierarchy/tree/${countryId}`).then(res => res.data);
+
+export const registerPerson = (orgId: string, data: any) => api.post(`/organisations/${orgId}/persons`, data).then(res => res.data);

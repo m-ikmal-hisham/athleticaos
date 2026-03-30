@@ -44,7 +44,7 @@ public class PublicProfileController {
                     .name(team.getName())
                     .shortName(team.getShortName())
                     .slug(team.getSlug())
-                    .logoUrl(team.getLogoUrl())
+                    .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(team.getLogoUrl()))
                     .category(team.getCategory())
                     .ageGroup(team.getAgeGroup())
                     .division(team.getDivision())
@@ -79,7 +79,7 @@ public class PublicProfileController {
                     .bloodGroup(null)
                     .position(null)
                     .position2(null)
-                    .profilePictureUrl(player.photoUrl())
+                    .profilePictureUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(player.photoUrl()))
                     .currentTeamName(player.teamNames() != null && !player.teamNames().isEmpty() ? player.teamNames().get(0) : null)
                     .currentTeamId(null)
                     .build();

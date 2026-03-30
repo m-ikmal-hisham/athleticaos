@@ -58,6 +58,13 @@ const navSections: NavSection[] = [
                 iconFilled: <Buildings className="w-5 h-5" weight="fill" />
             },
             {
+                label: 'People',
+                path: '/dashboard/people',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']
+            },
+            {
                 label: 'Competitions',
                 path: '/dashboard/competitions',
                 icon: <Medal className="w-5 h-5" />,

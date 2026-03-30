@@ -39,6 +39,7 @@ import Activity from '@/pages/dashboard/Activity';
 import TournamentRosters from '@/pages/dashboard/TournamentRosters';
 import DashboardTournamentDetail from '@/pages/dashboard/TournamentDetail';
 import BrandingSettings from '@/pages/dashboard/organisations/BrandingSettings';
+import PeopleDirectory from '@/pages/dashboard/PeopleDirectory';
 import { AuthGuard } from '@/routes/AuthGuard';
 import { CreateTeam } from '@/pages/dashboard/teams/CreateTeam';
 import { EditTeam } from '@/pages/dashboard/teams/EditTeam';
@@ -202,6 +203,14 @@ export const router = createBrowserRouter([
             {
                 path: 'organisations/:id/branding',
                 element: <BrandingSettings />,
+            },
+            {
+                path: 'people',
+                element: (
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
+                        <PeopleDirectory />
+                    </AuthGuard>
+                ),
             },
             {
                 path: 'players',

@@ -22,4 +22,5 @@ public class PlayerInTeamDTO {
     private String status;
     private LocalDate joinedDate;
     private Boolean isActive;
+    private String nationalPlayerStatus;
 }

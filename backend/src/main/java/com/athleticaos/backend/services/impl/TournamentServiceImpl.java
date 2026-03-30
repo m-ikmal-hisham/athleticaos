@@ -13,6 +13,7 @@ import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.SeasonRepository;
 import com.athleticaos.backend.repositories.TournamentRepository;
 import com.athleticaos.backend.repositories.TournamentTeamRepository;
+import com.athleticaos.backend.repositories.TournamentStageRepository;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.TournamentService;
 import com.athleticaos.backend.services.UserService;
@@ -44,6 +45,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
     private final com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
     private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository tournamentFormatConfigRepository;
+    private final TournamentStageRepository tournamentStageRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -549,6 +551,10 @@ public class TournamentServiceImpl implements TournamentService {
                         .state(tournamentTeam.getTeam().getState())
                         .state(tournamentTeam.getTeam().getState())
                         .status(tournamentTeam.getTeam().getStatus())
+                        .logoUrl(tournamentTeam.getTeam().getLogoUrl() != null 
+                            ? tournamentTeam.getTeam().getLogoUrl() 
+                            : (tournamentTeam.getTeam().getOrganisation() != null ? tournamentTeam.getTeam().getOrganisation().getLogoUrl() : null))
+                        .shortName(tournamentTeam.getTeam().getShortName())
                         .poolNumber(tournamentTeam.getPoolNumber())
                         .tournamentCategoryId(
                                 tournamentTeam.getCategory() != null ? tournamentTeam.getCategory().getId() : null)
@@ -560,18 +566,27 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional
     @SuppressWarnings("null")
-    public void addTeamsToTournament(UUID tournamentId, List<UUID> teamIds) {
+    public void addTeamsToTournament(UUID tournamentId, List<UUID> teamIds, UUID categoryId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        com.athleticaos.backend.entities.TournamentCategory explicitCategory = null;
+        if (categoryId != null) {
+            explicitCategory = tournament.getCategories().stream()
+                    .filter(c -> c.getId().equals(categoryId))
+                    .findFirst()
+                    .orElseThrow(() -> new EntityNotFoundException("Category not found in this tournament"));
+        }
 
         for (UUID teamId : teamIds) {
             // Fetch the Team entity to access its fields for category matching
             com.athleticaos.backend.entities.Team team = teamRepository.findById(teamId)
                     .orElseThrow(() -> new EntityNotFoundException("Team not found: " + teamId));
 
-            // Auto-assign category if possible
-            com.athleticaos.backend.entities.TournamentCategory assignedCategory = findMatchingCategory(tournament,
-                    team);
+            // Auto-assign category if no explicit category is provided
+            com.athleticaos.backend.entities.TournamentCategory assignedCategory = explicitCategory != null 
+                ? explicitCategory 
+                : findMatchingCategory(tournament, team);
 
             java.util.Optional<com.athleticaos.backend.entities.TournamentTeam> existing = tournamentTeamRepository
                     .findFirstByTournamentIdAndTeamId(tournamentId, teamId);
@@ -585,8 +600,8 @@ public class TournamentServiceImpl implements TournamentService {
                     changed = true;
                 }
 
-                // If category is missing, try to update it
-                if (tt.getCategory() == null && assignedCategory != null) {
+                // Update category if explicit category is provided or if current is missing
+                if (assignedCategory != null && !assignedCategory.equals(tt.getCategory())) {
                     tt.setCategory(assignedCategory);
                     changed = true;
                 }
@@ -736,13 +751,51 @@ public class TournamentServiceImpl implements TournamentService {
 
     @Override
     @Transactional
-    public void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber) {
+    public void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber, Integer poolSlot) {
+        log.info("Updating team pool assignment: Tournament {}, Team {}, Pool {}, Slot {}", 
+            tournamentId, teamId, poolNumber, poolSlot);
+
         com.athleticaos.backend.entities.TournamentTeam tt = tournamentTeamRepository
                 .findFirstByTournamentIdAndTeamId(tournamentId, teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team is not registered for this tournament"));
 
         tt.setPoolNumber(poolNumber);
+        tt.setPoolSlot(poolSlot);
         tournamentTeamRepository.save(tt);
+
+        // Auto-assign logic: Search and replace placeholders in matches
+        if (poolNumber != null && poolSlot != null) {
+            String placeholderMatch = poolNumber + " - Slot " + poolSlot;
+            log.info("Searching for matches with placeholder: '{}' in category {}", 
+                placeholderMatch, tt.getCategory() != null ? tt.getCategory().getId() : "NULL");
+
+            List<Match> matches = matchRepository.findByTournamentId(tournamentId);
+            for (Match match : matches) {
+                boolean updated = false;
+                
+                // Only update if category matches (important for isolation!)
+                UUID matchCategoryId = match.getCategory() != null ? match.getCategory().getId() : null;
+                UUID ttCategoryId = tt.getCategory() != null ? tt.getCategory().getId() : null;
+                
+                if (java.util.Objects.equals(matchCategoryId, ttCategoryId)) {
+                    if (placeholderMatch.equals(match.getHomeTeamPlaceholder())) {
+                        match.setHomeTeam(tt.getTeam());
+                        match.setHomeTeamPlaceholder(null);
+                        updated = true;
+                    }
+                    if (placeholderMatch.equals(match.getAwayTeamPlaceholder())) {
+                        match.setAwayTeam(tt.getTeam());
+                        match.setAwayTeamPlaceholder(null);
+                        updated = true;
+                    }
+                    
+                    if (updated) {
+                        matchRepository.save(match);
+                        log.info("Auto-assigned team {} to match {}", tt.getTeam().getName(), match.getId());
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -786,10 +839,25 @@ public class TournamentServiceImpl implements TournamentService {
             throw new IllegalArgumentException("Both teams must be registered in the tournament");
         }
 
+        com.athleticaos.backend.entities.Team homeTeam = teamRepository.findById(request.getHomeTeamId())
+                .orElseThrow(() -> new EntityNotFoundException("Home team not found"));
+        com.athleticaos.backend.entities.Team awayTeam = teamRepository.findById(request.getAwayTeamId())
+                .orElseThrow(() -> new EntityNotFoundException("Away team not found"));
+
+        com.athleticaos.backend.entities.TournamentStage stage = null;
+        if (request.getStageId() != null) {
+            stage = tournamentStageRepository.findById(request.getStageId())
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+            if (!stage.getTournament().getId().equals(tournamentId)) {
+                throw new IllegalArgumentException("Stage does not belong to this tournament");
+            }
+        }
+
         Match match = Match.builder()
                 .tournament(tournament)
-                .homeTeam(teamRepository.getReferenceById(request.getHomeTeamId()))
-                .awayTeam(teamRepository.getReferenceById(request.getAwayTeamId()))
+                .homeTeam(homeTeam)
+                .awayTeam(awayTeam)
+                .stage(stage)
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
                 .venue(request.getVenue())
@@ -800,25 +868,13 @@ public class TournamentServiceImpl implements TournamentService {
                 .build();
 
         Match savedMatch = matchRepository.save(match);
-        // Map to response - simplified manual mapping for now as Mapper inject might
-        // start a chain of complexity
-        // Assuming we rely on DTOs, let's return a basic response or use a specific
-        // mapper if available.
-        // Actually, we should check if we can reuse an existing mapper or just build
-        // the DTO manually.
         return com.athleticaos.backend.dtos.match.MatchResponse.builder()
                 .id(savedMatch.getId())
                 .tournamentId(savedMatch.getTournament().getId())
                 .homeTeamId(savedMatch.getHomeTeam().getId())
-                .homeTeamName(savedMatch.getHomeTeam().getName()) // Potential Lazy loading issue if not careful, but
-                                                                  // referencedById might not load name.
-                // Getting via Repo.getRefById does not load state. Better to use findById for
-                // teams above if we need names here.
-                // But for now let's hope frontend reloads or we can fix later.
-                // Actually, for validation I fetched TT which has Team, but I didn't keep it.
-                // Let's rely on valid entities. If issues, we can fetch eager.
+                .homeTeamName(savedMatch.getHomeTeam().getName())
                 .awayTeamId(savedMatch.getAwayTeam().getId())
-                // .awayTeamName(...)
+                .awayTeamName(savedMatch.getAwayTeam().getName())                // .awayTeamName(...)
                 .matchDate(savedMatch.getMatchDate())
                 .kickOffTime(savedMatch.getKickOffTime())
                 .status(savedMatch.getStatus().name())
@@ -880,6 +936,17 @@ public class TournamentServiceImpl implements TournamentService {
         if (match.getHomeTeam() != null) {
             builder.homeTeamId(match.getHomeTeam().getId());
             builder.homeTeamName(match.getHomeTeam().getName());
+            
+            String homeLogo = match.getHomeTeam().getLogoUrl();
+            if (homeLogo == null && match.getHomeTeam().getOrganisation() != null) {
+                homeLogo = match.getHomeTeam().getOrganisation().getLogoUrl();
+            }
+            builder.homeTeamLogoUrl(homeLogo);
+            builder.homeTeamShortName(match.getHomeTeam().getShortName());
+            if (match.getHomeTeam().getOrganisation() != null) {
+                builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
+            }
+            
             builder.homeTeam(com.athleticaos.backend.dtos.match.MatchResponse.TeamInfo.builder()
                     .id(match.getHomeTeam().getId())
                     .name(match.getHomeTeam().getName())
@@ -892,6 +959,17 @@ public class TournamentServiceImpl implements TournamentService {
         if (match.getAwayTeam() != null) {
             builder.awayTeamId(match.getAwayTeam().getId());
             builder.awayTeamName(match.getAwayTeam().getName());
+            
+            String awayLogo = match.getAwayTeam().getLogoUrl();
+            if (awayLogo == null && match.getAwayTeam().getOrganisation() != null) {
+                awayLogo = match.getAwayTeam().getOrganisation().getLogoUrl();
+            }
+            builder.awayTeamLogoUrl(awayLogo);
+            builder.awayTeamShortName(match.getAwayTeam().getShortName());
+            if (match.getAwayTeam().getOrganisation() != null) {
+                builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
+            }
+            
             builder.awayTeam(com.athleticaos.backend.dtos.match.MatchResponse.TeamInfo.builder()
                     .id(match.getAwayTeam().getId())
                     .name(match.getAwayTeam().getName())

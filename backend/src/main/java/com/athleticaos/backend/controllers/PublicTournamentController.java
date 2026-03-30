@@ -31,6 +31,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
+    private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
 
     @GetMapping("/tournaments")
     @Transactional(readOnly = true)
@@ -90,8 +91,36 @@ public class PublicTournamentController {
                         .collect(Collectors.toList());
             }
 
+            // Fetch officials for the tournament
+            List<com.athleticaos.backend.entities.MatchOfficial> allOfficials = matchOfficialRepository.findByMatch_Tournament_Id(tournament.getId());
+            java.util.Map<UUID, List<com.athleticaos.backend.dtos.official.MatchOfficialDTO>> officialsByMatch = allOfficials.stream()
+                .collect(Collectors.groupingBy(
+                    mo -> mo.getMatch().getId(),
+                    Collectors.mapping(mo -> {
+                        String name = "Unknown";
+                        if (mo.getOfficial() != null) {
+                            if (mo.getOfficial().getPerson() != null) {
+                                name = mo.getOfficial().getPerson().getFirstName() + " " + mo.getOfficial().getPerson().getLastName();
+                            } else if (mo.getOfficial().getUser() != null) {
+                                name = mo.getOfficial().getUser().getFirstName() + " " + mo.getOfficial().getUser().getLastName();
+                            }
+                        }
+                        return com.athleticaos.backend.dtos.official.MatchOfficialDTO.builder()
+                            .id(mo.getId())
+                            .officialName(name)
+                            .assignedRole(mo.getAssignedRole())
+                            .officialRoleName(mo.getOfficialRole() != null ? mo.getOfficialRole().getName() : null)
+                            .isConfirmed(mo.isConfirmed())
+                            .build();
+                    }, Collectors.toList())
+                ));
+
             List<PublicMatchSummaryResponse> response = matches.stream()
-                    .map(this::mapToPublicMatchSummary)
+                    .map(m -> {
+                         PublicMatchSummaryResponse summary = mapToPublicMatchSummary(m);
+                         summary.setOfficials(officialsByMatch.getOrDefault(m.getId(), List.of()));
+                         return summary;
+                    })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(response);
@@ -200,7 +229,7 @@ public class PublicTournamentController {
                 .organiserName("Organiser")
                 .organiserBranding(getOrganiserBranding(t.getOrganiserOrgId()))
                 .competitionType(t.getCompetitionType())
-                .logoUrl(t.getLogoUrl())
+                .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
@@ -215,8 +244,8 @@ public class PublicTournamentController {
                         .id(tt.getTeam().getId())
                         .name(tt.getTeam().getName())
                         .slug(tt.getTeam().getSlug())
-                        .logoUrl(tt.getTeam().getOrganisation() != null ? tt.getTeam().getOrganisation().getLogoUrl()
-                                : null)
+                        .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(tt.getTeam().getOrganisation() != null ? tt.getTeam().getOrganisation().getLogoUrl()
+                                : null))
                         .build())
                 .collect(Collectors.toList());
 
@@ -260,7 +289,7 @@ public class PublicTournamentController {
                 .teams(teams)
                 .categories(categories)
                 .stages(List.of()) // Stages can be populated if TournamentStage is used
-                .logoUrl(t.getLogoUrl())
+                .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
@@ -273,8 +302,8 @@ public class PublicTournamentController {
                         .primaryColor(org.getPrimaryColor())
                         .secondaryColor(org.getSecondaryColor())
                         .accentColor(org.getAccentColor())
-                        .logoUrl(org.getLogoUrl())
-                        .coverImageUrl(org.getCoverImageUrl())
+                        .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(org.getLogoUrl()))
+                        .coverImageUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(org.getCoverImageUrl()))
                         .build())
                 .orElse(null);
     }
@@ -285,8 +314,8 @@ public class PublicTournamentController {
                 .code(m.getMatchCode())
                 .homeTeamName(m.getHomeTeamName())
                 .awayTeamName(m.getAwayTeamName())
-                .homeTeamLogoUrl(m.getHomeTeamLogoUrl())
-                .awayTeamLogoUrl(m.getAwayTeamLogoUrl())
+                .homeTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getHomeTeamLogoUrl()))
+                .awayTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getAwayTeamLogoUrl()))
                 .homeTeamShortName(m.getHomeTeamShortName())
                 .awayTeamShortName(m.getAwayTeamShortName())
                 .homeScore(m.getHomeScore())
@@ -340,13 +369,33 @@ public class PublicTournamentController {
                 .code(m.getMatchCode())
                 .homeTeamName(m.getHomeTeamName())
                 .awayTeamName(m.getAwayTeamName())
-                .homeTeamLogoUrl(m.getHomeTeamLogoUrl())
-                .awayTeamLogoUrl(m.getAwayTeamLogoUrl())
+                .homeTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getHomeTeamLogoUrl()))
+                .awayTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getAwayTeamLogoUrl()))
                 .homeTeamShortName(m.getHomeTeamShortName())
                 .awayTeamShortName(m.getAwayTeamShortName())
                 .homeScore(m.getHomeScore())
                 .awayScore(m.getAwayScore())
                 .matchDate(m.getMatchDate())
+                .officials(matchOfficialRepository.findByMatchId(m.getId()).stream()
+                    .map(mo -> {
+                        String name = "Unknown";
+                        if (mo.getOfficial() != null) {
+                            if (mo.getOfficial().getPerson() != null) {
+                                name = mo.getOfficial().getPerson().getFirstName() + " " + mo.getOfficial().getPerson().getLastName();
+                            } else if (mo.getOfficial().getUser() != null) {
+                                name = mo.getOfficial().getUser().getFirstName() + " " + mo.getOfficial().getUser().getLastName();
+                            }
+                        }
+                        return com.athleticaos.backend.dtos.official.MatchOfficialDTO.builder()
+                            .id(mo.getId())
+                            .officialName(name)
+                            .assignedRole(mo.getAssignedRole())
+                            .officialRoleName(mo.getOfficialRole() != null ? mo.getOfficialRole().getName() : null)
+                            .isConfirmed(mo.isConfirmed())
+                            .build();
+                    })
+                    .collect(Collectors.toList()))
+                .matchTime(m.getKickOffTime())
                 .matchTime(m.getKickOffTime())
                 .venue(m.getVenue())
                 .status(m.getStatus())

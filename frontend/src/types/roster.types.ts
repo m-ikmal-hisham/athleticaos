@@ -9,6 +9,7 @@ export interface TournamentPlayerDTO {
     hasActiveSuspension: boolean;
     suspensionReason?: string;
     suspensionMatchesRemaining?: number;
+    position?: string;
 }
 
 export interface PlayerSuspensionDTO {
@@ -36,6 +37,7 @@ export interface LineupPlayerDTO {
     isSuspended: boolean;
     suspensionReason?: string;
     suspensionMatchesRemaining?: number;
+    position?: string;
 }
 
 export interface LineupHintsDTO {

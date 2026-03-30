@@ -39,13 +39,13 @@ public interface TournamentService {
 
         List<TeamResponse> getTeamsByTournament(UUID tournamentId);
 
-        void addTeamsToTournament(UUID tournamentId, List<UUID> teamIds);
+        void addTeamsToTournament(UUID tournamentId, List<UUID> teamIds, UUID categoryId);
 
         void removeTeamFromTournament(UUID tournamentId, UUID teamId);
 
         void removeTeamsFromTournament(UUID tournamentId, List<UUID> teamIds);
 
-        void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber);
+        void updateTeamPool(UUID tournamentId, UUID teamId, String poolNumber, Integer poolSlot);
 
         void generateSchedule(UUID tournamentId,
                         com.athleticaos.backend.dtos.tournament.BracketGenerationRequest request);

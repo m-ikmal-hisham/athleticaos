@@ -10,6 +10,7 @@ interface PlayerSelectionModalProps {
     onClose: () => void;
     onConfirm: (playerIds: string[]) => void;
     teamId: string;
+    organisationLevel?: string;
     existingPlayerIds: string[];
 }
 
@@ -18,6 +19,7 @@ export function PlayerSelectionModal({
     onClose,
     onConfirm,
     teamId,
+    organisationLevel,
     existingPlayerIds
 }: PlayerSelectionModalProps) {
     const [players, setPlayers] = useState<TeamPlayer[]>([]);
@@ -70,8 +72,15 @@ export function PlayerSelectionModal({
 
     if (!isOpen) return null;
 
+    const isNationalTeam = organisationLevel === 'COUNTRY';
     const availablePlayers = players.filter(p => !(existingPlayerIds || []).includes(p.playerId));
-    const filteredPlayers = availablePlayers.filter(p =>
+    
+    // Filter by national status if it's a national team
+    const eligiblePlayers = isNationalTeam 
+        ? availablePlayers.filter(p => p.nationalPlayerStatus === 'ACTIVE')
+        : availablePlayers;
+
+    const filteredPlayers = eligiblePlayers.filter(p =>
         p.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.jerseyNumber && p.jerseyNumber.toString().includes(searchQuery))

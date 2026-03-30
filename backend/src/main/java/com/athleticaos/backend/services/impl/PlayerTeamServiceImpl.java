@@ -40,6 +40,13 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                 Team team = teamRepository.findById(request.getTeamId())
                                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));
 
+                // Enforce National Team Filter
+                if (com.athleticaos.backend.enums.OrganisationLevel.COUNTRY.equals(team.getOrganisation().getOrgLevel())) {
+                        if (!"ACTIVE".equals(player.getPerson().getNationalPlayerStatus())) {
+                                throw new IllegalStateException("Only active national players can be assigned to a national team.");
+                        }
+                }
+
                 // Check if assignment already exists
                 playerTeamRepository.findByPlayerIdAndTeamId(request.getPlayerId(), request.getTeamId())
                                 .ifPresentOrElse(
@@ -112,6 +119,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                                                 .status(pt.getPlayer().getStatus())
                                                 .joinedDate(pt.getJoinedDate())
                                                 .isActive(pt.getIsActive())
+                                                .nationalPlayerStatus(pt.getPlayer().getPerson().getNationalPlayerStatus())
                                                 .build())
                                 .collect(Collectors.toList());
         }

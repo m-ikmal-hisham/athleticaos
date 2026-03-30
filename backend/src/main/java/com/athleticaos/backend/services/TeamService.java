@@ -28,5 +28,13 @@ public interface TeamService {
 
     List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId);
 
+    List<com.athleticaos.backend.dtos.team.TeamStaffDTO> getTeamStaff(UUID teamId);
+
+    com.athleticaos.backend.dtos.team.TeamStaffDTO addTeamStaff(UUID teamId, com.athleticaos.backend.dtos.team.AddTeamStaffRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    void removeTeamStaff(UUID teamId, UUID staffAssignmentId, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getAvailablePersonsForStaff(UUID teamId);
+
     void deleteTeam(UUID id, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

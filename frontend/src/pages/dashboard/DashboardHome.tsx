@@ -2,12 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, UsersThree, Buildings, Trophy, Calendar, ChartLineUp } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
+import { TrendBadge } from '@/components/TrendBadge';
 import { useAuthStore } from '@/store/auth.store';
 import { useUIStore } from '@/store/ui.store';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { useStatsStore } from '@/store/stats.store';
 import { useMatchesStore } from '@/store/matches.store';
-import { fetchDashboardStats } from '@/api/dashboard.api';
+import { fetchDashboardStats, DashboardStats } from '@/api/dashboard.api';
 import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { BentoGrid, BentoItem } from '@/components/dashboard/BentoGrid';
@@ -45,15 +46,6 @@ const useCountUp = (end: number, duration: number = 2000) => {
     return count;
 };
 
-interface GlobalDashboardStats {
-    totalPlayers: number;
-    totalTeams: number;
-    totalMatches: number;
-    totalOrganisations: number;
-    activeTournaments: number;
-    upcomingMatches: number;
-}
-
 interface PlayerStats {
     matchesPlayed: number;
     totalPoints: number;
@@ -70,7 +62,7 @@ export const DashboardHome = () => {
     const navigate = useNavigate();
 
     // Global Stats State
-    const [globalStats, setGlobalStats] = useState<GlobalDashboardStats | null>(null);
+    const [globalStats, setGlobalStats] = useState<DashboardStats | null>(null);
 
     // Player Stats State
     const [myPlayerStats, setMyPlayerStats] = useState<PlayerStats | null>(null);
@@ -94,9 +86,13 @@ export const DashboardHome = () => {
                 // Fallback zeroes
                 setGlobalStats({
                     totalPlayers: 0,
+                    playerTrend: 0,
                     totalTeams: 0,
+                    teamTrend: 0,
                     totalMatches: 0,
+                    matchTrend: 0,
                     totalOrganisations: 0,
+                    organisationTrend: 0,
                     activeTournaments: 0,
                     upcomingMatches: 0
                 });
@@ -218,6 +214,7 @@ export const DashboardHome = () => {
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
                                 <Users className="w-5 h-5" weight="fill" />
                             </div>
+                            {globalStats && <TrendBadge value={globalStats.playerTrend} />}
                         </div>
                         <div>
                             <div className="text-4xl font-bold text-foreground tracking-tight mt-4">{playersCount.toLocaleString()}</div>
@@ -396,6 +393,7 @@ export const DashboardHome = () => {
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
                                 <Buildings className="w-5 h-5" weight="fill" />
                             </div>
+                            {globalStats && <TrendBadge value={globalStats.organisationTrend} />}
                         </div>
                         <div>
                             <div className="text-4xl font-bold text-foreground tracking-tight mt-4">{orgsCount.toLocaleString()}</div>

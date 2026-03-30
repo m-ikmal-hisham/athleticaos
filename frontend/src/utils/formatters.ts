@@ -131,5 +131,23 @@ export const formatMatchStatus = (status: string | undefined | null): string => 
         .replace(/\b\w/g, c => c.toUpperCase());
 };
 
+/**
+ * Generates a short name for a team (3 to 5 characters max).
+ */
+export const formatTeamShortName = (shortName?: string | null, fullName?: string | null): string => {
+    if (shortName && shortName.trim().length > 0) {
+        return shortName.trim();
+    }
+    if (!fullName || fullName.trim().length === 0) {
+        return 'TBD';
+    }
+    
+    let clean = fullName.replace(/\b(Rugby|Club|FC|RC|Team|Men's|Women's|boys|girls|open)\b/gi, '').trim();
+    if (clean.length === 0) clean = fullName;
+
+    // Use common 3-letter abbreviation pattern if no short name is defined
+    return clean.slice(0, 3).toUpperCase();
+};
+
 
 

@@ -70,6 +70,7 @@ export interface PublicMatchSummary {
     status: string;
     stage?: string;
     round?: string;
+    officials?: { id?: string, officialName?: string, assignedRole?: string, officialRoleName?: string }[];
 }
 
 export interface PublicMatchDetail extends PublicMatchSummary {

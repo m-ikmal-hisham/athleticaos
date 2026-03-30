@@ -74,18 +74,51 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center">
-                                            <span className={`font-medium truncate ${match.homeScore! > match.awayScore! ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                {match.homeTeamName}
-                                            </span>
+                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                <div className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-600/50 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {match.homeTeamLogoUrl ? (
+                                                        <img src={match.homeTeamLogoUrl} alt="" className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <span className="text-[7px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
+                                                    )}
+                                                </div>
+                                                <span className={`font-medium truncate ${match.homeScore! > match.awayScore! ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {match.homeTeamName}
+                                                </span>
+                                            </div>
                                             <span className="font-mono">{match.homeScore ?? '-'}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className={`font-medium truncate ${match.awayScore! > match.homeScore! ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                {match.awayTeamName}
-                                            </span>
+                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                <div className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-600/50 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {match.awayTeamLogoUrl ? (
+                                                        <img src={match.awayTeamLogoUrl} alt="" className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <span className="text-[7px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
+                                                    )}
+                                                </div>
+                                                <span className={`font-medium truncate ${match.awayScore! > match.homeScore! ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {match.awayTeamName}
+                                                </span>
+                                            </div>
                                             <span className="font-mono">{match.awayScore ?? '-'}</span>
                                         </div>
                                     </div>
+                                    
+                                    {match.officials && match.officials.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-1">
+                                            {match.officials.map((o, idx) => (
+                                                <div key={idx} className="flex justify-between items-center text-[10px] leading-tight text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                                                    <span className="font-semibold text-slate-400 dark:text-slate-600 uppercase text-[8px] mr-2">
+                                                        {(o.assignedRole || 'OFFICIAL').replace(/_/g, ' ')}
+                                                    </span>
+                                                    <span className="truncate max-w-[120px] text-right font-medium">
+                                                        {o.officialName}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                     {stageName.toLowerCase().includes('final') && !stageName.toLowerCase().includes('semi') && match.status === 'COMPLETED' && (
                                         <div className="absolute -top-3 -right-3 bg-yellow-400 text-yellow-900 p-1 rounded-full shadow-md">
                                             <Trophy className="w-4 h-4" />

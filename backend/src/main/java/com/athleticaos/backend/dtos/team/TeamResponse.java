@@ -28,5 +28,6 @@ public class TeamResponse {
     private String logoUrl;
     private String poolNumber;
     private UUID tournamentCategoryId;
+    private String organisationLevel;
     private List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> players;
 }

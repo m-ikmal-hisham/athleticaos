@@ -20,4 +20,7 @@ public interface TournamentPlayerRepository extends JpaRepository<TournamentPlay
     List<TournamentPlayer> findByTournamentIdAndIsActiveTrue(UUID tournamentId);
 
     List<TournamentPlayer> findByTournamentIdAndTeamIdAndIsActiveTrue(UUID tournamentId, UUID teamId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(tp) > 0 THEN TRUE ELSE FALSE END FROM TournamentPlayer tp WHERE tp.player.person.id = :personId")
+    boolean existsByPlayerPersonId(@org.springframework.data.repository.query.Param("personId") UUID personId);
 }

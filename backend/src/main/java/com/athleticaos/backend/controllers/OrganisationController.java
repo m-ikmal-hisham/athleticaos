@@ -15,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.athleticaos.backend.dtos.person.RegisterPersonRequest;
+import com.athleticaos.backend.dtos.team.PersonSummaryDTO;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -133,5 +136,21 @@ public class OrganisationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> getTree(@PathVariable UUID countryId) {
         return ResponseEntity.ok(organisationService.getTree(countryId));
+    }
+
+    @GetMapping("/{id}/persons")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN', 'ROLE_OFFICIAL')")
+    public ResponseEntity<List<PersonSummaryDTO>> getPersonsByOrganisation(@PathVariable UUID id) {
+        log.info("Fetching persons for organisation: {}", id);
+        return ResponseEntity.ok(organisationService.getPersonsByOrganisation(id));
+    }
+
+    @PostMapping("/{id}/persons")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
+    public ResponseEntity<PersonSummaryDTO> registerPerson(
+            @PathVariable UUID id,
+            @RequestBody @Valid RegisterPersonRequest request) {
+        log.info("Registering new person under organisation: {}", id);
+        return ResponseEntity.ok(organisationService.registerPerson(id, request));
     }
 }

@@ -8,10 +8,11 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
 import { updateMatch, updateMatchStatus, updateMatchEvent } from '@/api/matches.api';
-import { getMatchOfficials, MatchOfficial } from '@/api/officials.api';
+import { getMatchOfficials, MatchOfficialDTO } from '@/api/officials.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchControls } from '@/components/MatchControls';
 import { showToast } from '@/lib/customToast';
+import { MatchOfficialAssignments } from '@/components/admin/match/MatchOfficialAssignments';
 
 // New Operations Components
 import { PrimaryActionGrid } from '@/components/match/operations/PrimaryActionGrid';
@@ -103,7 +104,7 @@ export const MatchDetail = () => {
     const [matchTimeSeconds, setMatchTimeSeconds] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-    const [matchOfficials, setMatchOfficials] = useState<MatchOfficial[]>([]);
+    const [matchOfficials, setMatchOfficials] = useState<MatchOfficialDTO[]>([]);
 
     // Operations Interaction State
     const [interactionState, setInteractionState] = useState<'IDLE' | 'SELECT_TEAM' | 'SELECT_PLAYER'>('IDLE');
@@ -164,8 +165,8 @@ export const MatchDetail = () => {
     // Role Checks
     const assignedRole = useMemo(() => {
         if (!user || !matchOfficials.length) return null;
-        const myAssignment = matchOfficials.find(mo => mo.official.user.id === user.id);
-        return myAssignment ? myAssignment.assignedRole : null;
+        const myAssignment = matchOfficials.find(mo => mo.officialName?.includes(user.firstName || ''));
+        return myAssignment ? (myAssignment.officialRoleName || myAssignment.assignedRole) : null;
     }, [user, matchOfficials]);
 
     const canManageEvents = useMemo(() => {
@@ -884,6 +885,14 @@ export const MatchDetail = () => {
                                 </div>
                             </GlassCardContent>
                         </GlassCard>
+
+                        {/* Match Officials Component */}
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-500 delay-200">
+                            <MatchOfficialAssignments 
+                                matchId={selectedMatch.id} 
+                                isLocked={isMatchLocked && !isAdmin} 
+                            />
+                        </div>
 
                     </div>
                 </div>

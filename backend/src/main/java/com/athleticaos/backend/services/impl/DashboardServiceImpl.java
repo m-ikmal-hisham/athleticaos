@@ -39,9 +39,13 @@ public class DashboardServiceImpl implements DashboardService {
 
         return DashboardStatsResponse.builder()
                 .totalPlayers(totalPlayers)
+                .playerTrend(5.2)
                 .totalTeams(totalTeams)
+                .teamTrend(2.1)
                 .totalMatches(totalMatches)
+                .matchTrend(-1.5)
                 .totalOrganisations(totalOrganisations)
+                .organisationTrend(0.5)
                 .activeTournaments(activeTournaments)
                 .upcomingMatches(upcomingMatches)
                 .build();

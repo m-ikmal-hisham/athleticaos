@@ -56,15 +56,21 @@ public class FormatServiceImpl implements FormatService {
             // Only update Global fields if no category selected
             tournament.setFormat(request.getFormat());
             tournament.setNumberOfPools(request.getNumberOfPools());
+            tournament.setHasPlacementStages(request.getIncludePlacementStages() != null ? request.getIncludePlacementStages() : false);
             tournamentRepository.save(tournament);
         } else {
-            // For category, we assume the config was saved by the UI before calling this,
-            // OR we should perhaps update it here?
-            // Since the UI "Build Pools" button sends `numberOfPools`, we might want to
-            // ensure the config reflects this.
-            // But let's check if we have the service injected to update config? No.
-            // Let's rely on the UI to save config or just use the request values for this
-            // generation session.
+            // If category is provided, the settings should be in TournamentFormatConfig.
+            // We assume the UI/User has configured this. 
+            // We'll fetch it to ensure it exists or use defaults.
+            TournamentFormatConfig config = tournament.getFormatConfig(request.getCategoryId());
+            if (config != null) {
+                config.setFormatType(request.getFormat());
+                if (request.getNumberOfPools() != null) config.setPoolCount(request.getNumberOfPools());
+                if (request.getIncludePlacementStages() != null) config.setIncludePlacementStages(request.getIncludePlacementStages());
+                // Config is auto-saved via tournament cascade if we add it, but it might already be there.
+                // Just to be safe:
+                tournamentRepository.save(tournament);
+            }
         }
 
         // Unified logic for using existing groups
@@ -124,9 +130,7 @@ public class FormatServiceImpl implements FormatService {
                 List<TournamentTeam> poolTeams = teams.stream()
                         .filter(t -> stage.getName().equals(t.getPoolNumber()))
                         .collect(Collectors.toList());
-                if (!poolTeams.isEmpty()) {
-                    generateRoundRobinMatches(tournament, stage, poolTeams, request);
-                }
+                generateRoundRobinMatches(tournament, stage, poolTeams, request);
             }
         } else if (request.getFormat() == TournamentFormat.KNOCKOUT
                 || request.getFormat() == TournamentFormat.POOL_TO_KNOCKOUT
@@ -181,10 +185,8 @@ public class FormatServiceImpl implements FormatService {
 
         for (TournamentStage stage : stages) {
             if (stage.getStageType() == TournamentStageType.POOL) {
-                List<TournamentTeam> poolTeams = poolMap.get(stage.getName());
-                if (poolTeams != null && !poolTeams.isEmpty()) {
-                    generateRoundRobinMatches(tournament, stage, poolTeams, request);
-                }
+                List<TournamentTeam> poolTeams = poolMap.getOrDefault(stage.getName(), new ArrayList<>());
+                generateRoundRobinMatches(tournament, stage, poolTeams, request);
             }
         }
     }
@@ -296,29 +298,48 @@ public class FormatServiceImpl implements FormatService {
     @SuppressWarnings("null")
     private void generateRoundRobinMatches(Tournament tournament, TournamentStage stage, List<TournamentTeam> teams,
             BracketGenerationRequest request) {
-        int n = teams.size();
-        // int totalMatches = (n * (n - 1)) / 2;
+        
+        UUID categoryId = stage.getCategory() != null ? stage.getCategory().getId() : null;
+        TournamentFormatConfig config = tournament.getFormatConfig(categoryId);
+        
+        int teamCountInConfig = (config != null && config.getTeamCount() != null && config.getTeamCount() > 0) 
+            ? config.getTeamCount() 
+            : (request.getTeamIds() != null ? request.getTeamIds().size() : 0);
+            
+        int poolCount = (config != null && config.getPoolCount() != null && config.getPoolCount() > 0) 
+            ? config.getPoolCount() 
+            : 1;
+        
+        // Calculate expected teams per pool
+        int expectedTeamsPerPool = teamCountInConfig > 0 ? (int) Math.ceil((double) teamCountInConfig / poolCount) : teams.size();
+        
+        // Default to a minimum of 2 expected teams per pool to generate at least 1 placeholder match 
+        // if no teams exist yet in the whole category.
+        if (expectedTeamsPerPool < 2) {
+            expectedTeamsPerPool = 2;
+        }
+        
+        int n = Math.max(teams.size(), expectedTeamsPerPool);
 
-        // long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
-        // tournament.getStartDate(),
-        // tournament.getEndDate());
+        log.info("Generating RR matches for stage: {}. Teams assigned: {}, Expected in pool: {}", stage.getName(), teams.size(), expectedTeamsPerPool);
+
+        // Check strict validation
+        if (Boolean.TRUE.equals(config != null ? config.getIsStrictlyValidated() : false) && teams.size() < expectedTeamsPerPool) {
+            throw new IllegalArgumentException("Strict Validation: Pool " + stage.getName() + " is missing teams. (Assigned: " + teams.size() + ", Expected: " + expectedTeamsPerPool + ")");
+        }
 
         int matchCounter = 0;
         boolean generateTimings = request.getGenerateTimings() == null || request.getGenerateTimings();
 
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
-                TournamentTeam home = teams.get(i);
-                TournamentTeam away = teams.get(j);
+                TournamentTeam homeTT = (i < teams.size()) ? teams.get(i) : null;
+                TournamentTeam awayTT = (j < teams.size()) ? teams.get(j) : null;
 
                 java.time.LocalDate matchDate = null;
                 java.time.LocalTime kickOffTime = null;
 
                 if (generateTimings) {
-                    UUID categoryId = stage.getCategory() != null ? stage.getCategory().getId() : null;
-                    com.athleticaos.backend.entities.TournamentFormatConfig config = tournament
-                            .getFormatConfig(categoryId);
-
                     // Defaults
                     java.time.LocalTime startTime = java.time.LocalTime.of(9, 0);
                     java.time.LocalTime endTime = java.time.LocalTime.of(17, 0);
@@ -338,15 +359,11 @@ public class FormatServiceImpl implements FormatService {
 
                     int slotMinutes = duration + buffer;
                     long minutesAvailable = java.time.temporal.ChronoUnit.MINUTES.between(startTime, endTime);
-                    // Avoid div by zero
-                    if (minutesAvailable <= 0)
-                        minutesAvailable = 480; // 8 hours default if weird
+                    if (minutesAvailable <= 0) minutesAvailable = 480;
 
                     int matchesPerDay = (int) (minutesAvailable / slotMinutes);
-                    if (matchesPerDay < 1)
-                        matchesPerDay = 1;
+                    if (matchesPerDay < 1) matchesPerDay = 1;
 
-                    // Calculate position
                     int dayIndex = matchCounter / matchesPerDay;
                     int matchInDay = matchCounter % matchesPerDay;
 
@@ -354,19 +371,35 @@ public class FormatServiceImpl implements FormatService {
                     kickOffTime = startTime.plusMinutes(matchInDay * slotMinutes);
                 }
 
+                // Placeholder logic: "Pool {Name} - Slot {N}"
+                String homePlaceholder = homeTT == null ? (stage.getName() + " - Slot " + (i + 1)) : null;
+                String awayPlaceholder = awayTT == null ? (stage.getName() + " - Slot " + (j + 1)) : null;
+
                 Match match = Match.builder()
                         .tournament(tournament)
-                        .homeTeam(home.getTeam())
-                        .awayTeam(away.getTeam())
+                        .category(stage.getCategory()) // Correctly set category on Match
+                        .homeTeam(homeTT != null ? homeTT.getTeam() : null)
+                        .awayTeam(awayTT != null ? awayTT.getTeam() : null)
+                        .homeTeamPlaceholder(homePlaceholder)
+                        .awayTeamPlaceholder(awayPlaceholder)
                         .stage(stage)
                         .matchDate(matchDate)
                         .kickOffTime(kickOffTime)
                         .status(MatchStatus.SCHEDULED)
+                        .phase(stage.getName())
+                        .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
+                                truncate(stage.getName().replace(" ", ""), 10),
+                                matchCounter + 1))
                         .build();
                 matchRepository.save(match);
                 matchCounter++;
             }
         }
+    }
+
+    private String truncate(String text, int length) {
+        if (text == null) return "";
+        return text.length() > length ? text.substring(0, length) : text;
     }
 
     @Override

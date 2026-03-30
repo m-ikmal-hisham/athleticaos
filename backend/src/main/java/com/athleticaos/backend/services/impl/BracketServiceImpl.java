@@ -87,12 +87,23 @@ public class BracketServiceImpl implements BracketService {
         boolean preserveStructure = Boolean.TRUE.equals(request.getUseExistingGroups());
         clearExistingBracket(tournamentId, request.getCategoryId(), !preserveStructure);
 
-        // Update tournament format settings
-        tournament.setFormat(request.getFormat());
-        tournament.setNumberOfPools(request.getNumberOfPools());
-        tournament.setHasPlacementStages(
-                request.getIncludePlacementStages() != null ? request.getIncludePlacementStages() : false);
-        tournamentRepository.save(tournament);
+        if (request.getCategoryId() == null) {
+            // Update tournament format settings (Global)
+            tournament.setFormat(request.getFormat());
+            tournament.setNumberOfPools(request.getNumberOfPools());
+            tournament.setHasPlacementStages(
+                    request.getIncludePlacementStages() != null ? request.getIncludePlacementStages() : false);
+            tournamentRepository.save(tournament);
+        } else {
+            // Update category-specific config
+            TournamentFormatConfig config = tournament.getFormatConfig(request.getCategoryId());
+            if (config != null) {
+                config.setFormatType(request.getFormat());
+                if (request.getNumberOfPools() != null) config.setPoolCount(request.getNumberOfPools());
+                if (request.getIncludePlacementStages() != null) config.setIncludePlacementStages(request.getIncludePlacementStages());
+                tournamentRepository.save(tournament);
+            }
+        }
 
         // Generate bracket based on format
         switch (request.getFormat()) {
@@ -418,6 +429,7 @@ public class BracketServiceImpl implements BracketService {
 
                 Match match = Match.builder()
                         .tournament(tournament)
+                        .category(stage.getCategory()) // Ensure category is set
                         .stage(stage)
                         .homeTeam(homeTeam)
                         .awayTeam(awayTeam)

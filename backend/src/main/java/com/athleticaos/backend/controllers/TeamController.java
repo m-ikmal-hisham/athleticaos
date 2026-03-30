@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.UUID;
+import com.athleticaos.backend.dtos.team.AddTeamStaffRequest;
+import com.athleticaos.backend.dtos.team.TeamStaffDTO;
 
 @RestController
 @RequestMapping("/api/v1/teams")
@@ -81,5 +83,33 @@ public class TeamController {
         log.info("Request to delete team: {}", id);
         teamService.deleteTeam(id, httpRequest);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/staff")
+    public ResponseEntity<List<TeamStaffDTO>> getTeamStaff(@PathVariable UUID id) {
+        return ResponseEntity.ok(teamService.getTeamStaff(id));
+    }
+
+    @PostMapping("/{id}/staff")
+    @PreAuthorize("hasAnyAuthority('ROLE_ORG_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<TeamStaffDTO> addTeamStaff(@PathVariable UUID id,
+            @RequestBody @Valid AddTeamStaffRequest request, HttpServletRequest httpRequest) {
+        log.info("Admin adding staff to team {}: person {}", id, request.getPersonId());
+        return ResponseEntity.ok(teamService.addTeamStaff(id, request, httpRequest));
+    }
+
+    @DeleteMapping("/{id}/staff/{staffAssignmentId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ORG_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> removeTeamStaff(@PathVariable UUID id, @PathVariable UUID staffAssignmentId, HttpServletRequest httpRequest) {
+        log.info("Admin removing staff {} from team {}", staffAssignmentId, id);
+        teamService.removeTeamStaff(id, staffAssignmentId, httpRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/available-staff")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.team.PersonSummaryDTO>> getAvailablePersonsForStaff(@PathVariable UUID id) {
+        return ResponseEntity.ok(teamService.getAvailablePersonsForStaff(id));
     }
 }

@@ -28,6 +28,10 @@ public class MatchOfficial {
     @Column(nullable = false)
     private String assignedRole; // "REFEREE", "AR1", "AR2", "TMO", "4TH_OFFICIAL"
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "official_role_id")
+    private OfficialRole officialRole;
+
     @Column(nullable = false)
     private boolean isConfirmed;
 

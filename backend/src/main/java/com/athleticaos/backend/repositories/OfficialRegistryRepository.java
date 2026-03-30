@@ -12,4 +12,13 @@ public interface OfficialRegistryRepository extends JpaRepository<OfficialRegist
     Optional<OfficialRegistry> findByUserId(UUID userId);
 
     Optional<OfficialRegistry> findByBadgeNumber(String badgeNumber);
+
+    Optional<OfficialRegistry> findByPersonId(UUID personId);
+    boolean existsByPersonIdAndIsWorldRugbyCertifiedTrue(UUID personId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT o.person.id FROM OfficialRegistry o")
+    java.util.Set<UUID> findAllPersonIds();
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT o.person.id FROM OfficialRegistry o WHERE o.isWorldRugbyCertified = true")
+    java.util.Set<UUID> findAllWorldRugbyCertifiedPersonIds();
 }

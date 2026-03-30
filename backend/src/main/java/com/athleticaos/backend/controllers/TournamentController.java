@@ -170,7 +170,7 @@ public class TournamentController {
     public ResponseEntity<Void> addTeamsToTournament(@PathVariable String idOrSlug,
             @RequestBody com.athleticaos.backend.dtos.tournament.TeamListRequest request) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
-        tournamentService.addTeamsToTournament(tournamentId, request.getTeamIds());
+        tournamentService.addTeamsToTournament(tournamentId, request.getTeamIds(), request.getCategoryId());
         return ResponseEntity.ok().build();
     }
 
@@ -197,9 +197,10 @@ public class TournamentController {
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Update team pool assignment")
     public ResponseEntity<Void> updateTeamPool(@PathVariable String idOrSlug, @PathVariable UUID teamId,
-            @RequestParam(required = false) String poolNumber) {
+            @RequestParam(required = false) String poolNumber,
+            @RequestParam(required = false) Integer poolSlot) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
-        tournamentService.updateTeamPool(tournamentId, teamId, poolNumber);
+        tournamentService.updateTeamPool(tournamentId, teamId, poolNumber, poolSlot);
         return ResponseEntity.ok().build();
     }
 

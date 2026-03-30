@@ -189,6 +189,7 @@ export default function TournamentRosters({ tournamentId: propTournamentId }: To
                         tournamentId={tournamentId}
                         teamId={selectedTeam.id}
                         teamName={selectedTeam.name}
+                        organisationLevel={selectedTeam.organisationLevel}
                         isModalOpen={isAddPlayersModalOpen}
                         onModalClose={() => setIsAddPlayersModalOpen(false)}
                     />

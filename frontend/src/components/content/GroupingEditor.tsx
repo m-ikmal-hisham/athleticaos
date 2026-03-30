@@ -32,7 +32,7 @@ interface GroupingEditorProps {
     teams: Team[];
     stages: TournamentStageResponse[];
     categoryId?: string;
-    onAssign: (teamId: string, poolName: string | null) => void;
+    onAssign: (teamId: string, poolName: string | null, poolSlot?: number | null) => void;
     readonly?: boolean;
     onRename?: () => void;
     tournamentId: string;
@@ -93,17 +93,15 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
         }
 
         // Check if dropped in a pool container (stage name is ID)
-        // We use stage.name as container ID for simplicity, assuming uniqueness within category
-        // But better to use stage.id or prefixed name.
-        // Let's assume passed stages have unique names or IDs.
-        // But our `onAssign` takes poolName string (as currently stored in Team.poolNumber).
-        // So we should find the stage that matches ID or Name.
-
-        // let's look up stage by the container ID (which might be the stage ID or Name)
-        // Implementation detail: Droppable containers below use stage.name as ID.
         const stage = stages.find(s => s.name === targetContainerId);
         if (stage) {
-            onAssign(teamId, stage.name);
+            // Find the index if dropped on another team, or just append
+            const poolTeams = relevantTeams.filter(t => t.poolNumber === stage.name)
+                .sort((a, b) => (a.poolSlot || 99) - (b.poolSlot || 99));
+
+            // For now, let's just assign the next available slot or the end
+            const nextSlot = poolTeams.length + 1;
+            onAssign(teamId, stage.name, nextSlot);
         }
     };
 
@@ -136,8 +134,14 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
     const handleBulkMove = (targetPoolName: string | null) => {
         if (readonly || selectedIds.size === 0) return;
 
+        let slotCounter = 1;
+        if (targetPoolName) {
+             const poolTeams = relevantTeams.filter(t => t.poolNumber === targetPoolName);
+             slotCounter = poolTeams.length + 1;
+        }
+
         selectedIds.forEach(teamId => {
-            onAssign(teamId, targetPoolName);
+            onAssign(teamId, targetPoolName, targetPoolName ? slotCounter++ : null);
         });
 
         showToast.success(`Moved ${selectedIds.size} team(s)`);
@@ -276,7 +280,10 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                 {/* Pools Grid */}
                 <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {stages.map((stage) => {
-                        const poolTeams = relevantTeams.filter(t => t.poolNumber === stage.name);
+                        const poolTeams = relevantTeams
+                            .filter(t => t.poolNumber === stage.name)
+                            .sort((a, b) => (a.poolSlot || 99) - (b.poolSlot || 99));
+
                         const isEditing = editingPoolId === stage.id;
 
                         return (
@@ -305,12 +312,6 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                                                     >
                                                         Save
                                                     </button>
-                                                    <button
-                                                        onClick={handleCancelRename}
-                                                        className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded hover:bg-muted/80"
-                                                    >
-                                                        Cancel
-                                                    </button>
                                                 </div>
                                             ) : (
                                                 <>
@@ -321,35 +322,41 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                                                     >
                                                         {stage.name}
                                                     </h3>
-                                                    <Badge variant="outline" className="text-xs">{poolTeams.length} Teams</Badge>
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5">{poolTeams.length} Teams</Badge>
                                                 </>
                                             )}
                                         </div>
                                         {!isEditing && (
                                             <button
                                                 onClick={() => handleSelectAll(stage.name)}
-                                                className="text-xs text-blue-600 hover:underline"
+                                                className="text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider"
                                             >
-                                                {poolTeams.every(t => selectedIds.has(t.id)) && poolTeams.length > 0 ? 'Deselect All' : 'Select All'}
+                                                {poolTeams.every(t => selectedIds.has(t.id)) && poolTeams.length > 0 ? 'Deselect' : 'Select'}
                                             </button>
                                         )}
                                     </div>
                                 </GlassCardHeader>
                                 <GlassCardContent className="p-2 min-h-[150px]">
                                     <SortableContext id={stage.name} items={poolTeams.map(t => t.id)} strategy={rectSortingStrategy}>
-                                        <DroppableContainer id={stage.name} className="space-y-2 h-full min-h-[100px]">
+                                        <DroppableContainer id={stage.name} className="space-y-1.5 h-full min-h-[100px]">
                                             {poolTeams.map((team) => (
-                                                <SortableTeamItem
-                                                    key={team.id}
-                                                    team={team}
-                                                    disabled={readonly}
-                                                    isSelected={selectedIds.has(team.id)}
-                                                    onToggleSelection={() => handleToggleSelection(team.id)}
-                                                />
+                                                <div key={team.id} className="relative group">
+                                                    <div className="absolute -left-1 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground/40 group-hover:text-primary/40 transition-colors">
+                                                        #{team.poolSlot || '?'}
+                                                    </div>
+                                                    <div className="pl-4">
+                                                        <SortableTeamItem
+                                                            team={team}
+                                                            disabled={readonly}
+                                                            isSelected={selectedIds.has(team.id)}
+                                                            onToggleSelection={() => handleToggleSelection(team.id)}
+                                                        />
+                                                    </div>
+                                                </div>
                                             ))}
                                             {poolTeams.length === 0 && (
-                                                <div className="h-full flex items-center justify-center text-xs text-muted-foreground text-center p-4 border-2 border-dashed rounded-lg border-muted/50">
-                                                    Drop here
+                                                <div className="h-full flex items-center justify-center text-xs text-muted-foreground text-center p-4 border-2 border-dashed rounded-lg border-muted/30">
+                                                    Drop teams here
                                                 </div>
                                             )}
                                         </DroppableContainer>

@@ -5,7 +5,7 @@ import { tournamentService } from '@/services/tournamentService';
 import { Team, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
-
+import { getImageUrl } from '@/utils/image';
 import { ConfirmModal } from '@/components/ConfirmModal';
 
 interface TournamentTeamsProps {
@@ -99,7 +99,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
 
     const handleAddTeams = async () => {
         try {
-            await tournamentService.addTeams(tournamentId, Array.from(selectedTeamIds));
+            await tournamentService.addTeams(tournamentId, Array.from(selectedTeamIds), selectedCategoryId || undefined);
             setShowAddModal(false);
             setRefreshTrigger(prev => prev + 1);
         } catch (error) {
@@ -149,6 +149,16 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
         });
     };
 
+    const handleBulkAssignCategory = async (categoryId: string) => {
+        try {
+            await tournamentService.addTeams(tournamentId, Array.from(selectedRegisteredTeamIds), categoryId);
+            setRefreshTrigger(prev => prev + 1);
+            setSelectedRegisteredTeamIds(new Set());
+        } catch (error) {
+            console.error('Failed to assign category:', error);
+        }
+    };
+
     const filteredAvailableTeams = availableTeams.filter(team =>
         team.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -167,14 +177,29 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                 <div className="flex gap-2 w-full md:w-auto items-center">
                     {/* Bulk Actions */}
                     {selectedRegisteredTeamIds.size > 0 && (
-                        <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={handleBulkRemove}
-                            className="mr-2"
-                        >
-                            Remove ({selectedRegisteredTeamIds.size})
-                        </Button>
+                        <div className="flex items-center gap-2 mr-2">
+                            <select
+                                onChange={(e) => handleBulkAssignCategory(e.target.value)}
+                                className="text-xs border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-md py-1.5 focus:ring-blue-500"
+                                value=""
+                                aria-label="Bulk assign category"
+                                title="Move selected teams to category"
+                            >
+                                <option value="" disabled>Move to Category...</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={handleBulkRemove}
+                            >
+                                Remove ({selectedRegisteredTeamIds.size})
+                            </Button>
+                        </div>
                     )}
 
                     {/* Category Filter */}
@@ -252,6 +277,16 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                     onClick={(e) => e.stopPropagation()}
                                     aria-label={`Select team ${team.name}`}
                                 />
+                                {/* Team Logo */}
+                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                                    {team.logoUrl ? (
+                                        <img src={getImageUrl(team.logoUrl)} alt={team.name} className="w-full h-full object-contain p-0.5" />
+                                    ) : (
+                                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+                                            {team.name?.slice(0, 2)?.toUpperCase()}
+                                        </span>
+                                    )}
+                                </div>
                                 <div>
                                     <h4 className="font-medium text-slate-900 dark:text-white">{team.name}</h4>
                                     <p className="text-sm text-slate-500 dark:text-slate-400">{team.organisationName}</p>

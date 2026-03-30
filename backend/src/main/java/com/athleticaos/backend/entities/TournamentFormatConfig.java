@@ -68,6 +68,10 @@ public class TournamentFormatConfig {
     @Builder.Default
     private Boolean includePlacementStages = false;
 
+    @Column(name = "is_strictly_validated")
+    @Builder.Default
+    private Boolean isStrictlyValidated = false;
+
     // Scoring Rules
     @Column(name = "points_win", nullable = false)
     @Builder.Default

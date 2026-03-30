@@ -1,52 +1,101 @@
 import api from '../api/axios';
-import { User, MatchResponse } from '@/types';
+import axios from 'axios';
 
-export interface OfficialRegistry {
+const API_URL = import.meta.env.VITE_API_URL || '';
+const publicApi = axios.create({
+    baseURL: `${API_URL}/api/public`,
+    headers: { 'Content-Type': 'application/json' },
+});
+
+// ─── Types (matching new DTO-based backend) ─────────────────────────
+
+export interface OfficialRoleDTO {
+    id: number;
+    name: string;
+    description: string;
+}
+
+export interface OfficialRegistryDTO {
     id: string;
-    user: User;
+    userId: string | null;
+    personId: string | null;
+    firstName: string;
+    lastName: string;
     accreditationLevel: string;
     primaryRole: string;
     badgeNumber: string;
-    accreditationExpiryDate: string;
+    isActive: boolean;
+    active: boolean;
+    isWorldRugbyCertified: boolean;
+}
+
+export interface MatchOfficialDTO {
+    id: string;
+    officialId: string;
+    officialName: string;
+    assignedRole: string;
+    officialRoleId: number | null;
+    officialRoleName: string | null;
+    isConfirmed: boolean;
+}
+
+export interface TournamentOfficialDTO {
+    id: string;
+    officialId: string;
+    officialName: string;
+    accreditationLevel: string;
+    badgeNumber: string;
+    officialRoleId: number | null;
+    officialRoleName: string | null;
     isActive: boolean;
 }
 
-export interface MatchOfficial {
-    id: string;
-    matchId: string;
-    official: OfficialRegistry;
-    assignedRole: string;
-    isConfirmed: boolean;
-    match?: MatchResponse;
-}
+// ─── Public API ─────────────────────────────────────────────────────
 
-export const getAllOfficials = async (): Promise<OfficialRegistry[]> => {
+export const getOfficialRoles = async (): Promise<OfficialRoleDTO[]> => {
+    const response = await publicApi.get('/official-roles');
+    return response.data;
+};
+
+// ─── Registry ───────────────────────────────────────────────────────
+
+export const getAllOfficials = async (): Promise<OfficialRegistryDTO[]> => {
     const response = await api.get('/officials');
     return response.data;
 };
 
-export const registerOfficial = async (data: {
-    userId: string;
-    accreditationLevel: string;
-    primaryRole: string;
-    badgeNumber: string;
-    expiryDate: string;
-}): Promise<OfficialRegistry> => {
-    const response = await api.post('/officials/register', null, {
-        params: data
-    });
+export const getOfficialById = async (officialId: string): Promise<OfficialRegistryDTO> => {
+    const response = await api.get(`/officials/${officialId}`);
     return response.data;
 };
 
-export const getMatchOfficials = async (matchId: string): Promise<MatchOfficial[]> => {
+export const registerOfficial = async (data: {
+    personId?: string;
+    userId?: string;
+    organisationId?: string;
+    accreditationLevel: string;
+    primaryRole: string;
+    badgeNumber: string;
+    expiryDate?: string;
+    isWorldRugbyCertified?: boolean;
+}): Promise<OfficialRegistryDTO> => {
+    const response = await api.post('/officials/register', data);
+    return response.data;
+};
+
+// ─── Match Assignments ──────────────────────────────────────────────
+
+export const getMatchOfficials = async (matchId: string): Promise<MatchOfficialDTO[]> => {
     const response = await api.get(`/officials/assignments/${matchId}`);
     return response.data;
 };
 
-export const assignOfficial = async (matchId: string, officialId: string, role: string): Promise<MatchOfficial> => {
-    const response = await api.post('/officials/assignments', null, {
-        params: { matchId, officialId, role }
-    });
+export const assignOfficial = async (matchId: string, data: {
+    officialId: string;
+    officialRoleId?: number;
+    assignedRole?: string;
+}): Promise<MatchOfficialDTO> => {
+    const response = await api.post(`/officials/assignments/${matchId}`, data);
     return response.data;
 };
 
@@ -54,7 +103,21 @@ export const removeOfficial = async (assignmentId: string): Promise<void> => {
     await api.delete(`/officials/assignments/${assignmentId}`);
 };
 
-export const getOfficialHistory = async (officialId: string): Promise<MatchOfficial[]> => {
-    const response = await api.get(`/officials/${officialId}/history`);
+// ─── Tournament Officials Panel ─────────────────────────────────────
+
+export const getTournamentOfficials = async (tournamentId: string): Promise<TournamentOfficialDTO[]> => {
+    const response = await api.get(`/officials/tournaments/${tournamentId}`);
     return response.data;
+};
+
+export const addOfficialToTournament = async (tournamentId: string, data: {
+    officialId: string;
+    officialRoleId?: number;
+}): Promise<TournamentOfficialDTO> => {
+    const response = await api.post(`/officials/tournaments/${tournamentId}`, data);
+    return response.data;
+};
+
+export const removeOfficialFromTournament = async (tournamentOfficialId: string): Promise<void> => {
+    await api.delete(`/officials/tournaments/panel/${tournamentOfficialId}`);
 };

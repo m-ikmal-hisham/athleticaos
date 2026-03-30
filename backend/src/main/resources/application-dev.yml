@@ -10,6 +10,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    out-of-order: true
 
 logging:
   level:

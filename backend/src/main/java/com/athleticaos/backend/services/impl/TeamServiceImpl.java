@@ -12,6 +12,17 @@ import com.athleticaos.backend.services.PlayerTeamService;
 import com.athleticaos.backend.services.TeamService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.utils.SlugGenerator;
+import com.athleticaos.backend.entities.Person;
+import com.athleticaos.backend.entities.StaffRole;
+import com.athleticaos.backend.entities.TeamStaff;
+import com.athleticaos.backend.repositories.PersonRepository;
+import com.athleticaos.backend.repositories.StaffRoleRepository;
+import com.athleticaos.backend.repositories.TeamStaffRepository;
+import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import com.athleticaos.backend.entities.OrganisationPerson;
+import com.athleticaos.backend.dtos.team.AddTeamStaffRequest;
+import com.athleticaos.backend.dtos.team.TeamStaffDTO;
+import java.time.LocalDate;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("null")
 @RequiredArgsConstructor
 @Slf4j
 public class TeamServiceImpl implements TeamService {
@@ -33,6 +45,10 @@ public class TeamServiceImpl implements TeamService {
     private final UserService userService;
     private final PlayerTeamService playerTeamService;
     private final AuditLogger auditLogger;
+    private final TeamStaffRepository teamStaffRepository;
+    private final StaffRoleRepository staffRoleRepository;
+    private final PersonRepository personRepository;
+    private final OrganisationPersonRepository organisationPersonRepository;
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getAllTeams(UUID organisationId) {
@@ -109,7 +125,6 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
     public TeamResponse createTeam(TeamCreateRequest request, HttpServletRequest httpRequest) {
         log.info("Creating team: {}", request.getName());
         Organisation org = organisationRepository.findById(request.getOrganisationId())
@@ -146,7 +161,6 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
     public TeamResponse updateTeam(UUID id, TeamUpdateRequest request, HttpServletRequest httpRequest) {
         log.info("Updating team: {}", id);
         Team team = teamRepository.findById(id)
@@ -198,10 +212,11 @@ public class TeamServiceImpl implements TeamService {
                 .category(team.getCategory())
                 .ageGroup(team.getAgeGroup())
                 .division(team.getDivision())
-                .level(team.getDivision()) // Map division to level for now
+                .level(team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
+                .organisationLevel(team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
                 .state(team.getState())
                 .status(team.getStatus())
-                .logoUrl(team.getLogoUrl())
+                .logoUrl(team.getLogoUrl() != null ? team.getLogoUrl() : (team.getOrganisation() != null ? team.getOrganisation().getLogoUrl() : null))
                 .players(playerTeamService.getTeamRoster(team.getId()))
                 .build();
     }
@@ -213,8 +228,95 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<TeamStaffDTO> getTeamStaff(UUID teamId) {
+        return teamStaffRepository.findByTeamId(teamId).stream()
+                .map(this::mapToTeamStaffDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
-    @SuppressWarnings("null")
+    public TeamStaffDTO addTeamStaff(UUID teamId, AddTeamStaffRequest request, HttpServletRequest httpRequest) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        Person person = personRepository.findById(request.getPersonId())
+                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+        StaffRole role = staffRoleRepository.findById(request.getStaffRoleId())
+                .orElseThrow(() -> new EntityNotFoundException("Staff Role not found"));
+
+        if (teamStaffRepository.findByTeamIdAndPersonIdAndStaffRoleId(teamId, person.getId(), role.getId()).isPresent()) {
+            throw new IllegalArgumentException("Person is already assigned this role in the team");
+        }
+
+        TeamStaff teamStaff = TeamStaff.builder()
+                .team(team)
+                .person(person)
+                .staffRole(role)
+                .joinedAt(LocalDate.now())
+                .isWorldRugbyCertified(request.isWorldRugbyCertified())
+                .build();
+        
+        teamStaff = teamStaffRepository.save(teamStaff);
+        
+        // Auto-link person to organisation
+        UUID orgId = team.getOrganisation().getId();
+        if (!organisationPersonRepository.existsByOrganisationIdAndPersonId(orgId, person.getId())) {
+            OrganisationPerson op = OrganisationPerson.builder()
+                    .organisation(team.getOrganisation())
+                    .person(person)
+                    .build();
+            organisationPersonRepository.save(op);
+        }
+
+        return mapToTeamStaffDTO(teamStaff);
+    }
+
+    @Override
+    @Transactional
+    public void removeTeamStaff(UUID teamId, UUID staffAssignmentId, HttpServletRequest httpRequest) {
+        TeamStaff teamStaff = teamStaffRepository.findById(staffAssignmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Team Staff not found"));
+        if (!teamStaff.getTeam().getId().equals(teamId)) {
+            throw new IllegalArgumentException("Staff does not belong to this team");
+        }
+        teamStaffRepository.delete(teamStaff);
+    }
+
+    private TeamStaffDTO mapToTeamStaffDTO(TeamStaff teamStaff) {
+        return TeamStaffDTO.builder()
+                .id(teamStaff.getId())
+                .personId(teamStaff.getPerson().getId())
+                .firstName(teamStaff.getPerson().getFirstName())
+                .lastName(teamStaff.getPerson().getLastName())
+                .staffRoleId(teamStaff.getStaffRole().getId())
+                .staffRoleName(teamStaff.getStaffRole().getName())
+                .staffRoleDescription(teamStaff.getStaffRole().getDescription())
+                .joinedAt(teamStaff.getJoinedAt())
+                .isWorldRugbyCertified(teamStaff.isWorldRugbyCertified())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getAvailablePersonsForStaff(UUID teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        UUID orgId = team.getOrganisation().getId();
+
+        return organisationPersonRepository.findByOrganisationIdOrHierarchy(orgId).stream()
+                .map(op -> op.getPerson())
+                .map(p -> com.athleticaos.backend.dtos.team.PersonSummaryDTO.builder()
+                        .id(p.getId().toString())
+                        .firstName(p.getFirstName())
+                        .lastName(p.getLastName())
+                        .email(p.getEmail())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
     public void deleteTeam(UUID id, HttpServletRequest httpRequest) {
         log.info("Deleting team: {}", id);
         Team team = teamRepository.findById(id)
@@ -224,3 +326,4 @@ public class TeamServiceImpl implements TeamService {
         auditLogger.logTeamDeleted(team, httpRequest);
     }
 }
+

@@ -39,6 +39,9 @@ public class TournamentTeam {
     @Column(name = "pool_number")
     private String poolNumber;
 
+    @Column(name = "pool_slot")
+    private Integer poolSlot;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true;

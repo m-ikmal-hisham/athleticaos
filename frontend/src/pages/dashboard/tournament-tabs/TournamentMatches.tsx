@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { tournamentService } from '@/services/tournamentService';
-import { Match, TournamentCategory } from '@/types';
+import { Match, MatchResponse, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '@/lib/customToast';
-import { formatMatchStatus } from '@/utils/formatters';
+import { formatMatchStatus, formatTeamShortName } from '@/utils/formatters';
+import { getImageUrl } from '@/utils/image';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
@@ -347,7 +348,21 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     );
 }
 
-function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick: () => void, onEdit: (e: any) => void, onDelete: (e: any) => void }) {
+function TeamLogo({ url, name, className = '' }: { url?: string | null; name?: string; className?: string }) {
+    return (
+        <div className={`w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 ${className}`}>
+            {url ? (
+                <img src={getImageUrl(url)} alt={name || ''} className="w-full h-full object-contain p-0.5" />
+            ) : (
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                    {name?.slice(0, 2)?.toUpperCase() || '?'}
+                </span>
+            )}
+        </div>
+    );
+}
+
+function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse, onClick: () => void, onEdit: (e: any) => void, onDelete: (e: any) => void }) {
     return (
         <div
             className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
@@ -401,11 +416,14 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
             {/* Score Block */}
             <div className="flex items-center justify-between gap-4">
                 {/* Home */}
-                <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
-                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.homeTeam?.name || match.homeTeamPlaceholder}>
-                        {match.homeTeam?.name || match.homeTeamPlaceholder || 'TBD'}
-                    </span>
-                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Home</span>
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || match.homeTeam?.name || match.homeTeamPlaceholder} />
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate" title={match.homeTeamName || match.homeTeam?.name || match.homeTeamPlaceholder}>
+                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || match.homeTeam?.name || match.homeTeamPlaceholder)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
+                    </div>
                 </div>
 
                 {/* Score */}
@@ -422,13 +440,17 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: Match, onClick
                 </div>
 
                 {/* Away */}
-                <div className="flex-1 flex flex-col items-end gap-1 min-w-0 text-right">
-                    <span className="font-bold text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate w-full" title={match.awayTeam?.name || match.awayTeamPlaceholder}>
-                        {match.awayTeam?.name || match.awayTeamPlaceholder || 'TBD'}
-                    </span>
-                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Away</span>
+                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                    <div className="flex flex-col items-end gap-0.5 min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right" title={match.awayTeamName || match.awayTeam?.name || match.awayTeamPlaceholder}>
+                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || match.awayTeam?.name || match.awayTeamPlaceholder)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
+                    </div>
+                    <TeamLogo url={match.awayTeamLogoUrl} name={match.awayTeamName || match.awayTeam?.name || match.awayTeamPlaceholder} />
                 </div>
             </div>
         </div>
     );
 }
+

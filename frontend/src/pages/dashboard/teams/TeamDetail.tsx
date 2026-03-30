@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
 import { fetchTeamBySlug, fetchTeamById, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
 import { usePlayersStore } from '../../../store/players.store';
-import { Users, Trophy, Target, TrendUp } from '@phosphor-icons/react';
+import { Users, Trophy, Target, TrendUp, CaretDown, CaretUp, MagnifyingGlass } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
 import { formatTeamCategory, formatAgeGroup, formatMatchStatus } from "@/utils/formatters";
+import { TeamStaffPanel } from '@/components/admin/team/TeamStaffPanel';
 
 interface TeamDetail {
     id: string;
@@ -45,6 +46,8 @@ interface Match {
     scheduledTime: string;
 }
 
+const COLLAPSED_LIMIT = 5;
+
 export default function TeamDetail() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
@@ -54,8 +57,13 @@ export default function TeamDetail() {
     const [stats, setStats] = useState<TeamStats | null>(null);
     const [matches, setMatches] = useState<Match[]>([]);
     const [teamPlayers, setTeamPlayers] = useState<any[]>([]);
+    const [staffPersonIds, setStaffPersonIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Roster expand/search state — collapsed by default
+    const [rosterExpanded, setRosterExpanded] = useState(false);
+    const [rosterSearch, setRosterSearch] = useState('');
 
     useEffect(() => {
         if (!slug) return;
@@ -64,14 +72,11 @@ export default function TeamDetail() {
             setLoading(true);
             setError(null);
             try {
-                // Determine if we should fetch by slug or ID
-                // Simple heuristic: if it looks like a standard UUID, try ID first, or just try slug then ID fallback
                 let teamData;
                 try {
                     const res = await fetchTeamBySlug(slug);
                     teamData = res.data;
                 } catch (e) {
-                    // Fallback to ID if slug fetch fails
                     console.warn("Failed to fetch by slug, trying ID...", e);
                     const res = await fetchTeamById(slug);
                     teamData = res.data;
@@ -80,14 +85,12 @@ export default function TeamDetail() {
                 if (!teamData) throw new Error("Team not found");
                 setTeam(teamData);
 
-                // IDs for subsequent calls
                 const teamId = teamData.id;
 
-                // Then fetch stats, matches, and players using team ID
                 const [statsRes, matchesRes, playersRes] = await Promise.all([
                     fetchTeamStats(teamId).catch(() => ({ data: null })),
                     fetchTeamMatches(teamId).catch(() => ({ data: [] })),
-                    fetchTeamPlayers(teamId).catch(() => ({ data: [] }))
+                    fetchTeamPlayers(teamId).catch(() => ({ data: [] })),
                 ]);
                 setStats(statsRes.data);
                 setMatches(matchesRes.data || []);
@@ -103,7 +106,34 @@ export default function TeamDetail() {
         loadTeamData();
     }, [slug]);
 
+    // Callback from TeamStaffPanel when staff list changes
+    const handleStaffChange = useCallback((ids: string[]) => {
+        setStaffPersonIds(ids);
+    }, []);
 
+    // Filter roster: exclude persons who are assigned as staff
+    const rosterPlayers = useMemo(() => {
+        if (staffPersonIds.length === 0) return teamPlayers;
+        const staffSet = new Set(staffPersonIds);
+        return teamPlayers.filter(p => {
+            const personId = p.personId || p.person?.id;
+            return !personId || !staffSet.has(personId);
+        });
+    }, [teamPlayers, staffPersonIds]);
+
+    // Searchable + expandable roster
+    const filteredRoster = useMemo(() => {
+        if (!rosterSearch.trim()) return rosterPlayers;
+        const q = rosterSearch.toLowerCase();
+        return rosterPlayers.filter(p =>
+            `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
+            (p.position || '').toLowerCase().includes(q) ||
+            String(p.jerseyNumber || '').includes(q)
+        );
+    }, [rosterPlayers, rosterSearch]);
+
+    const displayedRoster = rosterExpanded ? filteredRoster : filteredRoster.slice(0, COLLAPSED_LIMIT);
+    const hasMoreRoster = filteredRoster.length > COLLAPSED_LIMIT;
 
     const handleViewMatches = () => {
         if (team?.id) {
@@ -143,7 +173,6 @@ export default function TeamDetail() {
                     ]}
                     className="mb-4"
                 />
-
 
                 {team.logoUrl && (
                     <img
@@ -186,6 +215,9 @@ export default function TeamDetail() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Team Staff — directly after Team Info */}
+                    <TeamStaffPanel teamId={team.id} organisationId={team.organisationId} onStaffChange={handleStaffChange} />
 
                     {/* Team Stats */}
                     {stats && (
@@ -246,9 +278,12 @@ export default function TeamDetail() {
 
                 {/* Right Column */}
                 <div className="flex flex-col gap-6">
-                    {/* Roster */}
+                    {/* Roster (collapsible + searchable) */}
                     <Card>
-                        <CardHeader>
+                        <CardHeader
+                            className="cursor-pointer select-none"
+                            onClick={() => setRosterExpanded(!rosterExpanded)}
+                        >
                             <div className="flex justify-between items-center">
                                 <div>
                                     <CardTitle>
@@ -257,16 +292,58 @@ export default function TeamDetail() {
                                             Roster
                                         </div>
                                     </CardTitle>
-                                    <CardDescription>{teamPlayers.length} players</CardDescription>
+                                    <CardDescription>{rosterPlayers.length} players</CardDescription>
                                 </div>
+                                <Button variant="ghost" size="sm" className="h-10 w-10 p-0 shrink-0">
+                                    {rosterExpanded ? (
+                                        <CaretUp className="w-6 h-6" />
+                                    ) : (
+                                        <CaretDown className="w-6 h-6" />
+                                    )}
+                                </Button>
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <RosterList
-                                players={teamPlayers}
-                                onPlayerClick={openPlayerDrawer}
-                            />
-                        </CardContent>
+
+                        {/* Content only shown when expanded */}
+                        {rosterExpanded && (
+                            <CardContent>
+                                {/* Search bar */}
+                                {rosterPlayers.length > COLLAPSED_LIMIT && (
+                                    <div className="relative mb-4">
+                                        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search players..."
+                                            value={rosterSearch}
+                                            onChange={(e) => setRosterSearch(e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-full pl-9 pr-4 py-2 text-sm bg-muted/30 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 text-foreground placeholder:text-muted-foreground"
+                                        />
+                                    </div>
+                                )}
+                                <RosterList
+                                    players={rosterSearch ? filteredRoster : displayedRoster}
+                                    onPlayerClick={openPlayerDrawer}
+                                />
+                                {/* Show More / Less toggle (when not searching) */}
+                                {!rosterSearch && hasMoreRoster && (
+                                    <div className="mt-3 text-center">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                // This toggles between showing 5 and all
+                                                setRosterExpanded(true);
+                                            }}
+                                            className="text-muted-foreground hover:text-foreground gap-1"
+                                        >
+                                            Showing {displayedRoster.length} of {rosterPlayers.length} players
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        )}
                     </Card>
 
                     {/* Recent Matches */}

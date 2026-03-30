@@ -312,12 +312,19 @@ public class AuditLogger {
         // ==================== OFFICIAL ACTIONS ====================
 
         public void logOfficialAssigned(MatchOfficial assignment, HttpServletRequest request) {
+                String officialName = "Unknown";
+                if (assignment.getOfficial().getPerson() != null) {
+                        officialName = assignment.getOfficial().getPerson().getLastName();
+                } else if (assignment.getOfficial().getUser() != null) {
+                        officialName = assignment.getOfficial().getUser().getLastName();
+                }
+
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType("OFFICIAL_ASSIGNED")
                                 .entityType("MATCH_OFFICIAL")
                                 .entityId(assignment.getId())
                                 .entitySummary(String.format("Official %s assigned as %s to match %s",
-                                                assignment.getOfficial().getUser().getLastName(),
+                                                officialName,
                                                 assignment.getAssignedRole(),
                                                 assignment.getMatch().getMatchCode()))
                                 .build();

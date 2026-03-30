@@ -120,9 +120,11 @@ export interface Team {
     ageGroup: string;
     division?: string;
     state?: string;
+    organisationLevel?: string;
     status: string;
     // Tournament context fields (optional)
     poolNumber?: string;
+    poolSlot?: number;
     tournamentCategoryId?: string;
     logoUrl?: string;
     shortName?: string;
@@ -199,6 +201,7 @@ export interface TeamPlayer {
     status: string;
     joinedDate: string;
     isActive: boolean;
+    nationalPlayerStatus?: string;
 }
 
 export interface PlayerCreateRequest {
