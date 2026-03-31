@@ -24,7 +24,9 @@ public class UrlSanitizer {
 
         // Only upgrade if it's an internal URL starting with http://
         if (url.startsWith(HTTP_PREFIX) && url.contains(STAGING_DOMAIN)) {
-            String sanitized = url.replaceFirst(HTTP_PREFIX, HTTPS_PREFIX);
+            // Strip the port :8080 if present and upgrade to https
+            String sanitized = url.replaceFirst(HTTP_PREFIX, HTTPS_PREFIX)
+                                  .replaceFirst(":8080", "");
             log.debug("Sanitized insecure internal URL: {} -> {}", url, sanitized);
             return sanitized;
         }
