@@ -14,4 +14,7 @@ public interface TournamentStaffRepository extends JpaRepository<TournamentStaff
     List<TournamentStaff> findByTournamentIdAndTournamentTeamId(UUID tournamentId, UUID tournamentTeamId);
     Optional<TournamentStaff> findByTournamentTeamIdAndPersonIdAndStaffRoleId(UUID tournamentTeamId, UUID personId, Integer staffRoleId);
     boolean existsByPersonId(UUID personId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT ts.person.id FROM TournamentStaff ts WHERE ts.isActive = true AND ts.person.id IN :personIds")
+    java.util.Set<UUID> findAllPersonIdsIn(@org.springframework.data.repository.query.Param("personIds") java.util.Collection<UUID> personIds);
 }

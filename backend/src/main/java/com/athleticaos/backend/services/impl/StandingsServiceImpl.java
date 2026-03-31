@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.standing.StandingsResponse;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.TournamentTeam;
@@ -42,7 +44,7 @@ public class StandingsServiceImpl implements StandingsService {
                     standingsMap.put(tt.getTeam().getId(), StandingsResponse.builder()
                             .teamId(tt.getTeam().getId())
                             .teamName(tt.getTeam().getName())
-                            .teamLogoUrl(tt.getTeam().getLogoUrl())
+                            .teamLogoUrl(UrlSanitizer.sanitize(tt.getTeam().getLogoUrl()))
                             .teamShortName(tt.getTeam().getShortName())
                             .poolName(tt.getPoolNumber())
                             .played(0)

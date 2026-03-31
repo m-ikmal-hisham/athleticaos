@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.person.CreatePersonRequest;
 import com.athleticaos.backend.dtos.person.PersonResponseDTO;
 import com.athleticaos.backend.dtos.person.PersonUpdateRequest;
@@ -19,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -47,7 +51,7 @@ public class PersonServiceImpl implements PersonService {
     @Transactional(readOnly = true)
     public List<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId) {
         log.info("Fetching hierarchical persons for organisation: {}", organisationId);
-        
+
         Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Person> personsToMap;
 
@@ -57,32 +61,55 @@ public class PersonServiceImpl implements PersonService {
         } else {
             // Normal Admin -> fetch their org hierarchy
             Set<UUID> orgIds = organisationService.getAllDescendantIds(organisationId);
-            
-            // Retain only IDs they have access to, though getAllDescendantIds is usually derived from an accessible root anyway
+
+            // Retain only IDs they have access to
             if (!orgIds.isEmpty() && !accessibleIds.isEmpty()) {
                 orgIds.retainAll(accessibleIds);
             }
-            
+
             if (orgIds.isEmpty()) {
                 personsToMap = new ArrayList<>();
             } else {
                 personsToMap = organisationPersonRepository.findAllByOrganisationIdIn(orgIds).stream()
                         .map(OrganisationPerson::getPerson)
-                        .distinct() // Prevent duplicates if person linked to multiple sub-orgs
+                        .distinct()
                         .collect(Collectors.toList());
             }
         }
 
-        // Batch fetch role relationships to prevent N+1 queries. Convert to String Sets for reliable contains() checks regardless of JPA UUID mapping
-        Set<String> playerPersonIds = playerRepository.findAllPersonIds().stream().map(Object::toString).collect(Collectors.toSet());
-        Set<String> staffPersonIds = teamStaffRepository.findAllPersonIds().stream().map(Object::toString).collect(Collectors.toSet());
-        Set<String> officialPersonIds = officialRegistryRepository.findAllPersonIds().stream().map(Object::toString).collect(Collectors.toSet());
-        Set<String> wrStaffPersonIds = teamStaffRepository.findAllWorldRugbyCertifiedPersonIds().stream().map(Object::toString).collect(Collectors.toSet());
-        Set<String> wrOfficialPersonIds = officialRegistryRepository.findAllWorldRugbyCertifiedPersonIds().stream().map(Object::toString).collect(Collectors.toSet());
+        if (personsToMap.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<UUID> personIds = personsToMap.stream().map(Person::getId).collect(Collectors.toList());
+
+        // 1. Batch fetch National Logos to eliminate N+1
+        Map<UUID, String> nationalLogos = prefetchNationalLogos(personIds);
+
+        // 2. Batch fetch Roles for only the target persons to improve performance
+        Set<UUID> playerPersonIds = playerRepository.findAllPersonIdsIn(personIds);
+        Set<UUID> staffPersonIds = teamStaffRepository.findAllPersonIdsIn(personIds);
+        Set<UUID> officialPersonIds = officialRegistryRepository.findAllPersonIdsIn(personIds);
+        Set<UUID> wrStaffPersonIds = teamStaffRepository.findAllWorldRugbyCertifiedPersonIdsIn(personIds);
+        Set<UUID> wrOfficialPersonIds = officialRegistryRepository.findAllWorldRugbyCertifiedPersonIdsIn(personIds);
+        Set<UUID> tournamentStaffPersonIds = tournamentStaffRepository.findAllPersonIdsIn(personIds);
 
         return personsToMap.stream()
-                .map(p -> mapToResponseDTO(p, playerPersonIds, staffPersonIds, officialPersonIds, wrStaffPersonIds, wrOfficialPersonIds))
+                .map(p -> mapToResponseDTO(p, playerPersonIds, staffPersonIds, officialPersonIds, wrStaffPersonIds, wrOfficialPersonIds, nationalLogos, tournamentStaffPersonIds))
                 .collect(Collectors.toList());
+    }
+
+    private Map<UUID, String> prefetchNationalLogos(List<UUID> personIds) {
+        List<OrganisationPerson> mappings = organisationPersonRepository.findAllByPersonIdIn(personIds);
+        Map<UUID, String> logos = new HashMap<>();
+        
+        for (OrganisationPerson op : mappings) {
+            Organisation org = op.getOrganisation();
+            if (org != null && org.getOrgLevel() != null && "COUNTRY".equals(org.getOrgLevel().name())) {
+                logos.put(op.getPerson().getId(), UrlSanitizer.sanitize(org.getLogoUrl()));
+            }
+        }
+        return logos;
     }
 
     @Override
@@ -93,12 +120,15 @@ public class PersonServiceImpl implements PersonService {
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
         // For a single person, we can just use the batch method since it's cached/fast,
         // or just use the old determineRoles logic. We'll use the sets for simplicity.
+        List<UUID> personId = java.util.Collections.singletonList(person.getId());
         return mapToResponseDTO(person, 
-                playerRepository.findAllPersonIds().stream().map(Object::toString).collect(Collectors.toSet()), 
-                teamStaffRepository.findAllPersonIds().stream().map(Object::toString).collect(Collectors.toSet()), 
-                officialRegistryRepository.findAllPersonIds().stream().map(Object::toString).collect(Collectors.toSet()),
-                teamStaffRepository.findAllWorldRugbyCertifiedPersonIds().stream().map(Object::toString).collect(Collectors.toSet()),
-                officialRegistryRepository.findAllWorldRugbyCertifiedPersonIds().stream().map(Object::toString).collect(Collectors.toSet()));
+                playerRepository.findAllPersonIdsIn(personId), 
+                teamStaffRepository.findAllPersonIdsIn(personId), 
+                officialRegistryRepository.findAllPersonIdsIn(personId),
+                teamStaffRepository.findAllWorldRugbyCertifiedPersonIdsIn(personId),
+                officialRegistryRepository.findAllWorldRugbyCertifiedPersonIdsIn(personId),
+                prefetchNationalLogos(personId),
+                tournamentStaffRepository.findAllPersonIdsIn(personId));
     }
 
     @Override
@@ -271,20 +301,27 @@ public class PersonServiceImpl implements PersonService {
         personRepository.delete(person);
     }
 
-    private PersonResponseDTO mapToResponseDTO(Person p, Set<String> playerIds, Set<String> staffIds, Set<String> officialIds, Set<String> wrStaffIds, Set<String> wrOfficialIds) {
+    private PersonResponseDTO mapToResponseDTO(Person p, Set<UUID> playerIds, Set<UUID> staffIds, Set<UUID> officialIds, Set<UUID> wrStaffIds, Set<UUID> wrOfficialIds, Map<UUID, String> nationalLogos, Set<UUID> tournamentStaffIds) {
         List<String> roles = new ArrayList<>();
-        boolean isPlayer = playerIds.contains(p.getId().toString());
-        boolean isStaff = Boolean.TRUE.equals(p.getIsStaff()) || staffIds.contains(p.getId().toString());
-        boolean isOfficial = officialIds.contains(p.getId().toString());
+        UUID pid = p.getId();
+        
+        // A person is a player if they exist in the Player registry OR have an active National Player Status
+        boolean isPlayer = playerIds.contains(pid) || (p.getNationalPlayerStatus() != null && !"NONE".equalsIgnoreCase(p.getNationalPlayerStatus()));
+        
+        // A person is staff if they have the isStaff flag OR exist in TeamStaff or TournamentStaff registries
+        boolean isStaff = Boolean.TRUE.equals(p.getIsStaff()) || staffIds.contains(pid) || tournamentStaffIds.contains(pid);
+        
+        // A person is an official if they exist in the OfficialRegistry
+        boolean isOfficial = officialIds.contains(pid);
         
         if (isPlayer) roles.add("Player");
         if (isStaff) roles.add("Staff");
         if (isOfficial) roles.add("Official");
 
-        boolean isWR = wrStaffIds.contains(p.getId().toString()) || wrOfficialIds.contains(p.getId().toString());
+        boolean isWR = wrStaffIds.contains(pid) || wrOfficialIds.contains(pid);
 
         return PersonResponseDTO.builder()
-                .id(p.getId().toString())
+                .id(pid.toString())
                 .firstName(p.getFirstName())
                 .lastName(p.getLastName())
                 .icOrPassport(p.getIcOrPassport())
@@ -295,7 +332,7 @@ public class PersonServiceImpl implements PersonService {
                 .phone(p.getPhone())
                 .registeredAt(p.getCreatedAt() != null ? p.getCreatedAt().toString() : null)
                 .nationalPlayerStatus(p.getNationalPlayerStatus())
-                .nationalOrganisationLogoUrl(determineNationalLogo(p.getId()))
+                .nationalOrganisationLogoUrl(nationalLogos.get(pid))
                 .roles(roles)
                 .userId(p.getUserId() != null ? p.getUserId().toString() : null)
                 .isPlayer(isPlayer)
@@ -305,14 +342,6 @@ public class PersonServiceImpl implements PersonService {
                 .build();
     }
 
-    private String determineNationalLogo(UUID personId) {
-        return organisationPersonRepository.findByPersonId(personId).stream()
-                .map(op -> op.getOrganisation())
-                .filter(org -> "COUNTRY".equals(org.getOrgLevel().name()))
-                .map(org -> org.getLogoUrl())
-                .findFirst()
-                .orElse(null);
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.match.MatchCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.match.MatchUpdateRequest;
@@ -386,7 +388,7 @@ public class MatchServiceImpl implements MatchService {
             if (homeLogo == null && match.getHomeTeam().getOrganisation() != null) {
                 homeLogo = match.getHomeTeam().getOrganisation().getLogoUrl();
             }
-            builder.homeTeamLogoUrl(homeLogo);
+            builder.homeTeamLogoUrl(UrlSanitizer.sanitize(homeLogo));
             
             builder.homeTeamShortName(match.getHomeTeam().getShortName());
             if (match.getHomeTeam().getOrganisation() != null) {
@@ -405,7 +407,7 @@ public class MatchServiceImpl implements MatchService {
             if (awayLogo == null && match.getAwayTeam().getOrganisation() != null) {
                 awayLogo = match.getAwayTeam().getOrganisation().getLogoUrl();
             }
-            builder.awayTeamLogoUrl(awayLogo);
+            builder.awayTeamLogoUrl(UrlSanitizer.sanitize(awayLogo));
             
             builder.awayTeamShortName(match.getAwayTeam().getShortName());
             if (match.getAwayTeam().getOrganisation() != null) {

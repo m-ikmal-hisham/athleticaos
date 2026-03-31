@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.team.TeamResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentCreateRequest;
 import com.athleticaos.backend.dtos.tournament.TournamentDashboardResponse;
@@ -511,9 +513,9 @@ public class TournamentServiceImpl implements TournamentService {
                 .isPublished(tournament.isPublished())
                 .status(status)
                 .seasonName(tournament.getSeason() != null ? tournament.getSeason().getName() : null)
-                .logoUrl(tournament.getLogoUrl())
-                .bannerUrl(tournament.getBannerUrl())
-                .backgroundUrl(tournament.getBackgroundUrl())
+                .logoUrl(UrlSanitizer.sanitize(tournament.getLogoUrl()))
+                .bannerUrl(UrlSanitizer.sanitize(tournament.getBannerUrl()))
+                .backgroundUrl(UrlSanitizer.sanitize(tournament.getBackgroundUrl()))
                 .livestreamUrl(tournament.getLivestreamUrl())
                 .rugbyFormat(
                         tournament.getFormatConfig() != null ? tournament.getFormatConfig().getRugbyFormat() : null)
@@ -551,9 +553,9 @@ public class TournamentServiceImpl implements TournamentService {
                         .state(tournamentTeam.getTeam().getState())
                         .state(tournamentTeam.getTeam().getState())
                         .status(tournamentTeam.getTeam().getStatus())
-                        .logoUrl(tournamentTeam.getTeam().getLogoUrl() != null 
+                        .logoUrl(UrlSanitizer.sanitize(tournamentTeam.getTeam().getLogoUrl() != null 
                             ? tournamentTeam.getTeam().getLogoUrl() 
-                            : (tournamentTeam.getTeam().getOrganisation() != null ? tournamentTeam.getTeam().getOrganisation().getLogoUrl() : null))
+                            : (tournamentTeam.getTeam().getOrganisation() != null ? tournamentTeam.getTeam().getOrganisation().getLogoUrl() : null)))
                         .shortName(tournamentTeam.getTeam().getShortName())
                         .poolNumber(tournamentTeam.getPoolNumber())
                         .tournamentCategoryId(

@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.dtos.team.TeamCreateRequest;
 import com.athleticaos.backend.dtos.team.TeamResponse;
@@ -216,7 +218,7 @@ public class TeamServiceImpl implements TeamService {
                 .organisationLevel(team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
                 .state(team.getState())
                 .status(team.getStatus())
-                .logoUrl(team.getLogoUrl() != null ? team.getLogoUrl() : (team.getOrganisation() != null ? team.getOrganisation().getLogoUrl() : null))
+                .logoUrl(UrlSanitizer.sanitize(team.getLogoUrl() != null ? team.getLogoUrl() : (team.getOrganisation() != null ? team.getOrganisation().getLogoUrl() : null)))
                 .players(playerTeamService.getTeamRoster(team.getId()))
                 .build();
     }

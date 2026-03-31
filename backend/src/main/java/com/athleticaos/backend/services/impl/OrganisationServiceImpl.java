@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.org.OrganisationCreateRequest;
 import com.athleticaos.backend.dtos.org.OrganisationResponse;
 import com.athleticaos.backend.dtos.org.OrganisationTreeNode;
@@ -258,9 +260,9 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .secondaryColor(org.getSecondaryColor())
                 .tertiaryColor(org.getTertiaryColor())
                 .quaternaryColor(org.getQuaternaryColor())
-                .logoUrl(org.getLogoUrl())
+                .logoUrl(UrlSanitizer.sanitize(org.getLogoUrl()))
                 .accentColor(org.getAccentColor())
-                .coverImageUrl(org.getCoverImageUrl())
+                .coverImageUrl(UrlSanitizer.sanitize(org.getCoverImageUrl()))
                 .state(org.getState())
                 .addressLine1(org.getAddressLine1())
                 .addressLine2(org.getAddressLine2())
@@ -519,6 +521,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                         .id(p.getId().toString())
                         .firstName(p.getFirstName())
                         .lastName(p.getLastName())
+                        .icOrPassport(p.getIcOrPassport())
                         .email(p.getEmail())
                         .build();
                 })

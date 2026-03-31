@@ -24,6 +24,6 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
     boolean existsByOrganisationIdAndPersonId(UUID organisationId, UUID personId);
     
     List<OrganisationPerson> findAllByOrganisationIdIn(java.util.Collection<UUID> organisationIds);
-
+    List<OrganisationPerson> findAllByPersonIdIn(java.util.Collection<UUID> personIds);
     List<OrganisationPerson> findByPersonId(UUID personId);
 }
