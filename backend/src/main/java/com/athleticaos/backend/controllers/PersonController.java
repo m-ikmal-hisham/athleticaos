@@ -5,6 +5,10 @@ import com.athleticaos.backend.dtos.person.PersonUpdateRequest;
 import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.repositories.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +30,10 @@ public class PersonController {
 
     @GetMapping("/organisation/{orgId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
-    public ResponseEntity<List<PersonResponseDTO>> getPersonsByOrganisation(@PathVariable UUID orgId) {
-        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId));
+    public ResponseEntity<Page<PersonResponseDTO>> getPersonsByOrganisation(
+            @PathVariable UUID orgId,
+            @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable));
     }
 
     @PostMapping("/organisation/{orgId}")

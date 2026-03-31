@@ -21,6 +21,18 @@ export interface PersonResponseDTO {
     isWorldRugbyCertified?: boolean;
 }
 
+export interface PaginatedResponse<T> {
+    content: T[];
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number;
+    first: boolean;
+    last: boolean;
+    numberOfElements: number;
+    empty: boolean;
+}
+
 export interface PersonUpdateRequest {
     firstName: string;
     lastName: string;
@@ -45,8 +57,14 @@ export interface CreatePersonRequest {
     nationalPlayerStatus: string;
 }
 
-export const getPersonsByOrganisation = async (orgId: string): Promise<PersonResponseDTO[]> => {
-    const response = await api.get(`/persons/organisation/${orgId}`);
+export const getPersonsByOrganisation = async (
+    orgId: string,
+    page: number = 0,
+    size: number = 50
+): Promise<PaginatedResponse<PersonResponseDTO>> => {
+    const response = await api.get(`/persons/organisation/${orgId}`, {
+        params: { page, size }
+    });
     return response.data;
 };
 

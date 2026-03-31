@@ -1,6 +1,7 @@
 package com.athleticaos.backend.repositories;
 
 import com.athleticaos.backend.entities.OrganisationPerson;
+import com.athleticaos.backend.entities.Person;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,6 +25,18 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
     boolean existsByOrganisationIdAndPersonId(UUID organisationId, UUID personId);
     
     List<OrganisationPerson> findAllByOrganisationIdIn(java.util.Collection<UUID> organisationIds);
-    List<OrganisationPerson> findAllByPersonIdIn(java.util.Collection<UUID> personIds);
+    @Query("SELECT op FROM OrganisationPerson op " +
+           "JOIN FETCH op.organisation " +
+           "JOIN FETCH op.person " +
+           "WHERE op.person.id IN :personIds")
+    List<OrganisationPerson> findAllByPersonIdIn(@Param("personIds") java.util.Collection<UUID> personIds);
+    
     List<OrganisationPerson> findByPersonId(UUID personId);
+
+    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
+           "WHERE op.organisation.id IN :orgIds")
+    org.springframework.data.domain.Page<Person> findUniquePersonsByOrganisationIds(
+        @Param("orgIds") java.util.Collection<UUID> orgIds, 
+        org.springframework.data.domain.Pageable pageable
+    );
 }

@@ -17,10 +17,16 @@ import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,39 +55,40 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId) {
+    @SuppressWarnings("null")
+    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable) {
+        Objects.requireNonNull(pageable);
         log.info("Fetching hierarchical persons for organisation: {}", organisationId);
 
         Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
-        List<Person> personsToMap;
+        Page<Person> personsToMap;
 
         if (accessibleIds == null) {
-            // Super Admin -> fetch everyone
-            personsToMap = personRepository.findAll();
+            // Super Admin -> fetch everyone paginated
+            personsToMap = personRepository.findAll(pageable);
         } else {
             // Normal Admin -> fetch their org hierarchy
             Set<UUID> orgIds = organisationService.getAllDescendantIds(organisationId);
 
-            // Retain only IDs they have access to
+            // Intersection with accessibleIds to ensure they don't jump out of their allowed scope
             if (!orgIds.isEmpty() && !accessibleIds.isEmpty()) {
                 orgIds.retainAll(accessibleIds);
             }
 
             if (orgIds.isEmpty()) {
-                personsToMap = new ArrayList<>();
+                return Page.empty(pageable);
             } else {
-                personsToMap = organisationPersonRepository.findAllByOrganisationIdIn(orgIds).stream()
-                        .map(OrganisationPerson::getPerson)
-                        .distinct()
-                        .collect(Collectors.toList());
+                personsToMap = organisationPersonRepository.findUniquePersonsByOrganisationIds(orgIds, pageable);
             }
         }
 
-        if (personsToMap.isEmpty()) {
-            return new ArrayList<>();
-        }
+        List<UUID> personIds = personsToMap.getContent().stream()
+                .map(Person::getId)
+                .collect(Collectors.toList());
 
-        List<UUID> personIds = personsToMap.stream().map(Person::getId).collect(Collectors.toList());
+        if (personIds.isEmpty()) {
+             return new PageImpl<PersonResponseDTO>(Collections.emptyList(), pageable, personsToMap.getTotalElements());
+        }
 
         // 1. Batch fetch National Logos to eliminate N+1
         Map<UUID, String> nationalLogos = prefetchNationalLogos(personIds);
@@ -94,9 +101,11 @@ public class PersonServiceImpl implements PersonService {
         Set<UUID> wrOfficialPersonIds = officialRegistryRepository.findAllWorldRugbyCertifiedPersonIdsIn(personIds);
         Set<UUID> tournamentStaffPersonIds = tournamentStaffRepository.findAllPersonIdsIn(personIds);
 
-        return personsToMap.stream()
+        List<PersonResponseDTO> content = personsToMap.getContent().stream()
                 .map(p -> mapToResponseDTO(p, playerPersonIds, staffPersonIds, officialPersonIds, wrStaffPersonIds, wrOfficialPersonIds, nationalLogos, tournamentStaffPersonIds))
                 .collect(Collectors.toList());
+
+        return new PageImpl<PersonResponseDTO>(content, pageable, personsToMap.getTotalElements());
     }
 
     private Map<UUID, String> prefetchNationalLogos(List<UUID> personIds) {

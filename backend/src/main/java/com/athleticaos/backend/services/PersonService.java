@@ -3,11 +3,13 @@ package com.athleticaos.backend.services;
 import com.athleticaos.backend.dtos.person.PersonResponseDTO;
 import com.athleticaos.backend.dtos.person.PersonUpdateRequest;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.UUID;
 
 public interface PersonService {
-    List<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId);
+    Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable);
     PersonResponseDTO getPersonById(UUID id);
     PersonResponseDTO createPerson(UUID organisationId, com.athleticaos.backend.dtos.person.CreatePersonRequest request);
     PersonResponseDTO updatePerson(UUID id, PersonUpdateRequest request);

@@ -16,6 +16,12 @@ import { showToast } from '@/lib/customToast';
 const PeopleDirectory: React.FC = () => {
     const { user } = useAuthStore();
     const [persons, setPersons] = useState<PersonResponseDTO[]>([]);
+    const [pagination, setPagination] = useState({
+        currentPage: 0,
+        totalPages: 0,
+        totalElements: 0,
+        size: 50
+    });
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -30,12 +36,18 @@ const PeopleDirectory: React.FC = () => {
         }
     }, [user?.organisationId]);
 
-    const loadPersons = async () => {
+    const loadPersons = async (page: number = 0) => {
         if (!user?.organisationId) return;
         setLoading(true);
         try {
-            const data = await getPersonsByOrganisation(user.organisationId);
-            setPersons(data);
+            const res = await getPersonsByOrganisation(user.organisationId, page, pagination.size);
+            setPersons(res.content);
+            setPagination({
+                currentPage: res.number,
+                totalPages: res.totalPages,
+                totalElements: res.totalElements,
+                size: res.size
+            });
         } catch (err) {
             console.error("Failed to load persons", err);
             showToast.error("Failed to load directory");
@@ -46,12 +58,12 @@ const PeopleDirectory: React.FC = () => {
 
     const stats = useMemo(() => {
         return {
-            total: { count: persons.length, trend: 12.5 },
+            total: { count: pagination.totalElements, trend: 12.5 },
             players: { count: persons.filter(p => p.isPlayer).length, trend: 2.1 },
             staff: { count: persons.filter(p => p.isStaff).length, trend: 0 },
             officials: { count: persons.filter(p => p.isOfficial).length, trend: -3.4 },
         };
-    }, [persons]);
+    }, [persons, pagination.totalElements]);
 
     const filteredPersons = useMemo(() => {
         let result = persons;
@@ -344,6 +356,36 @@ const PeopleDirectory: React.FC = () => {
                             )}
                         </TableBody>
                     </Table>
+
+                    {/* Pagination Controls */}
+                    <div className="p-4 border-t border-border flex items-center justify-between bg-glass-bg/50">
+                        <div className="text-sm text-muted font-medium">
+                            Showing <span className="text-foreground">{persons.length}</span> of <span className="text-foreground">{pagination.totalElements}</span> people
+                        </div>
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 px-4 rounded-lg font-semibold"
+                                disabled={pagination.currentPage === 0 || loading}
+                                onClick={() => loadPersons(pagination.currentPage - 1)}
+                            >
+                                Previous
+                            </Button>
+                            <div className="flex items-center px-4 text-sm font-bold text-primary-600 bg-primary-50 rounded-lg">
+                                {pagination.currentPage + 1} / {pagination.totalPages || 1}
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 px-4 rounded-lg font-semibold"
+                                disabled={pagination.currentPage >= pagination.totalPages - 1 || loading}
+                                onClick={() => loadPersons(pagination.currentPage + 1)}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
