@@ -53,8 +53,9 @@ ssh -i "$PEM_KEY" "$EC2_USER@$EC2_HOST" << 'EOF'
 
   # Rebuild the image from the JAR
   cd ~/athleticaos/backend
-  echo "Rebuilding Docker image on host..."
-  docker build -t athleticaos-backend .
+  GIT_SHA=$(git rev-parse --short HEAD)
+  echo "Rebuilding Docker image on host (SHA: $GIT_SHA)..."
+  docker build -t athleticaos-backend --build-arg GIT_SHA=$GIT_SHA .
 
   echo "Starting new container..."
   docker run -d \

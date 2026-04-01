@@ -165,6 +165,7 @@
 						<includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
 					</includeOnlyProperties>
 					<commitIdGenerationMode>full</commitIdGenerationMode>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
 				</configuration>
 			</plugin>
 		</plugins>

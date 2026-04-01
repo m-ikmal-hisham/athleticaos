@@ -12,7 +12,8 @@ RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 # Copy source and build (skip tests — they run in CI)
 COPY src src
-RUN ./mvnw package -DskipTests -B && \
+ARG GIT_SHA=unknown
+RUN ./mvnw package -DskipTests -B -Dgit.commit.id.full=${GIT_SHA} && \
     # Extract the layered jar for better Docker layer caching
     java -Djarmode=layertools -jar target/*.jar extract --destination /extracted
 

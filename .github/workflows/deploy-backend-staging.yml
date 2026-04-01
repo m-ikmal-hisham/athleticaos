@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Docker image
         working-directory: backend
-        run: docker build -t athleticaos-backend:${{ github.sha }} .
+        run: docker build -t athleticaos-backend:${{ github.sha }} --build-arg GIT_SHA=${{ github.sha }} .
 
       - name: Save Docker image
         run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
