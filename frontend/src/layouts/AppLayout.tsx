@@ -419,6 +419,11 @@ export const AppLayout = () => {
                                 </>
                             )}
                         </button>
+                        {!isCollapsed && (
+                            <p className="mt-2 text-[9px] text-muted-foreground/30 font-mono text-center">
+                                v{import.meta.env.VITE_GIT_SHA || 'dev'}
+                            </p>
+                        )}
                     </div>
                 </div>
             </aside>

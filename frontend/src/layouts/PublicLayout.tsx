@@ -147,8 +147,9 @@ export default function PublicLayout() {
                             <Link to="/sponsors" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Sponsors</Link>
                         </div>
 
-                        <div className="text-xs text-slate-500 dark:text-slate-500">
-                            © {new Date().getFullYear()} Malaysia Rugby. All rights reserved.
+                        <div className="text-xs text-slate-500 dark:text-slate-500 flex flex-col items-end">
+                            <p>© {new Date().getFullYear()} Malaysia Rugby. All rights reserved.</p>
+                            <p className="mt-1 opacity-50 font-mono text-[10px]">v{import.meta.env.VITE_GIT_SHA || 'dev'}</p>
                         </div>
                     </div>
                 </div>
