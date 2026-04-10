@@ -1,6 +1,6 @@
 export const AppBackground = () => {
     return (
-        <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
             {/* Base Overlay Gradient - Enhances the underlying image */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-red-50/30 dark:from-blue-900/10 dark:via-transparent dark:to-red-900/10" />
 

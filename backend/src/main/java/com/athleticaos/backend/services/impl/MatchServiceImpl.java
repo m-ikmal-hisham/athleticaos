@@ -355,6 +355,7 @@ public class MatchServiceImpl implements MatchService {
                     .id(match.getStage().getId().toString())
                     .name(match.getStage().getName())
                     .stageType(match.getStage().getStageType() != null ? match.getStage().getStageType().name() : null)
+                    .categoryId(match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
                     .build());
         }
 

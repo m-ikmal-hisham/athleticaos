@@ -89,9 +89,9 @@ export const TournamentPill = () => {
     if (loading) {
         return (
             <div className={clsx(
-                "relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
+                "backdrop-blur-pill relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
                 "bg-white/10 dark:bg-black/20",
-                "backdrop-blur-[2px] backdrop-saturate-[150%] border border-white/20 dark:border-white/10 shadow-lg",
+                "border border-white/20 dark:border-white/10 shadow-lg",
                 "w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-blue-500/20">
@@ -108,9 +108,9 @@ export const TournamentPill = () => {
     if (!tournament) {
         return (
             <div className={clsx(
-                "relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
+                "backdrop-blur-pill relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
                 "bg-white/10 dark:bg-black/20",
-                "backdrop-blur-[2px] backdrop-saturate-[150%] border border-white/20 dark:border-white/10 shadow-lg",
+                "border border-white/20 dark:border-white/10 shadow-lg",
                 "w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-gray-500/20">
@@ -137,9 +137,8 @@ export const TournamentPill = () => {
     return (
         <div className="relative w-full">
             <div className={clsx(
-                "group relative flex items-center justify-between px-3 md:px-5 py-3 md:py-4 rounded-full", // True Pill shape
+                "backdrop-blur-pill group relative flex items-center justify-between px-3 md:px-5 py-3 md:py-4 rounded-full", // True Pill shape
                 "bg-white/10 dark:bg-black/20", // Glass Background (Glass Only, No Tint)
-                "backdrop-blur-[2px] backdrop-saturate-[150%]", // Stronger blur
                 "border border-white/20 dark:border-white/10", // Softer border
                 "shadow-lg shadow-black/10", // Softer shadow
                 "w-full transition-all duration-300 hover:scale-[1.005]"

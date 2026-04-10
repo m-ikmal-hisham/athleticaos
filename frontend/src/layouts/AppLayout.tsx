@@ -257,7 +257,9 @@ export const AppLayout = () => {
                     sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                <div className="relative flex flex-col h-full bg-white/40 dark:bg-black/40 backdrop-blur-xl backdrop-saturate-[180%] rounded-[24px] overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl">
+                <div
+                    className="backdrop-blur-nav relative flex flex-col h-full bg-white/40 dark:bg-black/40 rounded-[24px] overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                >
 
                     {/* Toggle Button (Desktop Only) */}
 

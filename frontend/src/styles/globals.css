@@ -5,16 +5,33 @@
 @tailwind utilities;
 
 @layer base {
+  /* 
+   * Fixed background using pseudo-element instead of background-attachment: fixed.
+   * iOS Safari does NOT support background-attachment: fixed and it causes
+   * blank/white screen rendering. This approach is universally compatible.
+   */
   body {
+    position: relative;
+    min-height: 100vh;
+    transition: color 0.3s ease-in-out;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
     background-image: url('/athleticaos-bg-light-new.png');
-    background-attachment: fixed;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    transition: background-image 0.3s ease-in-out;
+    pointer-events: none;
   }
 
-  [data-theme='dark'] body {
+  [data-theme='dark'] body::before {
     background-image: url('/athleticaos-bg-dark-new.png');
   }
 }
@@ -463,5 +480,25 @@
 
   .progress-fill {
     width: var(--progress-width, 0%);
+  }
+
+  .glass-card-effect {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  }
+
+  .backdrop-blur-pill {
+    -webkit-backdrop-filter: blur(2px) saturate(150%);
+    backdrop-filter: blur(2px) saturate(150%);
+  }
+
+  .backdrop-blur-nav {
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  .backdrop-blur-menu {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
   }
 }

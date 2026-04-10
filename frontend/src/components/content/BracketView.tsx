@@ -18,7 +18,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
         if (!stage) return [];
 
         return matches
-            .filter(m => m.phase === stage.name) // Legacy fallback: check backend if phase vs stage.name is reliable
+            .filter(m => m.stage?.id ? m.stage.id === stageId : m.phase === stage.name) // Strict ID match first, fallback to phase
             .sort((a, b) => (a.matchCode || '').localeCompare(b.matchCode || ''));
     };
 

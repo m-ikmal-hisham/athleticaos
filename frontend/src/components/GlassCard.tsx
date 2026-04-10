@@ -24,8 +24,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
                 ref={ref}
                 className={twMerge(
                     // Base Glass Styles - using locked variables
-                    'relative overflow-hidden rounded-[18px] border transition-all duration-300',
-                    'backdrop-blur-[var(--glass-blur)] backdrop-saturate-[180%]',
+                    'glass-card-effect relative overflow-hidden rounded-[18px] border transition-all duration-300',
                     'shadow-[var(--glass-shadow-md)]',
 
                     // Variants - using theme variables
