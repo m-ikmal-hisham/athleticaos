@@ -59,10 +59,11 @@ export interface CreatePersonRequest {
 
 export const getAllPersons = async (
     page: number = 0,
-    size: number = 50
+    size: number = 50,
+    search?: string
 ): Promise<PaginatedResponse<PersonResponseDTO>> => {
     const response = await api.get(`/persons`, {
-        params: { page, size }
+        params: { page, size, ...(search ? { search } : {}) }
     });
     return response.data;
 };
@@ -70,10 +71,11 @@ export const getAllPersons = async (
 export const getPersonsByOrganisation = async (
     orgId: string,
     page: number = 0,
-    size: number = 50
+    size: number = 50,
+    search?: string
 ): Promise<PaginatedResponse<PersonResponseDTO>> => {
     const response = await api.get(`/persons/organisation/${orgId}`, {
-        params: { page, size }
+        params: { page, size, ...(search ? { search } : {}) }
     });
     return response.data;
 };

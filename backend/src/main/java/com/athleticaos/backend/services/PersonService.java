@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PersonService {
-    Page<PersonResponseDTO> getAllPersons(Pageable pageable);
-    Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable);
+    Page<PersonResponseDTO> getAllPersons(Pageable pageable, String search);
+    Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search);
     PersonResponseDTO getPersonById(UUID id);
     PersonResponseDTO createPerson(UUID organisationId, com.athleticaos.backend.dtos.person.CreatePersonRequest request);
     PersonResponseDTO updatePerson(UUID id, PersonUpdateRequest request);

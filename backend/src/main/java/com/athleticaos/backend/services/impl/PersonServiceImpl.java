@@ -55,25 +55,31 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PersonResponseDTO> getAllPersons(Pageable pageable) {
+    public Page<PersonResponseDTO> getAllPersons(Pageable pageable, String search) {
         // Delegates to getPersonsByOrganisation which already handles Super Admin
         // (returns all persons when accessibleIds is null)
-        return getPersonsByOrganisation(null, pageable);
+        return getPersonsByOrganisation(null, pageable, search);
     }
 
     @Override
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
-    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable) {
+    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search) {
         Objects.requireNonNull(pageable);
-        log.info("Fetching hierarchical persons for organisation: {}", organisationId);
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        String searchTerm = hasSearch ? search.trim() : null;
+        log.info("Fetching hierarchical persons for organisation: {}, search: {}", organisationId, searchTerm);
 
         Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         Page<Person> personsToMap;
 
         if (accessibleIds == null) {
-            // Super Admin -> fetch everyone paginated
-            personsToMap = personRepository.findAll(pageable);
+            // Super Admin -> fetch everyone paginated, with optional search
+            if (hasSearch) {
+                personsToMap = personRepository.searchAllPersons(searchTerm, pageable);
+            } else {
+                personsToMap = personRepository.findAll(pageable);
+            }
         } else {
             // Normal Admin -> fetch their org hierarchy
             Set<UUID> orgIds = organisationService.getAllDescendantIds(organisationId);
@@ -85,6 +91,8 @@ public class PersonServiceImpl implements PersonService {
 
             if (orgIds.isEmpty()) {
                 return Page.empty(pageable);
+            } else if (hasSearch) {
+                personsToMap = organisationPersonRepository.searchPersonsByOrganisationIds(orgIds, searchTerm, pageable);
             } else {
                 personsToMap = organisationPersonRepository.findUniquePersonsByOrganisationIds(orgIds, pageable);
             }

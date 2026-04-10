@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { getPersonsByOrganisation, getAllPersons, deletePerson, PersonResponseDTO } from '@/api/persons.api';
 import { Card, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -29,24 +29,40 @@ const PeopleDirectory: React.FC = () => {
     const [selectedPerson, setSelectedPerson] = useState<PersonResponseDTO | null>(null);
     const [filter, setFilter] = useState<'ALL' | 'STAFF' | 'OFFICIALS' | 'PLAYERS'>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
 
+    // Debounce search input — 400ms delay before triggering API call
+    useEffect(() => {
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
+        searchTimerRef.current = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 400);
+        return () => {
+            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        };
+    }, [searchQuery]);
+
     useEffect(() => {
         if (user) {
-            loadPersons();
+            loadPersons(0);
         }
-    }, [user?.organisationId, user?.id]);
+    }, [user?.organisationId, user?.id, debouncedSearch]);
 
     const loadPersons = async (page: number = 0) => {
         if (!user) return;
         setLoading(true);
         try {
             let res;
+            const searchTerm = debouncedSearch || undefined;
             if (isSuperAdmin || !user.organisationId) {
-                res = await getAllPersons(page, pagination.size);
+                res = await getAllPersons(page, pagination.size, searchTerm);
             } else {
-                res = await getPersonsByOrganisation(user.organisationId, page, pagination.size);
+                res = await getPersonsByOrganisation(user.organisationId, page, pagination.size, searchTerm);
             }
             setPersons(res.content);
             setPagination({
@@ -75,26 +91,15 @@ const PeopleDirectory: React.FC = () => {
     const filteredPersons = useMemo(() => {
         let result = persons;
         
-        // Role filter
+        // Role filter (stays client-side — quick filter on loaded data)
         switch (filter) {
             case 'PLAYERS': result = result.filter(p => p.isPlayer); break;
             case 'STAFF': result = result.filter(p => p.isStaff); break;
             case 'OFFICIALS': result = result.filter(p => p.isOfficial); break;
         }
 
-        // Text search
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(p => 
-                p.firstName.toLowerCase().includes(query) || 
-                p.lastName.toLowerCase().includes(query) || 
-                p.icOrPassport?.toLowerCase().includes(query) ||
-                p.email?.toLowerCase().includes(query)
-            );
-        }
-
         return result;
-    }, [persons, filter, searchQuery]);
+    }, [persons, filter]);
 
     const handleDelete = async (id: string, name: string) => {
         if (window.confirm(`Are you sure you want to completely remove ${name} from the system? Roles must be unassigned first.`)) {
@@ -221,16 +226,29 @@ const PeopleDirectory: React.FC = () => {
                     />
                 </div>
                 <div className="flex-1 w-full relative">
-                    <label className="block text-sm font-medium text-muted mb-1.5 ml-1">Search Directory</label>
+                    <label className="block text-sm font-medium text-muted mb-1.5 ml-1">
+                        Search Directory
+                        {debouncedSearch && <span className="text-primary-500 ml-1 text-xs">— searching all records</span>}
+                    </label>
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Search by name, IC, or email..."
+                            placeholder="Search all people by name, IC, or email..."
                             className="w-full h-[44px] bg-background border border-border rounded-xl px-10 py-2 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none hover:border-primary-500 transition-all font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                         <Funnel className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted/20 hover:bg-muted/40 flex items-center justify-center text-muted hover:text-foreground transition-colors"
+                                aria-label="Clear search"
+                            >
+                                ×
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

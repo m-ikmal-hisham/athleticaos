@@ -39,4 +39,16 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
         @Param("orgIds") java.util.Collection<UUID> orgIds, 
         org.springframework.data.domain.Pageable pageable
     );
+
+    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
+           "WHERE op.organisation.id IN :orgIds AND (" +
+           "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.icOrPassport) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+    org.springframework.data.domain.Page<Person> searchPersonsByOrganisationIds(
+        @Param("orgIds") java.util.Collection<UUID> orgIds,
+        @Param("search") String search,
+        org.springframework.data.domain.Pageable pageable
+    );
 }

@@ -31,16 +31,18 @@ public class PersonController {
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<Page<PersonResponseDTO>> getAllPersons(
-            @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(personService.getAllPersons(pageable));
+            @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(personService.getAllPersons(pageable, search));
     }
 
     @GetMapping("/organisation/{orgId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
     public ResponseEntity<Page<PersonResponseDTO>> getPersonsByOrganisation(
             @PathVariable UUID orgId,
-            @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable));
+            @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable, search));
     }
 
     @PostMapping("/organisation/{orgId}")
