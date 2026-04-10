@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PersonService {
+    Page<PersonResponseDTO> getAllPersons(Pageable pageable);
     Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable);
     PersonResponseDTO getPersonById(UUID id);
     PersonResponseDTO createPerson(UUID organisationId, com.athleticaos.backend.dtos.person.CreatePersonRequest request);

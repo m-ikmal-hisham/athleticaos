@@ -55,6 +55,14 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<PersonResponseDTO> getAllPersons(Pageable pageable) {
+        // Delegates to getPersonsByOrganisation which already handles Super Admin
+        // (returns all persons when accessibleIds is null)
+        return getPersonsByOrganisation(null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable) {
         Objects.requireNonNull(pageable);

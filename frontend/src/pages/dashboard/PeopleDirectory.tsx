@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { getPersonsByOrganisation, deletePerson, PersonResponseDTO } from '@/api/persons.api';
+import { getPersonsByOrganisation, getAllPersons, deletePerson, PersonResponseDTO } from '@/api/persons.api';
 import { Card, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
@@ -30,17 +30,24 @@ const PeopleDirectory: React.FC = () => {
     const [filter, setFilter] = useState<'ALL' | 'STAFF' | 'OFFICIALS' | 'PLAYERS'>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
+
     useEffect(() => {
-        if (user?.organisationId) {
+        if (user) {
             loadPersons();
         }
-    }, [user?.organisationId]);
+    }, [user?.organisationId, user?.id]);
 
     const loadPersons = async (page: number = 0) => {
-        if (!user?.organisationId) return;
+        if (!user) return;
         setLoading(true);
         try {
-            const res = await getPersonsByOrganisation(user.organisationId, page, pagination.size);
+            let res;
+            if (isSuperAdmin || !user.organisationId) {
+                res = await getAllPersons(page, pagination.size);
+            } else {
+                res = await getPersonsByOrganisation(user.organisationId, page, pagination.size);
+            }
             setPersons(res.content);
             setPagination({
                 currentPage: res.number,

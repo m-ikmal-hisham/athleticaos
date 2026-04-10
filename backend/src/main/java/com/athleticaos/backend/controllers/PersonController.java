@@ -28,6 +28,13 @@ public class PersonController {
     private final OfficialRegistryRepository officialRegistryRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
 
+    @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Page<PersonResponseDTO>> getAllPersons(
+            @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(personService.getAllPersons(pageable));
+    }
+
     @GetMapping("/organisation/{orgId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
     public ResponseEntity<Page<PersonResponseDTO>> getPersonsByOrganisation(

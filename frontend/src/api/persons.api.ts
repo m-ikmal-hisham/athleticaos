@@ -57,6 +57,16 @@ export interface CreatePersonRequest {
     nationalPlayerStatus: string;
 }
 
+export const getAllPersons = async (
+    page: number = 0,
+    size: number = 50
+): Promise<PaginatedResponse<PersonResponseDTO>> => {
+    const response = await api.get(`/persons`, {
+        params: { page, size }
+    });
+    return response.data;
+};
+
 export const getPersonsByOrganisation = async (
     orgId: string,
     page: number = 0,
