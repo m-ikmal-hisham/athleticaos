@@ -1,6 +1,9 @@
 export const AppBackground = () => {
     return (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+            {/* Core Background Image */}
+            <div className="absolute inset-0 bg-[url('/athleticaos-bg-light-new.png')] dark:bg-[url('/athleticaos-bg-dark-new.png')] bg-cover bg-center bg-no-repeat" />
+
             {/* Base Overlay Gradient - Enhances the underlying image */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-red-50/30 dark:from-blue-900/10 dark:via-transparent dark:to-red-900/10" />
 

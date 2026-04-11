@@ -13,7 +13,7 @@ export default {
             },
             colors: {
                 // Semantic Tokens
-                background: 'var(--bg-app)',
+                background: 'var(--bg-base)',
                 foreground: 'var(--text-color)', // Fixed: matches theme.css --text-color
                 muted: 'var(--text-muted)',      // Fixed: matches theme.css --text-muted
                 border: 'var(--border-glass)',
