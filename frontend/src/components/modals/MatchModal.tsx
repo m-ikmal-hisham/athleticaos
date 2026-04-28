@@ -47,29 +47,29 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         if (isOpen) {
             // Pre-populate form in edit mode
             if (mode === 'edit' && initialMatch) {
-                // Determine source logic for Home
+                // Determine source logic for Home using the match's own feeder fields
                 let hSource = 'team';
                 let hTeam = initialMatch.homeTeamId || '';
                 let hWin = '';
                 let hLose = '';
                 
-                const homeFeederWin = matches.find(m => m.nextMatchIdForWinner === initialMatch.id && m.winnerSlot === 'HOME');
-                const homeFeederLose = matches.find(m => m.nextMatchIdForLoser === initialMatch.id && m.loserSlot === 'HOME');
-                
-                if (homeFeederWin) { hSource = 'winner'; hWin = homeFeederWin.id; hTeam = ''; }
-                else if (homeFeederLose) { hSource = 'loser'; hLose = homeFeederLose.id; hTeam = ''; }
+                if (initialMatch.homeFromWinnerOfMatchId) {
+                    hSource = 'winner'; hWin = initialMatch.homeFromWinnerOfMatchId; hTeam = '';
+                } else if (initialMatch.homeFromLoserOfMatchId) {
+                    hSource = 'loser'; hLose = initialMatch.homeFromLoserOfMatchId; hTeam = '';
+                }
 
-                // Determine source logic for Away
+                // Determine source logic for Away using the match's own feeder fields
                 let aSource = 'team';
                 let aTeam = initialMatch.awayTeamId || '';
                 let aWin = '';
                 let aLose = '';
                 
-                const awayFeederWin = matches.find(m => m.nextMatchIdForWinner === initialMatch.id && m.winnerSlot === 'AWAY');
-                const awayFeederLose = matches.find(m => m.nextMatchIdForLoser === initialMatch.id && m.loserSlot === 'AWAY');
-                
-                if (awayFeederWin) { aSource = 'winner'; aWin = awayFeederWin.id; aTeam = ''; }
-                else if (awayFeederLose) { aSource = 'loser'; aLose = awayFeederLose.id; aTeam = ''; }
+                if (initialMatch.awayFromWinnerOfMatchId) {
+                    aSource = 'winner'; aWin = initialMatch.awayFromWinnerOfMatchId; aTeam = '';
+                } else if (initialMatch.awayFromLoserOfMatchId) {
+                    aSource = 'loser'; aLose = initialMatch.awayFromLoserOfMatchId; aTeam = '';
+                }
 
                 setFormData({
                     tournamentId: initialMatch.tournamentId || defaultTournamentId || '',
