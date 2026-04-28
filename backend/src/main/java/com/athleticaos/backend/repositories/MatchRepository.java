@@ -135,4 +135,9 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         @org.springframework.data.repository.query.Param("categoryId") UUID categoryId,
                         @org.springframework.data.repository.query.Param("isCategoryIdNull") boolean isCategoryIdNull);
 
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.nextMatchIdForWinner = :nextMatchId AND (m.winnerSlot = :slot OR :slot IS NULL) AND m.deleted = false")
+        List<Match> findByNextMatchIdForWinnerAndWinnerSlot(@org.springframework.data.repository.query.Param("nextMatchId") UUID nextMatchId, @org.springframework.data.repository.query.Param("slot") String slot);
+
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.nextMatchIdForLoser = :nextMatchId AND (m.loserSlot = :slot OR :slot IS NULL) AND m.deleted = false")
+        List<Match> findByNextMatchIdForLoserAndLoserSlot(@org.springframework.data.repository.query.Param("nextMatchId") UUID nextMatchId, @org.springframework.data.repository.query.Param("slot") String slot);
 }

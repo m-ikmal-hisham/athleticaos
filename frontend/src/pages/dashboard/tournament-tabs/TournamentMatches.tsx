@@ -12,6 +12,8 @@ import { getImageUrl } from '@/utils/image';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
 import { SearchableSelect } from '@/components/SearchableSelect';
+import { BracketEditor } from '@/components/content/BracketEditor';
+import { TournamentStageResponse } from '@/types';
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -23,6 +25,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [tournamentStages, setTournamentStages] = useState<TournamentStageResponse[]>([]);
 
     // Filtered matches
     const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
@@ -69,14 +72,17 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
     const loadData = async () => {
         try {
-            await Promise.all([
-                loadMatchesByTournament(tournamentId),
-                tournamentService.getCategories(tournamentId)
-                    .then(cats => setCategories(cats))
+            const [categoriesData, bracketData] = await Promise.all([
+                tournamentService.getCategories(tournamentId),
+                tournamentService.getBracket(tournamentId)
             ]);
+            
+            setCategories(categoriesData);
+            setTournamentStages(bracketData?.stages?.map((s: any) => s.stage) || []);
+            await loadMatchesByTournament(tournamentId);
         } catch (error) {
             console.error('Failed to load data:', error);
-            showToast.error('Failed to load matches');
+            showToast.error('Failed to load tournaments data');
         }
     };
 
@@ -241,6 +247,19 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                     </Button>
                 </div>
             </div>
+
+            {/* Bracket Editor Section */}
+            {!loadingList && (
+                <div className="mb-8 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                    <BracketEditor 
+                        tournamentId={tournamentId}
+                        stages={tournamentStages}
+                        matches={matches}
+                        onMatchEdit={(match) => openEditModal(match, { stopPropagation: () => {} } as any)}
+                        onRefresh={() => setRefreshTrigger(prev => prev + 1)}
+                    />
+                </div>
+            )}
 
             {loadingList ? (
                 <div className="text-center py-12 text-slate-500 animate-pulse">Loading matches...</div>

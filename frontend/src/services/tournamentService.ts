@@ -132,4 +132,15 @@ export const tournamentService = {
             teamIds
         });
     },
+
+    async createManualBracket(id: string, data: { type: string, teamCount: number, categoryId?: string }): Promise<any> {
+        const response = await axios.post(`/tournaments/${id}/bracket/manual`, data);
+        return response.data;
+    },
+
+    async deleteManualBracket(id: string, type: string, categoryId?: string): Promise<void> {
+        await axios.delete(`/tournaments/${id}/bracket/type/${type}`, {
+            params: { categoryId }
+        });
+    }
 };

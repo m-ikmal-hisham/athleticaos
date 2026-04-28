@@ -35,4 +35,9 @@ public class MatchCreateRequest {
     private String pitch;
     private String phase;
     private String matchCode;
+
+    private java.util.UUID homeFromWinnerOfMatchId;
+    private java.util.UUID homeFromLoserOfMatchId;
+    private java.util.UUID awayFromWinnerOfMatchId;
+    private java.util.UUID awayFromLoserOfMatchId;
 }

@@ -28,4 +28,9 @@ public class MatchUpdateRequest {
     private java.util.UUID stageId;
     private String homeTeamPlaceholder;
     private String awayTeamPlaceholder;
+
+    private java.util.UUID homeFromWinnerOfMatchId;
+    private java.util.UUID homeFromLoserOfMatchId;
+    private java.util.UUID awayFromWinnerOfMatchId;
+    private java.util.UUID awayFromLoserOfMatchId;
 }

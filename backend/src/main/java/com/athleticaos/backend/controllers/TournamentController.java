@@ -131,6 +131,26 @@ public class TournamentController {
         return ResponseEntity.ok(bracketService.generateBracketForTournament(id, request));
     }
 
+    @PostMapping("/{idOrSlug}/bracket/manual")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
+    public ResponseEntity<BracketViewResponse> generateManualBracket(
+            @PathVariable String idOrSlug,
+            @RequestBody com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest request) {
+        UUID id = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(bracketService.generateManualKnockoutBracket(id, request.getType(), request.getTeamCount(), request.getCategoryId()));
+    }
+
+    @DeleteMapping("/{idOrSlug}/bracket/type/{stageType}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
+    public ResponseEntity<Void> deleteManualBracket(
+            @PathVariable String idOrSlug,
+            @PathVariable com.athleticaos.backend.enums.TournamentStageType stageType,
+            @RequestParam(required = false) UUID categoryId) {
+        UUID id = fetchTournament(idOrSlug).getId();
+        bracketService.deleteKnockoutBracket(id, stageType, categoryId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{id}/progress")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
     public ResponseEntity<Integer> progressTournament(@PathVariable UUID id) {

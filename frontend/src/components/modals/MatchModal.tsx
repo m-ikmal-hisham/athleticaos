@@ -9,6 +9,7 @@ import { fetchTournaments, getTournamentTeams, getTournamentBracket } from '@/ap
 import { createMatch, updateMatch } from '@/api/matches.api';
 import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
 import { Team, Match, Tournament } from '@/types';
+import { useMatchesStore } from '@/store/matches.store';
 
 interface MatchModalProps {
     isOpen: boolean;
@@ -24,11 +25,18 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
     const [formatTemplates, setFormatTemplates] = useState<MatchFormatTemplate[]>([]);
+    const { matches } = useMatchesStore();
 
     const [formData, setFormData] = useState({
         tournamentId: defaultTournamentId || '',
+        homeSourceType: 'team',
         homeTeamId: '',
+        homeFromWinnerOfMatchId: '',
+        homeFromLoserOfMatchId: '',
+        awaySourceType: 'team',
         awayTeamId: '',
+        awayFromWinnerOfMatchId: '',
+        awayFromLoserOfMatchId: '',
         matchDate: '',
         kickOffTime: '',
         venue: '',
@@ -39,10 +47,40 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         if (isOpen) {
             // Pre-populate form in edit mode
             if (mode === 'edit' && initialMatch) {
+                // Determine source logic for Home
+                let hSource = 'team';
+                let hTeam = initialMatch.homeTeamId || '';
+                let hWin = '';
+                let hLose = '';
+                
+                const homeFeederWin = matches.find(m => m.nextMatchIdForWinner === initialMatch.id && m.winnerSlot === 'HOME');
+                const homeFeederLose = matches.find(m => m.nextMatchIdForLoser === initialMatch.id && m.loserSlot === 'HOME');
+                
+                if (homeFeederWin) { hSource = 'winner'; hWin = homeFeederWin.id; hTeam = ''; }
+                else if (homeFeederLose) { hSource = 'loser'; hLose = homeFeederLose.id; hTeam = ''; }
+
+                // Determine source logic for Away
+                let aSource = 'team';
+                let aTeam = initialMatch.awayTeamId || '';
+                let aWin = '';
+                let aLose = '';
+                
+                const awayFeederWin = matches.find(m => m.nextMatchIdForWinner === initialMatch.id && m.winnerSlot === 'AWAY');
+                const awayFeederLose = matches.find(m => m.nextMatchIdForLoser === initialMatch.id && m.loserSlot === 'AWAY');
+                
+                if (awayFeederWin) { aSource = 'winner'; aWin = awayFeederWin.id; aTeam = ''; }
+                else if (awayFeederLose) { aSource = 'loser'; aLose = awayFeederLose.id; aTeam = ''; }
+
                 setFormData({
                     tournamentId: initialMatch.tournamentId || defaultTournamentId || '',
-                    homeTeamId: initialMatch.homeTeamId || '',
-                    awayTeamId: initialMatch.awayTeamId || '',
+                    homeSourceType: hSource,
+                    homeTeamId: hTeam,
+                    homeFromWinnerOfMatchId: hWin,
+                    homeFromLoserOfMatchId: hLose,
+                    awaySourceType: aSource,
+                    awayTeamId: aTeam,
+                    awayFromWinnerOfMatchId: aWin,
+                    awayFromLoserOfMatchId: aLose,
                     matchDate: initialMatch.matchDate || '',
                     kickOffTime: initialMatch.kickOffTime || '',
                     venue: initialMatch.venue || '',
@@ -52,8 +90,14 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 // Reset form in create mode
                 setFormData({
                     tournamentId: defaultTournamentId || '',
+                    homeSourceType: 'team',
                     homeTeamId: '',
+                    homeFromWinnerOfMatchId: '',
+                    homeFromLoserOfMatchId: '',
+                    awaySourceType: 'team',
                     awayTeamId: '',
+                    awayFromWinnerOfMatchId: '',
+                    awayFromLoserOfMatchId: '',
                     matchDate: '',
                     kickOffTime: '',
                     venue: '',
@@ -75,7 +119,7 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             };
             loadReferenceData();
         }
-    }, [isOpen, mode, initialMatch, defaultTournamentId]);
+    }, [isOpen, mode, initialMatch, defaultTournamentId, matches]);
 
     // Fetch teams when tournamentId changes
     useEffect(() => {
@@ -130,18 +174,49 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         e.preventDefault();
         setLoading(true);
 
+        const payload: any = {
+            matchDate: formData.matchDate,
+            kickOffTime: formData.kickOffTime,
+            venue: formData.venue,
+            stageId: formData.stageId || undefined
+        };
+
+        if (formData.homeSourceType === 'team') {
+            payload.homeTeamId = formData.homeTeamId || undefined;
+            payload.homeFromWinnerOfMatchId = null;
+            payload.homeFromLoserOfMatchId = null;
+        } else if (formData.homeSourceType === 'winner') {
+            payload.homeTeamId = null;
+            payload.homeFromWinnerOfMatchId = formData.homeFromWinnerOfMatchId || undefined;
+            payload.homeFromLoserOfMatchId = null;
+        } else if (formData.homeSourceType === 'loser') {
+            payload.homeTeamId = null;
+            payload.homeFromWinnerOfMatchId = null;
+            payload.homeFromLoserOfMatchId = formData.homeFromLoserOfMatchId || undefined;
+        }
+
+        if (formData.awaySourceType === 'team') {
+            payload.awayTeamId = formData.awayTeamId || undefined;
+            payload.awayFromWinnerOfMatchId = null;
+            payload.awayFromLoserOfMatchId = null;
+        } else if (formData.awaySourceType === 'winner') {
+            payload.awayTeamId = null;
+            payload.awayFromWinnerOfMatchId = formData.awayFromWinnerOfMatchId || undefined;
+            payload.awayFromLoserOfMatchId = null;
+        } else if (formData.awaySourceType === 'loser') {
+            payload.awayTeamId = null;
+            payload.awayFromWinnerOfMatchId = null;
+            payload.awayFromLoserOfMatchId = formData.awayFromLoserOfMatchId || undefined;
+        }
+
         try {
             if (mode === 'edit' && initialMatch?.id) {
                 // Update existing match
-                await updateMatch(initialMatch.id, {
-                    matchDate: formData.matchDate,
-                    kickOffTime: formData.kickOffTime,
-                    venue: formData.venue,
-                    stageId: formData.stageId || undefined
-                });
+                await updateMatch(initialMatch.id, payload);
             } else {
                 // Create new match
-                await createMatch({...formData, stageId: formData.stageId || undefined});
+                payload.tournamentId = formData.tournamentId;
+                await createMatch(payload);
             }
             onSuccess();
             onClose();
@@ -169,94 +244,135 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         return formatTemplates.find(f => f.formatCode === targetCode);
     }, [formData.tournamentId, tournaments, formatTemplates]);
 
+    const availableMatchesOptions = matches
+        .filter(m => m.id !== initialMatch?.id)
+        .map(m => ({ 
+            value: m.id, 
+            label: `${m.matchCode || 'Match'} (${m.stage?.name || 'Unassigned'})` 
+        }));
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={mode === 'edit' ? 'Edit Match' : 'New Match'}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                {mode === 'edit' ? (
-                    <>
-                        {/* Read-only team display in edit mode */}
-                        <div className="space-y-2">
-                            <Label>Tournament</Label>
-                            <div className="w-full px-3 py-2 rounded-md glass-card border border-white/10 text-muted-foreground">
-                                {tournaments.find(t => t.id === formData.tournamentId)?.name || 'Loading...'}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Home Team</Label>
-                                <div className="w-full px-3 py-2 rounded-md glass-card border border-white/10 text-foreground font-medium">
-                                    {teams.find(t => t.id === formData.homeTeamId)?.name || 'Loading...'}
+                <div className="space-y-2">
+                    <Label>Tournament</Label>
+                    <SearchableSelect
+                        value={formData.tournamentId}
+                        onChange={(value) => handleChange('tournamentId', value as string)}
+                        options={[
+                            { value: '', label: 'Select Tournament' },
+                            ...tournaments.map(t => ({ value: t.id, label: t.name }))
+                        ]}
+                        placeholder="Select tournament"
+                        disabled={mode === 'edit'}
+                    />
+                    {/* Dynamic Format Placeholder Display */}
+                    {selectedFormatConfig && (
+                        <div className="mt-2 p-3 bg-blue-50/10 border border-blue-500/20 rounded-md flex items-start gap-3 text-sm text-blue-200">
+                            <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                            <div>
+                                <div className="font-semibold text-blue-400 mb-0.5">
+                                    Match Format: {selectedFormatConfig.label}
+                                </div>
+                                <div className="text-xs text-blue-300/70">
+                                    {selectedFormatConfig.startingPlayers} starters per side.
                                 </div>
                             </div>
-
-                            <div className="space-y-2">
-                                <Label>Away Team</Label>
-                                <div className="w-full px-3 py-2 rounded-md glass-card border border-white/10 text-foreground font-medium">
-                                    {teams.find(t => t.id === formData.awayTeamId)?.name || 'Loading...'}
-                                </div>
-                            </div>
                         </div>
-                    </>
-                ) : (
-                    <>
-                        {/* Editable dropdowns in create mode */}
-                        <div className="space-y-2">
-                            <Label>Tournament</Label>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4 p-3 border border-white/10 rounded-md bg-white/5">
+                        <Label>Home Opponent</Label>
+                        <SearchableSelect
+                            value={formData.homeSourceType}
+                            onChange={(value) => {
+                                handleChange('homeSourceType', value as string);
+                                handleChange('homeTeamId', '');
+                                handleChange('homeFromWinnerOfMatchId', '');
+                                handleChange('homeFromLoserOfMatchId', '');
+                            }}
+                            options={[
+                                { value: 'team', label: 'Specific Team' },
+                                { value: 'winner', label: 'Winner of Match...' },
+                                { value: 'loser', label: 'Loser of Match...' }
+                            ]}
+                        />
+                        {formData.homeSourceType === 'team' && (
                             <SearchableSelect
-                                value={formData.tournamentId}
-                                onChange={(value) => handleChange('tournamentId', value as string)}
+                                value={formData.homeTeamId}
+                                onChange={(value) => handleChange('homeTeamId', value as string)}
                                 options={[
-                                    { value: '', label: 'Select Tournament' },
-                                    ...tournaments.map(t => ({ value: t.id, label: t.name }))
+                                    { value: '', label: 'Select Team' },
+                                    ...teams.map(t => ({ value: t.id, label: t.name }))
                                 ]}
-                                placeholder="Select tournament"
+                                placeholder="Select Home Team"
                             />
-                            {/* Dynamic Format Placeholder Display */}
-                            {selectedFormatConfig && (
-                                <div className="mt-2 p-3 bg-blue-50/10 border border-blue-500/20 rounded-md flex items-start gap-3 text-sm text-blue-200 animate-in fade-in slide-in-from-top-1">
-                                    <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                                    <div>
-                                        <div className="font-semibold text-blue-400 mb-0.5">
-                                            Match Format: {selectedFormatConfig.label}
-                                        </div>
-                                        <div className="text-xs text-blue-300/70">
-                                            {selectedFormatConfig.startingPlayers} starters per side.
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        )}
+                        {formData.homeSourceType === 'winner' && (
+                            <SearchableSelect
+                                value={formData.homeFromWinnerOfMatchId}
+                                onChange={(value) => handleChange('homeFromWinnerOfMatchId', value as string)}
+                                options={[{ value: '', label: 'Select Match' }, ...availableMatchesOptions]}
+                                placeholder="Select Feeder Match"
+                            />
+                        )}
+                        {formData.homeSourceType === 'loser' && (
+                            <SearchableSelect
+                                value={formData.homeFromLoserOfMatchId}
+                                onChange={(value) => handleChange('homeFromLoserOfMatchId', value as string)}
+                                options={[{ value: '', label: 'Select Match' }, ...availableMatchesOptions]}
+                                placeholder="Select Feeder Match"
+                            />
+                        )}
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Home Team</Label>
-                                <SearchableSelect
-                                    value={formData.homeTeamId}
-                                    onChange={(value) => handleChange('homeTeamId', value as string)}
-                                    options={[
-                                        { value: '', label: 'Select Home Team' },
-                                        ...teams.map(t => ({ value: t.id, label: t.name }))
-                                    ]}
-                                    placeholder="Select home team"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Away Team</Label>
-                                <SearchableSelect
-                                    value={formData.awayTeamId}
-                                    onChange={(value) => handleChange('awayTeamId', value as string)}
-                                    options={[
-                                        { value: '', label: 'Select Away Team' },
-                                        ...teams.map(t => ({ value: t.id, label: t.name }))
-                                    ]}
-                                    placeholder="Select away team"
-                                />
-                            </div>
-                        </div>
-                    </>
-                )}
+                    <div className="space-y-4 p-3 border border-white/10 rounded-md bg-white/5">
+                        <Label>Away Opponent</Label>
+                        <SearchableSelect
+                            value={formData.awaySourceType}
+                            onChange={(value) => {
+                                handleChange('awaySourceType', value as string);
+                                handleChange('awayTeamId', '');
+                                handleChange('awayFromWinnerOfMatchId', '');
+                                handleChange('awayFromLoserOfMatchId', '');
+                            }}
+                            options={[
+                                { value: 'team', label: 'Specific Team' },
+                                { value: 'winner', label: 'Winner of Match...' },
+                                { value: 'loser', label: 'Loser of Match...' }
+                            ]}
+                        />
+                        {formData.awaySourceType === 'team' && (
+                            <SearchableSelect
+                                value={formData.awayTeamId}
+                                onChange={(value) => handleChange('awayTeamId', value as string)}
+                                options={[
+                                    { value: '', label: 'Select Team' },
+                                    ...teams.map(t => ({ value: t.id, label: t.name }))
+                                ]}
+                                placeholder="Select Away Team"
+                            />
+                        )}
+                        {formData.awaySourceType === 'winner' && (
+                            <SearchableSelect
+                                value={formData.awayFromWinnerOfMatchId}
+                                onChange={(value) => handleChange('awayFromWinnerOfMatchId', value as string)}
+                                options={[{ value: '', label: 'Select Match' }, ...availableMatchesOptions]}
+                                placeholder="Select Feeder Match"
+                            />
+                        )}
+                        {formData.awaySourceType === 'loser' && (
+                            <SearchableSelect
+                                value={formData.awayFromLoserOfMatchId}
+                                onChange={(value) => handleChange('awayFromLoserOfMatchId', value as string)}
+                                options={[{ value: '', label: 'Select Match' }, ...availableMatchesOptions]}
+                                placeholder="Select Feeder Match"
+                            />
+                        )}
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

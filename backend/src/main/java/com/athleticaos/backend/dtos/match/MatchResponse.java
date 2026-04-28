@@ -41,6 +41,11 @@ public class MatchResponse {
     private String matchCode;
     private StageInfo stage;
 
+    private java.util.UUID homeFromWinnerOfMatchId;
+    private java.util.UUID homeFromLoserOfMatchId;
+    private java.util.UUID awayFromWinnerOfMatchId;
+    private java.util.UUID awayFromLoserOfMatchId;
+
     private TeamInfo homeTeam;
     private TeamInfo awayTeam;
 

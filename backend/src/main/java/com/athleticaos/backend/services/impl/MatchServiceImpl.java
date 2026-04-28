@@ -271,6 +271,42 @@ public class MatchServiceImpl implements MatchService {
             match.setAwayTeamPlaceholder(request.getAwayTeamPlaceholder());
         }
 
+        // --- FEEDER LINKS LOGIC ---
+        // Handle Home Feeder Match
+        if (request.getHomeFromWinnerOfMatchId() != null) {
+            clearIncomingLinksToSlot(match, "HOME");
+            Match feeder = matchRepository.findById(request.getHomeFromWinnerOfMatchId()).orElseThrow();
+            feeder.setNextMatchIdForWinner(match.getId());
+            feeder.setWinnerSlot("HOME");
+            matchRepository.save(feeder);
+            match.setHomeTeamPlaceholder(null); 
+        } else if (request.getHomeFromLoserOfMatchId() != null) {
+            clearIncomingLinksToSlot(match, "HOME");
+            Match feeder = matchRepository.findById(request.getHomeFromLoserOfMatchId()).orElseThrow();
+            feeder.setNextMatchIdForLoser(match.getId());
+            feeder.setLoserSlot("HOME");
+            matchRepository.save(feeder);
+            match.setHomeTeamPlaceholder(null);
+        }
+
+        // Handle Away Feeder Match
+        if (request.getAwayFromWinnerOfMatchId() != null) {
+            clearIncomingLinksToSlot(match, "AWAY");
+            Match feeder = matchRepository.findById(request.getAwayFromWinnerOfMatchId()).orElseThrow();
+            feeder.setNextMatchIdForWinner(match.getId());
+            feeder.setWinnerSlot("AWAY");
+            matchRepository.save(feeder);
+            match.setAwayTeamPlaceholder(null);
+        } else if (request.getAwayFromLoserOfMatchId() != null) {
+            clearIncomingLinksToSlot(match, "AWAY");
+            Match feeder = matchRepository.findById(request.getAwayFromLoserOfMatchId()).orElseThrow();
+            feeder.setNextMatchIdForLoser(match.getId());
+            feeder.setLoserSlot("AWAY");
+            matchRepository.save(feeder);
+            match.setAwayTeamPlaceholder(null);
+        }
+        // ------------------------
+
         // Set scores first if provided in the request
         if (request.getHomeScore() != null) {
             match.setHomeScore(request.getHomeScore());
@@ -299,6 +335,24 @@ public class MatchServiceImpl implements MatchService {
         Match updatedMatch = matchRepository.save(match);
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
         return mapToResponse(updatedMatch);
+    }
+
+    @SuppressWarnings("null")
+    private void clearIncomingLinksToSlot(Match targetMatch, String slot) {
+        if (targetMatch == null || targetMatch.getId() == null) return;
+        List<Match> winnerFeeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(targetMatch.getId(), slot);
+        for(Match m : winnerFeeders) {
+            m.setNextMatchIdForWinner(null);
+            m.setWinnerSlot(null);
+        }
+        matchRepository.saveAll(winnerFeeders);
+        
+        List<Match> loserFeeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(targetMatch.getId(), slot);
+        for(Match m : loserFeeders) {
+            m.setNextMatchIdForLoser(null);
+            m.setLoserSlot(null);
+        }
+        matchRepository.saveAll(loserFeeders);
     }
 
     @Override

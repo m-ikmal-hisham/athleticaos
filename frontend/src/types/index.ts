@@ -425,6 +425,12 @@ export interface Match {
     awayScore?: number;
     homeTeamPlaceholder?: string;
     awayTeamPlaceholder?: string;
+    
+    homeFromWinnerOfMatchId?: string;
+    homeFromLoserOfMatchId?: string;
+    awayFromWinnerOfMatchId?: string;
+    awayFromLoserOfMatchId?: string;
+
     createdAt: string;
     updatedAt: string;
 }
