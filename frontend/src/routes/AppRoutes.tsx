@@ -1,69 +1,89 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
+
+// Layouts & Guards — always needed, keep eager
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import PublicLayout from '@/layouts/PublicLayout';
-import { Login } from '@/pages/public/Login';
-import { Signup } from '@/pages/public/Signup';
-import Home from '@/pages/public/Home';
-import TournamentsList from '@/pages/public/TournamentsList';
-import TournamentDetail from '@/pages/public/TournamentDetail';
-import MatchCenter from '@/pages/public/MatchCenter';
-import Contact from '@/pages/public/Contact';
-import HowItWorks from '@/pages/public/HowItWorks';
-import Sponsors from '@/pages/public/Sponsors';
-import { PublicTeamProfile } from '@/pages/public/PublicTeamProfile';
-import { PublicPlayerProfile } from '@/pages/public/PublicPlayerProfile';
-import { DashboardHome } from '@/pages/dashboard/DashboardHome';
-import Players from '@/pages/dashboard/Players';
-import Teams from '@/pages/dashboard/Teams';
-import TeamDetail from '@/pages/dashboard/teams/TeamDetail';
-import Organisations from '@/pages/dashboard/Organisations';
-import OrganisationDetail from '@/pages/dashboard/organisations/OrganisationDetail';
-import Tournaments from '@/pages/dashboard/Tournaments';
-import Users from '@/pages/dashboard/Users';
-import { CreateUser } from '@/pages/dashboard/users/CreateUser';
-import { EditUser } from '@/pages/dashboard/users/EditUser';
-import { CreatePlayer } from '@/pages/dashboard/players/CreatePlayer';
-import { EditPlayer } from '@/pages/dashboard/players/EditPlayer';
-import { PlayerProfile } from '@/pages/dashboard/players/PlayerProfile';
-import Profile from '@/pages/dashboard/Profile';
-import { Matches } from '@/pages/dashboard/Matches';
-import { MatchDetail } from '@/pages/dashboard/MatchDetail';
-import Stats from '@/pages/dashboard/Stats';
-import Officials from '@/pages/dashboard/Officials';
-import { Seasons } from '@/pages/dashboard/competitions/Seasons';
-import { CreateSeason } from '@/pages/dashboard/competitions/CreateSeason';
-import { EditSeason } from '@/pages/dashboard/competitions/EditSeason';
-import { SeasonDetail } from '@/pages/dashboard/competitions/SeasonDetail';
-import Activity from '@/pages/dashboard/Activity';
-import TournamentRosters from '@/pages/dashboard/TournamentRosters';
-import DashboardTournamentDetail from '@/pages/dashboard/TournamentDetail';
-import BrandingSettings from '@/pages/dashboard/organisations/BrandingSettings';
-import PeopleDirectory from '@/pages/dashboard/PeopleDirectory';
 import { AuthGuard } from '@/routes/AuthGuard';
-import { CreateTeam } from '@/pages/dashboard/teams/CreateTeam';
-import { EditTeam } from '@/pages/dashboard/teams/EditTeam';
-import { CreateOrganisation } from '@/pages/dashboard/organisations/CreateOrganisation';
-import { EditOrganisation } from '@/pages/dashboard/organisations/EditOrganisation';
-import { CreateTournament } from '@/pages/dashboard/tournaments/CreateTournament';
-import { EditTournament } from '@/pages/dashboard/tournaments/EditTournament';
-import { CreateMatch } from '@/pages/dashboard/matches/CreateMatch';
-import { EditMatch } from '@/pages/dashboard/matches/EditMatch';
-import { EditProfile } from '@/pages/dashboard/profile/EditProfile';
-import { NotFoundPage } from '@/pages/NotFoundPage';
-import OperationsConsole from '@/pages/admin/operations/OperationsConsole';
 
-import { FederationDashboard } from '@/pages/admin/federation/FederationDashboard';
-import { SanctioningConsole } from '@/pages/admin/federation/SanctioningConsole';
-import { CompetitionOversight } from '@/pages/admin/federation/CompetitionOversight';
-import { ComplianceReports } from '@/pages/admin/federation/ComplianceReports';
-import { DisciplineTrends } from '@/pages/admin/federation/DisciplineTrends';
-import { TeamAnalyticsDashboard } from '@/pages/admin/analytics/TeamAnalyticsDashboard';
-import { DisciplineImpactAnalysis } from '@/pages/admin/analytics/DisciplineImpactAnalysis';
-import { SeasonSummaryReport } from '@/pages/admin/analytics/SeasonSummaryReport';
-import { SponsorPackages } from '@/pages/admin/monetization/SponsorPackages';
-import { SubscriptionManagement } from '@/pages/admin/monetization/SubscriptionManagement';
-import { MediaPortal } from '@/pages/public/MediaPortal';
+// Helper for named exports: lazy(() => import(...).then(m => ({ default: m.X })))
+const lazyNamed = <T extends Record<string, any>, K extends keyof T>(
+    factory: () => Promise<T>,
+    name: K
+) => lazy(() => factory().then(m => ({ default: m[name] as React.ComponentType<any> })));
+
+// ─── Public Pages ───────────────────────────────────────────────────
+const Home = lazy(() => import('@/pages/public/Home'));
+const TournamentsList = lazy(() => import('@/pages/public/TournamentsList'));
+const TournamentDetail = lazy(() => import('@/pages/public/TournamentDetail'));
+const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
+const Contact = lazy(() => import('@/pages/public/Contact'));
+const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
+const Sponsors = lazy(() => import('@/pages/public/Sponsors'));
+const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
+const Signup = lazyNamed(() => import('@/pages/public/Signup'), 'Signup');
+const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
+const PublicPlayerProfile = lazyNamed(() => import('@/pages/public/PublicPlayerProfile'), 'PublicPlayerProfile');
+const MediaPortal = lazyNamed(() => import('@/pages/public/MediaPortal'), 'MediaPortal');
+
+// ─── Dashboard Pages ────────────────────────────────────────────────
+const DashboardHome = lazyNamed(() => import('@/pages/dashboard/DashboardHome'), 'DashboardHome');
+const Players = lazy(() => import('@/pages/dashboard/Players'));
+const Teams = lazy(() => import('@/pages/dashboard/Teams'));
+const Organisations = lazy(() => import('@/pages/dashboard/Organisations'));
+const Tournaments = lazy(() => import('@/pages/dashboard/Tournaments'));
+const Users = lazy(() => import('@/pages/dashboard/Users'));
+const Profile = lazy(() => import('@/pages/dashboard/Profile'));
+const Matches = lazyNamed(() => import('@/pages/dashboard/Matches'), 'Matches');
+const MatchDetail = lazyNamed(() => import('@/pages/dashboard/MatchDetail'), 'MatchDetail');
+const Stats = lazy(() => import('@/pages/dashboard/Stats'));
+const Officials = lazy(() => import('@/pages/dashboard/Officials'));
+const Activity = lazy(() => import('@/pages/dashboard/Activity'));
+const TournamentRosters = lazy(() => import('@/pages/dashboard/TournamentRosters'));
+const DashboardTournamentDetail = lazy(() => import('@/pages/dashboard/TournamentDetail'));
+const PeopleDirectory = lazy(() => import('@/pages/dashboard/PeopleDirectory'));
+
+// ─── Dashboard Sub-pages ────────────────────────────────────────────
+const CreateUser = lazyNamed(() => import('@/pages/dashboard/users/CreateUser'), 'CreateUser');
+const EditUser = lazyNamed(() => import('@/pages/dashboard/users/EditUser'), 'EditUser');
+const CreatePlayer = lazyNamed(() => import('@/pages/dashboard/players/CreatePlayer'), 'CreatePlayer');
+const EditPlayer = lazyNamed(() => import('@/pages/dashboard/players/EditPlayer'), 'EditPlayer');
+const PlayerProfile = lazyNamed(() => import('@/pages/dashboard/players/PlayerProfile'), 'PlayerProfile');
+const TeamDetail = lazy(() => import('@/pages/dashboard/teams/TeamDetail'));
+const CreateTeam = lazyNamed(() => import('@/pages/dashboard/teams/CreateTeam'), 'CreateTeam');
+const EditTeam = lazyNamed(() => import('@/pages/dashboard/teams/EditTeam'), 'EditTeam');
+const OrganisationDetail = lazy(() => import('@/pages/dashboard/organisations/OrganisationDetail'));
+const CreateOrganisation = lazyNamed(() => import('@/pages/dashboard/organisations/CreateOrganisation'), 'CreateOrganisation');
+const EditOrganisation = lazyNamed(() => import('@/pages/dashboard/organisations/EditOrganisation'), 'EditOrganisation');
+const BrandingSettings = lazy(() => import('@/pages/dashboard/organisations/BrandingSettings'));
+
+// ─── Competitions ───────────────────────────────────────────────────
+const Seasons = lazyNamed(() => import('@/pages/dashboard/competitions/Seasons'), 'Seasons');
+const CreateSeason = lazyNamed(() => import('@/pages/dashboard/competitions/CreateSeason'), 'CreateSeason');
+const EditSeason = lazyNamed(() => import('@/pages/dashboard/competitions/EditSeason'), 'EditSeason');
+const SeasonDetail = lazyNamed(() => import('@/pages/dashboard/competitions/SeasonDetail'), 'SeasonDetail');
+const CreateTournament = lazyNamed(() => import('@/pages/dashboard/tournaments/CreateTournament'), 'CreateTournament');
+const EditTournament = lazyNamed(() => import('@/pages/dashboard/tournaments/EditTournament'), 'EditTournament');
+const CreateMatch = lazyNamed(() => import('@/pages/dashboard/matches/CreateMatch'), 'CreateMatch');
+const EditMatch = lazyNamed(() => import('@/pages/dashboard/matches/EditMatch'), 'EditMatch');
+const EditProfile = lazyNamed(() => import('@/pages/dashboard/profile/EditProfile'), 'EditProfile');
+
+// ─── Admin / Federation ─────────────────────────────────────────────
+const OperationsConsole = lazy(() => import('@/pages/admin/operations/OperationsConsole'));
+const FederationDashboard = lazyNamed(() => import('@/pages/admin/federation/FederationDashboard'), 'FederationDashboard');
+const SanctioningConsole = lazyNamed(() => import('@/pages/admin/federation/SanctioningConsole'), 'SanctioningConsole');
+const CompetitionOversight = lazyNamed(() => import('@/pages/admin/federation/CompetitionOversight'), 'CompetitionOversight');
+const ComplianceReports = lazyNamed(() => import('@/pages/admin/federation/ComplianceReports'), 'ComplianceReports');
+const DisciplineTrends = lazyNamed(() => import('@/pages/admin/federation/DisciplineTrends'), 'DisciplineTrends');
+const TeamAnalyticsDashboard = lazyNamed(() => import('@/pages/admin/analytics/TeamAnalyticsDashboard'), 'TeamAnalyticsDashboard');
+const DisciplineImpactAnalysis = lazyNamed(() => import('@/pages/admin/analytics/DisciplineImpactAnalysis'), 'DisciplineImpactAnalysis');
+const SeasonSummaryReport = lazyNamed(() => import('@/pages/admin/analytics/SeasonSummaryReport'), 'SeasonSummaryReport');
+const SponsorPackages = lazyNamed(() => import('@/pages/admin/monetization/SponsorPackages'), 'SponsorPackages');
+const SubscriptionManagement = lazyNamed(() => import('@/pages/admin/monetization/SubscriptionManagement'), 'SubscriptionManagement');
+
+// ─── Misc ───────────────────────────────────────────────────────────
+const NotFoundPage = lazyNamed(() => import('@/pages/NotFoundPage'), 'NotFoundPage');
 
 
 

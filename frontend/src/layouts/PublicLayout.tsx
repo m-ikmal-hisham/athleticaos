@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { SignIn, List, X } from '@phosphor-icons/react';
 import { TournamentPill } from '@/components/TournamentPill';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { AppBackground } from '@/components/public/AppBackground';
+import { PageLoader } from '@/components/PageLoader';
 import { clsx } from 'clsx';
 
 export default function PublicLayout() {
@@ -129,7 +130,9 @@ export default function PublicLayout() {
 
             {/* Main Content - pb-28 ensures content isn't hidden behind the fixed TournamentPill on mobile */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 relative z-10">
-                <Outlet />
+                <Suspense fallback={<PageLoader />}>
+                    <Outlet />
+                </Suspense>
             </main>
 
             {/* Footer */}

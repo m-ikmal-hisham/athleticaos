@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight, Wrench, Globe, Gavel, Eye, ShieldWarning, ChartLine, CurrencyDollar } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { TournamentPill } from '@/components/TournamentPill';
 import { ProfilePopup } from '@/components/ProfilePopup';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
+import { PageLoader } from '@/components/PageLoader';
 
 interface NavItem {
     label: string;
@@ -457,7 +458,9 @@ export const AppLayout = () => {
                 {/* Page Content Container - Centered */}
                 <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden">
                     <div className="max-w-7xl mx-auto w-full pb-32"> {/* Increased bottom padding for pill */}
-                        <Outlet />
+                        <Suspense fallback={<PageLoader />}>
+                            <Outlet />
+                        </Suspense>
                     </div>
                 </main>
 

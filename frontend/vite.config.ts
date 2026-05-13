@@ -35,10 +35,16 @@ export default defineConfig({
   },
   build: {
     target: 'es2015',
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
-
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-charts': ['recharts'],
+          'vendor-icons': ['@phosphor-icons/react', 'lucide-react'],
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'vendor-geo': ['country-state-city'],
+        }
       }
     }
   },
