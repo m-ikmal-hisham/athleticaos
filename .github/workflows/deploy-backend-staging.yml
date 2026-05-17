@@ -49,7 +49,6 @@ jobs:
             docker image prune -af --filter "until=24h"
             docker container prune -f
             docker builder prune -af
-            rm -f /home/ec2-user/backend-image.tar.gz
 
             # Load the new Docker image
             docker load < /home/ec2-user/backend-image.tar.gz
