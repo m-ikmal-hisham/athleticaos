@@ -4,9 +4,11 @@ import com.athleticaos.backend.util.UrlSanitizer;
 
 import com.athleticaos.backend.dtos.standing.StandingsResponse;
 import com.athleticaos.backend.entities.Match;
+import com.athleticaos.backend.entities.TournamentFormatConfig;
 import com.athleticaos.backend.entities.TournamentTeam;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
+import com.athleticaos.backend.repositories.TournamentFormatConfigRepository;
 import com.athleticaos.backend.repositories.TournamentTeamRepository;
 import com.athleticaos.backend.services.StandingsService;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +26,29 @@ public class StandingsServiceImpl implements StandingsService {
 
     private final MatchRepository matchRepository;
     private final TournamentTeamRepository tournamentTeamRepository;
+    private final TournamentFormatConfigRepository formatConfigRepository;
 
     @Override
     @Transactional(readOnly = true)
     public List<StandingsResponse> getStandings(UUID tournamentId) {
         log.info("Calculating standings for tournament {}", tournamentId);
+
+        // Load scoring rules from tournament format config (global = category is null)
+        int pointsWin = 4;   // defaults
+        int pointsDraw = 2;
+        int pointsLoss = 0;
+
+        TournamentFormatConfig formatConfig = formatConfigRepository
+                .findByTournamentIdAndCategoryIsNull(tournamentId)
+                .orElse(null);
+        if (formatConfig != null) {
+            pointsWin = formatConfig.getPointsWin() != null ? formatConfig.getPointsWin() : 4;
+            pointsDraw = formatConfig.getPointsDraw() != null ? formatConfig.getPointsDraw() : 2;
+            pointsLoss = formatConfig.getPointsLoss() != null ? formatConfig.getPointsLoss() : 0;
+            log.info("Using configured scoring rules: Win={}, Draw={}, Loss={}", pointsWin, pointsDraw, pointsLoss);
+        } else {
+            log.info("No format config found, using default scoring rules: Win={}, Draw={}, Loss={}", pointsWin, pointsDraw, pointsLoss);
+        }
 
         // 1. Get all teams in the tournament
         List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
@@ -107,10 +127,10 @@ public class StandingsServiceImpl implements StandingsService {
             int aScore = match.getAwayScore() != null ? match.getAwayScore() : 0;
 
             // Update Home
-            updateStats(homeStats, hScore, aScore);
+            updateStats(homeStats, hScore, aScore, pointsWin, pointsDraw, pointsLoss);
 
             // Update Away
-            updateStats(awayStats, aScore, hScore);
+            updateStats(awayStats, aScore, hScore, pointsWin, pointsDraw, pointsLoss);
         }
 
         // 4. Return sorted list
@@ -123,7 +143,8 @@ public class StandingsServiceImpl implements StandingsService {
                 .collect(Collectors.toList());
     }
 
-    private void updateStats(StandingsResponse stats, int scoreFor, int scoreAgainst) {
+    private void updateStats(StandingsResponse stats, int scoreFor, int scoreAgainst,
+                              int pointsWin, int pointsDraw, int pointsLoss) {
         stats.setPlayed(stats.getPlayed() + 1);
         stats.setPointsFor(stats.getPointsFor() + scoreFor);
         stats.setPointsAgainst(stats.getPointsAgainst() + scoreAgainst);
@@ -131,13 +152,13 @@ public class StandingsServiceImpl implements StandingsService {
 
         if (scoreFor > scoreAgainst) {
             stats.setWon(stats.getWon() + 1);
-            stats.setPoints(stats.getPoints() + 4); // Win = 4
+            stats.setPoints(stats.getPoints() + pointsWin);
         } else if (scoreFor == scoreAgainst) {
             stats.setDrawn(stats.getDrawn() + 1);
-            stats.setPoints(stats.getPoints() + 2); // Draw = 2
+            stats.setPoints(stats.getPoints() + pointsDraw);
         } else {
             stats.setLost(stats.getLost() + 1);
-            stats.setPoints(stats.getPoints() + 0); // Loss = 0
+            stats.setPoints(stats.getPoints() + pointsLoss);
         }
     }
 }
