@@ -34,7 +34,7 @@ public class StandingsServiceImpl implements StandingsService {
         log.info("Calculating standings for tournament {}", tournamentId);
 
         // Load scoring rules from tournament format config (global = category is null)
-        int pointsWin = 4;   // defaults
+        int pointsWin = 4; // defaults
         int pointsDraw = 2;
         int pointsLoss = 0;
 
@@ -47,7 +47,8 @@ public class StandingsServiceImpl implements StandingsService {
             pointsLoss = formatConfig.getPointsLoss() != null ? formatConfig.getPointsLoss() : 0;
             log.info("Using configured scoring rules: Win={}, Draw={}, Loss={}", pointsWin, pointsDraw, pointsLoss);
         } else {
-            log.info("No format config found, using default scoring rules: Win={}, Draw={}, Loss={}", pointsWin, pointsDraw, pointsLoss);
+            log.info("No format config found, using default scoring rules: Win={}, Draw={}, Loss={}", pointsWin,
+                    pointsDraw, pointsLoss);
         }
 
         // 1. Get all teams in the tournament
@@ -118,7 +119,7 @@ public class StandingsServiceImpl implements StandingsService {
 
             // Skip if teams not found in map (maybe not in pool or inactive?)
             if (homeStats == null || awayStats == null) {
-                log.warn("Match {} teams not found in standings map. Home: {}, Away: {}", match.getId(),
+                log.warn("Match {} teams not found in standings mapping. Home: {}, Away: {}", match.getId(),
                         homeStats != null, awayStats != null);
                 continue;
             }
@@ -144,7 +145,7 @@ public class StandingsServiceImpl implements StandingsService {
     }
 
     private void updateStats(StandingsResponse stats, int scoreFor, int scoreAgainst,
-                              int pointsWin, int pointsDraw, int pointsLoss) {
+            int pointsWin, int pointsDraw, int pointsLoss) {
         stats.setPlayed(stats.getPlayed() + 1);
         stats.setPointsFor(stats.getPointsFor() + scoreFor);
         stats.setPointsAgainst(stats.getPointsAgainst() + scoreAgainst);
