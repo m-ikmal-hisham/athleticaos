@@ -50,6 +50,7 @@ export interface PublicTeamSummary {
     id: string;
     name: string;
     slug: string;
+    shortName?: string;
     logoUrl?: string;
 }
 
@@ -130,6 +131,8 @@ export interface PublicPlayerStatEntry {
     name: string;
     teamName: string;
     tries: number;
+    conversions: number;
+    penalties: number;
     totalPoints: number;
     yellowCards: number;
     redCards: number;
@@ -148,6 +151,13 @@ export interface PublicTournamentStats {
     topScorers: PublicPlayerStatEntry[];
     topOffenders: PublicPlayerStatEntry[];
     topTeams: PublicTeamStatEntry[];
+    totalMatches?: number;
+    totalTries?: number;
+    totalConversions?: number;
+    totalPenalties?: number;
+    totalYellowCards?: number;
+    totalRedCards?: number;
+    totalPoints?: number;
 }
 
 // API Functions
@@ -197,6 +207,7 @@ export interface PublicPlayerSummary {
     dateOfBirth?: string;
     position?: string;
     position2?: string;
+    jerseyNumber?: number;
     profilePictureUrl?: string;
 }
 
@@ -231,6 +242,8 @@ export interface PublicPlayerDetailResponse {
     emergencyContactRelationship?: string;
     position?: string;
     position2?: string;
+    jerseyNumber?: number;
+    organisationName?: string;
     profilePictureUrl?: string;
     currentTeamName?: string;
     currentTeamId?: string;
@@ -243,6 +256,14 @@ export const publicProfileApi = {
     },
     getPlayer: async (idOrSlug: string): Promise<PublicPlayerDetailResponse> => {
         const response = await publicApi.get(`/players/${idOrSlug}`);
+        return response.data;
+    },
+    getPlayerStats: async (idOrSlug: string): Promise<any> => {
+        const response = await publicApi.get(`/players/${idOrSlug}/stats`);
+        return response.data;
+    },
+    getTeamStats: async (idOrSlug: string): Promise<any> => {
+        const response = await publicApi.get(`/teams/${idOrSlug}/stats`);
         return response.data;
     }
 };

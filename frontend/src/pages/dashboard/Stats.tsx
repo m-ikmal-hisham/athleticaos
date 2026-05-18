@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStatsStore } from '@/store/stats.store';
 import { useUIStore } from '@/store/ui.store';
 import { fetchTournaments } from '@/api/tournaments.api';
-import { Trophy, Users, Pulse, WarningCircle, Flag, Medal, CaretUp, CaretDown } from '@phosphor-icons/react';
+import { Trophy, Users, Pulse, WarningCircle, Flag, Medal, CaretUp, CaretDown, Target, Lightning } from '@phosphor-icons/react';
 import { BentoGrid, BentoItem } from '@/components/dashboard/BentoGrid';
 import { GlassCard } from '@/components/GlassCard';
 import { SearchableSelect } from '@/components/SearchableSelect';
@@ -233,6 +233,20 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
             </BentoItem>
             <BentoItem colSpan={1}>
                 <SummaryCard
+                    label="Conversions"
+                    value={summary?.totalConversions ?? 0}
+                    icon={<Target className="w-5 h-5 text-green-400" />}
+                />
+            </BentoItem>
+            <BentoItem colSpan={1}>
+                <SummaryCard
+                    label="Penalties"
+                    value={summary?.totalPenalties ?? 0}
+                    icon={<Lightning className="w-5 h-5 text-orange-400" />}
+                />
+            </BentoItem>
+            <BentoItem colSpan={1}>
+                <SummaryCard
                     label="Yellow Cards"
                     value={summary?.totalYellowCards ?? 0}
                     icon={<div className="w-4 h-5 bg-yellow-400 rounded-[2px]" />}
@@ -271,13 +285,15 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                     <th className="px-6 py-3 font-medium cursor-pointer hover:text-foreground transition-colors text-xs uppercase tracking-wider" onClick={() => handleSort('firstName', 'scorers')}>Player <SortIcon columnKey="firstName" type="scorers" /></th>
                                     <th className="px-6 py-3 font-medium cursor-pointer hover:text-foreground transition-colors text-xs uppercase tracking-wider" onClick={() => handleSort('teamName', 'scorers')}>Team <SortIcon columnKey="teamName" type="scorers" /></th>
                                     <th className="px-6 py-3 font-medium text-right cursor-pointer hover:text-foreground transition-colors text-xs uppercase tracking-wider" onClick={() => handleSort('tries', 'scorers')}>Tries <SortIcon columnKey="tries" type="scorers" /></th>
+                                    <th className="px-6 py-3 font-medium text-right cursor-pointer hover:text-foreground transition-colors text-xs uppercase tracking-wider" onClick={() => handleSort('conversions', 'scorers')}>Con <SortIcon columnKey="conversions" type="scorers" /></th>
+                                    <th className="px-6 py-3 font-medium text-right cursor-pointer hover:text-foreground transition-colors text-xs uppercase tracking-wider" onClick={() => handleSort('penalties', 'scorers')}>Pen <SortIcon columnKey="penalties" type="scorers" /></th>
                                     <th className="px-6 py-3 font-medium text-right cursor-pointer hover:text-foreground transition-colors text-xs uppercase tracking-wider" onClick={() => handleSort('totalPoints', 'scorers')}>Pts <SortIcon columnKey="totalPoints" type="scorers" /></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {sortedScorers.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
+                                        <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
                                             No scoring stats available.
                                         </td>
                                     </tr>
@@ -299,6 +315,12 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                             </td>
                                             <td className="px-6 py-3.5 text-right text-foreground/80 font-medium">
                                                 {player.tries}
+                                            </td>
+                                            <td className="px-6 py-3.5 text-right text-green-500 font-medium">
+                                                {player.conversions}
+                                            </td>
+                                            <td className="px-6 py-3.5 text-right text-orange-500 font-medium">
+                                                {player.penalties}
                                             </td>
                                             <td className="px-6 py-3.5 text-right text-primary font-bold">
                                                 {player.totalPoints}

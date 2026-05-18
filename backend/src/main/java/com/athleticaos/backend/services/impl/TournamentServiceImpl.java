@@ -139,6 +139,8 @@ public class TournamentServiceImpl implements TournamentService {
                 (int) totalPoints,
                 0, // yellow placeholder
                 0, // red placeholder
+                0, // conversions placeholder
+                0, // penalties placeholder
                 totalTeams,
                 totalPlayers,
                 totalPoints);

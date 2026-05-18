@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { publicTournamentApi, PublicTournamentStats } from '../../../api/public.api';
-import { Loader2, Trophy, Medal, AlertTriangle, Shield } from 'lucide-react';
+import { Loader2, Trophy, Medal, AlertTriangle, Shield, Target, Zap } from 'lucide-react';
 
 interface PublicStatsProps {
     tournamentId: string;
@@ -62,8 +62,33 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-            {/* Top Teams - Large Vertical Block */}
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Tournament Global Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
+                    <Medal className="w-6 h-6 text-yellow-500 mb-2" />
+                    <div className="text-2xl font-black text-skin-base">{stats.totalTries ?? 0}</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Tries</div>
+                </div>
+                <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
+                    <Trophy className="w-6 h-6 text-purple-500 mb-2" />
+                    <div className="text-2xl font-black text-skin-base">{stats.totalPoints ?? 0}</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Points</div>
+                </div>
+                <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
+                    <Target className="w-6 h-6 text-green-500 mb-2" />
+                    <div className="text-2xl font-black text-skin-base">{stats.totalConversions ?? 0}</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Conversions</div>
+                </div>
+                <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
+                    <Zap className="w-6 h-6 text-orange-500 mb-2" />
+                    <div className="text-2xl font-black text-skin-base">{stats.totalPenalties ?? 0}</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Penalties</div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Top Teams - Large Vertical Block */}
             <div className="md:col-span-1 lg:col-span-1 row-span-2 relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 dark:from-red-500 dark:to-orange-500" />
                 <div className="p-6 h-full flex flex-col">
@@ -118,10 +143,15 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-skin-base truncate">{player.name}</div>
                                     <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
+                                    <div className="flex gap-3 mt-1.5 text-[10px] uppercase font-medium text-skin-muted">
+                                        <span>{player.tries} T</span>
+                                        <span className="text-green-500 dark:text-green-400">{player.conversions} C</span>
+                                        <span className="text-orange-500 dark:text-orange-400">{player.penalties} P</span>
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-lg font-bold text-skin-base">{player.totalPoints}</div>
-                                    <div className="text-[10px] uppercase text-skin-muted font-medium">{player.tries} Tries</div>
+                                    <div className="text-[10px] uppercase text-skin-muted font-medium">pts</div>
                                 </div>
                             </div>
                         ))}
@@ -190,7 +220,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 <div 
                                     key={player.playerId + 'tries'} 
                                     className="flex items-center justify-between text-sm p-2 -mx-2 rounded-lg hover:bg-white/30 dark:hover:bg-white/5 transition-colors cursor-pointer group"
-                                    onClick={() => navigate(`/dashboard/players/${player.playerId}`)}
+                                    onClick={() => navigate(`/players/${player.playerId}`)}
                                 >
                                     <div className="truncate pr-2">
                                         <div className="font-medium text-skin-base">{player.name}</div>
@@ -205,6 +235,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                 </div>
             </div>
 
+            </div>
         </div>
     );
 };

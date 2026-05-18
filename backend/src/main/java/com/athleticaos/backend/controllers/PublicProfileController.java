@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.athleticaos.backend.repositories.PlayerTeamRepository;
+
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
@@ -24,6 +26,8 @@ public class PublicProfileController {
 
     private final TeamService teamService;
     private final PlayerService playerService;
+    private final PlayerTeamRepository playerTeamRepository;
+    private final com.athleticaos.backend.services.StatisticsService statisticsService;
 
     @GetMapping("/teams/{idOrSlug}")
     public ResponseEntity<PublicTeamDetailResponse> getPublicTeam(@PathVariable String idOrSlug) {
@@ -36,6 +40,7 @@ public class PublicProfileController {
                     .firstName(p.getFirstName())
                     .lastName(p.getLastName())
                     .position(p.getPosition())
+                    .jerseyNumber(p.getJerseyNumber())
                     .build()
                 ).collect(Collectors.toList()) : List.of();
                 
@@ -65,23 +70,42 @@ public class PublicProfileController {
         try {
             PlayerResponse player = fetchPlayer(idOrSlug);
             
+            // Resolve position from player-team assignment
+            String position = null;
+            String position2 = null;
+            UUID currentTeamId = null;
+            Integer jerseyNumber = null;
+            try {
+                var playerTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(player.id());
+                if (playerTeams != null && !playerTeams.isEmpty()) {
+                    var primaryTeam = playerTeams.get(0);
+                    position = primaryTeam.getPosition();
+                    currentTeamId = primaryTeam.getTeam() != null ? primaryTeam.getTeam().getId() : null;
+                    jerseyNumber = primaryTeam.getJerseyNumber();
+                }
+            } catch (Exception ex) {
+                log.debug("Could not fetch player teams for {}", player.id(), ex);
+            }
+            
             PublicPlayerDetailResponse response = PublicPlayerDetailResponse.builder()
                     .id(player.id())
                     .firstName(player.firstName())
                     .lastName(player.lastName())
                     .idType(player.identificationType())
                     .idNumber("XXX") // Hide for public
-                    .dateOfBirth(player.dob() != null ? "Hidden" : null) // Hide for public
+                    .dateOfBirth(player.dob() != null ? player.dob().toString() : null)
                     .gender(player.gender())
                     .country(player.country())
                     .state(player.state())
                     .city(player.city())
                     .bloodGroup(null)
-                    .position(null)
-                    .position2(null)
+                    .position(position)
+                    .position2(position2)
+                    .jerseyNumber(jerseyNumber)
+                    .organisationName(player.organisationName())
                     .profilePictureUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(player.photoUrl()))
                     .currentTeamName(player.teamNames() != null && !player.teamNames().isEmpty() ? player.teamNames().get(0) : null)
-                    .currentTeamId(null)
+                    .currentTeamId(currentTeamId)
                     .build();
                     
             return ResponseEntity.ok(response);
@@ -97,6 +121,56 @@ public class PublicProfileController {
             return teamService.getTeamById(uuid);
         } catch (IllegalArgumentException e) {
             return teamService.getTeamBySlug(idOrSlug);
+        }
+    }
+
+    @GetMapping("/players/{idOrSlug}/stats")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<?> getPublicPlayerStats(@PathVariable String idOrSlug) {
+        try {
+            PlayerResponse player = fetchPlayer(idOrSlug);
+            var stats = statisticsService.getPlayerStatsAcrossTournaments(player.id());
+            if (stats == null) {
+                return ResponseEntity.ok(java.util.Map.of(
+                    "matchesPlayed", 0, "tries", 0, "conversions", 0,
+                    "penalties", 0, "dropGoals", 0, "yellowCards", 0,
+                    "redCards", 0, "totalPoints", 0, "totalMinutesPlayed", 0,
+                    "recentMatches", java.util.List.of()
+                ));
+            }
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error fetching public player stats {}", idOrSlug, e);
+            return ResponseEntity.ok(java.util.Map.of(
+                "matchesPlayed", 0, "tries", 0, "conversions", 0,
+                "penalties", 0, "dropGoals", 0, "yellowCards", 0,
+                "redCards", 0, "totalPoints", 0, "totalMinutesPlayed", 0,
+                "recentMatches", java.util.List.of()
+            ));
+        }
+    }
+
+    @GetMapping("/teams/{idOrSlug}/stats")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<?> getPublicTeamStats(@PathVariable String idOrSlug) {
+        try {
+            TeamResponse team = fetchTeam(idOrSlug);
+            var stats = statisticsService.getTeamStatsAcrossTournaments(team.getId());
+            if (stats == null) {
+                return ResponseEntity.ok(java.util.Map.of(
+                    "matchesPlayed", 0, "wins", 0, "draws", 0, "losses", 0,
+                    "pointsFor", 0, "pointsAgainst", 0, "triesScored", 0,
+                    "yellowCards", 0, "redCards", 0
+                ));
+            }
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error fetching public team stats {}", idOrSlug, e);
+            return ResponseEntity.ok(java.util.Map.of(
+                "matchesPlayed", 0, "wins", 0, "draws", 0, "losses", 0,
+                "pointsFor", 0, "pointsAgainst", 0, "triesScored", 0,
+                "yellowCards", 0, "redCards", 0
+            ));
         }
     }
 

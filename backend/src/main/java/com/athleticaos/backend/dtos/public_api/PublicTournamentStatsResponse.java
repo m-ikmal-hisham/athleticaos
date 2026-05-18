@@ -11,4 +11,11 @@ public class PublicTournamentStatsResponse {
     private List<PublicPlayerStatEntry> topScorers;
     private List<PublicPlayerStatEntry> topOffenders;
     private List<PublicTeamStatEntry> topTeams;
+    private int totalMatches;
+    private int totalTries;
+    private int totalConversions;
+    private int totalPenalties;
+    private int totalYellowCards;
+    private int totalRedCards;
+    private int totalPoints;
 }

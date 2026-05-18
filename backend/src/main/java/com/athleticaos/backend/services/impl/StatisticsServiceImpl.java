@@ -55,6 +55,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 MatchEventType.YELLOW_CARD, categoryId, categoryId == null);
                 int totalRedCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
                                 MatchEventType.RED_CARD, categoryId, categoryId == null);
+                int totalConversions = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
+                                MatchEventType.CONVERSION, categoryId, categoryId == null);
+                int totalPenalties = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
+                                MatchEventType.PENALTY, categoryId, categoryId == null);
 
                 // Efficiently sum points via SQL
                 int totalPoints = (int) matchEventRepository.sumPointsByTournamentId(tournamentId, categoryId,
@@ -75,6 +79,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 totalPoints,
                                 totalYellowCards,
                                 totalRedCards,
+                                totalConversions,
+                                totalPenalties,
                                 activeTeams,
                                 activePlayers,
                                 totalPoints);
@@ -306,6 +312,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 p.lastName(),
                                                 p.teamName(),
                                                 p.tries(),
+                                                p.conversions(),
+                                                p.penalties(),
                                                 p.totalPoints(),
                                                 p.yellowCards(),
                                                 p.redCards()))
@@ -324,6 +332,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 p.lastName(),
                                                 p.teamName(),
                                                 p.tries(),
+                                                p.conversions(),
+                                                p.penalties(),
                                                 p.totalPoints(),
                                                 p.yellowCards(),
                                                 p.redCards()))

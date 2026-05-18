@@ -12,6 +12,8 @@ public class PublicPlayerStatEntry {
     private String name;
     private String teamName;
     private int tries;
+    private int conversions;
+    private int penalties;
     private int totalPoints;
     private int yellowCards;
     private int redCards;

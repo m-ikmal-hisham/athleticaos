@@ -194,8 +194,10 @@ public class PublicTournamentController {
 
             com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard = statisticsService
                     .getTournamentLeaderboard(tournament.getId(), categoryId);
+            com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse summary = statisticsService
+                    .getTournamentSummary(tournament.getId(), categoryId);
 
-            PublicTournamentStatsResponse response = mapToPublicStats(leaderboard);
+            PublicTournamentStatsResponse response = mapToPublicStats(leaderboard, summary);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error fetching stats for tournament {}", idOrSlug, e);
@@ -439,13 +441,16 @@ public class PublicTournamentController {
     }
 
     private PublicTournamentStatsResponse mapToPublicStats(
-            com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard) {
+            com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard,
+            com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse summary) {
         List<PublicPlayerStatEntry> topScorers = leaderboard.topPlayers().stream()
                 .map(p -> PublicPlayerStatEntry.builder()
                         .playerId(p.playerId())
                         .name(p.firstName() + " " + p.lastName())
                         .teamName(p.teamName())
                         .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
                         .totalPoints(p.totalPoints())
                         .yellowCards(p.yellowCards())
                         .redCards(p.redCards())
@@ -458,6 +463,8 @@ public class PublicTournamentController {
                         .name(p.firstName() + " " + p.lastName())
                         .teamName(p.teamName())
                         .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
                         .totalPoints(p.totalPoints())
                         .yellowCards(p.yellowCards())
                         .redCards(p.redCards())
@@ -479,6 +486,13 @@ public class PublicTournamentController {
                 .topScorers(topScorers)
                 .topOffenders(topOffenders)
                 .topTeams(topTeams)
+                .totalMatches(summary.totalMatches())
+                .totalTries(summary.totalTries())
+                .totalConversions(summary.totalConversions())
+                .totalPenalties(summary.totalPenalties())
+                .totalYellowCards(summary.totalYellowCards())
+                .totalRedCards(summary.totalRedCards())
+                .totalPoints(summary.totalPoints())
                 .build();
     }
 }

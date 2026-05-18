@@ -15,6 +15,8 @@ interface TournamentSummary {
     totalPoints: number;
     totalYellowCards: number;
     totalRedCards: number;
+    totalConversions: number;
+    totalPenalties: number;
 }
 
 interface PlayerLeaderboardEntry {
@@ -23,6 +25,8 @@ interface PlayerLeaderboardEntry {
     lastName: string;
     teamName: string | null;
     tries: number;
+    conversions: number;
+    penalties: number;
     totalPoints: number;
     yellowCards: number;
     redCards: number;

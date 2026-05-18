@@ -20,5 +20,6 @@ public class PublicPlayerSummary {
     private String dateOfBirth;
     private String position;
     private String position2;
+    private Integer jerseyNumber;
     private String profilePictureUrl;
 }

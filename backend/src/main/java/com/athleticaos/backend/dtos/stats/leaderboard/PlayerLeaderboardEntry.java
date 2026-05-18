@@ -8,6 +8,8 @@ public record PlayerLeaderboardEntry(
                 String lastName,
                 String teamName,
                 int tries,
+                int conversions,
+                int penalties,
                 int totalPoints,
                 int yellowCards,
                 int redCards) {

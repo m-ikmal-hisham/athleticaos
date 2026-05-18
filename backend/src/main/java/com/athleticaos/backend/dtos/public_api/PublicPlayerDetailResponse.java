@@ -28,6 +28,8 @@ public class PublicPlayerDetailResponse {
     private String emergencyContactRelationship;
     private String position;
     private String position2;
+    private Integer jerseyNumber;
+    private String organisationName;
     private String profilePictureUrl;
     private String currentTeamName;
     private UUID currentTeamId;
