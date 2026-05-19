@@ -75,7 +75,7 @@ export function PublicTeamProfile() {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12">
             {/* Header Banner */}
-            <div className="relative h-56 sm:h-72 md:h-80 overflow-hidden bg-gradient-to-br from-slate-200 via-blue-100 to-indigo-100 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900">
+            <div className="relative pt-20 pb-0 min-h-[16rem] sm:h-72 md:h-80 overflow-hidden bg-gradient-to-br from-slate-200 via-blue-100 to-indigo-100 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 flex flex-col justify-end">
                 <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-300 via-transparent to-transparent dark:from-blue-600 dark:via-transparent dark:to-transparent"></div>
                 <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-200/30 dark:bg-blue-500/10 blur-2xl"></div>
                 <div className="absolute -bottom-24 -left-12 w-48 h-48 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-2xl"></div>
@@ -88,7 +88,7 @@ export function PublicTeamProfile() {
                 </button>
 
                 {/* Glassmorphism card inside banner */}
-                <div className="absolute bottom-0 left-0 right-0 z-10 px-4 sm:px-6 lg:px-8">
+                <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mt-auto">
                     <div className="max-w-7xl mx-auto">
                         <div className="bg-white/50 dark:bg-slate-800/40 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-t-2xl p-6 sm:p-8 shadow-lg">
                             <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-center">

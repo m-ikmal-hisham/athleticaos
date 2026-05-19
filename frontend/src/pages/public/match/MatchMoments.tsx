@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown } from '@phosphor-icons/react';
+import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail } from '../../../api/public.api';
 import { formatEventType } from '@/utils/formatters';
@@ -11,6 +11,7 @@ interface MatchMomentsProps {
 }
 
 export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: MatchMomentsProps) => {
+    const [isExpanded, setIsExpanded] = useState(true);
     const [replayMode, setReplayMode] = useState(false);
     const [currentMinute, setCurrentMinute] = useState(fullTimeMinutes);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -157,7 +158,15 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
         <GlassCard className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Match Moments</h3>
+                    <div 
+                        className="flex items-center gap-2 cursor-pointer select-none group" 
+                        onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">Match Moments</h3>
+                        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
+                            {isExpanded ? <CaretUp className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600" /> : <CaretDown className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600" />}
+                        </div>
+                    </div>
                     {replayMode && (
                         <div className="text-xs font-bold text-blue-500 uppercase tracking-widest mt-1 animate-pulse">
                             Replay Mode • {currentMinute}'
@@ -180,7 +189,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
             </div>
 
             {/* Replay Controls - Only visible in Replay Mode */}
-            {replayMode && (
+            {isExpanded && replayMode && (
                 <div className="mb-8 p-4 rounded-2xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 space-y-4">
                     {/* Score Display (simulated) */}
                     <div className="flex justify-center items-center gap-8 text-2xl font-black text-slate-900 dark:text-white pb-4 border-b border-slate-200 dark:border-white/5">
@@ -243,9 +252,10 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
             )}
 
 
-            <div className="relative space-y-0">
-                {/* Vertical Timeline Line */}
-                <div className="absolute top-4 bottom-4 left-[2.45rem] w-px bg-slate-200 dark:bg-slate-800 z-0" />
+            {isExpanded && (
+                <div className="relative space-y-0">
+                    {/* Vertical Timeline Line */}
+                    <div className="absolute top-4 bottom-4 left-[2.45rem] w-px bg-slate-200 dark:bg-slate-800 z-0" />
 
                 {sortedEvents.length === 0 && replayMode && (
                     <div className="py-12 text-center text-slate-400 italic">
@@ -329,7 +339,8 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                         </div>
                     );
                 })}
-            </div>
+                </div>
+            )}
         </GlassCard>
     );
 };
