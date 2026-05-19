@@ -34,6 +34,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         private final MatchEventRepository matchEventRepository;
         private final TournamentRepository tournamentRepository;
         private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
+        private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository formatConfigRepository;
 
         @Override
         public TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId, UUID categoryId) {
@@ -192,6 +193,24 @@ public class StatisticsServiceImpl implements StatisticsService {
                 java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
 
+                int pointsWin = 4;
+                int pointsDraw = 2;
+                int pointsLoss = 0;
+
+                com.athleticaos.backend.entities.TournamentFormatConfig formatConfig = null;
+                if (categoryId != null) {
+                        formatConfig = formatConfigRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId).orElse(null);
+                }
+                if (formatConfig == null) {
+                        formatConfig = formatConfigRepository.findByTournamentIdAndCategoryIsNull(tournamentId).orElse(null);
+                }
+                
+                if (formatConfig != null) {
+                        pointsWin = formatConfig.getPointsWin() != null ? formatConfig.getPointsWin() : 4;
+                        pointsDraw = formatConfig.getPointsDraw() != null ? formatConfig.getPointsDraw() : 2;
+                        pointsLoss = formatConfig.getPointsLoss() != null ? formatConfig.getPointsLoss() : 0;
+                }
+
                 // Filter matches
                 if (categoryId != null) {
                         matches = matches.stream()
@@ -270,8 +289,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                         int yellowCards = countEvents(teamEvents, MatchEventType.YELLOW_CARD);
                         int redCards = countEvents(teamEvents, MatchEventType.RED_CARD);
 
-                        // Table points: Win=4, Draw=2, Loss=0
-                        int tablePoints = (wins * 4) + (draws * 2);
+                        // Table points calculated dynamically based on format config
+                        int tablePoints = (wins * pointsWin) + (draws * pointsDraw) + (losses * pointsLoss);
 
                         stats.add(new TeamStatsResponse(
                                         teamId,
@@ -353,6 +372,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 t.organisationName(),
                                                 t.wins(),
                                                 t.triesScored(),
+                                                t.pointsFor(),
+                                                t.pointsDifference(),
                                                 t.tablePoints()))
                                 .toList();
 

@@ -144,6 +144,8 @@ export interface PublicTeamStatEntry {
     organisationName: string;
     wins: number;
     triesScored: number;
+    pointsFor: number;
+    pointsDifference: number;
     tablePoints: number;
 }
 
