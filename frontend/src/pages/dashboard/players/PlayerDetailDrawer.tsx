@@ -36,6 +36,8 @@ interface PlayerStats {
         yellowCards: number;
         redCards: number;
         minutesPlayed: string;
+        teamName?: string;
+        tournamentName?: string;
     }>;
 }
 
@@ -379,6 +381,7 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                                     <thead className="bg-white/5 text-muted-foreground font-medium border-b border-white/5">
                                                         <tr>
                                                             <th className="p-3">Date</th>
+                                                            <th className="p-3">Team</th>
                                                             <th className="p-3">Opponent</th>
                                                             <th className="p-3 text-center">Res</th>
                                                             <th className="p-3 text-center">Mins</th>
@@ -393,6 +396,14 @@ export const PlayerDetailDrawer = ({ playerId, isOpen, onClose }: PlayerDetailDr
                                                             <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                                 <td className="p-3 text-muted-foreground">
                                                                     {new Date(match.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-foreground font-medium text-xs">{match.teamName || '—'}</span>
+                                                                        {match.tournamentName && (
+                                                                            <span className="text-muted-foreground text-[10px] truncate max-w-[100px]">{match.tournamentName}</span>
+                                                                        )}
+                                                                    </div>
                                                                 </td>
                                                                 <td className="p-3 text-foreground font-medium">
                                                                     {match.opponentName}

@@ -265,6 +265,7 @@ export function PublicPlayerProfile() {
                                         <thead>
                                             <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 text-xs uppercase tracking-wider">
                                                 <th className="py-3 px-3 text-left font-medium">Date</th>
+                                                <th className="py-3 px-3 text-left font-medium">Team</th>
                                                 <th className="py-3 px-3 text-left font-medium">Opponent</th>
                                                 <th className="py-3 px-3 text-center font-medium">Result</th>
                                                 <th className="py-3 px-3 text-center font-medium">Tries</th>
@@ -277,6 +278,14 @@ export function PublicPlayerProfile() {
                                                 <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                                                     <td className="py-2.5 px-3 text-slate-500 text-xs whitespace-nowrap">
                                                         {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}
+                                                    </td>
+                                                    <td className="py-2.5 px-3">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-slate-900 dark:text-white text-xs">{match.teamName || '—'}</span>
+                                                            {match.tournamentName && (
+                                                                <span className="text-slate-400 dark:text-slate-500 text-[10px] truncate max-w-[120px]">{match.tournamentName}</span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white truncate max-w-[150px]">{match.opponentName}</td>
                                                     <td className="py-2.5 px-3 text-center">

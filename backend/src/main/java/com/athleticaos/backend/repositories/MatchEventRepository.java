@@ -17,6 +17,12 @@ public interface MatchEventRepository extends JpaRepository<MatchEvent, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e WHERE e.player.id = :playerId AND e.match.deleted = false")
         List<MatchEvent> findByPlayer_Id(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
 
+        @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e WHERE (e.player.id = :playerId OR e.relatedPlayer.id = :playerId) AND e.match.deleted = false")
+        List<MatchEvent> findByPlayerIdOrRelatedPlayerId(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e WHERE e.match.id = :matchId AND e.match.deleted = false")
+        List<MatchEvent> findAllByMatchIdIncludingDeleted(@org.springframework.data.repository.query.Param("matchId") UUID matchId);
+
         void deleteByMatch_Tournament_Id(UUID tournamentId);
 
         void deleteByMatchId(UUID matchId);

@@ -31,6 +31,8 @@ interface PlayerStats {
         yellowCards: number;
         redCards: number;
         minutesPlayed: string;
+        teamName?: string;
+        tournamentName?: string;
     }>;
 }
 
@@ -313,6 +315,7 @@ export const PlayerProfile = () => {
                                         <thead className="bg-white/5 text-muted-foreground font-medium border-b border-white/5">
                                             <tr>
                                                 <th className="p-4">Date</th>
+                                                <th className="p-4">Team</th>
                                                 <th className="p-4">Opponent</th>
                                                 <th className="p-4 text-center">Result</th>
                                                 <th className="p-4 text-center">Mins</th>
@@ -327,6 +330,14 @@ export const PlayerProfile = () => {
                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                     <td className="p-4 text-muted-foreground">
                                                         {new Date(match.matchDate).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-foreground font-medium text-xs">{match.teamName || '—'}</span>
+                                                            {match.tournamentName && (
+                                                                <span className="text-muted-foreground text-[10px]">{match.tournamentName}</span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="p-4 text-foreground font-medium">
                                                         {match.opponentName}
@@ -348,7 +359,7 @@ export const PlayerProfile = () => {
                                             ))}
                                             {stats.recentMatches.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={8} className="p-8 text-center text-muted-foreground">No stats record found.</td>
+                                                    <td colSpan={9} className="p-8 text-center text-muted-foreground">No stats record found.</td>
                                                 </tr>
                                             )}
                                         </tbody>

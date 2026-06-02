@@ -306,6 +306,11 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                             <span className={`text-xs px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${style.text} border-current opacity-70`}>
                                                 {formatEventType(event.eventType)}
                                             </span>
+                                            {event.eventType === 'RED_CARD' && event.notes?.includes('Automatic red card') && (
+                                                <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold">
+                                                    2nd YC
+                                                </span>
+                                            )}
                                         </div>
 
                                         {event.eventType === 'SUBSTITUTION' && subInName ? (

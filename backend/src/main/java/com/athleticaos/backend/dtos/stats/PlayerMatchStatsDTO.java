@@ -12,6 +12,8 @@ public record PlayerMatchStatsDTO(
         int points,
         int yellowCards,
         int redCards,
-        String minutesPlayed // e.g. "80", "20 (Sub)"
+        String minutesPlayed, // e.g. "80", "32 (Sub)", "DNP"
+        String teamName, // Team the player represented in this match
+        String tournamentName // Tournament/competition name
 ) {
 }

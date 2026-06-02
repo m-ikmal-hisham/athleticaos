@@ -388,18 +388,17 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<com.athleticaos.backend.entities.MatchLineup> lineups = matchLineupRepository
                                 .findByPlayerId(playerId);
 
-                // 2. Fetch Events (Performance)
-                List<MatchEvent> events = matchEventRepository.findByPlayer_Id(playerId);
+                // 2. Fetch Events where this player is the primary player (for scoring stats)
+                List<MatchEvent> playerEvents = matchEventRepository.findByPlayer_Id(playerId);
 
-                // 3. Aggregate Career Stats
-                // matchesPlayed will be calculated after processing recentMatches
-                int tries = countEvents(events, MatchEventType.TRY);
-                int conversions = countEvents(events, MatchEventType.CONVERSION);
-                int penalties = countEvents(events, MatchEventType.PENALTY);
-                int dropGoals = countEvents(events, MatchEventType.DROP_GOAL);
-                int yellowCards = countEvents(events, MatchEventType.YELLOW_CARD);
-                int redCards = countEvents(events, MatchEventType.RED_CARD);
-                int totalPoints = events.stream().mapToInt(this::getPointsForEvent).sum();
+                // 3. Aggregate Career Stats (only count events where player is the primary actor)
+                int tries = countEvents(playerEvents, MatchEventType.TRY);
+                int conversions = countEvents(playerEvents, MatchEventType.CONVERSION);
+                int penalties = countEvents(playerEvents, MatchEventType.PENALTY);
+                int dropGoals = countEvents(playerEvents, MatchEventType.DROP_GOAL);
+                int yellowCards = countEvents(playerEvents, MatchEventType.YELLOW_CARD);
+                int redCards = countEvents(playerEvents, MatchEventType.RED_CARD);
+                int totalPoints = playerEvents.stream().mapToInt(this::getPointsForEvent).sum();
 
                 // 4. Get Player Details
                 String firstName = "";
@@ -410,35 +409,51 @@ public class StatisticsServiceImpl implements StatisticsService {
                         Player p = lineups.get(0).getPlayer();
                         firstName = p.getPerson().getFirstName();
                         lastName = p.getPerson().getLastName();
-                        currentTeamName = lineups.get(lineups.size() - 1).getTeam().getName();
-                } else if (!events.isEmpty()) {
-                        Player p = events.get(0).getPlayer();
+                        // Get the most recent team from the most recent match lineup
+                        currentTeamName = lineups.stream()
+                                        .sorted((l1, l2) -> {
+                                                java.time.LocalDate d1 = l1.getMatch().getMatchDate();
+                                                java.time.LocalDate d2 = l2.getMatch().getMatchDate();
+                                                if (d1 == null || d2 == null) return 0;
+                                                return d2.compareTo(d1);
+                                        })
+                                        .findFirst()
+                                        .map(l -> l.getTeam().getName())
+                                        .orElse(null);
+                } else if (!playerEvents.isEmpty()) {
+                        Player p = playerEvents.get(0).getPlayer();
                         firstName = p.getPerson().getFirstName();
                         lastName = p.getPerson().getLastName();
-                } else {
-                        // No stats, fetch player name manually or return empty stats
-                        // For now returning empty stats with placeholder name if not found in cache
-                        // Ideally fetching player via playerRepository is better.
                 }
 
                 // 5. Generate Match History
-                // Group events by Match
-                Map<UUID, List<MatchEvent>> eventsByMatch = events.stream()
+                // Group player events by Match (for scoring stats per match)
+                Map<UUID, List<MatchEvent>> playerEventsByMatch = playerEvents.stream()
                                 .collect(Collectors.groupingBy(e -> e.getMatch().getId()));
+
+                // Cache of all match events (including substitution events where player is relatedPlayer)
+                Map<UUID, List<MatchEvent>> allMatchEventsCache = new HashMap<>();
 
                 List<PlayerMatchStatsDTO> recentMatches = lineups.stream()
                                 .map(lineup -> {
                                         Match match = lineup.getMatch();
-                                        List<MatchEvent> matchEvents = eventsByMatch.getOrDefault(match.getId(),
-                                                        new ArrayList<>());
+                                        // Player-specific events for scoring stats
+                                        List<MatchEvent> matchPlayerEvents = playerEventsByMatch
+                                                        .getOrDefault(match.getId(), new ArrayList<>());
 
-                                        int mPoints = matchEvents.stream().mapToInt(this::getPointsForEvent).sum();
-                                        int mTries = (int) matchEvents.stream()
+                                        // ALL events for this match (needed for correct minutes calculation)
+                                        List<MatchEvent> allMatchEvents = allMatchEventsCache.computeIfAbsent(
+                                                        match.getId(),
+                                                        id -> matchEventRepository.findAllByMatchIdIncludingDeleted(id));
+
+                                        int mPoints = matchPlayerEvents.stream()
+                                                        .mapToInt(this::getPointsForEvent).sum();
+                                        int mTries = (int) matchPlayerEvents.stream()
                                                         .filter(e -> e.getEventType() == MatchEventType.TRY).count();
-                                        int mYellow = (int) matchEvents.stream()
+                                        int mYellow = (int) matchPlayerEvents.stream()
                                                         .filter(e -> e.getEventType() == MatchEventType.YELLOW_CARD)
                                                         .count();
-                                        int mRed = (int) matchEvents.stream()
+                                        int mRed = (int) matchPlayerEvents.stream()
                                                         .filter(e -> e.getEventType() == MatchEventType.RED_CARD)
                                                         .count();
 
@@ -466,10 +481,13 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                                         int duration = 80; // Default
                                         if (match.getTournament() != null) {
-                                                UUID catId = (match.getStage() != null && match.getStage().getCategory() != null)
-                                                                ? match.getStage().getCategory().getId()
-                                                                : (match.getCategory() != null ? match.getCategory().getId()
-                                                                                : null);
+                                                UUID catId = (match.getStage() != null
+                                                                && match.getStage().getCategory() != null)
+                                                                                ? match.getStage().getCategory().getId()
+                                                                                : (match.getCategory() != null
+                                                                                                ? match.getCategory()
+                                                                                                                .getId()
+                                                                                                : null);
                                                 com.athleticaos.backend.entities.TournamentFormatConfig config = match
                                                                 .getTournament().getFormatConfig(catId);
                                                 if (config != null) {
@@ -477,16 +495,65 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 }
                                         }
 
-                                        int minutesPlayedVal = calculateMinutesPlayed(match, playerId, lineup.getRole(),
-                                                        matchEvents, duration);
+                                        // Determine original starting state from events, not from
+                                        // (potentially mutated) lineup role.
+                                        // If ANY substitution event has this player as relatedPlayer
+                                        // (i.e. they were subbed IN), they originally started on bench.
+                                        boolean wasSubbedIn = allMatchEvents.stream()
+                                                        .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
+                                                                        && e.getRelatedPlayer() != null
+                                                                        && e.getRelatedPlayer().getId()
+                                                                                        .equals(playerId));
+
+                                        // If the player was subbed in, their original role was BENCH
+                                        // If they were NOT subbed in and are in the lineup, they were a
+                                        // STARTER
+                                        // (unless they're bench and never entered = DNP)
+                                        boolean wasOriginallyStarter;
+                                        if (wasSubbedIn) {
+                                                wasOriginallyStarter = false; // They came off the bench
+                                        } else {
+                                                // Check if they were subbed OUT (meaning they were a
+                                                // starter who got replaced)
+                                                boolean wasSubbedOut = allMatchEvents.stream()
+                                                                .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
+                                                                                && e.getPlayer() != null
+                                                                                && e.getPlayer().getId()
+                                                                                                .equals(playerId));
+                                                if (wasSubbedOut) {
+                                                        wasOriginallyStarter = true; // Started and got subbed
+                                                                                     // out
+                                                } else {
+                                                        // No substitution events involving this player at all
+                                                        // Use lineup role but prefer original intention:
+                                                        // STARTER = played full match, BENCH = DNP
+                                                        wasOriginallyStarter = lineup
+                                                                        .getRole() == com.athleticaos.backend.enums.LineupRole.STARTER
+                                                                        || lineup.isStarter();
+                                                }
+                                        }
+
+                                        com.athleticaos.backend.enums.LineupRole effectiveRole = wasOriginallyStarter
+                                                        ? com.athleticaos.backend.enums.LineupRole.STARTER
+                                                        : com.athleticaos.backend.enums.LineupRole.BENCH;
+
+                                        int minutesPlayedVal = calculateMinutesPlayed(match, playerId,
+                                                        effectiveRole, allMatchEvents, duration);
                                         String minutesStr = String.valueOf(minutesPlayedVal);
-                                        if (lineup.getRole() != com.athleticaos.backend.enums.LineupRole.STARTER
-                                                        && minutesPlayedVal > 0) {
+                                        if (!wasOriginallyStarter && minutesPlayedVal > 0) {
                                                 minutesStr += " (Sub)";
-                                        } else if (minutesPlayedVal == 0 && lineup
-                                                        .getRole() == com.athleticaos.backend.enums.LineupRole.BENCH) {
+                                        } else if (minutesPlayedVal == 0
+                                                        && effectiveRole == com.athleticaos.backend.enums.LineupRole.BENCH) {
                                                 minutesStr = "DNP";
                                         }
+
+                                        // Team and tournament info
+                                        String teamName = lineup.getTeam() != null
+                                                        ? lineup.getTeam().getName()
+                                                        : null;
+                                        String tournamentName = match.getTournament() != null
+                                                        ? match.getTournament().getName()
+                                                        : null;
 
                                         return new PlayerMatchStatsDTO(
                                                         match.getId(),
@@ -497,7 +564,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                         mPoints,
                                                         mYellow,
                                                         mRed,
-                                                        minutesStr);
+                                                        minutesStr,
+                                                        teamName,
+                                                        tournamentName);
                                 })
                                 .sorted((m1, m2) -> {
                                         if (m1.matchDate() == null || m2.matchDate() == null)
@@ -543,14 +612,34 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 recentMatches);
         }
 
-        private int calculateMinutesPlayed(Match match, UUID playerId, com.athleticaos.backend.enums.LineupRole role,
-                        List<MatchEvent> events, int matchDuration) {
-                boolean isOn = role == com.athleticaos.backend.enums.LineupRole.STARTER;
+        /**
+         * Calculates the actual minutes a player was on the field during a match.
+         * 
+         * This method processes ALL match events (not just player-specific ones) to
+         * correctly track when a player enters and leaves the field via substitutions
+         * or red cards.
+         * 
+         * For substitution events:
+         * - player (primary) = the player going OFF the field
+         * - relatedPlayer = the player coming ON the field
+         * 
+         * @param match         The match
+         * @param playerId      The player's ID
+         * @param originalRole  The player's original role (STARTER or BENCH) before any
+         *                      substitutions
+         * @param allMatchEvents ALL events for the match (not just this player's)
+         * @param matchDuration  Total match duration in minutes
+         * @return Minutes played on the field
+         */
+        private int calculateMinutesPlayed(Match match, UUID playerId,
+                        com.athleticaos.backend.enums.LineupRole originalRole,
+                        List<MatchEvent> allMatchEvents, int matchDuration) {
+                boolean isOn = originalRole == com.athleticaos.backend.enums.LineupRole.STARTER;
                 int lastTime = 0;
                 int totalMinutes = 0;
 
-                // Sort events by minute (create copy to avoid mutating original list if shared)
-                List<MatchEvent> sortedEvents = new ArrayList<>(events);
+                // Sort events by minute (create copy to avoid mutating original list)
+                List<MatchEvent> sortedEvents = new ArrayList<>(allMatchEvents);
                 sortedEvents.sort(Comparator.comparingInt(e -> e.getMinute() != null ? e.getMinute() : 0));
 
                 for (MatchEvent event : sortedEvents) {
@@ -559,20 +648,21 @@ public class StatisticsServiceImpl implements StatisticsService {
                         int eventTime = event.getMinute();
 
                         if (isOn) {
-                                // Check if player is coming OFF
+                                // Check if player is coming OFF (primary player in substitution)
                                 if (event.getEventType() == MatchEventType.SUBSTITUTION && event.getPlayer() != null
                                                 && event.getPlayer().getId().equals(playerId)) {
                                         totalMinutes += (eventTime - lastTime);
                                         isOn = false;
                                         lastTime = eventTime;
-                                } else if (event.getEventType() == MatchEventType.RED_CARD && event.getPlayer() != null
+                                } else if (event.getEventType() == MatchEventType.RED_CARD
+                                                && event.getPlayer() != null
                                                 && event.getPlayer().getId().equals(playerId)) {
                                         totalMinutes += (eventTime - lastTime);
                                         isOn = false;
                                         lastTime = eventTime;
                                 }
                         } else {
-                                // Check if player is coming ON (via Related Player in Substitution)
+                                // Check if player is coming ON (relatedPlayer in substitution)
                                 if (event.getEventType() == MatchEventType.SUBSTITUTION
                                                 && event.getRelatedPlayer() != null
                                                 && event.getRelatedPlayer().getId().equals(playerId)) {
