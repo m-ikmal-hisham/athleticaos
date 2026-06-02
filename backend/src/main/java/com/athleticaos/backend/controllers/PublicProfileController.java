@@ -27,6 +27,7 @@ public class PublicProfileController {
     private final TeamService teamService;
     private final PlayerService playerService;
     private final PlayerTeamRepository playerTeamRepository;
+    private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
 
     @GetMapping("/teams/{idOrSlug}")
@@ -75,16 +76,75 @@ public class PublicProfileController {
             String position2 = null;
             UUID currentTeamId = null;
             Integer jerseyNumber = null;
+            String currentTeamName = null;
+
             try {
                 var playerTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(player.id());
                 if (playerTeams != null && !playerTeams.isEmpty()) {
                     var primaryTeam = playerTeams.get(0);
                     position = primaryTeam.getPosition();
-                    currentTeamId = primaryTeam.getTeam() != null ? primaryTeam.getTeam().getId() : null;
                     jerseyNumber = primaryTeam.getJerseyNumber();
+                    // Default from player-team registration
+                    currentTeamId = primaryTeam.getTeam() != null ? primaryTeam.getTeam().getId() : null;
+                    currentTeamName = primaryTeam.getTeam() != null ? primaryTeam.getTeam().getName() : null;
                 }
             } catch (Exception ex) {
                 log.debug("Could not fetch player teams for {}", player.id(), ex);
+            }
+
+            // Determine the "active" team from match lineups, prioritizing
+            // active (LIVE/PUBLISHED) tournaments over completed ones.
+            // This ensures a player who plays for multiple teams across
+            // tournaments shows the team from the currently active tournament.
+            try {
+                var lineups = matchLineupRepository.findByPlayerId(player.id());
+                if (lineups != null && !lineups.isEmpty()) {
+                    // First, try to find a lineup from an active tournament (LIVE > PUBLISHED)
+                    var activeLineup = lineups.stream()
+                            .filter(l -> l.getMatch() != null && l.getMatch().getTournament() != null)
+                            .filter(l -> {
+                                var status = l.getMatch().getTournament().getStatus();
+                                return status == com.athleticaos.backend.enums.TournamentStatus.LIVE
+                                        || status == com.athleticaos.backend.enums.TournamentStatus.PUBLISHED;
+                            })
+                            .sorted((l1, l2) -> {
+                                // Prefer LIVE over PUBLISHED
+                                var s1 = l1.getMatch().getTournament().getStatus();
+                                var s2 = l2.getMatch().getTournament().getStatus();
+                                if (s1 == com.athleticaos.backend.enums.TournamentStatus.LIVE && s2 != com.athleticaos.backend.enums.TournamentStatus.LIVE) return -1;
+                                if (s2 == com.athleticaos.backend.enums.TournamentStatus.LIVE && s1 != com.athleticaos.backend.enums.TournamentStatus.LIVE) return 1;
+                                // Then by most recent match date
+                                var d1 = l1.getMatch().getMatchDate();
+                                var d2 = l2.getMatch().getMatchDate();
+                                if (d1 == null || d2 == null) return 0;
+                                return d2.compareTo(d1);
+                            })
+                            .findFirst()
+                            .orElse(null);
+
+                    if (activeLineup != null) {
+                        currentTeamId = activeLineup.getTeam().getId();
+                        currentTeamName = activeLineup.getTeam().getName();
+                    } else {
+                        // No active tournament — fall back to most recent match
+                        var mostRecentLineup = lineups.stream()
+                                .filter(l -> l.getMatch() != null && l.getMatch().getMatchDate() != null)
+                                .sorted((l1, l2) -> l2.getMatch().getMatchDate().compareTo(l1.getMatch().getMatchDate()))
+                                .findFirst()
+                                .orElse(null);
+                        if (mostRecentLineup != null) {
+                            currentTeamId = mostRecentLineup.getTeam().getId();
+                            currentTeamName = mostRecentLineup.getTeam().getName();
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.debug("Could not determine active team from lineups for {}", player.id(), ex);
+            }
+
+            // Final fallback: use first team name from player response
+            if (currentTeamName == null && player.teamNames() != null && !player.teamNames().isEmpty()) {
+                currentTeamName = player.teamNames().get(0);
             }
             
             PublicPlayerDetailResponse response = PublicPlayerDetailResponse.builder()
@@ -104,7 +164,7 @@ public class PublicProfileController {
                     .jerseyNumber(jerseyNumber)
                     .organisationName(player.organisationName())
                     .profilePictureUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(player.photoUrl()))
-                    .currentTeamName(player.teamNames() != null && !player.teamNames().isEmpty() ? player.teamNames().get(0) : null)
+                    .currentTeamName(currentTeamName)
                     .currentTeamId(currentTeamId)
                     .build();
                     

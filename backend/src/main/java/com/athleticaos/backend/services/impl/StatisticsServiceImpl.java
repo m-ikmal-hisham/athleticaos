@@ -409,17 +409,38 @@ public class StatisticsServiceImpl implements StatisticsService {
                         Player p = lineups.get(0).getPlayer();
                         firstName = p.getPerson().getFirstName();
                         lastName = p.getPerson().getLastName();
-                        // Get the most recent team from the most recent match lineup
+                        // Get the team from the most relevant tournament:
+                        // 1. Prefer teams from active (LIVE/PUBLISHED) tournaments
+                        // 2. Fall back to the most recent match date
                         currentTeamName = lineups.stream()
+                                        .filter(l -> l.getMatch() != null && l.getMatch().getTournament() != null)
+                                        .filter(l -> {
+                                                var status = l.getMatch().getTournament().getStatus();
+                                                return status == com.athleticaos.backend.enums.TournamentStatus.LIVE
+                                                        || status == com.athleticaos.backend.enums.TournamentStatus.PUBLISHED;
+                                        })
                                         .sorted((l1, l2) -> {
-                                                java.time.LocalDate d1 = l1.getMatch().getMatchDate();
-                                                java.time.LocalDate d2 = l2.getMatch().getMatchDate();
+                                                // Prefer LIVE over PUBLISHED
+                                                var s1 = l1.getMatch().getTournament().getStatus();
+                                                var s2 = l2.getMatch().getTournament().getStatus();
+                                                if (s1 == com.athleticaos.backend.enums.TournamentStatus.LIVE && s2 != com.athleticaos.backend.enums.TournamentStatus.LIVE) return -1;
+                                                if (s2 == com.athleticaos.backend.enums.TournamentStatus.LIVE && s1 != com.athleticaos.backend.enums.TournamentStatus.LIVE) return 1;
+                                                var d1 = l1.getMatch().getMatchDate();
+                                                var d2 = l2.getMatch().getMatchDate();
                                                 if (d1 == null || d2 == null) return 0;
                                                 return d2.compareTo(d1);
                                         })
                                         .findFirst()
                                         .map(l -> l.getTeam().getName())
-                                        .orElse(null);
+                                        .orElseGet(() ->
+                                                // No active tournament — fall back to most recent match
+                                                lineups.stream()
+                                                        .filter(l -> l.getMatch() != null && l.getMatch().getMatchDate() != null)
+                                                        .sorted((l1, l2) -> l2.getMatch().getMatchDate().compareTo(l1.getMatch().getMatchDate()))
+                                                        .findFirst()
+                                                        .map(l -> l.getTeam().getName())
+                                                        .orElse(null)
+                                        );
                 } else if (!playerEvents.isEmpty()) {
                         Player p = playerEvents.get(0).getPlayer();
                         firstName = p.getPerson().getFirstName();
