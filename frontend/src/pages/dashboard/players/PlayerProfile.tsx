@@ -189,7 +189,12 @@ export const PlayerProfile = () => {
                             <div className="flex flex-wrap gap-2">
                                 {player.teamNames && player.teamNames.length > 0 ? (
                                     player.teamNames.map((team, idx) => (
-                                        <span key={idx} className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-foreground">
+                                        <span key={idx} className={`px-2 py-1 rounded-md text-xs inline-flex items-center gap-1.5 ${
+                                            idx === 0
+                                                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold'
+                                                : 'bg-white/5 border border-white/10 text-foreground'
+                                        }`}>
+                                            {idx === 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />}
                                             {team}
                                         </span>
                                     ))
