@@ -77,6 +77,7 @@ public class PublicProfileController {
             UUID currentTeamId = null;
             Integer jerseyNumber = null;
             String currentTeamName = null;
+            String organisationName = player.organisationName(); // Default from player registration
 
             try {
                 var playerTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(player.id());
@@ -125,6 +126,10 @@ public class PublicProfileController {
                     if (activeLineup != null) {
                         currentTeamId = activeLineup.getTeam().getId();
                         currentTeamName = activeLineup.getTeam().getName();
+                        // Also update organisation to match the active team's org
+                        if (activeLineup.getTeam().getOrganisation() != null) {
+                            organisationName = activeLineup.getTeam().getOrganisation().getName();
+                        }
                     } else {
                         // No active tournament — fall back to most recent match
                         var mostRecentLineup = lineups.stream()
@@ -135,6 +140,9 @@ public class PublicProfileController {
                         if (mostRecentLineup != null) {
                             currentTeamId = mostRecentLineup.getTeam().getId();
                             currentTeamName = mostRecentLineup.getTeam().getName();
+                            if (mostRecentLineup.getTeam().getOrganisation() != null) {
+                                organisationName = mostRecentLineup.getTeam().getOrganisation().getName();
+                            }
                         }
                     }
                 }
@@ -162,7 +170,7 @@ public class PublicProfileController {
                     .position(position)
                     .position2(position2)
                     .jerseyNumber(jerseyNumber)
-                    .organisationName(player.organisationName())
+                    .organisationName(organisationName)
                     .profilePictureUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(player.photoUrl()))
                     .currentTeamName(currentTeamName)
                     .currentTeamId(currentTeamId)
