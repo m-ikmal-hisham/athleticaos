@@ -188,7 +188,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
                         isActive && !hasChildren
                             ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium dark:bg-blue-600 dark:shadow-blue-900/40 dark:shadow-lg'
-                            : 'text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground',
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white font-medium',
                         depth > 0 && 'ml-4'
                     )}
                 >

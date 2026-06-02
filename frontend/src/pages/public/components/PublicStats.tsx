@@ -114,7 +114,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                     </div>
                                     <div>
                                         <div className="font-semibold text-skin-base truncate max-w-[120px]">{team.teamName}</div>
-                                        <div className="text-xs text-skin-muted">{team.wins} Wins • {team.triesScored} Tries</div>
+                                        <div className="text-xs text-skin-muted">{team.wins} Wins • {team.triesScored} Tries • {team.pointsFor || 0} PF</div>
                                     </div>
                                 </div>
                                 <div className="text-lg font-bold text-skin-base">{team.tablePoints} <span className="text-xs font-normal text-skin-muted">pts</span></div>

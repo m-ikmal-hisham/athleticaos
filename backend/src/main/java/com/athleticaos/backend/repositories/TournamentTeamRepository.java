@@ -18,7 +18,7 @@ public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, 
     @org.springframework.data.jpa.repository.Query("UPDATE TournamentTeam tt SET tt.deleted = true WHERE tt.tournament.id = :tournamentId")
     void softDeleteByTournamentId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT tt FROM TournamentTeam tt JOIN FETCH tt.team t LEFT JOIN FETCH t.organisation WHERE tt.tournament.id = :tournamentId")
+    @org.springframework.data.jpa.repository.Query("SELECT tt FROM TournamentTeam tt JOIN FETCH tt.team t LEFT JOIN FETCH t.organisation WHERE tt.tournament.id = :tournamentId AND tt.isActive = true AND tt.deleted = false")
     java.util.List<TournamentTeam> findByTournamentIdWithTeamAndOrganisation(
             @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 

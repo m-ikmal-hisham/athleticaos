@@ -457,8 +457,14 @@ public class PlayerServiceImpl implements PlayerService {
         // unless logic is flawed
         List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
                 .findByPlayerIdAndIsActiveTrue(player.getId());
+        // Sort by most recent assignment first so current team drives org display
+        playerTeams.sort((a, b) -> {
+            var d1 = a.getJoinedDate() != null ? a.getJoinedDate() : (a.getCreatedAt() != null ? a.getCreatedAt().toLocalDate() : java.time.LocalDate.MIN);
+            var d2 = b.getJoinedDate() != null ? b.getJoinedDate() : (b.getCreatedAt() != null ? b.getCreatedAt().toLocalDate() : java.time.LocalDate.MIN);
+            return d2.compareTo(d1);
+        });
         if (!playerTeams.isEmpty()) {
-            // Get the first active team assignment
+            // Get the first (most recent) active team assignment
             var playerTeam = playerTeams.get(0);
 
             if (playerTeam.getTeam() != null && playerTeam.getTeam().getOrganisation() != null) {
@@ -466,7 +472,7 @@ public class PlayerServiceImpl implements PlayerService {
                 organisationName = playerTeam.getTeam().getOrganisation().getName();
             }
 
-            // Collect all active team names
+            // Collect all active team names (most recent first)
             teamNames = playerTeams.stream()
                     .map(pt -> pt.getTeam().getName())
                     .collect(java.util.stream.Collectors.toList());

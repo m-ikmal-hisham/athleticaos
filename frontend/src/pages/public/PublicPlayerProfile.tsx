@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
-import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target, Clock } from 'lucide-react';
 import { calculateAge } from '@/utils/date';
 
 export function PublicPlayerProfile() {
@@ -65,7 +65,7 @@ export function PublicPlayerProfile() {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12">
             {/* Header Banner */}
-            <div className="relative h-56 sm:h-72 overflow-hidden bg-gradient-to-br from-slate-200 via-blue-100 to-indigo-100 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900">
+            <div className="relative pt-20 pb-0 min-h-[16rem] sm:h-72 overflow-hidden bg-gradient-to-br from-slate-200 via-blue-100 to-indigo-100 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 flex flex-col justify-end">
                 <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-300 via-transparent to-transparent dark:from-blue-600 dark:via-transparent dark:to-transparent"></div>
                 <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-200/30 dark:bg-blue-500/10 blur-2xl"></div>
                 <div className="absolute -bottom-24 -left-12 w-48 h-48 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-2xl"></div>
@@ -78,7 +78,7 @@ export function PublicPlayerProfile() {
                 </button>
 
                 {/* Glassmorphism card inside banner */}
-                <div className="absolute bottom-0 left-0 right-0 z-10 px-4 sm:px-6 lg:px-8">
+                <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mt-auto">
                     <div className="max-w-5xl mx-auto">
                         <div className="bg-white/50 dark:bg-slate-800/40 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-t-2xl p-6 sm:p-8 shadow-lg">
                             <div className="flex flex-col md:flex-row gap-6 items-center md:items-center">
@@ -247,6 +247,7 @@ export function PublicPlayerProfile() {
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
                             <StatCard label="Matches" value={stats.matchesPlayed} icon={<Activity className="w-4 h-4 text-blue-500" />} />
+                            <StatCard label="Total Minutes" value={stats.totalMinutesPlayed || 0} icon={<Clock className="w-4 h-4 text-indigo-500" />} />
                             <StatCard label="Tries" value={stats.tries} icon={<span className="text-base">🏉</span>} highlight />
                             <StatCard label="Conversions" value={stats.conversions} icon={<Target className="w-4 h-4 text-green-500" />} />
                             <StatCard label="Penalties" value={stats.penalties} icon={<Zap className="w-4 h-4 text-orange-500" />} />
@@ -265,6 +266,7 @@ export function PublicPlayerProfile() {
                                         <thead>
                                             <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 text-xs uppercase tracking-wider">
                                                 <th className="py-3 px-3 text-left font-medium">Date</th>
+                                                <th className="py-3 px-3 text-left font-medium">Team</th>
                                                 <th className="py-3 px-3 text-left font-medium">Opponent</th>
                                                 <th className="py-3 px-3 text-center font-medium">Result</th>
                                                 <th className="py-3 px-3 text-center font-medium">Tries</th>
@@ -277,6 +279,14 @@ export function PublicPlayerProfile() {
                                                 <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                                                     <td className="py-2.5 px-3 text-slate-500 text-xs whitespace-nowrap">
                                                         {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}
+                                                    </td>
+                                                    <td className="py-2.5 px-3">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-slate-900 dark:text-white text-xs">{match.teamName || '—'}</span>
+                                                            {match.tournamentName && (
+                                                                <span className="text-slate-400 dark:text-slate-500 text-[10px] truncate max-w-[120px]">{match.tournamentName}</span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white truncate max-w-[150px]">{match.opponentName}</td>
                                                     <td className="py-2.5 px-3 text-center">

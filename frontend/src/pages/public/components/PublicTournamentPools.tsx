@@ -97,11 +97,11 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                                         <SortableHeader field="teamName" label="Team" align="left" />
                                         <SortableHeader field="played" label="PLD" />
                                         <SortableHeader field="won" label="W" />
-                                        <SortableHeader field="drawn" label="D" />
-                                        <SortableHeader field="lost" label="L" />
+                                        <SortableHeader field="drawn" label="D" hiddenOnMobile />
+                                        <SortableHeader field="lost" label="L" hiddenOnMobile />
                                         <SortableHeader field="pointsFor" label="PF" hiddenOnMobile />
                                         <SortableHeader field="pointsAgainst" label="PA" hiddenOnMobile />
-                                        <SortableHeader field="pointsDiff" label="+/-" />
+                                        <SortableHeader field="pointsDiff" label="+/-" hiddenOnMobile />
                                         <SortableHeader field="points" label="Pts" />
                                     </tr>
                                 </thead>
@@ -146,11 +146,11 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                                             </td>
                                             <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400 font-medium">{team.played}</td>
                                             <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.won}</td>
-                                            <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.drawn}</td>
-                                            <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.lost}</td>
+                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.drawn}</td>
+                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.lost}</td>
                                             <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsFor}</td>
                                             <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsAgainst}</td>
-                                            <td className="px-3 py-4 text-center font-medium">
+                                            <td className="px-3 py-4 text-center hidden sm:table-cell font-medium">
                                                 <span className={`${team.pointsDiff > 0 ? "text-green-600 dark:text-green-400" : (team.pointsDiff < 0 ? "text-red-500 dark:text-red-400" : "text-slate-500")}`}>
                                                     {team.pointsDiff > 0 ? `+${team.pointsDiff}` : team.pointsDiff}
                                                 </span>

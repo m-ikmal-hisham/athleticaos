@@ -298,6 +298,11 @@ export const MatchDetail = () => {
                 eventNotes = `OUT: ${selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : 'Unknown'} | IN: ${secondaryPlayerName}`;
             }
 
+            // Capture current red card count before adding event (for 2nd yellow detection)
+            const redCardCountBefore = action.type === 'YELLOW_CARD'
+                ? events.filter(e => e.eventType === 'RED_CARD' && e.playerId === action.playerId).length
+                : 0;
+
             await addEvent(selectedMatch!.id, {
                 matchId: selectedMatch!.id,
                 teamId: action.teamId,
@@ -337,6 +342,23 @@ export const MatchDetail = () => {
             }
 
             await loadMatchDetail(selectedMatch!.id);
+
+            // Check if a 2nd yellow triggered an automatic red card
+            if (action.type === 'YELLOW_CARD') {
+                const updatedEvents = useMatchesStore.getState().events;
+                const redCardCountAfter = updatedEvents.filter(
+                    e => e.eventType === 'RED_CARD' && e.playerId === action.playerId
+                ).length;
+
+                if (redCardCountAfter > redCardCountBefore) {
+                    const playerName = selectedPlayer
+                        ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}`
+                        : 'Player';
+                    showToast.success(`2nd Yellow Card \u2192 Automatic Red Card for ${playerName}!`);
+                    return;
+                }
+            }
+
             showToast.success(`${action.type} recorded!`);
         } catch (error) {
             console.error('Failed to add event', error);
@@ -774,6 +796,11 @@ export const MatchDetail = () => {
                                                                         {SCORING_RULES[event.eventType] > 0 && (
                                                                             <span className="text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800 font-bold">
                                                                                 +{SCORING_RULES[event.eventType]}
+                                                                            </span>
+                                                                        )}
+                                                                        {event.eventType === 'RED_CARD' && event.notes?.includes('Automatic red card') && (
+                                                                            <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold">
+                                                                                2nd YC
                                                                             </span>
                                                                         )}
                                                                     </div>

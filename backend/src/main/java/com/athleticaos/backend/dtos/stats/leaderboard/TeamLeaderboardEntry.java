@@ -8,5 +8,7 @@ public record TeamLeaderboardEntry(
         String organisationName,
         int wins,
         int triesScored,
+        int pointsFor,
+        int pointsDifference,
         int tablePoints) {
 }
