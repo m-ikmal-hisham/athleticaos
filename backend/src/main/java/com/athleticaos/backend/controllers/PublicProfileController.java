@@ -67,6 +67,7 @@ public class PublicProfileController {
     }
 
     @GetMapping("/players/{idOrSlug}")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<PublicPlayerDetailResponse> getPublicPlayer(@PathVariable String idOrSlug) {
         try {
             PlayerResponse player = fetchPlayer(idOrSlug);
@@ -147,7 +148,7 @@ public class PublicProfileController {
                     }
                 }
             } catch (Exception ex) {
-                log.debug("Could not determine active team from lineups for {}", player.id(), ex);
+                log.warn("Could not determine active team from lineups for {}: {}", player.id(), ex.getMessage());
             }
 
             // Final fallback: use first team name from player response
