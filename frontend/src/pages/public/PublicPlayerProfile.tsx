@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
-import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target, Clock } from 'lucide-react';
 import { calculateAge } from '@/utils/date';
 
 export function PublicPlayerProfile() {
@@ -247,6 +247,7 @@ export function PublicPlayerProfile() {
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
                             <StatCard label="Matches" value={stats.matchesPlayed} icon={<Activity className="w-4 h-4 text-blue-500" />} />
+                            <StatCard label="Total Minutes" value={stats.totalMinutesPlayed || 0} icon={<Clock className="w-4 h-4 text-indigo-500" />} />
                             <StatCard label="Tries" value={stats.tries} icon={<span className="text-base">🏉</span>} highlight />
                             <StatCard label="Conversions" value={stats.conversions} icon={<Target className="w-4 h-4 text-green-500" />} />
                             <StatCard label="Penalties" value={stats.penalties} icon={<Zap className="w-4 h-4 text-orange-500" />} />
