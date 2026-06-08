@@ -212,6 +212,9 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                         <span>{player.tries} T</span>
                                         <span className="text-green-500 dark:text-green-400">{player.conversions} C</span>
                                         <span className="text-orange-500 dark:text-orange-400">{player.penalties} P</span>
+                                        {player.dropGoals > 0 && (
+                                            <span className="text-purple-500 dark:text-purple-400">{player.dropGoals} DG</span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="text-right">

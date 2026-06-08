@@ -14,6 +14,7 @@ public class PublicPlayerStatEntry {
     private int tries;
     private int conversions;
     private int penalties;
+    private int dropGoals;
     private int totalPoints;
     private int yellowCards;
     private int redCards;

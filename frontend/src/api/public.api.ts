@@ -134,6 +134,7 @@ export interface PublicPlayerStatEntry {
     tries: number;
     conversions: number;
     penalties: number;
+    dropGoals: number;
     totalPoints: number;
     yellowCards: number;
     redCards: number;

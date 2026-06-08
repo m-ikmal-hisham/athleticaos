@@ -332,6 +332,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 p.tries(),
                                                 p.conversions(),
                                                 p.penalties(),
+                                                p.dropGoals(),
                                                 p.totalPoints(),
                                                 p.yellowCards(),
                                                 p.redCards()))
@@ -351,6 +352,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 p.tries(),
                                                 p.conversions(),
                                                 p.penalties(),
+                                                p.dropGoals(),
                                                 p.totalPoints(),
                                                 p.yellowCards(),
                                                 p.redCards()))
@@ -370,6 +372,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 p.tries(),
                                                 p.conversions(),
                                                 p.penalties(),
+                                                p.dropGoals(),
                                                 p.totalPoints(),
                                                 p.yellowCards(),
                                                 p.redCards()))
