@@ -517,10 +517,25 @@ public class PublicTournamentController {
                         .build())
                 .collect(Collectors.toList());
 
+        List<PublicPlayerStatEntry> topTryScorers = leaderboard.topTryScorers().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
         return PublicTournamentStatsResponse.builder()
                 .topScorers(topScorers)
                 .topOffenders(topOffenders)
                 .topTeams(topTeams)
+                .topTryScorers(topTryScorers)
                 .totalMatches(summary.totalMatches())
                 .totalTries(summary.totalTries())
                 .totalConversions(summary.totalConversions())

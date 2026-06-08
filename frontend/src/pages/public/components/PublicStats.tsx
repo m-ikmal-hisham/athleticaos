@@ -1,13 +1,109 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { publicTournamentApi, PublicTournamentStats } from '../../../api/public.api';
-import { Loader2, Trophy, Medal, AlertTriangle, Shield, Target, Zap } from 'lucide-react';
+import { publicTournamentApi, PublicTournamentStats, PublicPlayerStatEntry } from '../../../api/public.api';
+import { Loader2, Trophy, Medal, AlertTriangle, Shield, Target, Zap, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PublicStatsProps {
     tournamentId: string;
     categoryId?: string;
 }
 
+// ─── Reusable expandable player list with search ───────────────────────────
+interface PlayerListSectionProps {
+    players: PublicPlayerStatEntry[];
+    renderRow: (player: PublicPlayerStatEntry, idx: number) => React.ReactNode;
+    emptyIcon?: React.ReactNode;
+    emptyMessage?: string;
+    defaultVisible?: number;
+}
+
+const PlayerListSection: React.FC<PlayerListSectionProps> = ({
+    players,
+    renderRow,
+    emptyIcon,
+    emptyMessage = 'No data yet.',
+    defaultVisible = 5,
+}) => {
+    const [search, setSearch] = useState('');
+    const [expanded, setExpanded] = useState(false);
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return players;
+        const q = search.toLowerCase();
+        return players.filter(
+            (p) =>
+                p.name.toLowerCase().includes(q) ||
+                (p.teamName && p.teamName.toLowerCase().includes(q))
+        );
+    }, [players, search]);
+
+    const isSearchActive = search.trim().length > 0;
+    const visible = isSearchActive || expanded ? filtered : filtered.slice(0, defaultVisible);
+    const hasMore = !isSearchActive && filtered.length > defaultVisible;
+
+    if (players.length === 0) {
+        return (
+            <div className="h-32 flex flex-col items-center justify-center text-skin-muted opacity-60">
+                {emptyIcon || <Shield className="w-8 h-8 mb-2" />}
+                <span className="text-sm">{emptyMessage}</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            {/* Search input */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-skin-muted pointer-events-none" />
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search player or team..."
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 text-skin-base placeholder:text-skin-muted/60 focus:outline-none focus:ring-2 focus:ring-blue-400/40 dark:focus:ring-cyan-400/40 transition-all"
+                />
+            </div>
+
+            {/* Player rows */}
+            <div className="space-y-2">
+                {visible.map((player, idx) => (
+                    <React.Fragment key={player.playerId + '-' + idx}>
+                        {renderRow(player, idx)}
+                    </React.Fragment>
+                ))}
+            </div>
+
+            {/* Show more / show less toggle */}
+            {hasMore && (
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-blue-500 dark:text-cyan-400 hover:text-blue-600 dark:hover:text-cyan-300 transition-colors py-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/5"
+                >
+                    {expanded ? (
+                        <>
+                            <ChevronUp className="w-3.5 h-3.5" />
+                            Show Less
+                        </>
+                    ) : (
+                        <>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                            Show All ({filtered.length})
+                        </>
+                    )}
+                </button>
+            )}
+
+            {/* No results from search */}
+            {isSearchActive && filtered.length === 0 && (
+                <div className="text-center text-sm text-skin-muted py-4 opacity-60">
+                    No players match "{search}"
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────
 export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, categoryId }) => {
     const navigate = useNavigate();
     const [stats, setStats] = useState<PublicTournamentStats | null>(null);
@@ -50,8 +146,13 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
         );
     }
 
+    // Derive try scorers: prefer dedicated list, fallback to re-sorting topScorers
+    const tryScorers: PublicPlayerStatEntry[] = (stats.topTryScorers && stats.topTryScorers.length > 0)
+        ? stats.topTryScorers
+        : [...stats.topScorers].sort((a, b) => b.tries - a.tries).filter(p => p.tries > 0);
+
     // Checking if we have any data to show
-    const hasData = stats.topTeams.length > 0 || stats.topScorers.length > 0 || stats.topOffenders.length > 0;
+    const hasData = stats.topScorers.length > 0 || stats.topOffenders.length > 0 || tryScorers.length > 0;
 
     if (!hasData) {
         return (
@@ -87,56 +188,20 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Top Teams - Large Vertical Block */}
-            <div className="md:col-span-1 lg:col-span-1 row-span-2 relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 dark:from-red-500 dark:to-orange-500" />
-                <div className="p-6 h-full flex flex-col">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-skin-base">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        Team Leaderboard
-                    </h3>
-
-                    <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        {stats.topTeams.map((team, idx) => (
-                            <div 
-                                key={team.teamId} 
-                                className="flex items-center justify-between p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/5 hover:bg-white/50 dark:hover:bg-white/10 transition-colors cursor-pointer group"
-                                onClick={() => navigate(`/teams/${team.teamId}`)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm
-                                        ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                            idx === 1 ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' :
-                                                idx === 2 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
-                                                    'bg-transparent text-skin-muted'}`}>
-                                        {idx + 1}
-                                    </div>
-                                    <div>
-                                        <div className="font-semibold text-skin-base truncate max-w-[120px]">{team.teamName}</div>
-                                        <div className="text-xs text-skin-muted">{team.wins} Wins • {team.triesScored} Tries • {team.pointsFor || 0} PF</div>
-                                    </div>
-                                </div>
-                                <div className="text-lg font-bold text-skin-base">{team.tablePoints} <span className="text-xs font-normal text-skin-muted">pts</span></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Top Scorers - Wide Block */}
-            <div className="md:col-span-1 lg:col-span-2 relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
+            {/* Top Point Scorers — Full Width */}
+            <div className="relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-green-400 to-emerald-500 dark:from-blue-500 dark:to-cyan-500" />
                 <div className="p-6">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-skin-base">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
                         <Medal className="w-5 h-5 text-blue-500 dark:text-cyan-400" />
                         Top Point Scorers
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {stats.topScorers.slice(0, 6).map((player) => (
-                            <div 
-                                key={player.playerId} 
+                    <PlayerListSection
+                        players={stats.topScorers}
+                        emptyMessage="No scoring data yet."
+                        renderRow={(player) => (
+                            <div
                                 className="flex items-center gap-4 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/10 hover:bg-white/40 dark:hover:bg-white/10 transition-colors cursor-pointer group"
                                 onClick={() => navigate(`/players/${player.playerId}`)}
                             >
@@ -154,38 +219,35 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                     <div className="text-[10px] uppercase text-skin-muted font-medium">pts</div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    />
                 </div>
             </div>
 
-            {/* Discipline (Cards) - Square Block */}
-            <div className="md:col-span-1 lg:col-span-1 relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-500 to-red-700" />
-                <div className="p-6 h-full">
-                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
-                        <AlertTriangle className="w-5 h-5 text-red-500" />
-                        Discipline
-                    </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Discipline (Cards) */}
+                <div className="relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-500 to-red-700" />
+                    <div className="p-6 h-full">
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                            Discipline
+                        </h3>
 
-                    {stats.topOffenders.length === 0 ? (
-                        <div className="h-32 flex flex-col items-center justify-center text-skin-muted opacity-60">
-                            <Shield className="w-8 h-8 mb-2" />
-                            <span className="text-sm">Clean Play! No cards yet.</span>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {stats.topOffenders.slice(0, 5).map((player) => (
-                                <div 
-                                    key={player.playerId} 
-                                    className="flex items-center justify-between text-sm p-2 -mx-2 rounded-lg hover:bg-white/30 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                        <PlayerListSection
+                            players={stats.topOffenders}
+                            emptyIcon={<Shield className="w-8 h-8 mb-2" />}
+                            emptyMessage="Clean Play! No cards yet."
+                            renderRow={(player) => (
+                                <div
+                                    className="flex items-center justify-between text-sm p-2.5 rounded-xl bg-white/20 dark:bg-white/5 border border-white/10 hover:bg-white/30 dark:hover:bg-white/10 transition-colors cursor-pointer group"
                                     onClick={() => navigate(`/players/${player.playerId}`)}
                                 >
                                     <div className="truncate pr-2">
                                         <div className="font-medium text-skin-base">{player.name}</div>
                                         <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 shrink-0">
                                         {player.redCards > 0 && (
                                             <span className="flex items-center justify-center w-6 h-8 bg-red-600 text-white text-xs font-bold rounded-sm shadow-sm" title="Red Cards">
                                                 {player.redCards}
@@ -198,43 +260,40 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                         )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            )}
+                        />
+                    </div>
                 </div>
-            </div>
 
-            {/* Top Try Scorers - Remaining Space (if wanted, or just merge with Top Scorers) */}
-            <div className="md:col-span-1 lg:col-span-1 relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600" />
-                <div className="p-6 h-full">
-                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
-                        <span className="text-2xl">🏉</span>
-                        Top Try Scorers
-                    </h3>
-                    <div className="space-y-3">
-                        {stats.topScorers
-                            .sort((a, b) => b.tries - a.tries) // Re-sort by tries just in case
-                            .slice(0, 5)
-                            .map((player) => (
-                                <div 
-                                    key={player.playerId + 'tries'} 
-                                    className="flex items-center justify-between text-sm p-2 -mx-2 rounded-lg hover:bg-white/30 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                {/* Top Try Scorers */}
+                <div className="relative group overflow-hidden rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-xl transition-all duration-300 hover:shadow-2xl">
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600" />
+                    <div className="p-6 h-full">
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
+                            <span className="text-2xl">🏉</span>
+                            Top Try Scorers
+                        </h3>
+
+                        <PlayerListSection
+                            players={tryScorers}
+                            emptyMessage="No tries scored yet."
+                            renderRow={(player) => (
+                                <div
+                                    className="flex items-center justify-between text-sm p-2.5 rounded-xl bg-white/20 dark:bg-white/5 border border-white/10 hover:bg-white/30 dark:hover:bg-white/10 transition-colors cursor-pointer group"
                                     onClick={() => navigate(`/players/${player.playerId}`)}
                                 >
                                     <div className="truncate pr-2">
                                         <div className="font-medium text-skin-base">{player.name}</div>
                                         <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
                                     </div>
-                                    <div className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                                    <div className="font-bold text-lg text-emerald-600 dark:text-emerald-400 shrink-0">
                                         {player.tries}
                                     </div>
                                 </div>
-                            ))}
+                            )}
+                        />
                     </div>
                 </div>
-            </div>
-
             </div>
         </div>
     );

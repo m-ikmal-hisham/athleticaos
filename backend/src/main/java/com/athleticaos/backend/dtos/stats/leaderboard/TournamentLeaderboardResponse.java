@@ -7,5 +7,6 @@ public record TournamentLeaderboardResponse(
                 TournamentStatsSummaryResponse summary,
                 List<PlayerLeaderboardEntry> topPlayers,
                 List<TeamLeaderboardEntry> topTeams,
-                List<PlayerLeaderboardEntry> topOffenders) {
+                List<PlayerLeaderboardEntry> topOffenders,
+                List<PlayerLeaderboardEntry> topTryScorers) {
 }

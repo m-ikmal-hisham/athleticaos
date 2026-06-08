@@ -324,7 +324,6 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .sorted(Comparator.comparingInt(PlayerStatsResponse::totalPoints).reversed()
                                                 .thenComparing(Comparator.comparingInt(PlayerStatsResponse::tries)
                                                                 .reversed()))
-                                .limit(10)
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
                                                 p.firstName(),
@@ -344,7 +343,25 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .sorted(Comparator.comparingInt(PlayerStatsResponse::redCards).reversed()
                                                 .thenComparing(Comparator.comparingInt(PlayerStatsResponse::yellowCards)
                                                                 .reversed()))
-                                .limit(10)
+                                .map(p -> new PlayerLeaderboardEntry(
+                                                p.playerId(),
+                                                p.firstName(),
+                                                p.lastName(),
+                                                p.teamName(),
+                                                p.tries(),
+                                                p.conversions(),
+                                                p.penalties(),
+                                                p.totalPoints(),
+                                                p.yellowCards(),
+                                                p.redCards()))
+                                .toList();
+
+                // Top Try Scorers: Tries desc, then Total Points desc
+                List<PlayerLeaderboardEntry> topTryScorers = playerStats.stream()
+                                .filter(p -> p.tries() > 0)
+                                .sorted(Comparator.comparingInt(PlayerStatsResponse::tries).reversed()
+                                                .thenComparing(Comparator.comparingInt(PlayerStatsResponse::totalPoints)
+                                                                .reversed()))
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
                                                 p.firstName(),
@@ -377,7 +394,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 t.tablePoints()))
                                 .toList();
 
-                return new TournamentLeaderboardResponse(summary, topPlayers, topTeams, topOffenders);
+                return new TournamentLeaderboardResponse(summary, topPlayers, topTeams, topOffenders, topTryScorers);
         }
 
         @Override

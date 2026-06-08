@@ -154,6 +154,7 @@ export interface PublicTournamentStats {
     topScorers: PublicPlayerStatEntry[];
     topOffenders: PublicPlayerStatEntry[];
     topTeams: PublicTeamStatEntry[];
+    topTryScorers?: PublicPlayerStatEntry[];
     totalMatches?: number;
     totalTries?: number;
     totalConversions?: number;
