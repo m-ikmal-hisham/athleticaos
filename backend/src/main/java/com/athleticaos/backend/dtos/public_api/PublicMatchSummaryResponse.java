@@ -31,6 +31,7 @@ public class PublicMatchSummaryResponse {
     private String venue;
     private String status; // SCHEDULED, LIVE, FULL_TIME, CANCELLED
     private String stage;
+    private Integer stageDisplayOrder;
     private String round;
     private List<MatchOfficialDTO> officials;
 }

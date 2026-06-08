@@ -70,6 +70,7 @@ export interface PublicMatchSummary {
     venue?: string;
     status: string;
     stage?: string;
+    stageDisplayOrder?: number;
     round?: string;
     officials?: { id?: string, officialName?: string, assignedRole?: string, officialRoleName?: string }[];
 }

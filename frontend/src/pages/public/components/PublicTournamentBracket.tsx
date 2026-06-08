@@ -27,11 +27,14 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
             if (!g[stage]) g[stage] = [];
             g[stage].push(m);
         });
+        // Sort matches within each stage group by match code
+        Object.values(g).forEach(stageMatches => {
+            stageMatches.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+        });
         return g;
     }, [bracketMatches]);
 
-    // Sort stages typically: Round of 16 -> Quarter Final -> Semi Final -> Final
-    // Heuristic sort based on keywords
+    // Sort stages by displayOrder from the backend, falling back to keyword heuristic
     const stageOrder = (name: string) => {
         const n = name.toLowerCase();
         if (n.includes('final') && !n.includes('semi') && !n.includes('quarter')) return 100;
@@ -42,7 +45,26 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
         return 0;
     };
 
-    const sortedStageNames = Object.keys(grouped).sort((a, b) => stageOrder(a) - stageOrder(b));
+    // Get the displayOrder for a stage from its first match (all matches in a stage share the same displayOrder)
+    const getStageDisplayOrder = (stageName: string): number | null => {
+        const stageMatches = grouped[stageName];
+        if (stageMatches && stageMatches.length > 0) {
+            return stageMatches[0].stageDisplayOrder ?? null;
+        }
+        return null;
+    };
+
+    const sortedStageNames = Object.keys(grouped).sort((a, b) => {
+        const orderA = getStageDisplayOrder(a);
+        const orderB = getStageDisplayOrder(b);
+        // If both have displayOrder, use it (same as admin view)
+        if (orderA != null && orderB != null) return orderA - orderB;
+        // If only one has displayOrder, prioritize it
+        if (orderA != null) return -1;
+        if (orderB != null) return 1;
+        // Fall back to keyword heuristic
+        return stageOrder(a) - stageOrder(b);
+    });
 
     if (sortedStageNames.length === 0) {
         return (
