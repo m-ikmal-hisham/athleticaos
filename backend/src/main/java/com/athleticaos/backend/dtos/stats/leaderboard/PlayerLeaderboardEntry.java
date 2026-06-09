@@ -10,6 +10,7 @@ public record PlayerLeaderboardEntry(
                 int tries,
                 int conversions,
                 int penalties,
+                int dropGoals,
                 int totalPoints,
                 int yellowCards,
                 int redCards) {

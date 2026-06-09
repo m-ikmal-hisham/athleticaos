@@ -32,6 +32,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
     private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
+    private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
 
     @GetMapping("/tournaments")
     @Transactional(readOnly = true)
@@ -115,9 +116,23 @@ public class PublicTournamentController {
                     }, Collectors.toList())
                 ));
 
+            // Batch-load stage display orders to avoid N+1 queries
+            java.util.Map<UUID, com.athleticaos.backend.entities.TournamentStage> stageMap = new java.util.HashMap<>();
+            java.util.Set<UUID> stageIds = matches.stream()
+                .filter(m -> m.getStage() != null && m.getStage().getId() != null)
+                .map(m -> {
+                    try { return UUID.fromString(m.getStage().getId()); }
+                    catch (Exception e) { return null; }
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+            if (!stageIds.isEmpty()) {
+                stageRepository.findAllById(stageIds).forEach(s -> stageMap.put(s.getId(), s));
+            }
+
             List<PublicMatchSummaryResponse> response = matches.stream()
                     .map(m -> {
-                         PublicMatchSummaryResponse summary = mapToPublicMatchSummary(m);
+                         PublicMatchSummaryResponse summary = mapToPublicMatchSummary(m, stageMap);
                          summary.setOfficials(officialsByMatch.getOrDefault(m.getId(), List.of()));
                          return summary;
                     })
@@ -310,7 +325,26 @@ public class PublicTournamentController {
                 .orElse(null);
     }
 
-    private PublicMatchSummaryResponse mapToPublicMatchSummary(MatchResponse m) {
+    private PublicMatchSummaryResponse mapToPublicMatchSummary(
+            MatchResponse m,
+            java.util.Map<UUID, com.athleticaos.backend.entities.TournamentStage> stageMap) {
+        // Use stage name from the actual TournamentStage entity if available,
+        // falling back to the legacy phase field.
+        String stageName = m.getPhase(); // Default to phase (legacy)
+        Integer stageDisplayOrder = null;
+        if (m.getStage() != null && m.getStage().getName() != null) {
+            stageName = m.getStage().getName();
+            try {
+                UUID stageId = UUID.fromString(m.getStage().getId());
+                com.athleticaos.backend.entities.TournamentStage stageEntity = stageMap.get(stageId);
+                if (stageEntity != null) {
+                    stageDisplayOrder = stageEntity.getDisplayOrder();
+                }
+            } catch (Exception ignored) {
+                // If stage ID is not valid, skip display order
+            }
+        }
+
         return PublicMatchSummaryResponse.builder()
                 .id(m.getId())
                 .code(m.getMatchCode())
@@ -326,7 +360,8 @@ public class PublicTournamentController {
                 .matchTime(m.getKickOffTime())
                 .venue(m.getVenue())
                 .status(m.getStatus())
-                .stage(m.getPhase()) // Mapping phase to stage for now
+                .stage(stageName)
+                .stageDisplayOrder(stageDisplayOrder)
                 .build();
     }
 
@@ -451,6 +486,7 @@ public class PublicTournamentController {
                         .tries(p.tries())
                         .conversions(p.conversions())
                         .penalties(p.penalties())
+                        .dropGoals(p.dropGoals())
                         .totalPoints(p.totalPoints())
                         .yellowCards(p.yellowCards())
                         .redCards(p.redCards())
@@ -465,6 +501,7 @@ public class PublicTournamentController {
                         .tries(p.tries())
                         .conversions(p.conversions())
                         .penalties(p.penalties())
+                        .dropGoals(p.dropGoals())
                         .totalPoints(p.totalPoints())
                         .yellowCards(p.yellowCards())
                         .redCards(p.redCards())
@@ -482,10 +519,26 @@ public class PublicTournamentController {
                         .build())
                 .collect(Collectors.toList());
 
+        List<PublicPlayerStatEntry> topTryScorers = leaderboard.topTryScorers().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
+                        .dropGoals(p.dropGoals())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
         return PublicTournamentStatsResponse.builder()
                 .topScorers(topScorers)
                 .topOffenders(topOffenders)
                 .topTeams(topTeams)
+                .topTryScorers(topTryScorers)
                 .totalMatches(summary.totalMatches())
                 .totalTries(summary.totalTries())
                 .totalConversions(summary.totalConversions())

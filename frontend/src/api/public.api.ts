@@ -70,6 +70,7 @@ export interface PublicMatchSummary {
     venue?: string;
     status: string;
     stage?: string;
+    stageDisplayOrder?: number;
     round?: string;
     officials?: { id?: string, officialName?: string, assignedRole?: string, officialRoleName?: string }[];
 }
@@ -133,6 +134,7 @@ export interface PublicPlayerStatEntry {
     tries: number;
     conversions: number;
     penalties: number;
+    dropGoals: number;
     totalPoints: number;
     yellowCards: number;
     redCards: number;
@@ -153,6 +155,7 @@ export interface PublicTournamentStats {
     topScorers: PublicPlayerStatEntry[];
     topOffenders: PublicPlayerStatEntry[];
     topTeams: PublicTeamStatEntry[];
+    topTryScorers?: PublicPlayerStatEntry[];
     totalMatches?: number;
     totalTries?: number;
     totalConversions?: number;
