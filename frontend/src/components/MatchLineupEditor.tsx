@@ -26,6 +26,7 @@ import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { DotsSixVertical, User as UserIcon } from '@phosphor-icons/react';
 import { showToast } from '@/lib/customToast';
+import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
 
 interface Props {
     matchId: string;
@@ -47,6 +48,13 @@ import {
 } from '@phosphor-icons/react';
 
 export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = false, maxStarters = 15, maxBench = 10, onLineupUpdate }: Props) {
+    const detectFormat = (): RugbyFormat => {
+        if (maxStarters === 7) return 'SEVENS';
+        if (maxStarters === 10) return 'TENS';
+        return 'XV';
+    };
+    const format = detectFormat();
+
     const [items, setItems] = useState<{
         [key in LineupRole]: MatchLineupEntry[];
     }>({
@@ -99,6 +107,16 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                 else if (l.role === LineupRole.BENCH) bench.push({ ...l, role: LineupRole.BENCH });
                 else reserve.push(l);
             });
+
+            // Normalize 0-based orderIndex to 1-based
+            const hasZeroStarter = starters.some(p => p.orderIndex === 0);
+            if (hasZeroStarter) {
+                starters.forEach(p => { if (p.orderIndex != null) p.orderIndex += 1; });
+            }
+            const hasZeroBench = bench.some(p => p.orderIndex === 0);
+            if (hasZeroBench) {
+                bench.forEach(p => { if (p.orderIndex != null) p.orderIndex += 1; });
+            }
 
             // Add remaining from hints as reserve
             // Select the correct list based on teamId
@@ -249,11 +267,8 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
         try {
             // Prepare update request
             const entries = [
-                ...items[LineupRole.STARTER].map((p, idx) => ({ ...p, role: LineupRole.STARTER, orderIndex: idx, isStarter: true })),
-                ...items[LineupRole.BENCH].map((p, idx) => ({ ...p, role: LineupRole.BENCH, orderIndex: idx, isStarter: false })),
-                // We don't save NOT_SELECTED usually, dependent on if we want to explicitly remove them from DB if previously selected.
-                // updateLineup replaces all. So anyone NOT in this list is deleted.
-                // So correct.
+                ...items[LineupRole.STARTER].map((p, idx) => ({ ...p, role: LineupRole.STARTER, orderIndex: idx + 1, isStarter: true })),
+                ...items[LineupRole.BENCH].map((p, idx) => ({ ...p, role: LineupRole.BENCH, orderIndex: idx + 1, isStarter: false })),
             ];
 
             // Client side validation check
@@ -394,6 +409,8 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
     if (loading) return <div>Loading roster...</div>;
 
     const renderSortableItem = (item: MatchLineupEntry, currentRole: LineupRole) => {
+        const idx = currentRole === LineupRole.STARTER ? items[LineupRole.STARTER].indexOf(item) + 1 : undefined;
+        const positionName = idx ? getPositionName(idx, format) : '';
         return (
             <SortableItem
                 key={item.playerId}
@@ -404,8 +421,9 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                 isSelected={selectedIds.has(item.playerId)}
                 onToggleSelection={() => handleToggleSelection(item.playerId)}
                 onMove={handleMove}
-                index={currentRole === LineupRole.STARTER ? items[LineupRole.STARTER].indexOf(item) + 1 : undefined}
+                index={idx}
                 onUpdateNumber={handleUpdateNumber} // Only passed if needed (logic inside SortableItem can handle it)
+                positionName={positionName}
             />
         );
     };
@@ -575,7 +593,8 @@ function SortableItem({
     isSelected,
     onToggleSelection,
     onMove,
-    onUpdateNumber
+    onUpdateNumber,
+    positionName
 }: {
     id: string,
     item: MatchLineupEntry,
@@ -585,7 +604,8 @@ function SortableItem({
     isSelected?: boolean,
     onToggleSelection?: () => void,
     onMove?: (id: string, target: LineupRole) => void,
-    onUpdateNumber?: (id: string, num: number) => void
+    onUpdateNumber?: (id: string, num: number) => void,
+    positionName?: string
 }) {
     const {
         attributes,
@@ -666,7 +686,13 @@ function SortableItem({
                         </span>
                     )}
                 </div>
-                {item.positionDisplay && <p className="text-xs text-muted-foreground truncate">{item.positionDisplay}</p>}
+                {isStarter && positionName ? (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold truncate">
+                        {positionName}
+                    </p>
+                ) : (
+                    item.positionDisplay && <p className="text-xs text-muted-foreground truncate">{item.positionDisplay}</p>
+                )}
             </div>
 
             {item.isCaptain && (

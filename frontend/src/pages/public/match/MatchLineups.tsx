@@ -27,6 +27,18 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
         const loadLineups = async () => {
             try {
                 const data = await publicTournamentApi.getMatchLineups(match.id);
+                if (data) {
+                    const normalizeLineup = (lineup: PublicLineupEntry[]) => {
+                        const starters = lineup.filter(p => p.role === 'STARTER');
+                        const hasZeroIndex = starters.some(p => p.orderIndex === 0);
+                        if (hasZeroIndex) {
+                            return lineup.map(p => p.role === 'STARTER' ? { ...p, orderIndex: p.orderIndex != null ? p.orderIndex + 1 : undefined } : p);
+                        }
+                        return lineup;
+                    };
+                    data.homeLineup = normalizeLineup(data.homeLineup);
+                    data.awayLineup = normalizeLineup(data.awayLineup);
+                }
                 setLineups(data);
             } catch (error) {
                 console.error('Failed to load lineups:', error);
