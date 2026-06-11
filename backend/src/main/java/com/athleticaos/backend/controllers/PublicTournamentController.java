@@ -33,6 +33,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
     private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
     private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
+    private final com.athleticaos.backend.services.MatchLineupService matchLineupService;
 
     @GetMapping("/tournaments")
     @Transactional(readOnly = true)
@@ -168,6 +169,68 @@ public class PublicTournamentController {
 
         PublicMatchDetailResponse response = mapToPublicMatchDetail(match);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/matches/{idOrSlug}/lineups")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicMatchLineupsResponse> getMatchLineups(@PathVariable String idOrSlug) {
+        try {
+            // Resolve match ID
+            UUID matchId;
+            try {
+                matchId = UUID.fromString(idOrSlug);
+            } catch (IllegalArgumentException e) {
+                MatchResponse matchByCode = matchService.getMatchByCode(idOrSlug);
+                matchId = matchByCode.getId();
+            }
+
+            MatchResponse match = matchService.getMatchById(matchId);
+
+            // Verify tournament is published
+            TournamentResponse tournament = tournamentService.getTournamentById(match.getTournamentId());
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Get lineups for both teams
+            UUID homeTeamId = match.getHomeTeamId();
+            UUID awayTeamId = match.getAwayTeamId();
+
+            List<com.athleticaos.backend.dtos.roster.MatchLineupEntryDTO> homeEntries =
+                    matchLineupService.getLineup(matchId, homeTeamId);
+            List<com.athleticaos.backend.dtos.roster.MatchLineupEntryDTO> awayEntries =
+                    matchLineupService.getLineup(matchId, awayTeamId);
+
+            PublicMatchLineupsResponse response = PublicMatchLineupsResponse.builder()
+                    .homeTeamName(match.getHomeTeamName())
+                    .awayTeamName(match.getAwayTeamName())
+                    .homeLineup(homeEntries.stream()
+                            .map(e -> PublicMatchLineupsResponse.PublicLineupEntry.builder()
+                                    .playerName(e.getPlayerName())
+                                    .jerseyNumber(e.getJerseyNumber())
+                                    .captain(e.isCaptain())
+                                    .role(e.getRole() != null ? e.getRole().name() : "STARTER")
+                                    .orderIndex(e.getOrderIndex())
+                                    .positionDisplay(e.getPositionDisplay())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .awayLineup(awayEntries.stream()
+                            .map(e -> PublicMatchLineupsResponse.PublicLineupEntry.builder()
+                                    .playerName(e.getPlayerName())
+                                    .jerseyNumber(e.getJerseyNumber())
+                                    .captain(e.isCaptain())
+                                    .role(e.getRole() != null ? e.getRole().name() : "STARTER")
+                                    .orderIndex(e.getOrderIndex())
+                                    .positionDisplay(e.getPositionDisplay())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .build();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching lineups for match {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/tournaments/{idOrSlug}/standings")

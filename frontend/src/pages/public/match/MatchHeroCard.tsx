@@ -8,6 +8,7 @@ import {
 import { PublicMatchDetail } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
 import { getImageUrl } from '@/utils/image';
+import { formatOfficialRole } from '@/utils/rugbyPositions';
 import { formatEnum, formatTeamShortName } from '@/utils/formatters';
 
 interface MatchHeroCardProps {
@@ -228,7 +229,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
                             {match.officials.map((official, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{official.officialRoleName}:</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{formatOfficialRole(official.officialRoleName)}:</span>
                                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{official.officialName}</span>
                                 </div>
                             ))}

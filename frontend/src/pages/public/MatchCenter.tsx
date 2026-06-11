@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock } from '@phosphor-icons/react';
+import { Clock, Users, ChartBar, FilmStrip } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicMatchDetail } from '../../api/public.api';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MatchHeroCard } from './match/MatchHeroCard';
@@ -9,7 +9,16 @@ import { MatchMoments } from './match/MatchMoments';
 import { MomentumIndicator } from './match/MomentumIndicator';
 import { DisciplineImpactCard } from './match/DisciplineImpactCard';
 import { ScoringBreakdown } from './match/ScoringBreakdown';
+import { MatchLineups } from './match/MatchLineups';
 import { SponsorsSection } from '@/components/public/SponsorsSection';
+
+type MatchTab = 'lineups' | 'stats' | 'moments';
+
+const TAB_CONFIG: { key: MatchTab; label: string; icon: typeof Users }[] = [
+    { key: 'lineups', label: 'Lineups', icon: Users },
+    { key: 'stats', label: 'Match Stats', icon: ChartBar },
+    { key: 'moments', label: 'Moments', icon: FilmStrip },
+];
 
 export default function MatchCenter() {
     const { matchId } = useParams<{ matchId: string }>();
@@ -17,6 +26,7 @@ export default function MatchCenter() {
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [tournamentName, setTournamentName] = useState<string>('');
+    const [activeTab, setActiveTab] = useState<MatchTab>('lineups');
     const intervalRef = useRef<number | null>(null);
 
     useEffect(() => {
@@ -126,7 +136,7 @@ export default function MatchCenter() {
                 />
             </div>
 
-            {/* Match Hero Container */}
+            {/* Match Hero Container — Always Visible */}
             <div className="space-y-4">
                 <MatchHeroCard
                     match={match}
@@ -140,26 +150,64 @@ export default function MatchCenter() {
                 </div>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-                {/* Left Column: Timeline (Moments) - Takes more space as "Story" */}
-                <div className="lg:col-span-7 space-y-6">
-                    {/* Phase 2: Momentum Indicator */}
-                    <MomentumIndicator match={match} />
+            {/* Tab Navigation */}
+            <div className="flex justify-center">
+                <div className="inline-flex p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
+                    {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
+                        <button
+                            key={key}
+                            id={`tab-${key}`}
+                            onClick={() => setActiveTab(key)}
+                            className={`
+                                relative px-5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all duration-300
+                                ${activeTab === key
+                                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-md ring-1 ring-slate-200/50 dark:ring-white/10'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
+                            `}
+                        >
+                            <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-blue-500' : ''}`} weight={activeTab === key ? 'fill' : 'regular'} />
+                            <span className="hidden sm:inline">{label}</span>
+                            {/* Active indicator dot — mobile only (when label is hidden) */}
+                            {activeTab === key && (
+                                <span className="sm:hidden absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
+            {/* Tab Content */}
+            <div className="animate-fade-in">
+                {/* Lineups Tab */}
+                {activeTab === 'lineups' && (
+                    <MatchLineups match={match} />
+                )}
+
+                {/* Match Stats Tab */}
+                {activeTab === 'stats' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                        {/* Left Column: Momentum */}
+                        <div className="lg:col-span-7 space-y-6">
+                            <MomentumIndicator match={match} />
+                            <ScoringBreakdown match={match} />
+                        </div>
+
+                        {/* Right Column: Stats & Extras */}
+                        <div className="lg:col-span-5 space-y-6">
+                            <MatchStatsSection match={match} />
+                            <DisciplineImpactCard match={match} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Moments Tab */}
+                {activeTab === 'moments' && (
                     <MatchMoments
                         match={match}
                         fullTimeMinutes={match.matchDuration || 80}
                         isOneWay={match.isOneWayMatch || false}
                     />
-                </div>
-
-                {/* Right Column: Stats & Extras */}
-                <div className="lg:col-span-5 space-y-6">
-                    <MatchStatsSection match={match} />
-                    <DisciplineImpactCard match={match} />
-                    <ScoringBreakdown match={match} />
-                </div>
+                )}
             </div>
 
             {/* Footer Sponsors */}

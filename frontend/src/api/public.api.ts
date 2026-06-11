@@ -202,7 +202,28 @@ export const publicTournamentApi = {
         const response = await publicApi.get(`/matches/${idOrSlug}`);
         return response.data;
     },
+
+    getMatchLineups: async (matchId: string): Promise<PublicMatchLineups> => {
+        const response = await publicApi.get(`/matches/${matchId}/lineups`);
+        return response.data;
+    },
 };
+
+export interface PublicLineupEntry {
+    playerName: string;
+    jerseyNumber?: number;
+    captain: boolean;
+    role: string; // 'STARTER' | 'BENCH' | 'RESERVE'
+    orderIndex?: number;
+    positionDisplay?: string;
+}
+
+export interface PublicMatchLineups {
+    homeTeamName: string;
+    awayTeamName: string;
+    homeLineup: PublicLineupEntry[];
+    awayLineup: PublicLineupEntry[];
+}
 export interface PublicPlayerSummary {
     id: string;
     firstName: string;
