@@ -123,7 +123,6 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
 
     const renderTeamLineup = (
         teamLineup: PublicLineupEntry[],
-        teamName: string,
         accentColor: string
     ) => {
         const starters = teamLineup
@@ -257,7 +256,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             </div>
                         </div>
                         {homeLineup.length > 0 ? (
-                            renderTeamLineup(homeLineup, match.homeTeamName, 'bg-blue-500')
+                            renderTeamLineup(homeLineup, 'bg-blue-500')
                         ) : (
                             <p className="text-sm text-slate-400 text-center py-8">Lineup not submitted</p>
                         )}
@@ -279,7 +278,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             </div>
                         </div>
                         {awayLineup.length > 0 ? (
-                            renderTeamLineup(awayLineup, match.awayTeamName, 'bg-red-500')
+                            renderTeamLineup(awayLineup, 'bg-red-500')
                         ) : (
                             <p className="text-sm text-slate-400 text-center py-8">Lineup not submitted</p>
                         )}
