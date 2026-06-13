@@ -189,6 +189,13 @@ export interface Player {
     teamNames?: string[];
     photoUrl?: string;
     createdAt: string;
+    tries?: number;
+    conversions?: number;
+    penalties?: number;
+    dropGoals?: number;
+    yellowCards?: number;
+    redCards?: number;
+    appearances?: number;
 }
 
 export interface TeamPlayer {
@@ -202,6 +209,13 @@ export interface TeamPlayer {
     joinedDate: string;
     isActive: boolean;
     nationalPlayerStatus?: string;
+    tries?: number;
+    conversions?: number;
+    penalties?: number;
+    dropGoals?: number;
+    yellowCards?: number;
+    redCards?: number;
+    appearances?: number;
 }
 
 export interface PlayerCreateRequest {

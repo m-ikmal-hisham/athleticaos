@@ -73,8 +73,8 @@ public class TeamController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/players")
-    public ResponseEntity<List<PlayerInTeamDTO>> getPlayersByTeam(@PathVariable UUID id) {
-        return ResponseEntity.ok(teamService.getPlayersByTeam(id));
+    public ResponseEntity<List<PlayerInTeamDTO>> getPlayersByTeam(@PathVariable UUID id, @RequestParam(required = false) UUID tournamentId) {
+        return ResponseEntity.ok(teamService.getPlayersByTeam(id, tournamentId));
     }
 
     @DeleteMapping("/{id}")

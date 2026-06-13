@@ -10,6 +10,7 @@ import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.repositories.TournamentTeamRepository;
 import com.athleticaos.backend.services.PlayerTeamService;
 import com.athleticaos.backend.services.TeamService;
 import com.athleticaos.backend.services.UserService;
@@ -51,6 +52,7 @@ public class TeamServiceImpl implements TeamService {
     private final StaffRoleRepository staffRoleRepository;
     private final PersonRepository personRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
+    private final TournamentTeamRepository tournamentTeamRepository;
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getAllTeams(UUID organisationId) {
@@ -204,6 +206,14 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private TeamResponse mapToResponse(Team team) {
+        List<TeamResponse.TournamentSummary> tournamentsList = tournamentTeamRepository
+                .findActiveTournamentsByTeamId(team.getId()).stream()
+                .map(t -> TeamResponse.TournamentSummary.builder()
+                        .id(t.getId())
+                        .name(t.getName())
+                        .build())
+                .collect(Collectors.toList());
+
         return TeamResponse.builder()
                 .id(team.getId())
                 .organisationId(team.getOrganisation().getId())
@@ -219,14 +229,15 @@ public class TeamServiceImpl implements TeamService {
                 .state(team.getState())
                 .status(team.getStatus())
                 .logoUrl(UrlSanitizer.sanitize(team.getLogoUrl() != null ? team.getLogoUrl() : (team.getOrganisation() != null ? team.getOrganisation().getLogoUrl() : null)))
-                .players(playerTeamService.getTeamRoster(team.getId()))
+                .players(playerTeamService.getTeamRoster(team.getId(), null))
+                .tournaments(tournamentsList)
                 .build();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> getPlayersByTeam(UUID teamId) {
-        return playerTeamService.getTeamRoster(teamId);
+    public List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> getPlayersByTeam(UUID teamId, UUID tournamentId) {
+        return playerTeamService.getTeamRoster(teamId, tournamentId);
     }
 
     @Override

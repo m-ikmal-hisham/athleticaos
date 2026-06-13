@@ -34,4 +34,4 @@ export const fetchTeamStats = (teamId: string) => api.get(`/stats/teams/${teamId
 
 export const fetchTeamMatches = (teamId: string) => api.get(`/matches`, { params: { teamId } });
 
-export const fetchTeamPlayers = (teamId: string) => api.get(`/teams/${teamId}/players`);
+export const fetchTeamPlayers = (teamId: string, tournamentId?: string) => api.get(`/teams/${teamId}/players`, { params: { tournamentId } });

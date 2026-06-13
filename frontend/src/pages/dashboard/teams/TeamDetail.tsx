@@ -23,6 +23,7 @@ interface TeamDetail {
     organisationId: string;
     organisationName?: string;
     logoUrl?: string;
+    tournaments?: { id: string; name: string }[];
 }
 
 interface TeamStats {
@@ -64,6 +65,8 @@ export default function TeamDetail() {
     // Roster expand/search state — collapsed by default
     const [rosterExpanded, setRosterExpanded] = useState(false);
     const [rosterSearch, setRosterSearch] = useState('');
+    const [showRosterStats, setShowRosterStats] = useState(false);
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
 
     useEffect(() => {
         if (!slug) return;
@@ -87,14 +90,12 @@ export default function TeamDetail() {
 
                 const teamId = teamData.id;
 
-                const [statsRes, matchesRes, playersRes] = await Promise.all([
+                const [statsRes, matchesRes] = await Promise.all([
                     fetchTeamStats(teamId).catch(() => ({ data: null })),
                     fetchTeamMatches(teamId).catch(() => ({ data: [] })),
-                    fetchTeamPlayers(teamId).catch(() => ({ data: [] })),
                 ]);
                 setStats(statsRes.data);
                 setMatches(matchesRes.data || []);
-                setTeamPlayers(playersRes.data || []);
             } catch (err) {
                 setError('Failed to load team details');
                 console.error(err);
@@ -105,6 +106,21 @@ export default function TeamDetail() {
 
         loadTeamData();
     }, [slug]);
+
+    useEffect(() => {
+        if (!team?.id) return;
+
+        const loadRosterPlayers = async () => {
+            try {
+                const res = await fetchTeamPlayers(team.id, selectedTournamentId || undefined);
+                setTeamPlayers(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch team players roster:", err);
+            }
+        };
+
+        loadRosterPlayers();
+    }, [team?.id, selectedTournamentId]);
 
     // Callback from TeamStaffPanel when staff list changes
     const handleStaffChange = useCallback((ids: string[]) => {
@@ -321,9 +337,57 @@ export default function TeamDetail() {
                                         />
                                     </div>
                                 )}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/50 mb-4 pb-2 gap-4">
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowRosterStats(false);
+                                            }}
+                                            className={`pb-2 px-4 font-semibold text-sm transition-all border-b-2 ${
+                                                !showRosterStats
+                                                    ? 'border-primary text-foreground'
+                                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        >
+                                            Standard Roster
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowRosterStats(true);
+                                            }}
+                                            className={`pb-2 px-4 font-semibold text-sm transition-all border-b-2 ${
+                                                showRosterStats
+                                                    ? 'border-primary text-foreground'
+                                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        >
+                                            Player Stats
+                                        </button>
+                                    </div>
+                                    {team.tournaments && team.tournaments.length > 0 && (
+                                        <div className="flex items-center gap-2 px-4" onClick={(e) => e.stopPropagation()}>
+                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tournament:</span>
+                                            <select
+                                                value={selectedTournamentId}
+                                                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                                                className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            >
+                                                <option value="">All (Global)</option>
+                                                {team.tournaments.map((t) => (
+                                                    <option key={t.id} value={t.id}>
+                                                        {t.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
                                 <RosterList
                                     players={rosterSearch ? filteredRoster : displayedRoster}
                                     onPlayerClick={openPlayerDrawer}
+                                    showStats={showRosterStats}
                                 />
                                 {/* Show More / Less toggle (when not searching) */}
                                 {!rosterSearch && hasMoreRoster && (

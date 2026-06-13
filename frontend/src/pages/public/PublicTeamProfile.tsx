@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { publicProfileApi, PublicTeamDetailResponse } from '../../api/public.api';
 import { ArrowLeft, Users, Trophy, Shield, Hash, TrendingUp, Target, Zap } from 'lucide-react';
+import { RosterList } from '../../components/RosterList';
 
 export function PublicTeamProfile() {
     const { id } = useParams<{ id: string }>();
@@ -11,6 +12,8 @@ export function PublicTeamProfile() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [playerSearch, setPlayerSearch] = useState('');
+    const [rosterView, setRosterView] = useState<'cards' | 'stats'>('cards');
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
 
     useEffect(() => {
         const fetchTeam = async () => {
@@ -18,7 +21,7 @@ export function PublicTeamProfile() {
             try {
                 setLoading(true);
                 const [data, statsData] = await Promise.all([
-                    publicProfileApi.getTeam(id),
+                    publicProfileApi.getTeam(id, selectedTournamentId || undefined),
                     publicProfileApi.getTeamStats(id).catch(() => null),
                 ]);
                 setTeam(data);
@@ -32,7 +35,7 @@ export function PublicTeamProfile() {
         };
 
         fetchTeam();
-    }, [id]);
+    }, [id, selectedTournamentId]);
 
     if (loading) {
         return (
@@ -189,37 +192,90 @@ export function PublicTeamProfile() {
                                 </div>
                             )}
 
-                            {filteredPlayers.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {filteredPlayers.map((player) => (
-                                        <div 
-                                            key={player.id} 
-                                            onClick={() => navigate(`/players/${player.id}`)}
-                                            className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md transition-all cursor-pointer group"
+                            {/* Roster View Selector Tabs & Tournament Filter */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-700 mb-6 pb-2 gap-4">
+                                <div className="flex">
+                                    <button
+                                        onClick={() => setRosterView('cards')}
+                                        className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
+                                            rosterView === 'cards'
+                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                                        }`}
+                                    >
+                                        Cards View
+                                    </button>
+                                    <button
+                                        onClick={() => setRosterView('stats')}
+                                        className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
+                                            rosterView === 'stats'
+                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                                        }`}
+                                    >
+                                        Player Stats
+                                    </button>
+                                </div>
+                                {team.tournaments && team.tournaments.length > 0 && (
+                                    <div className="flex items-center gap-2 px-4">
+                                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filter by Tournament:</span>
+                                        <select
+                                            value={selectedTournamentId}
+                                            onChange={(e) => setSelectedTournamentId(e.target.value)}
+                                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         >
-                                            <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
-                                                {player.profilePictureUrl ? (
-                                                    <img src={player.profilePictureUrl} alt={player.firstName} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <span className="text-lg font-bold text-slate-500">{player.firstName.charAt(0)}{player.lastName.charAt(0)}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
-                                                    {player.firstName} {player.lastName}
-                                                </div>
-                                                <div className="text-sm text-slate-500 truncate flex items-center gap-2">
-                                                    {player.position && <span>{player.position}</span>}
-                                                    {player.jerseyNumber && (
-                                                        <span className="inline-flex items-center gap-0.5 text-xs text-slate-400">
-                                                            <Hash className="w-3 h-3" />{player.jerseyNumber}
-                                                        </span>
+                                            <option value="">All Tournaments (Global)</option>
+                                            {team.tournaments.map((t) => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {filteredPlayers.length > 0 ? (
+                                rosterView === 'cards' ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {filteredPlayers.map((player) => (
+                                            <div 
+                                                key={player.id} 
+                                                onClick={() => navigate(`/players/${player.id}`)}
+                                                className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md transition-all cursor-pointer group"
+                                            >
+                                                <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center overflow-hidden relative">
+                                                    {player.profilePictureUrl ? (
+                                                        <img src={player.profilePictureUrl} alt={player.firstName} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-lg font-bold text-slate-500">{player.firstName.charAt(0)}{player.lastName.charAt(0)}</span>
                                                     )}
                                                 </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                                                        {player.firstName} {player.lastName}
+                                                    </div>
+                                                    <div className="text-sm text-slate-500 truncate flex items-center gap-2">
+                                                        {player.position && <span>{player.position}</span>}
+                                                        {player.jerseyNumber && (
+                                                            <span className="inline-flex items-center gap-0.5 text-xs text-slate-400">
+                                                                <Hash className="w-3 h-3" />{player.jerseyNumber}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <RosterList
+                                            players={filteredPlayers as any}
+                                            onPlayerClick={(playerId) => navigate(`/players/${playerId}`)}
+                                            showStats={true}
+                                        />
+                                    </div>
+                                )
                             ) : playerSearch ? (
                                 <div className="text-center py-12 text-slate-500">
                                     No players matching "{playerSearch}"

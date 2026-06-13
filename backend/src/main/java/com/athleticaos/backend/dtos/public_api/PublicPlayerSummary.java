@@ -22,4 +22,11 @@ public class PublicPlayerSummary {
     private String position2;
     private Integer jerseyNumber;
     private String profilePictureUrl;
+    private Integer tries;
+    private Integer conversions;
+    private Integer penalties;
+    private Integer dropGoals;
+    private Integer yellowCards;
+    private Integer redCards;
+    private Integer appearances;
 }
