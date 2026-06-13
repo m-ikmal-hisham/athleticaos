@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
-import { PublicMatchDetail } from '../../../api/public.api';
+import { PublicMatchDetail, publicTournamentApi, PublicMatchLineups, PublicLineupEntry } from '../../../api/public.api';
 import { formatEventType } from '@/utils/formatters';
+import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
 
 interface MatchMomentsProps {
     match: PublicMatchDetail;
@@ -12,6 +13,66 @@ interface MatchMomentsProps {
 
 export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: MatchMomentsProps) => {
     const [isExpanded, setIsExpanded] = useState(true);
+    const [lineups, setLineups] = useState<PublicMatchLineups | null>(null);
+
+    // Detect format from match duration (heuristic)
+    const detectFormat = (): RugbyFormat => {
+        const duration = match.matchDuration || 80;
+        if (duration <= 16) return 'SEVENS';
+        if (duration <= 30) return 'TENS';
+        return 'XV';
+    };
+
+    const format = detectFormat();
+
+    useEffect(() => {
+        const loadLineups = async () => {
+            try {
+                const data = await publicTournamentApi.getMatchLineups(match.id);
+                if (data) {
+                    const normalizeLineup = (lineup: PublicLineupEntry[]) => {
+                        const starters = lineup.filter(p => p.role === 'STARTER');
+                        const hasZeroIndex = starters.some(p => p.orderIndex === 0);
+                        if (hasZeroIndex) {
+                            return lineup.map(p => p.role === 'STARTER' ? { ...p, orderIndex: p.orderIndex != null ? p.orderIndex + 1 : undefined } : p);
+                        }
+                        return lineup;
+                    };
+                    data.homeLineup = normalizeLineup(data.homeLineup);
+                    data.awayLineup = normalizeLineup(data.awayLineup);
+                }
+                setLineups(data);
+            } catch (error) {
+                console.error('Failed to load lineups for moments:', error);
+            }
+        };
+
+        if (match?.id) {
+            loadLineups();
+        }
+    }, [match?.id]);
+
+    const findPlayerLineupEntry = (name: string | null | undefined, teamName: string | null | undefined) => {
+        if (!lineups || !name || !teamName) return null;
+        
+        const normalize = (s: string) => s.toLowerCase().trim().replace(/\s+/g, ' ');
+        const targetName = normalize(name);
+        
+        const isHome = normalize(teamName) === normalize(match.homeTeamName);
+        const lineup = isHome ? lineups.homeLineup : lineups.awayLineup;
+        
+        // 1. Try exact match
+        let found = lineup.find(p => normalize(p.playerName) === targetName);
+        if (found) return found;
+
+        // 2. Try partial match
+        found = lineup.find(p => {
+            const pName = normalize(p.playerName);
+            return pName.includes(targetName) || targetName.includes(pName);
+        });
+        
+        return found || null;
+    };
     const [replayMode, setReplayMode] = useState(false);
     const [currentMinute, setCurrentMinute] = useState(fullTimeMinutes);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -314,20 +375,78 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                         </div>
 
                                         {event.eventType === 'SUBSTITUTION' && subInName ? (
-                                            <div className="flex flex-col gap-1 mt-1">
-                                                <div className="flex items-center gap-1.5 text-sm text-red-500 dark:text-red-400">
-                                                    <ArrowDown className="w-3.5 h-3.5" weight="bold" />
-                                                    <span className="font-medium">{subOutName || 'Unknown'}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-                                                    <ArrowUp className="w-3.5 h-3.5" weight="bold" />
-                                                    <span className="font-medium">{subInName}</span>
-                                                </div>
-                                            </div>
+                                            (() => {
+                                                const outEntry = findPlayerLineupEntry(subOutName, event.teamName);
+                                                const inEntry = findPlayerLineupEntry(subInName, event.teamName);
+                                                return (
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        <div className="flex items-center gap-2 text-sm text-red-500 dark:text-red-400">
+                                                            <ArrowDown className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
+                                                            <span className="font-medium">{subOutName || 'Unknown'}</span>
+                                                            {outEntry && (
+                                                                <div className="flex items-center gap-1.5 text-[11px] font-normal">
+                                                                    <span className={`
+                                                                        inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold
+                                                                        ${outEntry.jerseyNumber != null && outEntry.jerseyNumber > 0
+                                                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                                                        }
+                                                                    `}>
+                                                                        #{outEntry.jerseyNumber != null && outEntry.jerseyNumber > 0 ? outEntry.jerseyNumber : '—'}
+                                                                    </span>
+                                                                    <span className="text-slate-400 dark:text-slate-500">
+                                                                        ({outEntry.positionDisplay || getPositionName(outEntry.orderIndex, format)})
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                                                            <ArrowUp className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
+                                                            <span className="font-medium">{subInName}</span>
+                                                            {inEntry && (
+                                                                <div className="flex items-center gap-1.5 text-[11px] font-normal">
+                                                                    <span className={`
+                                                                        inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold
+                                                                        ${inEntry.jerseyNumber != null && inEntry.jerseyNumber > 0
+                                                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                                                        }
+                                                                    `}>
+                                                                        #{inEntry.jerseyNumber != null && inEntry.jerseyNumber > 0 ? inEntry.jerseyNumber : '—'}
+                                                                    </span>
+                                                                    <span className="text-slate-400 dark:text-slate-500">
+                                                                        ({inEntry.positionDisplay || getPositionName(inEntry.orderIndex, format)})
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()
                                         ) : (
                                             event.playerName && (
-                                                <div className="text-slate-600 dark:text-slate-300 font-medium">
-                                                    {event.playerName}
+                                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium text-sm">
+                                                    <span>{event.playerName}</span>
+                                                    {(() => {
+                                                        const entry = findPlayerLineupEntry(event.playerName, event.teamName);
+                                                        if (!entry) return null;
+                                                        return (
+                                                            <div className="flex items-center gap-1.5 text-[11px] font-normal">
+                                                                <span className={`
+                                                                    inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold
+                                                                    ${entry.jerseyNumber != null && entry.jerseyNumber > 0
+                                                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                                                                        : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                                                    }
+                                                                `}>
+                                                                    #{entry.jerseyNumber != null && entry.jerseyNumber > 0 ? entry.jerseyNumber : '—'}
+                                                                </span>
+                                                                <span className="text-slate-400 dark:text-slate-500">
+                                                                    ({entry.positionDisplay || getPositionName(entry.orderIndex, format)})
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             )
                                         )}
