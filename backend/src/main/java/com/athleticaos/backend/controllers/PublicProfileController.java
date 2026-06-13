@@ -243,10 +243,12 @@ public class PublicProfileController {
 
     @GetMapping("/teams/{idOrSlug}/stats")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public ResponseEntity<?> getPublicTeamStats(@PathVariable String idOrSlug) {
+    public ResponseEntity<?> getPublicTeamStats(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID tournamentId) {
         try {
             TeamResponse team = fetchTeam(idOrSlug);
-            var stats = statisticsService.getTeamStatsAcrossTournaments(team.getId());
+            var stats = statisticsService.getTeamStats(team.getId(), tournamentId);
             if (stats == null) {
                 return ResponseEntity.ok(java.util.Map.of(
                     "matchesPlayed", 0, "wins", 0, "draws", 0, "losses", 0,

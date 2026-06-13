@@ -298,8 +298,10 @@ export const publicProfileApi = {
         const response = await publicApi.get(`/players/${idOrSlug}/stats`);
         return response.data;
     },
-    getTeamStats: async (idOrSlug: string): Promise<any> => {
-        const response = await publicApi.get(`/teams/${idOrSlug}/stats`);
+    getTeamStats: async (idOrSlug: string, tournamentId?: string): Promise<any> => {
+        const response = await publicApi.get(`/teams/${idOrSlug}/stats`, {
+            params: { tournamentId }
+        });
         return response.data;
     }
 };

@@ -50,4 +50,10 @@ public interface MatchEventRepository extends JpaRepository<MatchEvent, UUID> {
 
         @org.springframework.data.jpa.repository.Query("SELECT e.player.id, e.eventType, COUNT(e) FROM MatchEvent e WHERE e.team.id = :teamId AND e.match.tournament.id = :tournamentId AND e.player IS NOT NULL AND e.match.deleted = false GROUP BY e.player.id, e.eventType")
         List<Object[]> countEventsByTeamIdAndEventTypeAndTournamentId(@org.springframework.data.repository.query.Param("teamId") java.util.UUID teamId, @org.springframework.data.repository.query.Param("tournamentId") java.util.UUID tournamentId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT e.eventType, COUNT(e) FROM MatchEvent e WHERE e.team.id = :teamId AND e.match.deleted = false GROUP BY e.eventType")
+        List<Object[]> countEventsByTeamIdGroupByEventType(@org.springframework.data.repository.query.Param("teamId") java.util.UUID teamId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT e.eventType, COUNT(e) FROM MatchEvent e WHERE e.team.id = :teamId AND e.match.tournament.id = :tournamentId AND e.match.deleted = false GROUP BY e.eventType")
+        List<Object[]> countEventsByTeamIdAndTournamentIdGroupByEventType(@org.springframework.data.repository.query.Param("teamId") java.util.UUID teamId, @org.springframework.data.repository.query.Param("tournamentId") java.util.UUID tournamentId);
 }

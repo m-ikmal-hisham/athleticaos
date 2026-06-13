@@ -22,7 +22,7 @@ export function PublicTeamProfile() {
                 setLoading(true);
                 const [data, statsData] = await Promise.all([
                     publicProfileApi.getTeam(id, selectedTournamentId || undefined),
-                    publicProfileApi.getTeamStats(id).catch(() => null),
+                    publicProfileApi.getTeamStats(id, selectedTournamentId || undefined).catch(() => null),
                 ]);
                 setTeam(data);
                 setStats(statsData);
@@ -135,15 +135,23 @@ export function PublicTeamProfile() {
                 {/* Team Stats */}
                 {hasStats && (
                     <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50 mb-8">
-                        <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                            <TrendingUp className="w-5 h-5 text-blue-500" /> Team Statistics
+                        <h2 className="text-lg font-bold mb-6 flex flex-wrap items-center justify-between gap-2 text-slate-900 dark:text-white">
+                            <span className="flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-blue-500" /> Team Statistics
+                            </span>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
+                                {team?.tournaments?.find(t => t.id === selectedTournamentId)?.name || 'Global'}
+                            </span>
                         </h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
                             <TeamStatCard label="Played" value={stats.matchesPlayed} />
                             <TeamStatCard label="Wins" value={stats.wins} highlight />
                             <TeamStatCard label="Draws" value={stats.draws} />
                             <TeamStatCard label="Losses" value={stats.losses} color="red" />
                             <TeamStatCard label="Tries" value={stats.triesScored} icon={<span className="text-sm">🏉</span>} />
+                            <TeamStatCard label="Conversions" value={stats.conversions} icon={<span className="text-sm">🎯</span>} />
+                            <TeamStatCard label="Penalties" value={stats.penalties} icon={<span className="text-sm">👟</span>} />
+                            <TeamStatCard label="Drop Goals" value={stats.dropGoals} icon={<span className="text-sm">🥅</span>} />
                             <TeamStatCard label="Points For" value={stats.pointsFor} icon={<Target className="w-4 h-4 text-green-500" />} />
                             <TeamStatCard label="Points Against" value={stats.pointsAgainst} icon={<Zap className="w-4 h-4 text-orange-500" />} />
                             <TeamStatCard label="Pts Diff" value={stats.pointsDifference} highlight={stats.pointsDifference > 0} color={stats.pointsDifference < 0 ? 'red' : undefined} />
