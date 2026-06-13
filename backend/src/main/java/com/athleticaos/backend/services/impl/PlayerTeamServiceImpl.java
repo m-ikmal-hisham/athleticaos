@@ -116,7 +116,9 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                 // Fetch appearance stats and event stats for all team players in bulk
                 Map<UUID, Integer> appearancesMap = new HashMap<>();
                 try {
-                    List<Object[]> appearances = matchLineupRepository.countAppearancesByTeamIdAndTournamentId(teamId, tournamentId);
+                    List<Object[]> appearances = tournamentId == null 
+                        ? matchLineupRepository.countAppearancesByTeamId(teamId)
+                        : matchLineupRepository.countAppearancesByTeamIdAndTournamentId(teamId, tournamentId);
                     for (Object[] row : appearances) {
                         if (row[0] != null && row[1] != null) {
                             appearancesMap.put((UUID) row[0], ((Long) row[1]).intValue());
@@ -128,7 +130,9 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
 
                 Map<UUID, Map<com.athleticaos.backend.enums.MatchEventType, Integer>> eventsMap = new HashMap<>();
                 try {
-                    List<Object[]> eventCounts = matchEventRepository.countEventsByTeamIdAndEventTypeAndTournamentId(teamId, tournamentId);
+                    List<Object[]> eventCounts = tournamentId == null
+                        ? matchEventRepository.countEventsByTeamIdAndEventType(teamId)
+                        : matchEventRepository.countEventsByTeamIdAndEventTypeAndTournamentId(teamId, tournamentId);
                     for (Object[] row : eventCounts) {
                         if (row[0] != null && row[1] != null && row[2] != null) {
                             UUID playerId = (UUID) row[0];
