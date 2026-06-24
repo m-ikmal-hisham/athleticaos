@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Input } from './Input';
 import { MALAYSIA_STATES, getDistrictsForState, getSarawakDistricts, detectStateFromPostcode } from '@/constants/malaysia-geo';
-import { Country, State as CSCState, City as CSCCity } from 'country-state-city';
 
 export interface AddressData {
     addressLine1?: string;
@@ -25,11 +24,20 @@ interface AddressInputsProps {
 }
 
 export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, showLabels = true }: AddressInputsProps) => {
-    const defaultCountryCode = data.countryCode || 'MY';
+    // Dynamic import of country-state-city database
+    const [csc, setCsc] = useState<any>(null);
+    useEffect(() => {
+        import('country-state-city').then(module => {
+            setCsc(module);
+        });
+    }, []);
 
     // Global location states
-    const countries = useMemo(() => Country.getAllCountries(), []);
-    const [globalStates, setGlobalStates] = useState(CSCState.getStatesOfCountry(defaultCountryCode));
+    const countries = useMemo<any[]>(() => {
+        return csc ? csc.Country.getAllCountries() : [];
+    }, [csc]);
+
+    const [globalStates, setGlobalStates] = useState<any[]>([]);
     const [globalCities, setGlobalCities] = useState<any[]>([]);
 
     // Malaysia specific states
@@ -38,18 +46,18 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
 
     // Effect to handle dynamic loading of states/cities when country/state changes
     useEffect(() => {
-        if (data.countryCode) {
-            setGlobalStates(CSCState.getStatesOfCountry(data.countryCode));
+        if (csc) {
+            setGlobalStates(csc.State.getStatesOfCountry(data.countryCode || 'MY'));
         }
-    }, [data.countryCode]);
+    }, [csc, data.countryCode]);
 
     useEffect(() => {
-        if (data.countryCode && data.stateCode && data.countryCode !== 'MY') {
-            setGlobalCities(CSCCity.getCitiesOfState(data.countryCode, data.stateCode));
+        if (csc && data.countryCode && data.stateCode && data.countryCode !== 'MY') {
+            setGlobalCities(csc.City.getCitiesOfState(data.countryCode, data.stateCode));
         } else {
             setGlobalCities([]);
         }
-    }, [data.countryCode, data.stateCode]);
+    }, [csc, data.countryCode, data.stateCode]);
 
     // Initialize MY districts/divisions based on current state
     useEffect(() => {
