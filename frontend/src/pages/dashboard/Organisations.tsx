@@ -8,12 +8,13 @@ import { Input } from "../../components/Input";
 import { GlassCard } from "../../components/GlassCard";
 import { Badge } from "../../components/Badge";
 import { useOrganisationsStore } from "../../store/organisations.store";
-import { getCountries, getStates, getDivisions, getDistricts, Organisation, deleteOrganisation, createBulkOrganisations } from "../../api/organisations.api";
+import { getDivisions, getDistricts, Organisation, deleteOrganisation, createBulkOrganisations } from "../../api/organisations.api";
 import { BulkUploadModal } from "../../components/modals/BulkUploadModal";
 import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
 import { formatOrgType } from "../../utils/formatters";
 import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
+import { getCountryName } from "../../constants/country-codes";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
 import toast from "react-hot-toast";
@@ -25,15 +26,14 @@ export default function Organisations() {
     const { organisations, loading, getOrganisations } = useOrganisationsStore();
     const { user } = useAuthStore();
 
-    const [countries, setCountries] = useState<Organisation[]>([]);
-    const [states, setStates] = useState<Organisation[]>([]);
     const [divisions, setDivisions] = useState<Organisation[]>([]);
     const [districts, setDistricts] = useState<Organisation[]>([]);
 
-    const [selectedCountry, setSelectedCountry] = useState<string>("");
-    const [selectedState, setSelectedState] = useState<string>("");
-    const [selectedDivision, setSelectedDivision] = useState<string>("");
-    const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+    // Geo-based filter state: values are real geographic strings, not org IDs
+    const [selectedCountry, setSelectedCountry] = useState<string>(""); // countryCode e.g. "MY"
+    const [selectedState, setSelectedState] = useState<string>(""); // state name e.g. "Sarawak"
+    const [selectedDivision, setSelectedDivision] = useState<string>(""); // org ID (hierarchy-based)
+    const [selectedDistrict, setSelectedDistrict] = useState<string>(""); // org ID (hierarchy-based)
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
@@ -55,31 +55,37 @@ export default function Organisations() {
 
     useEffect(() => {
         getOrganisations();
-        getCountries().then(setCountries);
     }, [getOrganisations]);
 
+    // Reset dependent filters when country changes
     useEffect(() => {
-        if (selectedCountry) {
-            getStates(selectedCountry).then(setStates);
-        } else {
-            setStates([]);
-        }
         setSelectedState("");
         setSelectedDivision("");
         setSelectedDistrict("");
     }, [selectedCountry]);
 
+    // When state changes, load divisions/districts from hierarchy for that state
+    // We find the matching state-level org to get its ID for the hierarchy endpoint
     useEffect(() => {
-        if (selectedState) {
-            getDivisions(selectedState).then(setDivisions);
-            getDistricts(selectedState).then(setDistricts);
+        if (selectedState && organisations) {
+            // Find a state-level org matching this state name to get divisions/districts
+            const stateOrg = organisations.find(
+                org => org.orgLevel === 'STATE' && (org.state === selectedState || org.name === selectedState)
+            );
+            if (stateOrg) {
+                getDivisions(stateOrg.id).then(setDivisions);
+                getDistricts(stateOrg.id).then(setDistricts);
+            } else {
+                setDivisions([]);
+                setDistricts([]);
+            }
         } else {
             setDivisions([]);
             setDistricts([]);
         }
         setSelectedDivision("");
         setSelectedDistrict("");
-    }, [selectedState]);
+    }, [selectedState, organisations]);
 
     // Build hierarchy map for deep recursive filtering
     const hierarchyMap = useMemo(() => {
@@ -116,11 +122,44 @@ export default function Organisations() {
         return results;
     };
 
+    // Extract unique countries from org data (by countryCode)
+    const countryOptions = useMemo(() => {
+        if (!organisations) return [];
+        const codes = new Set<string>();
+        organisations.forEach(org => {
+            if (org.countryCode) codes.add(org.countryCode);
+        });
+        return Array.from(codes).map(code => ({
+            value: code,
+            label: getCountryName(code)
+        })).sort((a, b) => a.label.localeCompare(b.label));
+    }, [organisations]);
+
+    // Extract unique states from org data (filtered by selected country)
+    const stateOptions = useMemo(() => {
+        if (!organisations) return [];
+        const stateNames = new Set<string>();
+        organisations.forEach(org => {
+            // If a country is selected, only show states from that country
+            if (selectedCountry && org.countryCode !== selectedCountry) return;
+            if (org.state) stateNames.add(org.state);
+        });
+        return Array.from(stateNames).sort().map(name => ({
+            value: name,
+            label: name
+        }));
+    }, [organisations, selectedCountry]);
+
     const filteredOrganisations = useMemo(() => {
         if (!organisations) return [];
         let filtered = organisations;
 
-        // Apply hierarchy filter (Deep Filter)
+        // Apply country filter (by countryCode)
+        if (selectedCountry) {
+            filtered = filtered.filter(org => org.countryCode === selectedCountry);
+        }
+
+        // Apply hierarchy filter (Deep Filter) for divisions/districts (org-ID-based)
         if (selectedDistrict) {
             const descendantIds = getDescendants(selectedDistrict);
             filtered = filtered.filter(org => descendantIds.has(org.id));
@@ -128,10 +167,8 @@ export default function Organisations() {
             const descendantIds = getDescendants(selectedDivision);
             filtered = filtered.filter(org => descendantIds.has(org.id));
         } else if (selectedState) {
-            const stateObj = states.find(s => s.id === selectedState);
-            if (stateObj) {
-                filtered = filtered.filter(org => org.state === stateObj.name || org.id === selectedState);
-            }
+            // State filter: match by state name string
+            filtered = filtered.filter(org => org.state === selectedState);
         }
 
         // Apply Type Filter
@@ -148,7 +185,7 @@ export default function Organisations() {
         }
 
         return filtered;
-    }, [organisations, selectedDistrict, selectedDivision, selectedState, states, searchTerm, hierarchyMap, typeFilter]);
+    }, [organisations, selectedCountry, selectedDistrict, selectedDivision, selectedState, searchTerm, hierarchyMap, typeFilter]);
 
     // Extract unique types for SmartPills
     const typeOptions: FilterOption[] = useMemo(() => {
@@ -260,7 +297,7 @@ export default function Organisations() {
                         placeholder="All Countries"
                         value={selectedCountry}
                         onChange={(value) => setSelectedCountry(value as string)}
-                        options={[{ value: "", label: "All Countries" }, ...countries.map(c => ({ value: c.id, label: c.name }))]}
+                        options={[{ value: "", label: "All Countries" }, ...countryOptions]}
                         className="z-40"
                     />
 
@@ -268,8 +305,7 @@ export default function Organisations() {
                         placeholder="All States"
                         value={selectedState}
                         onChange={(value) => setSelectedState(value as string)}
-                        options={[{ value: "", label: "All States" }, ...states.map(s => ({ value: s.id, label: s.name }))]}
-                        disabled={!selectedCountry}
+                        options={[{ value: "", label: "All States" }, ...stateOptions]}
                         className="z-30"
                     />
 

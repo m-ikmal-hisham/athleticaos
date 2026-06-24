@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { formatOrgType } from '@/utils/formatters';
-import { getOrganisationById, Organisation } from '../../../api/organisations.api';
+import { getOrganisationById, Organisation, getChildren } from '../../../api/organisations.api';
 import { fetchTeamsByOrganisation } from '../../../api/teams.api';
 import { fetchPlayersByOrganisation } from '../../../api/players.api';
 import { usersApi } from '../../../api/users.api';
 import { RecentActivityWidget } from '../../../components/RecentActivityWidget';
 import { GlassCard } from '../../../components/GlassCard';
-import { Users, TShirt, ChartBar, TreeStructure, Buildings, MapPin } from '@phosphor-icons/react';
+import { Users, TShirt, ChartBar, TreeStructure, Buildings, MapPin, CaretDown, CaretRight } from '@phosphor-icons/react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Badge } from '../../../components/Badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/Tabs';
@@ -16,6 +16,14 @@ import { MALAYSIA_STATES } from '../../../constants/malaysia-geo';
 import { RosterList } from '../../../components/RosterList';
 import { useNavigate, useParams } from 'react-router-dom';
 
+interface ChildOrgTeamGroup {
+    orgId: string;
+    orgName: string;
+    orgLogoUrl?: string;
+    orgType?: string;
+    teams: any[];
+}
+
 const OrganisationDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -23,7 +31,9 @@ const OrganisationDetail = () => {
     const [teams, setTeams] = useState<any[]>([]);
     const [players, setPlayers] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
+    const [childOrgs, setChildOrgs] = useState<Organisation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedChildOrgs, setExpandedChildOrgs] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (id) {
@@ -46,17 +56,73 @@ const OrganisationDetail = () => {
 
     const loadRelatedData = async (orgId: string) => {
         try {
-            const [teamsRes, playersRes, usersRes] = await Promise.all([
+            const [teamsRes, playersRes, usersRes, childOrgsRes] = await Promise.all([
                 fetchTeamsByOrganisation(orgId).catch(() => ({ data: [] })),
                 fetchPlayersByOrganisation(orgId).catch(() => ({ data: [] })),
-                usersApi.getAllUsers({ organisationId: orgId }).catch(() => ({ data: [] }))
+                usersApi.getAllUsers({ organisationId: orgId }).catch(() => ({ data: [] })),
+                getChildren(orgId).catch(() => [])
             ]);
             setTeams(teamsRes.data || []);
             setPlayers(playersRes.data || []);
             setUsers(usersRes.data || []);
+            setChildOrgs(childOrgsRes || []);
         } catch (error) {
             console.error("Failed to load related data", error);
         }
+    };
+
+    // Separate teams into direct teams and child org teams
+    const { directTeams, childOrgTeamGroups, totalChildOrgTeams } = useMemo(() => {
+        if (!id) return { directTeams: [], childOrgTeamGroups: [], totalChildOrgTeams: 0 };
+
+        const direct = teams.filter(t => t.organisationId === id);
+        const childTeams = teams.filter(t => t.organisationId !== id);
+
+        // Group child teams by their organisation
+        const groupMap = new Map<string, ChildOrgTeamGroup>();
+        childTeams.forEach(team => {
+            const orgId = team.organisationId;
+            if (!groupMap.has(orgId)) {
+                // Try to find org details from childOrgs list, otherwise use team data
+                const childOrg = childOrgs.find(co => co.id === orgId);
+                groupMap.set(orgId, {
+                    orgId,
+                    orgName: team.organisationName || childOrg?.name || 'Unknown Organisation',
+                    orgLogoUrl: childOrg?.logoUrl,
+                    orgType: childOrg?.type,
+                    teams: []
+                });
+            }
+            groupMap.get(orgId)!.teams.push(team);
+        });
+
+        const groups = Array.from(groupMap.values()).sort((a, b) => a.orgName.localeCompare(b.orgName));
+
+        return {
+            directTeams: direct,
+            childOrgTeamGroups: groups,
+            totalChildOrgTeams: childTeams.length
+        };
+    }, [teams, id, childOrgs]);
+
+    const toggleChildOrg = (orgId: string) => {
+        setExpandedChildOrgs(prev => {
+            const next = new Set(prev);
+            if (next.has(orgId)) {
+                next.delete(orgId);
+            } else {
+                next.add(orgId);
+            }
+            return next;
+        });
+    };
+
+    const expandAll = () => {
+        setExpandedChildOrgs(new Set(childOrgTeamGroups.map(g => g.orgId)));
+    };
+
+    const collapseAll = () => {
+        setExpandedChildOrgs(new Set());
     };
 
     // Local formatOrgType removed in favor of utility
@@ -152,22 +218,49 @@ const OrganisationDetail = () => {
                     </div>
                 </TabsContent>
 
-                <TabsContent value="teams">
+                <TabsContent value="teams" className="space-y-6">
+                    {/* Summary Stats */}
+                    {(childOrgTeamGroups.length > 0 || directTeams.length > 0) && (
+                        <div className="flex flex-wrap gap-3">
+                            <div className="px-4 py-2 rounded-lg bg-primary-500/10 border border-primary-500/20">
+                                <span className="text-sm text-muted-foreground">Total Teams</span>
+                                <p className="text-xl font-bold text-primary-400">{teams.length}</p>
+                            </div>
+                            <div className="px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+                                <span className="text-sm text-muted-foreground">Direct Teams</span>
+                                <p className="text-xl font-bold">{directTeams.length}</p>
+                            </div>
+                            {childOrgTeamGroups.length > 0 && (
+                                <>
+                                    <div className="px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+                                        <span className="text-sm text-muted-foreground">Child Organisations</span>
+                                        <p className="text-xl font-bold">{childOrgTeamGroups.length}</p>
+                                    </div>
+                                    <div className="px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+                                        <span className="text-sm text-muted-foreground">Child Org Teams</span>
+                                        <p className="text-xl font-bold">{totalChildOrgTeams}</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Direct / Assigned Teams */}
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                                 <TShirt className="w-5 h-5 text-primary-500" />
-                                Assigned Teams ({teams.length})
+                                Assigned Teams ({directTeams.length})
                             </h3>
                             <Button size="sm" onClick={() => navigate('/dashboard/teams/new')}>Add Team</Button>
                         </div>
-                        {teams.length === 0 ? (
+                        {directTeams.length === 0 ? (
                             <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-lg">
-                                No teams assigned yet.
+                                No teams directly assigned to this organisation.
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {teams.map((team) => (
+                                {directTeams.map((team) => (
                                     <div
                                         key={team.id}
                                         className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-primary-500/50 transition-all cursor-pointer group"
@@ -184,6 +277,95 @@ const OrganisationDetail = () => {
                             </div>
                         )}
                     </GlassCard>
+
+                    {/* Child Organisation Teams */}
+                    {childOrgTeamGroups.length > 0 && (
+                        <GlassCard className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    <TreeStructure className="w-5 h-5 text-primary-500" />
+                                    Child Organisation Teams ({totalChildOrgTeams})
+                                </h3>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={expandedChildOrgs.size === childOrgTeamGroups.length ? collapseAll : expandAll}
+                                    >
+                                        {expandedChildOrgs.size === childOrgTeamGroups.length ? 'Collapse All' : 'Expand All'}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                {childOrgTeamGroups.map((group) => {
+                                    const isExpanded = expandedChildOrgs.has(group.orgId);
+                                    return (
+                                        <div
+                                            key={group.orgId}
+                                            className="rounded-lg border border-white/10 overflow-hidden transition-all"
+                                        >
+                                            {/* Child Org Header */}
+                                            <button
+                                                onClick={() => toggleChildOrg(group.orgId)}
+                                                className="w-full flex items-center gap-3 p-4 bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-left"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {group.orgLogoUrl ? (
+                                                        <img src={getImageUrl(group.orgLogoUrl)} alt={group.orgName} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Buildings className="w-4 h-4 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-semibold text-sm truncate">{group.orgName}</span>
+                                                        {group.orgType && (
+                                                            <Badge variant="outline" className="text-[10px] px-1.5 h-4 shrink-0">
+                                                                {formatOrgType(group.orgType)}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {group.teams.length} {group.teams.length === 1 ? 'team' : 'teams'}
+                                                    </Badge>
+                                                    {isExpanded ? (
+                                                        <CaretDown className="w-4 h-4 text-muted-foreground transition-transform" />
+                                                    ) : (
+                                                        <CaretRight className="w-4 h-4 text-muted-foreground transition-transform" />
+                                                    )}
+                                                </div>
+                                            </button>
+
+                                            {/* Expanded Teams Grid */}
+                                            {isExpanded && (
+                                                <div className="p-4 pt-0 border-t border-white/5">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                                                        {group.teams.map((team) => (
+                                                            <div
+                                                                key={team.id}
+                                                                className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-primary-500/50 transition-all cursor-pointer group"
+                                                                onClick={() => navigate(`/dashboard/teams/${team.slug || team.id}`)}
+                                                            >
+                                                                <div className="flex justify-between items-start mb-1.5">
+                                                                    <h4 className="font-medium text-sm text-foreground group-hover:text-primary-500 transition-colors">{team.name}</h4>
+                                                                    <Badge variant="secondary" className="text-[10px]">{team.status}</Badge>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground">{team.category} • {team.division}</p>
+                                                                <p className="text-xs text-muted-foreground">{team.ageGroup}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </GlassCard>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="personnel">
