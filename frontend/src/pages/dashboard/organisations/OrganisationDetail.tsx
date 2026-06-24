@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { formatOrgType } from '@/utils/formatters';
-import { getOrganisationById, Organisation, getChildren } from '../../../api/organisations.api';
+import { getOrganisationById, Organisation, getChildren, fetchOrganisations } from '../../../api/organisations.api';
 import { fetchTeamsByOrganisation } from '../../../api/teams.api';
 import { fetchPlayersByOrganisation } from '../../../api/players.api';
 import { usersApi } from '../../../api/users.api';
@@ -24,6 +24,126 @@ interface ChildOrgTeamGroup {
     teams: any[];
 }
 
+interface OrgTreeNode {
+    org: Organisation;
+    children: OrgTreeNode[];
+    teams: any[];
+}
+
+const OrgTreeNodeView = ({ node }: { node: OrgTreeNode }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    const navigate = useNavigate();
+
+    const hasChildren = node.children.length > 0;
+    const hasTeams = node.teams.length > 0;
+    const totalDescendantTeamsCount = useMemo(() => {
+        let count = node.teams.length;
+        const countDescendants = (n: OrgTreeNode) => {
+            count += n.teams.length;
+            n.children.forEach(countDescendants);
+        };
+        node.children.forEach(countDescendants);
+        return count;
+    }, [node]);
+
+    return (
+        <div className="space-y-1 animate-in fade-in duration-200">
+            {/* Header */}
+            <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 transition-all text-left">
+                {/* Expander Arrow */}
+                {hasChildren ? (
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-1 hover:bg-white/10 rounded shrink-0 transition-colors"
+                        type="button"
+                    >
+                        {isExpanded ? (
+                            <CaretDown className="w-4 h-4 text-muted-foreground transition-transform" />
+                        ) : (
+                            <CaretRight className="w-4 h-4 text-muted-foreground transition-transform" />
+                        )}
+                    </button>
+                ) : (
+                    <div className="w-6 h-6 shrink-0" />
+                )}
+
+                {/* Org Logo / Icon */}
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                    {node.org.logoUrl ? (
+                        <img src={getImageUrl(node.org.logoUrl)} alt={node.org.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <Buildings className="w-4 h-4 text-muted-foreground" />
+                    )}
+                </div>
+
+                {/* Name and Level */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => navigate(`/dashboard/organisations/${node.org.id}`)}
+                            className="font-semibold text-sm truncate hover:text-primary-500 hover:underline text-left text-foreground"
+                            type="button"
+                        >
+                            {node.org.name}
+                        </button>
+                        <Badge variant="outline" className="text-[10px] px-1.5 h-4 shrink-0">
+                            {formatOrgType(node.org.type)}
+                        </Badge>
+                    </div>
+                </div>
+
+                {/* Team counts / details */}
+                <div className="flex items-center gap-2 shrink-0">
+                    {totalDescendantTeamsCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                            {totalDescendantTeamsCount} {totalDescendantTeamsCount === 1 ? 'team' : 'teams'} total
+                        </Badge>
+                    )}
+                </div>
+            </div>
+
+            {/* Render children and teams under this node */}
+            {isExpanded && (hasChildren || hasTeams) && (
+                <div className="pl-6 ml-4 border-l border-white/10 space-y-3">
+                    {/* Render Teams of this node */}
+                    {hasTeams && (
+                        <div>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">Teams</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                {node.teams.map(team => (
+                                    <div
+                                        key={team.id}
+                                        className="p-2.5 rounded-lg bg-white/5 border border-white/10 hover:border-primary-500/50 transition-all cursor-pointer group"
+                                        onClick={() => navigate(`/dashboard/teams/${team.slug || team.id}`)}
+                                    >
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="font-medium text-xs text-foreground group-hover:text-primary-500 transition-colors truncate">{team.name}</span>
+                                            <Badge variant="secondary" className="text-[9px] px-1 h-3.5">{team.status}</Badge>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground truncate">{team.category} • {team.division}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Render Child nodes recursively */}
+                    {hasChildren && (
+                        <div className="space-y-2">
+                            {node.children.map(childNode => (
+                                <OrgTreeNodeView
+                                    key={childNode.org.id}
+                                    node={childNode}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const OrganisationDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -32,6 +152,7 @@ const OrganisationDetail = () => {
     const [players, setPlayers] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [childOrgs, setChildOrgs] = useState<Organisation[]>([]);
+    const [allOrganisations, setAllOrganisations] = useState<Organisation[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedChildOrgs, setExpandedChildOrgs] = useState<Set<string>>(new Set());
 
@@ -56,16 +177,18 @@ const OrganisationDetail = () => {
 
     const loadRelatedData = async (orgId: string) => {
         try {
-            const [teamsRes, playersRes, usersRes, childOrgsRes] = await Promise.all([
+            const [teamsRes, playersRes, usersRes, childOrgsRes, allOrgsRes] = await Promise.all([
                 fetchTeamsByOrganisation(orgId).catch(() => ({ data: [] })),
                 fetchPlayersByOrganisation(orgId).catch(() => ({ data: [] })),
                 usersApi.getAllUsers({ organisationId: orgId }).catch(() => ({ data: [] })),
-                getChildren(orgId).catch(() => [])
+                getChildren(orgId).catch(() => []),
+                fetchOrganisations().catch(() => [])
             ]);
             setTeams(teamsRes.data || []);
             setPlayers(playersRes.data || []);
             setUsers(usersRes.data || []);
             setChildOrgs(childOrgsRes || []);
+            setAllOrganisations(allOrgsRes || []);
         } catch (error) {
             console.error("Failed to load related data", error);
         }
@@ -104,6 +227,23 @@ const OrganisationDetail = () => {
             totalChildOrgTeams: childTeams.length
         };
     }, [teams, id, childOrgs]);
+
+    const buildOrgTree = (parentId: string): OrgTreeNode[] => {
+        const children = allOrganisations.filter(org => org.parentOrgId === parentId);
+        return children.map(child => {
+            const childTeams = teams.filter(t => t.organisationId === child.id);
+            return {
+                org: child,
+                children: buildOrgTree(child.id),
+                teams: childTeams
+            };
+        });
+    };
+
+    const orgTree = useMemo(() => {
+        if (!id || allOrganisations.length === 0) return [];
+        return buildOrgTree(id);
+    }, [allOrganisations, id, teams]);
 
     const toggleChildOrg = (orgId: string) => {
         setExpandedChildOrgs(prev => {
@@ -192,6 +332,7 @@ const OrganisationDetail = () => {
                 <TabsList className="bg-white/5 border border-white/10">
                     <TabsTrigger value="overview" className="data-[state=active]:bg-primary-500">Overview</TabsTrigger>
                     <TabsTrigger value="teams" className="data-[state=active]:bg-primary-500">Teams</TabsTrigger>
+                    <TabsTrigger value="children" className="data-[state=active]:bg-primary-500">Sub-Organisations</TabsTrigger>
                     <TabsTrigger value="personnel" className="data-[state=active]:bg-primary-500">Personnel</TabsTrigger>
                     <TabsTrigger value="chart" className="data-[state=active]:bg-primary-500">Org Chart</TabsTrigger>
                 </TabsList>
@@ -433,6 +574,29 @@ const OrganisationDetail = () => {
                         <div className="h-96 flex items-center justify-center text-muted-foreground bg-white/5 rounded-lg border border-dashed border-white/10">
                             Organisation Chart Visualization Area
                         </div>
+                    </GlassCard>
+                </TabsContent>
+
+                <TabsContent value="children" className="space-y-6">
+                    <GlassCard className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <TreeStructure className="w-5 h-5 text-primary-500" />
+                                Sub-Organisations & Hierarchy
+                            </h3>
+                        </div>
+
+                        {orgTree.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-lg">
+                                No sub-organisations registered under this organisation.
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {orgTree.map(node => (
+                                    <OrgTreeNodeView key={node.org.id} node={node} />
+                                ))}
+                            </div>
+                        )}
                     </GlassCard>
                 </TabsContent>
             </Tabs>
