@@ -14,6 +14,7 @@ import { useAuthStore } from "../../store/auth.store";
 import { getImageUrl } from "../../utils/image";
 import { formatOrgType } from "../../utils/formatters";
 import { MALAYSIA_STATES } from "../../constants/malaysia-geo";
+import { getCountryName } from "../../constants/country-codes";
 import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
 import { EmptyState } from "../../components/EmptyState";
 import toast from "react-hot-toast";
@@ -30,6 +31,7 @@ export default function Organisations() {
     const [divisions, setDivisions] = useState<Organisation[]>([]);
     const [districts, setDistricts] = useState<Organisation[]>([]);
 
+    // Filter state: org IDs for hierarchy-based filtering
     const [selectedCountry, setSelectedCountry] = useState<string>("");
     const [selectedState, setSelectedState] = useState<string>("");
     const [selectedDivision, setSelectedDivision] = useState<string>("");
@@ -116,6 +118,51 @@ export default function Organisations() {
         return results;
     };
 
+    // Helper: Get real geographic label for a country org
+    const getCountryLabel = (org: Organisation): string => {
+        // Try countryCode mapping first, then state field, then strip common suffixes from name
+        if (org.countryCode) return getCountryName(org.countryCode);
+        if (org.state) return org.state;
+        // Strip common suffixes like "Rugby", "Rugby Union", "Rugby Football Union"
+        return org.name
+            .replace(/\s*(Rugby Football Union|Rugby Union|Rugby)\s*$/i, '')
+            .trim() || org.name;
+    };
+
+    // Helper: Get real geographic label for a state org
+    const getStateLabel = (org: Organisation): string => {
+        // Use the state field (real geo name) if available, otherwise strip suffixes from name
+        if (org.state) return org.state;
+        return org.name
+            .replace(/^(Kesatuan Ragbi Negeri|Persatuan Ragbi Negeri|Persatuan Ragbi|Kesatuan Ragbi)\s+/i, '')
+            .replace(/\s*(Rugby Football Union|Rugby Union|Rugby|State Union|State Association|Association|Union)\s*$/i, '')
+            .trim() || org.name;
+    };
+
+    // Helper: Get real geographic label for a division/district org
+    const getDivisionLabel = (org: Organisation): string => {
+        const name = org.name;
+        let cleaned = name
+            .replace(/^(Persatuan Ragbi Bahagian|Persatuan Ragbi Daerah|Persatuan Ragbi|Kesatuan Ragbi Bahagian|Kesatuan Ragbi Daerah|Kesatuan Ragbi)\s+/i, '')
+            .replace(/\s*(Rugby Association|Rugby Union|Rugby Football Union|Rugby|Association|Union)\s*$/i, '')
+            .trim();
+        
+        if (org.orgLevel === 'DIVISION') {
+            if (/^Bahagian\s+/i.test(cleaned)) {
+                cleaned = cleaned.replace(/^Bahagian\s+/i, '') + ' Division';
+            } else if (!/Division/i.test(cleaned)) {
+                cleaned = cleaned + ' Division';
+            }
+        } else if (org.orgLevel === 'DISTRICT') {
+            if (/^Daerah\s+/i.test(cleaned)) {
+                cleaned = cleaned.replace(/^Daerah\s+/i, '') + ' District';
+            } else if (!/District/i.test(cleaned)) {
+                cleaned = cleaned + ' District';
+            }
+        }
+        return cleaned || name;
+    };
+
     const filteredOrganisations = useMemo(() => {
         if (!organisations) return [];
         let filtered = organisations;
@@ -128,10 +175,13 @@ export default function Organisations() {
             const descendantIds = getDescendants(selectedDivision);
             filtered = filtered.filter(org => descendantIds.has(org.id));
         } else if (selectedState) {
-            const stateObj = states.find(s => s.id === selectedState);
-            if (stateObj) {
-                filtered = filtered.filter(org => org.state === stateObj.name || org.id === selectedState);
-            }
+            // State filter: show all descendants of the selected state org
+            const descendantIds = getDescendants(selectedState);
+            filtered = filtered.filter(org => descendantIds.has(org.id));
+        } else if (selectedCountry) {
+            // Country filter: show all descendants of the selected country org
+            const descendantIds = getDescendants(selectedCountry);
+            filtered = filtered.filter(org => descendantIds.has(org.id));
         }
 
         // Apply Type Filter
@@ -148,7 +198,7 @@ export default function Organisations() {
         }
 
         return filtered;
-    }, [organisations, selectedDistrict, selectedDivision, selectedState, states, searchTerm, hierarchyMap, typeFilter]);
+    }, [organisations, selectedCountry, selectedDistrict, selectedDivision, selectedState, searchTerm, hierarchyMap, typeFilter]);
 
     // Extract unique types for SmartPills
     const typeOptions: FilterOption[] = useMemo(() => {
@@ -260,7 +310,7 @@ export default function Organisations() {
                         placeholder="All Countries"
                         value={selectedCountry}
                         onChange={(value) => setSelectedCountry(value as string)}
-                        options={[{ value: "", label: "All Countries" }, ...countries.map(c => ({ value: c.id, label: c.name }))]}
+                        options={[{ value: "", label: "All Countries" }, ...countries.map(c => ({ value: c.id, label: getCountryLabel(c) }))]}
                         className="z-40"
                     />
 
@@ -268,7 +318,7 @@ export default function Organisations() {
                         placeholder="All States"
                         value={selectedState}
                         onChange={(value) => setSelectedState(value as string)}
-                        options={[{ value: "", label: "All States" }, ...states.map(s => ({ value: s.id, label: s.name }))]}
+                        options={[{ value: "", label: "All States" }, ...states.map(s => ({ value: s.id, label: getStateLabel(s) }))]}
                         disabled={!selectedCountry}
                         className="z-30"
                     />
@@ -277,7 +327,7 @@ export default function Organisations() {
                         placeholder="All Divisions"
                         value={selectedDivision}
                         onChange={(value) => setSelectedDivision(value as string)}
-                        options={[{ value: "", label: "All Divisions" }, ...divisions.map(d => ({ value: d.id, label: d.name }))]}
+                        options={[{ value: "", label: "All Divisions" }, ...divisions.map(d => ({ value: d.id, label: getDivisionLabel(d) }))]}
                         disabled={!selectedState}
                         className="z-20"
                     />
@@ -286,7 +336,7 @@ export default function Organisations() {
                         placeholder="All Districts"
                         value={selectedDistrict}
                         onChange={(value) => setSelectedDistrict(value as string)}
-                        options={[{ value: "", label: "All Districts" }, ...districts.map(d => ({ value: d.id, label: d.name }))]}
+                        options={[{ value: "", label: "All Districts" }, ...districts.map(d => ({ value: d.id, label: getDivisionLabel(d) }))]}
                         disabled={!selectedState}
                         className="z-10"
                     />

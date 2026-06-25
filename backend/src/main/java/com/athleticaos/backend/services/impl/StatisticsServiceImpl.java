@@ -35,6 +35,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         private final TournamentRepository tournamentRepository;
         private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
         private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository formatConfigRepository;
+        private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
 
         @Override
         public TournamentStatsSummaryResponse getTournamentSummary(UUID tournamentId, UUID categoryId) {
@@ -286,6 +287,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         .toList();
 
                         int triesScored = countEvents(teamEvents, MatchEventType.TRY);
+                        int conversions = countEvents(teamEvents, MatchEventType.CONVERSION);
+                        int penalties = countEvents(teamEvents, MatchEventType.PENALTY);
+                        int dropGoals = countEvents(teamEvents, MatchEventType.DROP_GOAL);
                         int yellowCards = countEvents(teamEvents, MatchEventType.YELLOW_CARD);
                         int redCards = countEvents(teamEvents, MatchEventType.RED_CARD);
 
@@ -304,6 +308,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         pointsAgainst,
                                         pointsDifference,
                                         triesScored,
+                                        conversions,
+                                        penalties,
+                                        dropGoals,
                                         yellowCards,
                                         redCards,
                                         tablePoints));
@@ -724,9 +731,94 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         @Override
-        public TeamStatsResponse getTeamStatsAcrossTournaments(UUID teamId) {
-                // Note: Implementation across tournaments pending
-                return null;
+        public TeamStatsResponse getTeamStats(UUID teamId, UUID tournamentId) {
+                java.util.Objects.requireNonNull(teamId, "Team ID must not be null");
+                Team team = teamRepository.findById(teamId)
+                                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Team not found"));
+
+                List<Match> matches = tournamentId == null
+                                ? matchRepository.findByHomeTeamIdOrAwayTeamId(teamId, teamId)
+                                : matchRepository.findByTeamIdAndTournamentId(teamId, tournamentId);
+
+                int matchesPlayed = 0;
+                int wins = 0;
+                int draws = 0;
+                int losses = 0;
+                int pointsFor = 0;
+                int pointsAgainst = 0;
+
+                for (Match m : matches) {
+                        if (m.getStatus() == MatchStatus.COMPLETED && m.getHomeScore() != null
+                                        && m.getAwayScore() != null) {
+                                matchesPlayed++;
+                                boolean isHome = m.getHomeTeam() != null && m.getHomeTeam().getId().equals(teamId);
+                                int scoreFor = isHome ? m.getHomeScore() : m.getAwayScore();
+                                int scoreAgainst = isHome ? m.getAwayScore() : m.getHomeScore();
+
+                                pointsFor += scoreFor;
+                                pointsAgainst += scoreAgainst;
+
+                                if (scoreFor > scoreAgainst) {
+                                        wins++;
+                                } else if (scoreFor == scoreAgainst) {
+                                        draws++;
+                                } else {
+                                        losses++;
+                                }
+                        }
+                }
+
+                int pointsDifference = pointsFor - pointsAgainst;
+
+                // Fetch event counts for this team
+                List<Object[]> eventCounts = tournamentId == null
+                                ? matchEventRepository.countEventsByTeamIdGroupByEventType(teamId)
+                                : matchEventRepository.countEventsByTeamIdAndTournamentIdGroupByEventType(teamId, tournamentId);
+
+                int tries = 0;
+                int conversions = 0;
+                int penalties = 0;
+                int dropGoals = 0;
+                int yellowCards = 0;
+                int redCards = 0;
+
+                for (Object[] row : eventCounts) {
+                        if (row[0] != null && row[1] != null) {
+                                MatchEventType type = (MatchEventType) row[0];
+                                int count = ((Long) row[1]).intValue();
+                                switch (type) {
+                                        case TRY -> tries = count;
+                                        case CONVERSION -> conversions = count;
+                                        case PENALTY -> penalties = count;
+                                        case DROP_GOAL -> dropGoals = count;
+                                        case YELLOW_CARD -> yellowCards = count;
+                                        case RED_CARD -> redCards = count;
+                                        case SUBSTITUTION, PENALTY_TRY, INJURY, SCRUM, LINEOUT, OTHER -> {}
+                                }
+                        }
+                }
+
+                int tablePoints = wins * 4 + draws * 2;
+
+                return new TeamStatsResponse(
+                                teamId,
+                                team.getName(),
+                                team.getOrganisation() != null ? team.getOrganisation().getName() : null,
+                                matchesPlayed,
+                                wins,
+                                draws,
+                                losses,
+                                pointsFor,
+                                pointsAgainst,
+                                pointsDifference,
+                                tries,
+                                conversions,
+                                penalties,
+                                dropGoals,
+                                yellowCards,
+                                redCards,
+                                tablePoints
+                );
         }
 
         @Override
@@ -780,13 +872,11 @@ public class StatisticsServiceImpl implements StatisticsService {
         public int getPointsForEventType(MatchEventType eventType) { // Changed signature to match Interface (public)
                 if (eventType == null)
                         return 0;
-                return switch (eventType) {
-                        case TRY -> 5;
-                        case CONVERSION -> 2;
-                        case PENALTY -> 3;
-                        case DROP_GOAL -> 3;
-                        default -> 0;
-                };
+                if (eventType == MatchEventType.TRY) return 5;
+                if (eventType == MatchEventType.CONVERSION) return 2;
+                if (eventType == MatchEventType.PENALTY) return 3;
+                if (eventType == MatchEventType.DROP_GOAL) return 3;
+                return 0;
         }
 
         private int getPointsForEvent(MatchEvent event) {

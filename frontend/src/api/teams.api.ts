@@ -30,8 +30,8 @@ export const fetchTeamById = (id: string) => api.get(`/teams/${id}`);
 
 export const fetchTeamBySlug = (slug: string) => api.get(`/teams/slug/${slug}`);
 
-export const fetchTeamStats = (teamId: string) => api.get(`/stats/teams/${teamId}`);
+export const fetchTeamStats = (teamId: string, tournamentId?: string) => api.get(`/stats/teams/${teamId}`, { params: { tournamentId } });
 
 export const fetchTeamMatches = (teamId: string) => api.get(`/matches`, { params: { teamId } });
 
-export const fetchTeamPlayers = (teamId: string) => api.get(`/teams/${teamId}/players`);
+export const fetchTeamPlayers = (teamId: string, tournamentId?: string) => api.get(`/teams/${teamId}/players`, { params: { tournamentId } });

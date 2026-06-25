@@ -37,4 +37,10 @@ public interface MatchLineupRepository extends JpaRepository<MatchLineup, UUID> 
             @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
             @org.springframework.data.repository.query.Param("categoryId") UUID categoryId,
             @org.springframework.data.repository.query.Param("isCategoryIdNull") boolean isCategoryIdNull);
+
+    @org.springframework.data.jpa.repository.Query("SELECT l.player.id, COUNT(l) FROM MatchLineup l WHERE l.team.id = :teamId AND l.match.deleted = false AND (l.role = com.athleticaos.backend.enums.LineupRole.STARTER OR l.role = com.athleticaos.backend.enums.LineupRole.BENCH) GROUP BY l.player.id")
+    List<Object[]> countAppearancesByTeamId(@org.springframework.data.repository.query.Param("teamId") java.util.UUID teamId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT l.player.id, COUNT(l) FROM MatchLineup l WHERE l.team.id = :teamId AND l.match.tournament.id = :tournamentId AND l.match.deleted = false AND (l.role = com.athleticaos.backend.enums.LineupRole.STARTER OR l.role = com.athleticaos.backend.enums.LineupRole.BENCH) GROUP BY l.player.id")
+    List<Object[]> countAppearancesByTeamIdAndTournamentId(@org.springframework.data.repository.query.Param("teamId") java.util.UUID teamId, @org.springframework.data.repository.query.Param("tournamentId") java.util.UUID tournamentId);
 }

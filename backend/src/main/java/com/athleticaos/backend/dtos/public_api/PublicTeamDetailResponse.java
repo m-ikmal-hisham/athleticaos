@@ -24,5 +24,15 @@ public class PublicTeamDetailResponse {
     private String state;
     private String organisationName;
     private List<PublicPlayerSummary> players;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TournamentSummary {
+        private UUID id;
+        private String name;
+    }
+    private List<TournamentSummary> tournaments;
 }
 

@@ -26,7 +26,7 @@ public interface TeamService {
 
     TeamResponse updateTeam(UUID id, TeamUpdateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
-    List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId);
+    List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId, UUID tournamentId);
 
     List<com.athleticaos.backend.dtos.team.TeamStaffDTO> getTeamStaff(UUID teamId);
 

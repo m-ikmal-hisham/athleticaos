@@ -28,6 +28,9 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE (m.homeTeam.id = :homeTeamId OR m.awayTeam.id = :awayTeamId) AND m.deleted = false")
         List<Match> findByHomeTeamIdOrAwayTeamId(@org.springframework.data.repository.query.Param("homeTeamId") UUID homeTeamId, @org.springframework.data.repository.query.Param("awayTeamId") UUID awayTeamId);
 
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE (m.homeTeam.id = :teamId OR m.awayTeam.id = :teamId) AND m.tournament.id = :tournamentId AND m.deleted = false")
+        List<Match> findByTeamIdAndTournamentId(@org.springframework.data.repository.query.Param("teamId") UUID teamId, @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.tournament.id = :tournamentId AND m.status = :status AND m.deleted = false")
         List<Match> findByTournamentIdAndStatus(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 

@@ -30,4 +30,14 @@ public class TeamResponse {
     private UUID tournamentCategoryId;
     private String organisationLevel;
     private List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> players;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TournamentSummary {
+        private UUID id;
+        private String name;
+    }
+    private List<TournamentSummary> tournaments;
 }

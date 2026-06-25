@@ -21,7 +21,7 @@ public interface PlayerTeamService {
     /**
      * Get all players in a team (roster)
      */
-    List<PlayerInTeamDTO> getTeamRoster(UUID teamId);
+    List<PlayerInTeamDTO> getTeamRoster(UUID teamId, UUID tournamentId);
 
     /**
      * Get all teams a player is assigned to

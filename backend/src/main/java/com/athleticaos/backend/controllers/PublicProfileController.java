@@ -29,21 +29,42 @@ public class PublicProfileController {
     private final PlayerTeamRepository playerTeamRepository;
     private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
+    private final com.athleticaos.backend.repositories.TournamentTeamRepository tournamentTeamRepository;
+    private final com.athleticaos.backend.services.PlayerTeamService playerTeamService;
 
     @GetMapping("/teams/{idOrSlug}")
-    public ResponseEntity<PublicTeamDetailResponse> getPublicTeam(@PathVariable String idOrSlug) {
+    public ResponseEntity<PublicTeamDetailResponse> getPublicTeam(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID tournamentId) {
         try {
             TeamResponse team = fetchTeam(idOrSlug);
             
-            List<PublicPlayerSummary> players = team.getPlayers() != null ? 
-                team.getPlayers().stream().map(p -> PublicPlayerSummary.builder()
+            List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> teamRoster = playerTeamService.getTeamRoster(team.getId(), tournamentId);
+            
+            List<PublicPlayerSummary> players = teamRoster != null ? 
+                teamRoster.stream().map(p -> PublicPlayerSummary.builder()
                     .id(p.getPlayerId())
                     .firstName(p.getFirstName())
                     .lastName(p.getLastName())
                     .position(p.getPosition())
                     .jerseyNumber(p.getJerseyNumber())
+                    .tries(p.getTries())
+                    .conversions(p.getConversions())
+                    .penalties(p.getPenalties())
+                    .dropGoals(p.getDropGoals())
+                    .yellowCards(p.getYellowCards())
+                    .redCards(p.getRedCards())
+                    .appearances(p.getAppearances())
                     .build()
                 ).collect(Collectors.toList()) : List.of();
+
+            List<PublicTeamDetailResponse.TournamentSummary> tournamentsList = tournamentTeamRepository
+                .findActiveTournamentsByTeamId(team.getId()).stream()
+                .map(t -> PublicTeamDetailResponse.TournamentSummary.builder()
+                    .id(t.getId())
+                    .name(t.getName())
+                    .build())
+                .collect(Collectors.toList());
                 
             PublicTeamDetailResponse response = PublicTeamDetailResponse.builder()
                     .id(team.getId())
@@ -57,6 +78,7 @@ public class PublicProfileController {
                     .state(team.getState())
                     .organisationName(team.getOrganisationName())
                     .players(players)
+                    .tournaments(tournamentsList)
                     .build();
                     
             return ResponseEntity.ok(response);
@@ -221,10 +243,12 @@ public class PublicProfileController {
 
     @GetMapping("/teams/{idOrSlug}/stats")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public ResponseEntity<?> getPublicTeamStats(@PathVariable String idOrSlug) {
+    public ResponseEntity<?> getPublicTeamStats(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID tournamentId) {
         try {
             TeamResponse team = fetchTeam(idOrSlug);
-            var stats = statisticsService.getTeamStatsAcrossTournaments(team.getId());
+            var stats = statisticsService.getTeamStats(team.getId(), tournamentId);
             if (stats == null) {
                 return ResponseEntity.ok(java.util.Map.of(
                     "matchesPlayed", 0, "wins", 0, "draws", 0, "losses", 0,

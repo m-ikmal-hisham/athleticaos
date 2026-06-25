@@ -72,8 +72,9 @@ public class StatisticsController {
 
     @GetMapping("/teams/{teamId}")
     @PreAuthorize("isAuthenticated()")
-    public TeamStatsResponse getTeamStatsAcrossTournaments(
-            @PathVariable UUID teamId) {
-        return statisticsService.getTeamStatsAcrossTournaments(teamId);
+    public TeamStatsResponse getTeamStats(
+            @PathVariable UUID teamId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID tournamentId) {
+        return statisticsService.getTeamStats(teamId, tournamentId);
     }
 }

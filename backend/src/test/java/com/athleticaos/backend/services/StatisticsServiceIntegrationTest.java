@@ -43,6 +43,9 @@ public class StatisticsServiceIntegrationTest {
         @Autowired
         private TournamentFormatConfigRepository formatConfigRepository;
 
+        @Autowired
+        private TeamRepository teamRepository;
+
         // Service under test
         private StatisticsServiceImpl statisticsService;
 
@@ -50,13 +53,14 @@ public class StatisticsServiceIntegrationTest {
         public void setUp() {
                 // manually inject repositories since @DataJpaTest doesn't scan services
                 // Constructor order: MatchRepository, MatchEventRepository,
-                // TournamentRepository, MatchLineupRepository, TournamentFormatConfigRepository
+                // TournamentRepository, MatchLineupRepository, TournamentFormatConfigRepository, TeamRepository
                 statisticsService = new StatisticsServiceImpl(
                                 matchRepository,
                                 matchEventRepository,
                                 tournamentRepository,
                                 matchLineupRepository,
-                                formatConfigRepository);
+                                formatConfigRepository,
+                                teamRepository);
         }
 
         @Test

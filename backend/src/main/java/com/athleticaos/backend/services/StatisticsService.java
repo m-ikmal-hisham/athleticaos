@@ -20,7 +20,7 @@ public interface StatisticsService {
 
     PlayerStatsResponse getPlayerStatsAcrossTournaments(UUID playerId);
 
-    TeamStatsResponse getTeamStatsAcrossTournaments(UUID teamId);
+    TeamStatsResponse getTeamStats(UUID teamId, UUID tournamentId);
 
     // Centralized Scoring Logic
     int getPointsForEventType(com.athleticaos.backend.enums.MatchEventType type);

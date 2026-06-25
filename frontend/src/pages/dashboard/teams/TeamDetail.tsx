@@ -5,7 +5,7 @@ import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
 import { fetchTeamBySlug, fetchTeamById, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
 import { usePlayersStore } from '../../../store/players.store';
-import { Users, Trophy, Target, TrendUp, CaretDown, CaretUp, MagnifyingGlass } from '@phosphor-icons/react';
+import { Users, Trophy, Target, CaretDown, CaretUp, MagnifyingGlass } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
@@ -23,17 +23,27 @@ interface TeamDetail {
     organisationId: string;
     organisationName?: string;
     logoUrl?: string;
+    tournaments?: { id: string; name: string }[];
 }
 
 interface TeamStats {
     teamId: string;
     teamName: string;
-    totalMatches: number;
+    organisationName?: string;
+    matchesPlayed: number;
     wins: number;
-    losses: number;
     draws: number;
+    losses: number;
     pointsFor: number;
     pointsAgainst: number;
+    pointsDifference: number;
+    triesScored: number;
+    conversions: number;
+    penalties: number;
+    dropGoals: number;
+    yellowCards: number;
+    redCards: number;
+    tablePoints: number;
 }
 
 interface Match {
@@ -64,6 +74,13 @@ export default function TeamDetail() {
     // Roster expand/search state — collapsed by default
     const [rosterExpanded, setRosterExpanded] = useState(false);
     const [rosterSearch, setRosterSearch] = useState('');
+    const [showRosterStats, setShowRosterStats] = useState(false);
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+
+    const selectedTournamentName = useMemo(() => {
+        if (!selectedTournamentId) return 'Global';
+        return team?.tournaments?.find(t => t.id === selectedTournamentId)?.name || '';
+    }, [selectedTournamentId, team?.tournaments]);
 
     useEffect(() => {
         if (!slug) return;
@@ -87,14 +104,12 @@ export default function TeamDetail() {
 
                 const teamId = teamData.id;
 
-                const [statsRes, matchesRes, playersRes] = await Promise.all([
+                const [statsRes, matchesRes] = await Promise.all([
                     fetchTeamStats(teamId).catch(() => ({ data: null })),
                     fetchTeamMatches(teamId).catch(() => ({ data: [] })),
-                    fetchTeamPlayers(teamId).catch(() => ({ data: [] })),
                 ]);
                 setStats(statsRes.data);
                 setMatches(matchesRes.data || []);
-                setTeamPlayers(playersRes.data || []);
             } catch (err) {
                 setError('Failed to load team details');
                 console.error(err);
@@ -105,6 +120,25 @@ export default function TeamDetail() {
 
         loadTeamData();
     }, [slug]);
+
+    useEffect(() => {
+        if (!team?.id) return;
+
+        const loadRosterAndStats = async () => {
+            try {
+                const [playersRes, statsRes] = await Promise.all([
+                    fetchTeamPlayers(team.id, selectedTournamentId || undefined),
+                    fetchTeamStats(team.id, selectedTournamentId || undefined).catch(() => ({ data: null }))
+                ]);
+                setTeamPlayers(playersRes.data || []);
+                setStats(statsRes.data);
+            } catch (err) {
+                console.error("Failed to fetch team roster and stats:", err);
+            }
+        };
+
+        loadRosterAndStats();
+    }, [team?.id, selectedTournamentId]);
 
     // Callback from TeamStaffPanel when staff list changes
     const handleStaffChange = useCallback((ids: string[]) => {
@@ -223,15 +257,20 @@ export default function TeamDetail() {
                     {stats && (
                         <Card>
                             <CardHeader>
-                                <CardTitle>Team Statistics</CardTitle>
+                                <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                                    <span>Team Statistics</span>
+                                    <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                        {selectedTournamentName}
+                                    </span>
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="stats-grid mb-6">
+                                <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="stat-card">
                                         <Target className="w-5 h-5 text-primary" />
                                         <div>
-                                            <p className="text-2xl font-bold text-foreground">{stats.totalMatches}</p>
-                                            <p className="text-sm text-muted-foreground">Matches</p>
+                                            <p className="text-2xl font-bold text-foreground">{stats.matchesPlayed}</p>
+                                            <p className="text-sm text-muted-foreground">Played</p>
                                         </div>
                                     </div>
                                     <div className="stat-card">
@@ -241,32 +280,63 @@ export default function TeamDetail() {
                                             <p className="text-sm text-muted-foreground">Wins</p>
                                         </div>
                                     </div>
-                                    <div className="stat-card">
-                                        <TrendUp className="w-5 h-5 text-primary" />
-                                        <div>
-                                            <p className="text-2xl font-bold text-foreground">{stats.pointsFor}</p>
-                                            <p className="text-sm text-muted-foreground">Points For</p>
-                                        </div>
-                                    </div>
                                 </div>
                                 <div className="flex flex-col gap-3">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Losses</span>
-                                        <span className="text-foreground font-medium">{stats.losses}</span>
-                                    </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Draws</span>
                                         <span className="text-foreground font-medium">{stats.draws}</span>
                                     </div>
                                     <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Losses</span>
+                                        <span className="text-foreground font-medium">{stats.losses}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-border/50 pt-2">
+                                        <span className="text-muted-foreground font-medium">Tries Scored</span>
+                                        <span className="text-foreground font-bold">{stats.triesScored}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Conversions</span>
+                                        <span className="text-foreground font-medium">{stats.conversions}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Penalties</span>
+                                        <span className="text-foreground font-medium">{stats.penalties}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Drop Goals</span>
+                                        <span className="text-foreground font-medium">{stats.dropGoals}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-border/50 pt-2">
+                                        <span className="text-muted-foreground">Points For</span>
+                                        <span className="text-foreground font-medium">{stats.pointsFor}</span>
+                                    </div>
+                                    <div className="flex justify-between">
                                         <span className="text-muted-foreground">Points Against</span>
                                         <span className="text-foreground font-medium">{stats.pointsAgainst}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Points Difference</span>
+                                        <span className={`font-medium ${stats.pointsDifference >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            {stats.pointsDifference > 0 ? `+${stats.pointsDifference}` : stats.pointsDifference}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-border/50 pt-2">
+                                        <span className="text-muted-foreground flex items-center gap-1.5">
+                                            <span className="w-2.5 h-3.5 bg-yellow-400 rounded-[2px]" /> Yellow Cards
+                                        </span>
+                                        <span className="text-foreground font-medium">{stats.yellowCards}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground flex items-center gap-1.5">
+                                            <span className="w-2.5 h-3.5 bg-red-500 rounded-[2px]" /> Red Cards
+                                        </span>
+                                        <span className="text-foreground font-medium">{stats.redCards}</span>
                                     </div>
                                     <div className="flex justify-between pt-3 border-t border-border/50">
                                         <span className="text-muted-foreground">Win Rate</span>
                                         <span className="text-foreground font-bold">
-                                            {stats.totalMatches > 0
-                                                ? `${Math.round((stats.wins / stats.totalMatches) * 100)}%`
+                                            {stats.matchesPlayed > 0
+                                                ? `${Math.round((stats.wins / stats.matchesPlayed) * 100)}%`
                                                 : '—'}
                                         </span>
                                     </div>
@@ -321,9 +391,57 @@ export default function TeamDetail() {
                                         />
                                     </div>
                                 )}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/50 mb-4 pb-2 gap-4">
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowRosterStats(false);
+                                            }}
+                                            className={`pb-2 px-4 font-semibold text-sm transition-all border-b-2 ${
+                                                !showRosterStats
+                                                    ? 'border-primary text-foreground'
+                                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        >
+                                            Standard Roster
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowRosterStats(true);
+                                            }}
+                                            className={`pb-2 px-4 font-semibold text-sm transition-all border-b-2 ${
+                                                showRosterStats
+                                                    ? 'border-primary text-foreground'
+                                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                            }`}
+                                        >
+                                            Player Stats
+                                        </button>
+                                    </div>
+                                    {team.tournaments && team.tournaments.length > 0 && (
+                                        <div className="flex items-center gap-2 px-4" onClick={(e) => e.stopPropagation()}>
+                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tournament:</span>
+                                            <select
+                                                value={selectedTournamentId}
+                                                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                                                className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            >
+                                                <option value="">All (Global)</option>
+                                                {team.tournaments.map((t) => (
+                                                    <option key={t.id} value={t.id}>
+                                                        {t.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
                                 <RosterList
                                     players={rosterSearch ? filteredRoster : displayedRoster}
                                     onPlayerClick={openPlayerDrawer}
+                                    showStats={showRosterStats}
                                 />
                                 {/* Show More / Less toggle (when not searching) */}
                                 {!rosterSearch && hasMoreRoster && (
