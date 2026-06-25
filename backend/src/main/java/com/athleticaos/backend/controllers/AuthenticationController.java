@@ -24,8 +24,10 @@ public class AuthenticationController {
     private final AuthService authService;
     private final UserService userService;
     private final com.athleticaos.backend.utils.CookieUtils cookieUtils;
+    private final com.athleticaos.backend.services.LoginAttemptService loginAttemptService;
 
     @PostMapping("/register")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AuthResponse> register(@RequestBody @Valid RegisterRequest request) {
         AuthResponse response = authService.register(request);
         String token = response.getToken();
@@ -42,17 +44,61 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        String token = response.getToken();
-        if (token == null) {
-            throw new IllegalStateException("Authentication failed: No token generated");
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request,
+                                   jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+
+        // Check if IP is locked out due to too many failed attempts
+        if (loginAttemptService.isBlocked(clientIp)) {
+            long remainingMinutes = loginAttemptService.getRemainingLockoutMinutes(clientIp);
+            return ResponseEntity.status(423) // 423 Locked
+                    .body(java.util.Map.of(
+                            "message", "Too many failed login attempts. Please try again in " + remainingMinutes + " minute(s).",
+                            "remainingMinutes", remainingMinutes
+                    ));
         }
-        org.springframework.http.ResponseCookie cookie = cookieUtils.createSessionCookie(token);
-        // response.setToken(null);
-        return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(response);
+
+        try {
+            AuthResponse response = authService.login(request);
+            String token = response.getToken();
+            if (token == null) {
+                throw new IllegalStateException("Authentication failed: No token generated");
+            }
+
+            // Login succeeded — reset attempt counter
+            loginAttemptService.recordSuccess(clientIp);
+
+            org.springframework.http.ResponseCookie cookie = cookieUtils.createSessionCookie(token);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(response);
+        } catch (Exception e) {
+            // Login failed — record the failure
+            loginAttemptService.recordFailure(clientIp);
+
+            if (loginAttemptService.isBlocked(clientIp)) {
+                long remainingMinutes = loginAttemptService.getRemainingLockoutMinutes(clientIp);
+                return ResponseEntity.status(423)
+                        .body(java.util.Map.of(
+                                "message", "Account locked due to too many failed attempts. Try again in " + remainingMinutes + " minute(s).",
+                                "remainingMinutes", remainingMinutes
+                        ));
+            }
+
+            return ResponseEntity.status(401)
+                    .body(java.util.Map.of("message", "Invalid email or password"));
+        }
+    }
+
+    /**
+     * Extract client IP, respecting X-Forwarded-For header for reverse proxies.
+     */
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @PostMapping("/logout")

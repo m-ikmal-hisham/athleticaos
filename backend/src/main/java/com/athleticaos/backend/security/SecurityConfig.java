@@ -48,7 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/login",
-                                "/api/v1/auth/register",
+                                // "/api/v1/auth/register" — removed: now requires SUPER_ADMIN authentication
                                 "/api/v1/auth/logout",
                                 "/api/v1/auth/me",
                                 "/api/public/**",

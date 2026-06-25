@@ -22,7 +22,7 @@ const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
 const Sponsors = lazy(() => import('@/pages/public/Sponsors'));
 const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
-const Signup = lazyNamed(() => import('@/pages/public/Signup'), 'Signup');
+// Signup removed — registration is closed and route is disabled
 const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
 const PublicPlayerProfile = lazyNamed(() => import('@/pages/public/PublicPlayerProfile'), 'PublicPlayerProfile');
 const MediaPortal = lazyNamed(() => import('@/pages/public/MediaPortal'), 'MediaPortal');
@@ -142,10 +142,7 @@ export const router = createBrowserRouter([
                 path: '/login',
                 element: <Login />,
             },
-            {
-                path: '/signup',
-                element: <Signup />,
-            },
+            // /signup route removed — registration closed
         ],
     },
     {

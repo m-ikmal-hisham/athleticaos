@@ -1,6 +1,6 @@
 import { Suspense, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { SignIn, List, X } from '@phosphor-icons/react';
+import { List, X } from '@phosphor-icons/react';
 import { TournamentPill } from '@/components/TournamentPill';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { AppBackground } from '@/components/public/AppBackground';
@@ -66,13 +66,6 @@ export default function PublicLayout() {
                             >
                                 Sponsors
                             </Link>
-                            <Link
-                                to="/dashboard"
-                                className="flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 hover:opacity-90 rounded-lg transition-all shadow-md shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-lg"
-                            >
-                                <SignIn className="w-4 h-4" weight="bold" />
-                                Login
-                            </Link>
                         </div>
 
                         {/* Mobile Menu Button */}
@@ -115,14 +108,6 @@ export default function PublicLayout() {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             Sponsors
-                        </Link>
-                        <Link
-                            to="/dashboard"
-                            className="flex items-center justify-center gap-2 w-full px-5 py-3 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 rounded-lg shadow-lg"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            <SignIn className="w-5 h-5" weight="bold" />
-                            Login to Dashboard
                         </Link>
                     </div>
                 )}
