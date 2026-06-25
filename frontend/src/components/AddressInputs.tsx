@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Input } from './Input';
-import { MALAYSIA_STATES, getDistrictsForState, getSarawakDistricts, detectStateFromPostcode } from '@/constants/malaysia-geo';
+import { MALAYSIA_STATES, getDistrictsForState, getSarawakDistricts, detectStateFromPostcode, SARAWAK_GEO_DATA } from '@/constants/malaysia-geo';
 
 export interface AddressData {
     addressLine1?: string;
@@ -43,6 +43,21 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
     // Malaysia specific states
     const [myDistricts, setMyDistricts] = useState<string[]>([]);
     const [sarawakDivision, setSarawakDivision] = useState<string>('');
+
+    // Auto-detect Sarawak Division from City if it's Sarawak and not set
+    useEffect(() => {
+        const isSarawak = data.countryCode === 'MY' && (data.stateCode === 'MY-13' || data.state === 'Sarawak');
+        if (isSarawak && data.city && !sarawakDivision) {
+            const foundDivision = Object.keys(SARAWAK_GEO_DATA).find(div => 
+                SARAWAK_GEO_DATA[div].includes(data.city!)
+            );
+            if (foundDivision) {
+                setSarawakDivision(foundDivision);
+                const districts = getSarawakDistricts(foundDivision);
+                setMyDistricts(districts);
+            }
+        }
+    }, [data.countryCode, data.stateCode, data.state, data.city, sarawakDivision]);
 
     // Effect to handle dynamic loading of states/cities when country/state changes
     useEffect(() => {
