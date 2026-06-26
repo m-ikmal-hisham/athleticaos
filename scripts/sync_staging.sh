@@ -46,16 +46,22 @@ scp -i "$PEM_KEY" backend/target/backend-0.0.1-SNAPSHOT.jar "$EC2_USER@$EC2_HOST
 # 6. Restart Backend on EC2
 echo "🔄 Rebuilding and Restarting Backend Container on EC2..."
 ssh -i "$PEM_KEY" "$EC2_USER@$EC2_HOST" << 'EOF'
-  # Find the running container
-  echo "Stopping existing container if present..."
-  docker stop athleticaos-backend || true
-  docker rm athleticaos-backend || true
+  # Update code on host
+  cd ~/athleticaos
+  echo "Fetching latest changes from origin..."
+  git fetch origin
+  git reset --hard origin/staging
 
-  # Rebuild the image from the JAR
-  cd ~/athleticaos/backend
+  # Rebuild the image from the latest code
+  cd backend
   GIT_SHA=$(git rev-parse --short HEAD)
   echo "Rebuilding Docker image on host (SHA: $GIT_SHA)..."
   docker build -t athleticaos-backend --build-arg GIT_SHA=$GIT_SHA .
+
+  # Stop and remove the existing container (minimize downtime & avoid watchdog races)
+  echo "Stopping existing container..."
+  docker stop athleticaos-backend || true
+  docker rm athleticaos-backend || true
 
   echo "Starting new container..."
   docker run -d \
