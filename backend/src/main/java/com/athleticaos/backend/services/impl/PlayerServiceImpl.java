@@ -7,9 +7,11 @@ import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.entities.PlayerTeam;
 import com.athleticaos.backend.entities.Team;
+import com.athleticaos.backend.entities.TournamentPlayer;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
+import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import com.athleticaos.backend.dtos.player.PlayerBatchResponse;
@@ -42,6 +44,7 @@ public class PlayerServiceImpl implements PlayerService {
     private final PersonRepository personRepository;
     private final UserService userService;
     private final PlayerTeamRepository playerTeamRepository;
+    private final TournamentPlayerRepository tournamentPlayerRepository;
     private final TeamRepository teamRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
     private final com.athleticaos.backend.services.OrganisationService organisationService;
@@ -407,6 +410,20 @@ public class PlayerServiceImpl implements PlayerService {
         player.setDeleted(true);
         player.setDeletedAt(java.time.LocalDateTime.now());
         playerRepository.save(player);
+
+        // Deactivate all active team assignments for this player
+        List<PlayerTeam> playerTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(id);
+        for (PlayerTeam pt : playerTeams) {
+            pt.setIsActive(false);
+            playerTeamRepository.save(pt);
+        }
+
+        // Deactivate all active tournament assignments for this player
+        List<TournamentPlayer> tournamentPlayers = tournamentPlayerRepository.findByPlayerIdAndIsActiveTrue(id);
+        for (TournamentPlayer tp : tournamentPlayers) {
+            tp.setActive(false);
+            tournamentPlayerRepository.save(tp);
+        }
     }
 
     @Override

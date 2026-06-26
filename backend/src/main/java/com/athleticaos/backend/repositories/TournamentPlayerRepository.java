@@ -11,16 +11,24 @@ import java.util.UUID;
 @Repository
 public interface TournamentPlayerRepository extends JpaRepository<TournamentPlayer, UUID> {
 
-    List<TournamentPlayer> findByTournamentIdAndTeamId(UUID tournamentId, UUID teamId);
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.team.id = :teamId AND tp.player.deleted = false")
+    List<TournamentPlayer> findByTournamentIdAndTeamId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("teamId") UUID teamId);
 
-    Optional<TournamentPlayer> findByTournamentIdAndTeamIdAndPlayerId(UUID tournamentId, UUID teamId, UUID playerId);
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.team.id = :teamId AND tp.player.id = :playerId AND tp.player.deleted = false")
+    Optional<TournamentPlayer> findByTournamentIdAndTeamIdAndPlayerId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("teamId") UUID teamId, @org.springframework.data.repository.query.Param("playerId") UUID playerId);
 
-    List<TournamentPlayer> findByTournamentId(UUID tournamentId);
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.player.deleted = false")
+    List<TournamentPlayer> findByTournamentId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
-    List<TournamentPlayer> findByTournamentIdAndIsActiveTrue(UUID tournamentId);
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.isActive = true AND tp.player.deleted = false")
+    List<TournamentPlayer> findByTournamentIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
-    List<TournamentPlayer> findByTournamentIdAndTeamIdAndIsActiveTrue(UUID tournamentId, UUID teamId);
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.team.id = :teamId AND tp.isActive = true AND tp.player.deleted = false")
+    List<TournamentPlayer> findByTournamentIdAndTeamIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("teamId") UUID teamId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(tp) > 0 THEN TRUE ELSE FALSE END FROM TournamentPlayer tp WHERE tp.player.person.id = :personId")
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.player.id = :playerId AND tp.isActive = true AND tp.player.deleted = false")
+    List<TournamentPlayer> findByPlayerIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(tp) > 0 THEN TRUE ELSE FALSE END FROM TournamentPlayer tp WHERE tp.player.person.id = :personId AND tp.player.deleted = false")
     boolean existsByPlayerPersonId(@org.springframework.data.repository.query.Param("personId") UUID personId);
 }
