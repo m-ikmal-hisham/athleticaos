@@ -18,6 +18,8 @@ import com.athleticaos.backend.repositories.TournamentRepository;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.MatchService;
 import com.athleticaos.backend.services.PlayerSuspensionService;
+import com.athleticaos.backend.services.ProgressionService;
+import com.athleticaos.backend.services.BracketService;
 import com.athleticaos.backend.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class MatchServiceImpl implements MatchService {
 
     private final MatchRepository matchRepository;
@@ -48,6 +51,8 @@ public class MatchServiceImpl implements MatchService {
     private final com.athleticaos.backend.repositories.EventRepository eventRepository;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
     private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
+    private final ProgressionService progressionService;
+    private final BracketService bracketService;
 
     @Override
     @Transactional(readOnly = true)
@@ -132,9 +137,7 @@ public class MatchServiceImpl implements MatchService {
             }
         }
 
-        return matches.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return mapMatchesToResponses(matches);
     }
 
     @Override
@@ -147,9 +150,7 @@ public class MatchServiceImpl implements MatchService {
         if (!tournamentRepository.existsById(tournamentId)) {
             throw new EntityNotFoundException("Tournament not found with ID: " + tournamentId);
         }
-        return matchRepository.findByTournamentId(tournamentId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return mapMatchesToResponses(matchRepository.findByTournamentId(tournamentId));
     }
 
     @Override
@@ -382,6 +383,7 @@ public class MatchServiceImpl implements MatchService {
         }
         Match updatedMatch = matchRepository.save(match);
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
+        triggerAutoProgression(updatedMatch);
         return mapToResponse(updatedMatch);
     }
 
@@ -442,6 +444,14 @@ public class MatchServiceImpl implements MatchService {
     }
 
     private MatchResponse mapToResponse(Match match) {
+        return mapToResponse(match, null, null, null, null);
+    }
+
+    private MatchResponse mapToResponse(Match match,
+            java.util.Map<UUID, UUID> homeWinnerMap,
+            java.util.Map<UUID, UUID> homeLoserMap,
+            java.util.Map<UUID, UUID> awayWinnerMap,
+            java.util.Map<UUID, UUID> awayLoserMap) {
         MatchResponse.MatchResponseBuilder builder = MatchResponse.builder()
                 .id(match.getId())
                 .tournamentId(match.getTournament() != null ? match.getTournament().getId() : null)
@@ -526,7 +536,84 @@ public class MatchServiceImpl implements MatchService {
         }
         builder.awayTeamPlaceholder(match.getAwayTeamPlaceholder());
 
+        // Resolve Feeder Match References
+        UUID matchId = match.getId();
+        if (matchId != null) {
+            // Home Winner Feeder
+            if (homeWinnerMap != null && homeWinnerMap.containsKey(matchId)) {
+                builder.homeFromWinnerOfMatchId(homeWinnerMap.get(matchId));
+            } else if (homeWinnerMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(matchId, "HOME");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.homeFromWinnerOfMatchId(feeders.get(0).getId());
+                }
+            }
+
+            // Home Loser Feeder
+            if (homeLoserMap != null && homeLoserMap.containsKey(matchId)) {
+                builder.homeFromLoserOfMatchId(homeLoserMap.get(matchId));
+            } else if (homeLoserMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(matchId, "HOME");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.homeFromLoserOfMatchId(feeders.get(0).getId());
+                }
+            }
+
+            // Away Winner Feeder
+            if (awayWinnerMap != null && awayWinnerMap.containsKey(matchId)) {
+                builder.awayFromWinnerOfMatchId(awayWinnerMap.get(matchId));
+            } else if (awayWinnerMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(matchId, "AWAY");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.awayFromWinnerOfMatchId(feeders.get(0).getId());
+                }
+            }
+
+            // Away Loser Feeder
+            if (awayLoserMap != null && awayLoserMap.containsKey(matchId)) {
+                builder.awayFromLoserOfMatchId(awayLoserMap.get(matchId));
+            } else if (awayLoserMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(matchId, "AWAY");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.awayFromLoserOfMatchId(feeders.get(0).getId());
+                }
+            }
+        }
+
         return builder.build();
+    }
+
+    private List<MatchResponse> mapMatchesToResponses(List<Match> matches) {
+        if (matches == null || matches.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        
+        java.util.Map<UUID, UUID> homeWinnerMap = new java.util.HashMap<>();
+        java.util.Map<UUID, UUID> homeLoserMap = new java.util.HashMap<>();
+        java.util.Map<UUID, UUID> awayWinnerMap = new java.util.HashMap<>();
+        java.util.Map<UUID, UUID> awayLoserMap = new java.util.HashMap<>();
+
+        for (Match m : matches) {
+            if (m.getId() == null) continue;
+            if (m.getNextMatchIdForWinner() != null) {
+                if ("HOME".equalsIgnoreCase(m.getWinnerSlot())) {
+                    homeWinnerMap.put(m.getNextMatchIdForWinner(), m.getId());
+                } else if ("AWAY".equalsIgnoreCase(m.getWinnerSlot())) {
+                    awayWinnerMap.put(m.getNextMatchIdForWinner(), m.getId());
+                }
+            }
+            if (m.getNextMatchIdForLoser() != null) {
+                if ("HOME".equalsIgnoreCase(m.getLoserSlot())) {
+                    homeLoserMap.put(m.getNextMatchIdForLoser(), m.getId());
+                } else if ("AWAY".equalsIgnoreCase(m.getLoserSlot())) {
+                    awayLoserMap.put(m.getNextMatchIdForLoser(), m.getId());
+                }
+            }
+        }
+
+        return matches.stream()
+                .map(m -> mapToResponse(m, homeWinnerMap, homeLoserMap, awayWinnerMap, awayLoserMap))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -556,7 +643,8 @@ public class MatchServiceImpl implements MatchService {
 
         match.setHomeScore(homeScore);
         match.setAwayScore(awayScore);
-        matchRepository.save(match);
+        Match updatedMatch = matchRepository.save(match);
+        triggerAutoProgression(updatedMatch);
     }
 
     @Override
@@ -586,6 +674,7 @@ public class MatchServiceImpl implements MatchService {
         }
 
         Match updatedMatch = matchRepository.save(match);
+        triggerAutoProgression(updatedMatch);
         return mapToResponse(updatedMatch);
     }
 
@@ -635,5 +724,49 @@ public class MatchServiceImpl implements MatchService {
                 .completedMatches(completed)
                 .attentionRequired(attentionRequired)
                 .build();
+    }
+
+    private void triggerAutoProgression(Match match) {
+        if (match == null || match.getStatus() != MatchStatus.COMPLETED) {
+            return;
+        }
+
+        com.athleticaos.backend.entities.TournamentStage stage = match.getStage();
+        if (stage == null) {
+            return;
+        }
+
+        if (Boolean.TRUE.equals(stage.getIsKnockoutStage())) {
+            log.info("Triggering auto-progression for knockout match {}", match.getId());
+            try {
+                progressionService.processMatchCompletion(match.getId());
+            } catch (Exception e) {
+                log.error("Failed to auto-progress knockout match {}", match.getId(), e);
+            }
+        } else {
+            UUID tournamentId = match.getTournament().getId();
+            log.info("Checking if all pool matches are completed for tournament {}", tournamentId);
+            try {
+                List<com.athleticaos.backend.entities.TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
+                        .stream()
+                        .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
+                        .toList();
+
+                boolean allPoolStagesCompleted = true;
+                for (com.athleticaos.backend.entities.TournamentStage poolStage : poolStages) {
+                    if (!progressionService.isStageComplete(poolStage.getId())) {
+                        allPoolStagesCompleted = false;
+                        break;
+                    }
+                }
+
+                if (allPoolStagesCompleted && !poolStages.isEmpty()) {
+                    log.info("All pool stages completed. Seeding knockout bracket for tournament {}", tournamentId);
+                    bracketService.progressPoolsToKnockout(tournamentId);
+                }
+            } catch (Exception e) {
+                log.error("Failed to auto-progress pool stages for tournament {}", tournamentId, e);
+            }
+        }
     }
 }
