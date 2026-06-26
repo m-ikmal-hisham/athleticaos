@@ -291,7 +291,7 @@ public class ProgressionServiceImpl implements ProgressionService {
         return allStages.stream()
                 .filter(stage -> stage.getIsKnockoutStage())
                 .filter(stage -> stage.getDisplayOrder() > currentStage.getDisplayOrder())
-                .min(Comparator.comparing(TournamentStage::getDisplayOrder))
+                .min(Comparator.comparing(stage -> stage.getDisplayOrder()))
                 .orElse(null);
     }
 

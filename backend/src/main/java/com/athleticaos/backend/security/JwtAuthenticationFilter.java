@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 jwt = java.util.Arrays.stream(request.getCookies())
                         .filter(c -> "athos_auth".equals(c.getName()))
                         .findFirst()
-                        .map(jakarta.servlet.http.Cookie::getValue)
+                        .map(c -> c.getValue())
                         .orElse(null);
             } else {
                 jwt = null;

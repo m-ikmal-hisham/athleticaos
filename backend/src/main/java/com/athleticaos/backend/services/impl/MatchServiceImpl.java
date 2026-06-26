@@ -52,7 +52,7 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches() {
-        return getAllMatches(null, null);
+        return getAllMatches(null, null, null);
     }
 
     // ... [omitted unchanged methods for brevity in tool call, but must be careful
@@ -65,33 +65,58 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getMatchesByStatus(String status) {
-        return getAllMatches(status, null);
+        return getAllMatches(status, null, null);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MatchResponse> getAllMatches(String status, UUID tournamentId) {
+    public List<MatchResponse> getAllMatches(String status, UUID tournamentId, UUID teamId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Match> matches;
 
-        if (accessibleIds == null) {
-            // SUPER_ADMIN sees all
-            if (tournamentId != null) {
-                matches = matchRepository.findByTournamentIdWithDetails(tournamentId);
-            } else {
-                matches = matchRepository.findAllWithDetails();
+        if (teamId != null) {
+            matches = matchRepository.findByHomeTeamIdOrAwayTeamId(teamId, teamId);
+            
+            // If the user has a restricted set of accessible organisations, filter results
+            if (accessibleIds != null) {
+                matches = matches.stream()
+                        .filter(m -> {
+                            UUID homeOrgId = m.getHomeTeam() != null && m.getHomeTeam().getOrganisation() != null ? m.getHomeTeam().getOrganisation().getId() : null;
+                            UUID awayOrgId = m.getAwayTeam() != null && m.getAwayTeam().getOrganisation() != null ? m.getAwayTeam().getOrganisation().getId() : null;
+                            UUID tournamentOrgId = m.getTournament() != null && m.getTournament().getOrganiserOrg() != null ? m.getTournament().getOrganiserOrg().getId() : null;
+                            return (homeOrgId != null && accessibleIds.contains(homeOrgId)) ||
+                                   (awayOrgId != null && accessibleIds.contains(awayOrgId)) ||
+                                   (tournamentOrgId != null && accessibleIds.contains(tournamentOrgId));
+                        })
+                        .collect(Collectors.toList());
             }
-        } else if (accessibleIds.isEmpty()) {
-            matches = java.util.Collections.emptyList();
-        } else {
-            // Filter by accessible organisations
-            matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
 
             // If tournamentId is provided, filter the results
             if (tournamentId != null) {
                 matches = matches.stream()
-                        .filter(m -> m.getTournament().getId().equals(tournamentId))
+                        .filter(m -> m.getTournament() != null && m.getTournament().getId().equals(tournamentId))
                         .collect(Collectors.toList());
+            }
+        } else {
+            if (accessibleIds == null) {
+                // SUPER_ADMIN sees all
+                if (tournamentId != null) {
+                    matches = matchRepository.findByTournamentIdWithDetails(tournamentId);
+                } else {
+                    matches = matchRepository.findAllWithDetails();
+                }
+            } else if (accessibleIds.isEmpty()) {
+                matches = java.util.Collections.emptyList();
+            } else {
+                // Filter by accessible organisations
+                matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
+
+                // If tournamentId is provided, filter the results
+                if (tournamentId != null) {
+                    matches = matches.stream()
+                            .filter(m -> m.getTournament() != null && m.getTournament().getId().equals(tournamentId))
+                            .collect(Collectors.toList());
+                }
             }
         }
 
@@ -103,8 +128,6 @@ public class MatchServiceImpl implements MatchService {
                         .filter(m -> m.getStatus() == matchStatus)
                         .collect(Collectors.toList());
             } catch (IllegalArgumentException e) {
-                // Ignore invalid status or return empty list?
-                // Returning empty list matches previous behavior likely
                 return java.util.Collections.emptyList();
             }
         }
@@ -116,8 +139,10 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
-    @SuppressWarnings("null")
     public List<MatchResponse> getMatchesByTournament(UUID tournamentId) {
+        if (tournamentId == null) {
+            throw new IllegalArgumentException("Tournament ID must not be null");
+        }
         // Validate tournament exists
         if (!tournamentRepository.existsById(tournamentId)) {
             throw new EntityNotFoundException("Tournament not found with ID: " + tournamentId);
@@ -129,8 +154,10 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional(readOnly = true)
-    @SuppressWarnings("null")
     public MatchResponse getMatchById(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
         return mapToResponse(match);
@@ -163,26 +190,31 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public MatchResponse createMatch(MatchCreateRequest request, HttpServletRequest httpRequest) {
-        Tournament tournament = tournamentRepository.findById(request.getTournamentId())
+        UUID tournamentId = request.getTournamentId();
+        if (tournamentId == null) {
+            throw new IllegalArgumentException("Tournament ID must not be null");
+        }
+        Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Tournament not found with ID: " + request.getTournamentId()));
+                        "Tournament not found with ID: " + tournamentId));
 
         Team homeTeam = null;
-        if (request.getHomeTeamId() != null) {
-            homeTeam = teamRepository.findById(request.getHomeTeamId())
+        UUID homeTeamId = request.getHomeTeamId();
+        if (homeTeamId != null) {
+            homeTeam = teamRepository.findById(homeTeamId)
                     .orElseThrow(
                             () -> new EntityNotFoundException(
-                                    "Home Team not found with ID: " + request.getHomeTeamId()));
+                                    "Home Team not found with ID: " + homeTeamId));
         }
 
         Team awayTeam = null;
-        if (request.getAwayTeamId() != null) {
-            awayTeam = teamRepository.findById(request.getAwayTeamId())
+        UUID awayTeamId = request.getAwayTeamId();
+        if (awayTeamId != null) {
+            awayTeam = teamRepository.findById(awayTeamId)
                     .orElseThrow(
                             () -> new EntityNotFoundException(
-                                    "Away Team not found with ID: " + request.getAwayTeamId()));
+                                    "Away Team not found with ID: " + awayTeamId));
         }
 
         // Validation: Home team != Away team (only if both are present)
@@ -191,9 +223,10 @@ public class MatchServiceImpl implements MatchService {
         }
 
         com.athleticaos.backend.entities.TournamentStage stage = null;
-        if (request.getStageId() != null) {
-            stage = stageRepository.findById(request.getStageId())
-                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + request.getStageId()));
+        UUID stageId = request.getStageId();
+        if (stageId != null) {
+            stage = stageRepository.findById(stageId)
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + stageId));
         }
 
         // Basic Scheduling Logic: Check if match date is valid (optional soft rule,
@@ -216,6 +249,9 @@ public class MatchServiceImpl implements MatchService {
                 .status(MatchStatus.SCHEDULED) // Default status
                 .build();
 
+        if (match == null) {
+            throw new IllegalStateException("Match cannot be null");
+        }
         Match savedMatch = matchRepository.save(match);
         auditLogger.logMatchCreated(savedMatch, httpRequest);
         return mapToResponse(savedMatch);
@@ -223,8 +259,10 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public MatchResponse updateMatch(UUID id, MatchUpdateRequest request, HttpServletRequest httpRequest) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
 
@@ -243,9 +281,10 @@ public class MatchServiceImpl implements MatchService {
         if (request.getPhase() != null) {
             match.setPhase(request.getPhase());
         }
-        if (request.getStageId() != null) {
-            com.athleticaos.backend.entities.TournamentStage stage = stageRepository.findById(request.getStageId())
-                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + request.getStageId()));
+        UUID stageId = request.getStageId();
+        if (stageId != null) {
+            com.athleticaos.backend.entities.TournamentStage stage = stageRepository.findById(stageId)
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + stageId));
             match.setStage(stage);
         }
         if (request.getMatchCode() != null) {
@@ -253,8 +292,9 @@ public class MatchServiceImpl implements MatchService {
         }
 
         // Update Teams if provided
-        if (request.getHomeTeamId() != null) {
-            Team homeTeam = teamRepository.findById(request.getHomeTeamId())
+        UUID homeTeamId = request.getHomeTeamId();
+        if (homeTeamId != null) {
+            Team homeTeam = teamRepository.findById(homeTeamId)
                     .orElseThrow(() -> new EntityNotFoundException("Home Team not found"));
             match.setHomeTeam(homeTeam);
         }
@@ -262,8 +302,9 @@ public class MatchServiceImpl implements MatchService {
             match.setHomeTeamPlaceholder(request.getHomeTeamPlaceholder());
         }
 
-        if (request.getAwayTeamId() != null) {
-            Team awayTeam = teamRepository.findById(request.getAwayTeamId())
+        UUID awayTeamId = request.getAwayTeamId();
+        if (awayTeamId != null) {
+            Team awayTeam = teamRepository.findById(awayTeamId)
                     .orElseThrow(() -> new EntityNotFoundException("Away Team not found"));
             match.setAwayTeam(awayTeam);
         }
@@ -273,16 +314,18 @@ public class MatchServiceImpl implements MatchService {
 
         // --- FEEDER LINKS LOGIC ---
         // Handle Home Feeder Match
-        if (request.getHomeFromWinnerOfMatchId() != null) {
+        UUID homeFromWinnerOfMatchId = request.getHomeFromWinnerOfMatchId();
+        UUID homeFromLoserOfMatchId = request.getHomeFromLoserOfMatchId();
+        if (homeFromWinnerOfMatchId != null) {
             clearIncomingLinksToSlot(match, "HOME");
-            Match feeder = matchRepository.findById(request.getHomeFromWinnerOfMatchId()).orElseThrow();
+            Match feeder = matchRepository.findById(homeFromWinnerOfMatchId).orElseThrow();
             feeder.setNextMatchIdForWinner(match.getId());
             feeder.setWinnerSlot("HOME");
             matchRepository.save(feeder);
             match.setHomeTeamPlaceholder(null); 
-        } else if (request.getHomeFromLoserOfMatchId() != null) {
+        } else if (homeFromLoserOfMatchId != null) {
             clearIncomingLinksToSlot(match, "HOME");
-            Match feeder = matchRepository.findById(request.getHomeFromLoserOfMatchId()).orElseThrow();
+            Match feeder = matchRepository.findById(homeFromLoserOfMatchId).orElseThrow();
             feeder.setNextMatchIdForLoser(match.getId());
             feeder.setLoserSlot("HOME");
             matchRepository.save(feeder);
@@ -290,16 +333,18 @@ public class MatchServiceImpl implements MatchService {
         }
 
         // Handle Away Feeder Match
-        if (request.getAwayFromWinnerOfMatchId() != null) {
+        UUID awayFromWinnerOfMatchId = request.getAwayFromWinnerOfMatchId();
+        UUID awayFromLoserOfMatchId = request.getAwayFromLoserOfMatchId();
+        if (awayFromWinnerOfMatchId != null) {
             clearIncomingLinksToSlot(match, "AWAY");
-            Match feeder = matchRepository.findById(request.getAwayFromWinnerOfMatchId()).orElseThrow();
+            Match feeder = matchRepository.findById(awayFromWinnerOfMatchId).orElseThrow();
             feeder.setNextMatchIdForWinner(match.getId());
             feeder.setWinnerSlot("AWAY");
             matchRepository.save(feeder);
             match.setAwayTeamPlaceholder(null);
-        } else if (request.getAwayFromLoserOfMatchId() != null) {
+        } else if (awayFromLoserOfMatchId != null) {
             clearIncomingLinksToSlot(match, "AWAY");
-            Match feeder = matchRepository.findById(request.getAwayFromLoserOfMatchId()).orElseThrow();
+            Match feeder = matchRepository.findById(awayFromLoserOfMatchId).orElseThrow();
             feeder.setNextMatchIdForLoser(match.getId());
             feeder.setLoserSlot("AWAY");
             matchRepository.save(feeder);
@@ -332,33 +377,41 @@ public class MatchServiceImpl implements MatchService {
             }
         }
 
+        if (match == null) {
+            throw new IllegalStateException("Match cannot be null");
+        }
         Match updatedMatch = matchRepository.save(match);
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
         return mapToResponse(updatedMatch);
     }
 
-    @SuppressWarnings("null")
     private void clearIncomingLinksToSlot(Match targetMatch, String slot) {
         if (targetMatch == null || targetMatch.getId() == null) return;
         List<Match> winnerFeeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(targetMatch.getId(), slot);
-        for(Match m : winnerFeeders) {
-            m.setNextMatchIdForWinner(null);
-            m.setWinnerSlot(null);
+        if (winnerFeeders != null) {
+            for(Match m : winnerFeeders) {
+                m.setNextMatchIdForWinner(null);
+                m.setWinnerSlot(null);
+            }
+            matchRepository.saveAll(winnerFeeders);
         }
-        matchRepository.saveAll(winnerFeeders);
         
         List<Match> loserFeeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(targetMatch.getId(), slot);
-        for(Match m : loserFeeders) {
-            m.setNextMatchIdForLoser(null);
-            m.setLoserSlot(null);
+        if (loserFeeders != null) {
+            for(Match m : loserFeeders) {
+                m.setNextMatchIdForLoser(null);
+                m.setLoserSlot(null);
+            }
+            matchRepository.saveAll(loserFeeders);
         }
-        matchRepository.saveAll(loserFeeders);
     }
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public void deleteMatch(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         if (!matchRepository.existsById(id)) {
             throw new EntityNotFoundException("Match not found with ID: " + id);
         }
@@ -478,8 +531,10 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public void recalculateMatchScores(UUID matchId) {
+        if (matchId == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
 
@@ -506,8 +561,10 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public MatchResponse updateMatchStatus(UUID id, String status, HttpServletRequest httpRequest) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
 

@@ -11,6 +11,8 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
 import { formatTeamCategory, formatAgeGroup, formatMatchStatus } from "@/utils/formatters";
 import { TeamStaffPanel } from '@/components/admin/team/TeamStaffPanel';
+import { useAuthStore } from '../../../store/auth.store';
+import { BulkPasteRosterModal } from '@/components/modals/BulkPasteRosterModal';
 
 interface TeamDetail {
     id: string;
@@ -62,6 +64,9 @@ export default function TeamDetail() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const { openPlayerDrawer } = usePlayersStore();
+    const { user } = useAuthStore();
+    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+    const [pasteModalOpen, setPasteModalOpen] = useState(false);
 
     const [team, setTeam] = useState<TeamDetail | null>(null);
     const [stats, setStats] = useState<TeamStats | null>(null);
@@ -121,24 +126,23 @@ export default function TeamDetail() {
         loadTeamData();
     }, [slug]);
 
-    useEffect(() => {
+    const loadRosterAndStats = useCallback(async () => {
         if (!team?.id) return;
-
-        const loadRosterAndStats = async () => {
-            try {
-                const [playersRes, statsRes] = await Promise.all([
-                    fetchTeamPlayers(team.id, selectedTournamentId || undefined),
-                    fetchTeamStats(team.id, selectedTournamentId || undefined).catch(() => ({ data: null }))
-                ]);
-                setTeamPlayers(playersRes.data || []);
-                setStats(statsRes.data);
-            } catch (err) {
-                console.error("Failed to fetch team roster and stats:", err);
-            }
-        };
-
-        loadRosterAndStats();
+        try {
+            const [playersRes, statsRes] = await Promise.all([
+                fetchTeamPlayers(team.id, selectedTournamentId || undefined),
+                fetchTeamStats(team.id, selectedTournamentId || undefined).catch(() => ({ data: null }))
+            ]);
+            setTeamPlayers(playersRes.data || []);
+            setStats(statsRes.data);
+        } catch (err) {
+            console.error("Failed to fetch team roster and stats:", err);
+        }
     }, [team?.id, selectedTournamentId]);
+
+    useEffect(() => {
+        loadRosterAndStats();
+    }, [loadRosterAndStats]);
 
     // Callback from TeamStaffPanel when staff list changes
     const handleStaffChange = useCallback((ids: string[]) => {
@@ -420,23 +424,38 @@ export default function TeamDetail() {
                                             Player Stats
                                         </button>
                                     </div>
-                                    {team.tournaments && team.tournaments.length > 0 && (
-                                        <div className="flex items-center gap-2 px-4" onClick={(e) => e.stopPropagation()}>
-                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tournament:</span>
-                                            <select
-                                                value={selectedTournamentId}
-                                                onChange={(e) => setSelectedTournamentId(e.target.value)}
-                                                className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    <div className="flex items-center gap-3 px-4" onClick={(e) => e.stopPropagation()}>
+                                        {isAdmin && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPasteModalOpen(true);
+                                                }}
+                                                className="py-1 px-3 text-xs"
                                             >
-                                                <option value="">All (Global)</option>
-                                                {team.tournaments.map((t) => (
-                                                    <option key={t.id} value={t.id}>
-                                                        {t.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
+                                                Bulk Paste Roster
+                                            </Button>
+                                        )}
+                                        {team.tournaments && team.tournaments.length > 0 && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tournament:</span>
+                                                <select
+                                                    value={selectedTournamentId}
+                                                    onChange={(e) => setSelectedTournamentId(e.target.value)}
+                                                    className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                                >
+                                                    <option value="">All (Global)</option>
+                                                    {team.tournaments.map((t) => (
+                                                        <option key={t.id} value={t.id}>
+                                                            {t.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <RosterList
                                     players={rosterSearch ? filteredRoster : displayedRoster}
@@ -519,6 +538,15 @@ export default function TeamDetail() {
                     )}
                 </div>
             </div>
+
+            {team && (
+                <BulkPasteRosterModal
+                    isOpen={pasteModalOpen}
+                    onClose={() => setPasteModalOpen(false)}
+                    teamId={team.id}
+                    onSuccess={loadRosterAndStats}
+                />
+            )}
         </div>
     );
 }

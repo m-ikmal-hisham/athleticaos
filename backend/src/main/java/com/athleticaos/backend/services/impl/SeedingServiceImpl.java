@@ -185,7 +185,7 @@ public class SeedingServiceImpl implements SeedingService {
                 continue;
 
             // Sort by CreatedAt to be deterministic
-            roster.sort(Comparator.comparing(PlayerTeam::getJoinedDate).thenComparing(PlayerTeam::getId));
+            roster.sort(Comparator.comparing((PlayerTeam pt) -> pt.getJoinedDate()).thenComparing(pt -> pt.getId()));
 
             int jersey = 1;
             for (PlayerTeam pt : roster) {

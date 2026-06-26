@@ -148,7 +148,7 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                 }
 
                 // Check self-duplicates within the request
-                long distinctPlayers = entries.stream().map(MatchLineupEntryDTO::getPlayerId).distinct().count();
+                long distinctPlayers = entries.stream().map(e -> e.getPlayerId()).distinct().count();
                 if (distinctPlayers != entries.size()) {
                         throw new IllegalArgumentException("Duplicate players found in the submitted lineup.");
                 }
@@ -156,7 +156,7 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                 // Check cross-team duplicates (Player playing for the *other* team in the same
                 // match)
                 List<UUID> playerIds = entries.stream()
-                                .map(MatchLineupEntryDTO::getPlayerId)
+                                .map(e -> e.getPlayerId())
                                 .collect(Collectors.toList());
 
                 List<MatchLineup> existingEntries = matchLineupRepository.findByMatchIdAndPlayerIdIn(match.getId(),

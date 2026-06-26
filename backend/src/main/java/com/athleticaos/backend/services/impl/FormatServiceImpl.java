@@ -181,7 +181,7 @@ public class FormatServiceImpl implements FormatService {
         // Group teams by pool name
         java.util.Map<String, List<TournamentTeam>> poolMap = allTeams.stream()
                 .filter(t -> t.getPoolNumber() != null)
-                .collect(Collectors.groupingBy(TournamentTeam::getPoolNumber));
+                .collect(Collectors.groupingBy(t -> t.getPoolNumber()));
 
         for (TournamentStage stage : stages) {
             if (stage.getStageType() == TournamentStageType.POOL) {

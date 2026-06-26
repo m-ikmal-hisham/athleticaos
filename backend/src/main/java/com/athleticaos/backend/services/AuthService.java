@@ -119,7 +119,7 @@ public class AuthService {
                                 .phone(user.getPhone())
                                 .isActive(user.isActive())
                                 .status(user.isActive() ? "Active" : "Inactive")
-                                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                                .roles(user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet()))
                                 .organisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null)
                                 .createdAt(user.getCreatedAt())
                                 .updatedAt(user.getUpdatedAt())

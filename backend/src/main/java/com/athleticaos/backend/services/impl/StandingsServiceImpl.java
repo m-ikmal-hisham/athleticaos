@@ -136,11 +136,11 @@ public class StandingsServiceImpl implements StandingsService {
 
         // 4. Return sorted list
         return standingsMap.values().stream()
-                .sorted(Comparator.comparing(StandingsResponse::getPoolName) // Group by Pool
-                        .thenComparing(StandingsResponse::getPoints, Comparator.reverseOrder()) // High Points
-                        .thenComparing(StandingsResponse::getPointsDiff, Comparator.reverseOrder()) // High Diff
-                        .thenComparing(StandingsResponse::getPointsFor, Comparator.reverseOrder()) // High Scored
-                        .thenComparing(StandingsResponse::getTeamName)) // Alphabetical Fallback
+                .sorted(Comparator.comparing((StandingsResponse s) -> s.getPoolName()) // Group by Pool
+                        .thenComparing(s -> s.getPoints(), Comparator.reverseOrder()) // High Points
+                        .thenComparing(s -> s.getPointsDiff(), Comparator.reverseOrder()) // High Diff
+                        .thenComparing(s -> s.getPointsFor(), Comparator.reverseOrder()) // High Scored
+                        .thenComparing(s -> s.getTeamName())) // Alphabetical Fallback
                 .collect(Collectors.toList());
     }
 

@@ -223,7 +223,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
                 // Filter events
                 if (categoryId != null) {
-                        Set<UUID> matchIds = matches.stream().map(Match::getId).collect(Collectors.toSet());
+                        Set<UUID> matchIds = matches.stream().map(m -> m.getId()).collect(Collectors.toSet());
                         events = events.stream()
                                         .filter(e -> matchIds.contains(e.getMatch().getId()))
                                         .collect(Collectors.toList());
@@ -328,8 +328,8 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 // Top Players (Scorers): Total Points desc, then Tries desc
                 List<PlayerLeaderboardEntry> topPlayers = playerStats.stream()
-                                .sorted(Comparator.comparingInt(PlayerStatsResponse::totalPoints).reversed()
-                                                .thenComparing(Comparator.comparingInt(PlayerStatsResponse::tries)
+                                .sorted(Comparator.comparingInt((PlayerStatsResponse p) -> p.totalPoints()).reversed()
+                                                .thenComparing(Comparator.comparingInt((PlayerStatsResponse p) -> p.tries())
                                                                 .reversed()))
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
@@ -348,8 +348,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                 // Top Offenders (Discipline): Red Cards desc, then Yellow Cards desc
                 List<PlayerLeaderboardEntry> topOffenders = playerStats.stream()
                                 .filter(p -> p.redCards() > 0 || p.yellowCards() > 0)
-                                .sorted(Comparator.comparingInt(PlayerStatsResponse::redCards).reversed()
-                                                .thenComparing(Comparator.comparingInt(PlayerStatsResponse::yellowCards)
+                                .sorted(Comparator.comparingInt((PlayerStatsResponse p) -> p.redCards()).reversed()
+                                                .thenComparing(Comparator.comparingInt((PlayerStatsResponse p) -> p.yellowCards())
                                                                 .reversed()))
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
@@ -368,8 +368,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                 // Top Try Scorers: Tries desc, then Total Points desc
                 List<PlayerLeaderboardEntry> topTryScorers = playerStats.stream()
                                 .filter(p -> p.tries() > 0)
-                                .sorted(Comparator.comparingInt(PlayerStatsResponse::tries).reversed()
-                                                .thenComparing(Comparator.comparingInt(PlayerStatsResponse::totalPoints)
+                                .sorted(Comparator.comparingInt((PlayerStatsResponse p) -> p.tries()).reversed()
+                                                .thenComparing(Comparator.comparingInt((PlayerStatsResponse p) -> p.totalPoints())
                                                                 .reversed()))
                                 .map(p -> new PlayerLeaderboardEntry(
                                                 p.playerId(),
@@ -387,11 +387,11 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 // Top Teams: TablePoints desc, Wins desc, PointsDiff desc
                 List<TeamLeaderboardEntry> topTeams = teamStats.stream()
-                                .sorted(Comparator.comparingInt(TeamStatsResponse::tablePoints).reversed()
-                                                .thenComparing(Comparator.comparingInt(TeamStatsResponse::wins)
+                                .sorted(Comparator.comparingInt((TeamStatsResponse t) -> t.tablePoints()).reversed()
+                                                .thenComparing(Comparator.comparingInt((TeamStatsResponse t) -> t.wins())
                                                                 .reversed())
                                                 .thenComparing(Comparator
-                                                                .comparingInt(TeamStatsResponse::pointsDifference)
+                                                                .comparingInt((TeamStatsResponse t) -> t.pointsDifference())
                                                                 .reversed()))
                                 .map(t -> new TeamLeaderboardEntry(
                                                 t.teamId(),

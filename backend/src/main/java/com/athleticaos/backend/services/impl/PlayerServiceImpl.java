@@ -12,24 +12,30 @@ import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
-import com.athleticaos.backend.entities.OrganisationPerson;
+import com.athleticaos.backend.dtos.player.PlayerBatchResponse;
+import com.athleticaos.backend.dtos.player.PlayerRowDTO;
+import com.athleticaos.backend.dtos.player.PlayerRowResult;
+import com.athleticaos.backend.services.PlayerBatchHelper;
+import jakarta.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import java.util.Set;
+import java.util.ArrayList;
 import com.athleticaos.backend.services.PlayerService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.entities.OrganisationPerson;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@SuppressWarnings("null") // Suppressing null analysis warnings for cleaner logs
 public class PlayerServiceImpl implements PlayerService {
 
     private final PlayerRepository playerRepository;
@@ -39,10 +45,15 @@ public class PlayerServiceImpl implements PlayerService {
     private final TeamRepository teamRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
     private final com.athleticaos.backend.services.OrganisationService organisationService;
+    private final PlayerBatchHelper playerBatchHelper;
+    private final Validator validator;
 
     @Override
     @Transactional(readOnly = true)
     public PlayerResponse getPlayerById(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Player ID must not be null");
+        }
         log.info("Fetching player by id: {}", id);
         Player player = playerRepository.findById(id)
                 .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
@@ -172,6 +183,9 @@ public class PlayerServiceImpl implements PlayerService {
                 .address(request.address()) // Legacy mapping
                 .build();
 
+        if (person == null) {
+            throw new IllegalStateException("Person cannot be null");
+        }
         person = personRepository.save(person);
         log.info("Created person record with id: {}", person.getId());
 
@@ -193,6 +207,9 @@ public class PlayerServiceImpl implements PlayerService {
                 .photoUrl(request.photoUrl())
                 .build();
 
+        if (player == null) {
+            throw new IllegalStateException("Player cannot be null");
+        }
         player = playerRepository.save(player);
         log.info("Created player record with id: {}", player.getId());
 
@@ -313,6 +330,9 @@ public class PlayerServiceImpl implements PlayerService {
             player.setPhotoUrl(request.photoUrl());
         }
 
+        if (player == null) {
+            throw new IllegalStateException("Player cannot be null");
+        }
         player = playerRepository.save(player);
         log.info("Updated player: {}", id);
 
@@ -356,6 +376,9 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional
     public PlayerResponse toggleStatus(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Player ID must not be null");
+        }
         log.info("Toggling status for player: {}", id);
 
         Player player = playerRepository.findById(id)
@@ -376,6 +399,9 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional
     public void deletePlayer(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Player ID must not be null");
+        }
         Player player = playerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
         player.setDeleted(true);
@@ -412,6 +438,9 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     private void assignToTeam(Player player, UUID teamId) {
+        if (teamId == null) {
+            throw new IllegalArgumentException("Team ID must not be null");
+        }
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
 
@@ -428,6 +457,9 @@ public class PlayerServiceImpl implements PlayerService {
                 .joinedDate(LocalDate.now())
                 .build();
 
+        if (playerTeam == null) {
+            throw new IllegalStateException("PlayerTeam cannot be null");
+        }
         playerTeamRepository.save(playerTeam);
 
         // Auto-link person to organisation
@@ -437,6 +469,9 @@ public class PlayerServiceImpl implements PlayerService {
                         .organisation(team.getOrganisation())
                         .person(player.getPerson())
                         .build();
+                if (op == null) {
+                    throw new IllegalStateException("OrganisationPerson cannot be null");
+                }
                 organisationPersonRepository.save(op);
             }
         }
@@ -477,7 +512,6 @@ public class PlayerServiceImpl implements PlayerService {
                     .map(pt -> pt.getTeam().getName())
                     .collect(java.util.stream.Collectors.toList());
         }
-
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
@@ -512,6 +546,69 @@ public class PlayerServiceImpl implements PlayerService {
                 .teamNames(teamNames)
                 .createdAt(player.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = false)
+    public PlayerBatchResponse createBatchPlayers(UUID teamId, List<PlayerRowDTO> requests) {
+        if (teamId == null) {
+            throw new IllegalArgumentException("Team ID must not be null");
+        }
+        log.info("Starting batch player onboarding for team ID: {}, rows: {}", teamId, requests.size());
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        int successCount = 0;
+        int failCount = 0;
+        List<PlayerRowResult> results = new ArrayList<>();
+
+        for (int i = 0; i < requests.size(); i++) {
+            PlayerRowDTO row = requests.get(i);
+            List<String> rowErrors = new ArrayList<>();
+
+            // 1. Manual validation check using jakarta.validation.Validator
+            Set<ConstraintViolation<PlayerRowDTO>> violations = validator.validate(row);
+            if (!violations.isEmpty()) {
+                for (ConstraintViolation<PlayerRowDTO> violation : violations) {
+                    rowErrors.add(violation.getMessage());
+                }
+            }
+
+            // 2. Pre-check database constraint duplicate rules if no validation errors yet
+            if (rowErrors.isEmpty()) {
+                String normalizedIc = row.icOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+                if (personRepository.existsByIcOrPassport(normalizedIc)) {
+                    rowErrors.add("Player with this IC or Passport already exists");
+                }
+                
+                if (row.email() != null && !row.email().trim().isEmpty()) {
+                    if (personRepository.existsByEmail(row.email().trim().toLowerCase())) {
+                        rowErrors.add("Player with this email already exists");
+                    }
+                }
+            }
+
+            // 3. Save if valid, else fail
+            if (rowErrors.isEmpty()) {
+                try {
+                    UUID playerId = playerBatchHelper.savePlayerInNewTransaction(row, team);
+                    results.add(new PlayerRowResult(i, "SUCCESS", playerId, null));
+                    successCount++;
+                } catch (Exception e) {
+                    log.error("Failed to save player row at index {}", i, e);
+                    rowErrors.add("Internal save error: " + e.getMessage());
+                    results.add(new PlayerRowResult(i, "ERROR", null, rowErrors));
+                    failCount++;
+                }
+            } else {
+                results.add(new PlayerRowResult(i, "ERROR", null, rowErrors));
+                failCount++;
+            }
+        }
+
+        log.info("Batch player onboarding finished. Success: {}, Failed: {}", successCount, failCount);
+        return new PlayerBatchResponse(successCount, failCount, results);
     }
 
 }

@@ -541,7 +541,7 @@ public class TournamentServiceImpl implements TournamentService {
     @Transactional(readOnly = true)
     public List<TeamResponse> getTeamsByTournament(UUID tournamentId) {
         return tournamentTeamRepository.findByTournamentId(tournamentId).stream()
-                .filter(com.athleticaos.backend.entities.TournamentTeam::isActive)
+                .filter(t -> t.isActive())
                 .map(tournamentTeam -> TeamResponse.builder()
                         .id(tournamentTeam.getTeam().getId())
                         .organisationId(tournamentTeam.getTeam().getOrganisation().getId())

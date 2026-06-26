@@ -374,7 +374,7 @@ public class PersonServiceImpl implements PersonService {
         List<com.athleticaos.backend.entities.User> orgUsers = userRepository.findByOrganisationId(organisationId);
         
         List<UUID> linkedUserIds = personRepository.findAll().stream()
-                .map(Person::getUserId)
+                .map(p -> p.getUserId())
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toList());
 

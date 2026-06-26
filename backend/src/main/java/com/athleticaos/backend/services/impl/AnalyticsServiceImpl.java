@@ -32,7 +32,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         return matches.stream()
                 .filter(m -> m.getStatus() == MatchStatus.COMPLETED && m.getMatchDate() != null)
-                .sorted(Comparator.comparing(Match::getMatchDate))
+                .sorted(Comparator.comparing(m -> m.getMatchDate()))
                 .map(m -> {
                     boolean isHome = m.getHomeTeam().getId().equals(teamId);
                     int pointsScored = isHome ? m.getHomeScore() : m.getAwayScore();
@@ -149,7 +149,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         String highestScoringTeam = teamTotalScore.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
+                .map(entry -> entry.getKey())
                 .orElse("N/A");
 
         // Count Tries

@@ -16,6 +16,8 @@ public interface PlayerService {
 
     List<PlayerResponse> createBulkPlayers(List<PlayerCreateRequest> requests);
 
+    com.athleticaos.backend.dtos.player.PlayerBatchResponse createBatchPlayers(UUID teamId, List<com.athleticaos.backend.dtos.player.PlayerRowDTO> requests);
+
     PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request);
 
     PlayerResponse toggleStatus(UUID id);

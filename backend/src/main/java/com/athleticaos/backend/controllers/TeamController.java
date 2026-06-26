@@ -18,6 +18,10 @@ import java.util.UUID;
 import com.athleticaos.backend.dtos.team.AddTeamStaffRequest;
 import com.athleticaos.backend.dtos.team.TeamStaffDTO;
 
+import com.athleticaos.backend.services.PlayerService;
+import com.athleticaos.backend.dtos.player.PlayerBatchResponse;
+import com.athleticaos.backend.dtos.player.PlayerRowDTO;
+
 @RestController
 @RequestMapping("/api/v1/teams")
 @RequiredArgsConstructor
@@ -25,6 +29,7 @@ import com.athleticaos.backend.dtos.team.TeamStaffDTO;
 public class TeamController {
 
     private final TeamService teamService;
+    private final PlayerService playerService;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -111,5 +116,15 @@ public class TeamController {
     @GetMapping("/{id}/available-staff")
     public ResponseEntity<List<com.athleticaos.backend.dtos.team.PersonSummaryDTO>> getAvailablePersonsForStaff(@PathVariable UUID id) {
         return ResponseEntity.ok(teamService.getAvailablePersonsForStaff(id));
+    }
+
+    @PostMapping("/{teamId}/players/batch")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PlayerBatchResponse> createBatchPlayers(
+            @PathVariable UUID teamId,
+            @RequestBody List<PlayerRowDTO> requests) {
+        log.info("Request to bulk onboard players for team ID: {}, size: {}", teamId, requests.size());
+        PlayerBatchResponse response = playerService.createBatchPlayers(teamId, requests);
+        return ResponseEntity.ok(response);
     }
 }

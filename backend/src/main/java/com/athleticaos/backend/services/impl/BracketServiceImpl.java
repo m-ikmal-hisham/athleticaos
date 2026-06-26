@@ -1078,7 +1078,7 @@ public class BracketServiceImpl implements BracketService {
 
         // Sort by points, then point differential
         return standingsMap.values().stream()
-                .sorted(Comparator.comparing(PoolStanding::getPoints).reversed()
+                .sorted(Comparator.comparing((PoolStanding s) -> s.getPoints()).reversed()
                         .thenComparing(s -> s.pointsFor - s.pointsAgainst, Comparator.reverseOrder())
                         .thenComparing(s -> s.pointsFor, Comparator.reverseOrder()))
                 .toList();

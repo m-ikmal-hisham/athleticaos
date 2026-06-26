@@ -13,6 +13,9 @@ export const createPlayer = (payload: PlayerCreateRequest) =>
 export const createBulkPlayers = (payload: PlayerCreateRequest[]) =>
     api.post("/players/bulk", payload);
 
+export const createBatchPlayers = (teamId: string, payload: any[]) =>
+    api.post(`/teams/${teamId}/players/batch`, payload);
+
 export const updatePlayer = (id: string, payload: PlayerUpdateRequest) =>
     api.put(`/players/${id}`, payload);
 

@@ -223,7 +223,7 @@ public class UserService {
             return InviteUserResponse.builder()
                     .userId(existingUser.getId())
                     .email(existingUser.getEmail())
-                    .role(existingUser.getRoles().stream().findFirst().map(Role::getName).orElse("UNKNOWN"))
+                    .role(existingUser.getRoles().stream().findFirst().map(role -> role.getName()).orElse("UNKNOWN"))
                     .organisationId(
                             existingUser.getOrganisation() != null ? existingUser.getOrganisation().getId() : null)
                     .inviteStatus("EXISTS")
