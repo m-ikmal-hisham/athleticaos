@@ -13,6 +13,7 @@ logs/
 .DS_Store
 .env
 .env.*
+!.env.staging
 
 # Uploads
 uploads/
