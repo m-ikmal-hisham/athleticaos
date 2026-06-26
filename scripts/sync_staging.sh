@@ -48,9 +48,27 @@ echo "🔄 Rebuilding and Restarting Backend Container on EC2..."
 ssh -i "$PEM_KEY" "$EC2_USER@$EC2_HOST" << 'EOF'
   # Update code on host
   cd ~/athleticaos
+
+  # Backup server-local env files before git reset overwrites them
+  echo "Backing up server-local .env files..."
+  [ -f backend/.env.staging ] && cp backend/.env.staging /tmp/.env.staging.bak
+  [ -f frontend/.env.staging ] && cp frontend/.env.staging /tmp/.env.frontend.staging.bak
+
   echo "Fetching latest changes from origin..."
   git fetch origin
   git reset --hard origin/staging
+
+  # Restore server-local env files
+  echo "Restoring server-local .env files..."
+  [ -f /tmp/.env.staging.bak ] && cp /tmp/.env.staging.bak backend/.env.staging
+  [ -f /tmp/.env.frontend.staging.bak ] && cp /tmp/.env.frontend.staging.bak frontend/.env.staging
+
+  # Safety check: abort if backend .env.staging is missing
+  if [ ! -f backend/.env.staging ]; then
+    echo "❌ FATAL: backend/.env.staging is missing! Cannot start backend without it."
+    echo "   Create it on the server: ~/athleticaos/backend/.env.staging"
+    exit 1
+  fi
 
   # Ensure database container is running
   echo "Ensuring database container is started..."
