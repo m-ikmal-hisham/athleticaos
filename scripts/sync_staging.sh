@@ -52,6 +52,10 @@ ssh -i "$PEM_KEY" "$EC2_USER@$EC2_HOST" << 'EOF'
   git fetch origin
   git reset --hard origin/staging
 
+  # Ensure database container is running
+  echo "Ensuring database container is started..."
+  docker compose up -d || docker-compose up -d || true
+
   # Rebuild the image from the latest code
   cd backend
   GIT_SHA=$(git rev-parse --short HEAD)
