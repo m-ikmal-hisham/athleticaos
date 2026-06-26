@@ -10,6 +10,9 @@ export const assignPlayerToTeam = (payload: {
 export const removePlayerFromTeam = (playerId: string, teamId: string) =>
     api.delete('/player-teams', { params: { playerId, teamId } });
 
+export const removePlayersFromTeam = (playerIds: string[], teamId: string) =>
+    api.delete('/player-teams/batch', { params: { playerIds: playerIds.join(','), teamId } });
+
 export const fetchTeamRoster = (teamId: string) =>
     api.get(`/player-teams/team/${teamId}/roster`);
 

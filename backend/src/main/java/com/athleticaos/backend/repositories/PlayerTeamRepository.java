@@ -16,6 +16,8 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
     @Query("SELECT pt FROM PlayerTeam pt WHERE pt.team.id = :teamId AND pt.isActive = true AND pt.player.deleted = false")
     List<PlayerTeam> findByTeamIdAndIsActiveTrue(@Param("teamId") UUID teamId);
 
+    List<PlayerTeam> findByPlayerId(UUID playerId);
+
     @Query("SELECT pt FROM PlayerTeam pt WHERE pt.player.id = :playerId AND pt.isActive = true AND pt.player.deleted = false")
     List<PlayerTeam> findByPlayerIdAndIsActiveTrue(@Param("playerId") UUID playerId);
 

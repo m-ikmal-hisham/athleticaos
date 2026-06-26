@@ -14,6 +14,9 @@ import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import com.athleticaos.backend.repositories.MatchLineupRepository;
+import com.athleticaos.backend.repositories.MatchEventRepository;
+import com.athleticaos.backend.repositories.PlayerSuspensionRepository;
 import com.athleticaos.backend.dtos.player.PlayerBatchResponse;
 import com.athleticaos.backend.dtos.player.PlayerRowDTO;
 import com.athleticaos.backend.dtos.player.PlayerRowResult;
@@ -47,6 +50,9 @@ public class PlayerServiceImpl implements PlayerService {
     private final TournamentPlayerRepository tournamentPlayerRepository;
     private final TeamRepository teamRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
+    private final MatchLineupRepository matchLineupRepository;
+    private final MatchEventRepository matchEventRepository;
+    private final PlayerSuspensionRepository playerSuspensionRepository;
     private final com.athleticaos.backend.services.OrganisationService organisationService;
     private final PlayerBatchHelper playerBatchHelper;
     private final Validator validator;
@@ -401,28 +407,63 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public void deletePlayer(UUID id) {
         if (id == null) {
             throw new IllegalArgumentException("Player ID must not be null");
         }
         Player player = playerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
-        player.setDeleted(true);
-        player.setDeletedAt(java.time.LocalDateTime.now());
-        playerRepository.save(player);
+        
+        Person person = player.getPerson();
 
-        // Deactivate all active team assignments for this player
-        List<PlayerTeam> playerTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(id);
-        for (PlayerTeam pt : playerTeams) {
-            pt.setIsActive(false);
-            playerTeamRepository.save(pt);
-        }
+        // Check if there are any ACTIVE team assignments
+        List<PlayerTeam> activeTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(id);
+        
+        // Check if there is any match, lineup, or suspension history
+        boolean hasMatchHistory = !matchLineupRepository.findByPlayerId(id).isEmpty()
+                || !matchEventRepository.findByPlayer_Id(id).isEmpty()
+                || !playerSuspensionRepository.findByPlayerIdAndIsActiveTrue(id).isEmpty();
 
-        // Deactivate all active tournament assignments for this player
-        List<TournamentPlayer> tournamentPlayers = tournamentPlayerRepository.findByPlayerIdAndIsActiveTrue(id);
-        for (TournamentPlayer tp : tournamentPlayers) {
-            tp.setActive(false);
-            tournamentPlayerRepository.save(tp);
+        if (activeTeams.isEmpty() && !hasMatchHistory) {
+            log.info("Performing clean hard-delete for player {} and person {}", id, person != null ? person.getId() : null);
+            // Delete all historical player-team assignments to avoid foreign key violations
+            List<PlayerTeam> allTeams = playerTeamRepository.findByPlayerId(id);
+            playerTeamRepository.deleteAll(allTeams);
+
+            // Delete all historical tournament-player assignments to avoid foreign key violations
+            List<TournamentPlayer> allTournaments = tournamentPlayerRepository.findByPlayerId(id);
+            tournamentPlayerRepository.deleteAll(allTournaments);
+
+            // Delete player
+            playerRepository.delete(player);
+
+            // Delete person if safe (no user account associated and not a staff member)
+            if (person != null && person.getUserId() == null && !Boolean.TRUE.equals(person.getIsStaff())) {
+                List<OrganisationPerson> orgPersons = organisationPersonRepository.findByPersonId(person.getId());
+                organisationPersonRepository.deleteAll(orgPersons);
+                personRepository.delete(person);
+            }
+            log.info("Successfully hard-deleted player {} and associated person record.", id);
+        } else {
+            log.info("Performing soft-delete for player {} (activeTeams size: {}, hasMatchHistory: {})", id, activeTeams.size(), hasMatchHistory);
+            // Soft delete
+            player.setDeleted(true);
+            player.setDeletedAt(java.time.LocalDateTime.now());
+            playerRepository.save(player);
+
+            // Deactivate all active team assignments for this player
+            for (PlayerTeam pt : activeTeams) {
+                pt.setIsActive(false);
+                playerTeamRepository.save(pt);
+            }
+
+            // Deactivate all active tournament assignments for this player
+            List<TournamentPlayer> tournamentPlayers = tournamentPlayerRepository.findByPlayerIdAndIsActiveTrue(id);
+            for (TournamentPlayer tp : tournamentPlayers) {
+                tp.setActive(false);
+                tournamentPlayerRepository.save(tp);
+            }
         }
     }
 

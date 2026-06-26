@@ -26,6 +26,8 @@ public interface TournamentPlayerRepository extends JpaRepository<TournamentPlay
     @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.team.id = :teamId AND tp.isActive = true AND tp.player.deleted = false")
     List<TournamentPlayer> findByTournamentIdAndTeamIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("teamId") UUID teamId);
 
+    List<TournamentPlayer> findByPlayerId(UUID playerId);
+
     @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.player.id = :playerId AND tp.isActive = true AND tp.player.deleted = false")
     List<TournamentPlayer> findByPlayerIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
 

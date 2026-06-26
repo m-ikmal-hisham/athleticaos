@@ -1,11 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
 import { fetchTeamBySlug, fetchTeamById, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
+import { removePlayersFromTeam } from '../../../api/playerTeams.api';
 import { usePlayersStore } from '../../../store/players.store';
-import { Users, Trophy, Target, CaretDown, CaretUp, MagnifyingGlass } from '@phosphor-icons/react';
+import { Users, Trophy, Target, CaretDown, CaretUp, MagnifyingGlass, Trash } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
@@ -13,6 +15,7 @@ import { formatTeamCategory, formatAgeGroup, formatMatchStatus } from "@/utils/f
 import { TeamStaffPanel } from '@/components/admin/team/TeamStaffPanel';
 import { useAuthStore } from '../../../store/auth.store';
 import { BulkPasteRosterModal } from '@/components/modals/BulkPasteRosterModal';
+import ConfirmDeleteModal from '../../../components/modals/ConfirmDeleteModal';
 
 interface TeamDetail {
     id: string;
@@ -81,6 +84,9 @@ export default function TeamDetail() {
     const [rosterSearch, setRosterSearch] = useState('');
     const [showRosterStats, setShowRosterStats] = useState(false);
     const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+    const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+    const [removeModalOpen, setRemoveModalOpen] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
 
     const selectedTournamentName = useMemo(() => {
         if (!selectedTournamentId) return 'Global';
@@ -144,10 +150,31 @@ export default function TeamDetail() {
         loadRosterAndStats();
     }, [loadRosterAndStats]);
 
+    useEffect(() => {
+        setSelectedPlayerIds([]);
+    }, [selectedTournamentId, showRosterStats, rosterSearch]);
+
     // Callback from TeamStaffPanel when staff list changes
     const handleStaffChange = useCallback((ids: string[]) => {
         setStaffPersonIds(ids);
     }, []);
+
+    const handleConfirmRemove = async () => {
+        if (selectedPlayerIds.length === 0 || !team?.id) return;
+        try {
+            setIsRemoving(true);
+            await removePlayersFromTeam(selectedPlayerIds, team.id);
+            toast.success("Successfully removed players from team");
+            setSelectedPlayerIds([]);
+            setRemoveModalOpen(false);
+            loadRosterAndStats();
+        } catch (err) {
+            console.error("Failed to remove players from team:", err);
+            toast.error("Failed to remove players");
+        } finally {
+            setIsRemoving(false);
+        }
+    };
 
     // Filter roster: exclude persons who are assigned as staff
     const rosterPlayers = useMemo(() => {
@@ -425,6 +452,20 @@ export default function TeamDetail() {
                                         </button>
                                     </div>
                                     <div className="flex items-center gap-3 px-4" onClick={(e) => e.stopPropagation()}>
+                                        {isAdmin && selectedPlayerIds.length > 0 && (
+                                            <Button
+                                                size="sm"
+                                                variant="danger"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setRemoveModalOpen(true);
+                                                }}
+                                                className="py-1 px-3 text-xs gap-1"
+                                            >
+                                                <Trash className="w-3.5 h-3.5" />
+                                                Remove Selected ({selectedPlayerIds.length})
+                                            </Button>
+                                        )}
                                         {isAdmin && (
                                             <Button
                                                 size="sm"
@@ -461,6 +502,9 @@ export default function TeamDetail() {
                                     players={rosterSearch ? filteredRoster : displayedRoster}
                                     onPlayerClick={openPlayerDrawer}
                                     showStats={showRosterStats}
+                                    showCheckboxes={isAdmin}
+                                    selectedIds={selectedPlayerIds}
+                                    onSelectionChange={setSelectedPlayerIds}
                                 />
                                 {/* Show More / Less toggle (when not searching) */}
                                 {!rosterSearch && hasMoreRoster && (
@@ -545,6 +589,16 @@ export default function TeamDetail() {
                     onClose={() => setPasteModalOpen(false)}
                     teamId={team.id}
                     onSuccess={loadRosterAndStats}
+                />
+            )}
+            {team && (
+                <ConfirmDeleteModal
+                    isOpen={removeModalOpen}
+                    onClose={() => setRemoveModalOpen(false)}
+                    onConfirm={handleConfirmRemove}
+                    title="Remove Players from Team"
+                    message={`Are you sure you want to remove the selected ${selectedPlayerIds.length} player(s) from this team's roster?`}
+                    isDeleting={isRemoving}
                 />
             )}
         </div>

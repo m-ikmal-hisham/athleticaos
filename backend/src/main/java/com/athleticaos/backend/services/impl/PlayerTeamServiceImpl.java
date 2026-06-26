@@ -107,6 +107,22 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
         }
 
         @Override
+        @Transactional
+        public void removePlayersFromTeam(List<UUID> playerIds, UUID teamId) {
+                log.info("Bulk removing players {} from team {}", playerIds, teamId);
+                if (playerIds == null || playerIds.isEmpty()) {
+                        return;
+                }
+                for (UUID playerId : playerIds) {
+                        try {
+                                removePlayerFromTeam(playerId, teamId);
+                        } catch (Exception e) {
+                                log.error("Failed to remove player {} from team {}", playerId, teamId, e);
+                        }
+                }
+        }
+
+        @Override
         @Transactional(readOnly = true)
         public List<PlayerInTeamDTO> getTeamRoster(UUID teamId, UUID tournamentId) {
                 log.info("Fetching roster for team {} with tournamentId {}", teamId, tournamentId);
