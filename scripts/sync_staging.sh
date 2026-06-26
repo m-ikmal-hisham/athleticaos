@@ -72,7 +72,7 @@ ssh -i "$PEM_KEY" "$EC2_USER@$EC2_HOST" << 'EOF'
     --name athleticaos-backend \
     --restart unless-stopped \
     --env-file .env.staging \
-    -p 8080:8080 \
+    --network host \
     -v athleticaos-uploads:/app/uploads \
     athleticaos-backend
 
