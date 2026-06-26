@@ -9,15 +9,15 @@ import java.util.UUID;
 
 @Repository
 public interface MatchRepository extends JpaRepository<Match, UUID> {
-        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.tournament.id = :tournamentId AND m.deleted = false")
+        @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.tournament.id = :tournamentId AND m.deleted = false ORDER BY m.matchDate ASC, m.kickOffTime ASC")
         List<Match> findByTournamentId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m " +
                         "LEFT JOIN FETCH m.homeTeam " +
                         "LEFT JOIN FETCH m.awayTeam " +
                         "LEFT JOIN FETCH m.stage " +
-                        "LEFT JOIN FETCH m.stage " +
-                        "WHERE m.tournament.id = :tournamentId AND m.deleted = false")
+                        "WHERE m.tournament.id = :tournamentId AND m.deleted = false " +
+                        "ORDER BY m.matchDate ASC, m.kickOffTime ASC")
         List<Match> findByTournamentIdWithTeams(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
@@ -97,8 +97,8 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "LEFT JOIN FETCH m.tournament t " +
                         "LEFT JOIN FETCH t.organiserOrg tOrg " +
                         "LEFT JOIN FETCH m.stage " +
-                        "LEFT JOIN FETCH m.stage " +
-                        "WHERE t.id = :tournamentId AND m.deleted = false")
+                        "WHERE t.id = :tournamentId AND m.deleted = false " +
+                        "ORDER BY m.matchDate ASC, m.kickOffTime ASC")
         List<Match> findByTournamentIdWithDetails(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 

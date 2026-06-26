@@ -103,7 +103,15 @@ export default function TournamentDetail() {
     // Helper: Group matches
     const groupMatchesByDate = (matches: PublicMatchSummary[]) => {
         const grouped = new Map<string, PublicMatchSummary[]>();
-        matches.forEach(match => {
+        
+        // Sort matches by time first
+        const sortedMatches = [...matches].sort((a, b) => {
+            const timeA = a.matchTime || '';
+            const timeB = b.matchTime || '';
+            return timeA.localeCompare(timeB);
+        });
+
+        sortedMatches.forEach(match => {
             const date = match.matchDate;
             if (!grouped.has(date)) grouped.set(date, []);
             grouped.get(date)!.push(match);
