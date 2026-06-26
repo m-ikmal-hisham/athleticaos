@@ -26,6 +26,9 @@ WHERE person_id IN (
     WHERE person_id NOT IN (
         SELECT id FROM persons WHERE user_id IS NOT NULL OR is_staff = true
     )
+    AND person_id NOT IN (SELECT person_id FROM team_staff)
+    AND person_id NOT IN (SELECT person_id FROM tournament_staff)
+    AND person_id NOT IN (SELECT person_id FROM official_registry WHERE person_id IS NOT NULL)
 );
 
 -- Delete from persons
@@ -35,6 +38,9 @@ WHERE id IN (
     WHERE person_id NOT IN (
         SELECT id FROM persons WHERE user_id IS NOT NULL OR is_staff = true
     )
+    AND id NOT IN (SELECT person_id FROM team_staff)
+    AND id NOT IN (SELECT person_id FROM tournament_staff)
+    AND id NOT IN (SELECT person_id FROM official_registry WHERE person_id IS NOT NULL)
 );
 
 -- Drop the temp table
