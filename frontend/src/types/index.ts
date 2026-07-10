@@ -16,6 +16,16 @@ export interface User {
     status?: string;
     createdAt?: string;
     updatedAt?: string;
+    // Address fields
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postcode?: string;
+    state?: string;
+    country?: string;
+    stateCode?: string;
+    countryCode?: string;
+    address?: string; // Legacy
 }
 
 export interface LoginRequest {
@@ -80,11 +90,24 @@ export enum TeamCategory {
 }
 
 export enum AgeGroup {
+    U6 = 'U6',
+    U7 = 'U7',
+    U8 = 'U8',
+    U9 = 'U9',
+    U10 = 'U10',
     U12 = 'U12',
+    U14 = 'U14',
     U15 = 'U15',
+    U16 = 'U16',
     U18 = 'U18',
+    U19 = 'U19',
     U20 = 'U20',
+    U21 = 'U21',
+    U23 = 'U23',
     SENIOR = 'SENIOR',
+    O35 = 'O35',
+    O38 = 'O38',
+    O40 = 'O40',
 }
 
 export interface Team {
@@ -97,7 +120,14 @@ export interface Team {
     ageGroup: string;
     division?: string;
     state?: string;
+    organisationLevel?: string;
     status: string;
+    // Tournament context fields (optional)
+    poolNumber?: string;
+    poolSlot?: number;
+    tournamentCategoryId?: string;
+    logoUrl?: string;
+    shortName?: string;
 }
 
 export interface TeamCreateRequest {
@@ -105,6 +135,8 @@ export interface TeamCreateRequest {
     name: string;
     category: TeamCategory;
     ageGroup: AgeGroup;
+    logoUrl?: string;
+    shortName?: string;
 }
 
 // ============================================
@@ -126,23 +158,64 @@ export enum DominantSide {
 export interface Player {
     id: string;
     personId: string;
+    slug?: string;
     // Person (PII) fields
     firstName: string;
     lastName: string;
     gender: Gender;
     dob: string;
     icOrPassport: string; // Now included in response
+    identificationType?: string;
+    identificationValue?: string;
     nationality: string;
     email?: string;
     phone?: string;
-    address?: string;
+    // Structured Address
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postcode?: string;
+    state?: string;
+    country?: string;
+    address?: string; // Legacy
     // Player (Rugby-specific) fields
     status: string; // ACTIVE, INACTIVE, BANNED
     dominantHand?: DominantSide;
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
+    organisationId?: string;
+    organisationName?: string;
+    teamNames?: string[];
+    photoUrl?: string;
     createdAt: string;
+    tries?: number;
+    conversions?: number;
+    penalties?: number;
+    dropGoals?: number;
+    yellowCards?: number;
+    redCards?: number;
+    appearances?: number;
+}
+
+export interface TeamPlayer {
+    playerId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    jerseyNumber?: number;
+    position?: string;
+    status: string;
+    joinedDate: string;
+    isActive: boolean;
+    nationalPlayerStatus?: string;
+    tries?: number;
+    conversions?: number;
+    penalties?: number;
+    dropGoals?: number;
+    yellowCards?: number;
+    redCards?: number;
+    appearances?: number;
 }
 
 export interface PlayerCreateRequest {
@@ -152,6 +225,8 @@ export interface PlayerCreateRequest {
     gender: Gender;
     dob: string;
     icOrPassport: string;
+    identificationType?: string;
+    identificationValue?: string;
     nationality: string;
     email: string;
     phone?: string;
@@ -162,6 +237,7 @@ export interface PlayerCreateRequest {
     dominantLeg?: DominantSide;
     heightCm?: number;
     weightKg?: number;
+    photoUrl?: string;
 }
 
 export interface PlayerUpdateRequest {
@@ -171,6 +247,8 @@ export interface PlayerUpdateRequest {
     gender?: string;
     dob?: string;
     icOrPassport?: string;
+    identificationType?: string;
+    identificationValue?: string;
     nationality?: string;
     email?: string;
     phone?: string;
@@ -181,6 +259,7 @@ export interface PlayerUpdateRequest {
     dominantLeg?: string;
     heightCm?: number;
     weightKg?: number;
+    photoUrl?: string;
 }
 
 // ============================================
@@ -196,15 +275,16 @@ export enum TournamentLevel {
 }
 
 export enum TournamentStatus {
-    DRAFT = 'DRAFT',
-    OPEN = 'OPEN',
-    ONGOING = 'ONGOING',
-    COMPLETED = 'COMPLETED',
-    CANCELLED = 'CANCELLED',
+    DRAFT = 'Draft',
+    UPCOMING = 'Upcoming', // Mapped from PUBLISHED
+    ONGOING = 'Ongoing',   // Mapped from LIVE
+    COMPLETED = 'Completed',
+    CANCELLED = 'Cancelled',
 }
 
 export interface Tournament {
     id: string;
+    slug?: string;
     organiserOrgId: string;
     name: string;
     level: TournamentLevel;
@@ -219,6 +299,39 @@ export interface Tournament {
     competitionType?: string;
     isAgeGrade?: boolean;
     ageGroupLabel?: string;
+    categories?: TournamentCategory[];
+    logoUrl?: string;
+    bannerUrl?: string;
+    backgroundUrl?: string;
+    livestreamUrl?: string;
+    rugbyFormat?: string;
+    organiserBranding?: {
+        id: string;
+        name: string;
+        logoUrl?: string;
+    };
+}
+
+export interface TournamentCategory {
+    id: string;
+    tournamentId: string;
+    name: string;
+    description?: string;
+    gender?: string;
+    minAge?: number;
+    maxAge?: number;
+    minYear?: number;
+    maxYear?: number;
+}
+
+export interface CreateCategoryRequest {
+    name: string;
+    description?: string;
+    gender?: string;
+    minAge?: number;
+    maxAge?: number;
+    minYear?: number;
+    maxYear?: number;
 }
 
 export interface TournamentCreateRequest {
@@ -228,24 +341,79 @@ export interface TournamentCreateRequest {
     startDate: string;
     endDate: string;
     venue: string;
+    categories?: CreateCategoryRequest[];
+    logoUrl?: string;
+    bannerUrl?: string;
+    backgroundUrl?: string;
+    livestreamUrl?: string;
+}
+
+export interface TournamentStatsSummary {
+    totalMatches: number;
+    completedMatches: number;
+    totalTeams: number;
+    totalPlayers: number;
+    totalGoals: number;
+}
+
+export interface TournamentDashboardResponse {
+    id: string;
+    name: string;
+    level: TournamentLevel;
+    competitionType: string;
+    ageGrade: boolean;
+    ageGroupLabel?: string;
+    startDate: string;
+    endDate: string;
+    venue: string;
+    totalMatches: number;
+    completedMatches: number;
+    totalTeams: number;
+    totalPlayers: number;
+    status: TournamentStatus;
+    stats: TournamentStatsSummary;
+    seasonName?: string;
+    categories?: TournamentCategory[];
+}
+
+export interface TournamentFormatConfig {
+    id?: string;
+    tournamentId?: string;
+    categoryId?: string;
+    formatType: string;
+    rugbyFormat: 'XV' | 'SEVENS' | 'TENS' | 'TOUCH';
+    teamCount: number;
+    poolCount?: number;
+    matchDurationMinutes: number;
+    pointsWin?: number;
+    pointsDraw?: number;
+    pointsLoss?: number;
+    pointsBonusTry?: number;
+    pointsBonusLoss?: number;
+    startersCount: number;
+    maxBenchCount: number;
+    includePlacementStages?: boolean;
+    bufferTimeMinutes?: number;
+    carnivalStartTime?: string;
+    carnivalEndTime?: string;
+    isOneWayMatch?: boolean;
 }
 
 // ============================================
 // Match Types
 // ============================================
 
-export enum MatchStage {
-    GROUP = 'GROUP',
-    ROUND_16 = 'ROUND_16',
-    QUARTER_FINAL = 'QUARTER_FINAL',
-    SEMI_FINAL = 'SEMI_FINAL',
-    FINAL = 'FINAL',
-    THIRD_PLACE = 'THIRD_PLACE',
+export interface MatchStage {
+    id: string; // Changed from enum to object/interface if needed, but keeping simple for now. Actually backend returns object.
+    name: string;
+    stageType: string;
+    categoryId?: string;
 }
 
 export enum MatchStatus {
     SCHEDULED = 'SCHEDULED',
     LIVE = 'LIVE',
+    ONGOING = 'ONGOING',
     COMPLETED = 'COMPLETED',
     POSTPONED = 'POSTPONED',
     CANCELLED = 'CANCELLED',
@@ -255,13 +423,28 @@ export interface Match {
     id: string;
     tournamentId: string;
     homeTeamId: string;
+    homeTeam?: { id: string, name: string }; // Optional populated team
     awayTeamId: string;
+    awayTeam?: { id: string, name: string }; // Optional populated team
     matchDate: string;
-    location: string;
-    stage: MatchStage;
+    kickOffTime: string; // Added
+    venue?: string; // Changed from location to venue to match backend
+    location?: string; // Keep for backward compat if needed
+    pitch?: string;
+    matchCode?: string;
+    stage?: MatchStage; // Changed from enum
+    phase?: string;
     status: MatchStatus;
     homeScore?: number;
     awayScore?: number;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
+    
+    homeFromWinnerOfMatchId?: string;
+    homeFromLoserOfMatchId?: string;
+    awayFromWinnerOfMatchId?: string;
+    awayFromLoserOfMatchId?: string;
+
     createdAt: string;
     updatedAt: string;
 }
@@ -271,9 +454,76 @@ export interface MatchCreateRequest {
     homeTeamId: string;
     awayTeamId: string;
     matchDate: string;
-    location: string;
-    stage: MatchStage;
+    kickOffTime: string;
+    venue?: string;
+    pitch?: string;
+    matchCode?: string;
+    phase?: string;
+    stageId?: string;
+    status?: MatchStatus;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
 }
+
+export interface MatchResponse extends Match {
+    homeTeamName?: string;
+    awayTeamName?: string;
+    homeTeamLogoUrl?: string;
+    homeTeamShortName?: string;
+    awayTeamLogoUrl?: string;
+    awayTeamShortName?: string;
+    homeTeamOrgId?: string;
+    awayTeamOrgId?: string;
+    tournamentName?: string;
+    tournamentSlug?: string;
+    homeTeamPlaceholder?: string;
+    awayTeamPlaceholder?: string;
+    // Lineup configuration from tournament format
+    startersCount?: number;
+    maxBenchCount?: number;
+    matchDuration?: number;
+    isOneWayMatch?: boolean;
+}
+
+export interface TournamentStageResponse {
+    id: string;
+    tournamentId: string;
+    name: string;
+    stageType: string;
+    displayOrder: number;
+    groupStage: boolean;
+    knockoutStage: boolean;
+    categoryId?: string;
+}
+
+export interface TournamentStageBracket {
+    stage: TournamentStageResponse;
+    matches: MatchResponse[];
+}
+
+export interface BracketViewResponse {
+    tournament: Tournament;
+    stages: TournamentStageBracket[];
+}
+
+export interface Standings {
+    poolName: string;
+    teamId: string;
+    teamName: string;
+    teamLogoUrl?: string;
+    teamShortName?: string;
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    pointsFor: number;
+    pointsAgainst: number;
+    pointsDiff: number;
+    points: number;
+    categoryId?: string;
+}
+
+export type StandingsResponse = Standings;
 
 // ============================================
 // API Response Types
@@ -292,4 +542,22 @@ export interface PaginatedResponse<T> {
     totalPages: number;
     size: number;
     number: number;
+}
+
+export enum LineupRole {
+    STARTER = 'STARTER',
+    BENCH = 'BENCH',
+    RESERVE = 'RESERVE',
+    NOT_SELECTED = 'NOT_SELECTED'
+}
+
+export interface MatchLineupEntry {
+    playerId: string;
+    playerName: string;
+    jerseyNumber?: number;
+    isCaptain: boolean;
+    role: LineupRole;
+    orderIndex?: number;
+    isStarter?: boolean;
+    positionDisplay?: string;
 }

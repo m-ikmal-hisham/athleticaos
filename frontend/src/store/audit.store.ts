@@ -39,6 +39,7 @@ export const useAuditStore = create<AuditState>((set) => ({
                 pageSize: response.size,
                 isLoading: false,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             set({ isLoading: false, error: error.message || 'Failed to fetch audit logs' });
         }
@@ -56,6 +57,7 @@ export const useAuditStore = create<AuditState>((set) => ({
                 pageSize: response.size,
                 isLoading: false,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             set({ isLoading: false, error: error.message || 'Failed to fetch audit logs' });
         }
@@ -73,6 +75,7 @@ export const useAuditStore = create<AuditState>((set) => ({
                 pageSize: response.size,
                 isLoading: false,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             set({ isLoading: false, error: error.message || 'Failed to fetch audit logs' });
         }
@@ -90,6 +93,7 @@ export const useAuditStore = create<AuditState>((set) => ({
                 pageSize: response.size,
                 isLoading: false,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             set({ isLoading: false, error: error.message || 'Failed to fetch audit logs' });
         }

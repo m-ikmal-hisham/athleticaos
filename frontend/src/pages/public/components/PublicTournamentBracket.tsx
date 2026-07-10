@@ -1,0 +1,157 @@
+import { useMemo } from 'react';
+import { PublicMatchSummary } from '../../../api/public.api';
+import { Trophy } from '@phosphor-icons/react';
+import { formatEnum } from '@/utils/formatters';
+
+interface PublicTournamentBracketProps {
+    matches: PublicMatchSummary[];
+}
+
+// Simple visual brackets for MVP
+// Groups matches by knockout stage name
+export function PublicTournamentBracket({ matches }: PublicTournamentBracketProps) {
+    const bracketMatches = useMemo(() => {
+        // Filter out pool matches and unassigned matches
+        return matches.filter(m => {
+            if (!m.stage) return false;
+            const stage = m.stage.toLowerCase();
+            return !stage.includes('pool') && !stage.includes('group');
+        });
+    }, [matches]);
+
+    // Group by stage name
+    const grouped = useMemo(() => {
+        const g: Record<string, PublicMatchSummary[]> = {};
+        bracketMatches.forEach(m => {
+            const stage = m.stage || 'Unassigned';
+            if (!g[stage]) g[stage] = [];
+            g[stage].push(m);
+        });
+        // Sort matches within each stage group by match code
+        Object.values(g).forEach(stageMatches => {
+            stageMatches.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+        });
+        return g;
+    }, [bracketMatches]);
+
+    // Sort stages by displayOrder from the backend, falling back to keyword heuristic
+    const stageOrder = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('final') && !n.includes('semi') && !n.includes('quarter')) return 100;
+        if (n.includes('third') || n.includes('3rd')) return 90;
+        if (n.includes('semi')) return 50;
+        if (n.includes('quarter')) return 25;
+        if (n.includes('16')) return 16;
+        return 0;
+    };
+
+    // Get the displayOrder for a stage from its first match (all matches in a stage share the same displayOrder)
+    const getStageDisplayOrder = (stageName: string): number | null => {
+        const stageMatches = grouped[stageName];
+        if (stageMatches && stageMatches.length > 0) {
+            return stageMatches[0].stageDisplayOrder ?? null;
+        }
+        return null;
+    };
+
+    const sortedStageNames = Object.keys(grouped).sort((a, b) => {
+        const orderA = getStageDisplayOrder(a);
+        const orderB = getStageDisplayOrder(b);
+        // If both have displayOrder, use it (same as admin view)
+        if (orderA != null && orderB != null) return orderA - orderB;
+        // If only one has displayOrder, prioritize it
+        if (orderA != null) return -1;
+        if (orderB != null) return 1;
+        // Fall back to keyword heuristic
+        return stageOrder(a) - stageOrder(b);
+    });
+
+    if (sortedStageNames.length === 0) {
+        return (
+            <div className="text-center py-12 text-slate-500">
+                No knockout stages found.
+            </div>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto pb-4">
+            <div className="flex gap-8 min-w-max px-4">
+                {sortedStageNames.map(stageName => (
+                    <div key={stageName} className="flex flex-col gap-4 min-w-[280px]">
+                        <div className="text-center font-bold text-slate-900 dark:text-white uppercase tracking-wider text-sm border-b pb-2 border-slate-200 dark:border-slate-800">
+                            {formatEnum(stageName)}
+                        </div>
+                        <div className="flex flex-col justify-center gap-6 h-full">
+                            {grouped[stageName].map(match => (
+                                <div
+                                    key={match.id}
+                                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm p-3 relative"
+                                >
+                                    <div className="flex justify-between items-center mb-2 text-xs text-slate-500">
+                                        <span>
+                                            {match.code && match.code.length < 10 ? match.code : `Match`}
+                                        </span>
+                                        <span>{new Date(match.matchDate).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                <div className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-600/50 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {match.homeTeamLogoUrl ? (
+                                                        <img src={match.homeTeamLogoUrl} alt="" className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <span className="text-[7px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
+                                                    )}
+                                                </div>
+                                                <span className={`font-medium truncate ${match.homeScore! > match.awayScore! ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {match.homeTeamName}
+                                                </span>
+                                            </div>
+                                            <span className="font-mono">{match.homeScore ?? '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                <div className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 border border-slate-200/50 dark:border-slate-600/50 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {match.awayTeamLogoUrl ? (
+                                                        <img src={match.awayTeamLogoUrl} alt="" className="w-full h-full object-contain" />
+                                                    ) : (
+                                                        <span className="text-[7px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
+                                                    )}
+                                                </div>
+                                                <span className={`font-medium truncate ${match.awayScore! > match.homeScore! ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {match.awayTeamName}
+                                                </span>
+                                            </div>
+                                            <span className="font-mono">{match.awayScore ?? '-'}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {match.officials && match.officials.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-1">
+                                            {match.officials.map((o, idx) => (
+                                                <div key={idx} className="flex justify-between items-center text-[10px] leading-tight text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                                                    <span className="font-semibold text-slate-400 dark:text-slate-600 uppercase text-[8px] mr-2">
+                                                        {(o.assignedRole || 'OFFICIAL').replace(/_/g, ' ')}
+                                                    </span>
+                                                    <span className="truncate max-w-[120px] text-right font-medium">
+                                                        {o.officialName}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {stageName.toLowerCase().includes('final') && !stageName.toLowerCase().includes('semi') && match.status === 'COMPLETED' && (
+                                        <div className="absolute -top-3 -right-3 bg-yellow-400 text-yellow-900 p-1 rounded-full shadow-md">
+                                            <Trophy className="w-4 h-4" />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

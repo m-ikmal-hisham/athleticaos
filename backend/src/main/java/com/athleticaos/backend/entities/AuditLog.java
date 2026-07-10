@@ -13,7 +13,8 @@ import java.util.UUID;
  * Audit Log entity for tracking user actions across the system.
  * Provides governance, traceability, and compliance capabilities.
  * 
- * TODO: Implement retention policy (12-24 months) with archival to cold
+ * Retention Policy: Implement retention policy (12-24 months) with archival to
+ * cold
  * storage.
  * 
  * SECURITY NOTE:

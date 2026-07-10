@@ -23,46 +23,58 @@ import java.util.UUID;
 public class StatisticsController {
 
     private final StatisticsService statisticsService;
+    private final com.athleticaos.backend.services.PlayerService playerService;
 
     @GetMapping("/tournaments/{tournamentId}/summary")
     @PreAuthorize("isAuthenticated()")
     public TournamentStatsSummaryResponse getTournamentSummary(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getTournamentSummary(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getTournamentSummary(tournamentId, categoryId);
     }
 
     @GetMapping("/tournaments/{tournamentId}/players")
     @PreAuthorize("isAuthenticated()")
     public List<PlayerStatsResponse> getTournamentPlayerStats(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getPlayerStatsForTournament(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getPlayerStatsForTournament(tournamentId, categoryId);
     }
 
     @GetMapping("/tournaments/{tournamentId}/teams")
     @PreAuthorize("isAuthenticated()")
     public List<TeamStatsResponse> getTournamentTeamStats(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getTeamStatsForTournament(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getTeamStatsForTournament(tournamentId, categoryId);
     }
 
     @GetMapping("/tournaments/{tournamentId}/leaderboard")
     @PreAuthorize("isAuthenticated()")
     public TournamentLeaderboardResponse getTournamentLeaderboard(
-            @PathVariable UUID tournamentId) {
-        return statisticsService.getTournamentLeaderboard(tournamentId);
+            @PathVariable UUID tournamentId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        return statisticsService.getTournamentLeaderboard(tournamentId, categoryId);
     }
 
-    @GetMapping("/players/{playerId}")
+    @GetMapping("/players/{id}")
     @PreAuthorize("isAuthenticated()")
     public PlayerStatsResponse getPlayerStatsAcrossTournaments(
-            @PathVariable UUID playerId) {
-        return statisticsService.getPlayerStatsAcrossTournaments(playerId);
+            @PathVariable String id) {
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            uuid = playerService.getPlayerBySlug(id).id();
+        }
+        return statisticsService.getPlayerStatsAcrossTournaments(uuid);
     }
 
     @GetMapping("/teams/{teamId}")
     @PreAuthorize("isAuthenticated()")
-    public TeamStatsResponse getTeamStatsAcrossTournaments(
-            @PathVariable UUID teamId) {
-        return statisticsService.getTeamStatsAcrossTournaments(teamId);
+    public TeamStatsResponse getTeamStats(
+            @PathVariable UUID teamId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID tournamentId) {
+        return statisticsService.getTeamStats(teamId, tournamentId);
     }
 }

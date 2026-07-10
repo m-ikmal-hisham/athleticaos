@@ -1,19 +1,19 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api/v1',
+    baseURL: `${import.meta.env.VITE_API_URL || ''}/api/v1`,
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
     },
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
 });
 
-// Request interceptor to add JWT token
+// Request interceptor to add credentials
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('athos_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+        config.withCredentials = true;
         return config;
     },
     (error) => {
@@ -21,15 +21,13 @@ api.interceptors.request.use(
     }
 );
 
-import { useAuthStore } from '@/store/auth.store';
-
 // Response interceptor to handle 401 errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Clear token and state via store action
-            useAuthStore.getState().logout();
+            // Handle unauthorized access by redirection
+            // We avoid importing the store here to prevent circular dependencies
             window.location.href = '/login';
         }
         return Promise.reject(error);

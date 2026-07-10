@@ -6,8 +6,9 @@ import { z } from 'zod';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { Card } from '@/components/Card';
 import { authApi } from '@/api/auth.api';
+import { SocialButtons } from '@/components/SocialButtons';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 const registerSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -61,77 +62,146 @@ export const Signup = () => {
     };
 
 
+    const effectiveTheme = useEffectiveTheme();
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
+
+
+
     return (
-        <div className="auth-container flex flex-col items-center w-full max-w-md mx-auto">
-            <img src="/logo.png" alt="AthleticaOS" className="h-16 w-auto mb-8 drop-shadow-lg" />
-
-            <Card className="w-full">
-                <h2 className="text-2xl font-bold text-center mb-6 text-foreground">Create Account</h2>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {error && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/50 text-red-400 text-sm">
-                            {error}
+        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
+            {/* Left Side - Form */}
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10 transition-all duration-300">
+                <div className="w-full max-w-sm space-y-6">
+                    {/* Header Section - Side by Side Centered */}
+                    <div className="flex flex-row items-center justify-center gap-5">
+                        <img
+                            src={logoSrc}
+                            alt="AthleticaOS"
+                            className="h-16 w-auto object-contain shrink-0"
+                        />
+                        <div className="flex flex-col items-start text-left">
+                            <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
+                                Create Account
+                            </h2>
+                            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                Join the future of rugby management
+                            </p>
                         </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input
-                            placeholder="First Name"
-                            error={errors.firstName?.message}
-                            {...register('firstName')}
-                        />
-
-                        <Input
-                            placeholder="Last Name"
-                            error={errors.lastName?.message}
-                            {...register('lastName')}
-                        />
                     </div>
 
-                    <Input
-                        type="email"
-                        placeholder="Email"
-                        error={errors.email?.message}
-                        {...register('email')}
-                    />
+                    {/* Social Login Section */}
+                    <div className="mt-6">
+                        <SocialButtons />
+                    </div>
 
-                    <Input
-                        type="password"
-                        placeholder="Password"
-                        error={errors.password?.message}
-                        {...register('password')}
-                    />
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">Or register with email</span>
+                        </div>
+                    </div>
 
-                    <Input
-                        type="password"
-                        placeholder="Confirm Password"
-                        error={errors.confirmPassword?.message}
-                        {...register('confirmPassword')}
-                    />
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                        {error && (
+                            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/20">
+                                {error}
+                            </div>
+                        )}
 
-                    <Button
-                        type="submit"
-                        className="w-full mt-4"
-                        isLoading={isLoading}
-                    >
-                        Create Account
-                    </Button>
-                </form>
-            </Card>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                placeholder="First Name"
+                                error={errors.firstName?.message}
+                                {...register('firstName')}
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                disabled={true}
+                            />
 
-            <footer className="mt-8 text-center opacity-80">
-                <p className="text-sm font-semibold text-foreground">Powered by Ragbi Online</p>
-                <p className="text-xs mt-1 text-muted-foreground opacity-70">In collaboration with Infiniteous Creative</p>
-                <div className="mt-4">
-                    <p className="text-sm text-muted-foreground">
+                            <Input
+                                placeholder="Last Name"
+                                error={errors.lastName?.message}
+                                {...register('lastName')}
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                disabled={true}
+                            />
+                        </div>
+
+                        <Input
+                            type="email"
+                            placeholder="Email"
+                            error={errors.email?.message}
+                            {...register('email')}
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            disabled={true}
+                        />
+
+                        <Input
+                            type="password"
+                            placeholder="Password"
+                            error={errors.password?.message}
+                            {...register('password')}
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            disabled={true}
+                        />
+
+                        <Input
+                            type="password"
+                            placeholder="Confirm Password"
+                            error={errors.confirmPassword?.message}
+                            {...register('confirmPassword')}
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            disabled={true}
+                        />
+
+                        <Button
+                            type="submit"
+                            className={`w-full py-3 font-semibold rounded-lg shadow-md transition-all mt-2 bg-gray-300 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none`}
+                            isLoading={isLoading}
+                            disabled={true}
+                        >
+                            Registration Closed
+                        </Button>
+                        <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
+                            New registrations are currently invite-only.
+                        </p>
+                    </form>
+
+                    <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-primary hover:text-primary-glow font-medium transition-colors">
+                        <Link to="/login" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
                             Sign in
                         </Link>
-                    </p>
+                    </div>
                 </div>
-            </footer>
+            </div>
+
+            {/* Right Side - Abstract Art (Reused from Login) */}
+            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12 lg:w-1/2">
+                <img
+                    src={bgSrc}
+                    alt="AthleticaOS Background"
+                    className="absolute inset-0 w-full h-full object-cover"
+                />
+
+                <div className="relative z-20 max-w-lg text-right">
+                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
+                        Join the<br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
+                            Revolution
+                        </span>
+                    </h2>
+                    <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-md ml-auto">
+                        Create your profile, manage teams, and compete at the highest level.
+                        Your journey starts here.
+                    </p>
+
+                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern dark:bg-dot-pattern-white">
+                    </div>
+                </div>
+            </div>
         </div>
     );
-
 };

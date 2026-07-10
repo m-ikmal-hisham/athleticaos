@@ -2,7 +2,6 @@ package com.athleticaos.backend.services;
 
 import com.athleticaos.backend.dtos.user.InviteUserRequest;
 import com.athleticaos.backend.dtos.user.InviteUserResponse;
-import com.athleticaos.backend.dtos.user.PlayerResponse;
 import com.athleticaos.backend.dtos.user.UserCreateRequest;
 import com.athleticaos.backend.dtos.user.UserResponse;
 import com.athleticaos.backend.dtos.user.UserRolesResponse;
@@ -10,7 +9,6 @@ import com.athleticaos.backend.dtos.user.UserUpdateRequest;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.entities.Role;
 import com.athleticaos.backend.repositories.RoleRepository;
-import com.athleticaos.backend.services.PlayerTeamService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.athleticaos.backend.entities.User;
@@ -38,22 +36,61 @@ public class UserService {
     private final AuditLogger auditLogger;
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
+    public List<UserResponse> getAllUsers(UUID organisationId) {
         User currentUser = getCurrentUser();
         java.util.Set<UUID> accessibleOrgIds = resolveAccessibleOrganisationIds(currentUser);
+        java.util.Set<UUID> targetIds = new java.util.HashSet<>();
 
-        List<User> users;
-        if (accessibleOrgIds == null) {
-            users = userRepository.findAll();
-        } else if (accessibleOrgIds.isEmpty()) {
-            users = Collections.emptyList();
+        if (organisationId != null) {
+            // Filter mode
+            targetIds = resolveOrganisationHierarchy(organisationId);
+            if (accessibleOrgIds != null) {
+                targetIds.retainAll(accessibleOrgIds);
+            }
         } else {
-            users = userRepository.findByOrganisation_IdIn(accessibleOrgIds);
+            // Default mode
+            if (accessibleOrgIds != null) {
+                targetIds.addAll(accessibleOrgIds);
+            } else {
+                // Super Admin with no filter
+                return userRepository.findAll().stream()
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList());
+            }
         }
+
+        if (targetIds.isEmpty() && organisationId != null) {
+            return Collections.emptyList();
+        } else if (targetIds.isEmpty() && accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<User> users = userRepository.findByOrganisation_IdIn(targetIds);
 
         return users.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    private java.util.Set<UUID> resolveOrganisationHierarchy(UUID rootId) {
+        java.util.Set<UUID> hierarchy = new java.util.HashSet<>();
+        java.util.Queue<UUID> queue = new java.util.LinkedList<>();
+
+        queue.add(rootId);
+        hierarchy.add(rootId);
+
+        while (!queue.isEmpty()) {
+            UUID currentId = queue.poll();
+            List<com.athleticaos.backend.entities.Organisation> children = organisationRepository
+                    .findByParentOrgId(currentId);
+            for (com.athleticaos.backend.entities.Organisation child : children) {
+                if (!hierarchy.contains(child.getId())) {
+                    hierarchy.add(child.getId());
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return hierarchy;
     }
 
     @Transactional(readOnly = true)
@@ -70,11 +107,61 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Email already exists");
+            }
+            user.setEmail(request.getEmail());
+        }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }
         if (request.getIsActive() != null) {
             user.setActive(request.getIsActive());
+        }
+
+        // Update Address
+        if (request.getAddressLine1() != null)
+            user.setAddressLine1(request.getAddressLine1());
+        if (request.getAddressLine2() != null)
+            user.setAddressLine2(request.getAddressLine2());
+        if (request.getCity() != null)
+            user.setCity(request.getCity());
+        if (request.getPostcode() != null)
+            user.setPostcode(request.getPostcode());
+        if (request.getState() != null)
+            user.setState(request.getState());
+        if (request.getCountry() != null)
+            user.setCountry(request.getCountry());
+
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+
+        // Update Organisation
+        if (request.getOrganisationId() != null) {
+            com.athleticaos.backend.entities.Organisation organisation = organisationRepository
+                    .findById(request.getOrganisationId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+            user.setOrganisation(organisation);
+        }
+
+        // Update Roles if provided
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            java.util.Set<Role> newRoles = request.getRoles().stream()
+                    .map(roleName -> {
+                        String name = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+                        return roleRepository.findByName(name)
+                                .orElseThrow(() -> new EntityNotFoundException("Role not found: " + name));
+                    })
+                    .collect(Collectors.toSet());
+            user.setRoles(newRoles);
         }
 
         User savedUser = userRepository.save(user);
@@ -136,7 +223,7 @@ public class UserService {
             return InviteUserResponse.builder()
                     .userId(existingUser.getId())
                     .email(existingUser.getEmail())
-                    .role(existingUser.getRoles().stream().findFirst().map(Role::getName).orElse("UNKNOWN"))
+                    .role(existingUser.getRoles().stream().findFirst().map(role -> role.getName()).orElse("UNKNOWN"))
                     .organisationId(
                             existingUser.getOrganisation() != null ? existingUser.getOrganisation().getId() : null)
                     .inviteStatus("EXISTS")
@@ -151,6 +238,7 @@ public class UserService {
         validateInvitePermissions(currentUser, roleName, request.getOrganisationId());
 
         // Fetch organisation
+        @SuppressWarnings("null")
         com.athleticaos.backend.entities.Organisation organisation = organisationRepository
                 .findById(request.getOrganisationId())
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
@@ -170,6 +258,7 @@ public class UserService {
                 .roles(Collections.singleton(role))
                 .build();
 
+        @SuppressWarnings("null")
         User savedUser = userRepository.save(newUser);
         auditLogger.logUserInvited(savedUser, httpRequest);
 
@@ -230,6 +319,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
     public UserRolesResponse getUserRoles(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -255,7 +345,7 @@ public class UserService {
         // Since we removed the direct relationship, we need to fetch this differently
         // or return empty for now
         // The PlayerTeamService handles the relationship between players and teams
-        List<String> teamNames = Collections.emptyList(); // TODO: Fetch via PlayerTeamService if needed for
+        List<String> teamNames = Collections.emptyList(); // Fetch via PlayerTeamService if needed for UserResponse
                                                           // UserResponse
 
         return UserResponse.builder()
@@ -271,26 +361,17 @@ public class UserService {
                 .organisationName(user.getOrganisation() != null ? user.getOrganisation().getName() : null)
                 .teamIds(teamIds)
                 .teamNames(teamNames)
+                .addressLine1(user.getAddressLine1())
+                .addressLine2(user.getAddressLine2())
+                .city(user.getCity())
+                .postcode(user.getPostcode())
+                .state(user.getState())
+                .country(user.getCountry())
+                .address(user.getAddress())
+                .avatarUrl(user.getAvatarUrl())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
-    }
-
-    private PlayerResponse mapToPlayerResponse(User user) {
-        String role = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse("UNKNOWN");
-
-        return new PlayerResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                role,
-                user.isActive() ? "Active" : "Inactive",
-                user.getOrganisation() != null ? user.getOrganisation().getName() : null,
-                user.getOrganisation() != null ? user.getOrganisation().getId() : null);
     }
 
     public java.util.Set<UUID> resolveAccessibleOrganisationIds(User currentUser) {

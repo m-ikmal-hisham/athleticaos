@@ -13,27 +13,43 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/tournaments/{tournamentId}/suspensions")
+@RequestMapping("/api/v1/tournaments/{tournamentIdOrSlug}/suspensions")
 @RequiredArgsConstructor
 @Tag(name = "Player Suspensions", description = "Endpoints for managing player suspensions")
 public class PlayerSuspensionController {
 
     private final PlayerSuspensionService suspensionService;
+    private final com.athleticaos.backend.services.TournamentService tournamentService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get all active suspensions for a tournament")
-    public ResponseEntity<List<PlayerSuspensionDTO>> getActiveSuspensions(
-            @PathVariable UUID tournamentId) {
-        return ResponseEntity.ok(suspensionService.getActiveSuspensions(tournamentId));
+    @Operation(summary = "Get suspensions for a tournament (active only by default)")
+    public ResponseEntity<List<PlayerSuspensionDTO>> getSuspensions(
+            @PathVariable String tournamentIdOrSlug,
+            @RequestParam(defaultValue = "true") boolean activeOnly) {
+        UUID tournamentId = getTournamentId(tournamentIdOrSlug);
+        if (activeOnly) {
+            return ResponseEntity.ok(suspensionService.getActiveSuspensions(tournamentId));
+        } else {
+            return ResponseEntity.ok(suspensionService.getAllSuspensions(tournamentId));
+        }
     }
 
     @GetMapping("/player/{playerId}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get active suspensions for a specific player in a tournament")
     public ResponseEntity<List<PlayerSuspensionDTO>> getPlayerSuspensions(
-            @PathVariable UUID tournamentId,
+            @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID playerId) {
+        UUID tournamentId = getTournamentId(tournamentIdOrSlug);
         return ResponseEntity.ok(suspensionService.getPlayerActiveSuspensions(tournamentId, playerId));
+    }
+
+    private UUID getTournamentId(String idOrSlug) {
+        try {
+            return UUID.fromString(idOrSlug);
+        } catch (IllegalArgumentException e) {
+            return tournamentService.getTournamentBySlug(idOrSlug).getId();
+        }
     }
 }

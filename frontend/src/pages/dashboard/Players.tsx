@@ -1,37 +1,31 @@
-import { useEffect, useState } from "react";
-import { Search, MoreHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MagnifyingGlass, PencilSimple, UserMinus, Plus } from "@phosphor-icons/react";
+import { EmptyState } from "../../components/EmptyState";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
-import { Card, CardContent } from "../../components/Card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "../../components/Table";
+import { GlassCard } from "../../components/GlassCard";
 import { Badge } from "../../components/Badge";
 import { usePlayersStore } from "../../store/players.store";
-import { PlayerModal } from "../../components/modals/PlayerModal";
-import { PlayerDetailDrawer } from "./players/PlayerDetailDrawer";
 import { useAuthStore } from "../../store/auth.store";
 import { Player } from "../../types";
+import { calculateAge } from "../../utils/date";
+import { SmartFilterPills, FilterOption } from "../../components/SmartFilterPills";
+import { getImageUrl } from "../../utils/image";
+import { deletePlayer, createBulkPlayers } from "../../api/players.api";
+import { BulkUploadModal } from "../../components/modals/BulkUploadModal";
+import toast from "react-hot-toast";
+import { Trash } from "@phosphor-icons/react";
+import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 
 export default function Players() {
+    const navigate = useNavigate();
     const {
         filteredPlayers,
         loading,
         error,
         getPlayers,
-        savePlayer,
-        // Drawer
-        selectedPlayerId,
-        isDrawerOpen,
-        openPlayerDrawer,
-        closePlayerDrawer,
-        // Filters
         statusFilter,
         searchQuery,
         setStatusFilter,
@@ -39,36 +33,73 @@ export default function Players() {
     } = usePlayersStore();
 
     const { user } = useAuthStore();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
+
+    // Delete modal state
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Bulk upload state
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+    // RBAC: Check if user can delete a specific player
+    const canDeletePlayer = (player: Player) => {
+        if (isSuperAdmin) return true;
+        if (!user?.organisationId) return false;
+        return player.organisationId === user.organisationId;
+    };
 
     useEffect(() => {
         getPlayers();
     }, [getPlayers]);
 
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
+
+    // Navigation handlers
+    const handleCardClick = (player: Player) => {
+        navigate(`/dashboard/players/${player.id}`);
+    };
+
     const handleAdd = () => {
-        setModalMode('create');
-        setSelectedPlayer(null);
-        setIsModalOpen(true);
+        navigate('/dashboard/players/new');
+    };
+
+    const handleUpload = async (data: any[]) => {
+        await createBulkPlayers(data as any[]);
+        await getPlayers();
     };
 
     const handleEdit = (player: Player, e: React.MouseEvent) => {
         e.stopPropagation();
-        setModalMode('edit');
-        setSelectedPlayer(player);
-        setIsModalOpen(true);
+        navigate(`/dashboard/players/${player.id}/edit`);
     };
 
-    const handleSubmit = async (data: any) => {
+    const handleDeleteClick = (player: Player, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setPlayerToDelete(player);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!playerToDelete) return;
         try {
-            await savePlayer(data);
-            setIsModalOpen(false);
+            setIsDeleting(true);
+            await deletePlayer(playerToDelete.id);
+            toast.success("Player deleted successfully");
+            await getPlayers();
+            setDeleteModalOpen(false);
+            setPlayerToDelete(null);
         } catch (error) {
-            console.error('Failed to save player:', error);
-            // Error handling is done in store/api usually via toast
+            console.error("Failed to delete player", error);
+            toast.error("Failed to delete player");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -81,139 +112,162 @@ export default function Players() {
         }
     };
 
+    // Filter Options
+    const statusOptions: FilterOption[] = useMemo(() => [
+        { id: 'ACTIVE', label: 'Active', count: filteredPlayers.filter(p => p.status === 'ACTIVE').length },
+        { id: 'INACTIVE', label: 'Inactive' },
+        { id: 'BANNED', label: 'Banned' },
+    ], [filteredPlayers]);
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title="Players"
                 description="Manage all registered rugby players"
                 action={
                     isAdmin && (
-                        <Button onClick={handleAdd}>
-                            Add Player
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => setUploadModalOpen(true)} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Bulk Upload
+                            </Button>
+                            <Button onClick={handleAdd} className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Add Player
+                            </Button>
+                        </div>
                     )
                 }
             />
 
-            <Card>
-                <CardContent className="p-0">
-                    <div className="p-4 flex flex-col md:flex-row gap-4 border-b border-glass-border items-center">
-                        <div className="relative flex-1 w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                            <Input
-                                placeholder="Search by name or email..."
-                                className="pl-9 bg-glass-bg/50"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <select
-                                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                            >
-                                <option value="ALL">All Status</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
-                                <option value="BANNED">Banned</option>
-                            </select>
-                        </div>
-                    </div>
+            {/* Controls Layout */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="relative w-full md:w-96">
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted border-glass-border" />
+                    <Input
+                        placeholder="Search players..."
+                        className="pl-9 bg-glass-bg border-glass-border focus:border-primary-500/50 transition-colors"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
 
-                    <Table>
-                        <TableHeader className="border-b border-border/60">
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="text-xs font-medium text-muted-foreground">Name</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Email</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Gender</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Nationality</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                                <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8">Loading players...</TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-destructive">{error}</TableCell>
-                                </TableRow>
-                            ) : filteredPlayers.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No players found</TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredPlayers.map((p) => (
-                                    <TableRow
-                                        key={p.id}
-                                        className="group hover:bg-muted/30 transition-colors cursor-pointer border-b border-border/40"
-                                        onClick={() => openPlayerDrawer(p.id)}
-                                    >
-                                        <TableCell className="py-4">
-                                            <span className="text-sm font-medium">{p.firstName} {p.lastName}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm text-muted-foreground">{p.email || "—"}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm">{p.gender || "—"}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <span className="text-sm">{p.nationality || "—"}</span>
-                                        </TableCell>
-                                        <TableCell className="py-4">
-                                            <Badge variant={getStatusVariant(p.status) as any} className="text-xs">
-                                                {p.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {isAdmin && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={(e) => handleEdit(p, e)}
-                                                        className="h-8 px-3"
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openPlayerDrawer(p.id);
-                                                    }}
+                <SmartFilterPills
+                    options={statusOptions}
+                    selectedId={statusFilter === 'ALL' ? null : statusFilter}
+                    onSelect={(id) => setStatusFilter(id || 'ALL')}
+                    className="w-full md:w-auto"
+                />
+            </div>
+
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <GlassCard key={i} className="h-48 animate-pulse flex flex-col p-6">
+                            <div className="w-12 h-12 rounded-full bg-white/5 mb-4" />
+                            <div className="w-3/4 h-5 bg-white/5 rounded mb-2" />
+                            <div className="w-1/2 h-4 bg-white/5 rounded" />
+                        </GlassCard>
+                    ))}
+                </div>
+            ) : filteredPlayers.length === 0 ? (
+                <EmptyState
+                    icon={UserMinus}
+                    title="No players found"
+                    description="Try adjusting your search or filters, or add a new player."
+                    actionLabel={isAdmin ? "Add Player" : undefined}
+                    onAction={isAdmin ? handleAdd : undefined}
+                    className="min-h-[400px] border-dashed border-white/10"
+                />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredPlayers.map((p) => (
+                        <GlassCard
+                            key={p.id}
+                            hover={true}
+                            className="group relative flex flex-col p-5 transition-all duration-300 cursor-pointer"
+                            onClick={() => handleCardClick(p)}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 text-lg font-bold border border-primary-500/20 overflow-hidden">
+                                    {p.photoUrl ? (
+                                        <img
+                                            src={getImageUrl(p.photoUrl)}
+                                            alt={`${p.firstName} ${p.lastName}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span>{p.firstName[0]}{p.lastName[0]}</span>
+                                    )}
+                                </div>
+                                <div className="flex gap-1">
+                                    <Badge variant={getStatusVariant(p.status) as any} className="text-[10px] px-1.5 h-5">
+                                        {p.status}
+                                    </Badge>
+                                    {isAdmin && (
+                                        <>
+                                            <button
+                                                onClick={(e) => handleEdit(p, e)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                aria-label="Edit player"
+                                            >
+                                                <PencilSimple className="w-4 h-4" />
+                                            </button>
+                                            {canDeletePlayer(p) && (
+                                                <button
+                                                    onClick={(e) => handleDeleteClick(p, e)}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    aria-label="Delete player"
                                                 >
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
 
-            <PlayerModal
-                isOpen={isModalOpen}
-                mode={modalMode}
-                initialPlayer={selectedPlayer}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleSubmit}
+                            <div className="space-y-1 mb-4 flex-1">
+                                <h3 className="font-semibold text-lg leading-tight truncate text-foreground group-hover:text-primary-400 transition-colors">
+                                    {p.firstName} {p.lastName}
+                                </h3>
+                                <p className="text-sm text-muted-foreground truncate">{p.email || "No email"}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-4 border-t border-white/5 text-xs text-muted-foreground">
+                                <div>
+                                    <span className="block text-[10px] uppercase tracking-wider opacity-60">Age</span>
+                                    <span className="font-medium text-foreground">{calculateAge(p.dob) ?? "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-[10px] uppercase tracking-wider opacity-60">Nationality</span>
+                                    <span className="font-medium text-foreground truncate">{p.nationality || "-"}</span>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
+            )}
+
+            <ConfirmDeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setPlayerToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Player"
+                message={`Are you sure you want to delete "${playerToDelete?.firstName} ${playerToDelete?.lastName}"? This action cannot be undone.`}
+                isDeleting={isDeleting}
             />
 
-            <PlayerDetailDrawer
-                isOpen={isDrawerOpen}
-                onClose={closePlayerDrawer}
-                playerId={selectedPlayerId}
+            <BulkUploadModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                title="Bulk Upload Players"
+                expectedColumns={["firstName", "lastName", "dob", "gender", "email", "teamId", "organisationId"]}
+                onUpload={handleUpload}
+                sampleCsvHeader="firstName,lastName,dob,gender,email,teamId,organisationId,nationality,state,medicalNotes\nJohn,Doe,1995-05-12,MALE,john@example.com,UUID-HERE,UUID-HERE,Malaysia,Selangor,"
             />
         </div>
     );

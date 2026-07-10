@@ -11,9 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TeamUpdateRequest {
     private String name;
+    private String shortName;
     private String category;
     private String ageGroup;
     private String division;
     private String state;
     private String status;
+    private String logoUrl;
+    private java.util.UUID organisationId;
 }

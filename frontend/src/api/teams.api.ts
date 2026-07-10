@@ -1,6 +1,8 @@
 import api from "./axios";
 
-export const fetchTeams = () => api.get("/teams");
+export const fetchTeams = (params?: { organisationId?: string }) => api.get("/teams", { params });
+
+export const fetchTeamsByOrganisation = (organisationId: string) => api.get("/teams", { params: { organisationId } });
 
 export const createTeam = (payload: {
     name: string;
@@ -11,6 +13,8 @@ export const createTeam = (payload: {
     organisationId: string;
 }) => api.post("/teams", payload);
 
+export const createBulkTeams = (payload: any[]) => api.post("/teams/bulk", payload);
+
 export const updateTeam = (id: string, payload: {
     name?: string;
     category?: string;
@@ -20,10 +24,14 @@ export const updateTeam = (id: string, payload: {
     status?: string;
 }) => api.put(`/teams/${id}`, payload);
 
+export const deleteTeam = (id: string) => api.delete(`/teams/${id}`);
+
 export const fetchTeamById = (id: string) => api.get(`/teams/${id}`);
 
 export const fetchTeamBySlug = (slug: string) => api.get(`/teams/slug/${slug}`);
 
-export const fetchTeamStats = (teamId: string) => api.get(`/stats/teams/${teamId}`);
+export const fetchTeamStats = (teamId: string, tournamentId?: string) => api.get(`/stats/teams/${teamId}`, { params: { tournamentId } });
 
 export const fetchTeamMatches = (teamId: string) => api.get(`/matches`, { params: { teamId } });
+
+export const fetchTeamPlayers = (teamId: string, tournamentId?: string) => api.get(`/teams/${teamId}/players`, { params: { tournamentId } });

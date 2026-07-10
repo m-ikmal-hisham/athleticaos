@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collections;
@@ -23,8 +24,10 @@ public class UserSeedConfig {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
 
     @Bean
+    @SuppressWarnings("null")
     public CommandLineRunner seedUsers() {
         return args -> {
             log.info("Seeding users...");
@@ -64,38 +67,49 @@ public class UserSeedConfig {
                         return roleRepository.save(Role.builder().name("ROLE_PLAYER").build());
                     });
 
-            // Seed Super Admin
-            String adminEmail = "admin@athleticaos.com";
-            if (userRepository.findByEmail(adminEmail).isEmpty()) {
-                log.info("Creating super admin user: {}", adminEmail);
-                User admin = User.builder()
-                        .email(adminEmail)
-                        .passwordHash(passwordEncoder.encode("password123"))
-                        .firstName("Super")
-                        .lastName("Admin")
-                        .isActive(true)
-                        .roles(new HashSet<>(Collections.singletonList(superAdminRole)))
-                        .build();
-                userRepository.save(admin);
-                log.info("Super admin created successfully.");
-            } else {
-                log.info("Super admin user already exists. Updating credentials and roles to ensure correctness.");
-                User existingAdmin = userRepository.findByEmail(adminEmail).get();
-                existingAdmin.setPasswordHash(passwordEncoder.encode("password123"));
-                existingAdmin.setFirstName("Super");
-                existingAdmin.setLastName("Admin");
+            // Read passwords from environment variables (fallback to "password123" for local dev)
+            String adminPassword = environment.getProperty("ADMIN_PASSWORD", "password123");
+            String ragbiAdminPassword = environment.getProperty("RAGBI_ADMIN_PASSWORD", "password123");
 
-                // Ensure role is present
-                Set<Role> roles = existingAdmin.getRoles();
-                if (roles == null) {
-                    roles = new HashSet<>();
-                }
-                roles.add(superAdminRole);
-                existingAdmin.setRoles(roles);
+            // Seed Super Admin: admin@athleticaos.com
+            seedSuperAdmin("admin@athleticaos.com", "Super", "Admin", adminPassword, superAdminRole);
 
-                userRepository.save(existingAdmin);
-                log.info("Super admin updated successfully.");
-            }
+            // Seed Super Admin: ragbionline@athleticaos.com
+            seedSuperAdmin("ragbionline@athleticaos.com", "Ragbi", "Online", ragbiAdminPassword, superAdminRole);
         };
+    }
+
+    @SuppressWarnings("null")
+    private void seedSuperAdmin(String email, String firstName, String lastName, String password, Role superAdminRole) {
+        if (userRepository.findByEmail(email).isEmpty()) {
+            log.info("Creating super admin user: {}", email);
+            User admin = User.builder()
+                    .email(email)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .isActive(true)
+                    .roles(new HashSet<>(Collections.singletonList(superAdminRole)))
+                    .build();
+            userRepository.save(admin);
+            log.info("Super admin created successfully: {}", email);
+        } else {
+            log.info("Super admin user already exists: {}. Updating credentials and roles.", email);
+            User existingAdmin = userRepository.findByEmail(email).get();
+            existingAdmin.setPasswordHash(passwordEncoder.encode(password));
+            existingAdmin.setFirstName(firstName);
+            existingAdmin.setLastName(lastName);
+
+            // Ensure role is present
+            Set<Role> roles = existingAdmin.getRoles();
+            if (roles == null) {
+                roles = new HashSet<>();
+            }
+            roles.add(superAdminRole);
+            existingAdmin.setRoles(roles);
+
+            userRepository.save(existingAdmin);
+            log.info("Super admin updated successfully: {}", email);
+        }
     }
 }

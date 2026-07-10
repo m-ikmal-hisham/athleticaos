@@ -23,8 +23,38 @@ public interface TournamentRosterService {
      */
     List<TournamentPlayerDTO> getRoster(UUID tournamentId, UUID teamId);
 
+    List<com.athleticaos.backend.dtos.roster.TournamentStaffDTO> getTournamentStaff(UUID tournamentId, UUID teamId);
+
+    com.athleticaos.backend.dtos.roster.TournamentStaffDTO addStaffToRoster(UUID tournamentId, com.athleticaos.backend.dtos.roster.AddTournamentStaffRequest request);
+
+    void removeStaffFromRoster(UUID tournamentStaffId);
+
     /**
      * Gets lineup hints for a match (eligibility and suspension info).
      */
     LineupHintsDTO getLineupHints(UUID matchId);
+
+    /**
+     * Update a player's tournament-specific jersey number.
+     * 
+     * @param tournamentId The tournament ID
+     * @param teamId       The team ID
+     * @param playerId     The player ID
+     * @param jerseyNumber The new tournament jersey number (can be null to clear)
+     * @return Updated TournamentPlayerDTO
+     */
+    TournamentPlayerDTO updateTournamentJerseyNumber(UUID tournamentId, UUID teamId, UUID playerId,
+            Integer jerseyNumber);
+
+    /**
+     * Update a player's tournament-specific position.
+     * 
+     * @param tournamentId The tournament ID
+     * @param teamId       The team ID
+     * @param playerId     The player ID
+     * @param position     The new tournament position (can be null to clear)
+     * @return Updated TournamentPlayerDTO
+     */
+    TournamentPlayerDTO updateTournamentPosition(UUID tournamentId, UUID teamId, UUID playerId,
+            String position);
 }

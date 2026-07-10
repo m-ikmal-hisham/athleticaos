@@ -40,11 +40,21 @@ public class PlayerTeamController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/batch")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'COACH')")
+    public ResponseEntity<Void> removePlayersFromTeam(
+            @RequestParam List<UUID> playerIds,
+            @RequestParam UUID teamId) {
+        log.info("Batch removing players {} from team {}", playerIds, teamId);
+        playerTeamService.removePlayersFromTeam(playerIds, teamId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/team/{teamId}/roster")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<PlayerInTeamDTO>> getTeamRoster(@PathVariable UUID teamId) {
-        log.info("Fetching roster for team {}", teamId);
-        List<PlayerInTeamDTO> roster = playerTeamService.getTeamRoster(teamId);
+    public ResponseEntity<List<PlayerInTeamDTO>> getTeamRoster(@PathVariable UUID teamId, @RequestParam(required = false) UUID tournamentId) {
+        log.info("Fetching roster for team {} with tournamentId {}", teamId, tournamentId);
+        List<PlayerInTeamDTO> roster = playerTeamService.getTeamRoster(teamId, tournamentId);
         return ResponseEntity.ok(roster);
     }
 

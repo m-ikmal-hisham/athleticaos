@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, ArrowRight } from 'lucide-react';
+import { CalendarBlank, MapPin, Trophy, ArrowRight } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
+import { GlassCard } from '@/components/GlassCard';
+import { formatTournamentLevel, formatCompetitionType } from '@/utils/formatters';
 
 export default function Home() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
@@ -28,27 +30,27 @@ export default function Home() {
         <div className="space-y-12">
             {/* Hero Section */}
             <div className="text-center space-y-6 py-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-[#D32F2F]/10 dark:from-blue-900/30 dark:to-[#D32F2F]/20 text-blue-700 dark:text-blue-300 text-sm font-medium border border-[#D32F2F]/20">
                     <Trophy className="w-4 h-4" />
                     <span>Malaysia Rugby Competitions</span>
                 </div>
 
-                <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-5xl md:text-6xl font-bold text-foreground">
                     Live Scores, Fixtures
                     <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-[#D32F2F]">
                         & Results
                     </span>
                 </h1>
 
-                <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                     Follow all rugby competitions across Malaysia in real-time. Powered by AthleticaOS Rugby.
                 </p>
 
                 <div className="flex items-center justify-center gap-4 pt-4">
                     <Link
                         to="/tournaments"
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 hover:opacity-90 text-white font-medium rounded-lg transition-all shadow-lg shadow-blue-500/30 dark:shadow-red-500/30 hover:shadow-xl flex items-center gap-2"
                     >
                         View All Tournaments
                         <ArrowRight className="w-4 h-4" />
@@ -64,7 +66,7 @@ export default function Home() {
                     </h2>
                     <Link
                         to="/tournaments"
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-[#D32F2F] dark:hover:text-[#D32F2F] hover:underline transition-colors"
                     >
                         View all →
                     </Link>
@@ -91,47 +93,49 @@ export default function Home() {
                         {tournaments.map(tournament => (
                             <Link
                                 key={tournament.id}
-                                to={`/tournaments/${tournament.id}`}
-                                className="group relative overflow-hidden rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10"
+                                to={`/tournaments/${tournament.slug || tournament.id}`}
+                                className="block group"
                             >
-                                <div className="p-6 space-y-4">
-                                    {/* Status Badge */}
-                                    {tournament.live && (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium">
-                                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                            LIVE NOW
-                                        </div>
-                                    )}
+                                <GlassCard className="h-full relative overflow-hidden transition-all hover:shadow-xl hover:shadow-[var(--highlight-glow)] hover:border-[var(--highlight-color)]">
+                                    <div className="p-6 space-y-4 relative z-10">
+                                        {/* Status Badge */}
+                                        {tournament.live && (
+                                            <div className="absolute top-3 right-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium z-20">
+                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                                                LIVE NOW
+                                            </div>
+                                        )}
 
-                                    {/* Tournament Info */}
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                            {tournament.name}
-                                        </h3>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                            {tournament.level}
-                                            {tournament.competitionType && ` • ${tournament.competitionType}`}
-                                        </p>
+                                        {/* Tournament Info */}
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-[var(--highlight-color)] transition-colors">
+                                                {tournament.name}
+                                            </h3>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                {formatTournamentLevel(tournament.level)}
+                                                {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType)}`}
+                                            </p>
+                                        </div>
+
+                                        {/* Details */}
+                                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <div className="flex items-center gap-2">
+                                                <CalendarBlank className="w-4 h-4" />
+                                                <span>
+                                                    {new Date(tournament.startDate).toLocaleDateString()} -{' '}
+                                                    {new Date(tournament.endDate).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="w-4 h-4" />
+                                                <span>{tournament.venue}</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Details */}
-                                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="w-4 h-4" />
-                                            <span>
-                                                {new Date(tournament.startDate).toLocaleDateString()} -{' '}
-                                                {new Date(tournament.endDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>{tournament.venue}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Hover Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/5 group-hover:to-blue-600/10 transition-all" />
+                                    {/* Hover Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--highlight-color)] opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none" />
+                                </GlassCard>
                             </Link>
                         ))}
                     </div>

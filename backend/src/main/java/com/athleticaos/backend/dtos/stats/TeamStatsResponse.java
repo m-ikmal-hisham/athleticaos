@@ -14,6 +14,9 @@ public record TeamStatsResponse(
         int pointsAgainst,
         int pointsDifference,
         int triesScored,
+        int conversions,
+        int penalties,
+        int dropGoals,
         int yellowCards,
         int redCards,
         int tablePoints // e.g. 4-win, 2-draw, +bonus later (configurable)

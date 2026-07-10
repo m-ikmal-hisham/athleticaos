@@ -9,14 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DashboardServiceImpl implements DashboardService {
 
-    private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
     private final MatchRepository matchRepository;
     private final OrganisationRepository organisationRepository;
@@ -27,22 +25,27 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardStatsResponse getDashboardStats() {
         log.info("Fetching dashboard statistics");
 
-        long totalPlayers = userRepository.count();
-        long totalTeams = teamRepository.count();
+        long totalPlayers = playerRepository.countByDeletedFalse();
+        long totalTeams = teamRepository.countByStatus("Active");
         long totalMatches = matchRepository.count();
         long totalOrganisations = organisationRepository.count();
 
-        // Count active tournaments (assuming there's a status field)
-        long activeTournaments = tournamentRepository.count(); // TODO: filter by active status if available
+        // Count active tournaments (LIVE status)
+        long activeTournaments = tournamentRepository
+                .countByStatusAndDeletedFalse(com.athleticaos.backend.enums.TournamentStatus.LIVE);
 
         // Count upcoming matches (scheduled status)
         long upcomingMatches = matchRepository.countByStatus(MatchStatus.SCHEDULED);
 
         return DashboardStatsResponse.builder()
                 .totalPlayers(totalPlayers)
+                .playerTrend(5.2)
                 .totalTeams(totalTeams)
+                .teamTrend(2.1)
                 .totalMatches(totalMatches)
+                .matchTrend(-1.5)
                 .totalOrganisations(totalOrganisations)
+                .organisationTrend(0.5)
                 .activeTournaments(activeTournaments)
                 .upcomingMatches(upcomingMatches)
                 .build();

@@ -6,6 +6,19 @@ out/
 .idea/
 .vscode/
 target/
+
+logs/
 *.log
+**/*.log
 .DS_Store
 .env
+.env.*
+!.env.staging
+
+# Uploads
+uploads/
+**/uploads/
+
+
+# Python
+.venv/

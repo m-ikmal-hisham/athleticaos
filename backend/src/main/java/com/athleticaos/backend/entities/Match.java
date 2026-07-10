@@ -31,17 +31,21 @@ public class Match {
     private Tournament tournament;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "home_team_id", nullable = false)
+    @JoinColumn(name = "category_id")
+    private TournamentCategory category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "home_team_id", nullable = true)
     private Team homeTeam;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "away_team_id", nullable = false)
+    @JoinColumn(name = "away_team_id", nullable = true)
     private Team awayTeam;
 
-    @Column(name = "match_date", nullable = false)
+    @Column(name = "match_date", nullable = true)
     private LocalDate matchDate;
 
-    @Column(name = "kick_off_time", nullable = false)
+    @Column(name = "kick_off_time", nullable = true)
     private LocalTime kickOffTime;
 
     @Column
@@ -71,6 +75,24 @@ public class Match {
     @Column(name = "match_code")
     private String matchCode;
 
+    @Column(name = "next_match_id_for_winner")
+    private UUID nextMatchIdForWinner;
+
+    @Column(name = "next_match_id_for_loser")
+    private UUID nextMatchIdForLoser;
+
+    @Column(name = "winner_slot")
+    private String winnerSlot; // HOME or AWAY
+
+    @Column(name = "loser_slot")
+    private String loserSlot; // HOME or AWAY
+
+    @Column(name = "home_team_placeholder")
+    private String homeTeamPlaceholder;
+
+    @Column(name = "away_team_placeholder")
+    private String awayTeamPlaceholder;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,4 +100,8 @@ public class Match {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 }

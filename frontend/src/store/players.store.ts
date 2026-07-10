@@ -3,7 +3,8 @@ import {
     fetchPlayers,
     createPlayer,
     updatePlayer,
-    togglePlayerStatus
+    togglePlayerStatus,
+    deletePlayer
 } from "../api/players.api";
 import { Player } from "../types";
 
@@ -30,6 +31,7 @@ interface PlayersState {
     closeModal: () => void;
     savePlayer: (payload: any) => Promise<void>;
     toggleStatus: (id: string) => Promise<void>;
+    deletePlayer: (id: string) => Promise<void>;
     // Drawer actions
     openPlayerDrawer: (playerId: string) => void;
     closePlayerDrawer: () => void;
@@ -100,6 +102,21 @@ export const usePlayersStore = create<PlayersState>((set, get) => ({
             await get().getPlayers();
         } catch {
             set({ error: "Failed to toggle status" });
+        }
+    },
+
+    async deletePlayer(id) {
+        try {
+            await deletePlayer(id);
+            await get().getPlayers();
+            // If the deleted player was selected in drawer, close it
+            const { selectedPlayerId } = get();
+            if (selectedPlayerId === id) {
+                set({ selectedPlayerId: null, isDrawerOpen: false });
+            }
+        } catch {
+            set({ error: "Failed to delete player" });
+            throw new Error("Failed to delete player");
         }
     },
 

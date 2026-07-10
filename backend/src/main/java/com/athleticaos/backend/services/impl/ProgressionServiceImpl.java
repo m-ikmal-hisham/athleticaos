@@ -2,7 +2,6 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
-import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.TournamentStage;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.enums.TournamentStageType;
@@ -60,7 +59,19 @@ public class ProgressionServiceImpl implements ProgressionService {
             return;
         }
 
-        // Find next stage
+        // Check for explicit progression (new model)
+        if (match.getNextMatchIdForWinner() != null) {
+            progressWinnerExplicitly(match, winner);
+
+            // Handle loser explicit progression if configured
+            Team loser = determineLoser(match);
+            if (loser != null && match.getNextMatchIdForLoser() != null) {
+                progressLoserExplicitly(match, loser);
+            }
+            return;
+        }
+
+        // Fallback to implicit stage-based progression (legacy support)
         TournamentStage nextStage = findNextStage(currentStage);
         if (nextStage == null) {
             log.info("Match {} is in final stage, no further progression", matchId);
@@ -79,12 +90,13 @@ public class ProgressionServiceImpl implements ProgressionService {
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public int progressTournament(UUID tournamentId) {
         log.info("Processing tournament progression for tournament: {}", tournamentId);
 
         // Verify tournament exists
         tournamentRepository.findById(tournamentId)
-                .filter(t -> !t.isDeleted())
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
@@ -128,9 +140,10 @@ public class ProgressionServiceImpl implements ProgressionService {
 
     @Override
     @Transactional(readOnly = true)
-    @SuppressWarnings("null")
     public boolean canProgress(UUID matchId) {
-        Match match = matchRepository.findById(matchId)
+        if (matchId == null)
+            return false;
+        Match match = matchRepository.findById(java.util.Objects.requireNonNull(matchId))
                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
 
         // Match must be completed
@@ -219,7 +232,6 @@ public class ProgressionServiceImpl implements ProgressionService {
         };
     }
 
-    @SuppressWarnings("null")
     private TournamentStage findPlacementStage(UUID tournamentId, TournamentStageType stageType) {
         List<TournamentStage> allStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
 
@@ -249,7 +261,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .venue(completedMatch.getTournament().getVenue())
                 .status(MatchStatus.SCHEDULED)
                 .phase(placementStage.getName())
-                .matchCode(String.format("%s-M%d", getStageAbbreviation(placementStage.getStageType()),
+                .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
+                        getStageAbbreviation(placementStage.getStageType()),
                         existingMatches.size() + 1))
                 .build();
 
@@ -270,7 +283,6 @@ public class ProgressionServiceImpl implements ProgressionService {
         matchRepository.save(targetMatch);
     }
 
-    @SuppressWarnings("null")
     private TournamentStage findNextStage(TournamentStage currentStage) {
         List<TournamentStage> allStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(
                 currentStage.getTournament().getId());
@@ -279,7 +291,7 @@ public class ProgressionServiceImpl implements ProgressionService {
         return allStages.stream()
                 .filter(stage -> stage.getIsKnockoutStage())
                 .filter(stage -> stage.getDisplayOrder() > currentStage.getDisplayOrder())
-                .min(Comparator.comparing(TournamentStage::getDisplayOrder))
+                .min(Comparator.comparing(stage -> stage.getDisplayOrder()))
                 .orElse(null);
     }
 
@@ -323,7 +335,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .venue(completedMatch.getTournament().getVenue())
                 .status(MatchStatus.SCHEDULED)
                 .phase(nextStage.getName())
-                .matchCode(String.format("%s-M%d", getStageAbbreviation(nextStage.getStageType()),
+                .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
+                        getStageAbbreviation(nextStage.getStageType()),
                         nextStageMatchIndex + 1))
                 .build();
 
@@ -350,6 +363,70 @@ public class ProgressionServiceImpl implements ProgressionService {
         }
 
         matchRepository.save(targetMatch);
+    }
+
+    @SuppressWarnings("null")
+    private void progressWinnerExplicitly(Match completedMatch, Team winner) {
+        UUID nextMatchId = completedMatch.getNextMatchIdForWinner();
+        String slot = completedMatch.getWinnerSlot();
+
+        log.info("Explicitly progressing winner {} to match {} slot {}",
+                winner.getName(), nextMatchId, slot);
+
+        matchRepository.findById(nextMatchId).ifPresent(nextMatch -> {
+            boolean updated = false;
+
+            if ("HOME".equalsIgnoreCase(slot)) {
+                if (nextMatch.getHomeTeam() == null) {
+                    nextMatch.setHomeTeam(winner);
+                    updated = true;
+                } else {
+                    log.warn("Target match {} home slot already occupied by {}",
+                            nextMatchId, nextMatch.getHomeTeam().getName());
+                }
+            } else if ("AWAY".equalsIgnoreCase(slot)) {
+                if (nextMatch.getAwayTeam() == null) {
+                    nextMatch.setAwayTeam(winner);
+                    updated = true;
+                } else {
+                    log.warn("Target match {} away slot already occupied by {}",
+                            nextMatchId, nextMatch.getAwayTeam().getName());
+                }
+            }
+
+            if (updated) {
+                matchRepository.save(nextMatch);
+            }
+        });
+    }
+
+    @SuppressWarnings("null")
+    private void progressLoserExplicitly(Match completedMatch, Team loser) {
+        UUID nextMatchId = completedMatch.getNextMatchIdForLoser();
+        String slot = completedMatch.getLoserSlot();
+
+        log.info("Explicitly progressing loser {} to match {} slot {}",
+                loser.getName(), nextMatchId, slot);
+
+        matchRepository.findById(nextMatchId).ifPresent(nextMatch -> {
+            boolean updated = false;
+
+            if ("HOME".equalsIgnoreCase(slot)) {
+                if (nextMatch.getHomeTeam() == null) {
+                    nextMatch.setHomeTeam(loser);
+                    updated = true;
+                }
+            } else if ("AWAY".equalsIgnoreCase(slot)) {
+                if (nextMatch.getAwayTeam() == null) {
+                    nextMatch.setAwayTeam(loser);
+                    updated = true;
+                }
+            }
+
+            if (updated) {
+                matchRepository.save(nextMatch);
+            }
+        });
     }
 
     private String getStageAbbreviation(TournamentStageType stageType) {

@@ -14,4 +14,8 @@ public interface SeasonRepository extends JpaRepository<Season, UUID> {
     List<Season> findByStatus(SeasonStatus status);
 
     List<Season> findByLevel(SeasonLevel level);
+
+    List<Season> findByDeletedFalse();
+
+    List<Season> findByStatusAndDeletedFalse(SeasonStatus status);
 }

@@ -33,17 +33,25 @@ public class MatchEvent {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id")
-    private User player;
+    private Player player;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_player_id")
+    private Player relatedPlayer;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
     private MatchEventType eventType;
 
-    @Column
+    @Column(name = "event_minute")
     private Integer minute;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @Column(columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean isLocked = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

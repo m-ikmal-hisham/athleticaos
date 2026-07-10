@@ -1,0 +1,406 @@
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Modal } from '@/components/Modal';
+import { Input } from '@/components/Input';
+import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
+import { ImageUpload } from '@/components/common/ImageUpload';
+import { createTournament, updateTournament } from '@/api/tournaments.api';
+import { fetchOrganisations } from '@/api/organisations.api';
+import { Organisation, CreateCategoryRequest } from '@/types';
+import { Plus, Trash } from '@phosphor-icons/react';
+
+const categorySchema = z.object({
+    name: z.string().min(1, "Category name is required"),
+    gender: z.string().optional(),
+    minYear: z.number().optional(),
+    maxYear: z.number().optional()
+});
+
+const tournamentSchema = z.object({
+    name: z.string().min(3, "Name must be at least 3 characters"),
+    organiserOrgId: z.string().min(1, "Organisation is required"),
+    seasonName: z.string().min(1, "Season name is required"),
+    competitionType: z.string(),
+    level: z.string(),
+    venue: z.string().min(1, "Venue is required"),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().min(1, "End date is required"),
+    categories: z.array(categorySchema).optional(),
+    logoUrl: z.string().optional(),
+    livestreamUrl: z.string().optional()
+});
+
+type TournamentFormData = z.infer<typeof tournamentSchema>;
+
+import { Tournament } from '@/types';
+
+interface TournamentModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    tournament?: Tournament | null;
+}
+
+export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: TournamentModalProps) => {
+    const [loading, setLoading] = useState(false);
+    const [organisations, setOrganisations] = useState<Organisation[]>([]);
+
+    // State for the new category input (not yet added to form)
+    const [newCategory, setNewCategory] = useState<CreateCategoryRequest>({
+        name: '',
+        gender: 'MALE',
+        minYear: undefined,
+        maxYear: undefined
+    });
+
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        reset,
+        formState: { errors }
+    } = useForm<TournamentFormData>({
+        resolver: zodResolver(tournamentSchema),
+        defaultValues: {
+            competitionType: 'LEAGUE',
+            level: 'CLUB',
+            categories: []
+        }
+    });
+
+    const categories = watch('categories') || [];
+
+    useEffect(() => {
+        if (isOpen) {
+            loadOrganisations();
+            if (tournament) {
+                // Populate form for editing
+                reset({
+                    name: tournament.name,
+                    organiserOrgId: tournament.organiserOrgId || (tournament.organiserBranding?.id),
+                    seasonName: tournament.seasonName,
+                    competitionType: tournament.competitionType,
+                    level: tournament.level,
+                    venue: tournament.venue,
+                    startDate: tournament.startDate?.split('T')[0], // Extract YYYY-MM-DD
+                    endDate: tournament.endDate?.split('T')[0],
+                    categories: tournament.categories?.map(c => ({
+                        name: c.name,
+                        gender: c.gender,
+                        minYear: c.minYear,
+                        maxYear: c.maxYear
+                    })) || [],
+                    logoUrl: tournament.logoUrl,
+                    livestreamUrl: tournament.livestreamUrl
+                });
+            } else {
+                reset({
+                    competitionType: 'LEAGUE',
+                    level: 'CLUB',
+                    categories: []
+                }); // Reset form when creating new
+            }
+        }
+    }, [isOpen, reset, tournament]);
+
+    const loadOrganisations = async () => {
+        try {
+            const data = await fetchOrganisations();
+            setOrganisations(data as any);
+        } catch (error) {
+            console.error('Failed to load organisations:', error);
+        }
+    };
+
+    const onSubmit = async (data: TournamentFormData) => {
+        setLoading(true);
+        try {
+            if (tournament?.id) {
+                await updateTournament(tournament.id, data);
+            } else {
+                await createTournament(data as any);
+            }
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.error('Failed to save tournament', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ... helper functions remain same
+
+    const addCategory = () => {
+        if (!newCategory.name) return;
+
+        const currentCategories = watch('categories') || [];
+        setValue('categories', [...currentCategories, { ...newCategory }]);
+
+        setNewCategory({ name: '', gender: 'MALE', minYear: undefined, maxYear: undefined });
+    };
+
+    const removeCategory = (index: number) => {
+        const currentCategories = watch('categories') || [];
+        setValue('categories', currentCategories.filter((_, i) => i !== index));
+    };
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={tournament ? "Edit Tournament" : "Create New Tournament"}
+            size="lg"
+        >
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                        <Input
+                            label="Tournament Name"
+                            placeholder="e.g. Super League 2024"
+                            {...register('name')}
+                            error={errors.name?.message}
+                            required
+                        />
+                    </div>
+
+                    <div className="col-span-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                            Organiser <span className="text-red-400 ml-1">*</span>
+                        </label>
+                        <SearchableSelect
+                            value={watch('organiserOrgId')}
+                            onChange={(value) => setValue('organiserOrgId', value as string)}
+                            options={[
+                                { value: '', label: 'Select Organisation' },
+                                ...organisations.map(org => ({ value: org.id, label: org.name }))
+                            ]}
+                            placeholder="Select organiser"
+                        />
+                        {errors.organiserOrgId && <p className="mt-1.5 text-sm text-red-400">{errors.organiserOrgId.message}</p>}
+                    </div>
+
+                    <div className="col-span-2">
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Tournament Logo</label>
+                        <ImageUpload
+                            value={watch('logoUrl')}
+                            onChange={(url) => setValue('logoUrl', url)}
+                        />
+                    </div>
+                </div>
+
+                <div className="border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">Competition Format</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Input
+                                label="Season"
+                                placeholder="e.g. 2024/2025"
+                                {...register('seasonName')}
+                                error={errors.seasonName?.message}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
+                            <SearchableSelect
+                                value={watch('competitionType')}
+                                onChange={(value) => setValue('competitionType', value as string)}
+                                options={[
+                                    { value: 'LEAGUE', label: 'League' },
+                                    { value: 'KNOCKOUT', label: 'Knockout' },
+                                    { value: 'GROUP_KNOCKOUT', label: 'Group + Knockout' }
+                                ]}
+                                placeholder="Select type"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Level</label>
+                            <SearchableSelect
+                                value={watch('level')}
+                                onChange={(value) => setValue('level', value as string)}
+                                options={[
+                                    { value: 'INTERNATIONAL', label: 'International' },
+                                    { value: 'NATIONAL', label: 'National' },
+                                    { value: 'STATE', label: 'State' },
+                                    { value: 'DIVISION', label: 'Division' },
+                                    { value: 'CLUB', label: 'Club' },
+                                    { value: 'SCHOOL', label: 'School' }
+                                ]}
+                                placeholder="Select level"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">Categories</h3>
+
+                    <div className="space-y-3 mb-4">
+                        {categories.map((cat, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-white/10">
+                                <div>
+                                    <span className="font-medium text-foreground">{cat.name}</span>
+                                    <div className="text-xs text-muted-foreground mt-0.5">
+                                        <div className="text-xs text-muted-foreground mt-0.5">
+                                            {(() => {
+                                                const sd = watch('startDate');
+                                                const refYear = sd ? new Date(sd).getFullYear() : new Date().getFullYear();
+                                                const minAgeVal = cat.maxYear ? refYear - cat.maxYear : null;
+                                                const maxAgeVal = cat.minYear ? refYear - cat.minYear : null;
+
+                                                let ageText = '';
+                                                if (minAgeVal !== null && maxAgeVal !== null) {
+                                                    ageText = `(Age ${minAgeVal}-${maxAgeVal})`;
+                                                } else if (minAgeVal !== null) {
+                                                    ageText = `(Age ${minAgeVal}+)`;
+                                                } else if (maxAgeVal !== null) {
+                                                    ageText = `(Age U${maxAgeVal})`;
+                                                }
+
+                                                return (
+                                                    <span>
+                                                        {cat.gender} • {cat.minYear ? `Born after ${cat.minYear}` : ''} {cat.maxYear ? `Before ${cat.maxYear}` : ''} {ageText}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" onClick={() => removeCategory(idx)} className="text-red-500 hover:text-red-400" aria-label="Remove category">
+                                    <Trash size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-2 items-end bg-black/5 dark:bg-white/5 p-3 rounded-xl border border-white/10">
+                        <div className="col-span-4">
+                            <label className="text-xs text-muted-foreground mb-1 block">Category Name</label>
+                            <Input
+                                value={newCategory.name}
+                                onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="e.g. U16 Boys"
+                                className="h-9 text-sm"
+                            />
+                        </div>
+                        <div className="col-span-3">
+                            <label className="text-xs text-muted-foreground mb-1 block">Gender</label>
+                            <SearchableSelect
+                                value={newCategory.gender}
+                                onChange={(value) => setNewCategory(prev => ({ ...prev, gender: value as string }))}
+                                options={[
+                                    { value: 'MALE', label: 'Male' },
+                                    { value: 'FEMALE', label: 'Female' },
+                                    { value: 'MIXED', label: 'Mixed' }
+                                ]}
+                                placeholder="Select Gender"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="text-xs text-muted-foreground block">Min Year</label>
+                                {newCategory.minYear && (
+                                    <span className="text-[10px] text-primary-400">
+                                        {(() => {
+                                            const sd = watch('startDate');
+                                            const refYear = sd ? new Date(sd).getFullYear() : new Date().getFullYear();
+                                            return `Age ${refYear - newCategory.minYear}`;
+                                        })()}
+                                    </span>
+                                )}
+                            </div>
+                            <Input
+                                type="number"
+                                value={newCategory.minYear || ''}
+                                onChange={(e) => setNewCategory(prev => ({ ...prev, minYear: e.target.value ? parseInt(e.target.value) : undefined }))}
+                                placeholder="e.g. 2008"
+                                className="h-9 text-sm"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="text-xs text-muted-foreground block">Max Year</label>
+                                {newCategory.maxYear && (
+                                    <span className="text-[10px] text-primary-400">
+                                        {(() => {
+                                            const sd = watch('startDate');
+                                            const refYear = sd ? new Date(sd).getFullYear() : new Date().getFullYear();
+                                            return `Age ${refYear - newCategory.maxYear}`;
+                                        })()}
+                                    </span>
+                                )}
+                            </div>
+                            <Input
+                                type="number"
+                                value={newCategory.maxYear || ''}
+                                onChange={(e) => setNewCategory(prev => ({ ...prev, maxYear: e.target.value ? parseInt(e.target.value) : undefined }))}
+                                placeholder="e.g. 2006"
+                                className="h-9 text-sm"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <Button type="button" variant="primary" onClick={addCategory} className="w-full h-9 p-0 flex items-center justify-center">
+                                <Plus size={16} />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">Logistics</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <Input
+                                label="Venue"
+                                placeholder="Primary Venue"
+                                {...register('venue')}
+                                error={errors.venue?.message}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Input
+                                type="date"
+                                label="Start Date"
+                                {...register('startDate')}
+                                error={errors.startDate?.message}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Input
+                                type="date"
+                                label="End Date"
+                                {...register('endDate')}
+                                error={errors.endDate?.message}
+                                required
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <Input
+                                label="Livestream URL"
+                                placeholder="https://youtube.com/..."
+                                {...register('livestreamUrl')}
+                                error={errors.livestreamUrl?.message}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
+                    <Button type="button" variant="cancel" onClick={onClose} disabled={loading}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" variant="primary" isLoading={loading}>
+                        {tournament ? "Update Tournament" : "Create Tournament"}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};

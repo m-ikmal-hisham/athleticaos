@@ -20,10 +20,20 @@ public class OrganisationCreateRequest {
     private String orgType;
 
     private UUID parentOrgId;
+    private String state;
+    private String addressLine1;
+    private String addressLine2;
+    private String postcode;
+    private String city;
+    private String stateCode;
+    private String countryCode;
+    // existing fields
     private String primaryColor;
     private String secondaryColor;
     private String tertiaryColor;
     private String quaternaryColor;
     private String logoUrl;
+    private String accentColor;
+    private String coverImageUrl;
     private com.athleticaos.backend.enums.OrganisationLevel orgLevel;
 }

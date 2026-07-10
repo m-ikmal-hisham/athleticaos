@@ -1,22 +1,46 @@
 spring:
   application:
     name: athleticaos-backend
+
   profiles:
     active: dev
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   flyway:
     enabled: true
     locations: classpath:db/migration
+    validate-on-migrate: true
+
 
 server:
   port: 8080
+  forward-headers-strategy: framework
 
 springdoc:
   api-docs:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui/index.html
+
+application:
+  security:
+    cors:
+      allowed-origins: http://localhost:5173,http://localhost:3000
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+
+# CI/CD test 20260314005950

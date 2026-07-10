@@ -1,5 +1,6 @@
 package com.athleticaos.backend.services;
 
+import com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO;
 import com.athleticaos.backend.dtos.team.TeamCreateRequest;
 import com.athleticaos.backend.dtos.team.TeamResponse;
 import com.athleticaos.backend.dtos.team.TeamUpdateRequest;
@@ -8,7 +9,12 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TeamService {
-    List<TeamResponse> getAllTeams();
+    /**
+     * Retrieves all teams.
+     * 
+     * @return list of team responses
+     */
+    List<TeamResponse> getAllTeams(UUID organisationId);
 
     TeamResponse getTeamById(UUID id);
 
@@ -16,5 +22,19 @@ public interface TeamService {
 
     TeamResponse createTeam(TeamCreateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
 
+    List<TeamResponse> createBulkTeams(List<TeamCreateRequest> requests, jakarta.servlet.http.HttpServletRequest httpRequest);
+
     TeamResponse updateTeam(UUID id, TeamUpdateRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    List<PlayerInTeamDTO> getPlayersByTeam(UUID teamId, UUID tournamentId);
+
+    List<com.athleticaos.backend.dtos.team.TeamStaffDTO> getTeamStaff(UUID teamId);
+
+    com.athleticaos.backend.dtos.team.TeamStaffDTO addTeamStaff(UUID teamId, com.athleticaos.backend.dtos.team.AddTeamStaffRequest request, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    void removeTeamStaff(UUID teamId, UUID staffAssignmentId, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getAvailablePersonsForStaff(UUID teamId);
+
+    void deleteTeam(UUID id, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

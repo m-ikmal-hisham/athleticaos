@@ -27,8 +27,8 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UserResponse>> getAllUsers(@RequestParam(required = false) UUID organisationId) {
+        return ResponseEntity.ok(userService.getAllUsers(organisationId));
     }
 
     @GetMapping("/{id}")
@@ -38,7 +38,7 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<UserResponse> createUser(
             @RequestBody @jakarta.validation.Valid com.athleticaos.backend.dtos.user.UserCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -46,7 +46,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID id,
             @RequestBody UserUpdateRequest request,
@@ -55,7 +55,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<UserResponse> updateUserStatus(
             @PathVariable UUID id,
             @RequestParam String status,
@@ -64,7 +64,7 @@ public class UserController {
     }
 
     @PostMapping("/invite")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     public ResponseEntity<InviteUserResponse> inviteUser(
             @RequestBody @jakarta.validation.Valid InviteUserRequest request,
             HttpServletRequest httpRequest) {
@@ -83,7 +83,7 @@ public class UserController {
     public ResponseEntity<List<PlayerResponse>> getUsersByRole(@RequestParam String role) {
         // Only support PLAYER role for now
         if ("PLAYER".equalsIgnoreCase(role)) {
-            return ResponseEntity.ok(playerService.getAllPlayers());
+            return ResponseEntity.ok(playerService.getAllPlayers(null, null));
         }
         return ResponseEntity.ok(List.of());
     }

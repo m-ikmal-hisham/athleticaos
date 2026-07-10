@@ -1,11 +1,16 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.dtos.player.PlayerCreateRequest;
 import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
+import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.services.PlayerService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -16,30 +21,120 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/players")
 @RequiredArgsConstructor
+@Slf4j
 public class PlayerController {
 
     private final PlayerService playerService;
+    private final PlayerRepository playerRepository;
+    private final AuditLogger auditLogger;
 
     @GetMapping
-    public ResponseEntity<List<PlayerResponse>> getAllPlayers() {
-        return ResponseEntity.ok(playerService.getAllPlayers());
+    public ResponseEntity<List<PlayerResponse>> getAllPlayers(
+            @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) UUID teamId) {
+        return ResponseEntity.ok(playerService.getAllPlayers(organisationId, teamId));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable UUID id) {
-        return ResponseEntity.ok(playerService.getPlayerById(id));
+    @GetMapping("/me")
+    public ResponseEntity<PlayerResponse> getCurrentPlayer(java.security.Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(playerService.getPlayerByEmail(principal.getName()));
+    }
+
+    @GetMapping("/{idOrSlug}")
+    public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable String idOrSlug) {
+        if (isValidUUID(idOrSlug)) {
+            return ResponseEntity.ok(playerService.getPlayerById(UUID.fromString(idOrSlug)));
+        } else {
+            return ResponseEntity.ok(playerService.getPlayerBySlug(idOrSlug));
+        }
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<PlayerResponse> createPlayer(@RequestBody @Valid PlayerCreateRequest request) {
-        return ResponseEntity.ok(playerService.createPlayer(request));
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PlayerResponse> createPlayer(
+            @RequestBody @Valid PlayerCreateRequest request,
+            HttpServletRequest httpRequest) {
+        PlayerResponse response = playerService.createPlayer(request);
+
+        // Audit log
+        Player player = playerRepository.findByIdWithPerson(response.id()).orElse(null);
+        if (player != null) {
+            auditLogger.logPlayerCreated(player, httpRequest);
+        }
+
+        return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CLUB_ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<PlayerResponse> updatePlayer(@PathVariable UUID id,
-            @RequestBody @Valid PlayerUpdateRequest request) {
-        return ResponseEntity.ok(playerService.updatePlayer(id, request));
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<PlayerResponse>> createBulkPlayers(
+            @RequestBody @Valid List<PlayerCreateRequest> requests,
+            HttpServletRequest httpRequest) {
+        log.info("Admin creating bulk players (size: {})", requests.size());
+        List<PlayerResponse> responses = playerService.createBulkPlayers(requests);
+        return ResponseEntity.ok(responses);
+    }
+
+    @PutMapping("/{idOrSlug}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PlayerResponse> updatePlayer(
+            @PathVariable String idOrSlug,
+            @RequestBody @Valid PlayerUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        UUID id = resolveId(idOrSlug);
+        PlayerResponse response = playerService.updatePlayer(id, request);
+
+        // Audit log
+        Player player = playerRepository.findByIdWithPerson(id).orElse(null);
+        if (player != null) {
+            auditLogger.logPlayerUpdated(player, httpRequest);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{idOrSlug}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> deletePlayer(
+            @PathVariable String idOrSlug,
+            HttpServletRequest httpRequest) {
+
+        UUID id = resolveId(idOrSlug);
+        Player player = playerRepository.findByIdWithPerson(id).orElse(null);
+
+        playerService.deletePlayer(id);
+
+        if (player != null) {
+            auditLogger.logPlayerDeleted(player, httpRequest);
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/admin/regenerate-slugs")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Void> regenerateSlugs() {
+        playerService.regenerateAllSlugs();
+        return ResponseEntity.ok().build();
+    }
+
+    private boolean isValidUUID(String str) {
+        try {
+            UUID.fromString(str);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private UUID resolveId(String idOrSlug) {
+        if (isValidUUID(idOrSlug)) {
+            return UUID.fromString(idOrSlug);
+        } else {
+            return playerService.getPlayerBySlug(idOrSlug).id();
+        }
     }
 }

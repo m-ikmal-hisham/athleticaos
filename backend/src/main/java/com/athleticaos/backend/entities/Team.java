@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -28,11 +26,17 @@ public class Team {
     @JoinColumn(name = "organisation_id", nullable = false)
     private Organisation organisation;
 
-    @Column(unique = true, nullable = false, length = 255)
+    @Column(unique = true, length = 255)
     private String slug;
+
+    @Column(name = "logo_url")
+    private String logoUrl;
 
     @Column(nullable = false)
     private String name;
+
+    @Column(name = "short_name", length = 5)
+    private String shortName;
 
     @Column(nullable = false)
     private String category; // MENS, WOMENS, MIXED

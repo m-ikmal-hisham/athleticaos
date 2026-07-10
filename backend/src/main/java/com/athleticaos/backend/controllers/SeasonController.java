@@ -1,6 +1,7 @@
 package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.season.SeasonOverviewResponse;
+import com.athleticaos.backend.dtos.season.SeasonResponse;
 import com.athleticaos.backend.entities.Season;
 import com.athleticaos.backend.services.SeasonService;
 import lombok.RequiredArgsConstructor;
@@ -17,22 +18,23 @@ import java.util.UUID;
 public class SeasonController {
 
     private final SeasonService seasonService;
+    private final com.athleticaos.backend.services.TournamentService tournamentService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Season>> getAllSeasons() {
+    public ResponseEntity<List<SeasonResponse>> getAllSeasons() {
         return ResponseEntity.ok(seasonService.getAllSeasons());
     }
 
     @GetMapping("/active")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<Season>> getActiveSeasons() {
+    public ResponseEntity<List<SeasonResponse>> getActiveSeasons() {
         return ResponseEntity.ok(seasonService.getActiveSeasons());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Season> getSeasonById(@PathVariable UUID id) {
+    public ResponseEntity<SeasonResponse> getSeasonById(@PathVariable UUID id) {
         return ResponseEntity.ok(seasonService.getSeasonById(id));
     }
 
@@ -43,20 +45,42 @@ public class SeasonController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
-    public ResponseEntity<Season> createSeason(@RequestBody Season season) {
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    public ResponseEntity<SeasonResponse> createSeason(@RequestBody Season season) {
         return ResponseEntity.ok(seasonService.createSeason(season));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
-    public ResponseEntity<Season> updateSeason(@PathVariable UUID id, @RequestBody Season season) {
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    public ResponseEntity<SeasonResponse> updateSeason(@PathVariable UUID id, @RequestBody Season season) {
         return ResponseEntity.ok(seasonService.updateSeason(id, season));
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ORG_ADMIN')")
-    public ResponseEntity<Season> updateStatus(@PathVariable UUID id, @RequestParam String status) {
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    public ResponseEntity<SeasonResponse> updateStatus(@PathVariable UUID id, @RequestParam String status) {
         return ResponseEntity.ok(seasonService.updateStatus(id, status));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    public ResponseEntity<Void> deleteSeason(@PathVariable UUID id) {
+        seasonService.deleteSeason(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/tournaments")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.TournamentResponse>> getTournamentsBySeason(
+            @PathVariable UUID id) {
+        // We need to inject TournamentService. Circular dependency risk?
+        // SeasonService depends on SeasonRepository. TournamentService depends on
+        // SeasonRepository.
+        // Controller depends on Service.
+        // It is cleaner to put this in TournamentController: GET
+        // /tournaments?seasonId=...
+        // But the plan said SeasonController /api/v1/seasons/{id}/tournaments.
+        // Let's add TournamentService dependency.
+        return ResponseEntity.ok(tournamentService.getTournamentsBySeason(id));
     }
 }

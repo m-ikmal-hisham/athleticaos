@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'cancel' | 'tertiary';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
 }
@@ -13,15 +13,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             <button
                 ref={ref}
                 className={clsx(
-                    'btn inline-flex items-center justify-center gap-2',
-                    variant === 'primary' && 'btn-primary',
+                    'btn inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-300',
+                    variant === 'primary' && 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-xl hover:shadow-blue-500/30 dark:hover:shadow-red-500/30',
                     variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
                     variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
                     variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',
                     variant === 'danger' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                    variant === 'cancel' && 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl',
+                    variant === 'tertiary' && 'backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-slate-100 shadow-sm',
                     size === 'sm' && 'h-9 px-3 text-xs',
                     size === 'md' && 'h-10 px-4 py-2',
                     size === 'lg' && 'h-11 px-8',
+                    (disabled || isLoading) && 'opacity-50 cursor-not-allowed',
                     className
                 )}
                 disabled={disabled || isLoading}

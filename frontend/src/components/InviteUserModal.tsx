@@ -5,7 +5,9 @@ import { Input } from './Input';
 import { usersApi, InviteUserRequest } from '@/api/users.api';
 import { useOrganisationsStore } from '@/store/organisations.store';
 import { useAuthStore } from '@/store/auth.store';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
+import { formatRoleName } from '@/utils/stringUtils';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface InviteUserModalProps {
     isOpen: boolean;
@@ -46,12 +48,15 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
     // Determine available roles based on current user's role
     const getAvailableRoles = () => {
         if (isSuperAdmin) {
-            return ['SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN', 'COACH', 'PLAYER'];
+            return ['SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN', 'TEAM_MANAGER', 'COACH', 'PLAYER'];
         } else if (isOrgAdmin) {
-            return ['CLUB_ADMIN', 'COACH', 'PLAYER'];
+            return ['CLUB_ADMIN', 'TEAM_MANAGER', 'COACH', 'PLAYER'];
         } else if (isClubAdmin) {
-            return ['COACH', 'PLAYER'];
+            return ['TEAM_MANAGER', 'COACH', 'PLAYER'];
         }
+        // Team Manager can invite Players (and maybe Coaches? sticking to prompt "view and manage players")
+        // If we want Team Manager to invite players:
+        // else if (isTeamManager) { return ['PLAYER']; }
         return ['PLAYER'];
     };
 
@@ -63,9 +68,9 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
             const response = await usersApi.inviteUser(formData);
 
             if (response.data.inviteStatus === 'EXISTS') {
-                toast.error(response.data.message || 'User already exists');
+                showToast.error(response.data.message || 'User already exists');
             } else {
-                toast.success(response.data.message || 'User invited successfully!');
+                showToast.success(response.data.message || 'User invited successfully!');
                 onSuccess?.();
                 onClose();
                 // Reset form
@@ -78,7 +83,7 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
                 });
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to invite user');
+            showToast.error(error.response?.data?.message || 'Failed to invite user');
         } finally {
             setLoading(false);
         }
@@ -103,41 +108,37 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
                 </div>
 
                 <Input
-                    label="Email"
+                    label={formData.role === 'PLAYER' ? "Email (Optional)" : "Email"}
                     type="email"
                     value={formData.email}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
+                    required={formData.role !== 'PLAYER'}
+                />
+
+                <SearchableSelect
+                    label="Role"
+                    value={formData.role}
+                    onChange={(value) => setFormData({ ...formData, role: value as string })}
+                    options={getAvailableRoles().map(role => ({
+                        value: role,
+                        label: formatRoleName(role)
+                    }))}
                     required
                 />
 
-                <div>
-                    <label className="block text-sm font-medium mb-2">Role</label>
-                    <select
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        required
-                    >
-                        {getAvailableRoles().map(role => (
-                            <option key={role} value={role}>{role}</option>
-                        ))}
-                    </select>
-                </div>
-
                 {isSuperAdmin && (
                     <div>
-                        <label className="block text-sm font-medium mb-2">Organisation</label>
-                        <select
-                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                        <SearchableSelect
+                            label="Organisation"
                             value={formData.organisationId}
-                            onChange={(e) => setFormData({ ...formData, organisationId: e.target.value })}
+                            onChange={(value) => setFormData({ ...formData, organisationId: value as string })}
+                            options={[
+                                { value: '', label: 'Select Organisation' },
+                                ...organisations.map(org => ({ value: org.id, label: org.name }))
+                            ]}
+                            placeholder="Select Organisation"
                             required
-                        >
-                            <option value="">Select Organisation</option>
-                            {organisations.map(org => (
-                                <option key={org.id} value={org.id}>{org.name}</option>
-                            ))}
-                        </select>
+                        />
                     </div>
                 )}
 
@@ -152,7 +153,7 @@ export const InviteUserModal = ({ isOpen, onClose, onSuccess }: InviteUserModalP
                 )}
 
                 <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={onClose}>
+                    <Button type="button" variant="cancel" onClick={onClose}>
                         Cancel
                     </Button>
                     <Button type="submit" disabled={loading}>

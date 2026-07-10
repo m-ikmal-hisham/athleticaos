@@ -20,13 +20,13 @@ public class JwtService {
 
     private final com.athleticaos.backend.services.TokenGenerationService tokenGenerationService;
 
-    @Value("${application.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    @Value("${application.security.jwt.secret-key}")
     private String secretKey;
 
-    @Value("${application.security.jwt.expiration:86400000}")
+    @Value("${application.security.jwt.expiration}")
     private long jwtExpiration;
 
-    @Value("${application.security.jwt.refresh-token.expiration:604800000}")
+    @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshExpiration;
 
     public JwtService(com.athleticaos.backend.services.TokenGenerationService tokenGenerationService) {
@@ -34,7 +34,7 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        return extractClaim(token, claims -> claims.getSubject());
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -87,7 +87,7 @@ public class JwtService {
     }
 
     private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractClaim(token, claims -> claims.getExpiration());
     }
 
     private Claims extractAllClaims(String token) {

@@ -2,6 +2,7 @@ package com.athleticaos.backend.audit;
 
 import com.athleticaos.backend.dtos.audit.AuditLogEntry;
 import com.athleticaos.backend.entities.*;
+import com.athleticaos.backend.entities.MatchOfficial;
 import com.athleticaos.backend.services.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -95,6 +96,17 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logTeamDeleted(Team team, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TEAM_DELETED")
+                                .entityType("TEAM")
+                                .entityId(team.getId())
+                                .entitySummary(String.format("Team deleted: %s", team.getName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== TOURNAMENT ACTIONS ====================
 
         public void logTournamentCreated(Tournament tournament, HttpServletRequest request) {
@@ -127,8 +139,8 @@ public class AuditLogger {
                                 .entityType("MATCH")
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match created: %s vs %s on %s",
-                                                match.getHomeTeam().getName(),
-                                                match.getAwayTeam().getName(),
+                                                getHomeTeamName(match),
+                                                getAwayTeamName(match),
                                                 match.getMatchDate()))
                                 .build();
 
@@ -141,8 +153,8 @@ public class AuditLogger {
                                 .entityType("MATCH")
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match updated: %s vs %s",
-                                                match.getHomeTeam().getName(),
-                                                match.getAwayTeam().getName()))
+                                                getHomeTeamName(match),
+                                                getAwayTeamName(match)))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -154,10 +166,10 @@ public class AuditLogger {
                                 .entityType("MATCH")
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match score updated: %s %d - %d %s",
-                                                match.getHomeTeam().getName(),
+                                                getHomeTeamName(match),
                                                 match.getHomeScore() != null ? match.getHomeScore() : 0,
                                                 match.getAwayScore() != null ? match.getAwayScore() : 0,
-                                                match.getAwayTeam().getName()))
+                                                getAwayTeamName(match)))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -170,8 +182,8 @@ public class AuditLogger {
                                 .entityId(match.getId())
                                 .entitySummary(String.format("Match status changed to %s: %s vs %s",
                                                 match.getStatus(),
-                                                match.getHomeTeam().getName(),
-                                                match.getAwayTeam().getName()))
+                                                getHomeTeamName(match),
+                                                getAwayTeamName(match)))
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -180,12 +192,26 @@ public class AuditLogger {
         // ==================== MATCH EVENT ACTIONS ====================
 
         public void logMatchEventAdded(MatchEvent event, HttpServletRequest request) {
+                String summary;
+                if (event.getPlayer() != null) {
+                        summary = String.format("Match event added: %s by %s %s (%s) at %d min",
+                                        event.getEventType(),
+                                        event.getPlayer().getPerson().getFirstName(),
+                                        event.getPlayer().getPerson().getLastName(),
+                                        event.getTeam().getName(),
+                                        event.getMinute());
+                } else {
+                        summary = String.format("Match event added: %s for %s at %d min",
+                                        event.getEventType(),
+                                        event.getTeam().getName(),
+                                        event.getMinute());
+                }
+
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType("MATCH_EVENT_ADDED")
                                 .entityType("MATCH_EVENT")
                                 .entityId(event.getId())
-                                .entitySummary(String.format("Match event added: %s at %d min",
-                                                event.getEventType(), event.getMinute()))
+                                .entitySummary(summary)
                                 .build();
 
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
@@ -199,8 +225,8 @@ public class AuditLogger {
                                 .entityType("PLAYER_SUSPENSION")
                                 .entityId(suspension.getId())
                                 .entitySummary(String.format("Player suspended: %s %s - %s",
-                                                suspension.getPlayer().getFirstName(),
-                                                suspension.getPlayer().getLastName(),
+                                                suspension.getPlayer().getPerson().getFirstName(),
+                                                suspension.getPlayer().getPerson().getLastName(),
                                                 suspension.getReason()))
                                 .build();
 
@@ -217,6 +243,101 @@ public class AuditLogger {
                                 .entitySummary(String.format("User logged in: %s", user.getEmail()))
                                 .build();
 
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        // ==================== ORGANISATION ACTIONS ====================
+
+        public void logOrganisationCreated(Organisation organisation, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("ORGANISATION_CREATED")
+                                .entityType("ORGANISATION")
+                                .entityId(organisation.getId())
+                                .entitySummary(String.format("Organisation created: %s (%s)",
+                                                organisation.getName(), organisation.getOrgLevel()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logOrganisationUpdated(Organisation organisation, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("ORGANISATION_UPDATED")
+                                .entityType("ORGANISATION")
+                                .entityId(organisation.getId())
+                                .entitySummary(String.format("Organisation updated: %s", organisation.getName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        // ==================== PLAYER ACTIONS ====================
+
+        public void logPlayerCreated(Player player, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PLAYER_CREATED")
+                                .entityType("PLAYER")
+                                .entityId(player.getId())
+                                .entitySummary(String.format("Player created: %s %s",
+                                                player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPlayerUpdated(Player player, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PLAYER_UPDATED")
+                                .entityType("PLAYER")
+                                .entityId(player.getId())
+                                .entitySummary(String.format("Player updated: %s %s",
+                                                player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPlayerDeleted(Player player, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PLAYER_DELETED")
+                                .entityType("PLAYER")
+                                .entityId(player.getId())
+                                .entitySummary(String.format("Player deleted: %s %s",
+                                                player.getPerson().getFirstName(), player.getPerson().getLastName()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        // ==================== OFFICIAL ACTIONS ====================
+
+        public void logOfficialAssigned(MatchOfficial assignment, HttpServletRequest request) {
+                String officialName = "Unknown";
+                if (assignment.getOfficial().getPerson() != null) {
+                        officialName = assignment.getOfficial().getPerson().getLastName();
+                } else if (assignment.getOfficial().getUser() != null) {
+                        officialName = assignment.getOfficial().getUser().getLastName();
+                }
+
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("OFFICIAL_ASSIGNED")
+                                .entityType("MATCH_OFFICIAL")
+                                .entityId(assignment.getId())
+                                .entitySummary(String.format("Official %s assigned as %s to match %s",
+                                                officialName,
+                                                assignment.getAssignedRole(),
+                                                assignment.getMatch().getMatchCode()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logBulkAction(String actionType, String entityType, String summary, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType(actionType)
+                                .entityType(entityType)
+                                .entitySummary(summary)
+                                .build();
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
@@ -239,5 +360,19 @@ public class AuditLogger {
                         return null;
                 }
                 return request.getHeader("User-Agent");
+        }
+
+        private String getHomeTeamName(Match match) {
+                if (match.getHomeTeam() != null) {
+                        return match.getHomeTeam().getName();
+                }
+                return match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD";
+        }
+
+        private String getAwayTeamName(Match match) {
+                if (match.getAwayTeam() != null) {
+                        return match.getAwayTeam().getName();
+                }
+                return match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD";
         }
 }

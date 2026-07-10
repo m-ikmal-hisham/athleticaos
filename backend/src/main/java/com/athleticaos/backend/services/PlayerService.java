@@ -8,13 +8,25 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PlayerService {
-    List<PlayerResponse> getAllPlayers();
+    List<PlayerResponse> getAllPlayers(UUID organisationId, UUID teamId);
 
     PlayerResponse getPlayerById(UUID id);
 
     PlayerResponse createPlayer(PlayerCreateRequest request);
 
+    List<PlayerResponse> createBulkPlayers(List<PlayerCreateRequest> requests);
+
+    com.athleticaos.backend.dtos.player.PlayerBatchResponse createBatchPlayers(UUID teamId, List<com.athleticaos.backend.dtos.player.PlayerRowDTO> requests);
+
     PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request);
 
     PlayerResponse toggleStatus(UUID id);
+
+    void deletePlayer(UUID id);
+
+    PlayerResponse getPlayerBySlug(String slug);
+
+    PlayerResponse getPlayerByEmail(String email);
+
+    void regenerateAllSlugs();
 }

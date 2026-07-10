@@ -1,4 +1,6 @@
+
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -6,6 +8,8 @@ interface UIState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   getEffectiveTheme: () => 'light' | 'dark';
+  activeTournamentId: string | null;
+  setActiveTournamentId: (id: string | null) => void;
 }
 
 const getSystemTheme = (): 'light' | 'dark' => {
@@ -13,23 +17,49 @@ const getSystemTheme = (): 'light' | 'dark' => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
-export const useUIStore = create<UIState>((set, get) => ({
-  theme: (localStorage.getItem("athos-theme") as Theme) || "system",
+export const useUIStore = create<UIState>()(
+  persist(
+    (set, get) => ({
+      theme: "system",
 
-  setTheme: (theme: Theme) => {
-    localStorage.setItem("athos-theme", theme);
-    set({ theme });
+      setTheme: (theme: Theme) => {
+        set({ theme });
+        // Apply effective theme
+        const effectiveTheme = theme === 'system' ? getSystemTheme() : theme;
+        document.documentElement.setAttribute("data-theme", effectiveTheme);
+        if (effectiveTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      },
 
-    // Apply effective theme
-    const effectiveTheme = theme === 'system' ? getSystemTheme() : theme;
-    document.documentElement.setAttribute("data-theme", effectiveTheme);
-  },
+      getEffectiveTheme: () => {
+        const { theme } = get();
+        return theme === 'system' ? getSystemTheme() : theme;
+      },
 
-  getEffectiveTheme: () => {
-    const { theme } = get();
-    return theme === 'system' ? getSystemTheme() : theme;
-  },
-}));
+      activeTournamentId: null,
+      setActiveTournamentId: (id: string | null) => set({ activeTournamentId: id }),
+    }),
+    {
+      name: "athos-ui-storage", // content is persisted to localStorage
+      // partialize: (state) => ({ theme: state.theme, activeTournamentId: state.activeTournamentId }), // Optional: persist only specific fields
+      onRehydrateStorage: () => (state) => {
+        // Re-apply theme on hydration
+        if (state) {
+          const effectiveTheme = state.theme === 'system' ? getSystemTheme() : state.theme;
+          document.documentElement.setAttribute("data-theme", effectiveTheme);
+          if (effectiveTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+      }
+    }
+  )
+);
 
 // Listen for system theme changes
 if (typeof window !== 'undefined') {
@@ -38,6 +68,11 @@ if (typeof window !== 'undefined') {
     if (store.theme === 'system') {
       const effectiveTheme = getSystemTheme();
       document.documentElement.setAttribute("data-theme", effectiveTheme);
+      if (effectiveTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   });
 }

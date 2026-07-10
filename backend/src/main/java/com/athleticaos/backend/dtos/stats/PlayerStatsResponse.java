@@ -14,6 +14,7 @@ public record PlayerStatsResponse(
         int dropGoals,
         int yellowCards,
         int redCards,
-        int totalPoints // e.g. try=5, conv=2, penalty=3, drop=3
-) {
+        int totalPoints, // e.g. try=5, conv=2, penalty=3, drop=3
+        int totalMinutesPlayed,
+        java.util.List<PlayerMatchStatsDTO> recentMatches) {
 }

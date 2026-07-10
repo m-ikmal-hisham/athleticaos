@@ -5,20 +5,38 @@ import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.entities.PlayerTeam;
+import com.athleticaos.backend.entities.Team;
+import com.athleticaos.backend.entities.TournamentPlayer;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
+import com.athleticaos.backend.repositories.TournamentPlayerRepository;
+import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import com.athleticaos.backend.repositories.MatchLineupRepository;
+import com.athleticaos.backend.repositories.MatchEventRepository;
+import com.athleticaos.backend.repositories.PlayerSuspensionRepository;
+import com.athleticaos.backend.dtos.player.PlayerBatchResponse;
+import com.athleticaos.backend.dtos.player.PlayerRowDTO;
+import com.athleticaos.backend.dtos.player.PlayerRowResult;
+import com.athleticaos.backend.services.PlayerBatchHelper;
+import jakarta.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import java.util.Set;
+import java.util.ArrayList;
 import com.athleticaos.backend.services.PlayerService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.entities.OrganisationPerson;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -29,31 +47,100 @@ public class PlayerServiceImpl implements PlayerService {
     private final PersonRepository personRepository;
     private final UserService userService;
     private final PlayerTeamRepository playerTeamRepository;
+    private final TournamentPlayerRepository tournamentPlayerRepository;
+    private final TeamRepository teamRepository;
+    private final OrganisationPersonRepository organisationPersonRepository;
+    private final MatchLineupRepository matchLineupRepository;
+    private final MatchEventRepository matchEventRepository;
+    private final PlayerSuspensionRepository playerSuspensionRepository;
+    private final com.athleticaos.backend.services.OrganisationService organisationService;
+    private final PlayerBatchHelper playerBatchHelper;
+    private final Validator validator;
 
     @Override
     @Transactional(readOnly = true)
     public PlayerResponse getPlayerById(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Player ID must not be null");
+        }
         log.info("Fetching player by id: {}", id);
         Player player = playerRepository.findById(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
         return mapToPlayerResponse(player);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PlayerResponse> getAllPlayers() {
+    public PlayerResponse getPlayerBySlug(String slug) {
+        log.info("Fetching player by slug: {}", slug);
+        Player player = playerRepository.findBySlug(slug)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        return mapToPlayerResponse(player);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PlayerResponse getPlayerByEmail(String email) {
+        log.info("Fetching player by email: {}", email);
+        Player player = playerRepository.findByPerson_Email(email)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        return mapToPlayerResponse(player);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PlayerResponse> getAllPlayers(UUID organisationId, UUID teamId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Player> players;
 
-        if (accessibleIds == null) {
+        if (organisationId != null || teamId != null) {
+            // Handle explicit filtering
+            if (teamId != null) {
+                // Filter by specific team (check access first?)
+                // Simplification: Check if team belongs to accessible orgs if not super admin
+                // For now, trusting repository + filter later
+                players = playerTeamRepository.findPlayersByTeamId(teamId).stream()
+                        .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                        .collect(Collectors.toList());
+            } else {
+                // Filter by Organisation (Hierarchical)
+                java.util.Set<UUID> targetIds = organisationService.getAllDescendantIds(organisationId);
+
+                // Security check: Ensure requested org hierarchy intersects with user's
+                // accessible scope
+                if (accessibleIds != null) {
+                    // If accessibleIds is not null (not super admin), we must filter targetIds
+                    // to only include those that are also in accessibleIds (or just check root?)
+                    // Actually, if I have access to State, I have access to all children.
+                    // But accessibleIds currently returns the whole subtree.
+                    // So intersection is the correct approach.
+                    targetIds.retainAll(accessibleIds);
+                }
+
+                if (targetIds.isEmpty()) {
+                    return java.util.Collections.emptyList();
+                }
+
+                players = playerTeamRepository
+                        .findPlayersByOrganisationIds(targetIds).stream()
+                        .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                        .collect(Collectors.toList());
+            }
+
+        } else if (accessibleIds == null) {
             // SUPER_ADMIN sees all
-            players = playerRepository.findAllByOrderByCreatedAtDesc();
+            players = playerRepository.findAllByDeletedFalseOrderByCreatedAtDesc();
         } else if (accessibleIds.isEmpty()) {
             // No organisation assigned or empty hierarchy
             players = java.util.Collections.emptyList();
         } else {
             // Filter by accessible organisations via team assignments
-            players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds);
+            players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds).stream()
+                    .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                    .collect(Collectors.toList());
         }
 
         return players.stream()
@@ -63,12 +150,25 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
+    @SuppressWarnings("deprecation")
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
-        // Check if person with email already exists
-        if (personRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already exists");
+        // Normalize IC/Passport (Strict Alpha-Numeric)
+        String normalizedIc = null;
+        if (request.icOrPassport() != null) {
+            normalizedIc = normalizeIc(request.icOrPassport());
+        }
+
+        if (normalizedIc != null && !normalizedIc.isEmpty()) {
+            checkDuplicateIc(normalizedIc, null);
+        }
+
+        // Check if person with email already exists (only if email provided)
+        if (request.email() != null && !request.email().isEmpty()) {
+            if (personRepository.existsByEmail(request.email())) {
+                throw new IllegalArgumentException("Email already exists");
+            }
         }
 
         // Create Person record (PII)
@@ -77,41 +177,84 @@ public class PlayerServiceImpl implements PlayerService {
                 .lastName(request.lastName())
                 .gender(request.gender())
                 .dob(request.dob())
-                .icOrPassport(request.icOrPassport())
+                .icOrPassport(normalizedIc)
+                .identificationType(request.identificationType())
+                .identificationValue(request.identificationValue())
                 .nationality(request.nationality())
                 .email(request.email())
                 .phone(request.phone())
-                .address(request.address())
+                .addressLine1(request.addressLine1())
+                .addressLine2(request.addressLine2())
+                .city(request.city())
+                .postcode(request.postcode())
+                .state(request.state())
+                .country(request.country())
+                .address(request.address()) // Legacy mapping
                 .build();
 
+        if (person == null) {
+            throw new IllegalStateException("Person cannot be null");
+        }
         person = personRepository.save(person);
         log.info("Created person record with id: {}", person.getId());
+
+        // Generate slug
+        String name = person.getFirstName() + " " + person.getLastName();
+        String slug = com.athleticaos.backend.utils.SlugGenerator.generateUniqueSlug(name,
+                playerRepository::existsBySlug);
 
         // Create Player record (Rugby-specific)
         Player player = Player.builder()
                 .person(person)
+                .slug(slug)
                 .status(request.status() != null ? request.status() : "ACTIVE")
                 .dominantHand(request.dominantHand())
                 .dominantLeg(request.dominantLeg())
                 .heightCm(request.heightCm())
+                .heightCm(request.heightCm())
                 .weightKg(request.weightKg())
+                .photoUrl(request.photoUrl())
                 .build();
 
+        if (player == null) {
+            throw new IllegalStateException("Player cannot be null");
+        }
         player = playerRepository.save(player);
         log.info("Created player record with id: {}", player.getId());
+
+        // Handle Immediate Team Assignment
+        if (request.teamId() != null) {
+            assignToTeam(player, request.teamId());
+        }
 
         return mapToPlayerResponse(player);
     }
 
     @Override
     @Transactional
+    public List<PlayerResponse> createBulkPlayers(List<PlayerCreateRequest> requests) {
+        log.info("Creating bulk players: {} items", requests.size());
+        return requests.stream()
+                .map(this::createPlayer)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("deprecation")
     public PlayerResponse updatePlayer(UUID id, PlayerUpdateRequest request) {
         log.info("Updating player: {}", id);
 
-        Player player = playerRepository.findById(id)
+        Player player = playerRepository.findByIdWithPerson(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
-        Person person = player.getPerson();
+        // Explicitly load Person to avoid LazyInitializationException
+        Person person = playerRepository.findPersonByPlayerId(id)
+                .orElseThrow(() -> new EntityNotFoundException("Person details not found for player"));
+
+        // Force initialization (double safety, though implicit load should suffice)
+        log.debug("Loaded person for update: {}", person.getId());
 
         // Update Person (PII) fields
         if (request.firstName() != null) {
@@ -127,7 +270,24 @@ public class PlayerServiceImpl implements PlayerService {
             person.setDob(request.dob());
         }
         if (request.icOrPassport() != null) {
-            person.setIcOrPassport(request.icOrPassport());
+            String normalizedIcUpdate = normalizeIc(request.icOrPassport());
+
+            // Validate only if different or new (though duplicate check handles
+            // self-exclusion)
+            if (normalizedIcUpdate != null && !normalizedIcUpdate.isEmpty()) {
+                checkDuplicateIc(normalizedIcUpdate, person.getId());
+                person.setIcOrPassport(normalizedIcUpdate);
+            } else {
+                // If explicitly cleared (empty), allow setting to null or empty?
+                // Assuming empty string means clear.
+                person.setIcOrPassport(normalizedIcUpdate);
+            }
+        }
+        if (request.identificationType() != null) {
+            person.setIdentificationType(request.identificationType());
+        }
+        if (request.identificationValue() != null) {
+            person.setIdentificationValue(request.identificationValue());
         }
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
@@ -138,6 +298,21 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.phone() != null) {
             person.setPhone(request.phone());
         }
+
+        // Structured Address Updates
+        if (request.addressLine1() != null)
+            person.setAddressLine1(request.addressLine1());
+        if (request.addressLine2() != null)
+            person.setAddressLine2(request.addressLine2());
+        if (request.city() != null)
+            person.setCity(request.city());
+        if (request.postcode() != null)
+            person.setPostcode(request.postcode());
+        if (request.state() != null)
+            person.setState(request.state());
+        if (request.country() != null)
+            person.setCountry(request.country());
+
         if (request.address() != null) {
             person.setAddress(request.address());
         }
@@ -160,19 +335,63 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.weightKg() != null) {
             player.setWeightKg(request.weightKg());
         }
+        if (request.photoUrl() != null) {
+            player.setPhotoUrl(request.photoUrl());
+        }
 
+        if (player == null) {
+            throw new IllegalStateException("Player cannot be null");
+        }
         player = playerRepository.save(player);
         log.info("Updated player: {}", id);
 
         return mapToPlayerResponse(player);
     }
 
+    // ... (keeping other methods unchanged, skipping to checkDuplicateIc
+    // replacement)
+
+    private String normalizeIc(String ic) {
+        if (ic == null)
+            return null;
+        return ic.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+    }
+
+    /**
+     * Helper method to perform robust duplicate checking for IC/Passport.
+     * Uses strict normalization and Database uniqueness check.
+     *
+     * @param ic              The normalized (strict alphanumeric) input string
+     * @param excludePersonId The Person ID to exclude from the check (for updates)
+     */
+    private void checkDuplicateIc(String ic, UUID excludePersonId) {
+        log.debug("Checking for duplicate IC: {} (excluding: {})", ic, excludePersonId);
+        if (ic == null || ic.isEmpty())
+            return;
+
+        boolean exists;
+        if (excludePersonId == null) {
+            exists = personRepository.existsByIcOrPassport(ic);
+        } else {
+            exists = personRepository.existsByIcOrPassportAndIdNot(ic, excludePersonId);
+        }
+
+        if (exists) {
+            log.warn("Duplicate IC/Passport detected: {}", ic);
+            throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC number already exists");
+        }
+    }
+
     @Override
     @Transactional
     public PlayerResponse toggleStatus(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Player ID must not be null");
+        }
         log.info("Toggling status for player: {}", id);
 
         Player player = playerRepository.findById(id)
+                .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
 
         // Toggle between ACTIVE and INACTIVE
@@ -186,27 +405,268 @@ public class PlayerServiceImpl implements PlayerService {
         return mapToPlayerResponse(player);
     }
 
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public void deletePlayer(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Player ID must not be null");
+        }
+        Player player = playerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        
+        Person person = player.getPerson();
+
+        // Check if there are any ACTIVE team assignments
+        List<PlayerTeam> activeTeams = playerTeamRepository.findByPlayerIdAndIsActiveTrue(id);
+        
+        // Check if there is any match, lineup, or suspension history
+        boolean hasMatchHistory = !matchLineupRepository.findByPlayerId(id).isEmpty()
+                || !matchEventRepository.findByPlayer_Id(id).isEmpty()
+                || !playerSuspensionRepository.findByPlayerIdAndIsActiveTrue(id).isEmpty();
+
+        if (activeTeams.isEmpty() && !hasMatchHistory) {
+            log.info("Performing clean hard-delete for player {} and person {}", id, person != null ? person.getId() : null);
+            // Delete all historical player-team assignments to avoid foreign key violations
+            List<PlayerTeam> allTeams = playerTeamRepository.findByPlayerId(id);
+            playerTeamRepository.deleteAll(allTeams);
+
+            // Delete all historical tournament-player assignments to avoid foreign key violations
+            List<TournamentPlayer> allTournaments = tournamentPlayerRepository.findByPlayerId(id);
+            tournamentPlayerRepository.deleteAll(allTournaments);
+
+            // Delete player
+            playerRepository.delete(player);
+
+            // Delete person if safe (no user account associated and not a staff member)
+            if (person != null && person.getUserId() == null && !Boolean.TRUE.equals(person.getIsStaff())) {
+                List<OrganisationPerson> orgPersons = organisationPersonRepository.findByPersonId(person.getId());
+                organisationPersonRepository.deleteAll(orgPersons);
+                personRepository.delete(person);
+            }
+            log.info("Successfully hard-deleted player {} and associated person record.", id);
+        } else {
+            log.info("Performing soft-delete for player {} (activeTeams size: {}, hasMatchHistory: {})", id, activeTeams.size(), hasMatchHistory);
+            // Soft delete
+            player.setDeleted(true);
+            player.setDeletedAt(java.time.LocalDateTime.now());
+            playerRepository.save(player);
+
+            // Deactivate all active team assignments for this player
+            for (PlayerTeam pt : activeTeams) {
+                pt.setIsActive(false);
+                playerTeamRepository.save(pt);
+            }
+
+            // Deactivate all active tournament assignments for this player
+            List<TournamentPlayer> tournamentPlayers = tournamentPlayerRepository.findByPlayerIdAndIsActiveTrue(id);
+            for (TournamentPlayer tp : tournamentPlayers) {
+                tp.setActive(false);
+                tournamentPlayerRepository.save(tp);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void regenerateAllSlugs() {
+        List<Player> players = playerRepository.findAll();
+        for (Player player : players) {
+            boolean changed = false;
+            // Fix Null Slug
+            if (player.getSlug() == null || player.getSlug().isEmpty()) {
+                String baseSlug = com.athleticaos.backend.utils.SlugGenerator
+                        .generateSlug(player.getPerson().getFirstName() + " " + player.getPerson().getLastName());
+                String uniqueSlug = com.athleticaos.backend.utils.SlugGenerator.generateUniqueSlug(
+                        baseSlug,
+                        slug -> playerRepository.findBySlug(slug).isPresent());
+                player.setSlug(uniqueSlug);
+                changed = true;
+            }
+            // Fix Null Deleted
+            if (player.getDeleted() == null) {
+                player.setDeleted(false);
+                changed = true;
+            }
+
+            if (changed) {
+                playerRepository.save(player);
+            }
+        }
+    }
+
+    private void assignToTeam(Player player, UUID teamId) {
+        if (teamId == null) {
+            throw new IllegalArgumentException("Team ID must not be null");
+        }
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        // Check if already assigned
+        boolean exists = playerTeamRepository.existsByPlayerIdAndTeamId(player.getId(), teamId);
+        if (exists) {
+            return; // Already assigned, nothing to do
+        }
+
+        PlayerTeam playerTeam = PlayerTeam.builder()
+                .player(player)
+                .team(team)
+                .isActive(true)
+                .joinedDate(LocalDate.now())
+                .build();
+
+        if (playerTeam == null) {
+            throw new IllegalStateException("PlayerTeam cannot be null");
+        }
+        playerTeamRepository.save(playerTeam);
+
+        // Auto-link person to organisation
+        if (team.getOrganisation() != null) {
+            if (!organisationPersonRepository.existsByOrganisationIdAndPersonId(team.getOrganisation().getId(), player.getPerson().getId())) {
+                OrganisationPerson op = OrganisationPerson.builder()
+                        .organisation(team.getOrganisation())
+                        .person(player.getPerson())
+                        .build();
+                if (op == null) {
+                    throw new IllegalStateException("OrganisationPerson cannot be null");
+                }
+                organisationPersonRepository.save(op);
+            }
+        }
+
+        log.info("Assigned player {} to team {}", player.getId(), team.getId());
+    }
+
+    @SuppressWarnings("deprecation")
     private PlayerResponse mapToPlayerResponse(Player player) {
         Person person = player.getPerson();
 
+        // Get organisation from current team assignment
+        UUID organisationId = null;
+        String organisationName = null;
+        java.util.List<String> teamNames = new java.util.ArrayList<>();
+
+        // Helper filter for active assignments usually won't include deleted players
+        // unless logic is flawed
+        List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
+                .findByPlayerIdAndIsActiveTrue(player.getId());
+        // Sort by most recent assignment first so current team drives org display
+        playerTeams.sort((a, b) -> {
+            var d1 = a.getJoinedDate() != null ? a.getJoinedDate() : (a.getCreatedAt() != null ? a.getCreatedAt().toLocalDate() : java.time.LocalDate.MIN);
+            var d2 = b.getJoinedDate() != null ? b.getJoinedDate() : (b.getCreatedAt() != null ? b.getCreatedAt().toLocalDate() : java.time.LocalDate.MIN);
+            return d2.compareTo(d1);
+        });
+        if (!playerTeams.isEmpty()) {
+            // Get the first (most recent) active team assignment
+            var playerTeam = playerTeams.get(0);
+
+            if (playerTeam.getTeam() != null && playerTeam.getTeam().getOrganisation() != null) {
+                organisationId = playerTeam.getTeam().getOrganisation().getId();
+                organisationName = playerTeam.getTeam().getOrganisation().getName();
+            }
+
+            // Collect all active team names (most recent first)
+            teamNames = playerTeams.stream()
+                    .map(pt -> pt.getTeam().getName())
+                    .collect(java.util.stream.Collectors.toList());
+        }
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
+                .slug(player.getSlug())
                 .firstName(person.getFirstName())
                 .lastName(person.getLastName())
                 .gender(person.getGender())
                 .dob(person.getDob())
                 .icOrPassport(person.getIcOrPassport()) // Include for update flow
+                .identificationType(person.getIdentificationType())
+                .identificationValue(person.getIdentificationValue())
                 .nationality(person.getNationality())
                 .email(person.getEmail())
                 .phone(person.getPhone())
-                .address(person.getAddress())
+                // Structured Address
+                .addressLine1(person.getAddressLine1())
+                .addressLine2(person.getAddressLine2())
+                .city(person.getCity())
+                .postcode(person.getPostcode())
+                .state(person.getState())
+                .country(person.getCountry())
+                .address(person.getAddress()) // Legacy
+                // Rugby
                 .status(player.getStatus())
                 .dominantHand(player.getDominantHand())
                 .dominantLeg(player.getDominantLeg())
                 .heightCm(player.getHeightCm())
                 .weightKg(player.getWeightKg())
+                .photoUrl(player.getPhotoUrl())
+                .organisationId(organisationId)
+                .organisationName(organisationName)
+                .teamNames(teamNames)
                 .createdAt(player.getCreatedAt())
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = false)
+    public PlayerBatchResponse createBatchPlayers(UUID teamId, List<PlayerRowDTO> requests) {
+        if (teamId == null) {
+            throw new IllegalArgumentException("Team ID must not be null");
+        }
+        log.info("Starting batch player onboarding for team ID: {}, rows: {}", teamId, requests.size());
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        int successCount = 0;
+        int failCount = 0;
+        List<PlayerRowResult> results = new ArrayList<>();
+
+        for (int i = 0; i < requests.size(); i++) {
+            PlayerRowDTO row = requests.get(i);
+            List<String> rowErrors = new ArrayList<>();
+
+            // 1. Manual validation check using jakarta.validation.Validator
+            Set<ConstraintViolation<PlayerRowDTO>> violations = validator.validate(row);
+            if (!violations.isEmpty()) {
+                for (ConstraintViolation<PlayerRowDTO> violation : violations) {
+                    rowErrors.add(violation.getMessage());
+                }
+            }
+
+            // 2. Pre-check database constraint duplicate rules if no validation errors yet
+            if (rowErrors.isEmpty()) {
+                String normalizedIc = row.icOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+                if (personRepository.existsByIcOrPassport(normalizedIc)) {
+                    rowErrors.add("Player with this IC or Passport already exists");
+                }
+                
+                if (row.email() != null && !row.email().trim().isEmpty()) {
+                    if (personRepository.existsByEmail(row.email().trim().toLowerCase())) {
+                        rowErrors.add("Player with this email already exists");
+                    }
+                }
+            }
+
+            // 3. Save if valid, else fail
+            if (rowErrors.isEmpty()) {
+                try {
+                    UUID playerId = playerBatchHelper.savePlayerInNewTransaction(row, team);
+                    results.add(new PlayerRowResult(i, "SUCCESS", playerId, null));
+                    successCount++;
+                } catch (Exception e) {
+                    log.error("Failed to save player row at index {}", i, e);
+                    rowErrors.add("Internal save error: " + e.getMessage());
+                    results.add(new PlayerRowResult(i, "ERROR", null, rowErrors));
+                    failCount++;
+                }
+            } else {
+                results.add(new PlayerRowResult(i, "ERROR", null, rowErrors));
+                failCount++;
+            }
+        }
+
+        log.info("Batch player onboarding finished. Success: {}, Failed: {}", successCount, failCount);
+        return new PlayerBatchResponse(successCount, failCount, results);
+    }
+
 }

@@ -1,3 +1,5 @@
+import { Modal } from './Modal';
+import { Button } from './Button';
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -7,6 +9,7 @@ interface ConfirmModalProps {
     message: string;
     confirmText?: string;
     cancelText?: string;
+    variant?: 'primary' | 'destructive'; // Added variant support
 }
 
 export const ConfirmModal = ({
@@ -16,9 +19,9 @@ export const ConfirmModal = ({
     title,
     message,
     confirmText = 'Confirm',
-    cancelText = 'Cancel'
+    cancelText = 'Cancel',
+    variant = 'primary'
 }: ConfirmModalProps) => {
-    if (!isOpen) return null;
 
     const handleConfirm = () => {
         onConfirm();
@@ -26,38 +29,32 @@ export const ConfirmModal = ({
     };
 
     return (
-        <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
-                onClick={onClose}
-            />
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={title}
+            size="sm"
+        >
+            <div className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                    {message}
+                </p>
 
-            {/* Modal */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div
-                    className="glass-card w-full max-w-md animate-scale-in"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <h2 className="text-xl font-semibold text-foreground mb-2">{title}</h2>
-                    <p className="text-muted-foreground mb-6">{message}</p>
-
-                    <div className="flex gap-3 justify-end">
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors text-foreground font-medium"
-                        >
-                            {cancelText}
-                        </button>
-                        <button
-                            onClick={handleConfirm}
-                            className="px-4 py-2 btn-primary rounded-lg font-medium transition-colors text-white bg-primary hover:bg-primary/90"
-                        >
-                            {confirmText}
-                        </button>
-                    </div>
+                <div className="flex gap-3 justify-end pt-2">
+                    <Button
+                        variant="cancel"
+                        onClick={onClose}
+                    >
+                        {cancelText}
+                    </Button>
+                    <Button
+                        variant={variant === 'destructive' ? 'danger' : 'primary'}
+                        onClick={handleConfirm}
+                    >
+                        {confirmText}
+                    </Button>
                 </div>
             </div>
-        </>
+        </Modal>
     );
 };

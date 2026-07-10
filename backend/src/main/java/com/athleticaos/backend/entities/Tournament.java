@@ -31,6 +31,9 @@ public class Tournament {
     @Column(nullable = false)
     private String level; // NATIONAL, STATE, SCHOOL
 
+    @Column(unique = true)
+    private String slug;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organiser_org_id", nullable = false)
     private Organisation organiserOrg;
@@ -49,8 +52,17 @@ public class Tournament {
     private boolean isPublished = false;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private com.athleticaos.backend.enums.TournamentStatus status = com.athleticaos.backend.enums.TournamentStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "format")
     private TournamentFormat format;
+
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TournamentFormatConfig> formatConfigs = new java.util.ArrayList<>();
 
     @Column(name = "number_of_pools")
     private Integer numberOfPools;
@@ -74,11 +86,69 @@ public class Tournament {
     @Column(name = "age_group_label")
     private String ageGroupLabel;
 
-    @Column(nullable = false)
+    @Column(name = "deleted")
     @Builder.Default
-    private boolean deleted = false;
+    private Boolean deleted = false;
+
+    @Column(name = "logo_url")
+    private String logoUrl;
+
+    @Column(name = "banner_url")
+    private String bannerUrl;
+
+    @Column(name = "background_url")
+    private String backgroundUrl;
+
+    @Column(name = "livestream_url")
+    private String livestreamUrl;
+
+    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TournamentCategory> categories = new java.util.ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    // Helper methods for Format Configs
+
+    public TournamentFormatConfig getFormatConfig() {
+        return getFormatConfig(null);
+    }
+
+    public TournamentFormatConfig getFormatConfig(UUID categoryId) {
+        if (formatConfigs == null || formatConfigs.isEmpty()) {
+            return null;
+        }
+        // Try specific category
+        if (categoryId != null) {
+            TournamentFormatConfig config = formatConfigs.stream()
+                    .filter(c -> c.getCategory() != null && c.getCategory().getId().equals(categoryId))
+                    .findFirst()
+                    .orElse(null);
+            if (config != null) {
+                return config;
+            }
+        }
+        // Fallback to global (category is null)
+        return formatConfigs.stream()
+                .filter(c -> c.getCategory() == null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void addFormatConfig(TournamentFormatConfig config) {
+        if (this.formatConfigs == null) {
+            this.formatConfigs = new java.util.ArrayList<>();
+        }
+        // Remove existing if any for same category (to avoid dupes in list before save,
+        // though DB constrains it)
+        UUID catId = config.getCategory() != null ? config.getCategory().getId() : null;
+        this.formatConfigs.removeIf(c -> {
+            UUID cId = c.getCategory() != null ? c.getCategory().getId() : null;
+            return java.util.Objects.equals(catId, cId);
+        });
+
+        config.setTournament(this);
+        this.formatConfigs.add(config);
+    }
 }

@@ -8,5 +8,6 @@ public enum CompetitionType {
     FRIENDLY,
     SEVENS,
     TENS,
-    FIFTEENS
+    FIFTEENS,
+    GROUP_KNOCKOUT
 }

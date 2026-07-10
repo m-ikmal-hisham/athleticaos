@@ -14,7 +14,12 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class PublicMatchDetailResponse extends PublicMatchSummaryResponse {
+    private java.util.UUID tournamentId;
+    private String tournamentSlug;
     private List<PublicMatchEventResponse> events;
     private PublicTeamStatsResponse homeStats;
     private PublicTeamStatsResponse awayStats;
+    private PublicOrganisationBranding organiserBranding;
+    private Integer matchDuration;
+    private Boolean isOneWayMatch;
 }

@@ -15,5 +15,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     java.util.List<User> findByRoles_Name(String roleName);
 
+    java.util.List<User> findByOrganisationId(UUID organisationId);
     java.util.List<User> findByOrganisation_IdIn(java.util.Set<UUID> orgIds);
 }

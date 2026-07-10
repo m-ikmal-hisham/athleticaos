@@ -19,9 +19,14 @@ public interface PlayerTeamService {
     void removePlayerFromTeam(UUID playerId, UUID teamId);
 
     /**
+     * Remove players from a team in bulk
+     */
+    void removePlayersFromTeam(List<UUID> playerIds, UUID teamId);
+
+    /**
      * Get all players in a team (roster)
      */
-    List<PlayerInTeamDTO> getTeamRoster(UUID teamId);
+    List<PlayerInTeamDTO> getTeamRoster(UUID teamId, UUID tournamentId);
 
     /**
      * Get all teams a player is assigned to

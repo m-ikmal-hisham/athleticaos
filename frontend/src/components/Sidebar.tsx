@@ -1,16 +1,24 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-    LayoutDashboard,
+    Layout,
     Users,
-    Building2,
+    Buildings,
     UserCircle,
-    Users2,
+    UsersThree,
     Trophy,
     Calendar,
     X,
-    Medal
-} from 'lucide-react';
+    Medal,
+    ChartBar,
+    CheckCircle,
+    Gavel,
+    TrendUp,
+    Info,
+    ChartLineUp,
+    CurrencyDollar,
+    Rocket
+} from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -24,13 +32,14 @@ interface NavItem {
     path: string;
     icon: React.ReactNode;
     roles?: string[];
+    children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
     {
         label: 'Dashboard',
         path: '/dashboard',
-        icon: <LayoutDashboard className="w-5 h-5" />,
+        icon: <Layout className="w-5 h-5" />,
     },
     {
         label: 'Users',
@@ -41,39 +50,113 @@ const navItems: NavItem[] = [
     {
         label: 'Organisations',
         path: '/dashboard/organisations',
-        icon: <Building2 className="w-5 h-5" />,
+        icon: <Buildings className="w-5 h-5" />,
         roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+    },
+    {
+        label: 'People',
+        path: '/dashboard/people',
+        icon: <Users className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+    },
+    {
+        label: 'Federation',
+        path: '/dashboard/federation/dashboard',
+        icon: <Buildings className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+    },
+    {
+        label: 'Sanctioning',
+        path: '/dashboard/federation/sanctioning',
+        icon: <Trophy className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+    },
+    {
+        label: 'Oversight',
+        path: '/dashboard/federation/oversight',
+        icon: <ChartBar className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+    },
+    {
+        label: 'Compliance',
+        path: '/dashboard/federation/compliance',
+        icon: <CheckCircle className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+    },
+    {
+        label: 'Discipline',
+        path: '/dashboard/federation/discipline',
+        icon: <Gavel className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+    },
+    {
+        label: 'Monetization',
+        path: '/dashboard/monetization',
+        icon: <CurrencyDollar className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+        children: [
+            {
+                label: 'Sponsor Packages',
+                path: '/dashboard/monetization/sponsors',
+                icon: <Medal className="w-5 h-5" />,
+            },
+            {
+                label: 'Subscriptions',
+                path: '/dashboard/monetization/subscriptions',
+                icon: <Rocket className="w-5 h-5" />,
+            }
+        ]
+    },
+    {
+        label: 'Analytics',
+        path: '/dashboard/analytics',
+        icon: <ChartLineUp className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+        children: [
+            {
+                label: 'Team Trends',
+                path: '/dashboard/analytics/teams',
+                icon: <TrendUp className="w-5 h-5" />,
+            },
+            {
+                label: 'Impact Analysis',
+                path: '/dashboard/analytics/impact',
+                icon: <Info className="w-5 h-5" />,
+            },
+            {
+                label: 'Season Summary',
+                path: '/dashboard/analytics/season',
+                icon: <Trophy className="w-5 h-5" />,
+            }
+        ]
     },
     {
         label: 'Teams',
         path: '/dashboard/teams',
-        icon: <Users2 className="w-5 h-5" />,
-        // All roles except PLAYER can see teams (with different scopes)
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_COACH'],
+        icon: <UsersThree className="w-5 h-5" />,
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER', 'ROLE_COACH', 'ROLE_PLAYER'],
     },
     {
         label: 'Players',
         path: '/dashboard/players',
         icon: <UserCircle className="w-5 h-5" />,
-        // All roles can see players (PLAYER sees only self)
     },
     {
         label: 'Matches',
         path: '/dashboard/matches',
         icon: <Calendar className="w-5 h-5" />,
-        // All roles can see matches
     },
     {
         label: 'Tournaments',
         path: '/dashboard/tournaments',
         icon: <Trophy className="w-5 h-5" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER', 'ROLE_COACH', 'ROLE_PLAYER'],
     },
     {
         label: 'Competitions',
         path: '/dashboard/competitions',
         icon: <Medal className="w-5 h-5" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER', 'ROLE_COACH', 'ROLE_PLAYER'],
     },
 ];
 
@@ -91,6 +174,35 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         if (!item.roles || item.roles.length === 0) return true;
         return hasAnyRole(item.roles);
     });
+
+    const renderNavItem = (item: NavItem, depth = 0) => {
+        const isActive = location.pathname === item.path || (item.children && location.pathname.startsWith(item.path));
+        const hasChildren = item.children && item.children.length > 0;
+
+        return (
+            <div key={item.path}>
+                <Link
+                    to={hasChildren ? '#' : item.path}
+                    onClick={hasChildren ? undefined : onClose}
+                    className={clsx(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        isActive && !hasChildren
+                            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium dark:bg-blue-600 dark:shadow-blue-900/40 dark:shadow-lg'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white font-medium',
+                        depth > 0 && 'ml-4'
+                    )}
+                >
+                    {item.icon}
+                    <span className="text-sm">{item.label}</span>
+                </Link>
+                {hasChildren && (
+                    <div className="mt-1 space-y-1">
+                        {item.children!.map(child => renderNavItem(child, depth + 1))}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <aside
@@ -115,6 +227,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                     <button
                         onClick={onClose}
                         className="lg:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-muted"
+                        aria-label="Close Sidebar"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -122,28 +235,9 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto custom-scrollbar px-4 py-2">
-                    <ul className="space-y-1">
-                        {filteredNavItems.map((item) => {
-                            const isActive = location.pathname.startsWith(item.path);
-                            return (
-                                <li key={item.path}>
-                                    <Link
-                                        to={item.path}
-                                        onClick={onClose}
-                                        className={clsx(
-                                            'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                                            isActive
-                                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium'
-                                                : 'text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
-                                        )}
-                                    >
-                                        {item.icon}
-                                        <span className="text-sm">{item.label}</span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                    <div className="space-y-1">
+                        {filteredNavItems.map(item => renderNavItem(item))}
+                    </div>
                 </nav>
 
                 {/* Footer */}

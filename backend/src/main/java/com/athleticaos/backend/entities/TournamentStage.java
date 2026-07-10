@@ -28,6 +28,10 @@ public class TournamentStage {
     @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private TournamentCategory category;
+
     @Column(nullable = false)
     private String name; // e.g. "Pool A", "Quarter Finals", "Cup Semi Final"
 

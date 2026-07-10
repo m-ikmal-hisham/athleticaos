@@ -13,9 +13,9 @@ export default {
             },
             colors: {
                 // Semantic Tokens
-                background: 'var(--bg-app)',
-                foreground: 'var(--text-primary)',
-                muted: 'var(--text-secondary)',
+                background: 'var(--bg-base)',
+                foreground: 'var(--text-color)', // Fixed: matches theme.css --text-color
+                muted: 'var(--text-muted)',      // Fixed: matches theme.css --text-muted
                 border: 'var(--border-glass)',
 
                 // Glass & Panels
@@ -37,18 +37,19 @@ export default {
                     950: '#172554',
                 },
                 secondary: {
-                    // Legacy palette support
-                    50: '#fffdf0',
-                    100: '#fffac2',
-                    200: '#fff594',
-                    300: '#ffeb57',
-                    400: '#ffdd1f',
-                    500: '#FFCC00', // Malaysia Yellow
-                    600: '#d1a300',
-                    700: '#a37f00',
-                    800: '#7a5e00',
-                    900: '#523f00',
-                    950: '#2e2300',
+                    DEFAULT: 'var(--brand-secondary)',
+                    foreground: 'var(--brand-accent)',
+                    50: '#fef2f2',
+                    100: '#fee2e2',
+                    200: '#fecaca',
+                    300: '#fca5a5',
+                    400: '#f87171',
+                    500: '#D32F2F', // Red
+                    600: '#dc2626',
+                    700: '#b91c1c',
+                    800: '#991b1b',
+                    900: '#7f1d1d',
+                    950: '#450a0a',
                 },
             },
             backgroundImage: {

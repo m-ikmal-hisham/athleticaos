@@ -6,6 +6,7 @@ import com.athleticaos.backend.repositories.*;
 import com.athleticaos.backend.services.EligibilityService;
 import com.athleticaos.backend.services.PlayerSuspensionService;
 import com.athleticaos.backend.services.TournamentRosterService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("null")
 @RequiredArgsConstructor
 @Slf4j
 public class TournamentRosterServiceImpl implements TournamentRosterService {
 
+        private final TournamentTeamRepository tournamentTeamRepository;
         private final TournamentPlayerRepository tournamentPlayerRepository;
         private final TournamentRepository tournamentRepository;
         private final TeamRepository teamRepository;
@@ -29,10 +32,15 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
         private final PlayerTeamRepository playerTeamRepository;
         private final EligibilityService eligibilityService;
         private final PlayerSuspensionService suspensionService;
+        private final TournamentStaffRepository tournamentStaffRepository;
+        private final StaffRoleRepository staffRoleRepository;
+        private final PersonRepository personRepository;
 
         @Override
         @Transactional
-        public List<TournamentPlayerDTO> addPlayersToRoster(UUID tournamentId, UUID teamId, List<UUID> playerIds) {
+
+        public List<TournamentPlayerDTO> addPlayersToRoster(@NonNull UUID tournamentId, @NonNull UUID teamId,
+                        @NonNull List<UUID> playerIds) {
                 log.info("Adding {} players to roster for tournament {} team {}", playerIds.size(), tournamentId,
                                 teamId);
 
@@ -42,12 +50,22 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Team team = teamRepository.findById(teamId)
                                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));
 
+                // Get TournamentTeam to identify Category
+                TournamentTeam tournamentTeam = tournamentTeamRepository
+                                .findByTournamentIdAndTeamId(tournamentId, teamId)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Team is not registered in this tournament"));
+
                 List<TournamentPlayerDTO> addedPlayers = new ArrayList<>();
 
                 for (UUID playerId : playerIds) {
-                        Player player = playerRepository.findById(playerId)
+                        Player player = playerRepository.findById(java.util.Objects.requireNonNull(playerId))
                                         .orElseThrow(() -> new IllegalArgumentException(
                                                         "Player not found: " + playerId));
+
+                        if (Boolean.TRUE.equals(player.getDeleted())) {
+                                throw new IllegalArgumentException("Cannot assign a deleted player: " + playerId);
+                        }
 
                         // Check if already in roster
                         var existing = tournamentPlayerRepository.findByTournamentIdAndTeamIdAndPlayerId(
@@ -67,8 +85,9 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 continue;
                         }
 
-                        // Check eligibility
-                        EligibilityResult eligibility = eligibilityService.checkPlayerEligibility(tournament, player);
+                        // Check eligibility with Category context
+                        EligibilityResult eligibility = eligibilityService.checkPlayerEligibility(tournament,
+                                        tournamentTeam.getCategory(), player);
 
                         // Create roster entry
                         TournamentPlayer tournamentPlayer = TournamentPlayer.builder()
@@ -80,7 +99,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                         .eligibilityNote(eligibility.getReason())
                                         .build();
 
-                        tournamentPlayerRepository.save(tournamentPlayer);
+                        tournamentPlayerRepository.save(java.util.Objects.requireNonNull(tournamentPlayer));
                         addedPlayers.add(toDTO(tournamentPlayer));
                         log.info("Added player {} to roster with eligibility: {}", playerId, eligibility.isEligible());
                 }
@@ -90,7 +109,8 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional
-        public void removePlayerFromRoster(UUID tournamentPlayerId) {
+
+        public void removePlayerFromRoster(@NonNull UUID tournamentPlayerId) {
                 log.info("Removing player from roster: {}", tournamentPlayerId);
 
                 TournamentPlayer tournamentPlayer = tournamentPlayerRepository.findById(tournamentPlayerId)
@@ -116,7 +136,70 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         @Override
         @Transactional(readOnly = true)
-        public LineupHintsDTO getLineupHints(UUID matchId) {
+        public List<TournamentStaffDTO> getTournamentStaff(UUID tournamentId, UUID teamId) {
+                log.info("Getting staff roster for tournament {} team {}", tournamentId, teamId);
+                TournamentTeam tournamentTeam = tournamentTeamRepository
+                                .findByTournamentIdAndTeamId(tournamentId, teamId)
+                                .orElseThrow(() -> new IllegalArgumentException("Team is not registered in this tournament"));
+                
+                return tournamentStaffRepository.findByTournamentTeamIdAndIsActiveTrue(tournamentTeam.getId()).stream()
+                                .map(this::toStaffDTO)
+                                .collect(Collectors.toList());
+        }
+
+        @Override
+        @Transactional
+        public TournamentStaffDTO addStaffToRoster(UUID tournamentId, AddTournamentStaffRequest request) {
+                log.info("Adding staff to roster for tournament {} team {}", tournamentId, request.getTeamId());
+                Tournament tournament = tournamentRepository.findById(tournamentId)
+                                .orElseThrow(() -> new IllegalArgumentException("Tournament not found"));
+                TournamentTeam tournamentTeam = tournamentTeamRepository
+                                .findByTournamentIdAndTeamId(tournamentId, request.getTeamId())
+                                .orElseThrow(() -> new IllegalArgumentException("Team is not registered in this tournament"));
+                Person person = personRepository.findById(request.getPersonId())
+                                .orElseThrow(() -> new IllegalArgumentException("Person not found"));
+                StaffRole role = staffRoleRepository.findById(request.getStaffRoleId())
+                                .orElseThrow(() -> new IllegalArgumentException("Staff Role not found"));
+                
+                var existing = tournamentStaffRepository.findByTournamentTeamIdAndPersonIdAndStaffRoleId(
+                                tournamentTeam.getId(), person.getId(), role.getId());
+                
+                if (existing.isPresent()) {
+                        TournamentStaff ts = existing.get();
+                        if (!ts.isActive()) {
+                                ts.setActive(true);
+                                ts = tournamentStaffRepository.save(ts);
+                        }
+                        return toStaffDTO(ts);
+                }
+
+                TournamentStaff ts = TournamentStaff.builder()
+                                .tournament(tournament)
+                                .tournamentTeam(tournamentTeam)
+                                .person(person)
+                                .staffRole(role)
+                                .isActive(true)
+                                .build();
+                
+                ts = tournamentStaffRepository.save(ts);
+                return toStaffDTO(ts);
+        }
+
+        @Override
+        @Transactional
+        public void removeStaffFromRoster(UUID tournamentStaffId) {
+                log.info("Removing staff from roster: {}", tournamentStaffId);
+                TournamentStaff ts = tournamentStaffRepository.findById(tournamentStaffId)
+                                .orElseThrow(() -> new IllegalArgumentException("Tournament staff not found"));
+                ts.setActive(false);
+                tournamentStaffRepository.save(ts);
+                log.info("Successfully removed staff from roster");
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+
+        public LineupHintsDTO getLineupHints(@NonNull UUID matchId) {
                 log.info("Getting lineup hints for match {}", matchId);
 
                 Match match = matchRepository.findById(matchId)
@@ -126,22 +209,33 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Team homeTeam = match.getHomeTeam();
                 Team awayTeam = match.getAwayTeam();
 
-                // Get rosters for both teams
-                List<TournamentPlayer> homeRoster = tournamentPlayerRepository
-                                .findByTournamentIdAndTeamIdAndIsActiveTrue(
-                                                tournament.getId(), homeTeam.getId());
-                List<TournamentPlayer> awayRoster = tournamentPlayerRepository
-                                .findByTournamentIdAndTeamIdAndIsActiveTrue(
-                                                tournament.getId(), awayTeam.getId());
+                // Get rosters for both teams (Home)
+                List<LineupPlayerDTO> homePlayers = new ArrayList<>();
+                if (homeTeam != null) {
+                        List<TournamentPlayer> homeRoster = tournamentPlayerRepository
+                                        .findByTournamentIdAndTeamIdAndIsActiveTrue(
+                                                        tournament.getId(), homeTeam.getId());
 
-                // Convert to lineup player DTOs
-                List<LineupPlayerDTO> homePlayers = homeRoster.stream()
-                                .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
-                                .collect(Collectors.toList());
+                        homePlayers = homeRoster.stream()
+                                        .filter(com.athleticaos.backend.utils.StreamUtils
+                                                        .distinctByKey(tp -> tp.getPlayer().getId()))
+                                        .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
+                                        .collect(Collectors.toList());
+                }
 
-                List<LineupPlayerDTO> awayPlayers = awayRoster.stream()
-                                .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
-                                .collect(Collectors.toList());
+                // Get rosters for both teams (Away)
+                List<LineupPlayerDTO> awayPlayers = new ArrayList<>();
+                if (awayTeam != null) {
+                        List<TournamentPlayer> awayRoster = tournamentPlayerRepository
+                                        .findByTournamentIdAndTeamIdAndIsActiveTrue(
+                                                        tournament.getId(), awayTeam.getId());
+
+                        awayPlayers = awayRoster.stream()
+                                        .filter(com.athleticaos.backend.utils.StreamUtils
+                                                        .distinctByKey(tp -> tp.getPlayer().getId()))
+                                        .map(tp -> toLineupPlayerDTO(tp, tournament.getId()))
+                                        .collect(Collectors.toList());
+                }
 
                 return LineupHintsDTO.builder()
                                 .homeTeamPlayers(homePlayers)
@@ -153,11 +247,12 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Player player = tp.getPlayer();
                 Person person = player.getPerson();
 
-                // Get jersey number from PlayerTeam if exists
-                Integer jerseyNumber = null;
-                var playerTeam = playerTeamRepository.findByPlayerIdAndTeamId(player.getId(), tp.getTeam().getId());
-                if (playerTeam.isPresent()) {
-                        jerseyNumber = playerTeam.get().getJerseyNumber();
+                // Get jersey number with priority: tournament > team
+                Integer displayNumber = tp.getTournamentJerseyNumber();
+                var playerTeam = playerTeamRepository.findByPlayerIdAndTeamId(player.getId(),
+                                tp.getTeam().getId());
+                if (displayNumber == null && playerTeam.isPresent()) {
+                        displayNumber = playerTeam.get().getJerseyNumber();
                 }
 
                 // Check for active suspensions
@@ -180,13 +275,27 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 .id(tp.getId())
                                 .playerId(player.getId())
                                 .playerName(person.getFirstName() + " " + person.getLastName())
-                                .playerNumber(jerseyNumber != null ? jerseyNumber.toString() : null)
+                                .playerNumber(displayNumber != null ? displayNumber.toString() : null)
                                 .organisationName(tp.getTeam().getOrganisation().getName())
                                 .isEligible(tp.isEligible())
                                 .eligibilityNote(tp.getEligibilityNote())
                                 .hasActiveSuspension(hasSuspension)
                                 .suspensionReason(suspensionReason)
                                 .suspensionMatchesRemaining(suspensionMatches)
+                                .position(tp.getPosition() != null ? tp.getPosition() : (playerTeam.isPresent() ? playerTeam.get().getPosition() : null))
+                                .build();
+        }
+
+        private TournamentStaffDTO toStaffDTO(TournamentStaff ts) {
+                return TournamentStaffDTO.builder()
+                                .id(ts.getId())
+                                .personId(ts.getPerson().getId())
+                                .firstName(ts.getPerson().getFirstName())
+                                .lastName(ts.getPerson().getLastName())
+                                .staffRoleId(ts.getStaffRole().getId())
+                                .staffRoleName(ts.getStaffRole().getName())
+                                .staffRoleDescription(ts.getStaffRole().getDescription())
+                                .isActive(ts.isActive())
                                 .build();
         }
 
@@ -194,12 +303,18 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 Player player = tp.getPlayer();
                 Person person = player.getPerson();
 
-                // Get jersey number
-                Integer jerseyNumber = null;
+                // Get jersey number and position
+                // Priority: Tournament Jersey > Team Jersey
+                Integer jerseyNumber = tp.getTournamentJerseyNumber();
+                String position = null;
+
                 var playerTeam = playerTeamRepository.findByPlayerIdAndTeamId(player.getId(), tp.getTeam().getId());
                 if (playerTeam.isPresent()) {
-                        jerseyNumber = playerTeam.get().getJerseyNumber();
+                        if (jerseyNumber == null) {
+                                jerseyNumber = playerTeam.get().getJerseyNumber();
+                        }
                 }
+                position = tp.getPosition() != null ? tp.getPosition() : (playerTeam.isPresent() ? playerTeam.get().getPosition() : null);
 
                 // Check for active suspensions
                 boolean hasSuspension = suspensionService.hasActiveSuspension(tournamentId, player.getId());
@@ -221,11 +336,55 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 .playerId(player.getId())
                                 .playerName(person.getFirstName() + " " + person.getLastName())
                                 .playerNumber(jerseyNumber != null ? jerseyNumber.toString() : null)
+                                .position(position)
                                 .isEligible(tp.isEligible())
                                 .eligibilityNote(tp.getEligibilityNote())
                                 .isSuspended(hasSuspension)
                                 .suspensionReason(suspensionReason)
                                 .suspensionMatchesRemaining(suspensionMatches)
                                 .build();
+        }
+
+        @Override
+        @Transactional
+
+        public TournamentPlayerDTO updateTournamentJerseyNumber(
+                        @NonNull UUID tournamentId, @NonNull UUID teamId, @NonNull UUID playerId,
+                        Integer jerseyNumber) {
+
+                log.info("Updating tournament jersey number for player {} in tournament {} team {} to {}",
+                                playerId, tournamentId, teamId, jerseyNumber);
+
+                TournamentPlayer tp = tournamentPlayerRepository
+                                .findByTournamentIdAndTeamIdAndPlayerId(tournamentId, teamId, playerId)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Player not found in tournament roster"));
+
+                tp.setTournamentJerseyNumber(jerseyNumber);
+                tournamentPlayerRepository.save(tp);
+
+                log.info("Successfully updated tournament jersey number");
+                return toDTO(tp);
+        }
+
+        @Override
+        @Transactional
+        public TournamentPlayerDTO updateTournamentPosition(
+                        @NonNull UUID tournamentId, @NonNull UUID teamId, @NonNull UUID playerId,
+                        String position) {
+
+                log.info("Updating tournament position for player {} in tournament {} team {} to {}",
+                                playerId, tournamentId, teamId, position);
+
+                TournamentPlayer tp = tournamentPlayerRepository
+                                .findByTournamentIdAndTeamIdAndPlayerId(tournamentId, teamId, playerId)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Player not found in tournament roster"));
+
+                tp.setPosition(position);
+                tournamentPlayerRepository.save(tp);
+
+                log.info("Successfully updated tournament position");
+                return toDTO(tp);
         }
 }

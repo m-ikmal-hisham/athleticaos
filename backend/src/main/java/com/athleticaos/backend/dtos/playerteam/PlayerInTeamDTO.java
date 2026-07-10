@@ -22,4 +22,12 @@ public class PlayerInTeamDTO {
     private String status;
     private LocalDate joinedDate;
     private Boolean isActive;
+    private String nationalPlayerStatus;
+    private Integer tries;
+    private Integer conversions;
+    private Integer penalties;
+    private Integer dropGoals;
+    private Integer yellowCards;
+    private Integer redCards;
+    private Integer appearances;
 }

@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class TokenGeneration {
 
     @Id
+    @Builder.Default
     private Long id = 1L; // Single row table
 
     @Column(nullable = false)

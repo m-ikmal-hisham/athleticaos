@@ -2,18 +2,20 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
 import { authApi } from '@/api/auth.api';
-import toast from 'react-hot-toast';
+import { showToast } from '@/lib/customToast';
 import { AxiosError } from 'axios';
 
 interface AuthState {
     user: User | null;
     token: string | null;
     isAuthenticated: boolean;
+    isInitialized: boolean;
     primaryRole: string | null;
 
     // Actions
     login: (credentials: { email: string; password: string }) => Promise<void>;
-    setAuth: (user: User, token: string) => void;
+    setAuth: (user: User) => void;
+    setUser: (user: User) => void;
     logout: () => void;
     checkTokenValidity: () => Promise<void>;
     hasRole: (role: string) => boolean;
@@ -28,58 +30,77 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             token: null,
             isAuthenticated: false,
+            isInitialized: false,
             primaryRole: null,
 
             login: async (credentials) => {
                 try {
+                    // Login call sets the HttpOnly cookie
                     const response = await authApi.login(credentials);
-                    const { user, token } = response.data;
-
-                    // Store token as athos_token
-                    localStorage.setItem('athos_token', token);
+                    const { user } = response.data;
 
                     // Determine primary role
                     const primaryRole = user.roles && user.roles.length > 0
                         ? user.roles[0].replace('ROLE_', '')
                         : null;
 
-                    set({ user, token, isAuthenticated: true, primaryRole });
-                    toast.success('Login successful!');
+                    set({ user, isAuthenticated: true, primaryRole, isInitialized: true });
+                    showToast.success('Login successful!');
                 } catch (error: unknown) {
                     const axiosError = error as AxiosError<{ message: string }>;
                     const errorMessage = axiosError.response?.data?.message || 'Login failed';
-                    toast.error(errorMessage);
+                    showToast.error(errorMessage);
                     throw error;
                 }
             },
 
-            setAuth: (user: User, token: string) => {
-                localStorage.setItem('athos_token', token);
+            setAuth: (user: User) => {
+                // Token is handled via cookies
                 const primaryRole = user.roles && user.roles.length > 0
                     ? user.roles[0].replace('ROLE_', '')
                     : null;
-                set({ user, token, isAuthenticated: true, primaryRole });
+                set({ user, isAuthenticated: true, primaryRole, isInitialized: true });
             },
 
-            logout: () => {
-                localStorage.removeItem('athos_token');
-                set({ user: null, token: null, isAuthenticated: false, primaryRole: null });
+            setUser: (user: User) => {
+                const primaryRole = user.roles && user.roles.length > 0
+                    ? user.roles[0].replace('ROLE_', '')
+                    : null;
+                set({ user, primaryRole });
+            },
+
+            logout: async () => {
+                try {
+                    await authApi.logout(); // Call backend to clear cookie
+                } catch (e) {
+                    console.error("Logout failed on server", e);
+                }
+                set({ user: null, token: null, isAuthenticated: false, primaryRole: null, isInitialized: true });
+                window.location.href = '/login';
             },
 
             checkTokenValidity: async () => {
-                const { token, logout } = get();
-                if (!token) return;
-
                 try {
-                    // Make a simple API call to check if token is still valid
-                    await authApi.verifyToken();
-                } catch (error: unknown) {
-                    const axiosError = error as AxiosError;
-                    if (axiosError.response?.status === 401) {
-                        // Token is invalid (likely due to server restart)
-                        logout();
-                        toast.error('Session expired. Please login again.');
+                    // Fetch current user (Boot Check)
+                    const response = await authApi.getMe();
+                    if (response.status === 204) {
+                        set({ user: null, isAuthenticated: false, primaryRole: null });
+                        return;
                     }
+
+                    const user = response.data;
+
+                    const primaryRole = user.roles && user.roles.length > 0
+                        ? user.roles[0].replace('ROLE_', '')
+                        : null;
+
+                    set({ user, isAuthenticated: true, primaryRole });
+                } catch (error: any) {
+                    console.error('Token check FAILED:', error);
+                    // Session invalid or expired
+                    set({ user: null, isAuthenticated: false, primaryRole: null });
+                } finally {
+                    set({ isInitialized: true });
                 }
             },
 
@@ -127,11 +148,9 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'auth-storage',
-            partialize: (state) => ({
-                user: state.user,
-                token: state.token,
-                isAuthenticated: state.isAuthenticated,
-                primaryRole: state.primaryRole,
+            partialize: () => ({
+                // We do NOT persist auth state anymore (user, isAuthenticated)
+                // This ensures we rely on the session cookie + Boot Check
             }),
         }
     )

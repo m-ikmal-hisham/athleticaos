@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface MatchService {
         List<MatchResponse> getAllMatches();
 
+        List<MatchResponse> getAllMatches(String status, UUID tournamentId, UUID teamId);
+
         List<MatchResponse> getMatchesByTournament(UUID tournamentId);
 
         MatchResponse getMatchById(UUID id);
@@ -21,9 +23,15 @@ public interface MatchService {
 
         void deleteMatch(UUID id);
 
+        void deleteMatches(List<UUID> ids);
+
         List<MatchResponse> getMatchesByStatus(String status);
 
         void recalculateMatchScores(UUID matchId);
 
         MatchResponse updateMatchStatus(UUID id, String status, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        MatchResponse getMatchByCode(String matchCode);
+
+        com.athleticaos.backend.dtos.match.OperationsDashboardDTO getOperationsDashboard();
 }

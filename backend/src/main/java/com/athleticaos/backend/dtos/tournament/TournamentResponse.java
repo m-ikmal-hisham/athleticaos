@@ -15,6 +15,7 @@ import java.util.UUID;
 public class TournamentResponse {
     private UUID id;
     private String name;
+    private String slug;
     private String level;
     private UUID organiserOrgId;
     private LocalDate startDate;
@@ -24,4 +25,10 @@ public class TournamentResponse {
     private String status;
     private String seasonName;
     private String competitionType;
+    private java.util.List<TournamentCategoryDTO> categories;
+    private String logoUrl;
+    private String bannerUrl;
+    private String backgroundUrl;
+    private String livestreamUrl;
+    private String rugbyFormat;
 }

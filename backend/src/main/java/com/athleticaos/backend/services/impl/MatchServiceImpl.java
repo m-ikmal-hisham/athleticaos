@@ -1,11 +1,16 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.match.MatchCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.match.MatchUpdateRequest;
+import com.athleticaos.backend.dtos.match.MatchValidationDTO;
+import com.athleticaos.backend.dtos.match.OperationsDashboardDTO;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
+import com.athleticaos.backend.entities.TournamentFormatConfig;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
@@ -13,6 +18,8 @@ import com.athleticaos.backend.repositories.TournamentRepository;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.MatchService;
 import com.athleticaos.backend.services.PlayerSuspensionService;
+import com.athleticaos.backend.services.ProgressionService;
+import com.athleticaos.backend.services.BracketService;
 import com.athleticaos.backend.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class MatchServiceImpl implements MatchService {
 
     private final MatchRepository matchRepository;
@@ -36,66 +44,190 @@ public class MatchServiceImpl implements MatchService {
     private final AuditLogger auditLogger;
     private final PlayerSuspensionService suspensionService;
 
+    private final com.athleticaos.backend.repositories.MatchLineupRepository matchLineupRepository;
+    private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
+    private final com.athleticaos.backend.repositories.PlayerSuspensionRepository playerSuspensionRepository;
+    private final com.athleticaos.backend.repositories.MediaAssetRepository mediaAssetRepository;
+    private final com.athleticaos.backend.repositories.EventRepository eventRepository;
+    private final com.athleticaos.backend.services.StatisticsService statisticsService;
+    private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
+    private final ProgressionService progressionService;
+    private final BracketService bracketService;
+
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches() {
+        return getAllMatches(null, null, null);
+    }
+
+    // ... [omitted unchanged methods for brevity in tool call, but must be careful
+    // with offsets if not replacing whole block.
+    // Actually, I should use specific small replace calls for injection and for the
+    // methods to avoid large text matching issues.]
+    // I will replace fields and then separate replace calls for
+    // deleteMatch/deleteMatches.
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getMatchesByStatus(String status) {
+        return getAllMatches(status, null, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getAllMatches(String status, UUID tournamentId, UUID teamId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         List<Match> matches;
 
-        if (accessibleIds == null) {
-            // SUPER_ADMIN sees all
-            matches = matchRepository.findAll();
-        } else if (accessibleIds.isEmpty()) {
-            matches = java.util.Collections.emptyList();
+        if (teamId != null) {
+            matches = matchRepository.findByHomeTeamIdOrAwayTeamId(teamId, teamId);
+            
+            // If the user has a restricted set of accessible organisations, filter results
+            if (accessibleIds != null) {
+                matches = matches.stream()
+                        .filter(m -> {
+                            UUID homeOrgId = m.getHomeTeam() != null && m.getHomeTeam().getOrganisation() != null ? m.getHomeTeam().getOrganisation().getId() : null;
+                            UUID awayOrgId = m.getAwayTeam() != null && m.getAwayTeam().getOrganisation() != null ? m.getAwayTeam().getOrganisation().getId() : null;
+                            UUID tournamentOrgId = m.getTournament() != null && m.getTournament().getOrganiserOrg() != null ? m.getTournament().getOrganiserOrg().getId() : null;
+                            return (homeOrgId != null && accessibleIds.contains(homeOrgId)) ||
+                                   (awayOrgId != null && accessibleIds.contains(awayOrgId)) ||
+                                   (tournamentOrgId != null && accessibleIds.contains(tournamentOrgId));
+                        })
+                        .collect(Collectors.toList());
+            }
+
+            // If tournamentId is provided, filter the results
+            if (tournamentId != null) {
+                matches = matches.stream()
+                        .filter(m -> m.getTournament() != null && m.getTournament().getId().equals(tournamentId))
+                        .collect(Collectors.toList());
+            }
         } else {
-            // Filter by accessible organisations (Home Team OR Away Team OR Tournament
-            // Organiser)
-            matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
+            if (accessibleIds == null) {
+                // SUPER_ADMIN sees all
+                if (tournamentId != null) {
+                    matches = matchRepository.findByTournamentIdWithDetails(tournamentId);
+                } else {
+                    matches = matchRepository.findAllWithDetails();
+                }
+            } else if (accessibleIds.isEmpty()) {
+                matches = java.util.Collections.emptyList();
+            } else {
+                // Filter by accessible organisations
+                matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
+
+                // If tournamentId is provided, filter the results
+                if (tournamentId != null) {
+                    matches = matches.stream()
+                            .filter(m -> m.getTournament() != null && m.getTournament().getId().equals(tournamentId))
+                            .collect(Collectors.toList());
+                }
+            }
         }
 
-        return matches.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        // Filter by status if provided
+        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            try {
+                MatchStatus matchStatus = MatchStatus.valueOf(status.toUpperCase());
+                matches = matches.stream()
+                        .filter(m -> m.getStatus() == matchStatus)
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                return java.util.Collections.emptyList();
+            }
+        }
+
+        return mapMatchesToResponses(matches);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getMatchesByTournament(UUID tournamentId) {
+        if (tournamentId == null) {
+            throw new IllegalArgumentException("Tournament ID must not be null");
+        }
         // Validate tournament exists
         if (!tournamentRepository.existsById(tournamentId)) {
             throw new EntityNotFoundException("Tournament not found with ID: " + tournamentId);
         }
-        return matchRepository.findByTournamentId(tournamentId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return mapMatchesToResponses(matchRepository.findByTournamentId(tournamentId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public MatchResponse getMatchById(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
         return mapToResponse(match);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public MatchResponse getMatchByCode(String matchCode) {
+        List<Match> matches = matchRepository.findByMatchCode(matchCode);
+
+        if (matches.isEmpty()) {
+            throw new EntityNotFoundException("Match not found with code: " + matchCode);
+        }
+
+        Match match;
+        if (matches.size() == 1) {
+            match = matches.get(0);
+        } else {
+            // Handle duplicates: Prioritize LIVE/ONGOING tournaments
+            match = matches.stream()
+                    .filter(m -> m.getTournament() != null &&
+                            ("LIVE".equalsIgnoreCase(m.getTournament().getStatus().name()) ||
+                                    "ONGOING".equalsIgnoreCase(m.getTournament().getStatus().name())))
+                    .findFirst()
+                    .orElse(matches.get(0)); // Fallback to first match if no active tournament match found
+        }
+
+        return mapToResponse(match);
+    }
+
+    @Override
     @Transactional
     public MatchResponse createMatch(MatchCreateRequest request, HttpServletRequest httpRequest) {
-        Tournament tournament = tournamentRepository.findById(request.getTournamentId())
+        UUID tournamentId = request.getTournamentId();
+        if (tournamentId == null) {
+            throw new IllegalArgumentException("Tournament ID must not be null");
+        }
+        Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Tournament not found with ID: " + request.getTournamentId()));
+                        "Tournament not found with ID: " + tournamentId));
 
-        Team homeTeam = teamRepository.findById(request.getHomeTeamId())
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Home Team not found with ID: " + request.getHomeTeamId()));
+        Team homeTeam = null;
+        UUID homeTeamId = request.getHomeTeamId();
+        if (homeTeamId != null) {
+            homeTeam = teamRepository.findById(homeTeamId)
+                    .orElseThrow(
+                            () -> new EntityNotFoundException(
+                                    "Home Team not found with ID: " + homeTeamId));
+        }
 
-        Team awayTeam = teamRepository.findById(request.getAwayTeamId())
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Away Team not found with ID: " + request.getAwayTeamId()));
+        Team awayTeam = null;
+        UUID awayTeamId = request.getAwayTeamId();
+        if (awayTeamId != null) {
+            awayTeam = teamRepository.findById(awayTeamId)
+                    .orElseThrow(
+                            () -> new EntityNotFoundException(
+                                    "Away Team not found with ID: " + awayTeamId));
+        }
 
-        // Validation: Home team != Away team
-        if (homeTeam.getId().equals(awayTeam.getId())) {
+        // Validation: Home team != Away team (only if both are present)
+        if (homeTeam != null && awayTeam != null && homeTeam.getId().equals(awayTeam.getId())) {
             throw new IllegalArgumentException("Home team and Away team cannot be the same.");
+        }
+
+        com.athleticaos.backend.entities.TournamentStage stage = null;
+        UUID stageId = request.getStageId();
+        if (stageId != null) {
+            stage = stageRepository.findById(stageId)
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + stageId));
         }
 
         // Basic Scheduling Logic: Check if match date is valid (optional soft rule,
@@ -106,15 +238,21 @@ public class MatchServiceImpl implements MatchService {
                 .tournament(tournament)
                 .homeTeam(homeTeam)
                 .awayTeam(awayTeam)
+                .homeTeamPlaceholder(request.getHomeTeamPlaceholder())
+                .awayTeamPlaceholder(request.getAwayTeamPlaceholder())
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
                 .venue(request.getVenue())
                 .pitch(request.getPitch())
                 .phase(request.getPhase())
+                .stage(stage)
                 .matchCode(request.getMatchCode())
                 .status(MatchStatus.SCHEDULED) // Default status
                 .build();
 
+        if (match == null) {
+            throw new IllegalStateException("Match cannot be null");
+        }
         Match savedMatch = matchRepository.save(match);
         auditLogger.logMatchCreated(savedMatch, httpRequest);
         return mapToResponse(savedMatch);
@@ -123,6 +261,9 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional
     public MatchResponse updateMatch(UUID id, MatchUpdateRequest request, HttpServletRequest httpRequest) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
 
@@ -141,27 +282,92 @@ public class MatchServiceImpl implements MatchService {
         if (request.getPhase() != null) {
             match.setPhase(request.getPhase());
         }
+        UUID stageId = request.getStageId();
+        if (stageId != null) {
+            com.athleticaos.backend.entities.TournamentStage stage = stageRepository.findById(stageId)
+                    .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + stageId));
+            match.setStage(stage);
+        }
         if (request.getMatchCode() != null) {
             match.setMatchCode(request.getMatchCode());
         }
 
-        // Status update logic
+        // Update Teams if provided
+        UUID homeTeamId = request.getHomeTeamId();
+        if (homeTeamId != null) {
+            Team homeTeam = teamRepository.findById(homeTeamId)
+                    .orElseThrow(() -> new EntityNotFoundException("Home Team not found"));
+            match.setHomeTeam(homeTeam);
+        }
+        if (request.getHomeTeamPlaceholder() != null) {
+            match.setHomeTeamPlaceholder(request.getHomeTeamPlaceholder());
+        }
+
+        UUID awayTeamId = request.getAwayTeamId();
+        if (awayTeamId != null) {
+            Team awayTeam = teamRepository.findById(awayTeamId)
+                    .orElseThrow(() -> new EntityNotFoundException("Away Team not found"));
+            match.setAwayTeam(awayTeam);
+        }
+        if (request.getAwayTeamPlaceholder() != null) {
+            match.setAwayTeamPlaceholder(request.getAwayTeamPlaceholder());
+        }
+
+        // --- FEEDER LINKS LOGIC ---
+        // Handle Home Feeder Match
+        UUID homeFromWinnerOfMatchId = request.getHomeFromWinnerOfMatchId();
+        UUID homeFromLoserOfMatchId = request.getHomeFromLoserOfMatchId();
+        if (homeFromWinnerOfMatchId != null) {
+            clearIncomingLinksToSlot(match, "HOME");
+            Match feeder = matchRepository.findById(homeFromWinnerOfMatchId).orElseThrow();
+            feeder.setNextMatchIdForWinner(match.getId());
+            feeder.setWinnerSlot("HOME");
+            matchRepository.save(feeder);
+            match.setHomeTeamPlaceholder(null); 
+        } else if (homeFromLoserOfMatchId != null) {
+            clearIncomingLinksToSlot(match, "HOME");
+            Match feeder = matchRepository.findById(homeFromLoserOfMatchId).orElseThrow();
+            feeder.setNextMatchIdForLoser(match.getId());
+            feeder.setLoserSlot("HOME");
+            matchRepository.save(feeder);
+            match.setHomeTeamPlaceholder(null);
+        }
+
+        // Handle Away Feeder Match
+        UUID awayFromWinnerOfMatchId = request.getAwayFromWinnerOfMatchId();
+        UUID awayFromLoserOfMatchId = request.getAwayFromLoserOfMatchId();
+        if (awayFromWinnerOfMatchId != null) {
+            clearIncomingLinksToSlot(match, "AWAY");
+            Match feeder = matchRepository.findById(awayFromWinnerOfMatchId).orElseThrow();
+            feeder.setNextMatchIdForWinner(match.getId());
+            feeder.setWinnerSlot("AWAY");
+            matchRepository.save(feeder);
+            match.setAwayTeamPlaceholder(null);
+        } else if (awayFromLoserOfMatchId != null) {
+            clearIncomingLinksToSlot(match, "AWAY");
+            Match feeder = matchRepository.findById(awayFromLoserOfMatchId).orElseThrow();
+            feeder.setNextMatchIdForLoser(match.getId());
+            feeder.setLoserSlot("AWAY");
+            matchRepository.save(feeder);
+            match.setAwayTeamPlaceholder(null);
+        }
+        // ------------------------
+
+        // Set scores first if provided in the request
+        if (request.getHomeScore() != null) {
+            match.setHomeScore(request.getHomeScore());
+        }
+        if (request.getAwayScore() != null) {
+            match.setAwayScore(request.getAwayScore());
+        }
+
+        // Status update logic - validate after scores are set
         if (request.getStatus() != null) {
             if (request.getStatus() == MatchStatus.COMPLETED) {
-                // Require scores if completing
-                if (request.getHomeScore() == null || request.getAwayScore() == null) {
-                    // If scores are not provided in this request, check if they are already set?
-                    // Or strictly require them in the update request.
-                    // Let's check if they are set in the entity or request.
-                    Integer newHomeScore = request.getHomeScore() != null ? request.getHomeScore()
-                            : match.getHomeScore();
-                    Integer newAwayScore = request.getAwayScore() != null ? request.getAwayScore()
-                            : match.getAwayScore();
-
-                    if (newHomeScore == null || newAwayScore == null) {
-                        throw new IllegalArgumentException(
-                                "Cannot set status to COMPLETED without home and away scores.");
-                    }
+                // Require scores to be set (either from request or already in entity)
+                if (match.getHomeScore() == null || match.getAwayScore() == null) {
+                    throw new IllegalArgumentException(
+                            "Cannot set status to COMPLETED without home and away scores.");
                 }
             }
             match.setStatus(request.getStatus());
@@ -172,37 +378,85 @@ public class MatchServiceImpl implements MatchService {
             }
         }
 
-        if (request.getHomeScore() != null) {
-            match.setHomeScore(request.getHomeScore());
+        if (match == null) {
+            throw new IllegalStateException("Match cannot be null");
         }
-        if (request.getAwayScore() != null) {
-            match.setAwayScore(request.getAwayScore());
-        }
-
         Match updatedMatch = matchRepository.save(match);
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
+        triggerAutoProgression(updatedMatch);
         return mapToResponse(updatedMatch);
+    }
+
+    private void clearIncomingLinksToSlot(Match targetMatch, String slot) {
+        if (targetMatch == null || targetMatch.getId() == null) return;
+        List<Match> winnerFeeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(targetMatch.getId(), slot);
+        if (winnerFeeders != null) {
+            for(Match m : winnerFeeders) {
+                m.setNextMatchIdForWinner(null);
+                m.setWinnerSlot(null);
+            }
+            matchRepository.saveAll(winnerFeeders);
+        }
+        
+        List<Match> loserFeeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(targetMatch.getId(), slot);
+        if (loserFeeders != null) {
+            for(Match m : loserFeeders) {
+                m.setNextMatchIdForLoser(null);
+                m.setLoserSlot(null);
+            }
+            matchRepository.saveAll(loserFeeders);
+        }
     }
 
     @Override
     @Transactional
     public void deleteMatch(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         if (!matchRepository.existsById(id)) {
             throw new EntityNotFoundException("Match not found with ID: " + id);
         }
+        matchEventRepository.deleteByMatchId(id);
+        matchLineupRepository.deleteByMatchId(id);
+        matchOfficialRepository.deleteByMatchId(id);
+        playerSuspensionRepository.deleteByMatchId(id);
+        mediaAssetRepository.deleteByMatchId(id);
+        eventRepository.deleteByLinkedMatchId(id);
+
         matchRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public void deleteMatches(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        matchEventRepository.deleteByMatchIdIn(ids);
+        matchLineupRepository.deleteByMatchIdIn(ids);
+        matchOfficialRepository.deleteByMatchIdIn(ids);
+        playerSuspensionRepository.deleteByMatchIdIn(ids);
+        mediaAssetRepository.deleteByMatchIdIn(ids);
+        eventRepository.deleteByLinkedMatchIdIn(ids);
+
+        matchRepository.deleteAllById(ids);
+    }
+
     private MatchResponse mapToResponse(Match match) {
-        return MatchResponse.builder()
+        return mapToResponse(match, null, null, null, null);
+    }
+
+    private MatchResponse mapToResponse(Match match,
+            java.util.Map<UUID, UUID> homeWinnerMap,
+            java.util.Map<UUID, UUID> homeLoserMap,
+            java.util.Map<UUID, UUID> awayWinnerMap,
+            java.util.Map<UUID, UUID> awayLoserMap) {
+        MatchResponse.MatchResponseBuilder builder = MatchResponse.builder()
                 .id(match.getId())
-                .tournamentId(match.getTournament().getId())
-                .homeTeamId(match.getHomeTeam().getId())
-                .homeTeamOrgId(match.getHomeTeam().getOrganisation().getId())
-                .homeTeamName(match.getHomeTeam().getName())
-                .awayTeamId(match.getAwayTeam().getId())
-                .awayTeamOrgId(match.getAwayTeam().getOrganisation().getId())
-                .awayTeamName(match.getAwayTeam().getName())
+                .tournamentId(match.getTournament() != null ? match.getTournament().getId() : null)
+                .tournamentName(match.getTournament() != null ? match.getTournament().getName() : "")
+                .tournamentSlug(match.getTournament() != null ? match.getTournament().getSlug() : null)
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
                 .venue(match.getVenue())
@@ -210,23 +464,164 @@ public class MatchServiceImpl implements MatchService {
                 .status(match.getStatus().name())
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
-                .phase(match.getPhase())
-                .matchCode(match.getMatchCode())
-                .build();
+                .phase(match.getPhase() != null ? match.getPhase() : (match.getStage() != null ? match.getStage().getName() : null))
+                .matchCode(match.getMatchCode());
+
+        if (match.getStage() != null) {
+            builder.stage(MatchResponse.StageInfo.builder()
+                    .id(match.getStage().getId().toString())
+                    .name(match.getStage().getName())
+                    .stageType(match.getStage().getStageType() != null ? match.getStage().getStageType().name() : null)
+                    .categoryId(match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
+                    .build());
+        }
+
+        // Populate lineup configuration from tournament format config
+        if (match.getTournament() != null) {
+            UUID categoryId = null;
+            if (match.getStage() != null && match.getStage().getCategory() != null) {
+                categoryId = match.getStage().getCategory().getId();
+            }
+            TournamentFormatConfig config = match.getTournament().getFormatConfig(categoryId);
+            
+            if (config != null) {
+                builder.startersCount(config.getStartersCount());
+                builder.maxBenchCount(config.getMaxBenchCount());
+            } else {
+                // Fallback to XV defaults for backward compatibility
+                builder.startersCount(15);
+                builder.maxBenchCount(10);
+            }
+        } else {
+            // Fallback to XV defaults for backward compatibility
+            builder.startersCount(15);
+            builder.maxBenchCount(10);
+        }
+
+        if (match.getHomeTeam() != null) {
+            builder.homeTeamId(match.getHomeTeam().getId());
+            builder.homeTeamName(match.getHomeTeam().getName());
+            
+            String homeLogo = match.getHomeTeam().getLogoUrl();
+            if (homeLogo == null && match.getHomeTeam().getOrganisation() != null) {
+                homeLogo = match.getHomeTeam().getOrganisation().getLogoUrl();
+            }
+            builder.homeTeamLogoUrl(UrlSanitizer.sanitize(homeLogo));
+            
+            builder.homeTeamShortName(match.getHomeTeam().getShortName());
+            if (match.getHomeTeam().getOrganisation() != null) {
+                builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
+            }
+        } else {
+            builder.homeTeamName(match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD");
+        }
+        builder.homeTeamPlaceholder(match.getHomeTeamPlaceholder());
+
+        if (match.getAwayTeam() != null) {
+            builder.awayTeamId(match.getAwayTeam().getId());
+            builder.awayTeamName(match.getAwayTeam().getName());
+            
+            String awayLogo = match.getAwayTeam().getLogoUrl();
+            if (awayLogo == null && match.getAwayTeam().getOrganisation() != null) {
+                awayLogo = match.getAwayTeam().getOrganisation().getLogoUrl();
+            }
+            builder.awayTeamLogoUrl(UrlSanitizer.sanitize(awayLogo));
+            
+            builder.awayTeamShortName(match.getAwayTeam().getShortName());
+            if (match.getAwayTeam().getOrganisation() != null) {
+                builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
+            }
+        } else {
+            builder.awayTeamName(match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD");
+        }
+        builder.awayTeamPlaceholder(match.getAwayTeamPlaceholder());
+
+        // Resolve Feeder Match References
+        UUID matchId = match.getId();
+        if (matchId != null) {
+            // Home Winner Feeder
+            if (homeWinnerMap != null && homeWinnerMap.containsKey(matchId)) {
+                builder.homeFromWinnerOfMatchId(homeWinnerMap.get(matchId));
+            } else if (homeWinnerMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(matchId, "HOME");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.homeFromWinnerOfMatchId(feeders.get(0).getId());
+                }
+            }
+
+            // Home Loser Feeder
+            if (homeLoserMap != null && homeLoserMap.containsKey(matchId)) {
+                builder.homeFromLoserOfMatchId(homeLoserMap.get(matchId));
+            } else if (homeLoserMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(matchId, "HOME");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.homeFromLoserOfMatchId(feeders.get(0).getId());
+                }
+            }
+
+            // Away Winner Feeder
+            if (awayWinnerMap != null && awayWinnerMap.containsKey(matchId)) {
+                builder.awayFromWinnerOfMatchId(awayWinnerMap.get(matchId));
+            } else if (awayWinnerMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(matchId, "AWAY");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.awayFromWinnerOfMatchId(feeders.get(0).getId());
+                }
+            }
+
+            // Away Loser Feeder
+            if (awayLoserMap != null && awayLoserMap.containsKey(matchId)) {
+                builder.awayFromLoserOfMatchId(awayLoserMap.get(matchId));
+            } else if (awayLoserMap == null) {
+                List<Match> feeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(matchId, "AWAY");
+                if (feeders != null && !feeders.isEmpty()) {
+                    builder.awayFromLoserOfMatchId(feeders.get(0).getId());
+                }
+            }
+        }
+
+        return builder.build();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<MatchResponse> getMatchesByStatus(String status) {
-        MatchStatus matchStatus = MatchStatus.valueOf(status.toUpperCase());
-        return matchRepository.findByStatus(matchStatus).stream()
-                .map(this::mapToResponse)
+    private List<MatchResponse> mapMatchesToResponses(List<Match> matches) {
+        if (matches == null || matches.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        
+        java.util.Map<UUID, UUID> homeWinnerMap = new java.util.HashMap<>();
+        java.util.Map<UUID, UUID> homeLoserMap = new java.util.HashMap<>();
+        java.util.Map<UUID, UUID> awayWinnerMap = new java.util.HashMap<>();
+        java.util.Map<UUID, UUID> awayLoserMap = new java.util.HashMap<>();
+
+        for (Match m : matches) {
+            if (m.getId() == null) continue;
+            if (m.getNextMatchIdForWinner() != null) {
+                if ("HOME".equalsIgnoreCase(m.getWinnerSlot())) {
+                    homeWinnerMap.put(m.getNextMatchIdForWinner(), m.getId());
+                } else if ("AWAY".equalsIgnoreCase(m.getWinnerSlot())) {
+                    awayWinnerMap.put(m.getNextMatchIdForWinner(), m.getId());
+                }
+            }
+            if (m.getNextMatchIdForLoser() != null) {
+                if ("HOME".equalsIgnoreCase(m.getLoserSlot())) {
+                    homeLoserMap.put(m.getNextMatchIdForLoser(), m.getId());
+                } else if ("AWAY".equalsIgnoreCase(m.getLoserSlot())) {
+                    awayLoserMap.put(m.getNextMatchIdForLoser(), m.getId());
+                }
+            }
+        }
+
+        return matches.stream()
+                .map(m -> mapToResponse(m, homeWinnerMap, homeLoserMap, awayWinnerMap, awayLoserMap))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void recalculateMatchScores(UUID matchId) {
+        if (matchId == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
 
@@ -236,39 +631,28 @@ public class MatchServiceImpl implements MatchService {
         int awayScore = 0;
 
         for (com.athleticaos.backend.entities.MatchEvent event : events) {
-            int points = getPointsForEventType(event.getEventType());
-            if (event.getTeam().getId().equals(match.getHomeTeam().getId())) {
+            int points = statisticsService.getPointsForEventType(event.getEventType());
+            if (match.getHomeTeam() != null && event.getTeam() != null
+                    && event.getTeam().getId().equals(match.getHomeTeam().getId())) {
                 homeScore += points;
-            } else if (event.getTeam().getId().equals(match.getAwayTeam().getId())) {
+            } else if (match.getAwayTeam() != null && event.getTeam() != null
+                    && event.getTeam().getId().equals(match.getAwayTeam().getId())) {
                 awayScore += points;
             }
         }
 
         match.setHomeScore(homeScore);
         match.setAwayScore(awayScore);
-        matchRepository.save(match);
-    }
-
-    private int getPointsForEventType(com.athleticaos.backend.enums.MatchEventType eventType) {
-        if (eventType == null)
-            return 0;
-        switch (eventType) {
-            case TRY:
-                return 5;
-            case CONVERSION:
-                return 2;
-            case PENALTY:
-                return 3;
-            case DROP_GOAL:
-                return 3;
-            default:
-                return 0;
-        }
+        Match updatedMatch = matchRepository.save(match);
+        triggerAutoProgression(updatedMatch);
     }
 
     @Override
     @Transactional
     public MatchResponse updateMatchStatus(UUID id, String status, HttpServletRequest httpRequest) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
 
@@ -283,10 +667,106 @@ public class MatchServiceImpl implements MatchService {
 
         // Decrement suspensions if match is completed
         if (matchStatus == MatchStatus.COMPLETED) {
+            if (match.getHomeScore() == null || match.getAwayScore() == null) {
+                throw new IllegalArgumentException("Cannot set status to COMPLETED without home and away scores.");
+            }
             suspensionService.decrementSuspensions(match);
         }
 
         Match updatedMatch = matchRepository.save(match);
+        triggerAutoProgression(updatedMatch);
         return mapToResponse(updatedMatch);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OperationsDashboardDTO getOperationsDashboard() {
+        // Reuse getAllMatches to ensure we only count accessible matches
+        List<MatchResponse> allMatches = getAllMatches();
+
+        long live = 0;
+        long pending = 0;
+        long completed = 0;
+        List<MatchValidationDTO> attentionRequired = new java.util.ArrayList<>();
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        for (MatchResponse m : allMatches) {
+            String status = m.getStatus();
+            if ("LIVE".equalsIgnoreCase(status) || "ONGOING".equalsIgnoreCase(status)) {
+                live++;
+            } else if ("COMPLETED".equalsIgnoreCase(status)) {
+                completed++;
+            } else {
+                pending++;
+                // Check if overdue (Scheduled but in the past)
+                if ("SCHEDULED".equalsIgnoreCase(status) && m.getMatchDate() != null) {
+                    java.time.LocalDateTime startDateTime = m.getMatchDate().atTime(
+                            m.getKickOffTime() != null ? m.getKickOffTime() : java.time.LocalTime.MIN);
+
+                    if (startDateTime.isBefore(now)) {
+                        attentionRequired.add(MatchValidationDTO.builder()
+                                .matchId(m.getId())
+                                .matchCode(m.getMatchCode())
+                                .homeTeamName(m.getHomeTeamName())
+                                .awayTeamName(m.getAwayTeamName())
+                                .issues(java.util.Collections.singletonList("Match is SCHEDULED but past start time."))
+                                .build());
+                    }
+                }
+            }
+        }
+
+        return OperationsDashboardDTO.builder()
+                .totalMatches(allMatches.size())
+                .liveMatches(live)
+                .pendingMatches(pending)
+                .completedMatches(completed)
+                .attentionRequired(attentionRequired)
+                .build();
+    }
+
+    private void triggerAutoProgression(Match match) {
+        if (match == null || match.getStatus() != MatchStatus.COMPLETED) {
+            return;
+        }
+
+        com.athleticaos.backend.entities.TournamentStage stage = match.getStage();
+        if (stage == null) {
+            return;
+        }
+
+        if (Boolean.TRUE.equals(stage.getIsKnockoutStage())) {
+            log.info("Triggering auto-progression for knockout match {}", match.getId());
+            try {
+                progressionService.processMatchCompletion(match.getId());
+            } catch (Exception e) {
+                log.error("Failed to auto-progress knockout match {}", match.getId(), e);
+            }
+        } else {
+            UUID tournamentId = match.getTournament().getId();
+            log.info("Checking if all pool matches are completed for tournament {}", tournamentId);
+            try {
+                List<com.athleticaos.backend.entities.TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
+                        .stream()
+                        .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
+                        .toList();
+
+                boolean allPoolStagesCompleted = true;
+                for (com.athleticaos.backend.entities.TournamentStage poolStage : poolStages) {
+                    if (!progressionService.isStageComplete(poolStage.getId())) {
+                        allPoolStagesCompleted = false;
+                        break;
+                    }
+                }
+
+                if (allPoolStagesCompleted && !poolStages.isEmpty()) {
+                    log.info("All pool stages completed. Seeding knockout bracket for tournament {}", tournamentId);
+                    bracketService.progressPoolsToKnockout(tournamentId);
+                }
+            } catch (Exception e) {
+                log.error("Failed to auto-progress pool stages for tournament {}", tournamentId, e);
+            }
+        }
     }
 }

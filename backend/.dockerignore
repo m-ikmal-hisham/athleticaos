@@ -1,0 +1,28 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+*.iml
+.vscode
+.settings
+.project
+.classpath
+
+# Build output (rebuilt inside container)
+target/
+
+# Environment files (secrets — pass via env vars instead)
+.env*
+
+# Documentation
+*.md
+docs/
+
+# Scripts
+scripts/
+
+# Docker (avoid recursive copy)
+Dockerfile
+docker-compose*

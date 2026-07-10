@@ -15,4 +15,5 @@ public class PublicMatchEventResponse {
     private String playerName;
     private String eventType; // TRY, CONVERSION, PENALTY, YELLOW_CARD, RED_CARD, SUBSTITUTION
     private Integer points;
+    private String notes;
 }

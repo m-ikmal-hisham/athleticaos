@@ -39,6 +39,23 @@ public class User {
 
     private String phone;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Column(name = "address_line1")
+    private String addressLine1;
+
+    @Column(name = "address_line2")
+    private String addressLine2;
+
+    private String city;
+    private String postcode;
+    private String state;
+    private String country;
+
+    @Column(name = "full_address_legacy")
+    private String address;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true;

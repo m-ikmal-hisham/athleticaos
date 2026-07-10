@@ -28,20 +28,20 @@ public class MatchController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get all matches, optionally filtered by status")
+    @Operation(summary = "Get all matches, optionally filtered by status, tournament, and team")
     public ResponseEntity<List<MatchResponse>> getAllMatches(
-            @RequestParam(required = false) String status) {
-        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
-            return ResponseEntity.ok(matchService.getMatchesByStatus(status));
-        }
-        return ResponseEntity.ok(matchService.getAllMatches());
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID tournamentId,
+            @RequestParam(required = false) UUID teamId) {
+        return ResponseEntity.ok(matchService.getAllMatches(status, tournamentId, teamId));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{idOrSlug}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get match by ID")
-    public ResponseEntity<MatchResponse> getMatchById(@PathVariable UUID id) {
-        return ResponseEntity.ok(matchService.getMatchById(id));
+    @Operation(summary = "Get match by ID or match code")
+    public ResponseEntity<MatchResponse> getMatchById(@PathVariable String idOrSlug) {
+        MatchResponse match = fetchMatch(idOrSlug);
+        return ResponseEntity.ok(match);
     }
 
     @GetMapping("/by-tournament/{tournamentId}")
@@ -52,7 +52,7 @@ public class MatchController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Create a new match")
     public ResponseEntity<MatchResponse> createMatch(@RequestBody @Valid MatchCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -60,7 +60,7 @@ public class MatchController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Update an existing match")
     public ResponseEntity<MatchResponse> updateMatch(@PathVariable UUID id,
             @RequestBody @Valid MatchUpdateRequest request, HttpServletRequest httpRequest) {
@@ -68,7 +68,7 @@ public class MatchController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Update match status")
     public ResponseEntity<MatchResponse> updateMatchStatus(@PathVariable UUID id, @RequestParam String status,
             HttpServletRequest httpRequest) {
@@ -76,17 +76,25 @@ public class MatchController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Delete a match")
     public ResponseEntity<Void> deleteMatch(@PathVariable UUID id) {
         matchService.deleteMatch(id);
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/batch")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete multiple matches")
+    public ResponseEntity<Void> deleteMatches(@RequestBody List<UUID> ids) {
+        matchService.deleteMatches(ids);
+        return ResponseEntity.noContent().build();
+    }
+
     // Match Progression Endpoints
 
     @PostMapping("/{id}/progress")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLUB_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
     @Operation(summary = "Process match completion and advance winner to next stage")
     public ResponseEntity<Void> progressMatch(@PathVariable UUID id) {
         progressionService.processMatchCompletion(id);
@@ -98,5 +106,22 @@ public class MatchController {
     @Operation(summary = "Check if match can progress to next stage")
     public ResponseEntity<Boolean> canProgress(@PathVariable UUID id) {
         return ResponseEntity.ok(progressionService.canProgress(id));
+    }
+
+    @GetMapping("/operations/dashboard")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @Operation(summary = "Get aggregated operations dashboard data")
+    public ResponseEntity<com.athleticaos.backend.dtos.match.OperationsDashboardDTO> getOperationsDashboard() {
+        return ResponseEntity.ok(matchService.getOperationsDashboard());
+    }
+
+    // Helper method to fetch match by UUID or matchCode
+    private MatchResponse fetchMatch(String idOrSlug) {
+        try {
+            UUID uuid = UUID.fromString(idOrSlug);
+            return matchService.getMatchById(uuid);
+        } catch (IllegalArgumentException e) {
+            return matchService.getMatchByCode(idOrSlug);
+        }
     }
 }

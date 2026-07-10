@@ -37,7 +37,7 @@ public class TokenGenerationService {
     public Long getCurrentGeneration() {
         if (currentGeneration == null) {
             currentGeneration = tokenGenerationRepository.findById(1L)
-                    .map(TokenGeneration::getGeneration)
+                    .map(tg -> tg.getGeneration())
                     .orElse(1L);
         }
         return currentGeneration;

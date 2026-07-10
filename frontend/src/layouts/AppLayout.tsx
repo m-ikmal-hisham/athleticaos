@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Users, UsersRound, Building, Trophy, X, Bell, ChevronDown, BarChart2, Calendar, Award, Activity as ActivityIcon } from 'lucide-react';
+import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight, Wrench, Globe, Gavel, Eye, ShieldWarning, ChartLine, CurrencyDollar } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TournamentPill } from '@/components/TournamentPill';
 import { ProfilePopup } from '@/components/ProfilePopup';
+import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
+import { PageLoader } from '@/components/PageLoader';
 
 interface NavItem {
     label: string;
@@ -15,80 +17,223 @@ interface NavItem {
     roles?: string[]; // Optional roles for role-based visibility
 }
 
-const navItems: NavItem[] = [
+interface NavSection {
+    title?: string;
+    items: NavItem[];
+    roles?: string[];
+}
+
+const navSections: NavSection[] = [
     {
-        label: 'Dashboard',
-        path: '/dashboard',
-        icon: <Home className="w-5 h-5" />,
-        iconFilled: <Home className="w-5 h-5 fill-current" />
+        title: "Menu",
+        items: [
+            {
+                label: 'Dashboard',
+                path: '/dashboard',
+                icon: <House className="w-5 h-5" />,
+                iconFilled: <House className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Users',
+                path: '/dashboard/users',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+            },
+            {
+                label: 'Players',
+                path: '/dashboard/players',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Teams',
+                path: '/dashboard/teams',
+                icon: <UsersThree className="w-5 h-5" />,
+                iconFilled: <UsersThree className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Organisations',
+                path: '/dashboard/organisations',
+                icon: <Buildings className="w-5 h-5" />,
+                iconFilled: <Buildings className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'People',
+                path: '/dashboard/people',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']
+            },
+            {
+                label: 'Competitions',
+                path: '/dashboard/competitions',
+                icon: <Medal className="w-5 h-5" />,
+                iconFilled: <Medal className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Tournaments',
+                path: '/dashboard/tournaments',
+                icon: <Trophy className="w-5 h-5" />,
+                iconFilled: <Trophy className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Matches',
+                path: '/dashboard/matches',
+                icon: <CalendarBlank className="w-5 h-5" />,
+                iconFilled: <CalendarBlank className="w-5 h-5" weight="fill" />
+            }
+        ]
     },
     {
-        label: 'Users',
-        path: '/dashboard/users',
-        icon: <Users className="w-5 h-5" />,
-        iconFilled: <Users className="w-5 h-5 fill-current" />,
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+        title: "Federation",
+        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+        items: [
+            {
+                label: 'Dashboard',
+                path: '/dashboard/federation/dashboard',
+                icon: <Globe className="w-5 h-5" />,
+                iconFilled: <Globe className="w-5 h-5" weight="fill" />,
+            },
+            {
+                label: 'Sanctioning',
+                path: '/dashboard/federation/sanctioning',
+                icon: <Gavel className="w-5 h-5" />,
+                iconFilled: <Gavel className="w-5 h-5" weight="fill" />,
+            },
+            {
+                label: 'Oversight',
+                path: '/dashboard/federation/oversight',
+                icon: <Eye className="w-5 h-5" />,
+                iconFilled: <Eye className="w-5 h-5" weight="fill" />,
+            },
+            {
+                label: 'Discipline',
+                path: '/dashboard/federation/discipline',
+                icon: <ShieldWarning className="w-5 h-5" />,
+                iconFilled: <ShieldWarning className="w-5 h-5" weight="fill" />,
+            }
+        ]
     },
     {
-        label: 'Players',
-        path: '/dashboard/players',
-        icon: <Users className="w-5 h-5" />,
-        iconFilled: <Users className="w-5 h-5 fill-current" />
+        title: "Analysis",
+        items: [
+            {
+                label: 'Stats & Leaderboards',
+                path: '/dashboard/stats',
+                icon: <ChartBar className="w-5 h-5" />,
+                iconFilled: <ChartBar className="w-5 h-5" weight="fill" />
+            },
+            {
+                label: 'Analytics',
+                path: '/dashboard/analytics/teams',
+                icon: <ChartLine className="w-5 h-5" />,
+                iconFilled: <ChartLine className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+            }
+        ]
     },
     {
-        label: 'Teams',
-        path: '/dashboard/teams',
-        icon: <UsersRound className="w-5 h-5" />,
-        iconFilled: <UsersRound className="w-5 h-5 fill-current" />
-    },
-    {
-        label: 'Organisations',
-        path: '/dashboard/organisations',
-        icon: <Building className="w-5 h-5" />,
-        iconFilled: <Building className="w-5 h-5 fill-current" />
-    },
-    {
-        label: 'Competitions',
-        path: '/dashboard/competitions',
-        icon: <Award className="w-5 h-5" />,
-        iconFilled: <Award className="w-5 h-5 fill-current" />
-    },
-    {
-        label: 'Tournaments',
-        path: '/dashboard/tournaments',
-        icon: <Trophy className="w-5 h-5" />,
-        iconFilled: <Trophy className="w-5 h-5 fill-current" />
-    },
-    {
-        label: 'Matches',
-        path: '/dashboard/matches',
-        icon: <Calendar className="w-5 h-5" />,
-        iconFilled: <Calendar className="w-5 h-5 fill-current" />
-    },
-    {
-        label: 'Stats & Leaderboards',
-        path: '/dashboard/stats',
-        icon: <BarChart2 className="w-5 h-5" />,
-        iconFilled: <BarChart2 className="w-5 h-5 fill-current" />
-    },
-    {
-        label: 'Activity & Logs',
-        path: '/dashboard/activity',
-        icon: <ActivityIcon className="w-5 h-5" />,
-        iconFilled: <ActivityIcon className="w-5 h-5 fill-current" />
-    },
+        title: "Operations",
+        items: [
+            {
+                label: 'Operations',
+                path: '/dashboard/operations',
+                icon: <Wrench className="w-5 h-5" />,
+                iconFilled: <Wrench className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']
+            },
+            {
+                label: 'Officials',
+                path: '/dashboard/officials',
+                icon: <Users className="w-5 h-5" />,
+                iconFilled: <Users className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN']
+            },
+            {
+                label: 'Monetization',
+                path: '/dashboard/monetization/subscriptions',
+                icon: <CurrencyDollar className="w-5 h-5" />,
+                iconFilled: <CurrencyDollar className="w-5 h-5" weight="fill" />,
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+            },
+            {
+                label: 'Activity & Logs',
+                path: '/dashboard/activity',
+                icon: <ActivityIcon className="w-5 h-5" />,
+                iconFilled: <ActivityIcon className="w-5 h-5" weight="fill" />
+            }
+        ]
+    }
 ];
+
+import { useBrandingStore } from '@/store/branding.store';
+import { getOrganisationById } from '@/api/organisations.api';
+
+// ... (existing imports)
 
 export const AppLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const location = useLocation();
     const { user, checkTokenValidity } = useAuthStore();
+    const { setBrandingFromOrganisation, resetBranding, primaryColor, secondaryColor, accentColor, logoUrl: brandLogoUrl } = useBrandingStore();
+    const effectiveTheme = useEffectiveTheme();
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
 
     // Check token validity on mount
     useEffect(() => {
         checkTokenValidity();
     }, [checkTokenValidity]);
+
+    // Initialize Branding
+    useEffect(() => {
+        const initBranding = async () => {
+            // Check if user is SUPER_ADMIN. If so, force default branding (skip fetching org).
+            if (user?.roles?.includes('ROLE_SUPER_ADMIN')) {
+                resetBranding();
+                return;
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (user && (user as any).organisationId) {
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const org = await getOrganisationById((user as any).organisationId);
+                    setBrandingFromOrganisation(org);
+                } catch (e) {
+                    console.warn("Failed to load organisation branding", e);
+                    resetBranding();
+                }
+            } else {
+                // If we can't find an org, reset to defaults
+                resetBranding();
+            }
+        };
+
+        if (user) {
+            initBranding();
+        } else {
+            resetBranding();
+        }
+    }, [user, setBrandingFromOrganisation, resetBranding]);
+
+    // Apply Branding to CSS Variables
+    useEffect(() => {
+        const root = document.documentElement;
+        if (primaryColor) root.style.setProperty('--brand-primary', primaryColor);
+        else root.style.removeProperty('--brand-primary');
+
+        if (secondaryColor) root.style.setProperty('--brand-secondary', secondaryColor);
+        else root.style.removeProperty('--brand-secondary');
+
+        if (accentColor) root.style.setProperty('--brand-accent', accentColor);
+        else root.style.removeProperty('--brand-accent');
+
+        // Optional: Force a repaint or re-evaluation if needed, but CSS vars usually update immediately
+    }, [primaryColor, secondaryColor, accentColor]);
+
 
     return (
         <div className="min-h-screen flex">
@@ -100,112 +245,205 @@ export const AppLayout = () => {
                 />
             )}
 
-            {/* Sidebar - Apple TV/Music Style */}
+            {/* Sidebar - Apple TV/Music Style Floating */}
             <aside
                 className={clsx(
-                    'fixed top-0 left-0 h-screen z-50 transition-all duration-300 w-64',
-                    'glass-card border-r border-white/10',
+                    'fixed z-50 transition-all duration-300',
+                    isCollapsed ? 'w-20' : 'w-60', // Width transition - narrower (240px)
+                    'p-0 flex flex-col',
+                    'border border-white/10 dark:border-white/5',
+                    'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]',
+                    'lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[24px]',
                     'lg:translate-x-0',
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
                 )}
             >
-                <div className="flex flex-col h-full">
-                    {/* Logo */}
-                    <div className="flex items-center justify-between p-4 border-b border-white/10">
-                        <Link to="/dashboard" className="flex items-center gap-3">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-10 rounded-lg" />
-                            <span className="font-bold text-lg text-foreground">
-                                AthleticaOS
-                            </span>
+                <div
+                    className="backdrop-blur-nav relative flex flex-col h-full bg-white/40 dark:bg-black/40 rounded-[24px] overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                >
+
+                    {/* Toggle Button (Desktop Only) */}
+
+
+                    {/* Logo & Header */}
+                    <div className={clsx("flex items-center p-6 pb-2 transition-all duration-300", isCollapsed ? "justify-center px-0" : "justify-between")}>
+                        <Link to="/dashboard" className={clsx("flex items-center group", isCollapsed ? "gap-0" : "gap-3")}>
+                            <div className="relative shrink-0">
+                                {brandLogoUrl ? (
+                                    <img
+                                        src={brandLogoUrl}
+                                        alt="Logo"
+                                        className={clsx("rounded-xl object-contain bg-white/10 shadow-sm transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
+                                        onError={(e) => {
+                                            e.currentTarget.src = logoSrc;
+                                            e.currentTarget.className = clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10");
+                                            const fallbackA = e.currentTarget.nextElementSibling;
+                                            if (fallbackA) fallbackA.classList.add('hidden');
+                                        }}
+                                    />
+                                ) : (
+                                    <img
+                                        src={logoSrc}
+                                        alt="Logo"
+                                        className={clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
+                                    />
+                                )}
+                            </div>
+                            <div className={clsx("flex flex-col overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                                <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
+                                    AthleticaOS
+                                </span>
+                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mt-0.5 whitespace-nowrap">
+                                    Manager
+                                </span>
+                            </div>
                         </Link>
                         <button
+                            type="button"
+                            aria-label="Close sidebar"
                             onClick={() => setSidebarOpen(false)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150"
+                            className="lg:hidden p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-muted-foreground"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
+                    {/* Toggle Button */}
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className={clsx(
+                            "hidden lg:flex w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-md items-center justify-center text-xs border border-slate-200 dark:border-slate-700 z-50 text-slate-500 hover:text-blue-600 transition-all duration-300 mb-2",
+                            isCollapsed
+                                ? "relative mx-auto" // In flow when collapsed
+                                : "absolute top-8 right-5" // Floating when expanded
+                        )}
+                    >
+                        {isCollapsed ? <CaretRight weight="bold" /> : <CaretLeft weight="bold" />}
+                    </button>
+
                     {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto p-4">
-                        <ul className="space-y-1">
-                            {navItems
-                                .filter(item => {
-                                    // If no roles specified, show to everyone
-                                    if (!item.roles || item.roles.length === 0) return true;
-                                    // Check if user has any of the required roles
-                                    return item.roles.some(role => user?.roles?.includes(role));
-                                })
-                                .map((item) => {
-                                    const isActive = location.pathname === item.path;
-                                    return (
-                                        <li key={item.path}>
-                                            <Link
-                                                to={item.path}
-                                                onClick={() => setSidebarOpen(false)}
-                                                className={clsx(
-                                                    'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 relative group',
-                                                    isActive
-                                                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25 font-medium'
-                                                        : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5'
-                                                )}
-                                            >
-                                                {isActive ? item.iconFilled : item.icon}
-                                                <span className="text-sm">{item.label}</span>
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                        </ul>
+                    <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
+                        {navSections.map((section, sectionIndex) => (
+                            <div key={section.title || sectionIndex} className={clsx("mb-6", isCollapsed && "mb-4")}>
+                                {section.title && !isCollapsed && (
+                                    <h3 className="px-3 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-2">
+                                        {section.title}
+                                    </h3>
+                                )}
+                                <ul className="space-y-0.5">
+                                    {section.items.map((item) => {
+                                        if (item.roles && item.roles.length > 0 && !item.roles.some(role => user?.roles?.includes(role))) {
+                                            return null;
+                                        }
+
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <li key={item.path}>
+                                                <Link
+                                                    to={item.path}
+                                                    onClick={() => setSidebarOpen(false)}
+                                                    className={clsx(
+                                                        'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
+                                                        isCollapsed ? 'justify-center py-3 px-2' : 'px-3 py-1.5 mx-0',
+                                                        isActive
+                                                            ? 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 font-medium'
+                                                            : 'text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
+                                                    )}
+                                                >
+                                                    <span className={clsx("shrink-0", isActive ? "text-white" : "text-slate-400 dark:text-slate-500 group-hover:text-foreground")}>
+                                                        {isActive ? item.iconFilled : item.icon}
+                                                    </span>
+
+                                                    {!isCollapsed && (
+                                                        <span className="text-sm tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300">
+                                                            {item.label}
+                                                        </span>
+                                                    )}
+
+                                                    {/* Tooltip for collapsed state */}
+                                                    {isCollapsed && (
+                                                        <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                                            {item.label}
+                                                        </div>
+                                                    )}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                {isCollapsed && sectionIndex < navSections.length - 1 && (
+                                    <div className="mx-2 my-2 border-b border-white/5" />
+                                )}
+                            </div>
+                        ))}
                     </nav>
 
                     {/* Bottom Section: Theme + Notifications + Profile */}
-                    <div className="p-4 border-t border-white/10 space-y-3">
-                        {/* Theme Toggle + Notifications */}
-                        <div className="flex items-center justify-center gap-2">
-                            <button className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 relative transition-all duration-150">
-                                <Bell className="w-5 h-5" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full ring-2 ring-background"></span>
-                            </button>
-                            <ThemeToggle />
-                        </div>
+                    <div className={clsx("m-3 mt-0 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 transition-all duration-300", isCollapsed ? "p-2" : "p-3")}>
+                        {!isCollapsed && (
+                            <div className="text-[10px] text-muted-foreground px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
+                                <span>System</span>
+                                <div className="flex gap-2">
+                                    <ThemeToggle />
+                                </div>
+                            </div>
+                        )}
+
+                        {isCollapsed && (
+                            <div className="flex justify-center mb-2">
+                                <ThemeToggle orientation="vertical" />
+                            </div>
+                        )}
 
                         {/* Profile Block */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowProfilePopup(true)}
-                                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150"
-                            >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-600 flex items-center justify-center shadow-md ring-2 ring-primary-500/20">
-                                    <span className="font-bold text-white text-sm">
-                                        {user?.firstName?.[0]}{user?.lastName?.[0]}
-                                    </span>
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <p className="text-sm font-semibold text-foreground truncate">
-                                        {user?.firstName} {user?.lastName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                        {user?.roles?.[0]?.replace('ROLE_', '') || 'User'}
-                                    </p>
-                                </div>
-                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setShowProfilePopup(true)}
+                            className={clsx(
+                                "w-full flex items-center rounded-xl hover:bg-white/40 dark:hover:bg-black/40 transition-all duration-150 border border-transparent hover:border-black/5 dark:hover:border-white/10",
+                                isCollapsed ? "justify-center p-1" : "gap-3 p-2"
+                            )}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
+                                <span className="font-bold text-white text-[10px]">
+                                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                                </span>
+                            </div>
+                            {!isCollapsed && (
+                                <>
+                                    <div className="flex-1 text-left overflow-hidden">
+                                        <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                                            {user?.firstName} {user?.lastName}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground truncate">
+                                            Is Active
+                                        </p>
+                                    </div>
+                                    <CaretDown className="w-3 h-3 text-muted-foreground" />
+                                </>
+                            )}
+                        </button>
+                        {!isCollapsed && (
+                            <p className="mt-2 text-[9px] text-muted-foreground/30 font-mono text-center">
+                                v{import.meta.env.VITE_GIT_SHA || 'dev'}
+                            </p>
+                        )}
                     </div>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col lg:ml-64">
-                {/* Topbar - Apple-Style Hamburger (Mobile Only) */}
-                <header className="sticky top-0 z-30 glass-card border-b border-white/10 lg:hidden">
+            <div className={clsx(
+                "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
+                isCollapsed ? "lg:ml-[100px]" : "lg:ml-[260px]" // Adjusted margin for wider sidebar
+            )}>
+                {/* Topbar - Mobile Only */}
+                <header className="sticky top-0 z-30 glass-card border-b border-white/10 lg:hidden rounded-none">
                     <div className="flex items-center justify-between px-4 py-3">
                         <button
+                            aria-label="Open sidebar"
                             onClick={() => setSidebarOpen(true)}
                             className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150"
                         >
-                            {/* Apple-style hamburger */}
                             <div className="w-5 h-5 flex flex-col justify-center gap-1">
                                 <span className="w-full h-0.5 bg-current rounded-full"></span>
                                 <span className="w-full h-0.5 bg-current rounded-full"></span>
@@ -217,16 +455,22 @@ export const AppLayout = () => {
                     </div>
                 </header>
 
-                {/* Page Content */}
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative">
-                    <div className="max-w-7xl mx-auto w-full pb-24">
-                        <Outlet />
+                {/* Page Content Container - Centered */}
+                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden">
+                    <div className="max-w-7xl mx-auto w-full pb-32"> {/* Increased bottom padding for pill */}
+                        <Suspense fallback={<PageLoader />}>
+                            <Outlet />
+                        </Suspense>
                     </div>
                 </main>
 
-                {/* Sticky Tournament Pill */}
-                <div className="fixed bottom-6 left-0 right-0 lg:left-64 flex justify-center z-20 pointer-events-none px-4">
-                    <div className="pointer-events-auto w-full max-w-2xl">
+                {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
+                <div className={clsx(
+                    "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
+                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[260px]",
+                    location.pathname.startsWith('/dashboard/matches/') ? "opacity-0 invisible" : "opacity-100 visible"
+                )}>
+                    <div className="pointer-events-auto w-full max-w-3xl px-6">
                         <TournamentPill />
                     </div>
                 </div>

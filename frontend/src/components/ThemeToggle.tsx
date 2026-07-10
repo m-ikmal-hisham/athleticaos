@@ -1,9 +1,13 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun } from '@phosphor-icons/react';
 import { useUIStore } from '@/store/ui.store';
 
 type Theme = 'light' | 'dark' | 'system';
 
-export const ThemeToggle = () => {
+interface ThemeToggleProps {
+    orientation?: 'horizontal' | 'vertical';
+}
+
+export const ThemeToggle = ({ orientation = 'horizontal' }: ThemeToggleProps) => {
     const { theme, setTheme } = useUIStore();
 
     const options: { value: Theme; icon: React.ReactNode; label: string }[] = [
@@ -13,14 +17,14 @@ export const ThemeToggle = () => {
     ];
 
     return (
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5">
+        <div className={`flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}>
             {options.map((option) => (
                 <button
                     key={option.value}
                     onClick={() => setTheme(option.value)}
                     className={`p-2 rounded-lg transition-all duration-200 ${theme === option.value
-                            ? 'bg-primary text-white shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
                         }`}
                     title={option.label}
                 >

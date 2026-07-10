@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 
@@ -7,7 +7,7 @@ export const NotFoundPage = () => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
             <div className="text-center">
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary-500/20 border border-primary-500/50 mb-6">
-                    <AlertCircle className="w-10 h-10 text-primary-400" />
+                    <WarningCircle className="w-10 h-10 text-primary-400" />
                 </div>
                 <h1 className="text-6xl font-display font-bold gradient-text mb-4">
                     404

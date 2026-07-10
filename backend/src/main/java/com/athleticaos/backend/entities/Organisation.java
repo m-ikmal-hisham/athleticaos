@@ -1,11 +1,13 @@
 package com.athleticaos.backend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -25,6 +27,9 @@ public class Organisation {
     @Column(nullable = false)
     private String name;
 
+    @Column(unique = true)
+    private String slug;
+
     @Column(name = "org_type", nullable = false)
     private String orgType; // ENUM as String
 
@@ -35,6 +40,7 @@ public class Organisation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_org_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "parentOrg"})
     private Organisation parentOrg;
 
     @Column(name = "primary_color")
@@ -52,8 +58,33 @@ public class Organisation {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    @Column(name = "accent_color")
+    private String accentColor;
+
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
+
     @Column
     private String state; // State/Region
+
+    // Structured Address Fields
+    @Column(name = "address_line1")
+    private String addressLine1;
+
+    @Column(name = "address_line2")
+    private String addressLine2;
+
+    @Column
+    private String postcode;
+
+    @Column
+    private String city;
+
+    @Column(name = "state_code")
+    private String stateCode;
+
+    @Column(name = "country_code")
+    private String countryCode;
 
     @Column
     @Builder.Default
@@ -62,4 +93,11 @@ public class Organisation {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 }

@@ -9,4 +9,21 @@ import java.util.UUID;
 @Repository
 public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, UUID> {
     java.util.List<TournamentTeam> findByTournamentId(UUID tournamentId);
+
+    java.util.Optional<TournamentTeam> findByTournamentIdAndTeamId(UUID tournamentId, UUID teamId);
+
+    java.util.Optional<TournamentTeam> findFirstByTournamentIdAndTeamId(UUID tournamentId, UUID teamId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE TournamentTeam tt SET tt.deleted = true WHERE tt.tournament.id = :tournamentId")
+    void softDeleteByTournamentId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT tt FROM TournamentTeam tt JOIN FETCH tt.team t LEFT JOIN FETCH t.organisation WHERE tt.tournament.id = :tournamentId AND tt.isActive = true AND tt.deleted = false")
+    java.util.List<TournamentTeam> findByTournamentIdWithTeamAndOrganisation(
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+    long countByTournamentIdAndIsActiveTrueAndDeletedFalse(UUID tournamentId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT tt.tournament FROM TournamentTeam tt WHERE tt.team.id = :teamId AND tt.isActive = true AND tt.deleted = false")
+    java.util.List<com.athleticaos.backend.entities.Tournament> findActiveTournamentsByTeamId(@org.springframework.data.repository.query.Param("teamId") UUID teamId);
 }

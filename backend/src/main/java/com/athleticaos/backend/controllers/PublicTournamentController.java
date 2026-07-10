@@ -2,12 +2,16 @@ package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.public_api.*;
+import com.athleticaos.backend.dtos.standing.StandingsResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentResponse;
 import com.athleticaos.backend.services.MatchService;
+import com.athleticaos.backend.services.StandingsService;
 import com.athleticaos.backend.services.TournamentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,15 +20,23 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class PublicTournamentController {
 
     private final TournamentService tournamentService;
     private final MatchService matchService;
+    private final StandingsService standingsService;
     private final com.athleticaos.backend.repositories.TournamentTeamRepository tournamentTeamRepository;
     private final com.athleticaos.backend.repositories.MatchEventRepository matchEventRepository;
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
+    private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
+    private final com.athleticaos.backend.services.StatisticsService statisticsService;
+    private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
+    private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
+    private final com.athleticaos.backend.services.MatchLineupService matchLineupService;
 
     @GetMapping("/tournaments")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<PublicTournamentSummaryResponse>> getPublicTournaments(
             @RequestParam(required = false) String seasonId,
             @RequestParam(required = false) String status) {
@@ -40,50 +52,244 @@ public class PublicTournamentController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/tournaments/{id}")
-    public ResponseEntity<PublicTournamentDetailResponse> getTournamentDetail(@PathVariable UUID id) {
-        TournamentResponse tournament = tournamentService.getTournamentById(id);
+    @GetMapping("/tournaments/{idOrSlug}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicTournamentDetailResponse> getTournamentDetail(@PathVariable String idOrSlug) {
+        try {
+            TournamentResponse tournament = fetchTournament(idOrSlug);
 
-        if (!tournament.isPublished()) {
-            return ResponseEntity.notFound().build();
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            PublicTournamentDetailResponse response = mapToPublicDetail(tournament);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching tournament detail for id {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
         }
-
-        PublicTournamentDetailResponse response = mapToPublicDetail(tournament);
-        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/tournaments/{id}/matches")
+    @GetMapping("/tournaments/{idOrSlug}/matches")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<PublicMatchSummaryResponse>> getTournamentMatches(
-            @PathVariable UUID id,
-            @RequestParam(required = false) String stage) {
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) String stage,
+            @RequestParam(required = false) UUID categoryId) {
 
-        // Verify tournament is published
-        TournamentResponse tournament = tournamentService.getTournamentById(id);
-        if (!tournament.isPublished()) {
-            return ResponseEntity.notFound().build();
+        try {
+            // Verify tournament is published
+            TournamentResponse tournament = fetchTournament(idOrSlug);
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            List<MatchResponse> matches = matchService.getMatchesByTournament(tournament.getId());
+
+            if (categoryId != null) {
+                matches = matches.stream()
+                        .filter(m -> m.getStage() == null || m.getStage().getCategoryId() == null ||
+                                m.getStage().getCategoryId().equals(categoryId))
+                        .collect(Collectors.toList());
+            }
+
+            // Fetch officials for the tournament
+            List<com.athleticaos.backend.entities.MatchOfficial> allOfficials = matchOfficialRepository.findByMatch_Tournament_Id(tournament.getId());
+            java.util.Map<UUID, List<com.athleticaos.backend.dtos.official.MatchOfficialDTO>> officialsByMatch = allOfficials.stream()
+                .collect(Collectors.groupingBy(
+                    mo -> mo.getMatch().getId(),
+                    Collectors.mapping(mo -> {
+                        String name = "Unknown";
+                        if (mo.getOfficial() != null) {
+                            if (mo.getOfficial().getPerson() != null) {
+                                name = mo.getOfficial().getPerson().getFirstName() + " " + mo.getOfficial().getPerson().getLastName();
+                            } else if (mo.getOfficial().getUser() != null) {
+                                name = mo.getOfficial().getUser().getFirstName() + " " + mo.getOfficial().getUser().getLastName();
+                            }
+                        }
+                        return com.athleticaos.backend.dtos.official.MatchOfficialDTO.builder()
+                            .id(mo.getId())
+                            .officialName(name)
+                            .assignedRole(mo.getAssignedRole())
+                            .officialRoleName(mo.getOfficialRole() != null ? mo.getOfficialRole().getName() : null)
+                            .isConfirmed(mo.isConfirmed())
+                            .build();
+                    }, Collectors.toList())
+                ));
+
+            // Batch-load stage display orders to avoid N+1 queries
+            java.util.Map<UUID, com.athleticaos.backend.entities.TournamentStage> stageMap = new java.util.HashMap<>();
+            java.util.Set<UUID> stageIds = matches.stream()
+                .filter(m -> m.getStage() != null && m.getStage().getId() != null)
+                .map(m -> {
+                    try { return UUID.fromString(m.getStage().getId()); }
+                    catch (Exception e) { return null; }
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+            if (!stageIds.isEmpty()) {
+                stageRepository.findAllById(stageIds).forEach(s -> stageMap.put(s.getId(), s));
+            }
+
+            List<PublicMatchSummaryResponse> response = matches.stream()
+                    .map(m -> {
+                         PublicMatchSummaryResponse summary = mapToPublicMatchSummary(m, stageMap);
+                         summary.setOfficials(officialsByMatch.getOrDefault(m.getId(), List.of()));
+                         return summary;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching matches for tournament {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
         }
-
-        List<MatchResponse> matches = matchService.getMatchesByTournament(id);
-
-        List<PublicMatchSummaryResponse> response = matches.stream()
-                .map(this::mapToPublicMatchSummary)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/matches/{matchId}")
-    public ResponseEntity<PublicMatchDetailResponse> getMatchDetail(@PathVariable UUID matchId) {
+    @GetMapping("/matches/{idOrSlug}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicMatchDetailResponse> getMatchDetail(@PathVariable String idOrSlug) {
+        // Resolve UUID or matchCode
+        UUID matchId;
+        try {
+            matchId = UUID.fromString(idOrSlug);
+        } catch (IllegalArgumentException e) {
+            // Not a UUID, try to find by matchCode
+            MatchResponse matchByCode = matchService.getMatchByCode(idOrSlug);
+            matchId = matchByCode.getId();
+        }
+
         MatchResponse match = matchService.getMatchById(matchId);
 
         // Verify tournament is published
         TournamentResponse tournament = tournamentService.getTournamentById(match.getTournamentId());
-        if (!tournament.isPublished()) {
+        if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
             return ResponseEntity.notFound().build();
         }
 
         PublicMatchDetailResponse response = mapToPublicMatchDetail(match);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/matches/{idOrSlug}/lineups")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicMatchLineupsResponse> getMatchLineups(@PathVariable String idOrSlug) {
+        try {
+            // Resolve match ID
+            UUID matchId;
+            try {
+                matchId = UUID.fromString(idOrSlug);
+            } catch (IllegalArgumentException e) {
+                MatchResponse matchByCode = matchService.getMatchByCode(idOrSlug);
+                matchId = matchByCode.getId();
+            }
+
+            MatchResponse match = matchService.getMatchById(matchId);
+
+            // Verify tournament is published
+            TournamentResponse tournament = tournamentService.getTournamentById(match.getTournamentId());
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Get lineups for both teams
+            UUID homeTeamId = match.getHomeTeamId();
+            UUID awayTeamId = match.getAwayTeamId();
+
+            List<com.athleticaos.backend.dtos.roster.MatchLineupEntryDTO> homeEntries =
+                    matchLineupService.getLineup(matchId, homeTeamId);
+            List<com.athleticaos.backend.dtos.roster.MatchLineupEntryDTO> awayEntries =
+                    matchLineupService.getLineup(matchId, awayTeamId);
+
+            PublicMatchLineupsResponse response = PublicMatchLineupsResponse.builder()
+                    .homeTeamName(match.getHomeTeamName())
+                    .awayTeamName(match.getAwayTeamName())
+                    .homeLineup(homeEntries.stream()
+                            .map(e -> PublicMatchLineupsResponse.PublicLineupEntry.builder()
+                                    .playerName(e.getPlayerName())
+                                    .jerseyNumber(e.getJerseyNumber())
+                                    .captain(e.isCaptain())
+                                    .role(e.getRole() != null ? e.getRole().name() : "STARTER")
+                                    .orderIndex(e.getOrderIndex())
+                                    .positionDisplay(e.getPositionDisplay())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .awayLineup(awayEntries.stream()
+                            .map(e -> PublicMatchLineupsResponse.PublicLineupEntry.builder()
+                                    .playerName(e.getPlayerName())
+                                    .jerseyNumber(e.getJerseyNumber())
+                                    .captain(e.isCaptain())
+                                    .role(e.getRole() != null ? e.getRole().name() : "STARTER")
+                                    .orderIndex(e.getOrderIndex())
+                                    .positionDisplay(e.getPositionDisplay())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .build();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching lineups for match {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/tournaments/{idOrSlug}/standings")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<StandingsResponse>> getTournamentStandings(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
+        try {
+            // Verify tournament is published
+            TournamentResponse tournament = fetchTournament(idOrSlug);
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            List<StandingsResponse> standings = standingsService.getStandings(tournament.getId());
+
+            if (categoryId != null) {
+                standings = standings.stream()
+                        .filter(s -> s.getCategoryId() == null || s.getCategoryId().equals(categoryId))
+                        .collect(Collectors.toList());
+            }
+            return ResponseEntity.ok(standings);
+        } catch (Exception e) {
+            log.error("Error fetching standings for tournament {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/tournaments/{idOrSlug}/stats")
+    @Transactional(readOnly = true)
+    public ResponseEntity<PublicTournamentStatsResponse> getTournamentStats(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
+        try {
+            TournamentResponse tournament = fetchTournament(idOrSlug);
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard = statisticsService
+                    .getTournamentLeaderboard(tournament.getId(), categoryId);
+            com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse summary = statisticsService
+                    .getTournamentSummary(tournament.getId(), categoryId);
+
+            PublicTournamentStatsResponse response = mapToPublicStats(leaderboard, summary);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error fetching stats for tournament {}", idOrSlug, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    private TournamentResponse fetchTournament(String idOrSlug) {
+        try {
+            UUID uuid = UUID.fromString(idOrSlug);
+            return tournamentService.getTournamentById(uuid);
+        } catch (java.lang.IllegalArgumentException e) {
+            return tournamentService.getTournamentBySlug(idOrSlug);
+        }
     }
 
     // Mappers
@@ -92,6 +298,7 @@ public class PublicTournamentController {
         return PublicTournamentSummaryResponse.builder()
                 .id(t.getId())
                 .name(t.getName())
+                .slug(t.getSlug())
                 .level(t.getLevel())
                 .seasonName(t.getSeasonName())
                 .startDate(t.getStartDate())
@@ -99,36 +306,56 @@ public class PublicTournamentController {
                 .venue(t.getVenue())
                 .isLive("Ongoing".equalsIgnoreCase(t.getStatus()))
                 .isCompleted("Completed".equalsIgnoreCase(t.getStatus()))
-                .organiserName("Organiser") // TODO: Enrich if needed, currently ID is in response
+                .organiserName("Organiser")
+                .organiserBranding(getOrganiserBranding(t.getOrganiserOrgId()))
                 .competitionType(t.getCompetitionType())
+                .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
+                .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
 
     private PublicTournamentDetailResponse mapToPublicDetail(TournamentResponse t) {
-        // Fetch teams for this tournament
-        List<PublicTeamSummary> teams = tournamentTeamRepository.findByTournamentId(t.getId())
+        // Fetch teams for this tournament with eager loading to prevent
+        // LazyInitializationException
+        List<PublicTeamSummary> teams = tournamentTeamRepository.findByTournamentIdWithTeamAndOrganisation(t.getId())
                 .stream()
+                .filter(tt -> tt.getTeam() != null) // Filter out broken references
                 .map(tt -> PublicTeamSummary.builder()
                         .id(tt.getTeam().getId())
                         .name(tt.getTeam().getName())
                         .slug(tt.getTeam().getSlug())
-                        .logoUrl(tt.getTeam().getOrganisation().getLogoUrl())
+                        .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(tt.getTeam().getOrganisation() != null ? tt.getTeam().getOrganisation().getLogoUrl()
+                                : null))
                         .build())
                 .collect(Collectors.toList());
 
         // Fetch organiser name
         String organiserName = "Organiser";
-        try {
-            organiserName = organisationRepository.findById(t.getOrganiserOrgId())
-                    .map(com.athleticaos.backend.entities.Organisation::getName)
-                    .orElse("Organiser");
-        } catch (Exception e) {
-            // Fallback to default
+        if (t.getOrganiserOrgId() != null) {
+            try {
+                @SuppressWarnings("null")
+                String name = organisationRepository.findById(t.getOrganiserOrgId())
+                        .map(com.athleticaos.backend.entities.Organisation::getName)
+                        .orElse("Organiser");
+                organiserName = name;
+            } catch (Exception e) {
+                // Fallback to default
+            }
         }
+
+        // Fetch categories
+        List<PublicCategorySummary> categories = categoryService.getCategoriesByTournament(t.getId()).stream()
+                .map(c -> PublicCategorySummary.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .description(c.getDescription())
+                        .build())
+                .collect(Collectors.toList());
 
         return PublicTournamentDetailResponse.builder()
                 .id(t.getId())
                 .name(t.getName())
+                .slug(t.getSlug())
                 .level(t.getLevel())
                 .seasonName(t.getSeasonName())
                 .startDate(t.getStartDate())
@@ -137,25 +364,67 @@ public class PublicTournamentController {
                 .isLive("Ongoing".equalsIgnoreCase(t.getStatus()))
                 .isCompleted("Completed".equalsIgnoreCase(t.getStatus()))
                 .organiserName(organiserName)
+                .organiserBranding(getOrganiserBranding(t.getOrganiserOrgId()))
                 .competitionType(t.getCompetitionType())
                 .teams(teams)
+                .categories(categories)
                 .stages(List.of()) // Stages can be populated if TournamentStage is used
+                .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
+                .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
 
-    private PublicMatchSummaryResponse mapToPublicMatchSummary(MatchResponse m) {
+    private PublicOrganisationBranding getOrganiserBranding(UUID organiserId) {
+        if (organiserId == null)
+            return null;
+        return organisationRepository.findById(organiserId)
+                .map(org -> PublicOrganisationBranding.builder()
+                        .primaryColor(org.getPrimaryColor())
+                        .secondaryColor(org.getSecondaryColor())
+                        .accentColor(org.getAccentColor())
+                        .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(org.getLogoUrl()))
+                        .coverImageUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(org.getCoverImageUrl()))
+                        .build())
+                .orElse(null);
+    }
+
+    private PublicMatchSummaryResponse mapToPublicMatchSummary(
+            MatchResponse m,
+            java.util.Map<UUID, com.athleticaos.backend.entities.TournamentStage> stageMap) {
+        // Use stage name from the actual TournamentStage entity if available,
+        // falling back to the legacy phase field.
+        String stageName = m.getPhase(); // Default to phase (legacy)
+        Integer stageDisplayOrder = null;
+        if (m.getStage() != null && m.getStage().getName() != null) {
+            stageName = m.getStage().getName();
+            try {
+                UUID stageId = UUID.fromString(m.getStage().getId());
+                com.athleticaos.backend.entities.TournamentStage stageEntity = stageMap.get(stageId);
+                if (stageEntity != null) {
+                    stageDisplayOrder = stageEntity.getDisplayOrder();
+                }
+            } catch (Exception ignored) {
+                // If stage ID is not valid, skip display order
+            }
+        }
+
         return PublicMatchSummaryResponse.builder()
                 .id(m.getId())
                 .code(m.getMatchCode())
                 .homeTeamName(m.getHomeTeamName())
                 .awayTeamName(m.getAwayTeamName())
+                .homeTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getHomeTeamLogoUrl()))
+                .awayTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getAwayTeamLogoUrl()))
+                .homeTeamShortName(m.getHomeTeamShortName())
+                .awayTeamShortName(m.getAwayTeamShortName())
                 .homeScore(m.getHomeScore())
                 .awayScore(m.getAwayScore())
                 .matchDate(m.getMatchDate())
                 .matchTime(m.getKickOffTime())
                 .venue(m.getVenue())
                 .status(m.getStatus())
-                .stage(m.getPhase()) // Mapping phase to stage for now
+                .stage(stageName)
+                .stageDisplayOrder(stageDisplayOrder)
                 .build();
     }
 
@@ -168,8 +437,8 @@ public class PublicTournamentController {
                 .map(event -> {
                     String playerName = null;
                     if (event.getPlayer() != null) {
-                        com.athleticaos.backend.entities.User player = event.getPlayer();
-                        playerName = player.getFirstName() + " " + player.getLastName();
+                        com.athleticaos.backend.entities.Player player = event.getPlayer();
+                        playerName = player.getPerson().getFirstName() + " " + player.getPerson().getLastName();
                     }
 
                     return PublicMatchEventResponse.builder()
@@ -177,23 +446,56 @@ public class PublicTournamentController {
                             .teamName(event.getTeam().getName())
                             .playerName(playerName)
                             .eventType(event.getEventType().name())
-                            .points(getPointsForEventType(event.getEventType()))
+                            .points(statisticsService.getPointsForEventType(event.getEventType()))
+                            .notes(event.getNotes())
                             .build();
                 })
                 .collect(Collectors.toList());
 
         // Calculate team stats
-        PublicTeamStatsResponse homeStats = calculateTeamStats(matchEvents, m.getHomeTeamName());
-        PublicTeamStatsResponse awayStats = calculateTeamStats(matchEvents, m.getAwayTeamName());
+        PublicTeamStatsResponse homeStats = statisticsService.calculateTeamMatchStats(matchEvents, m.getHomeTeamName());
+        PublicTeamStatsResponse awayStats = statisticsService.calculateTeamMatchStats(matchEvents, m.getAwayTeamName());
+
+        // Fetch tournament to get organiser branding
+        UUID tournamentId = m.getTournamentId();
+        PublicOrganisationBranding branding = null;
+        if (tournamentId != null) {
+            TournamentResponse t = tournamentService.getTournamentById(tournamentId);
+            branding = getOrganiserBranding(t.getOrganiserOrgId());
+        }
 
         return PublicMatchDetailResponse.builder()
                 .id(m.getId())
                 .code(m.getMatchCode())
                 .homeTeamName(m.getHomeTeamName())
                 .awayTeamName(m.getAwayTeamName())
+                .homeTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getHomeTeamLogoUrl()))
+                .awayTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getAwayTeamLogoUrl()))
+                .homeTeamShortName(m.getHomeTeamShortName())
+                .awayTeamShortName(m.getAwayTeamShortName())
                 .homeScore(m.getHomeScore())
                 .awayScore(m.getAwayScore())
                 .matchDate(m.getMatchDate())
+                .officials(matchOfficialRepository.findByMatchId(m.getId()).stream()
+                    .map(mo -> {
+                        String name = "Unknown";
+                        if (mo.getOfficial() != null) {
+                            if (mo.getOfficial().getPerson() != null) {
+                                name = mo.getOfficial().getPerson().getFirstName() + " " + mo.getOfficial().getPerson().getLastName();
+                            } else if (mo.getOfficial().getUser() != null) {
+                                name = mo.getOfficial().getUser().getFirstName() + " " + mo.getOfficial().getUser().getLastName();
+                            }
+                        }
+                        return com.athleticaos.backend.dtos.official.MatchOfficialDTO.builder()
+                            .id(mo.getId())
+                            .officialName(name)
+                            .assignedRole(mo.getAssignedRole())
+                            .officialRoleName(mo.getOfficialRole() != null ? mo.getOfficialRole().getName() : null)
+                            .isConfirmed(mo.isConfirmed())
+                            .build();
+                    })
+                    .collect(Collectors.toList()))
+                .matchTime(m.getKickOffTime())
                 .matchTime(m.getKickOffTime())
                 .venue(m.getVenue())
                 .status(m.getStatus())
@@ -201,64 +503,112 @@ public class PublicTournamentController {
                 .events(events)
                 .homeStats(homeStats)
                 .awayStats(awayStats)
+                .organiserBranding(branding)
+                .tournamentId(m.getTournamentId())
+                .tournamentSlug(m.getTournamentSlug())
+                // Populate format fields using tournament match logic
+                .matchDuration(getMatchDuration(m.getTournamentId(),
+                        m.getStage() != null ? m.getStage().getCategoryId() : null))
+                .isOneWayMatch(getIsOneWayMatch(m.getTournamentId(),
+                        m.getStage() != null ? m.getStage().getCategoryId() : null))
                 .build();
     }
 
-    private PublicTeamStatsResponse calculateTeamStats(List<com.athleticaos.backend.entities.MatchEvent> events,
-            String teamName) {
-        int tries = 0;
-        int conversions = 0;
-        int penalties = 0;
-        int yellowCards = 0;
-        int redCards = 0;
-
-        for (com.athleticaos.backend.entities.MatchEvent event : events) {
-            if (event.getTeam().getName().equals(teamName)) {
-                switch (event.getEventType()) {
-                    case TRY:
-                        tries++;
-                        break;
-                    case CONVERSION:
-                        conversions++;
-                        break;
-                    case PENALTY:
-                        penalties++;
-                        break;
-                    case YELLOW_CARD:
-                        yellowCards++;
-                        break;
-                    case RED_CARD:
-                        redCards++;
-                        break;
-                    default:
-                        break;
-                }
-            }
+    private Integer getMatchDuration(UUID tournamentId, UUID categoryId) {
+        if (tournamentId == null)
+            return 80;
+        try {
+            com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO config = tournamentService
+                    .getFormatConfig(tournamentId, categoryId);
+            return config != null ? config.getMatchDurationMinutes() : 80;
+        } catch (Exception e) {
+            return 80; // default
         }
-
-        return PublicTeamStatsResponse.builder()
-                .tries(tries)
-                .conversions(conversions)
-                .penalties(penalties)
-                .yellowCards(yellowCards)
-                .redCards(redCards)
-                .build();
     }
 
-    private int getPointsForEventType(com.athleticaos.backend.enums.MatchEventType eventType) {
-        if (eventType == null)
-            return 0;
-        switch (eventType) {
-            case TRY:
-                return 5;
-            case CONVERSION:
-                return 2;
-            case PENALTY:
-                return 3;
-            case DROP_GOAL:
-                return 3;
-            default:
-                return 0;
+    private boolean getIsOneWayMatch(UUID tournamentId, UUID categoryId) {
+        if (tournamentId == null)
+            return false;
+        try {
+            com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO config = tournamentService
+                    .getFormatConfig(tournamentId, categoryId);
+            return config != null && Boolean.TRUE.equals(config.getIsOneWayMatch());
+        } catch (Exception e) {
+            return false;
         }
+    }
+
+    private PublicTournamentStatsResponse mapToPublicStats(
+            com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse leaderboard,
+            com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse summary) {
+        List<PublicPlayerStatEntry> topScorers = leaderboard.topPlayers().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
+                        .dropGoals(p.dropGoals())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<PublicPlayerStatEntry> topOffenders = leaderboard.topOffenders().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
+                        .dropGoals(p.dropGoals())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<PublicTeamStatEntry> topTeams = leaderboard.topTeams().stream()
+                .map(t -> PublicTeamStatEntry.builder()
+                        .teamId(t.teamId())
+                        .teamName(t.teamName())
+                        .organisationName(t.organisationName())
+                        .wins(t.wins())
+                        .triesScored(t.triesScored())
+                        .tablePoints(t.tablePoints())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<PublicPlayerStatEntry> topTryScorers = leaderboard.topTryScorers().stream()
+                .map(p -> PublicPlayerStatEntry.builder()
+                        .playerId(p.playerId())
+                        .name(p.firstName() + " " + p.lastName())
+                        .teamName(p.teamName())
+                        .tries(p.tries())
+                        .conversions(p.conversions())
+                        .penalties(p.penalties())
+                        .dropGoals(p.dropGoals())
+                        .totalPoints(p.totalPoints())
+                        .yellowCards(p.yellowCards())
+                        .redCards(p.redCards())
+                        .build())
+                .collect(Collectors.toList());
+
+        return PublicTournamentStatsResponse.builder()
+                .topScorers(topScorers)
+                .topOffenders(topOffenders)
+                .topTeams(topTeams)
+                .topTryScorers(topTryScorers)
+                .totalMatches(summary.totalMatches())
+                .totalTries(summary.totalTries())
+                .totalConversions(summary.totalConversions())
+                .totalPenalties(summary.totalPenalties())
+                .totalYellowCards(summary.totalYellowCards())
+                .totalRedCards(summary.totalRedCards())
+                .totalPoints(summary.totalPoints())
+                .build();
     }
 }

@@ -27,13 +27,12 @@ public class AuditController {
     private final UserService userService;
 
     private static final int MAX_PAGE_SIZE = 100;
-    private static final int DEFAULT_PAGE_SIZE = 20;
 
     /**
      * Get recent audit logs globally (SUPER_ADMIN only).
      */
     @GetMapping("/recent/global")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<Page<AuditLogResponse>> getRecentGlobal(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -48,7 +47,7 @@ public class AuditController {
      * Validates that the requesting user has access to the organisation.
      */
     @GetMapping("/recent/org/{orgId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'CLUB_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     public ResponseEntity<Page<AuditLogResponse>> getRecentForOrg(
             @PathVariable UUID orgId,
             @RequestParam(defaultValue = "0") int page,

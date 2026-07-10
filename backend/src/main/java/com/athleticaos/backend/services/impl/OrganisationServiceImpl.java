@@ -1,5 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.util.UrlSanitizer;
+
 import com.athleticaos.backend.dtos.org.OrganisationCreateRequest;
 import com.athleticaos.backend.dtos.org.OrganisationResponse;
 import com.athleticaos.backend.dtos.org.OrganisationTreeNode;
@@ -7,6 +9,14 @@ import com.athleticaos.backend.dtos.org.OrganisationUpdateRequest;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.enums.OrganisationLevel;
 import com.athleticaos.backend.repositories.OrganisationRepository;
+import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.repositories.PersonRepository;
+import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import com.athleticaos.backend.entities.Team;
+import com.athleticaos.backend.entities.Person;
+import com.athleticaos.backend.entities.OrganisationPerson;
+import com.athleticaos.backend.dtos.person.RegisterPersonRequest;
+import com.athleticaos.backend.dtos.team.PersonSummaryDTO;
 
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
@@ -26,8 +36,12 @@ import java.util.stream.Collectors;
 public class OrganisationServiceImpl implements OrganisationService {
 
     private final OrganisationRepository organisationRepository;
+    private final TeamRepository teamRepository;
+    private final PersonRepository personRepository;
+    private final OrganisationPersonRepository organisationPersonRepository;
     private final UserService userService;
 
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getAllOrganisations() {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
 
@@ -46,6 +60,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @SuppressWarnings("null")
+    @Transactional(readOnly = true)
     public OrganisationResponse getOrganisationById(UUID id) {
         return organisationRepository.findById(id)
                 .map(this::mapToResponse)
@@ -62,22 +77,65 @@ public class OrganisationServiceImpl implements OrganisationService {
                     .orElseThrow(() -> new EntityNotFoundException("Parent organisation not found"));
         }
 
+        String slug = generateSlug(request.getName());
+
+        String orgState = request.getState();
+        if (orgState == null && parent != null) {
+            if (parent.getOrgLevel() == OrganisationLevel.STATE) {
+                orgState = parent.getState() != null ? parent.getState() : parent.getName();
+            } else if (parent.getParentOrg() != null
+                    && parent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                orgState = parent.getParentOrg().getState() != null ? parent.getParentOrg().getState()
+                        : parent.getParentOrg().getName();
+            } else if (parent.getOrgLevel() == OrganisationLevel.DIVISION
+                    && request.getOrgLevel() == OrganisationLevel.CLUB) {
+                // Special case for Sarawak: If parent is Division, we might need to look up if
+                // that Division has a parent
+                if (parent.getParentOrg() != null && parent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                    orgState = parent.getParentOrg().getState() != null ? parent.getParentOrg().getState()
+                            : parent.getParentOrg().getName();
+                }
+            }
+            // Fallback: If parent has state set, use it
+            if (orgState == null && parent.getState() != null) {
+                orgState = parent.getState();
+            }
+        }
+
         Organisation org = Organisation.builder()
                 .name(request.getName())
                 .orgType(request.getOrgType())
                 .orgLevel(request.getOrgLevel() != null ? request.getOrgLevel() : OrganisationLevel.CLUB)
                 .parentOrg(parent)
+                .state(orgState)
                 .primaryColor(request.getPrimaryColor())
                 .secondaryColor(request.getSecondaryColor())
                 .tertiaryColor(request.getTertiaryColor())
                 .quaternaryColor(request.getQuaternaryColor())
                 .logoUrl(request.getLogoUrl())
+                .accentColor(request.getAccentColor())
+                .coverImageUrl(request.getCoverImageUrl())
+                .addressLine1(request.getAddressLine1())
+                .addressLine2(request.getAddressLine2())
+                .postcode(request.getPostcode())
+                .city(request.getCity())
+                .stateCode(request.getStateCode())
+                .countryCode(request.getCountryCode())
+                .slug(slug)
                 .status("Active")
                 .build();
 
         validateHierarchy(org);
 
         return mapToResponse(organisationRepository.save(org));
+    }
+
+    @Transactional
+    public List<OrganisationResponse> createBulkOrganisations(List<OrganisationCreateRequest> requests) {
+        log.info("Creating bulk organisations: {} items", requests.size());
+        return requests.stream()
+                .map(this::createOrganisation)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -89,6 +147,9 @@ public class OrganisationServiceImpl implements OrganisationService {
 
         if (request.getName() != null) {
             org.setName(request.getName());
+        }
+        if (request.getOrgType() != null) {
+            org.setOrgType(request.getOrgType());
         }
         if (request.getState() != null) {
             org.setState(request.getState());
@@ -114,6 +175,74 @@ public class OrganisationServiceImpl implements OrganisationService {
         if (request.getLogoUrl() != null) {
             org.setLogoUrl(request.getLogoUrl());
         }
+        if (request.getAccentColor() != null) {
+            org.setAccentColor(request.getAccentColor());
+        }
+        if (request.getCoverImageUrl() != null) {
+            org.setCoverImageUrl(request.getCoverImageUrl());
+        }
+        if (request.getAddressLine1() != null) {
+            org.setAddressLine1(request.getAddressLine1());
+        }
+        if (request.getAddressLine2() != null) {
+            org.setAddressLine2(request.getAddressLine2());
+        }
+        if (request.getPostcode() != null) {
+            org.setPostcode(request.getPostcode());
+        }
+        if (request.getCity() != null) {
+            org.setCity(request.getCity());
+        }
+        if (request.getStateCode() != null) {
+            org.setStateCode(request.getStateCode());
+        }
+        if (request.getCountryCode() != null) {
+            org.setCountryCode(request.getCountryCode());
+        }
+
+        // Handle Parent Org update and recursive state resolution
+        if (request.getParentOrgId() != null) {
+            Organisation newParent = organisationRepository.findById(request.getParentOrgId())
+                    .orElseThrow(() -> new EntityNotFoundException("New parent organisation not found"));
+
+            org.setParentOrg(newParent);
+
+            // Re-calculate state based on new parent ONLY if request state is not provided
+            if (request.getState() == null) {
+                String orgState = null;
+                if (newParent.getOrgLevel() == OrganisationLevel.STATE) {
+                    orgState = newParent.getState() != null ? newParent.getState() : newParent.getName();
+                } else if (newParent.getParentOrg() != null
+                        && newParent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                    orgState = newParent.getParentOrg().getState() != null ? newParent.getParentOrg().getState()
+                            : newParent.getParentOrg().getName();
+                } else if (newParent.getOrgLevel() == OrganisationLevel.DIVISION
+                        && org.getOrgLevel() == OrganisationLevel.CLUB) {
+                    // Special case for Sarawak: If parent is Division, we might need to look up if
+                    // that Division has a parent
+                    if (newParent.getParentOrg() != null
+                            && newParent.getParentOrg().getOrgLevel() == OrganisationLevel.STATE) {
+                        orgState = newParent.getParentOrg().getState() != null ? newParent.getParentOrg().getState()
+                                : newParent.getParentOrg().getName();
+                    }
+                }
+
+                // Fallback: If parent has state set, use it
+                if (orgState == null && newParent.getState() != null) {
+                    orgState = newParent.getState();
+                }
+
+                if (orgState != null) {
+                    org.setState(orgState);
+                }
+            }
+        }
+
+        if (request.getTeamIds() != null && !request.getTeamIds().isEmpty()) {
+            List<Team> teams = teamRepository.findAllById(request.getTeamIds());
+            teams.forEach(t -> t.setOrganisation(org));
+            teamRepository.saveAll(teams);
+        }
 
         validateHierarchy(org);
 
@@ -124,20 +253,31 @@ public class OrganisationServiceImpl implements OrganisationService {
         return OrganisationResponse.builder()
                 .id(org.getId())
                 .name(org.getName())
+                .slug(org.getSlug())
                 .type(org.getOrgType()) // Map orgType to type
                 .parentOrgId(org.getParentOrg() != null ? org.getParentOrg().getId() : null)
                 .primaryColor(org.getPrimaryColor())
                 .secondaryColor(org.getSecondaryColor())
                 .tertiaryColor(org.getTertiaryColor())
                 .quaternaryColor(org.getQuaternaryColor())
-                .logoUrl(org.getLogoUrl())
+                .logoUrl(UrlSanitizer.sanitize(org.getLogoUrl()))
+                .accentColor(org.getAccentColor())
+                .coverImageUrl(UrlSanitizer.sanitize(org.getCoverImageUrl()))
                 .state(org.getState())
+                .addressLine1(org.getAddressLine1())
+                .addressLine2(org.getAddressLine2())
+                .postcode(org.getPostcode())
+                .city(org.getCity())
+                .stateCode(org.getStateCode())
+                .countryCode(org.getCountryCode())
                 .status(org.getStatus())
                 .orgLevel(org.getOrgLevel())
+                .parentOrganisationName(org.getParentOrg() != null ? org.getParentOrg().getName() : null)
                 .build();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getCountries() {
         return organisationRepository.findByOrgLevel(OrganisationLevel.COUNTRY).stream()
                 .map(this::mapToResponse)
@@ -145,6 +285,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getStates(UUID countryId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.STATE, countryId).stream()
                 .map(this::mapToResponse)
@@ -152,6 +293,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getDivisions(UUID stateId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.DIVISION, stateId).stream()
                 .map(this::mapToResponse)
@@ -159,6 +301,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getDistricts(UUID stateId) {
         return organisationRepository.findByOrgLevelAndParentOrgId(OrganisationLevel.DISTRICT, stateId).stream()
                 .map(this::mapToResponse)
@@ -166,6 +309,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrganisationResponse> getChildren(UUID parentId) {
         return organisationRepository.findByParentOrgId(parentId).stream()
                 .map(this::mapToResponse)
@@ -173,6 +317,30 @@ public class OrganisationServiceImpl implements OrganisationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public java.util.Set<UUID> getAllDescendantIds(UUID parentId) {
+        java.util.Set<UUID> descendantIds = new java.util.HashSet<>();
+        java.util.Queue<UUID> queue = new java.util.LinkedList<>();
+
+        queue.add(parentId);
+        descendantIds.add(parentId); // Include self
+
+        while (!queue.isEmpty()) {
+            UUID currentId = queue.poll();
+            List<Organisation> children = organisationRepository.findByParentOrgId(currentId);
+            for (Organisation child : children) {
+                if (!descendantIds.contains(child.getId())) {
+                    descendantIds.add(child.getId());
+                    queue.add(child.getId());
+                }
+            }
+        }
+        return descendantIds;
+    }
+
+    @Override
+    @SuppressWarnings("null")
+    @Transactional(readOnly = true)
     public Object getTree(UUID countryId) {
         Organisation country = organisationRepository.findById(countryId)
                 .orElseThrow(() -> new EntityNotFoundException("Country not found"));
@@ -209,35 +377,154 @@ public class OrganisationServiceImpl implements OrganisationService {
             return;
 
         switch (level) {
-            case COUNTRY -> {
+            case WORLD -> {
                 if (parent != null) {
-                    throw new IllegalArgumentException("COUNTRY may not have a parent organisation.");
+                    throw new IllegalArgumentException("WORLD may not have a parent organisation.");
+                }
+            }
+            case CONTINENTAL -> {
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.WORLD) {
+                    throw new IllegalArgumentException("CONTINENTAL may only have a WORLD organisation as parent.");
+                }
+            }
+            case REGIONAL -> {
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.CONTINENTAL && parent.getOrgLevel() != OrganisationLevel.WORLD) {
+                    throw new IllegalArgumentException("REGIONAL may only have a CONTINENTAL or WORLD organisation as parent.");
+                }
+            }
+            case COUNTRY -> {
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.REGIONAL && parent.getOrgLevel() != OrganisationLevel.CONTINENTAL && parent.getOrgLevel() != OrganisationLevel.WORLD) {
+                    throw new IllegalArgumentException("COUNTRY may only have a REGIONAL, CONTINENTAL or WORLD organisation as parent.");
                 }
             }
             case STATE -> {
                 if (parent == null || parent.getOrgLevel() != OrganisationLevel.COUNTRY) {
-                    throw new IllegalArgumentException("STATE must have a COUNTRY as parent.");
+                    // Relaxed: Just warn or allow null parent for now if needed, but keeping strict
+                    // for State-Country link seems safe?
+                    // Let's keep strict for State -> Country as that is standard.
+                    if (parent != null && parent.getOrgLevel() != OrganisationLevel.COUNTRY) {
+                        throw new IllegalArgumentException("STATE must have a COUNTRY as parent.");
+                    }
                 }
             }
             case DIVISION -> {
-                if (parent == null || parent.getOrgLevel() != OrganisationLevel.STATE) {
+                // Relaxed: Divisions exist in Sarawak/Sabah, parent should be State.
+                if (parent != null && parent.getOrgLevel() != OrganisationLevel.STATE) {
                     throw new IllegalArgumentException("DIVISION must have a STATE as parent.");
                 }
             }
+            // For DISTRICT, CLUB, SCHOOL -> We RELAX the rules to allow skipping levels.
+            // e.g. Club -> State, or Club -> Division, or Club -> District.
             case DISTRICT -> {
-                if (parent == null ||
-                        !(parent.getOrgLevel() == OrganisationLevel.STATE
-                                || parent.getOrgLevel() == OrganisationLevel.DIVISION)) {
-                    throw new IllegalArgumentException("DISTRICT must have a STATE or DIVISION as parent.");
-                }
+                // No strict validation on parent level
             }
             case CLUB, SCHOOL -> {
-                if (parent == null ||
-                        !(parent.getOrgLevel() == OrganisationLevel.DISTRICT
-                                || parent.getOrgLevel() == OrganisationLevel.DIVISION)) {
-                    throw new IllegalArgumentException(level + " must have a DISTRICT or DIVISION as parent.");
-                }
+                // No strict validation on parent level
             }
         }
+    }
+
+    private String generateSlug(String name) {
+        if (name == null)
+            return null;
+        String slug = name.toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-");
+
+        // Ensure uniqueness
+        if (organisationRepository.findBySlug(slug).isPresent()) {
+            int suffix = 1;
+            while (organisationRepository.findBySlug(slug + "-" + suffix).isPresent()) {
+                suffix++;
+            }
+            slug = slug + "-" + suffix;
+        }
+        return slug;
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public void deleteOrganisation(UUID id) {
+        log.info("Deleting organisation: {}", id);
+        Organisation org = organisationRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + id));
+
+        // Check for child organisations
+        List<Organisation> children = organisationRepository.findByParentOrgId(id);
+        if (!children.isEmpty()) {
+            throw new IllegalStateException("Cannot delete organisation because it has " + children.size()
+                    + " sub-organisations. Please delete or move them first.");
+        }
+
+        // Check for teams
+        List<Team> teams = teamRepository.findByOrganisation_IdIn(java.util.Collections.singleton(id));
+        if (!teams.isEmpty()) {
+            throw new IllegalStateException("Cannot delete organisation because it has " + teams.size()
+                    + " teams associated with it. Please delete or move them first.");
+        }
+
+        organisationRepository.delete(org);
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public PersonSummaryDTO registerPerson(UUID organisationId, RegisterPersonRequest request) {
+        Organisation org = organisationRepository.findById(organisationId)
+                .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + organisationId));
+
+        String normalizedIc = null;
+        if (request.getIcOrPassport() != null) {
+            normalizedIc = request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        }
+
+        if (normalizedIc != null && !normalizedIc.isEmpty()) {
+            if (personRepository.existsByIcOrPassport(normalizedIc)) {
+                throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC or Passport already exists in the system.");
+            }
+        }
+
+        Person person = Person.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .icOrPassport(normalizedIc)
+                .dob(request.getDob())
+                .gender(request.getGender())
+                .nationality(request.getNationality())
+                .nationalPlayerStatus(request.getNationalPlayerStatus())
+                .build();
+
+        person = personRepository.save(person);
+
+        OrganisationPerson op = OrganisationPerson.builder()
+                .organisation(org)
+                .person(person)
+                .build();
+        organisationPersonRepository.save(op);
+
+        return PersonSummaryDTO.builder()
+                .id(person.getId().toString())
+                .firstName(person.getFirstName())
+                .lastName(person.getLastName())
+                .email(person.getEmail())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PersonSummaryDTO> getPersonsByOrganisation(UUID organisationId) {
+        return organisationPersonRepository.findByOrganisationIdOrHierarchy(organisationId).stream()
+                .map(op -> {
+                    Person p = op.getPerson();
+                    return PersonSummaryDTO.builder()
+                        .id(p.getId().toString())
+                        .firstName(p.getFirstName())
+                        .lastName(p.getLastName())
+                        .icOrPassport(p.getIcOrPassport())
+                        .email(p.getEmail())
+                        .build();
+                })
+                .collect(Collectors.toList());
     }
 }

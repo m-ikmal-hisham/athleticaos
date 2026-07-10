@@ -18,11 +18,12 @@ public class MatchCreateRequest {
     @NotNull(message = "Tournament ID is required")
     private UUID tournamentId;
 
-    @NotNull(message = "Home Team ID is required")
     private UUID homeTeamId;
-
-    @NotNull(message = "Away Team ID is required")
     private UUID awayTeamId;
+    private UUID stageId;
+
+    private String homeTeamPlaceholder;
+    private String awayTeamPlaceholder;
 
     @NotNull(message = "Match date is required")
     private LocalDate matchDate;
@@ -34,4 +35,9 @@ public class MatchCreateRequest {
     private String pitch;
     private String phase;
     private String matchCode;
+
+    private java.util.UUID homeFromWinnerOfMatchId;
+    private java.util.UUID homeFromLoserOfMatchId;
+    private java.util.UUID awayFromWinnerOfMatchId;
+    private java.util.UUID awayFromLoserOfMatchId;
 }

@@ -8,6 +8,8 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+import java.util.List;
+import com.athleticaos.backend.dtos.official.MatchOfficialDTO;
 
 @Data
 @SuperBuilder
@@ -18,6 +20,10 @@ public class PublicMatchSummaryResponse {
     private String code;
     private String homeTeamName;
     private String awayTeamName;
+    private String homeTeamLogoUrl;
+    private String awayTeamLogoUrl;
+    private String homeTeamShortName;
+    private String awayTeamShortName;
     private Integer homeScore;
     private Integer awayScore;
     private LocalDate matchDate;
@@ -25,5 +31,7 @@ public class PublicMatchSummaryResponse {
     private String venue;
     private String status; // SCHEDULED, LIVE, FULL_TIME, CANCELLED
     private String stage;
+    private Integer stageDisplayOrder;
     private String round;
+    private List<MatchOfficialDTO> officials;
 }

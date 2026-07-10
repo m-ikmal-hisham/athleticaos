@@ -2,8 +2,16 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/Modal';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
+import { SearchableSelect } from '@/components/SearchableSelect';
+import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { Organisation, OrganisationLevel, fetchOrganisations } from '@/api/organisations.api';
-import { Upload } from 'lucide-react';
+import { fetchTeams } from '@/api/teams.api';
+import { Team } from '@/types';
+import { UploadSimple } from '@phosphor-icons/react';
+import { uploadFile } from '@/api/upload.api';
+import { getImageUrl } from '@/utils/image';
+
+
 
 interface OrganisationModalProps {
     isOpen: boolean;
@@ -26,17 +34,29 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
         tertiaryColor: '',
         quaternaryColor: '',
         logoUrl: '',
-        state: ''
+        state: '',
+        // Address
+        addressLine1: '',
+        addressLine2: '',
+        postcode: '',
+        city: '',
+        stateCode: '',
+        countryCode: 'MY'
     });
+    const [teamIds, setTeamIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [availableOrganisations, setAvailableOrganisations] = useState<Organisation[]>([]);
+    const [teams, setTeams] = useState<Team[]>([]);
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string>('');
+
+
 
     useEffect(() => {
         if (isOpen) {
             fetchOrganisations().then(setAvailableOrganisations).catch(console.error);
+            fetchTeams().then(res => setTeams(res.data)).catch(console.error);
         }
     }, [isOpen]);
 
@@ -52,8 +72,19 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 tertiaryColor: initialData.tertiaryColor || '',
                 quaternaryColor: initialData.quaternaryColor || '',
                 logoUrl: initialData.logoUrl || '',
-                state: initialData.state || ''
+                state: initialData.state || '',
+                addressLine1: initialData.addressLine1 || '',
+                addressLine2: initialData.addressLine2 || '',
+                postcode: initialData.postcode || '',
+                city: initialData.city || '',
+                stateCode: initialData.stateCode || '',
+                countryCode: initialData.countryCode || 'MY'
             });
+
+
+            // If we had a way to get existing mapped teams, we would set them here.
+            // For now, defaulting empty or we need to fetch org teams.
+            setTeamIds([]);
             setLogoPreview(initialData.logoUrl || '');
         } else {
             setFormData({
@@ -66,9 +97,17 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 tertiaryColor: '',
                 quaternaryColor: '',
                 logoUrl: '',
-                state: ''
+                state: '',
+                addressLine1: '',
+                addressLine2: '',
+                postcode: '',
+                city: '',
+                stateCode: '',
+                countryCode: 'MY'
             });
+            setTeamIds([]);
             setLogoPreview('');
+
         }
         setErrors({});
         setLogoFile(null);
@@ -107,20 +146,33 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
         img.src = URL.createObjectURL(file);
     };
 
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
 
         setLoading(true);
         try {
-            // Note: In a real app, you would upload the logo file to a storage service
-            // and get back a URL. For now, we'll just use the logoUrl field.
-            // You could integrate with services like AWS S3, Cloudinary, etc.
+            let finalLogoUrl = formData.logoUrl;
+
+            // If a file was selected, upload it first
+            if (logoFile) {
+                try {
+                    finalLogoUrl = await uploadFile(logoFile);
+                } catch (uploadErr) {
+                    console.error('Failed to upload logo', uploadErr);
+                    setErrors({ ...errors, logo: 'Failed to upload logo image' });
+                    setLoading(false);
+                    return;
+                }
+            }
 
             const submitData = {
                 ...formData,
-                // If a new logo file was selected, you would upload it here
-                // and update the logoUrl with the returned URL
+                parentOrgId: formData.parentOrgId === '' ? null : formData.parentOrgId,
+                logoUrl: finalLogoUrl,
+                teamIds: teamIds.length > 0 ? teamIds : null
             };
 
             await onSubmit(submitData);
@@ -160,55 +212,115 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Type</label>
-                        <select
+                        <SearchableSelect
                             value={formData.orgType}
-                            onChange={(e) => setFormData({ ...formData, orgType: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        >
-                            <option value="CLUB">Club</option>
-                            <option value="SCHOOL">School</option>
-                            <option value="UNION">Union</option>
-                            <option value="STATE_UNION">State Union</option>
-                            <option value="DIVISION">Division</option>
-                            <option value="DISTRICT">District</option>
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, orgType: value as string })}
+                            options={[
+                                { value: 'CLUB', label: 'Club' },
+                                { value: 'SCHOOL', label: 'School' },
+                                { value: 'UNION', label: 'Union' },
+                                { value: 'STATE_UNION', label: 'State Union' },
+                                { value: 'DIVISION', label: 'Division' },
+                                { value: 'DISTRICT', label: 'District' }
+                            ]}
+                            placeholder="Select type"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-muted-foreground mb-1">Level</label>
-                        <select
+                        <SearchableSelect
                             value={formData.orgLevel}
-                            onChange={(e) => setFormData({ ...formData, orgLevel: e.target.value as any })}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        >
-                            <option value="COUNTRY">Country</option>
-                            <option value="STATE">State</option>
-                            <option value="DIVISION">Division</option>
-                            <option value="DISTRICT">District</option>
-                            <option value="CLUB">Club</option>
-                            <option value="SCHOOL">School</option>
-                        </select>
+                            onChange={(value) => setFormData({ ...formData, orgLevel: value as any })}
+                            options={[
+                                { value: 'COUNTRY', label: 'Country' },
+                                { value: 'STATE', label: 'State' },
+                                { value: 'DIVISION', label: 'Division' },
+                                { value: 'DISTRICT', label: 'District' },
+                                { value: 'CLUB', label: 'Club' },
+                                { value: 'SCHOOL', label: 'School' }
+                            ]}
+                            placeholder="Select level"
+                        />
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-1">Parent Organisation (Optional)</label>
-                    <select
+                <div className="space-y-4 border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider">Address Details</h3>
+
+                    <AddressInputs
+                        data={{
+                            addressLine1: formData.addressLine1,
+                            addressLine2: formData.addressLine2,
+                            city: formData.city,
+                            postcode: formData.postcode,
+                            state: formData.state,
+                            stateCode: formData.stateCode,
+                            country: 'Malaysia', // Fixed for logic 
+                            countryCode: formData.countryCode
+                        }}
+                        onChange={(newData: AddressData) => {
+                            setFormData({
+                                ...formData,
+                                addressLine1: newData.addressLine1 || '',
+                                addressLine2: newData.addressLine2 || '',
+                                city: newData.city || '',
+                                postcode: newData.postcode || '',
+                                state: newData.state || '',
+                                stateCode: newData.stateCode || '',
+                                countryCode: newData.countryCode || 'MY'
+                            });
+                        }}
+                    />
+                </div>
+
+
+                <div className="border-t border-white/10 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3">Hierarchy</h3>
+                    {formData.stateCode === 'MY-13' && (
+                        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-400">
+                            Sarawak organisations often map to <strong>Divisions</strong> (e.g. Kuching, Sibu) rather than Districts.
+                        </div>
+                    )}
+
+                    <SearchableSelect
                         value={formData.parentOrgId}
-                        onChange={(e) => setFormData({ ...formData, parentOrgId: e.target.value })}
-                        className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                        <option value="">None (Top Level)</option>
-                        {availableOrganisations.map(org => (
-                            <option key={org.id} value={org.id}>
-                                {org.name} ({org.orgLevel})
-                            </option>
-                        ))}
-                    </select>
+                        onChange={(value) => setFormData({ ...formData, parentOrgId: value as string })}
+                        options={[
+                            { value: '', label: 'None (Top Level)' },
+                            ...availableOrganisations
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map(org => ({
+                                    value: org.id,
+                                    label: `${org.name} (${org.orgLevel})${org.state ? ` - ${org.state}` : ''}`
+                                }))
+                        ]}
+                        placeholder="Select parent organisation"
+                    />
                     {formData.parentOrgId && (
                         <p className="text-xs text-muted-foreground mt-1">
                             Selected: {getParentOrgName()}
                         </p>
                     )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Map Teams (Optional)</label>
+                    <div className="border border-white/10 rounded-xl p-3 max-h-40 overflow-y-auto bg-black/5 dark:bg-white/5">
+                        {teams.map(team => (
+                            <label key={team.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-white/5 rounded px-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={teamIds.includes(team.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setTeamIds([...teamIds, team.id]);
+                                        else setTeamIds(teamIds.filter(id => id !== team.id));
+                                    }}
+                                    className="rounded border-white/20 bg-black/20"
+                                />
+                                {team.name} ({team.division})
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -260,7 +372,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                     <div className="flex items-center gap-4">
                         <label className="flex-1 cursor-pointer">
                             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                                <Upload className="w-4 h-4" />
+                                <UploadSimple className="w-4 h-4" />
                                 <span className="text-sm">{logoFile ? logoFile.name : 'Choose file or enter URL'}</span>
                             </div>
                             <input
@@ -272,7 +384,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                         </label>
                         {logoPreview && (
                             <img
-                                src={logoPreview}
+                                src={logoPreview.startsWith('blob:') ? logoPreview : getImageUrl(logoPreview)}
                                 alt="Logo preview"
                                 className="w-12 h-12 rounded-lg object-cover border border-white/10"
                             />
@@ -291,7 +403,7 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
-                    <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
+                    <Button type="button" variant="cancel" onClick={onClose} disabled={loading}>
                         Cancel
                     </Button>
                     <Button type="submit" variant="primary" isLoading={loading}>
@@ -299,6 +411,6 @@ export const OrganisationModal = ({ isOpen, mode, initialData, initialParentId, 
                     </Button>
                 </div>
             </form>
-        </Modal>
+        </Modal >
     );
 };
