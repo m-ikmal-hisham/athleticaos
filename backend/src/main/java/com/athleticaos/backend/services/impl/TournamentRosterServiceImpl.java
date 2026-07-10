@@ -63,6 +63,10 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                         .orElseThrow(() -> new IllegalArgumentException(
                                                         "Player not found: " + playerId));
 
+                        if (Boolean.TRUE.equals(player.getDeleted())) {
+                                throw new IllegalArgumentException("Cannot assign a deleted player: " + playerId);
+                        }
+
                         // Check if already in roster
                         var existing = tournamentPlayerRepository.findByTournamentIdAndTeamIdAndPlayerId(
                                         tournamentId, teamId, playerId);

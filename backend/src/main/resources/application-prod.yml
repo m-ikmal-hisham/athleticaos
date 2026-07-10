@@ -6,7 +6,37 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:athleticaos}
     username: ${DB_USER:prod_user}
     password: ${DB_PASSWORD:prod_pass}
+    driver-class-name: org.postgresql.Driver
   jpa:
-    show-sql: false
     hibernate:
       ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: WARN
+    com.athleticaos: INFO
+    org.hibernate.SQL: WARN
+
+application:
+  security:
+    cors:
+      allowed-origins: ${FRONTEND_URL},${PUBLIC_URL}
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION:86400000}
+      refresh-token:
+        expiration: 604800000
+    cookie:
+      secure: true
+      same-site: Lax

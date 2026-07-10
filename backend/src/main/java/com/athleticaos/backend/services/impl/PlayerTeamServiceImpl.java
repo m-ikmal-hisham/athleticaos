@@ -44,6 +44,10 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                 Player player = playerRepository.findById(request.getPlayerId())
                                 .orElseThrow(() -> new IllegalArgumentException("Player not found"));
 
+                if (Boolean.TRUE.equals(player.getDeleted())) {
+                        throw new IllegalArgumentException("Cannot assign a deleted player");
+                }
+
                 Team team = teamRepository.findById(request.getTeamId())
                                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));
 

@@ -161,9 +161,16 @@ export const Login = () => {
     const [lockoutMessage, setLockoutMessage] = useState('');
 
     // ─── Access Gate State ────────────────────────────────────────────
-    const [accessGranted, setAccessGranted] = useState(false);
+    const [accessGranted, setAccessGranted] = useState(
+        ENV === 'production' || sessionStorage.getItem(SESSION_KEY) === 'true'
+    );
 
     useEffect(() => {
+        if (ENV === 'production') {
+            setAccessGranted(true);
+            return;
+        }
+
         // Check session first (gate was already passed in this tab session)
         if (sessionStorage.getItem(SESSION_KEY) === 'true') {
             setAccessGranted(true);

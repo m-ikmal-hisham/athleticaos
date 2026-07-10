@@ -5,6 +5,7 @@ FROM players p
 WHERE p.deleted = true
   AND NOT EXISTS (SELECT 1 FROM match_lineups ml WHERE ml.player_id = p.id)
   AND NOT EXISTS (SELECT 1 FROM match_events me WHERE me.player_id = p.id)
+  AND NOT EXISTS (SELECT 1 FROM match_events me WHERE me.related_player_id = p.id)
   AND NOT EXISTS (SELECT 1 FROM player_suspensions ps WHERE ps.player_id = p.id);
 
 -- Delete from player_teams
