@@ -1,0 +1,292 @@
+A: General Branch Comparison & Summary
+
+Now I have a comprehensive picture. Here's the high-level summary:
+
+---
+Dev → Main: Architectural Summary
+
+Scale
+
+674 files changed, ~125k insertions across 30+ commits. This is a substantial feature build — not incremental patches.
+
+---
+Backend (Java/Spring Boot)
+
+Java Version Upgrade
+
+pom.xml bumps from Java 17 → 21, with updated Lombok, MapStruct, and a new git-commit-id-maven-plugin for build metadata.
+
+Domain Model Expansion (30 entities, 9 enums)
+
+The core data model grew significantly. New entities added:
+
+┌────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│    Area    │                                                 New Entities                                                  │
+├────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Match      │ MatchLineup, MatchOfficial                                                                                    │
+├────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ People     │ OfficialRegistry, OfficialRole, OrganisationPerson, TeamStaff, TournamentOfficial, TournamentStaff, StaffRole │
+├────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Tournament │ TournamentCategory, TournamentFormatConfig (expanded)                                                         │
+├────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Platform   │ AuditLog, MediaAsset, SanctioningRequest, SponsorPackage, SubscriptionTier, TokenGeneration                   │
+└────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+67 Flyway Migrations (V4–V145)
+
+The entire migration history is new relative to main. Key structural milestones:
+- V107–V132: Tournament categories, lineup tables, format configs, positional data, pool slot validation
+- V133–V135: Team staff and tournament officials tables
+- V136–V137: Player certifications, national status, user↔person linkage
+- V138–V145: Bulk player cleanup, match indexes, address table fixes
+
+Service Layer (55 services)
+
+Nearly the entire service layer is new or changed. New notable services:
+- MatchLineupService — lineup management per match
+- TournamentCategoryService — age/gender category enforcement
+- TournamentRosterService — roster lifecycle separate from general player management
+- ProgressionServiceImpl — auto-progression logic for tournament bracket advancement
+- LoginAttemptService — IP-based brute-force tracking
+- PlayerBatchHelper — bulk import support
+- SanctioningService, MonetizationService, ReportingService — emerging admin/commerci
+
+30 Controllers
+
+New controllers include:
+- MatchLineupController, MatchFormatController
+- OfficialController, PublicOfficialRoleController, PublicStaffRoleController
+- TournamentRosterController
+- AnalyticsController, ReportingController
+- MonetizationController, MediaAccessController
+- SystemInfoController (likely exposes git-commit metadata)
+
+Security Changes
+
+SecurityConfig, JwtAuthenticationFilter, JwtService all updated — plus LoginAttemptSeting on auth endpoints. Registration now requires an admin code.
+
+Infrastructure
+
+- New application-staging.yml profile + Dockerfile for containerised staging deploys
+- forward-headers-strategy: framework added (reverse proxy / load balancer support)
+- ddl-auto: validate enforced (Flyway is now the sole schema authority)
+- Multipart file uploads enabled (10MB limit)
+
+---
+Frontend (React/TypeScript)
+
+Build Config
+
+vite.config.ts replaced/added alongside a .js variant — likely adds chunking strategyons (the commit notes defer country-state-city to reduce initial bundle).
+
+New Public-Facing Pages (8 match detail views)
+
+pages/public/match/ is entirely new — a full Match Center with live/post-match detailents, and substitution displays with jersey numbers and positional mapping.
+
+Dashboard Expansions
+
+- tournament-tabs/ — tabbed tournament detail with bracket, standings, grouping edito
+- players/ — detailed player stats including rugby-specific metrics (drop goals, appearances, try scoring)
+- organisations/ — hierarchical sub-organisation tree view with nested team listings
+- competitions/ — competition management views
+
+Admin Layer
+
+- admin/federation/ (5 files) — federation management
+- admin/analytics/ (3 files) — analytics dashboard
+- admin/monetization/ (2 files) — sponsor/subscription management
+- New modals: RegisterOfficialModal, OfficialHistoryModal, TeamStaffPanel, ConnectUserModal
+
+Component Library Growth
+
+~60+ new/changed shared components, including:
+- MatchLineupEditor, MatchControls, PlayerPicker — in-match operations UI
+- BracketEditor, BracketView, GroupingEditor, StandingsTable — tournament content
+- BulkPasteRosterModal, BulkUploadModal — bulk roster import
+- RosterManagement, SuspensionWidget — roster lifecycle UI
+- SmartFilterPills, SearchableSelect, TournamentPill — reusable filter/search primitives
+- SEO, ShareButton, ErrorBoundary — public-page infrastructure
+
+State Management (7 Zustand stores)
+
+All major stores touched: auth, matches, players, stats, audit, branding, ui — reflecting the expanded feature surface.
+
+API Layer (21 API modules)
+
+All API modules are new or expanded. Notable additions: officials.api.ts, staff.api.ts, federation.api.ts, monetization.api.ts, media.api.ts, matchFormats.api.ts.
+
+---
+Summary
+
+This branch represents a major platform build-out across four themes:
+1. Tournament engine — categories, format configs, bracket auto-progression, pool validation
+2. People management — officials registry, team/tournament staff, certifications, per
+3. Match operations — lineups, real-time event UI, substitution tracking, integrity c
+4. Platform infrastructure — staging environment, containerised deploy, IP-based authlytics scaffolding
+
+
+++++++++++++++++++++++++++++++++++++++++++++
+B: Database & Flyway Migration Check
+
+Confirmed both high-severity findings by re-reading the source directly. Here's the audit summary for dev-only migrations V100–V145 (46 files, Postgres/Flyway):
+
+Blocking issues
+
+1. V145__cleanup_deleted_players.sql — will fail with an FK violation, again
+
+The eligibility check (line 7) only excludes players referenced via match_events.player_id:
+AND NOT EXISTS (SELECT 1 FROM match_events me WHERE me.player_id = p.id)
+But V116 added a second FK from match_events to players: related_player_id (line 5-7 of V116, no ON DELETE clause → defaults to NO ACTION/restrict). A soft-deleted player referenced only as related_player_id (e.g., a substitution partner) passes this check, then the DELETE FROM players on line 19 throws a constraint violation and the whole migration rolls back. This is the exact same bug class the immediately-preceding commit (631e0d3) was written to fix — it just missed this second FK column.
+
+Fix: add AND NOT EXISTS (SELECT 1 FROM match_events me WHERE me.related_player_id = p.id) to the temp-table filter on line 7-8.
+
+2. V111__add_unique_ic_constraint.sql — no dedup before enforcing uniqueness
+
+ALTER TABLE persons ADD CONSTRAINT uc_persons_ic_or_passport UNIQUE (ic_or_passport);
+ic_or_passport has been NOT NULL since V17 with no cleanup step here. This migration set repeatedly shows dirty legacy data needing backfill/dedup before constraints land (V106, V108, V117, V143, V144). V144 explicitly deduplicates emails via ROW_NUMBER() before its unique index; V111 does no equivalent for IC/passport. If any duplicate values exist (placeholder IC values, reused passport numbers for foreign players, etc.), this deploy fails outright.
+
+Fix: dedupe first, following the same pattern V144 uses for email.
+
+Medium
+
+- V121__create_missing_tables.sql: media_assets.match_id is NOT NULL with no FK to matches(id), unlike every other table in the file — orphan risk.
+- V144__add_matches_team_indexes.sql: nulls out email on all but one duplicate row per person with no audit trail of which rows were affected — silent, irreversible data loss with no way to follow up with affected users.
+- V135__add_organisation_persons.sql: backfill picks an organisation via LIMIT 1 with no ORDER BY when a person has multiple — nondeterministic result across runs.
+
+Low / process notes
+
+- V134 allows official_registry rows with both user_id and person_id NULL — no CHECK constraint against fully-unlinked records.
+- V133/V134 use SERIAL int PKs while the rest of the schema (post-V17) is UUID — inconsistent, not unsafe.
+- V110 → V112 → V114 show three migrations in a row fighting over the same constraint on tournament_format_configs, resolved via a dynamic information_schema-driven drop in V114 — not unsafe (no injection risk, names come from catalog), but signals the migration authoring process could use tightening.
+
+No production-locking concerns: NOT NULL columns are consistently backfilled before constraints are applied, and table sizes in this domain don't make missing CONCURRENTLY on indexes a practical issue. 36 of the 46 files had no issues worth flagging.
+
+The two blocking issues (V145 and V111) will cause deploy failures on any database with the described data, so I'd fix those before this migration set ships. Want me to patch V145's exclusion filter and add a dedup step to V111?
+
+
+++++++++++++++++++++++++++++++++++++++++++++
+C: Security & Authentication Code Audit
+
+Both backend agents are done. Here's the full audit.
+
+Critical
+
+1. IP-based lockout is trivially bypassable — X-Forwarded-For is trusted blindly
+AuthenticationController.getClientIp() reads X-Forwarded-For directly and uses the first value verbatim, falling back to getRemoteAddr() only if the header is absent. There's no RemoteIpValve, no trusted-proxy allowlist, no server.tomcat.remoteip.* config anywhere in application.yml. Since LoginAttemptService keys its 5-attempt/15-minute lockout purely on this string:
+- An attacker can send a different X-Forwarded-For value on every login POST and get unlimited attempts — the brute-force protection does nothing against a real attacker.
+- Conversely, an attacker can spoof a victim's real IP to lock them out (DoS on a legitimate user).
+
+This is the same class of bug as trusting X-Forwarded-For for auth decisions without proxy validation — fix by only trusting this header when the request actually originates from a known reverse proxy (Spring's RemoteIpValve/ForwardedHeaderFilter with a trusted-proxy CIDR list), otherwise use getRemoteAddr().
+
+2. Lockout is keyed by IP only, not by account
+One successful login from any IP wipes the failure counter for that IP, not per-account. On a shared IP (office NAT, VPN, campus network), a legitimate user logging in successfully resets the brute-force counter that was accumulating against a different account being attacked from the same IP. There's also no per-account (email-based) lockout at all as a backstop.
+
+3. Lockout state is in-memory only
+ConcurrentHashMap in a singleton service — a restart clears all lockouts, and in any horizontally-scaled deployment each instance has an independent counter, effectively multiplying the attacker's allowed attempts by instance count.
+
+High
+
+4. Hardcoded admin bypass secret shipped in the frontend bundle (Login.tsx:21,29-38)
+const ACCESS_CODE = import.meta.env.VITE_ADMIN_ACCESS_CODE || 'AOS3R26ADMINDev';
+If VITE_ADMIN_ACCESS_CODE isn't set at build time, this literal string ships inside the public JS bundle for every visitor and is trivially recoverable via view-source/devtools. Worse, ENV also defaults to 'development' if VITE_ENV is unset (Login.tsx:22), which enables the ?devkey= bypass path rather than the staging one — so a misconfigured production build (missing both env vars) would let anyone visit /login?devkey=AOS3R26ADMINDev and pass the gate using a secret that's sitting in the repo/bundle. This whole "AccessGate" is client-side-only security theater (a sessionStorage flag), so its actual blast radius is limited to hiding the login form — it doesn't grant real auth — but shipping a real-looking secret with a hardcoded fallback is a bad pattern and should not have a non-empty default at all.
+
+Medium
+
+5. Default invite password returned in API response (UserService.java:255,271, found incidentally)
+New users created via the (properly role-gated) invite flow get a hardcoded default password "DefaultPass123!" that's echoed back in the API response. If invited accounts aren't force-reset before first use, this is a predictable-credential risk. Outside your requested scope but adjacent to auth — flagging since it surfaced during the register-endpoint check.
+
+6. Leftover debug banner in AuthGuard.tsx:19-29
+The loading state renders "DEBUG MODE ACTIVE v2" and exposes import.meta.env.MODE / the API URL on every app boot, in production too. Not exploitable by itself, but it's a shipped debug artifact and a minor info leak about environment/config.
+
+Not a bug (verified, worth noting)
+
+- /auth/register (AuthenticationController.java, SecurityConfig.java): despite the frontend still sending a roles field, RegisterRequest has no roles property (silently dropped), the service hardcodes ROLE_PUBLIC, and the endpoint requires @PreAuthorize("hasRole('SUPER_ADMIN')") plus is removed from permitAll(). No anonymous-registration or role-escalation path exists here. The frontend's authApi.register() is dead code.
+- The invite flow (UserController/UserService) does accept a client-chosen role but is gated by both controller @PreAuthorize and a service-level validateInvitePermissions() hierarchy check (SUPER_ADMIN > ORG_ADMIN > CLUB_ADMIN, each capped to roles below them) — correctly designed.
+- AppRoutes.tsx role-gating via AuthGuard requiredRoles=[...] looks consistent; no route is missing a guard that should have one, based on the roles referenced elsewhere in the store.
+
+Minor / cosmetic
+
+- The "Keep me logged in" checkbox (Login.tsx:300) has no onChange/registration — it's inert UI, not a security issue, just dead functionality.
+
+Priority fix order: #1 (spoofable IP) and #4 (hardcoded bypass secret with insecure default) first — both are exploitable today with no special access. #2/#3 are lockout-robustness issues worth fixing alongside #1 (e.g., move to a shared store like Redis, add per-account throttling as a backstop).
+
+
+++++++++++++++++++++++++++++++++++++++++++++
+D: Roster & Player Deletion Logic
+
+Here's the full picture. Two separate roster systems exist — team membership (player_teams) and tournament rosters (tournament_players) — and the deletion logic behaves differently depending on entry point.
+
+What works correctly
+
+- PlayerServiceImpl.deletePlayer (backend/.../services/impl/PlayerServiceImpl.java) is solid: it checks for active team assignments and match/lineup/suspension history, then either hard-deletes (no history at all — cleanly removes player_teams/tournament_players rows and the players/persons rows) or soft-deletes (deleted=true, deletedAt set, and deactivates every active player_teams and tournament_players row for that player). No orphaned active assignments result from this path.
+- All list/roster read queries (PlayerRepository, PlayerTeamRepository, TournamentPlayerRepository) consistently filter deleted = false, so soft-deleted players correctly disappear from every list and selection UI, including RosterManagement.tsx's PlayerSelectionModal.
+- Both RosterManagement.tsx (tournament roster) and TeamDetail.tsx/RosterList.tsx (team roster) always refetch from the server after a remove action — no client-side stale-state bugs.
+- Migration V145__cleanup_deleted_players.sql's fix (631e0d3) correctly guards against hard-deleting a persons row that's still referenced by team_staff/tournament_staff/official_registry FKs — that was the actual constraint-violation bug it fixed.
+
+Real gaps found
+
+1. Missing deleted guard on (re)assignment paths — can violate unique constraints
+Both PlayerTeamServiceImpl.assignPlayerToTeam and TournamentRosterServiceImpl.addPlayersToRoster fetch the player via plain playerRepository.findById(...) with no deleted check — unlike nearly every other player query in the codebase. Their "reactivate-existing-row-or-insert-new" logic relies on lookup queries (findByPlayerIdAndTeamId, findByTournamentIdAndTeamIdAndPlayerId) that do filter player.deleted = false. So if a player is soft-deleted and already has an old (now-inactive) assignment row, that lookup returns empty, the code falls into the "insert new" branch, and collides with:
+- player_teams_unique UNIQUE(player_id, team_id) (unconditional, not filtered on is_active)
+- uk_tournament_team_player UNIQUE(tournament_id, team_id, player_id) (same shape)
+
+In normal UI use this is masked because the player picker only lists non-deleted players — but there's no server-side enforcement, so a stale reference or direct API call with a since-deleted player's ID throws a constraint violation instead of a clean error, and there's no check preventing a soft-deleted player from being resurrected onto a roster at all.
+
+2. Bulk team removal doesn't cascade to tournament rosters
+removePlayersFromTeam only deactivates player_teams rows. It doesn't touch that player's active tournament_players rows for the same team, so a player removed from a team's roster can still show as active on that team's tournament roster.
+
+3. Bulk removal swallows per-item failures
+PlayerTeamServiceImpl.removePlayersFromTeam loops and catches/logs exceptions per player, always returning 204. TeamDetail.tsx then shows toast.success("Successfully removed players from team") unconditionally — a partial failure (e.g., "assignment not found") is silently hidden from the user.
+
+Recommendation
+
+Add deleted = false (or an explicit deleted-check with a clear error) to assignPlayerToTeam and addPlayersToRoster before the reactivate-or-insert branch — that's the one that can actually throw at runtime today. The bulk-removal cascade and swallowed-failure issues are correctness/UX gaps worth fixing but won't cause a DB-level exception.
+
+
+++++++++++++++++++++++++++++++++++++++++++++
+E: High-Priority Files
+
+Full review complete for all five files. This one turned up the most severe finding of the whole audit.
+
+🔴 Critical — Hardcoded JWT signing secret with silent fallback in production
+
+JwtService.java:
+@Value("${application.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+private String secretKey;
+application-prod.yml never sets application.security.jwt.secret-key, and neither does the base application.yml. I checked the entire repo for deployment automation (docker-compose, Dockerfiles, .github/workflows, k8s, terraform, Railway/Render/Fly configs, .env.production) — there is no production deployment config anywhere in this repository. Only staging has one (.env.staging + deploy-backend-staging.yml, injecting a real JWT_SECRET).
+
+Net effect: if prod is run using only what's in this repo, Spring starts up cleanly (no missing-placeholder error) and silently signs/validates every JWT with that hardcoded base64 string, which is sitting in source control right now. Anyone who reads the repo can forge a valid auth token for any user/role in a production deployment that doesn't override this externally. This needs a real secret injected via env var before prod ever runs, and the code default should probably be removed entirely (fail closed, not fail open) rather than relying on ops discipline.
+
+🔴 High — Cookie flags silently degrade to insecure defaults in prod
+
+CookieUtils.java defaults: secure:false, same-site:Strict. Since application-prod.yml sets neither, and no deploy config exists to inject them, prod would run with Secure=false on the athos_auth HttpOnly JWT cookie — it can be sent over plain HTTP if TLS isn't strictly enforced upstream, unlike staging which explicitly hardcodes secure: true, same-site: Lax. (The Strict same-site default is incidentally fine, but it's luck, not policy — prod has no explicit cookie config at all.)
+
+🟡 Medium — CORS silently falls back to localhost-only in prod
+
+SecurityConfig.java:30 requires application.security.cors.allowed-origins with no @Value default, but it resolves via the base application.yml's hardcoded http://localhost:5173,http://localhost:3000 since prod never overrides it. This wouldn't cause a startup crash — it would just silently break the real frontend (CORS-rejected) unless someone sets an env var out-of-band. Functional bug more than a vulnerability, but same root cause as the two findings above: the prod profile has no environment-specific security config at all, everything falls through to dev-shaped defaults.
+
+🟡 Medium — CSRF globally disabled, defended only by SameSite
+
+SecurityConfig.java:39 — .csrf(csrf -> csrf.disable()). Given cookie-based JWT auth, SameSite is your only CSRF defense. That's an acceptable pattern if SameSite is reliably Strict/Lax in every environment — but per the finding above, prod's SameSite value is an accidental default, not a deliberate, verified setting. api/axios.ts also configures xsrfCookieName/xsrfHeaderName (double-submit CSRF pattern), but since the backend never sets an XSRF-TOKEN cookie and CSRF protection is disabled server-side, this axios config is inert dead weight — worth removing or actually wiring up, since it currently reads as "we have CSRF protection" when there isn't any beyond SameSite.
+
+🟡 Medium — Two parallel, divergently-configured axios clients (your "consistency" question)
+
+Confirmed both are live, not dead code:
+- frontend/src/api/axios.ts — used by 17 files (auth.api.ts, playerTeams.api.ts, etc.). 10s timeout, XSRF header config, on 401 does an unconditional window.location.href = '/login' with no retry guard.
+- frontend/src/lib/axios.ts — used by 9 services/*.ts files, including rosterService.ts (the data layer behind RosterManagement.tsx). No timeout, no XSRF config, on 401 first clears two vestigial localStorage keys (athos_token, auth_user — dead keys; real auth state lives in the non-persisted Zustand store and the HttpOnly cookie, so this cleanup does nothing meaningful) guarded by an _retry flag, then does the same hard redirect.
+
+Both ultimately reset session state the same way (full page reload → app re-runs its boot check), so there's no functional session-persistence bug today. But maintaining two independently-hand-rolled axios instances with different timeout/CSRF/retry behavior is exactly the kind of split that causes a future fix (e.g., adding real logout-on-401 via useAuthStore.getState().logout(), or a CSRF header) to land in one file and get missed in the other. Recommend consolidating to a single client.
+
+🟠 Already covered from earlier turns (still valid, no change)
+
+- Login.tsx <AccessGate>: hardcoded fallback ACCESS_CODE = 'AOS3R26ADMINDev' shipped in the JS bundle if VITE_ADMIN_ACCESS_CODE is unset, combined with ENV defaulting to 'development' if VITE_ENV is unset — a misconfigured prod build exposes a real-looking bypass secret to every visitor. Same root pattern as the JWT/cookie/CORS findings: security-relevant values silently falling back to insecure defaults instead of failing closed.
+- RosterManagement.tsx / roster soft-delete: no new issues found beyond the earlier report (missing deleted guard on reassignment in PlayerTeamServiceImpl/TournamentRosterServiceImpl, causing potential unique-constraint violations).
+
+Minor
+
+- /api/v1/system/info (SystemInfoController.java) is permitAll() and leaks git commit hash, build time, and active Spring profile to unauthenticated users — low severity, but an easy fingerprinting target; consider gating behind auth or actuator-style access control.
+- Staging's checked-in JWT_SECRET=CHANGE_THIS_SECRET_FOR_STAGING in .env.staging looks like a placeholder that was never rotated — worth confirming it isn't still literally that value in the running staging environment.
+
+The one thing to fix first
+
+Every high/critical finding here traces back to the same gap: application-prod.yml has no security-relevant config of its own — no JWT secret, no cookie flags, no CORS origins — so it inherits either a hardcoded Java-side default (JWT secret, cookie.secure) or the dev-shaped base YAML (CORS). Fix this by making application-prod.yml mirror application-staging.yml's pattern (required env vars, no silent fallback) and removing the hardcoded JWT default from JwtService.java entirely so a missing secret fails startup instead of degrading silently.
