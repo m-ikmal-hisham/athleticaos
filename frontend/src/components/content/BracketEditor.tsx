@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { TournamentStageResponse, Match } from '@/types';
 import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent } from '@/components/GlassCard';
 import { Button } from '@/components/Button';
-import { Trash, PencilSimple, Plus } from '@phosphor-icons/react';
+import { Trash, PencilSimple, Plus, Info } from '@phosphor-icons/react';
 import { tournamentService } from '@/services/tournamentService';
 import { showToast } from '@/lib/customToast';
 
@@ -12,9 +12,10 @@ interface BracketEditorProps {
     matches: Match[];
     onMatchEdit: (match: Match) => void;
     onRefresh: () => void;
+    selectedCategoryId?: string | null;
 }
 
-export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh }: BracketEditorProps) {
+export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId }: BracketEditorProps) {
     const [loading, setLoading] = useState(false);
 
     // Group stages by stageType (the bracket container)
@@ -36,14 +37,39 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         return map;
     }, [knockoutStages]);
 
+    // Check which bracket types already exist for the current category
+    const existingBracketTypes = useMemo(() => {
+        const types = new Set<string>();
+        knockoutStages.forEach(stage => {
+            // If we have a selected category, only count stages that belong to it (or have no category)
+            if (selectedCategoryId) {
+                if (stage.categoryId === selectedCategoryId || !stage.categoryId) {
+                    types.add(stage.stageType || '');
+                }
+            } else {
+                types.add(stage.stageType || '');
+            }
+        });
+        return types;
+    }, [knockoutStages, selectedCategoryId]);
+
     const handleCreateBracket = async (type: string, teamCount: number) => {
         setLoading(true);
         try {
-            await tournamentService.createManualBracket(tournamentId, { type, teamCount });
+            await tournamentService.createManualBracket(tournamentId, {
+                type,
+                teamCount,
+                categoryId: selectedCategoryId || undefined,
+            });
             showToast.success(`Created ${type} Bracket`);
             onRefresh();
-        } catch (error) {
-            showToast.error('Failed to create bracket');
+        } catch (error: any) {
+            const message = error?.response?.data?.message || error?.message || 'Failed to create bracket';
+            if (message.includes('already exists')) {
+                showToast.error(`A ${type} bracket already exists for this category. Delete it first.`);
+            } else {
+                showToast.error(message);
+            }
         } finally {
             setLoading(false);
         }
@@ -53,7 +79,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         if (!confirm(`Are you sure you want to delete the entire ${type} Bracket? This will remove all associated matches.`)) return;
         setLoading(true);
         try {
-            await tournamentService.deleteManualBracket(tournamentId, type);
+            await tournamentService.deleteManualBracket(tournamentId, type, selectedCategoryId || undefined);
             showToast.success(`Deleted ${type} Bracket`);
             onRefresh();
         } catch (error) {
@@ -63,17 +89,38 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         }
     };
 
+    const bracketButtons: { type: string; label: string }[] = [
+        { type: 'PLATE', label: 'Add Plate Bracket (4 Teams)' },
+        { type: 'BOWL', label: 'Add Bowl Bracket (4 Teams)' },
+        { type: 'SHIELD', label: 'Add Shield Bracket (4 Teams)' },
+    ];
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">Knockout Brackets</h3>
                 <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleCreateBracket('PLATE', 4)} disabled={loading}>
-                        <Plus className="w-4 h-4 mr-1" /> Add Plate Bracket (4 Teams)
-                    </Button>
-                    <Button size="sm" onClick={() => handleCreateBracket('BOWL', 4)} disabled={loading}>
-                        <Plus className="w-4 h-4 mr-1" /> Add Bowl Bracket (4 Teams)
-                    </Button>
+                    {bracketButtons.map(({ type, label }) => {
+                        const exists = existingBracketTypes.has(type);
+                        return (
+                            <div key={type} className="relative group/btn">
+                                <Button
+                                    size="sm"
+                                    onClick={() => handleCreateBracket(type, 4)}
+                                    disabled={loading || exists}
+                                    className={exists ? 'opacity-50 cursor-not-allowed' : ''}
+                                >
+                                    <Plus className="w-4 h-4 mr-1" /> {label}
+                                </Button>
+                                {exists && (
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none border border-slate-700 shadow-lg z-50">
+                                        <Info className="w-3 h-3 inline mr-1 -mt-0.5" />
+                                        {type} bracket already exists
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -153,4 +200,3 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         </div>
     );
 }
-

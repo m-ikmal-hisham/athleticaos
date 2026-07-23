@@ -1255,6 +1255,21 @@ public class BracketServiceImpl implements BracketService {
     @SuppressWarnings("null")
     public BracketViewResponse generateManualKnockoutBracket(UUID tournamentId, com.athleticaos.backend.enums.TournamentStageType type, int teamCount, UUID categoryId) {
         Tournament tournament = tournamentRepository.findById(tournamentId).orElseThrow();
+
+        // Idempotency guard: prevent duplicate bracket creation (defect #4 root cause)
+        boolean bracketExists;
+        if (categoryId != null) {
+            bracketExists = stageRepository.existsByTournamentIdAndStageTypeAndCategoryId(tournamentId, type, categoryId);
+        } else {
+            bracketExists = stageRepository.existsByTournamentIdAndStageTypeAndCategoryIsNull(tournamentId, type);
+        }
+        if (bracketExists) {
+            throw new IllegalStateException(
+                    "A " + type.name() + " bracket already exists for this " +
+                    (categoryId != null ? "category" : "tournament") +
+                    ". Delete the existing bracket first before creating a new one.");
+        }
+
         TournamentCategory category = null;
         if (categoryId != null) {
             category = tournament.getCategories().stream()

@@ -257,6 +257,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                         matches={matches}
                         onMatchEdit={(match) => openEditModal(match, { stopPropagation: () => {} } as any)}
                         onRefresh={() => setRefreshTrigger(prev => prev + 1)}
+                        selectedCategoryId={selectedCategoryId}
                     />
                 </div>
             )}

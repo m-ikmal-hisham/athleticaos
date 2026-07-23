@@ -133,6 +133,8 @@ export const formatMatchStatus = (status: string | undefined | null): string => 
 
 /**
  * Generates a short name for a team (3 to 5 characters max).
+ * Placeholder text (e.g. "Winner Pool A", "3rd Pool C", "TBD") is returned
+ * un-abbreviated since abbreviating it to 3 chars makes it unreadable.
  */
 export const formatTeamShortName = (shortName?: string | null, fullName?: string | null): string => {
     if (shortName && shortName.trim().length > 0) {
@@ -141,6 +143,21 @@ export const formatTeamShortName = (shortName?: string | null, fullName?: string
     if (!fullName || fullName.trim().length === 0) {
         return 'TBD';
     }
+
+    // Detect bracket placeholder text — return it in full, not abbreviated
+    const lower = fullName.toLowerCase().trim();
+    const isPlaceholder =
+        lower === 'tbd' ||
+        lower.includes('pool') ||
+        lower.startsWith('winner') ||
+        lower.startsWith('loser') ||
+        lower.startsWith('runner-up') ||
+        lower.startsWith('runner up') ||
+        /^(1st|2nd|3rd|4th|5th|6th|7th|8th)\b/.test(lower);
+
+    if (isPlaceholder) {
+        return fullName.trim();
+    }
     
     let clean = fullName.replace(/\b(Rugby|Club|FC|RC|Team|Men's|Women's|boys|girls|open)\b/gi, '').trim();
     if (clean.length === 0) clean = fullName;
@@ -148,6 +165,5 @@ export const formatTeamShortName = (shortName?: string | null, fullName?: string
     // Use common 3-letter abbreviation pattern if no short name is defined
     return clean.slice(0, 3).toUpperCase();
 };
-
 
 
