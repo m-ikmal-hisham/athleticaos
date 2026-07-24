@@ -159,8 +159,21 @@ export const EditTournament = () => {
             // Determine if seasonInput is ID or Name
             const isUuid = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/.test(data.seasonInput);
 
+            // Build payload with only fields the backend TournamentUpdateRequest DTO accepts.
+            // Exclude categories (managed via dedicated category endpoints) to avoid
+            // destructive clear+recreate that triggers FK constraint violations (409).
+            // Exclude seasonInput and competitionType which aren't in the DTO.
             const payload = {
-                ...data,
+                name: data.name,
+                organiserOrgId: data.organiserOrgId,
+                level: data.level,
+                venue: data.venue,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                logoUrl: data.logoUrl,
+                bannerUrl: data.bannerUrl,
+                backgroundUrl: data.backgroundUrl,
+                livestreamUrl: data.livestreamUrl,
                 seasonId: isUuid ? data.seasonInput : undefined,
                 seasonName: !isUuid ? data.seasonInput : undefined,
             };

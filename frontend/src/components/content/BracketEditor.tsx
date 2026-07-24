@@ -21,10 +21,16 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     // Group stages by stageType (the bracket container)
     // Filter out pool stages since this is a knockout bracket editor
     const knockoutStages = stages.filter(s => s.knockoutStage);
+
+    // Filter knockout stages by selected category before grouping
+    const filteredKnockoutStages = useMemo(() => {
+        if (!selectedCategoryId) return knockoutStages;
+        return knockoutStages.filter(s => s.categoryId === selectedCategoryId || !s.categoryId);
+    }, [knockoutStages, selectedCategoryId]);
     
     const bracketsMap = useMemo(() => {
         const map = new Map<string, TournamentStageResponse[]>();
-        knockoutStages.forEach(stage => {
+        filteredKnockoutStages.forEach(stage => {
             const type = stage.stageType || 'CUSTOM';
             if (!map.has(type)) map.set(type, []);
             map.get(type)!.push(stage);
@@ -35,7 +41,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
             map.set(key, value.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
         }
         return map;
-    }, [knockoutStages]);
+    }, [filteredKnockoutStages]);
 
     // Check which bracket types already exist for the current category
     const existingBracketTypes = useMemo(() => {

@@ -427,9 +427,18 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
                     {match.kickOffTime}
                     {match.venue && <span className="text-slate-500 ml-1">• {match.venue}</span>}
                 </div>
-                {/* Match Code or Stage for context */}
-                <div className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                    {match.matchCode && match.matchCode.length < 10 ? match.matchCode : match.stage?.name || 'Match'}
+                {/* Match Code + Stage badges */}
+                <div className="flex items-center gap-1.5">
+                    {match.matchCode && (
+                        <div className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold">
+                            {match.matchCode}
+                        </div>
+                    )}
+                    {match.stage?.name && (
+                        <div className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            {match.stage.name}
+                        </div>
+                    )}
                 </div>
             </div>
 
