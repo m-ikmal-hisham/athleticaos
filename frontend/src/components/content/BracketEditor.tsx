@@ -140,7 +140,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-bold text-white uppercase tracking-wider">Knockout Brackets (FIFA Visual)</h3>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-wider">Knockout Brackets</h3>
                 </div>
                 <div className="flex gap-2">
                     {bracketButtons.map(({ type, label }) => {

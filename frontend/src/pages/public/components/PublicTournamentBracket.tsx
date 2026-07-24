@@ -28,7 +28,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                     key={bracket.id}
                     className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xl backdrop-blur-md overflow-hidden"
                 >
-                    {/* Bracket Header (FIFA Style) */}
+                    {/* Bracket Header */}
                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/60 dark:border-slate-800">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
@@ -45,11 +45,11 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                         </div>
 
                         <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
-                            <span>FIFA Bracket View</span>
+                            <span>Knockout Stage</span>
                         </div>
                     </div>
 
-                    {/* FIFA Tree Columns View */}
+                    {/* Bracket Tree View */}
                     <div className="overflow-x-auto pb-4 scrollbar-thin">
                         <div className="flex gap-10 min-w-max px-2 py-4">
                             {bracket.rounds.map((round, roundIdx) => (
