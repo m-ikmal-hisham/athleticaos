@@ -23,4 +23,10 @@ public interface TournamentStageRepository extends JpaRepository<TournamentStage
             @org.springframework.data.repository.query.Param("categoryId") UUID categoryId);
 
     void deleteByTournamentIdAndCategoryIsNull(UUID tournamentId);
+
+    boolean existsByTournamentIdAndStageTypeAndCategoryId(UUID tournamentId,
+            com.athleticaos.backend.enums.TournamentStageType stageType, UUID categoryId);
+
+    boolean existsByTournamentIdAndStageTypeAndCategoryIsNull(UUID tournamentId,
+            com.athleticaos.backend.enums.TournamentStageType stageType);
 }

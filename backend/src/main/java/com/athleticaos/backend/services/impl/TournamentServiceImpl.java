@@ -7,6 +7,7 @@ import com.athleticaos.backend.dtos.tournament.TournamentCreateRequest;
 import com.athleticaos.backend.dtos.tournament.TournamentDashboardResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest;
+import com.athleticaos.backend.dtos.tournament.CreateCategoryRequest;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Tournament;
@@ -297,24 +298,59 @@ public class TournamentServiceImpl implements TournamentService {
             tournament.setSeason(season);
         }
 
-        // Handle Category Updates
+        // Handle Category Updates — use merge strategy to preserve existing category IDs
+        // and avoid FK constraint violations from matches, stages, teams that reference them.
         if (request.getCategories() != null) {
-            // Clear existing categories
-            tournament.getCategories().clear();
+            List<com.athleticaos.backend.entities.TournamentCategory> existingCategories = tournament.getCategories();
+            List<CreateCategoryRequest> requestedCategories = request.getCategories();
 
-            // Add new categories from request
-            List<com.athleticaos.backend.entities.TournamentCategory> newCategories = request.getCategories().stream()
-                    .map(catReq -> com.athleticaos.backend.entities.TournamentCategory.builder()
+            // Build a map of existing categories by name for matching
+            java.util.Map<String, com.athleticaos.backend.entities.TournamentCategory> existingByName = new java.util.HashMap<>();
+            for (com.athleticaos.backend.entities.TournamentCategory cat : existingCategories) {
+                existingByName.put(cat.getName(), cat);
+            }
+
+            // Track which existing categories are still present in the request
+            java.util.Set<String> requestedNames = new java.util.HashSet<>();
+
+            for (CreateCategoryRequest catReq : requestedCategories) {
+                requestedNames.add(catReq.getName());
+                com.athleticaos.backend.entities.TournamentCategory existing = existingByName.get(catReq.getName());
+
+                if (existing != null) {
+                    // Update existing category in-place (preserving its ID and FK references)
+                    existing.setDescription(catReq.getDescription());
+                    existing.setGender(catReq.getGender());
+                    existing.setMinAge(catReq.getMinAge());
+                    existing.setMaxAge(catReq.getMaxAge());
+                    existing.setMinYear(catReq.getMinYear());
+                    existing.setMaxYear(catReq.getMaxYear());
+                } else {
+                    // Add new category
+                    com.athleticaos.backend.entities.TournamentCategory newCat = com.athleticaos.backend.entities.TournamentCategory.builder()
                             .tournament(tournament)
                             .name(catReq.getName())
                             .description(catReq.getDescription())
                             .gender(catReq.getGender())
                             .minAge(catReq.getMinAge())
                             .maxAge(catReq.getMaxAge())
-                            .build())
-                    .collect(Collectors.toList());
+                            .minYear(catReq.getMinYear())
+                            .maxYear(catReq.getMaxYear())
+                            .build();
+                    existingCategories.add(newCat);
+                }
+            }
 
-            tournament.getCategories().addAll(newCategories);
+            // Remove categories that are no longer in the request.
+            // Use iterator to safely remove while iterating. Only remove if not referenced.
+            existingCategories.removeIf(cat -> !requestedNames.contains(cat.getName()) && cat.getId() == null);
+            // For categories with IDs (already persisted), log a warning but don't force-delete
+            // to avoid FK violations. They can be removed via the dedicated DELETE endpoint.
+            for (com.athleticaos.backend.entities.TournamentCategory cat : existingCategories) {
+                if (!requestedNames.contains(cat.getName()) && cat.getId() != null) {
+                    log.warn("Category '{}' (id={}) not in update request but has FK references, skipping removal. Use DELETE /categories/{} to remove.", cat.getName(), cat.getId(), cat.getId());
+                }
+            }
         }
 
         // Validate dates after updates
