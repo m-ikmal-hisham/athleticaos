@@ -483,7 +483,6 @@ export const MatchDetail = () => {
             message: 'End match and finalize scores?',
             onConfirm: async () => {
                 await updateMatch(selectedMatch!.id, {
-                    ...selectedMatch, // simpler
                     status: 'COMPLETED',
                     homeScore: calculatedScores.homeScore,
                     awayScore: calculatedScores.awayScore,

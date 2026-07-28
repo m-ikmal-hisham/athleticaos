@@ -115,18 +115,26 @@ public class PlayerSuspensionServiceImpl implements PlayerSuspensionService {
         log.info("Decrementing suspensions for match {}", match.getId());
 
         Tournament tournament = match.getTournament();
+        if (tournament == null) {
+            log.warn("Match {} has no tournament, skipping suspension decrement", match.getId());
+            return;
+        }
+
         Team homeTeam = match.getHomeTeam();
         Team awayTeam = match.getAwayTeam();
 
-        // Get active suspensions for both teams in this tournament
-        List<PlayerSuspension> homeTeamSuspensions = suspensionRepository
-                .findByTournamentIdAndTeamIdAndIsActiveTrue(tournament.getId(), homeTeam.getId());
-        List<PlayerSuspension> awayTeamSuspensions = suspensionRepository
-                .findByTournamentIdAndTeamIdAndIsActiveTrue(tournament.getId(), awayTeam.getId());
+        // Get active suspensions for both teams in this tournament (skip if team not assigned)
+        if (homeTeam != null) {
+            List<PlayerSuspension> homeTeamSuspensions = suspensionRepository
+                    .findByTournamentIdAndTeamIdAndIsActiveTrue(tournament.getId(), homeTeam.getId());
+            decrementAndUpdate(homeTeamSuspensions);
+        }
 
-        // Decrement and update suspensions for both teams
-        decrementAndUpdate(homeTeamSuspensions);
-        decrementAndUpdate(awayTeamSuspensions);
+        if (awayTeam != null) {
+            List<PlayerSuspension> awayTeamSuspensions = suspensionRepository
+                    .findByTournamentIdAndTeamIdAndIsActiveTrue(tournament.getId(), awayTeam.getId());
+            decrementAndUpdate(awayTeamSuspensions);
+        }
     }
 
     /**
