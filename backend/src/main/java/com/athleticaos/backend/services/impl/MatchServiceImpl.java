@@ -726,6 +726,18 @@ public class MatchServiceImpl implements MatchService {
                 .build();
     }
 
+    /**
+     * Schedules auto-progression to run AFTER the current transaction commits.
+     * 
+     * This is critical for PostgreSQL: if progression logic fails with a SQL error
+     * (e.g., constraint violation, NPE during query), PostgreSQL marks the entire
+     * transaction as aborted. A Java try-catch cannot heal the DB transaction state,
+     * so all subsequent SQL in the same transaction would fail with:
+     * "ERROR: current transaction is aborted, commands ignored until end of transaction block"
+     * 
+     * By deferring to afterCommit, the match update always succeeds, and progression
+     * failures are isolated in their own transaction.
+     */
     private void triggerAutoProgression(Match match) {
         if (match == null || match.getStatus() != MatchStatus.COMPLETED) {
             return;
@@ -736,15 +748,33 @@ public class MatchServiceImpl implements MatchService {
             return;
         }
 
-        if (Boolean.TRUE.equals(stage.getIsKnockoutStage())) {
-            log.info("Triggering auto-progression for knockout match {}", match.getId());
+        // Capture IDs before afterCommit (entities may be detached after commit)
+        final UUID matchId = match.getId();
+        final boolean isKnockout = Boolean.TRUE.equals(stage.getIsKnockoutStage());
+        final UUID tournamentId = match.getTournament() != null ? match.getTournament().getId() : null;
+
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        performAutoProgression(matchId, isKnockout, tournamentId);
+                    }
+                });
+    }
+
+    /**
+     * Executes the actual auto-progression logic. Runs outside the original transaction
+     * so any failures here do not affect the match update.
+     */
+    private void performAutoProgression(UUID matchId, boolean isKnockout, UUID tournamentId) {
+        if (isKnockout) {
+            log.info("Triggering auto-progression for knockout match {}", matchId);
             try {
-                progressionService.processMatchCompletion(match.getId());
+                progressionService.processMatchCompletion(matchId);
             } catch (Exception e) {
-                log.error("Failed to auto-progress knockout match {}", match.getId(), e);
+                log.error("Failed to auto-progress knockout match {}", matchId, e);
             }
-        } else {
-            UUID tournamentId = match.getTournament().getId();
+        } else if (tournamentId != null) {
             log.info("Checking if all pool matches are completed for tournament {}", tournamentId);
             try {
                 List<com.athleticaos.backend.entities.TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
