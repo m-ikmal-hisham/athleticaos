@@ -434,6 +434,8 @@ export interface Match {
     location?: string; // Keep for backward compat if needed
     pitch?: string;
     matchCode?: string;
+    /** Sequential number within the tournament (1, 2, 3, …) for easy identification. */
+    matchNumber?: number;
     stage?: MatchStage; // Changed from enum
     phase?: string;
     status: MatchStatus;
@@ -464,6 +466,7 @@ export interface MatchCreateRequest {
     venue?: string;
     pitch?: string;
     matchCode?: string;
+    matchNumber?: number;
     phase?: string;
     stageId?: string;
     status?: MatchStatus;

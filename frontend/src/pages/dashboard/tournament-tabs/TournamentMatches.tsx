@@ -325,9 +325,16 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                                         onClick={(e) => openEditModal(match, e)}
                                                     >
                                                         <div className="flex justify-between items-center text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                            <span className="truncate max-w-[40%]" title={match.homeTeamName || match.homeTeamPlaceholder}>{match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}</span>
-                                                            <span className="text-xs text-slate-400">vs</span>
-                                                            <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || match.awayTeamPlaceholder}>{match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}</span>
+                                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                {match.matchNumber && (
+                                                                    <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 shrink-0">
+                                                                        #{match.matchNumber}
+                                                                    </span>
+                                                                )}
+                                                                <span className="truncate max-w-[40%]" title={match.homeTeamName || match.homeTeamPlaceholder}>{match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}</span>
+                                                                <span className="text-xs text-slate-400">vs</span>
+                                                                <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || match.awayTeamPlaceholder}>{match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}</span>
+                                                            </div>
                                                         </div>
                                                         <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Clock className="w-3 h-3" />
@@ -429,6 +436,11 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
                 </div>
                 {/* Match Code + Stage badges */}
                 <div className="flex items-center gap-1.5">
+                    {match.matchNumber !== undefined && match.matchNumber !== null && (
+                        <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded font-bold">
+                            Match {match.matchNumber}
+                        </div>
+                    )}
                     {match.matchCode && (
                         <div className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold">
                             {match.matchCode}

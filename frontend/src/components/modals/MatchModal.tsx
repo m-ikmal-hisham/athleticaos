@@ -330,10 +330,16 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
 
     const availableMatchesOptions = matches
         .filter(m => m.id !== initialMatch?.id)
-        .map(m => ({ 
-            value: m.id, 
-            label: `${m.matchCode || 'Match'} (${m.stage?.name || 'Unassigned'})` 
-        }));
+        .map(m => {
+            const numLabel = m.matchNumber ? `Match ${m.matchNumber}` : (m.matchCode || 'Match');
+            const homeName = m.homeTeamName || m.homeTeamPlaceholder || 'TBD';
+            const awayName = m.awayTeamName || m.awayTeamPlaceholder || 'TBD';
+            const stageName = m.stage?.name || 'Unassigned';
+            return { 
+                value: m.id, 
+                label: `${numLabel}: ${homeName} vs ${awayName} (${stageName})` 
+            };
+        });
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={mode === 'edit' ? 'Edit Match' : 'New Match'}>
