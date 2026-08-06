@@ -35,6 +35,7 @@ public class TournamentController {
     private final ProgressionService progressionService;
     private final com.athleticaos.backend.services.StandingsService standingsService;
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
+    private final com.athleticaos.backend.services.MatchService matchService;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -137,7 +138,7 @@ public class TournamentController {
             @PathVariable String idOrSlug,
             @RequestBody com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest request) {
         UUID id = fetchTournament(idOrSlug).getId();
-        return ResponseEntity.ok(bracketService.generateManualKnockoutBracket(id, request.getType(), request.getTeamCount(), request.getCategoryId()));
+        return ResponseEntity.ok(bracketService.generateManualKnockoutBracket(id, request));
     }
 
     @DeleteMapping("/{idOrSlug}/bracket/type/{stageType}")
@@ -156,6 +157,13 @@ public class TournamentController {
     public ResponseEntity<Integer> progressTournament(@PathVariable UUID id) {
         int progressedCount = progressionService.progressTournament(id);
         return ResponseEntity.ok(progressedCount);
+    }
+
+    @PostMapping("/{id}/apply-byes")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
+    @Operation(summary = "Advance every knockout match that has one team and no possible opponent")
+    public ResponseEntity<Integer> applyByes(@PathVariable UUID id) {
+        return ResponseEntity.ok(matchService.applyByesForTournament(id));
     }
 
     @PostMapping("/{id}/progress-pools")

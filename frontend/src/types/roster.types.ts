@@ -2,7 +2,12 @@ export interface TournamentPlayerDTO {
     id: string;
     playerId: string;
     playerName: string;
+    /** The number in effect, whichever layer supplied it. */
     playerNumber?: string;
+    /** Set only when this tournament overrides the club number; absent means inherited. */
+    tournamentJerseyNumber?: number;
+    /** The player's club-level default, so the UI can show what is being inherited. */
+    teamJerseyNumber?: number;
     organisationName: string;
     isEligible: boolean;
     eligibilityNote?: string;
@@ -47,4 +52,6 @@ export interface LineupHintsDTO {
 
 export interface AddPlayersToRosterRequest {
     playerIds: string[];
+    /** Optional tournament jersey number per player id; omitted players inherit their club number. */
+    jerseyNumbers?: Record<string, number>;
 }

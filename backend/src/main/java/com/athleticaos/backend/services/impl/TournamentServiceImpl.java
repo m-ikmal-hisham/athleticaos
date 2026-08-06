@@ -7,6 +7,7 @@ import com.athleticaos.backend.dtos.tournament.TournamentCreateRequest;
 import com.athleticaos.backend.dtos.tournament.TournamentDashboardResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentResponse;
 import com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest;
+import com.athleticaos.backend.dtos.tournament.CreateCategoryRequest;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Tournament;
@@ -48,6 +49,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
     private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository tournamentFormatConfigRepository;
     private final TournamentStageRepository tournamentStageRepository;
+    private final com.athleticaos.backend.services.MatchService matchService;
 
     @Override
     @Transactional(readOnly = true)
@@ -297,24 +299,59 @@ public class TournamentServiceImpl implements TournamentService {
             tournament.setSeason(season);
         }
 
-        // Handle Category Updates
+        // Handle Category Updates — use merge strategy to preserve existing category IDs
+        // and avoid FK constraint violations from matches, stages, teams that reference them.
         if (request.getCategories() != null) {
-            // Clear existing categories
-            tournament.getCategories().clear();
+            List<com.athleticaos.backend.entities.TournamentCategory> existingCategories = tournament.getCategories();
+            List<CreateCategoryRequest> requestedCategories = request.getCategories();
 
-            // Add new categories from request
-            List<com.athleticaos.backend.entities.TournamentCategory> newCategories = request.getCategories().stream()
-                    .map(catReq -> com.athleticaos.backend.entities.TournamentCategory.builder()
+            // Build a map of existing categories by name for matching
+            java.util.Map<String, com.athleticaos.backend.entities.TournamentCategory> existingByName = new java.util.HashMap<>();
+            for (com.athleticaos.backend.entities.TournamentCategory cat : existingCategories) {
+                existingByName.put(cat.getName(), cat);
+            }
+
+            // Track which existing categories are still present in the request
+            java.util.Set<String> requestedNames = new java.util.HashSet<>();
+
+            for (CreateCategoryRequest catReq : requestedCategories) {
+                requestedNames.add(catReq.getName());
+                com.athleticaos.backend.entities.TournamentCategory existing = existingByName.get(catReq.getName());
+
+                if (existing != null) {
+                    // Update existing category in-place (preserving its ID and FK references)
+                    existing.setDescription(catReq.getDescription());
+                    existing.setGender(catReq.getGender());
+                    existing.setMinAge(catReq.getMinAge());
+                    existing.setMaxAge(catReq.getMaxAge());
+                    existing.setMinYear(catReq.getMinYear());
+                    existing.setMaxYear(catReq.getMaxYear());
+                } else {
+                    // Add new category
+                    com.athleticaos.backend.entities.TournamentCategory newCat = com.athleticaos.backend.entities.TournamentCategory.builder()
                             .tournament(tournament)
                             .name(catReq.getName())
                             .description(catReq.getDescription())
                             .gender(catReq.getGender())
                             .minAge(catReq.getMinAge())
                             .maxAge(catReq.getMaxAge())
-                            .build())
-                    .collect(Collectors.toList());
+                            .minYear(catReq.getMinYear())
+                            .maxYear(catReq.getMaxYear())
+                            .build();
+                    existingCategories.add(newCat);
+                }
+            }
 
-            tournament.getCategories().addAll(newCategories);
+            // Remove categories that are no longer in the request.
+            // Use iterator to safely remove while iterating. Only remove if not referenced.
+            existingCategories.removeIf(cat -> !requestedNames.contains(cat.getName()) && cat.getId() == null);
+            // For categories with IDs (already persisted), log a warning but don't force-delete
+            // to avoid FK violations. They can be removed via the dedicated DELETE endpoint.
+            for (com.athleticaos.backend.entities.TournamentCategory cat : existingCategories) {
+                if (!requestedNames.contains(cat.getName()) && cat.getId() != null) {
+                    log.warn("Category '{}' (id={}) not in update request but has FK references, skipping removal. Use DELETE /categories/{} to remove.", cat.getName(), cat.getId(), cat.getId());
+                }
+            }
         }
 
         // Validate dates after updates
@@ -892,12 +929,11 @@ public class TournamentServiceImpl implements TournamentService {
         tournamentRepository.findById(java.util.Objects.requireNonNull(tournamentId))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        List<com.athleticaos.backend.entities.Match> matches = matchRepository
-                .findByTournamentIdWithTeams(tournamentId);
-
-        return matches.stream()
-                .map(this::mapMatchToResponse)
-                .collect(java.util.stream.Collectors.toList());
+        // Delegated to MatchService rather than mapped here. This class used to carry its own
+        // copy of the mapper, which silently omitted team placeholders, feeder links and the
+        // result type — so the Matches tab could not tell a "Seed 1" slot from an empty one,
+        // and the edit dialog could not show where a slot's team comes from.
+        return matchService.getMatchesByTournament(tournamentId);
     }
 
     @Override
@@ -917,85 +953,6 @@ public class TournamentServiceImpl implements TournamentService {
         formatService.clearSchedule(tournamentId, clearStructure);
     }
 
-    private com.athleticaos.backend.dtos.match.MatchResponse mapMatchToResponse(
-            com.athleticaos.backend.entities.Match match) {
-        // Safe status mapping
-        String status = match.getStatus() != null ? match.getStatus().name() : "SCHEDULED";
-
-        com.athleticaos.backend.dtos.match.MatchResponse.MatchResponseBuilder builder = com.athleticaos.backend.dtos.match.MatchResponse
-                .builder()
-                .id(match.getId())
-                .tournamentId(match.getTournament().getId())
-                .matchDate(match.getMatchDate())
-                .kickOffTime(match.getKickOffTime())
-                .venue(match.getVenue())
-                .pitch(match.getPitch())
-                .matchCode(match.getMatchCode())
-                .phase(match.getPhase())
-                .status(status)
-                .homeScore(match.getHomeScore())
-                .awayScore(match.getAwayScore());
-
-        // Add home team info if available
-        if (match.getHomeTeam() != null) {
-            builder.homeTeamId(match.getHomeTeam().getId());
-            builder.homeTeamName(match.getHomeTeam().getName());
-            
-            String homeLogo = match.getHomeTeam().getLogoUrl();
-            if (homeLogo == null && match.getHomeTeam().getOrganisation() != null) {
-                homeLogo = match.getHomeTeam().getOrganisation().getLogoUrl();
-            }
-            builder.homeTeamLogoUrl(homeLogo);
-            builder.homeTeamShortName(match.getHomeTeam().getShortName());
-            if (match.getHomeTeam().getOrganisation() != null) {
-                builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
-            }
-            
-            builder.homeTeam(com.athleticaos.backend.dtos.match.MatchResponse.TeamInfo.builder()
-                    .id(match.getHomeTeam().getId())
-                    .name(match.getHomeTeam().getName())
-                    .build());
-        } else {
-            builder.homeTeamName("TBD");
-        }
-
-        // Add away team info if available
-        if (match.getAwayTeam() != null) {
-            builder.awayTeamId(match.getAwayTeam().getId());
-            builder.awayTeamName(match.getAwayTeam().getName());
-            
-            String awayLogo = match.getAwayTeam().getLogoUrl();
-            if (awayLogo == null && match.getAwayTeam().getOrganisation() != null) {
-                awayLogo = match.getAwayTeam().getOrganisation().getLogoUrl();
-            }
-            builder.awayTeamLogoUrl(awayLogo);
-            builder.awayTeamShortName(match.getAwayTeam().getShortName());
-            if (match.getAwayTeam().getOrganisation() != null) {
-                builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
-            }
-            
-            builder.awayTeam(com.athleticaos.backend.dtos.match.MatchResponse.TeamInfo.builder()
-                    .id(match.getAwayTeam().getId())
-                    .name(match.getAwayTeam().getName())
-                    .build());
-        } else {
-            builder.awayTeamName("TBD");
-        }
-
-        // Add stage info if available
-        if (match.getStage() != null) {
-            String stageType = match.getStage().getStageType() != null ? match.getStage().getStageType().name()
-                    : "POOL";
-            builder.stage(com.athleticaos.backend.dtos.match.MatchResponse.StageInfo.builder()
-                    .id(match.getStage().getId().toString())
-                    .name(match.getStage().getName())
-                    .stageType(stageType)
-                    .categoryId(match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
-                    .build());
-        }
-
-        return builder.build();
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -1086,6 +1043,7 @@ public class TournamentServiceImpl implements TournamentService {
                         : null);
         config.setIsOneWayMatch(configDTO.getIsOneWayMatch());
         config.setIncludePlacementStages(configDTO.getIncludePlacementStages());
+        config.setPlacementBracketSize(configDTO.getPlacementBracketSize());
 
         // Save directly via repo
         config = tournamentFormatConfigRepository.save(config);
@@ -1119,6 +1077,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .carnivalEndTime(config.getCarnivalEndTime() != null ? config.getCarnivalEndTime().toString() : null)
                 .isOneWayMatch(config.getIsOneWayMatch())
                 .includePlacementStages(config.getIncludePlacementStages())
+                .placementBracketSize(config.getPlacementBracketSize())
                 .pointsWin(config.getPointsWin())
                 .pointsDraw(config.getPointsDraw())
                 .pointsLoss(config.getPointsLoss())

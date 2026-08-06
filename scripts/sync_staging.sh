@@ -94,6 +94,9 @@ ssh -i "$PEM_KEY" "$EC2_USER@$EC2_HOST" << 'EOF'
     -v athleticaos-uploads:/app/uploads \
     athleticaos-backend
 
+  echo "Cleaning up dangling Docker images and build cache..."
+  docker system prune -f || true
+
   echo "Waiting for health check..."
   for i in {1..10}; do
     if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then

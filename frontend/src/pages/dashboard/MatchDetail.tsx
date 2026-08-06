@@ -7,9 +7,11 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
-import { updateMatch, updateMatchStatus, updateMatchEvent } from '@/api/matches.api';
+import { updateMatch, updateMatchStatus, updateMatchEvent, recordUnplayedResult } from '@/api/matches.api';
 import { getMatchOfficials, MatchOfficialDTO } from '@/api/officials.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { Modal } from '@/components/Modal';
+import { Button } from '@/components/Button';
 import { MatchControls } from '@/components/MatchControls';
 import { showToast } from '@/lib/customToast';
 import { MatchOfficialAssignments } from '@/components/admin/match/MatchOfficialAssignments';
@@ -77,6 +79,7 @@ export const MatchDetail = () => {
 
     // NOTE: Removed unused states (isSubmitting, lineupHints, activeTab)
 
+    const [walkoverModalOpen, setWalkoverModalOpen] = useState(false);
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
         title: string;
@@ -483,7 +486,6 @@ export const MatchDetail = () => {
             message: 'End match and finalize scores?',
             onConfirm: async () => {
                 await updateMatch(selectedMatch!.id, {
-                    ...selectedMatch, // simpler
                     status: 'COMPLETED',
                     homeScore: calculatedScores.homeScore,
                     awayScore: calculatedScores.awayScore,
@@ -508,10 +510,38 @@ export const MatchDetail = () => {
         });
     };
 
+    // A walkover records the win without a scoreline — the match was never played, so
+    // inventing a score would distort points for/against in the standings.
+    const handleRecordWalkover = () => setWalkoverModalOpen(true);
+
+    const submitWalkover = async (winnerTeamId: string) => {
+        try {
+            await recordUnplayedResult(selectedMatch!.id, 'WALKOVER', winnerTeamId);
+            setWalkoverModalOpen(false);
+            await loadMatchDetail(selectedMatch!.id);
+            showToast.success('Walkover recorded');
+        } catch (error: any) {
+            showToast.error(error?.response?.data?.message || 'Failed to record walkover');
+        }
+    };
+
 
     // Calculations
+    const isUnplayedResult = selectedMatch?.resultType === 'WALKOVER'
+        || selectedMatch?.resultType === 'BYE';
+
     const calculatedScores = useMemo(() => {
         if (!selectedMatch) return { homeScore: 0, awayScore: 0 };
+
+        // A walkover or bye was never played, so it has no scoring events to add up. Deriving
+        // from events would render the awarded result as 0-0 and hide who actually won.
+        if (selectedMatch.resultType === 'WALKOVER' || selectedMatch.resultType === 'BYE') {
+            return {
+                homeScore: selectedMatch.homeScore ?? 0,
+                awayScore: selectedMatch.awayScore ?? 0,
+            };
+        }
+
         let homeScore = 0;
         let awayScore = 0;
         events.forEach(event => {
@@ -695,6 +725,21 @@ export const MatchDetail = () => {
                                     <div className="mt-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-xs font-medium text-slate-500 dark:text-slate-300 backdrop-blur-sm border border-slate-200 dark:border-white/10">
                                         {isHalfTime ? 'HALF TIME' : (selectedMatch.status === 'COMPLETED' ? 'FULL TIME' : (isTimerRunning ? 'LIVE' : selectedMatch.status))}
                                     </div>
+                                    {/* Without this the awarded result is indistinguishable from a played one. */}
+                                    {isUnplayedResult && (
+                                        <div className="mt-2 px-3 py-1 rounded-full bg-amber-500/15 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                            {selectedMatch.resultType === 'BYE' ? 'Bye' : 'Walkover'}
+                                            {selectedMatch.winnerTeamId && (
+                                                <span className="font-medium normal-case tracking-normal">
+                                                    {' — '}
+                                                    {selectedMatch.winnerTeamId === selectedMatch.homeTeamId
+                                                        ? selectedMatch.homeTeamName
+                                                        : selectedMatch.awayTeamName}
+                                                    {' wins'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="text-center relative z-10">
@@ -728,6 +773,7 @@ export const MatchDetail = () => {
                                 onResume={handleResume}
                                 onFullTime={handleFullTime}
                                 onCancelMatch={handleCancelMatch}
+                                onRecordWalkover={handleRecordWalkover}
                                 isAdmin={isAdmin!}
                                 matchTimeSeconds={matchTimeSeconds}
                                 isTimerRunning={isTimerRunning}
@@ -1210,6 +1256,44 @@ export const MatchDetail = () => {
                 }}
                 onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
             />
+
+            {/* Walkover: pick the side that advances. No score is recorded. */}
+            <Modal
+                isOpen={walkoverModalOpen}
+                onClose={() => setWalkoverModalOpen(false)}
+                title="Record Walkover"
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                        Choose the team that advances. The match is awarded 28–0 to that side,
+                        the World Rugby convention for a forfeit, and counts in the standings.
+                    </p>
+                    <div className="space-y-2">
+                        <Button
+                            variant="outline"
+                            className="w-full justify-center"
+                            onClick={() => submitWalkover(selectedMatch.homeTeamId!)}
+                            disabled={!selectedMatch.homeTeamId}
+                        >
+                            {selectedMatch.homeTeamName || 'Home'} wins
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="w-full justify-center"
+                            onClick={() => submitWalkover(selectedMatch.awayTeamId!)}
+                            disabled={!selectedMatch.awayTeamId}
+                        >
+                            {selectedMatch.awayTeamName || 'Away'} wins
+                        </Button>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                        <Button variant="cancel" onClick={() => setWalkoverModalOpen(false)}>
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

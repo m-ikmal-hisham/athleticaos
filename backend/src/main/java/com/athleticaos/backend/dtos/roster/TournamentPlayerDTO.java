@@ -16,7 +16,12 @@ public class TournamentPlayerDTO {
     private UUID id;
     private UUID playerId;
     private String playerName;
+    /** The number actually in effect, whichever layer it came from. */
     private String playerNumber;
+    /** Set only when this tournament overrides the club number; null means inherited. */
+    private Integer tournamentJerseyNumber;
+    /** The player's club-level default, shown so an organiser can see what is being inherited. */
+    private Integer teamJerseyNumber;
     private String organisationName;
     @JsonProperty("isEligible")
     private boolean isEligible;

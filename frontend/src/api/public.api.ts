@@ -69,7 +69,11 @@ export interface PublicMatchSummary {
     matchTime: string;
     venue?: string;
     status: string;
+    /** NORMAL, WALKOVER or BYE. Absent means a normally played match. */
+    resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
     stage?: string;
+    /** Stage type (PLATE, BOWL, SHIELD, ...), used to group the bracket the same way the admin view does. */
+    stageType?: string;
     stageDisplayOrder?: number;
     round?: string;
     officials?: { id?: string, officialName?: string, assignedRole?: string, officialRoleName?: string }[];

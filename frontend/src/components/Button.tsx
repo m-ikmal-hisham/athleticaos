@@ -18,7 +18,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
                     variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
                     variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',
-                    variant === 'danger' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                    // Note: `destructive` is not a defined colour token, so the previous
+                    // bg-destructive/text-destructive-foreground classes compiled to nothing and
+                    // left every danger button unstyled — next to the red-outlined `cancel`
+                    // variant, that made Cancel read as the more dangerous action.
+                    variant === 'danger' && 'bg-red-600 text-white shadow-lg shadow-red-500/20 hover:bg-red-700 hover:shadow-xl hover:shadow-red-500/30',
                     variant === 'cancel' && 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl',
                     variant === 'tertiary' && 'backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-slate-100 shadow-sm',
                     size === 'sm' && 'h-9 px-3 text-xs',

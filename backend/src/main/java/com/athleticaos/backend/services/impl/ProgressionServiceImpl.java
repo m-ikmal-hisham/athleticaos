@@ -3,6 +3,7 @@ package com.athleticaos.backend.services.impl;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.TournamentStage;
+import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.enums.TournamentStageType;
 import com.athleticaos.backend.repositories.MatchRepository;
@@ -47,8 +48,14 @@ public class ProgressionServiceImpl implements ProgressionService {
             return;
         }
 
-        if (!currentStage.getIsKnockoutStage()) {
-            log.debug("Match {} is in group stage, no automatic progression needed", matchId);
+        // A group match normally has nowhere to send anyone, but one wired straight into a
+        // bracket does. This is the third place the knockout-stage check appeared; the other
+        // two are canProgress() and progressTournament(), and all three had to agree or the
+        // winner silently stopped here after passing the earlier gates.
+        boolean hasExplicitLink = match.getNextMatchIdForWinner() != null
+                || match.getNextMatchIdForLoser() != null;
+        if (!Boolean.TRUE.equals(currentStage.getIsKnockoutStage()) && !hasExplicitLink) {
+            log.debug("Match {} is in group stage with no onward link, no progression needed", matchId);
             return;
         }
 
@@ -103,17 +110,23 @@ public class ProgressionServiceImpl implements ProgressionService {
         int progressedCount = 0;
 
         for (TournamentStage stage : stages) {
-            if (!stage.getIsKnockoutStage()) {
-                continue; // Skip group stages
-            }
+            List<Match> stageMatches = matchRepository.findByStageId(stage.getId());
 
-            if (!isStageComplete(stage.getId())) {
+            // A knockout stage waits until every match in it is done, so the implicit
+            // stage-order progression has a complete picture to work from. Other stages are
+            // still scanned, because a pool match can carry an explicit link into a bracket and
+            // that winner should advance as soon as its own match is decided.
+            boolean waitForStage = Boolean.TRUE.equals(stage.getIsKnockoutStage());
+            if (waitForStage && !isStageComplete(stage.getId())) {
                 log.debug("Stage {} is not complete yet, skipping progression", stage.getName());
                 continue;
             }
 
-            List<Match> stageMatches = matchRepository.findByStageId(stage.getId());
             for (Match match : stageMatches) {
+                if (!waitForStage && match.getNextMatchIdForWinner() == null
+                        && match.getNextMatchIdForLoser() == null) {
+                    continue; // Group match with nowhere to send anyone.
+                }
                 if (canProgress(match.getId())) {
                     processMatchCompletion(match.getId());
                     progressedCount++;
@@ -151,17 +164,32 @@ public class ProgressionServiceImpl implements ProgressionService {
             return false;
         }
 
-        // Must have scores
-        if (match.getHomeScore() == null || match.getAwayScore() == null) {
-            return false;
+        // Byes and walkovers are decided without scores, so they only need an explicit winner.
+        if (hasExplicitResult(match)) {
+            if (match.getWinnerTeam() == null) {
+                return false;
+            }
+        } else {
+            // Must have scores
+            if (match.getHomeScore() == null || match.getAwayScore() == null) {
+                return false;
+            }
+
+            // Cannot be a draw (rugby can have draws in pool stages but not knockouts)
+            if (match.getHomeScore().equals(match.getAwayScore())) {
+                return false;
+            }
         }
 
-        // Cannot be a draw (rugby can have draws in pool stages but not knockouts)
-        if (match.getHomeScore().equals(match.getAwayScore())) {
-            return false;
+        // An explicit "winner goes to match X" link is a deliberate instruction and is honoured
+        // wherever it appears. Requiring a knockout stage here stranded pool matches that feed a
+        // bracket directly: their winner could never advance, and re-running progression reported
+        // nothing to do. The stage check still applies to the implicit fallback below, which
+        // infers the next match from stage order and is only meaningful inside a bracket.
+        if (match.getNextMatchIdForWinner() != null || match.getNextMatchIdForLoser() != null) {
+            return true;
         }
 
-        // Must be in a knockout stage
         if (match.getStage() == null || !match.getStage().getIsKnockoutStage()) {
             return false;
         }
@@ -169,7 +197,20 @@ public class ProgressionServiceImpl implements ProgressionService {
         return true;
     }
 
+    /**
+     * Byes and walkovers carry no scores, so their winner is read from the explicit
+     * {@code winnerTeam} rather than derived.
+     */
+    private boolean hasExplicitResult(Match match) {
+        return match.getResultType() == MatchResultType.BYE
+                || match.getResultType() == MatchResultType.WALKOVER;
+    }
+
     private Team determineWinner(Match match) {
+        if (hasExplicitResult(match)) {
+            return match.getWinnerTeam();
+        }
+
         if (match.getHomeScore() == null || match.getAwayScore() == null) {
             return null;
         }
@@ -184,6 +225,20 @@ public class ProgressionServiceImpl implements ProgressionService {
     }
 
     private Team determineLoser(Match match) {
+        if (hasExplicitResult(match)) {
+            Team winner = match.getWinnerTeam();
+            if (winner == null) {
+                return null;
+            }
+            // A bye has no opponent, so it produces no loser to route onwards.
+            Team home = match.getHomeTeam();
+            Team away = match.getAwayTeam();
+            if (home != null && away != null) {
+                return winner.getId().equals(home.getId()) ? away : home;
+            }
+            return null;
+        }
+
         if (match.getHomeScore() == null || match.getAwayScore() == null) {
             return null;
         }

@@ -30,7 +30,15 @@ public class PublicMatchSummaryResponse {
     private LocalTime matchTime;
     private String venue;
     private String status; // SCHEDULED, LIVE, FULL_TIME, CANCELLED
+    /** NORMAL, WALKOVER or BYE. Null means a normally played match. */
+    private String resultType;
     private String stage;
+    /**
+     * The stage's type (PLATE, BOWL, SHIELD, ...). Needed so the public bracket groups a match
+     * the same way the organiser's view does — grouping on the stage *name* alone misfiles any
+     * bracket the organiser renamed, e.g. a Shield bracket called "Development".
+     */
+    private String stageType;
     private Integer stageDisplayOrder;
     private String round;
     private List<MatchOfficialDTO> officials;

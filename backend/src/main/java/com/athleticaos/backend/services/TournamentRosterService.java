@@ -14,6 +14,13 @@ public interface TournamentRosterService {
     List<TournamentPlayerDTO> addPlayersToRoster(UUID tournamentId, UUID teamId, List<UUID> playerIds);
 
     /**
+     * Adds players and assigns tournament jersey numbers in one step, so an organiser does not
+     * have to add the squad and then edit every number separately.
+     */
+    List<TournamentPlayerDTO> addPlayersToRoster(UUID tournamentId, UUID teamId, List<UUID> playerIds,
+            java.util.Map<UUID, Integer> jerseyNumbers);
+
+    /**
      * Removes a player from a tournament roster.
      */
     void removePlayerFromRoster(UUID tournamentPlayerId);

@@ -4,6 +4,7 @@ import { TournamentPlayerDTO } from '@/types/roster.types';
 import { WarningCircle, CheckCircle, ShieldWarning, X, Question } from '@phosphor-icons/react';
 import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { showToast } from '@/lib/customToast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 
@@ -18,6 +19,8 @@ interface RosterManagementProps {
 
 export function RosterManagement({ tournamentId, teamId, organisationLevel, isModalOpen, onModalClose }: RosterManagementProps) {
     const [roster, setRoster] = useState<TournamentPlayerDTO[]>([]);
+    const [editingNumberFor, setEditingNumberFor] = useState<string | null>(null);
+    const [numberDraft, setNumberDraft] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [confirmModal, setConfirmModal] = useState({
@@ -48,9 +51,9 @@ export function RosterManagement({ tournamentId, teamId, organisationLevel, isMo
         }
     };
 
-    const handleAddPlayers = async (playerIds: string[]) => {
+    const handleAddPlayers = async (playerIds: string[], jerseyNumbers?: Record<string, number>) => {
         try {
-            await rosterService.addPlayersToRoster(tournamentId, teamId, playerIds);
+            await rosterService.addPlayersToRoster(tournamentId, teamId, playerIds, jerseyNumbers);
             await loadRoster();
             onModalClose();
         } catch (err) {
@@ -80,6 +83,45 @@ export function RosterManagement({ tournamentId, teamId, organisationLevel, isMo
     if (loading) return <div>Loading roster...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
 
+    // Squad numbers must be unique within a squad. The lineup editor already refuses
+    // duplicates; without the same check here a clash is only discovered on match day.
+    const duplicateNumbers = (() => {
+        const seen = new Map<string, number>();
+        roster.forEach(p => {
+            if (p.playerNumber) seen.set(p.playerNumber, (seen.get(p.playerNumber) || 0) + 1);
+        });
+        return new Set([...seen.entries()].filter(([, count]) => count > 1).map(([n]) => n));
+    })();
+
+    const startEditingNumber = (player: TournamentPlayerDTO) => {
+        setEditingNumberFor(player.playerId);
+        setNumberDraft(player.playerNumber || '');
+    };
+
+    const saveNumber = async (player: TournamentPlayerDTO) => {
+        const trimmed = numberDraft.trim();
+        // Clearing the field drops back to the club number rather than storing a blank.
+        const parsed = trimmed === '' ? null : parseInt(trimmed, 10);
+
+        if (parsed !== null && (Number.isNaN(parsed) || parsed < 1)) {
+            showToast.error('Jersey number must be a positive whole number.');
+            return;
+        }
+
+        setEditingNumberFor(null);
+        if (trimmed === (player.playerNumber || '')) return;
+
+        try {
+            await rosterService.updatePlayerNumber(tournamentId, teamId, player.playerId, parsed);
+            await loadRoster();
+            showToast.success(parsed === null
+                ? `${player.playerName} now uses their club number`
+                : `${player.playerName} set to #${parsed}`);
+        } catch (err: any) {
+            showToast.error(err?.response?.data?.message || 'Failed to update jersey number');
+        }
+    };
+
     return (
         <div className="space-y-6">
 
@@ -106,7 +148,46 @@ export function RosterManagement({ tournamentId, teamId, organisationLevel, isMo
                             roster.map((player) => (
                                 <tr key={player.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                     <td className="py-3 px-4 font-medium">{player.playerName}</td>
-                                    <td className="py-3 px-4">{player.playerNumber || '-'}</td>
+                                    <td className="py-3 px-4">
+                                        {editingNumberFor === player.playerId ? (
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                autoFocus
+                                                value={numberDraft}
+                                                onChange={(e) => setNumberDraft(e.target.value)}
+                                                onBlur={() => saveNumber(player)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveNumber(player);
+                                                    if (e.key === 'Escape') setEditingNumberFor(null);
+                                                }}
+                                                className="w-16 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-transparent"
+                                                placeholder="—"
+                                            />
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => startEditingNumber(player)}
+                                                className="inline-flex items-center gap-1.5 hover:underline"
+                                                title="Click to set this player's number for this tournament"
+                                            >
+                                                <span className={player.playerNumber && duplicateNumbers.has(player.playerNumber)
+                                                    ? 'text-red-600 dark:text-red-400 font-bold'
+                                                    : ''}>
+                                                    {player.playerNumber || '—'}
+                                                </span>
+                                                {/* Distinguishes a number chosen for this tournament from one inherited from the club. */}
+                                                {player.tournamentJerseyNumber == null && player.playerNumber && (
+                                                    <span className="text-[10px] uppercase tracking-wider text-slate-400">club</span>
+                                                )}
+                                                {player.playerNumber && duplicateNumbers.has(player.playerNumber) && (
+                                                    <Tooltip content="Another player in this squad has the same number" position="right">
+                                                        <WarningCircle className="w-4 h-4 text-red-500" />
+                                                    </Tooltip>
+                                                )}
+                                            </button>
+                                        )}
+                                    </td>
                                     <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">{player.position || '-'}</td>
                                     <td className="py-3 px-4">
                                         {player.isEligible ? (

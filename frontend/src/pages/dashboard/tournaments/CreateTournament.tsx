@@ -116,9 +116,9 @@ export const CreateTournament = () => {
                 seasonName: !isUuid ? data.seasonInput : undefined,
             };
 
-            await createTournament(payload);
+            const response = await createTournament(payload);
             showToast.success("Tournament created successfully");
-            navigate('/dashboard/tournaments');
+            navigate(`/dashboard/tournaments/${response.data.slug || response.data.id}`);
         } catch (error: any) {
             console.error('Failed to create tournament', error);
             showToast.error(error?.response?.data?.message || 'Failed to create tournament');

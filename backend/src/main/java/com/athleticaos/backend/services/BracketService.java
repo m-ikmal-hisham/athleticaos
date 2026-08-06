@@ -32,9 +32,10 @@ public interface BracketService {
     void progressPoolsToKnockout(UUID tournamentId);
 
     /**
-     * Generate a manual knockout bracket group.
+     * Generate a manual knockout bracket group, sized and named per the request.
      */
-    BracketViewResponse generateManualKnockoutBracket(UUID tournamentId, com.athleticaos.backend.enums.TournamentStageType type, int teamCount, UUID categoryId);
+    BracketViewResponse generateManualKnockoutBracket(UUID tournamentId,
+            com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest request);
 
     /**
      * Delete an entire knockout bracket group.

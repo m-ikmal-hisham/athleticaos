@@ -1,7 +1,7 @@
 import { Button } from '@/components/Button';
 import { MatchItem } from '@/store/matches.store';
 import { MatchStatus } from '@/types';
-import { Play, Pause, StopCircle, XCircle, FastForward, Rewind } from '@phosphor-icons/react';
+import { Play, Pause, StopCircle, XCircle, FastForward, Rewind, FlagBanner } from '@phosphor-icons/react';
 
 interface MatchControlsProps {
     match: MatchItem;
@@ -11,6 +11,8 @@ interface MatchControlsProps {
     onResume: () => void;
     onFullTime: () => void;
     onCancelMatch: () => void;
+    /** Optional: records a forfeit/no-show without inventing a scoreline. */
+    onRecordWalkover?: () => void;
     isAdmin: boolean;
     // Timer props
     // Timer props
@@ -35,6 +37,7 @@ export const MatchControls = ({
     onResume,
     onFullTime,
     onCancelMatch,
+    onRecordWalkover,
     isAdmin,
     matchTimeSeconds,
     isTimerRunning,
@@ -174,6 +177,19 @@ export const MatchControls = ({
                     >
                         <StopCircle className="w-4 h-4" />
                         Full Time
+                    </Button>
+                )}
+
+                {/* Walkover — a side forfeited or failed to appear, so no score is recorded */}
+                {onRecordWalkover && !isCompleted && !isCancelled && (
+                    <Button
+                        variant="tertiary"
+                        size="sm"
+                        onClick={onRecordWalkover}
+                        className="w-full justify-center gap-2"
+                    >
+                        <FlagBanner className="w-4 h-4" />
+                        Record Walkover
                     </Button>
                 )}
 

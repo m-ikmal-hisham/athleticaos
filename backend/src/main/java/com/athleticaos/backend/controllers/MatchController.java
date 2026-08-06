@@ -75,6 +75,16 @@ public class MatchController {
         return ResponseEntity.ok(matchService.updateMatchStatus(id, status, httpRequest));
     }
 
+    @PutMapping("/{id}/unplayed-result")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_CLUB_ADMIN')")
+    @Operation(summary = "Record a walkover or bye without a played scoreline")
+    public ResponseEntity<MatchResponse> recordUnplayedResult(@PathVariable UUID id,
+            @RequestParam com.athleticaos.backend.enums.MatchResultType resultType,
+            @RequestParam(required = false) UUID winnerTeamId,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchService.recordUnplayedResult(id, resultType, winnerTeamId, httpRequest));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Delete a match")

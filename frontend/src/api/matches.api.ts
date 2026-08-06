@@ -41,6 +41,20 @@ export const updateMatch = (id: string, data: any) => {
     return api.put(`/matches/${id}`, data);
 };
 
+/**
+ * Records a result that was never played out. `winnerTeamId` is required for a WALKOVER
+ * (both teams are known) and ignored for a BYE, where the single entered team wins.
+ */
+export const recordUnplayedResult = (
+    id: string,
+    resultType: 'WALKOVER' | 'BYE',
+    winnerTeamId?: string,
+) => {
+    return api.put(`/matches/${id}/unplayed-result`, null, {
+        params: { resultType, winnerTeamId },
+    });
+};
+
 export const deleteMatch = (matchId: string) => {
     return api.delete(`/matches/${matchId}`);
 };

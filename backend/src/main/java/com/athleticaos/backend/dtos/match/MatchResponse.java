@@ -37,6 +37,10 @@ public class MatchResponse {
     private String status;
     private Integer homeScore;
     private Integer awayScore;
+    /** NORMAL, WALKOVER or BYE. Null means a normally played match. */
+    private String resultType;
+    /** Set only for walkovers and byes, which have no scores to derive a winner from. */
+    private UUID winnerTeamId;
     private String phase;
     private String matchCode;
     private StageInfo stage;
