@@ -49,6 +49,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
     private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository tournamentFormatConfigRepository;
     private final TournamentStageRepository tournamentStageRepository;
+    private final com.athleticaos.backend.services.MatchService matchService;
 
     @Override
     @Transactional(readOnly = true)
@@ -928,12 +929,11 @@ public class TournamentServiceImpl implements TournamentService {
         tournamentRepository.findById(java.util.Objects.requireNonNull(tournamentId))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        List<com.athleticaos.backend.entities.Match> matches = matchRepository
-                .findByTournamentIdWithTeams(tournamentId);
-
-        return matches.stream()
-                .map(this::mapMatchToResponse)
-                .collect(java.util.stream.Collectors.toList());
+        // Delegated to MatchService rather than mapped here. This class used to carry its own
+        // copy of the mapper, which silently omitted team placeholders, feeder links and the
+        // result type — so the Matches tab could not tell a "Seed 1" slot from an empty one,
+        // and the edit dialog could not show where a slot's team comes from.
+        return matchService.getMatchesByTournament(tournamentId);
     }
 
     @Override
@@ -953,85 +953,6 @@ public class TournamentServiceImpl implements TournamentService {
         formatService.clearSchedule(tournamentId, clearStructure);
     }
 
-    private com.athleticaos.backend.dtos.match.MatchResponse mapMatchToResponse(
-            com.athleticaos.backend.entities.Match match) {
-        // Safe status mapping
-        String status = match.getStatus() != null ? match.getStatus().name() : "SCHEDULED";
-
-        com.athleticaos.backend.dtos.match.MatchResponse.MatchResponseBuilder builder = com.athleticaos.backend.dtos.match.MatchResponse
-                .builder()
-                .id(match.getId())
-                .tournamentId(match.getTournament().getId())
-                .matchDate(match.getMatchDate())
-                .kickOffTime(match.getKickOffTime())
-                .venue(match.getVenue())
-                .pitch(match.getPitch())
-                .matchCode(match.getMatchCode())
-                .phase(match.getPhase())
-                .status(status)
-                .homeScore(match.getHomeScore())
-                .awayScore(match.getAwayScore());
-
-        // Add home team info if available
-        if (match.getHomeTeam() != null) {
-            builder.homeTeamId(match.getHomeTeam().getId());
-            builder.homeTeamName(match.getHomeTeam().getName());
-            
-            String homeLogo = match.getHomeTeam().getLogoUrl();
-            if (homeLogo == null && match.getHomeTeam().getOrganisation() != null) {
-                homeLogo = match.getHomeTeam().getOrganisation().getLogoUrl();
-            }
-            builder.homeTeamLogoUrl(homeLogo);
-            builder.homeTeamShortName(match.getHomeTeam().getShortName());
-            if (match.getHomeTeam().getOrganisation() != null) {
-                builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
-            }
-            
-            builder.homeTeam(com.athleticaos.backend.dtos.match.MatchResponse.TeamInfo.builder()
-                    .id(match.getHomeTeam().getId())
-                    .name(match.getHomeTeam().getName())
-                    .build());
-        } else {
-            builder.homeTeamName("TBD");
-        }
-
-        // Add away team info if available
-        if (match.getAwayTeam() != null) {
-            builder.awayTeamId(match.getAwayTeam().getId());
-            builder.awayTeamName(match.getAwayTeam().getName());
-            
-            String awayLogo = match.getAwayTeam().getLogoUrl();
-            if (awayLogo == null && match.getAwayTeam().getOrganisation() != null) {
-                awayLogo = match.getAwayTeam().getOrganisation().getLogoUrl();
-            }
-            builder.awayTeamLogoUrl(awayLogo);
-            builder.awayTeamShortName(match.getAwayTeam().getShortName());
-            if (match.getAwayTeam().getOrganisation() != null) {
-                builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
-            }
-            
-            builder.awayTeam(com.athleticaos.backend.dtos.match.MatchResponse.TeamInfo.builder()
-                    .id(match.getAwayTeam().getId())
-                    .name(match.getAwayTeam().getName())
-                    .build());
-        } else {
-            builder.awayTeamName("TBD");
-        }
-
-        // Add stage info if available
-        if (match.getStage() != null) {
-            String stageType = match.getStage().getStageType() != null ? match.getStage().getStageType().name()
-                    : "POOL";
-            builder.stage(com.athleticaos.backend.dtos.match.MatchResponse.StageInfo.builder()
-                    .id(match.getStage().getId().toString())
-                    .name(match.getStage().getName())
-                    .stageType(stageType)
-                    .categoryId(match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
-                    .build());
-        }
-
-        return builder.build();
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -1122,6 +1043,7 @@ public class TournamentServiceImpl implements TournamentService {
                         : null);
         config.setIsOneWayMatch(configDTO.getIsOneWayMatch());
         config.setIncludePlacementStages(configDTO.getIncludePlacementStages());
+        config.setPlacementBracketSize(configDTO.getPlacementBracketSize());
 
         // Save directly via repo
         config = tournamentFormatConfigRepository.save(config);
@@ -1155,6 +1077,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .carnivalEndTime(config.getCarnivalEndTime() != null ? config.getCarnivalEndTime().toString() : null)
                 .isOneWayMatch(config.getIsOneWayMatch())
                 .includePlacementStages(config.getIncludePlacementStages())
+                .placementBracketSize(config.getPlacementBracketSize())
                 .pointsWin(config.getPointsWin())
                 .pointsDraw(config.getPointsDraw())
                 .pointsLoss(config.getPointsLoss())

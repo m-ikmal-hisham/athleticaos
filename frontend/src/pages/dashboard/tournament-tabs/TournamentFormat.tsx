@@ -41,7 +41,11 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         pointsBonusTry: 1,
         pointsBonusLoss: 1,
         startersCount: 15,
-        maxBenchCount: 10
+        maxBenchCount: 10,
+        // 4 gives Cup 1-4 / Plate 5-8 (no quarter-final); 8 gives Cup 1-8 / Plate 9-16
+        // with a quarter-final in each bracket. Kept on `config` so it loads and saves
+        // with the rest of the format rather than resetting on remount.
+        placementBracketSize: 4
     });
 
     const [generateTimings] = useState(true);
@@ -216,7 +220,8 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 useExistingGroups, // Use the manual pools!
                 selectedCategoryId || undefined,
                 config.includePlacementStages,
-                teams.filter(t => !selectedCategoryId || !t.tournamentCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned').map(t => t.id)
+                teams.filter(t => !selectedCategoryId || !t.tournamentCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned').map(t => t.id),
+                config.placementBracketSize ?? 4
             );
             showToast.success('Schedule generated!');
             if (onScheduleGenerated) onScheduleGenerated();
@@ -403,6 +408,28 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                     </label>
                                 </div>
                                 <p className="text-xs text-muted-foreground">Generate loser brackets for lower placements.</p>
+
+                                {config.includePlacementStages && (
+                                    <div className="pt-3 space-y-2">
+                                        <label htmlFor="placementBracketSize" className="text-sm font-medium">
+                                            Teams per bracket
+                                        </label>
+                                        <select
+                                            id="placementBracketSize"
+                                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                            value={config.placementBracketSize ?? 4}
+                                            onChange={(e) => setConfig({ ...config, placementBracketSize: parseInt(e.target.value) })}
+                                        >
+                                            <option value={4}>4 teams — Semi Finals → Final</option>
+                                            <option value={8}>8 teams — Quarter Finals → Semi Finals → Final</option>
+                                        </select>
+                                        <p className="text-xs text-muted-foreground">
+                                            {(config.placementBracketSize ?? 4) === 4
+                                                ? 'Each bracket decides 4 places: Cup 1st–4th, Plate 5th–8th, Bowl 9th–12th, and so on. A 4-team bracket has no quarter-final — its first round is the semi-final.'
+                                                : 'Each bracket decides 8 places: Cup 1st–8th, Plate 9th–16th, Bowl 17th–24th, and so on. Teams knocked out in the quarter-finals are not ranked further within their bracket.'}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                         <div className="space-y-2 flex items-end">

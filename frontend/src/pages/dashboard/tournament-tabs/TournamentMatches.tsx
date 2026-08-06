@@ -135,7 +135,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         setShowCreateModal(true);
     };
 
-    const openEditModal = (match: Match, e: React.MouseEvent) => {
+    const openEditModal = (match: MatchResponse, e: React.MouseEvent) => {
         e.stopPropagation();
         setEditMatch(match);
         setShowCreateModal(true);
@@ -147,7 +147,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     };
 
     // Grouping Logic for Scheduled Matches (By Date)
-    const matchesByDate: { [key: string]: Match[] } = {};
+    const matchesByDate: { [key: string]: MatchResponse[] } = {};
     scheduledMatches.forEach(match => {
         const dateKey = match.matchDate; // Assuming YYYY-MM-DD
         if (!matchesByDate[dateKey]) {
@@ -159,7 +159,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const sortedDates = Object.keys(matchesByDate).sort();
 
     // Grouping Logic for Unscheduled Matches (Sidebar)
-    const unscheduledByStage: { [key: string]: Match[] } = {};
+    const unscheduledByStage: { [key: string]: MatchResponse[] } = {};
     unscheduledMatches.forEach(match => {
         const stageName = match.stage?.name || 'Unassigned';
         if (!unscheduledByStage[stageName]) unscheduledByStage[stageName] = [];
@@ -325,9 +325,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                                         onClick={(e) => openEditModal(match, e)}
                                                     >
                                                         <div className="flex justify-between items-center text-sm font-medium text-slate-900 dark:text-slate-100">
-                                                            <span className="truncate max-w-[40%]" title={match.homeTeam?.name || match.homeTeamPlaceholder}>{match.homeTeam?.name || match.homeTeamPlaceholder || 'TBD'}</span>
+                                                            <span className="truncate max-w-[40%]" title={match.homeTeamName || match.homeTeamPlaceholder}>{match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}</span>
                                                             <span className="text-xs text-slate-400">vs</span>
-                                                            <span className="truncate max-w-[40%] text-right" title={match.awayTeam?.name || match.awayTeamPlaceholder}>{match.awayTeam?.name || match.awayTeamPlaceholder || 'TBD'}</span>
+                                                            <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || match.awayTeamPlaceholder}>{match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}</span>
                                                         </div>
                                                         <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Clock className="w-3 h-3" />
@@ -446,10 +446,10 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
             <div className="flex items-center justify-between gap-4">
                 {/* Home */}
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || match.homeTeam?.name || match.homeTeamPlaceholder} />
+                    <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder} />
                     <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate" title={match.homeTeamName || match.homeTeam?.name || match.homeTeamPlaceholder}>
-                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || match.homeTeam?.name || match.homeTeamPlaceholder)}
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate" title={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder}>
+                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
                     </div>
@@ -471,12 +471,12 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
                 {/* Away */}
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <div className="flex flex-col items-end gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right" title={match.awayTeamName || match.awayTeam?.name || match.awayTeamPlaceholder}>
-                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || match.awayTeam?.name || match.awayTeamPlaceholder)}
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right" title={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder}>
+                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
                     </div>
-                    <TeamLogo url={match.awayTeamLogoUrl} name={match.awayTeamName || match.awayTeam?.name || match.awayTeamPlaceholder} />
+                    <TeamLogo url={match.awayTeamLogoUrl} name={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder} />
                 </div>
             </div>
         </div>

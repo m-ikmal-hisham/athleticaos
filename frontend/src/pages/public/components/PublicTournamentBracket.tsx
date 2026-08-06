@@ -82,7 +82,14 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                         <span className="bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-md font-mono text-slate-700 dark:text-slate-300">
                                                             {match.code && match.code.length < 12 ? match.code : 'Match'}
                                                         </span>
-                                                        <span>{new Date(match.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} {match.matchTime ? `• ${match.matchTime}` : ''}</span>
+                                                        {/* An awarded result must read as one publicly too, not as an ordinary 28-0. */}
+                                                        {match.resultType && match.resultType !== 'NORMAL' ? (
+                                                            <span className="text-amber-600 dark:text-amber-400">
+                                                                {match.resultType === 'BYE' ? 'Bye' : 'Walkover'}
+                                                            </span>
+                                                        ) : (
+                                                            <span>{new Date(match.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} {match.matchTime ? `• ${match.matchTime}` : ''}</span>
+                                                        )}
                                                     </div>
 
                                                     {/* Teams and Scores */}

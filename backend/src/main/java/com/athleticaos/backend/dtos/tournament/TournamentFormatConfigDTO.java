@@ -45,6 +45,9 @@ public class TournamentFormatConfigDTO {
     private Boolean isOneWayMatch;
     private Boolean includePlacementStages;
 
+    /** Teams per placement bracket (2/4/8/16/32). Null means the generator default of 4. */
+    private Integer placementBracketSize;
+
     // Scoring
     private Integer pointsWin;
     private Integer pointsDraw;

@@ -65,6 +65,22 @@ public class Match {
     @Column(name = "away_score")
     private Integer awayScore;
 
+    /**
+     * How the result came about. Null is equivalent to
+     * {@link com.athleticaos.backend.enums.MatchResultType#NORMAL}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "result_type")
+    private com.athleticaos.backend.enums.MatchResultType resultType;
+
+    /**
+     * Explicit winner for results with no scores to derive one from (byes and walkovers).
+     * Left null for normally played matches, where the scores decide it.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "winner_team_id")
+    private Team winnerTeam;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stage_id")
     private TournamentStage stage;

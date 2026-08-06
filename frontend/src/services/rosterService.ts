@@ -13,8 +13,13 @@ export const rosterService = {
         return response.data;
     },
 
-    async addPlayersToRoster(tournamentId: string, teamId: string, playerIds: string[]): Promise<TournamentPlayerDTO[]> {
-        const request: AddPlayersToRosterRequest = { playerIds };
+    async addPlayersToRoster(
+        tournamentId: string,
+        teamId: string,
+        playerIds: string[],
+        jerseyNumbers?: Record<string, number>,
+    ): Promise<TournamentPlayerDTO[]> {
+        const request: AddPlayersToRosterRequest = { playerIds, jerseyNumbers };
         const response = await axios.post<TournamentPlayerDTO[]>(`/tournaments/${tournamentId}/roster/${teamId}`, request);
         return response.data;
     },
@@ -47,7 +52,7 @@ export const rosterService = {
         tournamentId: string,
         teamId: string,
         playerId: string,
-        tournamentJerseyNumber: number
+        tournamentJerseyNumber: number | null
     ): Promise<TournamentPlayerDTO> {
         const response = await axios.patch<TournamentPlayerDTO>(
             `/tournaments/${tournamentId}/roster/${teamId}/players/${playerId}/number`,

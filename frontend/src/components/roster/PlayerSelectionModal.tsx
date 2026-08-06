@@ -8,7 +8,8 @@ import { X, MagnifyingGlass, UserPlus } from '@phosphor-icons/react';
 interface PlayerSelectionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (playerIds: string[]) => void;
+    /** `jerseyNumbers` carries any numbers set here, keyed by player id; omitted players inherit their club number. */
+    onConfirm: (playerIds: string[], jerseyNumbers: Record<string, number>) => void;
     teamId: string;
     organisationLevel?: string;
     existingPlayerIds: string[];
@@ -25,6 +26,9 @@ export function PlayerSelectionModal({
     const [players, setPlayers] = useState<TeamPlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    // Numbers typed while selecting, so a squad can be added and numbered in one pass
+    // instead of adding everyone and then editing each row.
+    const [numberDrafts, setNumberDrafts] = useState<Record<string, string>>({});
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
@@ -67,7 +71,14 @@ export function PlayerSelectionModal({
     };
 
     const handleConfirm = () => {
-        onConfirm(Array.from(selectedPlayerIds));
+        const numbers: Record<string, number> = {};
+        Object.entries(numberDrafts).forEach(([playerId, value]) => {
+            const parsed = parseInt(value, 10);
+            if (selectedPlayerIds.has(playerId) && !Number.isNaN(parsed) && parsed >= 1) {
+                numbers[playerId] = parsed;
+            }
+        });
+        onConfirm(Array.from(selectedPlayerIds), numbers);
     };
 
     if (!isOpen) return null;
@@ -155,11 +166,28 @@ export function PlayerSelectionModal({
                                         <p className="text-xs text-slate-500">{player.position || 'No position'}</p>
                                     </div>
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedPlayerIds.has(player.playerId)
-                                    ? 'bg-blue-600 border-blue-600 text-white'
-                                    : 'border-slate-300 dark:border-slate-600'
-                                    }`}>
-                                    {selectedPlayerIds.has(player.playerId) && <UserPlus className="w-3 h-3" />}
+                                <div className="flex items-center gap-3">
+                                    {selectedPlayerIds.has(player.playerId) && (
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            value={numberDrafts[player.playerId] ?? (player.jerseyNumber?.toString() || '')}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => setNumberDrafts(prev => ({
+                                                ...prev,
+                                                [player.playerId]: e.target.value,
+                                            }))}
+                                            className="w-16 px-2 py-1 text-sm rounded border border-slate-300 dark:border-slate-600 bg-transparent"
+                                            placeholder="No."
+                                            title="Jersey number for this tournament"
+                                        />
+                                    )}
+                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedPlayerIds.has(player.playerId)
+                                        ? 'bg-blue-600 border-blue-600 text-white'
+                                        : 'border-slate-300 dark:border-slate-600'
+                                        }`}>
+                                        {selectedPlayerIds.has(player.playerId) && <UserPlus className="w-3 h-3" />}
+                                    </div>
                                 </div>
                             </div>
                         ))

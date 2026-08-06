@@ -64,6 +64,14 @@ public class TournamentFormatConfig {
     @Builder.Default
     private Boolean isOneWayMatch = false;
 
+    /**
+     * Teams per placement bracket, i.e. how many places each rung of the ladder covers.
+     * Null falls back to the generator's default of 4 (Cup 1-4, Plate 5-8, ... with no
+     * quarter-finals); 8 gives Cup 1-8, Plate 9-16, ... with a quarter-final per bracket.
+     */
+    @Column(name = "placement_bracket_size")
+    private Integer placementBracketSize;
+
     @Column(name = "include_placement_stages")
     @Builder.Default
     private Boolean includePlacementStages = false;

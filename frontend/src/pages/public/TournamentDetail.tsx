@@ -520,6 +520,12 @@ export default function TournamentDetail() {
                                                                 ) : (
                                                                     <span className="text-slate-400 text-sm">VS</span>
                                                                 )}
+                                                                {/* Marks an awarded 28-0 so it does not read as a played result. */}
+                                                                {match.resultType && match.resultType !== 'NORMAL' && (
+                                                                    <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                                                        {match.resultType === 'BYE' ? 'Bye' : 'W/O'}
+                                                                    </span>
+                                                                )}
                                                             </div>
 
                                                             {/* Away */}

@@ -292,15 +292,33 @@ public class MatchServiceImpl implements MatchService {
             match.setMatchCode(request.getMatchCode());
         }
 
+        // A slot is filled either by a fixed team or by a feeder link, never both.
+        rejectContradictorySlot("Home", request.getHomeTeamId(),
+                request.getHomeFromWinnerOfMatchId(), request.getHomeFromLoserOfMatchId());
+        rejectContradictorySlot("Away", request.getAwayTeamId(),
+                request.getAwayFromWinnerOfMatchId(), request.getAwayFromLoserOfMatchId());
+
         // Update Teams if provided
         UUID homeTeamId = request.getHomeTeamId();
         if (homeTeamId != null) {
             Team homeTeam = teamRepository.findById(homeTeamId)
                     .orElseThrow(() -> new EntityNotFoundException("Home Team not found"));
             match.setHomeTeam(homeTeam);
+            // Naming a team supersedes any feeder that was pointing at this slot; leaving the
+            // old link in place would let a later result overwrite the manual assignment.
+            clearIncomingLinksToSlot(match, "HOME");
+            // The placeholder was only ever a stand-in for this team, so drop it rather than
+            // leave a stale "Seed 3" attached to a slot that is now decided.
+            match.setHomeTeamPlaceholder(null);
         }
         if (request.getHomeTeamPlaceholder() != null) {
             match.setHomeTeamPlaceholder(request.getHomeTeamPlaceholder());
+            if (homeTeamId == null) {
+                // A placeholder means the slot is not decided yet, so it cannot keep holding a
+                // team — otherwise the slot would show a team and a "Seed 3" label at once.
+                match.setHomeTeam(null);
+                clearIncomingLinksToSlot(match, "HOME");
+            }
         }
 
         UUID awayTeamId = request.getAwayTeamId();
@@ -308,9 +326,22 @@ public class MatchServiceImpl implements MatchService {
             Team awayTeam = teamRepository.findById(awayTeamId)
                     .orElseThrow(() -> new EntityNotFoundException("Away Team not found"));
             match.setAwayTeam(awayTeam);
+            clearIncomingLinksToSlot(match, "AWAY");
+            match.setAwayTeamPlaceholder(null);
         }
         if (request.getAwayTeamPlaceholder() != null) {
             match.setAwayTeamPlaceholder(request.getAwayTeamPlaceholder());
+            if (awayTeamId == null) {
+                match.setAwayTeam(null);
+                clearIncomingLinksToSlot(match, "AWAY");
+            }
+        }
+
+        // Validation: Home team != Away team (checked against the resulting state,
+        // since updates are partial and either side may be unchanged)
+        if (match.getHomeTeam() != null && match.getAwayTeam() != null
+                && match.getHomeTeam().getId().equals(match.getAwayTeam().getId())) {
+            throw new IllegalArgumentException("Home team and Away team cannot be the same.");
         }
 
         // --- FEEDER LINKS LOGIC ---
@@ -323,14 +354,20 @@ public class MatchServiceImpl implements MatchService {
             feeder.setNextMatchIdForWinner(match.getId());
             feeder.setWinnerSlot("HOME");
             matchRepository.save(feeder);
-            match.setHomeTeamPlaceholder(null); 
+            // The slot is now decided by an earlier result, so any team previously pinned to
+            // it must go. Leaving it would show a team that the feeder may later contradict.
+            match.setHomeTeam(null);
+            // Label it the way the generator does. Clearing the label without replacing it left
+            // the slot rendering as "EMPTY SPOT", indistinguishable from one nothing feeds.
+            match.setHomeTeamPlaceholder(feederPlaceholder("Winner", feeder));
         } else if (homeFromLoserOfMatchId != null) {
             clearIncomingLinksToSlot(match, "HOME");
             Match feeder = matchRepository.findById(homeFromLoserOfMatchId).orElseThrow();
             feeder.setNextMatchIdForLoser(match.getId());
             feeder.setLoserSlot("HOME");
             matchRepository.save(feeder);
-            match.setHomeTeamPlaceholder(null);
+            match.setHomeTeam(null);
+            match.setHomeTeamPlaceholder(feederPlaceholder("Loser", feeder));
         }
 
         // Handle Away Feeder Match
@@ -342,14 +379,16 @@ public class MatchServiceImpl implements MatchService {
             feeder.setNextMatchIdForWinner(match.getId());
             feeder.setWinnerSlot("AWAY");
             matchRepository.save(feeder);
-            match.setAwayTeamPlaceholder(null);
+            match.setAwayTeam(null);
+            match.setAwayTeamPlaceholder(feederPlaceholder("Winner", feeder));
         } else if (awayFromLoserOfMatchId != null) {
             clearIncomingLinksToSlot(match, "AWAY");
             Match feeder = matchRepository.findById(awayFromLoserOfMatchId).orElseThrow();
             feeder.setNextMatchIdForLoser(match.getId());
             feeder.setLoserSlot("AWAY");
             matchRepository.save(feeder);
-            match.setAwayTeamPlaceholder(null);
+            match.setAwayTeam(null);
+            match.setAwayTeamPlaceholder(feederPlaceholder("Loser", feeder));
         }
         // ------------------------
 
@@ -364,8 +403,10 @@ public class MatchServiceImpl implements MatchService {
         // Status update logic - validate after scores are set
         if (request.getStatus() != null) {
             if (request.getStatus() == MatchStatus.COMPLETED) {
-                // Require scores to be set (either from request or already in entity)
-                if (match.getHomeScore() == null || match.getAwayScore() == null) {
+                // Require scores to be set (either from request or already in entity), unless the
+                // result is a bye or walkover, which carries an explicit winner instead of scores.
+                if (!hasExplicitResult(match)
+                        && (match.getHomeScore() == null || match.getAwayScore() == null)) {
                     throw new IllegalArgumentException(
                             "Cannot set status to COMPLETED without home and away scores.");
                 }
@@ -378,9 +419,6 @@ public class MatchServiceImpl implements MatchService {
             }
         }
 
-        if (match == null) {
-            throw new IllegalStateException("Match cannot be null");
-        }
         Match updatedMatch = matchRepository.save(match);
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
         triggerAutoProgression(updatedMatch);
@@ -464,6 +502,8 @@ public class MatchServiceImpl implements MatchService {
                 .status(match.getStatus().name())
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
+                .resultType(match.getResultType() != null ? match.getResultType().name() : null)
+                .winnerTeamId(match.getWinnerTeam() != null ? match.getWinnerTeam().getId() : null)
                 .phase(match.getPhase() != null ? match.getPhase() : (match.getStage() != null ? match.getStage().getName() : null))
                 .matchCode(match.getMatchCode());
 
@@ -667,7 +707,8 @@ public class MatchServiceImpl implements MatchService {
 
         // Decrement suspensions if match is completed
         if (matchStatus == MatchStatus.COMPLETED) {
-            if (match.getHomeScore() == null || match.getAwayScore() == null) {
+            // Byes and walkovers are complete without scores — their winner is recorded explicitly.
+            if (!hasExplicitResult(match) && (match.getHomeScore() == null || match.getAwayScore() == null)) {
                 throw new IllegalArgumentException("Cannot set status to COMPLETED without home and away scores.");
             }
             suspensionService.decrementSuspensions(match);
@@ -676,6 +717,157 @@ public class MatchServiceImpl implements MatchService {
         Match updatedMatch = matchRepository.save(match);
         triggerAutoProgression(updatedMatch);
         return mapToResponse(updatedMatch);
+    }
+
+    @Override
+    @Transactional
+    public MatchResponse recordUnplayedResult(UUID id, com.athleticaos.backend.enums.MatchResultType resultType,
+            UUID winnerTeamId, HttpServletRequest httpRequest) {
+        if (id == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
+        if (resultType == null || resultType == com.athleticaos.backend.enums.MatchResultType.NORMAL) {
+            throw new IllegalArgumentException(
+                    "Result type must be WALKOVER or BYE. Use the normal score update for a played match.");
+        }
+
+        Match match = matchRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
+
+        Team winner = resolveUnplayedWinner(match, resultType, winnerTeamId);
+
+        match.setResultType(resultType);
+        match.setWinnerTeam(winner);
+        match.setStatus(MatchStatus.COMPLETED);
+
+        if (resultType == com.athleticaos.backend.enums.MatchResultType.WALKOVER) {
+            // World Rugby awards a forfeited match to the non-offending side as a set scoreline
+            // rather than leaving it blank, and standings count it. Without a score the result
+            // displayed as 0-0 everywhere with no way to tell who had won.
+            boolean homeWon = match.getHomeTeam() != null && winner.getId().equals(match.getHomeTeam().getId());
+            match.setHomeScore(homeWon ? WALKOVER_WINNING_SCORE : WALKOVER_LOSING_SCORE);
+            match.setAwayScore(homeWon ? WALKOVER_LOSING_SCORE : WALKOVER_WINNING_SCORE);
+        }
+        // A bye keeps null scores: there was no opponent, so there is no result to record.
+
+        Match updatedMatch = matchRepository.save(match);
+        auditLogger.logMatchUpdated(updatedMatch, httpRequest);
+        triggerAutoProgression(updatedMatch);
+        return mapToResponse(updatedMatch);
+    }
+
+    /**
+     * Scoreline awarded for a walkover, following the World Rugby convention of 28-0 to the
+     * non-offending side. Byes are not scored — they have no opponent.
+     */
+    private static final int WALKOVER_WINNING_SCORE = 28;
+    private static final int WALKOVER_LOSING_SCORE = 0;
+
+    private Team resolveUnplayedWinner(Match match, com.athleticaos.backend.enums.MatchResultType resultType,
+            UUID winnerTeamId) {
+        Team home = match.getHomeTeam();
+        Team away = match.getAwayTeam();
+
+        if (resultType == com.athleticaos.backend.enums.MatchResultType.BYE) {
+            // A bye has exactly one team; the winner is whoever is present.
+            if (home != null && away != null) {
+                throw new IllegalArgumentException(
+                        "This match has two teams, so it cannot be a bye. Record it as a walkover instead.");
+            }
+            Team present = home != null ? home : away;
+            if (present == null) {
+                throw new IllegalArgumentException("Cannot mark an empty match as a bye - neither slot has a team.");
+            }
+            return present;
+        }
+
+        // WALKOVER: both sides are known, so the winner must be named explicitly.
+        if (winnerTeamId == null) {
+            throw new IllegalArgumentException("A walkover needs the winning team to be specified.");
+        }
+        if (home != null && home.getId().equals(winnerTeamId)) {
+            return home;
+        }
+        if (away != null && away.getId().equals(winnerTeamId)) {
+            return away;
+        }
+        throw new IllegalArgumentException("The winning team must be one of the two teams in this match.");
+    }
+
+    @Override
+    @Transactional
+    public int applyByesForTournament(UUID tournamentId) {
+        if (tournamentId == null) {
+            throw new IllegalArgumentException("Tournament ID must not be null");
+        }
+
+        List<Match> candidates = matchRepository.findByTournamentId(tournamentId).stream()
+                .filter(m -> m.getStage() != null && Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()))
+                .filter(m -> m.getStatus() == MatchStatus.SCHEDULED)
+                // Exactly one side filled: two teams is a real match, neither is simply undecided.
+                .filter(m -> (m.getHomeTeam() == null) != (m.getAwayTeam() == null))
+                .toList();
+
+        int applied = 0;
+        for (Match match : candidates) {
+            String emptySlot = match.getHomeTeam() == null ? "HOME" : "AWAY";
+            if (hasPendingFeeder(match, emptySlot)) {
+                // Still waiting on an earlier result, so the slot is undecided, not empty.
+                continue;
+            }
+
+            Team present = match.getHomeTeam() != null ? match.getHomeTeam() : match.getAwayTeam();
+            match.setResultType(com.athleticaos.backend.enums.MatchResultType.BYE);
+            match.setWinnerTeam(present);
+            match.setStatus(MatchStatus.COMPLETED);
+            Match saved = matchRepository.save(match);
+            triggerAutoProgression(saved);
+            applied++;
+        }
+
+        log.info("Applied {} bye(s) for tournament {}", applied, tournamentId);
+        return applied;
+    }
+
+    /**
+     * A slot can be filled by a fixed team or fed from an earlier match, but not both — the
+     * two would contradict each other as soon as that earlier match finished.
+     */
+    private void rejectContradictorySlot(String slotLabel, UUID teamId, UUID fromWinnerId, UUID fromLoserId) {
+        if (teamId != null && (fromWinnerId != null || fromLoserId != null)) {
+            throw new IllegalArgumentException(slotLabel
+                    + " cannot be both a specific team and fed from another match. Choose one.");
+        }
+        if (fromWinnerId != null && fromLoserId != null) {
+            throw new IllegalArgumentException(slotLabel
+                    + " cannot be fed by both the winner and the loser of a match. Choose one.");
+        }
+    }
+
+    /**
+     * Label for a slot fed from an earlier match, matching the wording the bracket generator
+     * uses ("Winner MATCH-CODE") so a manually rewired slot reads the same as a generated one.
+     */
+    private String feederPlaceholder(String outcome, Match feeder) {
+        String code = feeder.getMatchCode() != null ? feeder.getMatchCode() : "match";
+        String label = outcome + " " + code;
+        return label.length() > 255 ? label.substring(0, 255) : label;
+    }
+
+    /** Byes and walkovers are decided by an explicit winner rather than by scores. */
+    private boolean hasExplicitResult(Match match) {
+        return match.getResultType() == com.athleticaos.backend.enums.MatchResultType.BYE
+                || match.getResultType() == com.athleticaos.backend.enums.MatchResultType.WALKOVER;
+    }
+
+    /** True when another match is scheduled to feed the given slot, so it is not truly empty. */
+    private boolean hasPendingFeeder(Match match, String slot) {
+        List<Match> winnerFeeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(match.getId(), slot);
+        if (winnerFeeders != null && !winnerFeeders.isEmpty()) {
+            return true;
+        }
+        List<Match> loserFeeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(match.getId(), slot);
+        return loserFeeders != null && !loserFeeders.isEmpty();
     }
 
     @Override
@@ -750,7 +942,12 @@ public class MatchServiceImpl implements MatchService {
 
         // Capture IDs before afterCommit (entities may be detached after commit)
         final UUID matchId = match.getId();
-        final boolean isKnockout = Boolean.TRUE.equals(stage.getIsKnockoutStage());
+        // A pool match that explicitly feeds a bracket must progress its winner too, so treat
+        // "has an outgoing link" the same as "is in a knockout stage". Keying off the stage alone
+        // left such winners stranded until someone noticed.
+        final boolean isKnockout = Boolean.TRUE.equals(stage.getIsKnockoutStage())
+                || match.getNextMatchIdForWinner() != null
+                || match.getNextMatchIdForLoser() != null;
         final UUID tournamentId = match.getTournament() != null ? match.getTournament().getId() : null;
 
         org.springframework.transaction.support.TransactionSynchronizationManager

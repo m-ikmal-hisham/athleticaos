@@ -121,7 +121,7 @@ export const tournamentService = {
     },
 
     // Refactoring generateSchedule to include categoryId if needed
-    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean, categoryId?: string, includePlacementStages?: boolean, teamIds?: string[]): Promise<void> {
+    async generateSchedule(id: string, format: string, numberOfPools?: number, generateTimings?: boolean, useExistingGroups?: boolean, categoryId?: string, includePlacementStages?: boolean, teamIds?: string[], placementBracketSize?: number): Promise<void> {
         await axios.post(`/tournaments/${id}/format/generate`, {
             format,
             numberOfPools,
@@ -129,11 +129,45 @@ export const tournamentService = {
             useExistingGroups,
             categoryId,
             includePlacementStages,
-            teamIds
+            teamIds,
+            placementBracketSize
         });
     },
 
-    async createManualBracket(id: string, data: { type: string, teamCount: number, categoryId?: string }): Promise<any> {
+    /**
+     * Ranks teams across their pools and fills the bracket's "Seed N" slots. Safe to re-run:
+     * slots that already hold a team are left untouched, so manual assignments survive.
+     */
+    async progressPoolsToKnockout(id: string): Promise<void> {
+        await axios.post(`/tournaments/${id}/progress-pools`);
+    },
+
+    /**
+     * Advances every knockout match that has one team and no possible opponent. Returns how
+     * many byes were applied. Safe to re-run.
+     */
+    async applyByes(id: string): Promise<number> {
+        const response = await axios.post(`/tournaments/${id}/apply-byes`);
+        return response.data as number;
+    },
+
+    /**
+     * Re-runs winner progression across the tournament. Auto-progression runs after the match
+     * update commits and only logs on failure, so a winner can silently fail to advance; this
+     * is the manual recovery. Returns how many matches progressed. Safe to re-run.
+     */
+    async progressTournament(id: string): Promise<number> {
+        const response = await axios.post(`/tournaments/${id}/progress`);
+        return response.data as number;
+    },
+
+    async createManualBracket(id: string, data: {
+        type: string,
+        teamCount: number,
+        categoryId?: string,
+        includePlacementPlayoff?: boolean,
+        name?: string,
+    }): Promise<any> {
         const response = await axios.post(`/tournaments/${id}/bracket/manual`, data);
         return response.data;
     },

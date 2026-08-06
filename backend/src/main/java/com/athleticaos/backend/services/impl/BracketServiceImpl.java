@@ -109,6 +109,9 @@ public class BracketServiceImpl implements BracketService {
                 config.setFormatType(request.getFormat());
                 if (request.getNumberOfPools() != null) config.setPoolCount(request.getNumberOfPools());
                 if (request.getIncludePlacementStages() != null) config.setIncludePlacementStages(request.getIncludePlacementStages());
+                // Persisted so the Format tab shows the size the brackets were actually built
+                // with, rather than resetting to the default when the page reloads.
+                if (request.getPlacementBracketSize() != null) config.setPlacementBracketSize(request.getPlacementBracketSize());
                 tournamentRepository.save(tournament);
             }
         }
@@ -393,7 +396,7 @@ public class BracketServiceImpl implements BracketService {
             generateRugby16Bracket(tournament, teams, category);
         } else {
             // Allow linking of placement stages
-            legacyKnockoutGeneration(tournament, teams, Boolean.TRUE.equals(tournament.getHasPlacementStages()), category);
+            legacyKnockoutGeneration(tournament, teams, isPlacementEnabled(tournament, category), category);
         }
         log.info("Knockout bracket generated.");
     }
@@ -518,8 +521,10 @@ public class BracketServiceImpl implements BracketService {
 
                 // Optional: 7th Place (Losers of Plate Semis)
                 // Determine if we want 7th place? Usually yes for full ranking.
+                // Tagged PLATE so it groups with the semis that feed it, mirroring how
+                // 3rd place sits inside the Cup bracket.
                 TournamentStage seventhPlaceStage = createStage(tournament, "7th Place Playoff",
-                        TournamentStageType.CLASSIFICATION, nextDisplayOrder++, category);
+                        TournamentStageType.PLATE, nextDisplayOrder++, category);
                 List<Match> seventhPlaceMatch = createMatches(tournament, seventhPlaceStage, 1, "7th");
 
                 linkLosers(plateSemis, seventhPlaceMatch);
@@ -529,6 +534,184 @@ public class BracketServiceImpl implements BracketService {
         // Note: Can extend for Round of 16 (Bowl) if needed, but usually R16 uses the
         // specific rugby generator.
         // This covers standard 4 and 8 team knockouts.
+    }
+
+    /**
+     * The standard rugby placement ladder. Each rung covers four places: its semi-finals feed
+     * the rung's final (top two) and its placement playoff (bottom two).
+     *
+     * Cup is expressed with the SEMI_FINAL/FINAL/THIRD_PLACE stage types rather than a "CUP"
+     * type, because the enum has no CUP value — the frontend groups those under Cup by default.
+     */
+    private static final class LadderRung {
+        final String label;
+        /** Null for Cup, which uses the generic round types so the frontend groups it under Cup. */
+        final TournamentStageType type;
+        final String abbr;
+
+        LadderRung(String label, TournamentStageType type, String abbr) {
+            this.label = label;
+            this.type = type;
+            this.abbr = abbr;
+        }
+    }
+
+    // Every non-Cup rung tags all of its stages with the rung's own type so they group together;
+    // the stage name is what distinguishes the rounds within a rung.
+    private static final List<LadderRung> PLACEMENT_LADDER = List.of(
+            new LadderRung("Cup", null, "CUP"),
+            new LadderRung("Plate", TournamentStageType.PLATE, "PLT"),
+            new LadderRung("Bowl", TournamentStageType.BOWL, "BWL"),
+            new LadderRung("Shield", TournamentStageType.SHIELD, "SHD"),
+            new LadderRung("Spoon", TournamentStageType.SPOON, "SPN"),
+            new LadderRung("Fork", TournamentStageType.FORK, "FRK"));
+
+    /** Default teams per placement bracket — four places per rung (Cup 1-4, Plate 5-8, ...). */
+    private static final int DEFAULT_PLACEMENT_BRACKET_SIZE = 4;
+
+    /**
+     * Generates the placement ladder for a pool-based tournament: one self-contained bracket per
+     * rung, seeded from the overall standings.
+     *
+     * {@code bracketSize} sets how many places each rung covers, and therefore its rounds. At the
+     * default of 4 a rung is Semi Finals -> Final + placement playoff (Cup 1-4, Plate 5-8, ...);
+     * at 8 it gains a quarter-final and each rung covers eight places (Cup 1-8, Plate 9-16, ...).
+     * A quarter-final only exists when a rung holds more than four teams — a four-team bracket's
+     * first round *is* its semi-final.
+     *
+     * Note that in rungs larger than four, the teams knocked out before the semi-finals are not
+     * ranked any further; they occupy the lower half of the rung's range in no fixed order.
+     *
+     * Slots are left as seed placeholders rather than resolved teams. Pool results are not known
+     * at generation time, and organisers routinely override seeding anyway, so the ladder is
+     * created ready for assignment — either automatically once pools complete, or by hand.
+     *
+     * @return the next free display order after the ladder
+     */
+    private int generatePlacementLadder(Tournament tournament, int qualifyingTeamCount, int bracketSize,
+            int startDisplayOrder, TournamentCategory category) {
+        int size = nextPowerOfTwo(Math.max(bracketSize, 2));
+        int rungCount = (int) Math.ceil(qualifyingTeamCount / (double) size);
+        if (rungCount > PLACEMENT_LADDER.size()) {
+            log.warn("{} qualifying teams at {} per bracket exceed the {}-rung ladder; generating {} brackets only.",
+                    qualifyingTeamCount, size, PLACEMENT_LADDER.size(), PLACEMENT_LADDER.size());
+            rungCount = PLACEMENT_LADDER.size();
+        }
+
+        int displayOrder = startDisplayOrder;
+        for (int i = 0; i < rungCount; i++) {
+            LadderRung rung = PLACEMENT_LADDER.get(i);
+            int basePlace = i * size;
+
+            List<Match> previousRound = new ArrayList<>();
+            List<Match> semiFinals = new ArrayList<>();
+            List<Match> finalMatch = new ArrayList<>();
+
+            for (KnockoutStageInfo round : determineKnockoutStages(size)) {
+                boolean isFinal = round.type == TournamentStageType.FINAL;
+                String stageName = isFinal
+                        ? (i == 0 ? rung.label + " Final"
+                                : rung.label + " Final (" + ordinal(basePlace + 1) + " Place)")
+                        : rung.label + " " + round.name;
+                TournamentStageType stageType = rung.type != null ? rung.type : round.type;
+
+                TournamentStage stage = createStage(tournament, stageName, stageType, displayOrder++, category);
+                int matchCount = size / (int) Math.pow(2, determineKnockoutStages(size).indexOf(round) + 1);
+                List<Match> matches = createMatches(tournament, stage, Math.max(matchCount, 1),
+                        rung.abbr + round.abbreviation);
+
+                if (previousRound.isEmpty()) {
+                    applyOpeningRoundSeeds(matches, basePlace, size);
+                } else {
+                    linkRounds(previousRound, matches);
+                }
+                if (round.type == TournamentStageType.SEMI_FINAL) {
+                    semiFinals = matches;
+                }
+                if (isFinal) {
+                    finalMatch = matches;
+                }
+                previousRound = matches;
+            }
+
+            // Semi losers contest the rung's placement playoff, mirroring 3rd place in the Cup.
+            if (semiFinals.size() == 2 && !finalMatch.isEmpty()) {
+                String playoffName = ordinal(basePlace + 3) + " Place Playoff";
+                TournamentStageType playoffType = rung.type != null ? rung.type
+                        : TournamentStageType.THIRD_PLACE;
+                TournamentStage playoffStage = createStage(tournament, playoffName, playoffType, displayOrder++,
+                        category);
+                List<Match> playoffMatches = createMatches(tournament, playoffStage, 1, rung.abbr + "PO");
+                linkLosers(semiFinals, playoffMatches);
+            }
+        }
+
+        log.info("Generated {}-rung placement ladder ({} teams per bracket) for {} qualifying teams.",
+                rungCount, size, qualifyingTeamCount);
+        return displayOrder;
+    }
+
+    /** Standard bracket seeding for the opening round: 1 v last, 2 v second-last, and so on. */
+    private void applyOpeningRoundSeeds(List<Match> matches, int basePlace, int size) {
+        for (int m = 0; m < matches.size(); m++) {
+            applySeedPlaceholders(matches.get(m), basePlace + m + 1, basePlace + size - m);
+        }
+    }
+
+    private String ordinal(int n) {
+        if (n % 100 >= 11 && n % 100 <= 13) {
+            return n + "th";
+        }
+        switch (n % 10) {
+            case 1: return n + "st";
+            case 2: return n + "nd";
+            case 3: return n + "rd";
+            default: return n + "th";
+        }
+    }
+
+    /**
+     * Resolves whether placement/consolation brackets are enabled.
+     *
+     * Generation is normally category-scoped (the Format tab saves "Include Consolation Rounds"
+     * per category), in which case the flag lives on that category's TournamentFormatConfig.
+     * The tournament-level flag is only set for whole-tournament generation, so it is used as
+     * the fallback — reading it alone silently misses the per-category setting.
+     */
+    /**
+     * Teams per placement bracket: the request wins when it names one, otherwise the value
+     * saved on the category's format config, otherwise the default of 4. The saved fallback
+     * matters for generation paths that do not carry the setting, so a regenerate cannot
+     * quietly rebuild an 8-team ladder as a 4-team one.
+     */
+    private int resolvePlacementBracketSize(Tournament tournament, TournamentCategory category,
+            BracketGenerationRequest request) {
+        if (request != null && request.getPlacementBracketSize() != null) {
+            return request.getPlacementBracketSize();
+        }
+        if (category != null) {
+            TournamentFormatConfig config = tournament.getFormatConfig(category.getId());
+            if (config != null && config.getPlacementBracketSize() != null) {
+                return config.getPlacementBracketSize();
+            }
+        }
+        return DEFAULT_PLACEMENT_BRACKET_SIZE;
+    }
+
+    private boolean isPlacementEnabled(Tournament tournament, TournamentCategory category) {
+        if (category != null) {
+            TournamentFormatConfig config = tournament.getFormatConfig(category.getId());
+            if (config != null && config.getIncludePlacementStages() != null) {
+                return config.getIncludePlacementStages();
+            }
+        }
+        return Boolean.TRUE.equals(tournament.getHasPlacementStages());
+    }
+
+    private void applySeedPlaceholders(Match match, int homeSeed, int awaySeed) {
+        match.setHomeTeamPlaceholder(truncate("Seed " + homeSeed, 50));
+        match.setAwayTeamPlaceholder(truncate("Seed " + awaySeed, 50));
+        matchRepository.save(match);
     }
 
     @SuppressWarnings("null")
@@ -593,7 +776,9 @@ public class BracketServiceImpl implements BracketService {
     }
 
     private void generateRugby16Bracket(Tournament tournament, List<Team> teams, TournamentCategory category) {
-        log.info("Generating Rugby 16-team cascading bracket (Cup, Plate, Bowl, Shield, Spoon, Fork)");
+        // 16 teams fill four placement brackets: Cup 1-4, Plate 5-8, Bowl 9-12, Shield 13-16.
+        // Spoon (17-20) and Fork (21-24) only come into play for larger draws.
+        log.info("Generating Rugby 16-team cascading bracket (Cup, Plate, Bowl, Shield)");
 
         int nextDisplayOrder = 1;
 
@@ -623,7 +808,10 @@ public class BracketServiceImpl implements BracketService {
                 matchesMap, category);
         createAndStoreStage(tournament, "Bowl Final (9th Place)", TournamentStageType.BOWL, nextDisplayOrder++, 1,
                 stagesMap, matchesMap, category);
-        createAndStoreStage(tournament, "Fork Final (11th Place)", TournamentStageType.FORK, nextDisplayOrder++, 1,
+        // 11th place is contested by the losers of the Bowl semis, so it belongs to
+        // the Bowl bracket (places 9-12), the same relationship 3rd place has to Cup.
+        // Not "Fork" — under the standard rugby ladder Fork covers places 21-24.
+        createAndStoreStage(tournament, "11th Place Playoff", TournamentStageType.BOWL, nextDisplayOrder++, 1,
                 stagesMap, matchesMap, category);
 
         // Plate Path (Losers of Cup QF)
@@ -631,7 +819,9 @@ public class BracketServiceImpl implements BracketService {
                 stagesMap, matchesMap, category);
         createAndStoreStage(tournament, "Plate Final (5th Place)", TournamentStageType.PLATE, nextDisplayOrder++, 1,
                 stagesMap, matchesMap, category);
-        createAndStoreStage(tournament, "7th Place Playoff", TournamentStageType.FORK, nextDisplayOrder++, 1, stagesMap,
+        // 7th place is contested by the losers of the Plate semis, so it belongs to
+        // the Plate bracket.
+        createAndStoreStage(tournament, "7th Place Playoff", TournamentStageType.PLATE, nextDisplayOrder++, 1, stagesMap,
                 matchesMap, category);
 
         // Shield Path (Losers of Bowl QF)
@@ -639,7 +829,10 @@ public class BracketServiceImpl implements BracketService {
                 stagesMap, matchesMap, category);
         createAndStoreStage(tournament, "Shield Final (13th Place)", TournamentStageType.SHIELD, nextDisplayOrder++, 1,
                 stagesMap, matchesMap, category);
-        createAndStoreStage(tournament, "Spoon Final (15th Place)", TournamentStageType.SPOON, nextDisplayOrder++, 1,
+        // 15th place is contested by the losers of the Shield semis, so it belongs to
+        // the Shield bracket (places 13-16).
+        // Not "Spoon" — under the standard rugby ladder Spoon covers places 17-20.
+        createAndStoreStage(tournament, "15th Place Playoff", TournamentStageType.SHIELD, nextDisplayOrder++, 1,
                 stagesMap, matchesMap, category);
 
         // 2. Assign Teams to R16 Matches
@@ -674,13 +867,13 @@ public class BracketServiceImpl implements BracketService {
         linkComplexRound(matchesMap.get("Plate Semi Finals"), matchesMap.get("Plate Final (5th Place)"),
                 matchesMap.get("7th Place Playoff"));
 
-        // Link Bowl SF -> Bowl Final (Winners) & Fork Final (Losers - 11th)
+        // Link Bowl SF -> Bowl Final (Winners - 9th) & 11th Place Playoff (Losers)
         linkComplexRound(matchesMap.get("Bowl Semi Finals"), matchesMap.get("Bowl Final (9th Place)"),
-                matchesMap.get("Fork Final (11th Place)"));
+                matchesMap.get("11th Place Playoff"));
 
-        // Link Shield SF -> Shield Final (Winners) & Spoon Final (Losers - 15th)
+        // Link Shield SF -> Shield Final (Winners - 13th) & 15th Place Playoff (Losers)
         linkComplexRound(matchesMap.get("Shield Semi Finals"), matchesMap.get("Shield Final (13th Place)"),
-                matchesMap.get("Spoon Final (15th Place)"));
+                matchesMap.get("15th Place Playoff"));
     }
 
     @SuppressWarnings("null")
@@ -819,9 +1012,35 @@ public class BracketServiceImpl implements BracketService {
         return n > 0 && (n & (n - 1)) == 0;
     }
 
+    /** Smallest power of two greater than or equal to n, with a floor of 2 (a draw needs two slots). */
+    private int nextPowerOfTwo(int n) {
+        int result = 2;
+        while (result < n) {
+            result <<= 1;
+        }
+        return result;
+    }
+
+    /**
+     * Builds the ordered list of knockout rounds for a given draw size.
+     *
+     * Rounds above the quarter-final are included so that a large draw does not collapse
+     * into a single oversized "Quarter Finals" round. Round of 32/64 reuse the ROUND_OF_16
+     * stage type because the enum has no dedicated value for them; the stage name still
+     * distinguishes them, and getRoundWeight() on the frontend orders them by name.
+     */
     private List<KnockoutStageInfo> determineKnockoutStages(int teamCount) {
         List<KnockoutStageInfo> stages = new ArrayList<>();
 
+        if (teamCount >= 64) {
+            stages.add(new KnockoutStageInfo("Round of 64", TournamentStageType.ROUND_OF_16, "R64"));
+        }
+        if (teamCount >= 32) {
+            stages.add(new KnockoutStageInfo("Round of 32", TournamentStageType.ROUND_OF_16, "R32"));
+        }
+        if (teamCount >= 16) {
+            stages.add(new KnockoutStageInfo("Round of 16", TournamentStageType.ROUND_OF_16, "R16"));
+        }
         if (teamCount >= 8) {
             stages.add(new KnockoutStageInfo("Quarter Finals", TournamentStageType.QUARTER_FINAL, "QF"));
         }
@@ -913,7 +1132,17 @@ public class BracketServiceImpl implements BracketService {
 
         // Step 2: Create knockout stages for pool winners/runners-up
         int teamsAdvancingPerPool = 2; // Top 2 from each pool
-        int knockoutTeamCount = numberOfPools * teamsAdvancingPerPool;
+        int qualifyingTeamCount = numberOfPools * teamsAdvancingPerPool;
+
+        // Round the draw up to a power of two. Halving an odd count each round produces
+        // malformed brackets (12 qualifiers would give 6 quarter-finals -> 3 semi-finals -> 1
+        // final). Padding to the next power of two keeps every round well-formed; the surplus
+        // slots stay empty and act as byes.
+        int knockoutTeamCount = nextPowerOfTwo(qualifyingTeamCount);
+        if (knockoutTeamCount != qualifyingTeamCount) {
+            log.info("{} qualifying teams padded to a {}-slot draw; {} slot(s) will be byes.",
+                    qualifyingTeamCount, knockoutTeamCount, knockoutTeamCount - qualifyingTeamCount);
+        }
 
         // Determine knockout stages needed
         List<KnockoutStageInfo> knockoutStages = determineKnockoutStages(knockoutTeamCount);
@@ -925,6 +1154,15 @@ public class BracketServiceImpl implements BracketService {
                 .mapToInt(TournamentStage::getDisplayOrder)
                 .max()
                 .orElse(0) + 1;
+
+        // With placement stages enabled, every team continues into a four-team placement
+        // bracket (Cup 1-4, Plate 5-8, ...) rather than only the pool qualifiers playing on.
+        // This is the shape that yields more than four brackets for larger draws.
+        if (isPlacementEnabled(tournament, category)) {
+            generatePlacementLadder(tournament, teams.size(), resolvePlacementBracketSize(tournament, category, request),
+                    nextDisplayOrder, category);
+            return;
+        }
 
         // Create knockout stages with placeholder teams
         List<Match> previousRoundMatches = new ArrayList<>();
@@ -982,7 +1220,7 @@ public class BracketServiceImpl implements BracketService {
         }
 
         // Generate Placements for Mixed Format as well if configured
-        if (Boolean.TRUE.equals(tournament.getHasPlacementStages())) {
+        if (isPlacementEnabled(tournament, category)) {
             generateAndLinkPlacementMatches(tournament, matchesByStageType, nextDisplayOrder, category);
         }
 
@@ -990,7 +1228,7 @@ public class BracketServiceImpl implements BracketService {
     }
 
     @Transactional
-    @SuppressWarnings({ "null", "unused" })
+    @SuppressWarnings("null")
     public void progressPoolsToKnockout(UUID tournamentId) {
         log.info("Progressing pool winners to knockout stage for tournament: {}", tournamentId);
 
@@ -1001,7 +1239,7 @@ public class BracketServiceImpl implements BracketService {
         // Get all pool stages
         List<TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
                 .stream()
-                .filter(TournamentStage::getIsGroupStage)
+                .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
                 .toList();
 
         if (poolStages.isEmpty()) {
@@ -1009,46 +1247,177 @@ public class BracketServiceImpl implements BracketService {
             return;
         }
 
-        // Calculate standings for each pool
-        List<PoolStanding> allStandings = new ArrayList<>();
-        for (TournamentStage poolStage : poolStages) {
-            List<PoolStanding> poolStandings = calculatePoolStandings(poolStage);
-            allStandings.addAll(poolStandings);
+        // Pools and their brackets belong to a category, so each category is ranked and
+        // seeded on its own — pooling every category together would rank teams that never
+        // played each other.
+        Map<UUID, List<TournamentStage>> poolsByCategory = new LinkedHashMap<>();
+        for (TournamentStage stage : poolStages) {
+            UUID key = stage.getCategory() != null ? stage.getCategory().getId() : null;
+            poolsByCategory.computeIfAbsent(key, k -> new ArrayList<>()).add(stage);
         }
 
-        // Get first knockout stage
-        TournamentStage firstKnockoutStage = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
-                .stream()
-                .filter(TournamentStage::getIsKnockoutStage)
-                .findFirst()
-                .orElse(null);
+        for (Map.Entry<UUID, List<TournamentStage>> entry : poolsByCategory.entrySet()) {
+            List<PoolStanding> ranked = rankTeamsAcrossPools(tournament, entry.getKey(), entry.getValue());
+            seedBracketsFromStandings(tournamentId, entry.getKey(), ranked);
+        }
+    }
 
-        if (firstKnockoutStage == null) {
-            log.warn("No knockout stage found for tournament {}", tournamentId);
+    /**
+     * Orders every team in a category across its pools: all pool winners first (ranked against
+     * each other), then all runners-up, and so on.
+     *
+     * This ordering is what makes "Seed N" meaningful. Simply concatenating each pool's table —
+     * as this previously did — made seed 1 and seed 2 the winner and runner-up of the *same*
+     * pool, so the opening round paired teams that had just played each other.
+     */
+    private List<PoolStanding> rankTeamsAcrossPools(Tournament tournament, UUID categoryId,
+            List<TournamentStage> poolStages) {
+        // Match the scoring the public standings table uses, so the bracket cannot disagree
+        // with the table an organiser is looking at.
+        TournamentFormatConfig config = tournament.getFormatConfig(categoryId);
+        int pointsWin = config != null && config.getPointsWin() != null ? config.getPointsWin() : 4;
+        int pointsDraw = config != null && config.getPointsDraw() != null ? config.getPointsDraw() : 2;
+        int pointsLoss = config != null && config.getPointsLoss() != null ? config.getPointsLoss() : 0;
+
+        List<PoolStanding> ranked = new ArrayList<>();
+        for (TournamentStage poolStage : poolStages) {
+            List<PoolStanding> table = calculatePoolStandings(poolStage, pointsWin, pointsDraw, pointsLoss);
+            for (int position = 0; position < table.size(); position++) {
+                PoolStanding standing = table.get(position);
+                standing.poolPosition = position + 1;
+                standing.poolName = poolStage.getName();
+                ranked.add(standing);
+            }
+        }
+
+        ranked.sort(Comparator.comparingInt((PoolStanding s) -> s.poolPosition)
+                .thenComparing(s -> s.getPoints(), Comparator.reverseOrder())
+                .thenComparing(s -> s.pointsFor - s.pointsAgainst, Comparator.reverseOrder())
+                .thenComparing(s -> s.pointsFor, Comparator.reverseOrder()));
+        return ranked;
+    }
+
+    /**
+     * Fills the "Seed N" placeholders left by {@link #generatePlacementLadder} with the team that
+     * finished Nth overall, across every bracket in the ladder rather than only the opening stage.
+     *
+     * Slots that already hold a team are left alone, so a manual assignment is never overwritten.
+     */
+    private void seedBracketsFromStandings(UUID tournamentId, UUID categoryId, List<PoolStanding> ranked) {
+        if (ranked.isEmpty()) {
             return;
         }
 
-        // Seed teams into knockout bracket
-        seedKnockoutBracket(firstKnockoutStage, allStandings);
+        Map<String, Team> teamBySeedLabel = new HashMap<>();
+        for (int i = 0; i < ranked.size(); i++) {
+            teamBySeedLabel.put("Seed " + (i + 1), ranked.get(i).team);
+        }
+
+        // Also resolve slots written as a pool position, e.g. "Pool A1" for the winner of Pool A.
+        // These are what an organiser picks when a bracket should take a specific finisher from a
+        // specific pool rather than an overall seed. Both the spaced and unspaced spellings are
+        // accepted because the generator and the editor have historically produced each.
+        for (PoolStanding standing : ranked) {
+            if (standing.poolName == null || standing.poolPosition <= 0) {
+                continue;
+            }
+            teamBySeedLabel.put(standing.poolName + standing.poolPosition, standing.team);
+            teamBySeedLabel.put(standing.poolName + " " + standing.poolPosition, standing.team);
+        }
+
+        List<Match> knockoutMatches = matchRepository.findByTournamentId(tournamentId).stream()
+                .filter(m -> m.getStage() != null && Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()))
+                .filter(m -> {
+                    TournamentCategory stageCategory = m.getStage().getCategory();
+                    return categoryId == null
+                            ? stageCategory == null
+                            : stageCategory != null && categoryId.equals(stageCategory.getId());
+                })
+                .toList();
+
+        int seededMatches = 0;
+        for (Match match : knockoutMatches) {
+            boolean changed = false;
+
+            // The seed label has served its purpose once the real team is known; clearing it
+            // keeps the slot from showing a stale "Seed 3" beside an assigned team.
+            Team home = teamBySeedLabel.get(match.getHomeTeamPlaceholder());
+            if (home != null && match.getHomeTeam() == null) {
+                match.setHomeTeam(home);
+                match.setHomeTeamPlaceholder(null);
+                changed = true;
+            }
+            Team away = teamBySeedLabel.get(match.getAwayTeamPlaceholder());
+            if (away != null && match.getAwayTeam() == null) {
+                match.setAwayTeam(away);
+                match.setAwayTeamPlaceholder(null);
+                changed = true;
+            }
+
+            if (changed) {
+                matchRepository.save(match);
+                seededMatches++;
+            }
+        }
+
+        log.info("Seeded {} ranked team(s) into {} knockout match(es) for category {}.",
+                ranked.size(), seededMatches, categoryId);
     }
 
-    private List<PoolStanding> calculatePoolStandings(TournamentStage poolStage) {
+    /**
+     * Builds one pool's table, ordered best-first.
+     *
+     * Scoring is passed in from the tournament's format config rather than hardcoded. It used to
+     * assume 4/2/0 plus a bonus point for any score of 28 or more — a stand-in for the four-try
+     * bonus that no configuration controlled. That could rank a pool differently from the public
+     * standings table, meaning the bracket and the table disagreed about who had qualified. The
+     * fabricated bonus is gone; try counts are not recorded, so it cannot be derived.
+     */
+    private List<PoolStanding> calculatePoolStandings(TournamentStage poolStage, int pointsWin, int pointsDraw,
+            int pointsLoss) {
         List<Match> poolMatches = matchRepository.findByStageId(poolStage.getId());
         Map<UUID, PoolStanding> standingsMap = new HashMap<>();
 
-        // Initialize standings for all teams in pool
+        // Initialize standings for all teams in pool. Slots can still be unassigned at this
+        // point (an unfilled pool, or a bye), so both sides are checked before dereferencing.
         for (Match match : poolMatches) {
-            standingsMap.putIfAbsent(match.getHomeTeam().getId(),
-                    new PoolStanding(match.getHomeTeam()));
-            standingsMap.putIfAbsent(match.getAwayTeam().getId(),
-                    new PoolStanding(match.getAwayTeam()));
+            if (match.getHomeTeam() != null) {
+                standingsMap.putIfAbsent(match.getHomeTeam().getId(), new PoolStanding(match.getHomeTeam()));
+            }
+            if (match.getAwayTeam() != null) {
+                standingsMap.putIfAbsent(match.getAwayTeam().getId(), new PoolStanding(match.getAwayTeam()));
+            }
         }
 
         // Calculate points from completed matches
         for (Match match : poolMatches) {
             if (match.getStatus() != MatchStatus.COMPLETED ||
-                    match.getHomeScore() == null ||
-                    match.getAwayScore() == null) {
+                    match.getHomeTeam() == null ||
+                    match.getAwayTeam() == null) {
+                continue;
+            }
+
+            // Walkovers now carry the awarded scoreline, so they flow through the normal path
+            // below. This branch only catches ones recorded before that change, which have a
+            // winner but no scores.
+            if (match.getResultType() == com.athleticaos.backend.enums.MatchResultType.WALKOVER
+                    && match.getWinnerTeam() != null
+                    && (match.getHomeScore() == null || match.getAwayScore() == null)) {
+                PoolStanding winner = standingsMap.get(match.getWinnerTeam().getId());
+                UUID loserId = match.getWinnerTeam().getId().equals(match.getHomeTeam().getId())
+                        ? match.getAwayTeam().getId()
+                        : match.getHomeTeam().getId();
+                PoolStanding loser = standingsMap.get(loserId);
+                if (winner != null) {
+                    winner.points += pointsWin;
+                }
+                if (loser != null) {
+                    loser.points += pointsLoss;
+                }
+                continue;
+            }
+
+            if (match.getHomeScore() == null || match.getAwayScore() == null) {
                 continue;
             }
 
@@ -1061,46 +1430,23 @@ public class BracketServiceImpl implements BracketService {
             awayStanding.pointsAgainst += match.getHomeScore();
 
             if (match.getHomeScore() > match.getAwayScore()) {
-                homeStanding.points += 4; // 4 points for win
+                homeStanding.points += pointsWin;
+                awayStanding.points += pointsLoss;
             } else if (match.getAwayScore() > match.getHomeScore()) {
-                awayStanding.points += 4;
+                awayStanding.points += pointsWin;
+                homeStanding.points += pointsLoss;
             } else {
-                homeStanding.points += 2; // 2 points for draw
-                awayStanding.points += 2;
+                homeStanding.points += pointsDraw;
+                awayStanding.points += pointsDraw;
             }
-
-            // Bonus point for scoring 4+ tries (simplified - using score threshold)
-            if (match.getHomeScore() >= 28)
-                homeStanding.points++;
-            if (match.getAwayScore() >= 28)
-                awayStanding.points++;
         }
 
-        // Sort by points, then point differential
+        // Sort by points, then point differential — same order as the standings table.
         return standingsMap.values().stream()
                 .sorted(Comparator.comparing((PoolStanding s) -> s.getPoints()).reversed()
                         .thenComparing(s -> s.pointsFor - s.pointsAgainst, Comparator.reverseOrder())
                         .thenComparing(s -> s.pointsFor, Comparator.reverseOrder()))
                 .toList();
-    }
-
-    private void seedKnockoutBracket(TournamentStage firstKnockoutStage, List<PoolStanding> standings) {
-        List<Match> knockoutMatches = matchRepository.findByStageId(firstKnockoutStage.getId());
-
-        // Seed teams: Pool A winner vs Pool B runner-up, Pool B winner vs Pool A
-        // runner-up, etc.
-        int matchIndex = 0;
-        for (int i = 0; i < standings.size() && matchIndex < knockoutMatches.size(); i += 2) {
-            if (i + 1 < standings.size()) {
-                Match match = knockoutMatches.get(matchIndex);
-                match.setHomeTeam(standings.get(i).team); // Higher seed
-                match.setAwayTeam(standings.get(i + 1).team); // Lower seed
-                matchRepository.save(match);
-                matchIndex++;
-            }
-        }
-
-        log.info("Seeded {} teams into knockout bracket", standings.size());
     }
 
     // Helper class for pool standings
@@ -1110,10 +1456,10 @@ public class BracketServiceImpl implements BracketService {
         int pointsFor = 0;
         int pointsAgainst = 0;
         int points = 0;
-
-        // Although played, wins, draws, losses are calculated, they aren't used for
-        // sorting currently
-        // Keeping logic simple
+        /** Finishing position within this team's own pool, 1-based. Set during cross-pool ranking. */
+        int poolPosition = 0;
+        /** Name of the pool this team played in, e.g. "Pool A". Used to resolve "Pool A1" slots. */
+        String poolName;
 
         PoolStanding(Team team) {
             this.team = team;
@@ -1253,7 +1599,13 @@ public class BracketServiceImpl implements BracketService {
     @Override
     @Transactional
     @SuppressWarnings("null")
-    public BracketViewResponse generateManualKnockoutBracket(UUID tournamentId, com.athleticaos.backend.enums.TournamentStageType type, int teamCount, UUID categoryId) {
+    public BracketViewResponse generateManualKnockoutBracket(UUID tournamentId,
+            com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest request) {
+        com.athleticaos.backend.enums.TournamentStageType type = request.getType();
+        UUID categoryId = request.getCategoryId();
+        // Pad to a power of two so every round is well-formed; surplus slots act as byes.
+        int teamCount = nextPowerOfTwo(Math.max(request.getTeamCount(), 2));
+
         Tournament tournament = tournamentRepository.findById(tournamentId).orElseThrow();
 
         // Idempotency guard: prevent duplicate bracket creation (defect #4 root cause)
@@ -1281,10 +1633,16 @@ public class BracketServiceImpl implements BracketService {
         List<KnockoutStageInfo> stages = determineKnockoutStages(teamCount);
         int displayOrder = 100;
         List<Match> previousRoundMatches = new ArrayList<>();
-        
+        List<Match> semiFinalMatches = new ArrayList<>();
+        String bracketLabel = (request.getName() != null && !request.getName().isBlank())
+                ? request.getName().trim()
+                : null;
+
         for (KnockoutStageInfo stageInfo : stages) {
-            String stageName = formatStageName(type, stageInfo.name);
-            
+            String stageName = bracketLabel != null
+                    ? bracketLabel + " " + stageInfo.name
+                    : formatStageName(type, stageInfo.name);
+
             TournamentStage stage = TournamentStage.builder()
                     .tournament(tournament)
                     .category(category)
@@ -1322,10 +1680,45 @@ public class BracketServiceImpl implements BracketService {
             if (!previousRoundMatches.isEmpty()) {
                 linkRounds(previousRoundMatches, currentRoundMatches);
             }
+            if (stageInfo.type == TournamentStageType.SEMI_FINAL) {
+                semiFinalMatches = currentRoundMatches;
+            }
             previousRoundMatches = currentRoundMatches;
         }
 
+        // Optional placement playoff for the losers of this bracket's semi-finals, mirroring
+        // the Cup bracket's 3rd Place Playoff. Needs exactly two semi-finals to feed it.
+        if (Boolean.TRUE.equals(request.getIncludePlacementPlayoff())) {
+            if (semiFinalMatches.size() == 2) {
+                String playoffName = bracketLabel != null
+                        ? bracketLabel + " Placement Playoff"
+                        : placementPlayoffNameFor(type);
+                TournamentStage playoffStage = createStage(tournament, playoffName, type, displayOrder++, category);
+                List<Match> playoffMatches = createMatches(tournament, playoffStage, 1,
+                        type.name().substring(0, Math.min(2, type.name().length())) + "PO");
+                linkLosers(semiFinalMatches, playoffMatches);
+            } else {
+                log.warn("Placement playoff requested for a {}-team {} bracket, which has no semi-final round; skipped.",
+                        teamCount, type);
+            }
+        }
+
         return getBracketForTournament(tournamentId);
+    }
+
+    /**
+     * Playoff label for a bracket, taken from the standard ladder so a manually added bracket
+     * reads the same as a generated one (Plate -> "7th Place Playoff", Bowl -> "11th", ...).
+     */
+    private String placementPlayoffNameFor(com.athleticaos.backend.enums.TournamentStageType type) {
+        for (int i = 0; i < PLACEMENT_LADDER.size(); i++) {
+            if (PLACEMENT_LADDER.get(i).type == type) {
+                // Derived the same way the generated ladder derives it, so a manually added
+                // Plate bracket reads "7th Place Playoff" just like a generated one.
+                return ordinal(i * DEFAULT_PLACEMENT_BRACKET_SIZE + 3) + " Place Playoff";
+            }
+        }
+        return "Placement Playoff";
     }
     
     private String formatStageName(com.athleticaos.backend.enums.TournamentStageType bracketType, String phaseName) {

@@ -39,7 +39,8 @@ public class TournamentRosterController {
             @PathVariable UUID teamId,
             @Valid @RequestBody AddPlayersToRosterRequest request) {
         UUID tournamentId = getTournamentId(tournamentIdOrSlug);
-        return ResponseEntity.ok(rosterService.addPlayersToRoster(tournamentId, teamId, request.getPlayerIds()));
+        return ResponseEntity.ok(rosterService.addPlayersToRoster(tournamentId, teamId, request.getPlayerIds(),
+                request.getJerseyNumbers()));
     }
 
     @DeleteMapping("/{tournamentPlayerId}")

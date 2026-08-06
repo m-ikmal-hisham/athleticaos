@@ -423,7 +423,9 @@ public class PublicTournamentController {
                 .matchTime(m.getKickOffTime())
                 .venue(m.getVenue())
                 .status(m.getStatus())
+                .resultType(m.getResultType())
                 .stage(stageName)
+                .stageType(m.getStage() != null ? m.getStage().getStageType() : null)
                 .stageDisplayOrder(stageDisplayOrder)
                 .build();
     }

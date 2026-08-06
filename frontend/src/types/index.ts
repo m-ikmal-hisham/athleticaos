@@ -393,6 +393,8 @@ export interface TournamentFormatConfig {
     startersCount: number;
     maxBenchCount: number;
     includePlacementStages?: boolean;
+    /** Teams per placement bracket (2/4/8/16/32). Undefined falls back to the default of 4. */
+    placementBracketSize?: number;
     bufferTimeMinutes?: number;
     carnivalStartTime?: string;
     carnivalEndTime?: string;
@@ -437,6 +439,10 @@ export interface Match {
     status: MatchStatus;
     homeScore?: number;
     awayScore?: number;
+    /** How the result came about. Absent/NORMAL means played out and decided on scores. */
+    resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
+    /** Set only for walkovers and byes, which complete without a scoreline. */
+    winnerTeamId?: string;
     homeTeamPlaceholder?: string;
     awayTeamPlaceholder?: string;
     

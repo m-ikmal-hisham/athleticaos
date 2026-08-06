@@ -41,6 +41,15 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
         public List<TournamentPlayerDTO> addPlayersToRoster(@NonNull UUID tournamentId, @NonNull UUID teamId,
                         @NonNull List<UUID> playerIds) {
+                return addPlayersToRoster(tournamentId, teamId, playerIds, java.util.Collections.emptyMap());
+        }
+
+        @Override
+        @Transactional
+        public List<TournamentPlayerDTO> addPlayersToRoster(@NonNull UUID tournamentId, @NonNull UUID teamId,
+                        @NonNull List<UUID> playerIds, java.util.Map<UUID, Integer> jerseyNumbers) {
+                final java.util.Map<UUID, Integer> numbers = jerseyNumbers != null ? jerseyNumbers
+                                : java.util.Collections.emptyMap();
                 log.info("Adding {} players to roster for tournament {} team {}", playerIds.size(), tournamentId,
                                 teamId);
 
@@ -73,6 +82,10 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
                         if (existing.isPresent()) {
                                 TournamentPlayer tp = existing.get();
+                                if (numbers.get(playerId) != null) {
+                                        tp.setTournamentJerseyNumber(numbers.get(playerId));
+                                        tournamentPlayerRepository.save(tp);
+                                }
                                 if (!tp.isActive()) {
                                         // Reactivate
                                         tp.setActive(true);
@@ -97,6 +110,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                         .isActive(true)
                                         .isEligible(eligibility.isEligible())
                                         .eligibilityNote(eligibility.getReason())
+                                        .tournamentJerseyNumber(numbers.get(playerId))
                                         .build();
 
                         tournamentPlayerRepository.save(java.util.Objects.requireNonNull(tournamentPlayer));
@@ -276,6 +290,11 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 .playerId(player.getId())
                                 .playerName(person.getFirstName() + " " + person.getLastName())
                                 .playerNumber(displayNumber != null ? displayNumber.toString() : null)
+                                // Both layers are returned so the roster can show whether a number is
+                                // inherited from the club or set for this tournament. Without that an
+                                // organiser cannot tell why a number is what it is.
+                                .tournamentJerseyNumber(tp.getTournamentJerseyNumber())
+                                .teamJerseyNumber(playerTeam.map(pt -> pt.getJerseyNumber()).orElse(null))
                                 .organisationName(tp.getTeam().getOrganisation().getName())
                                 .isEligible(tp.isEligible())
                                 .eligibilityNote(tp.getEligibilityNote())
