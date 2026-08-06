@@ -351,7 +351,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                 </div>
 
                                                 <div className="text-[10px] text-muted-foreground/80 px-3 py-1 bg-black/40 border-b border-white/5 uppercase tracking-wider flex justify-between font-mono">
-                                                    <span>{match.matchCode || 'MATCH'}</span>
+                                                    <span>{match.matchNumber ? `M${match.matchNumber}${match.matchCode ? ` • ${match.matchCode}` : ''}` : (match.matchCode || 'MATCH')}</span>
                                                     <span className="truncate max-w-[100px]">
                                                         {match.matchDate ? match.matchDate.substring(5) : ''} {match.kickOffTime?.substring(0, 5)}
                                                     </span>

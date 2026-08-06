@@ -72,7 +72,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                                                     >
                                                         <div className="flex justify-between items-center mb-2 text-xs text-slate-500 dark:text-slate-400">
                                                             <span className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px]">
-                                                                {match.matchCode && match.matchCode.length < 10 ? match.matchCode : 'Match'}
+                                                                {match.matchNumber ? `Match ${match.matchNumber}` : (match.matchCode && match.matchCode.length < 10 ? match.matchCode : 'Match')}
                                                             </span>
                                                             {match.resultType && match.resultType !== 'NORMAL' ? (
                                                                 <span className="uppercase text-[10px] font-bold tracking-wider text-amber-600 dark:text-amber-400">

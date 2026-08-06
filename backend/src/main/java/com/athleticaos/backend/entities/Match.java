@@ -91,6 +91,9 @@ public class Match {
     @Column(name = "match_code")
     private String matchCode;
 
+    @Column(name = "match_number")
+    private Integer matchNumber;
+
     @Column(name = "next_match_id_for_winner")
     private UUID nextMatchIdForWinner;
 

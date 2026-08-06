@@ -390,6 +390,7 @@ public class FormatServiceImpl implements FormatService {
                         .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
                                 truncate(stage.getName().replace(" ", ""), 10),
                                 matchCounter + 1))
+                        .matchNumber(nextMatchNumber(tournament))
                         .build();
                 matchRepository.save(match);
                 matchCounter++;
@@ -400,6 +401,11 @@ public class FormatServiceImpl implements FormatService {
     private String truncate(String text, int length) {
         if (text == null) return "";
         return text.length() > length ? text.substring(0, length) : text;
+    }
+
+    /** Returns the next sequential match number for the given tournament. */
+    private int nextMatchNumber(Tournament tournament) {
+        return matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1;
     }
 
     @Override

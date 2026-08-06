@@ -565,9 +565,10 @@ export const MatchDetail = () => {
             });
         }
 
+        const numPrefix = selectedMatch?.matchNumber ? `Match ${selectedMatch.matchNumber}: ` : '';
         const matchLabel = selectedMatch?.homeTeamName && selectedMatch?.awayTeamName
-            ? `${selectedMatch.homeTeamName} vs ${selectedMatch.awayTeamName}`
-            : selectedMatch?.matchCode || 'Match';
+            ? `${numPrefix}${selectedMatch.homeTeamName} vs ${selectedMatch.awayTeamName}`
+            : (selectedMatch?.matchNumber ? `Match ${selectedMatch.matchNumber}` : (selectedMatch?.matchCode || 'Match'));
 
         items.push({ label: matchLabel });
         return items;

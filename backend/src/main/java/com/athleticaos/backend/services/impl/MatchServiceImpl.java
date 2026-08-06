@@ -247,6 +247,7 @@ public class MatchServiceImpl implements MatchService {
                 .phase(request.getPhase())
                 .stage(stage)
                 .matchCode(request.getMatchCode())
+                .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1)
                 .status(MatchStatus.SCHEDULED) // Default status
                 .build();
 
@@ -505,7 +506,8 @@ public class MatchServiceImpl implements MatchService {
                 .resultType(match.getResultType() != null ? match.getResultType().name() : null)
                 .winnerTeamId(match.getWinnerTeam() != null ? match.getWinnerTeam().getId() : null)
                 .phase(match.getPhase() != null ? match.getPhase() : (match.getStage() != null ? match.getStage().getName() : null))
-                .matchCode(match.getMatchCode());
+                .matchCode(match.getMatchCode())
+                .matchNumber(match.getMatchNumber());
 
         if (match.getStage() != null) {
             builder.stage(MatchResponse.StageInfo.builder()

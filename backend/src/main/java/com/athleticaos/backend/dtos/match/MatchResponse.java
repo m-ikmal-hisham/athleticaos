@@ -43,6 +43,8 @@ public class MatchResponse {
     private UUID winnerTeamId;
     private String phase;
     private String matchCode;
+    /** Sequential number within the tournament (1, 2, 3, …) for easy identification. */
+    private Integer matchNumber;
     private StageInfo stage;
 
     private java.util.UUID homeFromWinnerOfMatchId;

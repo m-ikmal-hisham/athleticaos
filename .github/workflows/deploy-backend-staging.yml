@@ -3,9 +3,11 @@ name: Deploy Backend to Staging
 on:
   push:
     branches: [staging]
-    paths:
-      - 'backend/**'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-staging-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:

@@ -319,6 +319,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
                         getStageAbbreviation(placementStage.getStageType()),
                         existingMatches.size() + 1))
+                .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(
+                        completedMatch.getTournament().getId()) + 1)
                 .build();
 
         return matchRepository.save(newMatch);
@@ -393,6 +395,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
                         getStageAbbreviation(nextStage.getStageType()),
                         nextStageMatchIndex + 1))
+                .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(
+                        completedMatch.getTournament().getId()) + 1)
                 .build();
 
         return matchRepository.save(newMatch);

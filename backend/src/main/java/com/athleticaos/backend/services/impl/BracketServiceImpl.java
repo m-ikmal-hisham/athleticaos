@@ -375,6 +375,7 @@ public class BracketServiceImpl implements BracketService {
                         .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
                                 truncate(poolName.replace(" ", ""), 10),
                                 i * teams.size() + j))
+                        .matchNumber(nextMatchNumber(tournament))
                         .build();
 
                 matchRepository.save(match);
@@ -454,6 +455,7 @@ public class BracketServiceImpl implements BracketService {
                         .phase(stageInfo.name)
                         .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
                                 stageInfo.abbreviation, i + 1))
+                        .matchNumber(nextMatchNumber(tournament))
                         .build();
 
                 match = matchRepository.save(match);
@@ -743,6 +745,7 @@ public class BracketServiceImpl implements BracketService {
                     .status(MatchStatus.SCHEDULED)
                     .phase(stage.getName())
                     .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20), abbr, i + 1))
+                    .matchNumber(nextMatchNumber(tournament))
                     .homeTeamPlaceholder("TBD")
                     .awayTeamPlaceholder("TBD")
                     .build();
@@ -905,6 +908,7 @@ public class BracketServiceImpl implements BracketService {
                     .phase(truncate(name, 50))
                     .matchCode(String.format("%s-%s%d", truncate(tournament.getSlug(), 30), getStageAbbreviation(type),
                             (i + 1)))
+                    .matchNumber(nextMatchNumber(tournament))
                     .build();
             match = matchRepository.save(match);
             stageMatches.add(match);
@@ -1195,6 +1199,7 @@ public class BracketServiceImpl implements BracketService {
                         .phase(truncate(stageInfo.name, 50))
                         .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
                                 stageInfo.abbreviation, i + 1))
+                        .matchNumber(nextMatchNumber(tournament))
                         .build();
 
                 // Set initial placeholders for first round (Pool qualifiers)
@@ -1496,6 +1501,7 @@ public class BracketServiceImpl implements BracketService {
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
                 .matchCode(match.getMatchCode())
+                .matchNumber(match.getMatchNumber())
                 .homeTeamPlaceholder(match.getHomeTeamPlaceholder())
                 .awayTeamPlaceholder(match.getAwayTeamPlaceholder())
                 .build();
@@ -1596,6 +1602,11 @@ public class BracketServiceImpl implements BracketService {
         return value.substring(0, limit);
     }
 
+    /** Returns the next sequential match number for the given tournament. */
+    private int nextMatchNumber(Tournament tournament) {
+        return matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1;
+    }
+
     @Override
     @Transactional
     @SuppressWarnings("null")
@@ -1670,6 +1681,7 @@ public class BracketServiceImpl implements BracketService {
                         .phase(stageName)
                         .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
                                 type.name().substring(0, Math.min(2, type.name().length())) + stageInfo.abbreviation, i + 1))
+                        .matchNumber(nextMatchNumber(tournament))
                         .homeTeamPlaceholder("TBD")
                         .awayTeamPlaceholder("TBD")
                         .build();
