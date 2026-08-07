@@ -41,8 +41,10 @@ public class FormatServiceImpl implements FormatService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        // Clear existing matches before generating new ones (preserve structure/pools)
-        clearSchedule(tournamentId, false);
+        // Clear existing matches before generating new ones (preserve structure/pools).
+        // Scoped to the requested category: generating one category's schedule must not
+        // wipe the matches of the tournament's other categories.
+        clearSchedule(tournamentId, request.getCategoryId(), false);
 
         // Update tournament format settings
         // Update tournament format settings logic
@@ -173,10 +175,22 @@ public class FormatServiceImpl implements FormatService {
 
     private void generateMatchesForExistingGroups(Tournament tournament, BracketGenerationRequest request) {
         // We already cleared matches at the start of generateSchedule(), so we can safely generate new ones.
-        
-        // Fetch existing stages/pools
-        List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournament.getId());
-        List<TournamentTeam> allTeams = tournamentTeamRepository.findByTournamentId(tournament.getId());
+
+        UUID categoryId = request.getCategoryId();
+
+        // Fetch existing stages/pools, restricted to the requested category. Pool names
+        // repeat across categories ("Pool A" exists for both Mens and Womens), so an
+        // unscoped pass would regenerate — and cross-populate — the other categories.
+        List<TournamentStage> stages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournament.getId())
+                .stream()
+                .filter(s -> categoryId == null
+                        || (s.getCategory() != null && s.getCategory().getId().equals(categoryId)))
+                .collect(Collectors.toList());
+
+        List<TournamentTeam> allTeams = tournamentTeamRepository.findByTournamentId(tournament.getId()).stream()
+                .filter(t -> categoryId == null
+                        || (t.getCategory() != null && t.getCategory().getId().equals(categoryId)))
+                .collect(Collectors.toList());
 
         // Group teams by pool name
         java.util.Map<String, List<TournamentTeam>> poolMap = allTeams.stream()
@@ -416,6 +430,16 @@ public class FormatServiceImpl implements FormatService {
 
     @Override
     public void clearSchedule(UUID tournamentId, boolean clearStructure) {
+        clearSchedule(tournamentId, null, clearStructure);
+    }
+
+    @Override
+    public void clearSchedule(UUID tournamentId, UUID categoryId, boolean clearStructure) {
+        if (categoryId != null) {
+            clearScheduleForCategory(tournamentId, categoryId, clearStructure);
+            return;
+        }
+
         log.info("Clearing schedule for tournament {} (clearStructure={})", tournamentId, clearStructure);
 
         // Delete all match-dependent entities first
@@ -432,6 +456,46 @@ public class FormatServiceImpl implements FormatService {
             stageRepository.deleteByTournamentId(tournamentId);
 
             List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
+            for (TournamentTeam team : teams) {
+                if (team.getPoolNumber() != null) {
+                    team.setPoolNumber(null);
+                    tournamentTeamRepository.save(team);
+                }
+            }
+        }
+    }
+
+    /**
+     * Category-scoped counterpart of {@link #clearSchedule(UUID, boolean)}. Only matches
+     * sitting on a stage belonging to this category are removed, so the other categories
+     * of a multi-category tournament keep their schedules.
+     */
+    private void clearScheduleForCategory(UUID tournamentId, UUID categoryId, boolean clearStructure) {
+        log.info("Clearing schedule for tournament {} category {} (clearStructure={})",
+                tournamentId, categoryId, clearStructure);
+
+        List<Match> categoryMatches = matchRepository.findByTournamentId(tournamentId).stream()
+                .filter(m -> m.getStage() != null && m.getStage().getCategory() != null
+                        && m.getStage().getCategory().getId().equals(categoryId))
+                .collect(Collectors.toList());
+
+        for (Match match : categoryMatches) {
+            playerSuspensionRepository.deleteByMatchId(match.getId());
+            matchOfficialRepository.deleteByMatchId(match.getId());
+            matchEventRepository.deleteByMatchId(match.getId());
+            matchLineupRepository.deleteByMatchId(match.getId());
+        }
+
+        // Clear self-referencing next-match links before deleting matches
+        matchRepository.clearNextMatchReferencesForCategory(tournamentId, categoryId);
+        matchRepository.deleteByTournamentIdAndCategoryId(tournamentId, categoryId);
+
+        if (clearStructure) {
+            stageRepository.deleteByTournamentIdAndCategoryId(tournamentId, categoryId);
+
+            List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId).stream()
+                    .filter(tt -> tt.getCategory() != null && tt.getCategory().getId().equals(categoryId))
+                    .collect(Collectors.toList());
             for (TournamentTeam team : teams) {
                 if (team.getPoolNumber() != null) {
                     team.setPoolNumber(null);

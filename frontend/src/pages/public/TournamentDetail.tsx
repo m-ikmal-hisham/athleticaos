@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass } from '@phosphor-icons/react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -31,6 +31,16 @@ export default function TournamentDetail() {
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
     const [teamRosters, setTeamRosters] = useState<Record<string, PublicPlayerSummary[]>>({});
     const [teamSearch, setTeamSearch] = useState('');
+
+    // Teams belonging to the selected category. Matches, standings and stats are already
+    // filtered server-side by category; the Teams and Players tabs read from the tournament
+    // payload, so they have to apply the same filter here or a Mens/Womens tournament shows
+    // every team under both chips. Uncategorised teams stay visible in all categories.
+    const categoryTeams = useMemo(() => {
+        const allTeams = tournament?.teams || [];
+        if (!selectedCategoryId) return allTeams;
+        return allTeams.filter(t => !t.categoryId || t.categoryId === selectedCategoryId);
+    }, [tournament?.teams, selectedCategoryId]);
 
     useEffect(() => {
         if (id) loadTournamentData();
@@ -241,7 +251,7 @@ export default function TournamentDetail() {
                             { id: 'stats', label: 'Stats', icon: Star, count: null },
                             ...(showPoolTab ? [{ id: 'standings', label: 'Standings', icon: Table, count: null }] : []),
                             ...(hasKnockoutMatches ? [{ id: 'bracket', label: 'Bracket', icon: ShareNetwork, count: null }] : []),
-                            { id: 'teams', label: 'Teams', icon: Users, count: tournament.teams?.length || null },
+                            { id: 'teams', label: 'Teams', icon: Users, count: categoryTeams.length || null },
                             { id: 'players', label: 'Players', icon: UserCircle, count: null },
                         ].map((tab) => (
                             <button
@@ -289,9 +299,9 @@ export default function TournamentDetail() {
                                     <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                         <Users className="w-5 h-5 text-blue-500" weight="fill" />
                                         Participating Teams
-                                        <span className="ml-2 text-sm font-normal text-slate-400">{tournament.teams?.length || 0} teams</span>
+                                        <span className="ml-2 text-sm font-normal text-slate-400">{categoryTeams.length} teams</span>
                                     </h2>
-                                    {tournament.teams && tournament.teams.length > 5 && (
+                                    {categoryTeams.length > 5 && (
                                         <div className="relative w-full sm:w-64">
                                             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                             <input
@@ -304,9 +314,9 @@ export default function TournamentDetail() {
                                         </div>
                                     )}
                                 </div>
-                                {tournament.teams && tournament.teams.length > 0 ? (
+                                {categoryTeams.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {tournament.teams
+                                        {categoryTeams
                                             .filter(t => !teamSearch || t.name.toLowerCase().includes(teamSearch.toLowerCase()) || t.shortName?.toLowerCase().includes(teamSearch.toLowerCase()))
                                             .map((team) => (
                                             <div
@@ -347,9 +357,9 @@ export default function TournamentDetail() {
                                     <UserCircle className="w-5 h-5 text-emerald-500" weight="fill" />
                                     Tournament Players
                                 </h2>
-                                {tournament.teams && tournament.teams.length > 0 ? (
+                                {categoryTeams.length > 0 ? (
                                     <div className="space-y-3">
-                                        {tournament.teams.map((team) => {
+                                        {categoryTeams.map((team) => {
                                             const isExpanded = expandedTeams[team.id] || false;
                                             const roster = teamRosters[team.id];
 
@@ -359,7 +369,9 @@ export default function TournamentDetail() {
                                                 // Fetch roster if expanding and not already fetched
                                                 if (newExpanded && !roster) {
                                                     try {
-                                                        const teamData = await publicProfileApi.getTeam(team.slug || team.id);
+                                                        // Scoped to this tournament so the card lists the registered
+                                                        // squad, not the club's entire player list.
+                                                        const teamData = await publicProfileApi.getTeam(team.slug || team.id, tournament.id);
                                                         setTeamRosters(prev => ({ ...prev, [team.id]: teamData.players || [] }));
                                                     } catch (err) {
                                                         console.error('Failed to fetch roster for', team.name, err);
@@ -398,7 +410,7 @@ export default function TournamentDetail() {
                                                                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                                                                 </div>
                                                             ) : roster.length === 0 ? (
-                                                                <div className="p-6 text-center text-sm text-slate-400">No players found for this team.</div>
+                                                                <div className="p-6 text-center text-sm text-slate-400">No squad registered for this tournament yet.</div>
                                                             ) : (
                                                                 <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                                     {roster.map((player) => (

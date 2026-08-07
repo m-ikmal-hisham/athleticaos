@@ -52,6 +52,8 @@ export interface PublicTeamSummary {
     slug: string;
     shortName?: string;
     logoUrl?: string;
+    categoryId?: string | null;
+    categoryName?: string | null;
 }
 
 export interface PublicMatchSummary {

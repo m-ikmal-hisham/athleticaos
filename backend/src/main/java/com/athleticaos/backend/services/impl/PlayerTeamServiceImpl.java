@@ -10,6 +10,8 @@ import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.MatchLineupRepository;
 import com.athleticaos.backend.repositories.MatchEventRepository;
+import com.athleticaos.backend.repositories.TournamentPlayerRepository;
+import com.athleticaos.backend.entities.TournamentPlayer;
 import com.athleticaos.backend.services.PlayerTeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
         private final TeamRepository teamRepository;
         private final MatchLineupRepository matchLineupRepository;
         private final MatchEventRepository matchEventRepository;
+        private final TournamentPlayerRepository tournamentPlayerRepository;
 
         @Override
         @Transactional
@@ -133,6 +136,25 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
 
                 List<PlayerTeam> playerTeams = playerTeamRepository.findActiveRosterByTeamId(teamId);
 
+                // When a tournament is in scope, the roster is the squad registered for THAT
+                // tournament, not the club's full player list. Without this, a club with 48
+                // registered members shows all 48 on a tournament page that only has a squad
+                // of 12. Tournament jersey number and position override the club defaults.
+                Map<UUID, TournamentPlayer> tournamentSquad = new HashMap<>();
+                if (tournamentId != null) {
+                        for (TournamentPlayer tp : tournamentPlayerRepository
+                                        .findByTournamentIdAndTeamIdAndIsActiveTrue(tournamentId, teamId)) {
+                                if (tp.getPlayer() != null) {
+                                        tournamentSquad.put(tp.getPlayer().getId(), tp);
+                                }
+                        }
+                        playerTeams = playerTeams.stream()
+                                        .filter(pt -> tournamentSquad.containsKey(pt.getPlayer().getId()))
+                                        .collect(Collectors.toList());
+                        log.info("Team {} has {} players registered for tournament {}", teamId, playerTeams.size(),
+                                        tournamentId);
+                }
+
                 // Fetch appearance stats and event stats for all team players in bulk
                 Map<UUID, Integer> appearancesMap = new HashMap<>();
                 try {
@@ -173,13 +195,23 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                                                 int appearances = appearancesMap.getOrDefault(playerId, 0);
                                                 Map<com.athleticaos.backend.enums.MatchEventType, Integer> pEvents = eventsMap.getOrDefault(playerId, Collections.emptyMap());
 
+                                                // Squad entry is null outside a tournament context; fall back to club values.
+                                                TournamentPlayer squadEntry = tournamentSquad.get(playerId);
+                                                Integer jerseyNumber = squadEntry != null
+                                                                && squadEntry.getTournamentJerseyNumber() != null
+                                                                                ? squadEntry.getTournamentJerseyNumber()
+                                                                                : pt.getJerseyNumber();
+                                                String position = squadEntry != null && squadEntry.getPosition() != null
+                                                                ? squadEntry.getPosition()
+                                                                : pt.getPosition();
+
                                                 return PlayerInTeamDTO.builder()
                                                                 .playerId(playerId)
                                                                 .firstName(pt.getPlayer().getPerson().getFirstName())
                                                                 .lastName(pt.getPlayer().getPerson().getLastName())
                                                                 .email(pt.getPlayer().getPerson().getEmail())
-                                                                .jerseyNumber(pt.getJerseyNumber())
-                                                                .position(pt.getPosition())
+                                                                .jerseyNumber(jerseyNumber)
+                                                                .position(position)
                                                                 .status(pt.getPlayer().getStatus())
                                                                 .joinedDate(pt.getJoinedDate())
                                                                 .isActive(pt.getIsActive())
