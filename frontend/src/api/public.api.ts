@@ -287,9 +287,72 @@ export interface PublicPlayerDetailResponse {
     profilePictureUrl?: string;
     currentTeamName?: string;
     currentTeamId?: string;
+    tournaments?: {
+        id: string;
+        name: string;
+        status?: string;
+    }[];
+}
+
+export interface PublicTeamDirectoryItem {
+    id: string;
+    name: string;
+    shortName?: string;
+    slug?: string;
+    logoUrl?: string;
+    category?: string;
+    ageGroup?: string;
+    division?: string;
+    state?: string;
+    organisationName?: string;
+    playerCount: number;
+    tournaments?: {
+        id: string;
+        name: string;
+        status?: string;
+    }[];
+}
+
+export interface PublicPlayerDirectoryItem {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug?: string;
+    position?: string;
+    position2?: string;
+    jerseyNumber?: number;
+    currentTeamName?: string;
+    currentTeamId?: string;
+    organisationName?: string;
+    profilePictureUrl?: string;
+    state?: string;
+    city?: string;
+    gender?: string;
+    dateOfBirth?: string;
+    tournamentCount: number;
 }
 
 export const publicProfileApi = {
+    getTeams: async (params?: {
+        search?: string;
+        tournamentId?: string;
+        category?: string;
+        state?: string;
+    }): Promise<PublicTeamDirectoryItem[]> => {
+        const response = await publicApi.get('/teams', { params });
+        return response.data;
+    },
+    getPlayers: async (params?: {
+        search?: string;
+        tournamentId?: string;
+        teamId?: string;
+        position?: string;
+        state?: string;
+        limit?: number;
+    }): Promise<PublicPlayerDirectoryItem[]> => {
+        const response = await publicApi.get('/players', { params });
+        return response.data;
+    },
     getTeam: async (idOrSlug: string, tournamentId?: string): Promise<PublicTeamDetailResponse> => {
         const response = await publicApi.get(`/teams/${idOrSlug}`, {
             params: { tournamentId }

@@ -17,6 +17,8 @@ const lazyNamed = <T extends Record<string, any>, K extends keyof T>(
 const Home = lazy(() => import('@/pages/public/Home'));
 const TournamentsList = lazy(() => import('@/pages/public/TournamentsList'));
 const TournamentDetail = lazy(() => import('@/pages/public/TournamentDetail'));
+const TeamsList = lazy(() => import('@/pages/public/TeamsList'));
+const PlayersList = lazy(() => import('@/pages/public/PlayersList'));
 const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
@@ -125,8 +127,16 @@ export const router = createBrowserRouter([
                 element: <MediaPortal />,
             },
             {
+                path: '/teams',
+                element: <TeamsList />,
+            },
+            {
                 path: '/teams/:id',
                 element: <PublicTeamProfile />,
+            },
+            {
+                path: '/players',
+                element: <PlayersList />,
             },
             {
                 path: '/players/:id',

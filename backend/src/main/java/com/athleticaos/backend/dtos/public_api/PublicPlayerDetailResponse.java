@@ -33,7 +33,5 @@ public class PublicPlayerDetailResponse {
     private String profilePictureUrl;
     private String currentTeamName;
     private UUID currentTeamId;
-    
-    // Using existing summary DTOs if needed, or simply string mapping
-    // But for public, simple strings often suffice.
+    private java.util.List<PublicTeamDetailResponse.TournamentSummary> tournaments;
 }

@@ -33,4 +33,7 @@ public interface TournamentPlayerRepository extends JpaRepository<TournamentPlay
 
     @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(tp) > 0 THEN TRUE ELSE FALSE END FROM TournamentPlayer tp WHERE tp.player.person.id = :personId AND tp.player.deleted = false")
     boolean existsByPlayerPersonId(@org.springframework.data.repository.query.Param("personId") UUID personId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT tp.tournament FROM TournamentPlayer tp WHERE tp.player.id = :playerId AND tp.isActive = true AND tp.tournament.deleted = false AND tp.player.deleted = false")
+    List<com.athleticaos.backend.entities.Tournament> findActiveTournamentsByPlayerId(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
 }
