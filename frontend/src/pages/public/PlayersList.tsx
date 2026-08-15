@@ -33,7 +33,7 @@ export default function PlayersList() {
     const loadPlayers = async () => {
         try {
             setLoading(true);
-            const data = await publicProfileApi.getPlayers({ limit: 100 });
+            const data = await publicProfileApi.getPlayers({ limit: 1000 });
             setPlayers(data);
         } catch (error) {
             console.error('Failed to load players:', error);

@@ -26,4 +26,7 @@ public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, 
 
     @org.springframework.data.jpa.repository.Query("SELECT tt.tournament FROM TournamentTeam tt WHERE tt.team.id = :teamId AND tt.isActive = true AND tt.deleted = false")
     java.util.List<com.athleticaos.backend.entities.Tournament> findActiveTournamentsByTeamId(@org.springframework.data.repository.query.Param("teamId") UUID teamId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT tt.team.id, tt.tournament FROM TournamentTeam tt WHERE tt.isActive = true AND tt.deleted = false AND tt.tournament.deleted = false")
+    java.util.List<Object[]> findActiveTournamentsGroupedByTeam();
 }

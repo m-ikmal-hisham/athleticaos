@@ -77,16 +77,43 @@ public class PublicProfileController {
                 stream = stream.filter(t -> t.getState() != null && t.getState().equalsIgnoreCase(state));
             }
 
-            List<com.athleticaos.backend.dtos.public_api.PublicTeamSummaryResponse> responses = stream.map(t -> {
-                int playerCount = (int) playerTeamRepository.countByTeamId(t.getId());
-                List<PublicTeamDetailResponse.TournamentSummary> tournamentsList = tournamentTeamRepository
-                        .findActiveTournamentsByTeamId(t.getId()).stream()
-                        .map(tr -> PublicTeamDetailResponse.TournamentSummary.builder()
-                                .id(tr.getId())
-                                .name(tr.getName())
-                                .status(tr.getStatus() != null ? tr.getStatus().name() : null)
-                                .build())
-                        .collect(Collectors.toList());
+            List<com.athleticaos.backend.entities.Team> filteredTeams = stream.collect(Collectors.toList());
+
+            // 1. Batch query active player counts grouped by team
+            java.util.Map<UUID, Integer> playerCountMap = new java.util.HashMap<>();
+            try {
+                for (Object[] row : playerTeamRepository.countActivePlayersGroupedByTeam()) {
+                    if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                        playerCountMap.put((UUID) row[0], ((Number) row[1]).intValue());
+                    }
+                }
+            } catch (Exception ex) {
+                log.debug("Error batch counting players by team", ex);
+            }
+
+            // 2. Batch query active tournaments grouped by team
+            java.util.Map<UUID, List<PublicTeamDetailResponse.TournamentSummary>> tournamentsByTeamMap = new java.util.HashMap<>();
+            try {
+                for (Object[] row : tournamentTeamRepository.findActiveTournamentsGroupedByTeam()) {
+                    if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                        UUID tId = (UUID) row[0];
+                        com.athleticaos.backend.entities.Tournament tr = (com.athleticaos.backend.entities.Tournament) row[1];
+                        tournamentsByTeamMap.computeIfAbsent(tId, k -> new java.util.ArrayList<>()).add(
+                                PublicTeamDetailResponse.TournamentSummary.builder()
+                                        .id(tr.getId())
+                                        .name(tr.getName())
+                                        .status(tr.getStatus() != null ? tr.getStatus().name() : null)
+                                        .build()
+                        );
+                    }
+                }
+            } catch (Exception ex) {
+                log.debug("Error batch fetching tournaments by team", ex);
+            }
+
+            List<com.athleticaos.backend.dtos.public_api.PublicTeamSummaryResponse> responses = filteredTeams.stream().map(t -> {
+                int playerCount = playerCountMap.getOrDefault(t.getId(), 0);
+                List<PublicTeamDetailResponse.TournamentSummary> tournamentsList = tournamentsByTeamMap.getOrDefault(t.getId(), java.util.List.of());
 
                 return com.athleticaos.backend.dtos.public_api.PublicTeamSummaryResponse.builder()
                         .id(t.getId())
@@ -119,7 +146,7 @@ public class PublicProfileController {
             @RequestParam(required = false) UUID teamId,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String state,
-            @RequestParam(defaultValue = "60") int limit) {
+            @RequestParam(defaultValue = "1000") int limit) {
         try {
             List<com.athleticaos.backend.entities.Player> players;
 
@@ -135,7 +162,7 @@ public class PublicProfileController {
                         .filter(p -> p != null && !Boolean.TRUE.equals(p.getDeleted()))
                         .collect(Collectors.toList());
             } else {
-                players = playerRepository.findAllByDeletedFalseOrderByCreatedAtDesc();
+                players = playerRepository.findAllWithPersonByDeletedFalseOrderByCreatedAtDesc();
             }
 
             var stream = players.stream();
@@ -156,8 +183,48 @@ public class PublicProfileController {
                 stream = stream.filter(p -> p.getPerson() != null && state.equalsIgnoreCase(p.getPerson().getState()));
             }
 
-            List<com.athleticaos.backend.dtos.public_api.PublicPlayerListItemResponse> responses = stream
-                    .limit(Math.min(limit, 200))
+            List<com.athleticaos.backend.entities.Player> filteredPlayers = stream.collect(Collectors.toList());
+            if (filteredPlayers.isEmpty()) {
+                return ResponseEntity.ok(java.util.List.of());
+            }
+
+            List<UUID> playerIds = filteredPlayers.stream()
+                    .filter(p -> p != null && p.getId() != null)
+                    .map(p -> p.getId())
+                    .collect(Collectors.toList());
+
+            // 1. Batch query active PlayerTeam memberships
+            java.util.Map<UUID, com.athleticaos.backend.entities.PlayerTeam> primaryTeamMap = new java.util.HashMap<>();
+            try {
+                var ptList = playerTeamRepository.findByPlayerIdInAndIsActiveTrue(playerIds);
+                if (ptList != null) {
+                    for (var pt : ptList) {
+                        if (pt != null && pt.getPlayer() != null) {
+                            primaryTeamMap.putIfAbsent(pt.getPlayer().getId(), pt);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.debug("Error batch querying player teams", ex);
+            }
+
+            // 2. Batch query active tournament counts
+            java.util.Map<UUID, Integer> tournamentCountMap = new java.util.HashMap<>();
+            try {
+                var tCountList = tournamentPlayerRepository.countActiveTournamentsGroupedByPlayerIds(playerIds);
+                if (tCountList != null) {
+                    for (Object[] row : tCountList) {
+                        if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                            tournamentCountMap.put((UUID) row[0], ((Number) row[1]).intValue());
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.debug("Error batch counting tournaments by player", ex);
+            }
+
+            List<com.athleticaos.backend.dtos.public_api.PublicPlayerListItemResponse> responses = filteredPlayers.stream()
+                    .limit(Math.min(limit, 2000))
                     .map(p -> {
                         String pos = null;
                         Integer jersey = null;
@@ -165,9 +232,8 @@ public class PublicProfileController {
                         UUID currTeamId = null;
                         String orgName = null;
 
-                        var ptList = playerTeamRepository.findByPlayerIdAndIsActiveTrue(p.getId());
-                        if (ptList != null && !ptList.isEmpty()) {
-                            var pt = ptList.get(0);
+                        var pt = primaryTeamMap.get(p.getId());
+                        if (pt != null) {
                             pos = pt.getPosition();
                             jersey = pt.getJerseyNumber();
                             if (pt.getTeam() != null) {
@@ -179,10 +245,7 @@ public class PublicProfileController {
                             }
                         }
 
-                        int tCount = 0;
-                        try {
-                            tCount = tournamentPlayerRepository.findActiveTournamentsByPlayerId(p.getId()).size();
-                        } catch (Exception ignored) {}
+                        int tCount = tournamentCountMap.getOrDefault(p.getId(), 0);
 
                         return com.athleticaos.backend.dtos.public_api.PublicPlayerListItemResponse.builder()
                                 .id(p.getId())
