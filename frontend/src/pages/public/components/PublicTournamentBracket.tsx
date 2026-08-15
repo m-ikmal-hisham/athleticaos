@@ -3,6 +3,7 @@ import { PublicMatchSummary } from '../../../api/public.api';
 import { Trophy, CaretRight } from '@phosphor-icons/react';
 import { formatEnum } from '@/utils/formatters';
 import { groupMatchesIntoBrackets } from '@/utils/bracketUtils';
+import { getImageUrl } from '@/utils/image';
 
 interface PublicTournamentBracketProps {
     matches: PublicMatchSummary[];
@@ -99,7 +100,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                             <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                 <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                                                                     {match.homeTeamLogoUrl ? (
-                                                                        <img src={match.homeTeamLogoUrl} alt="" className="w-full h-full object-contain p-0.5" />
+                                                                        <img src={getImageUrl(match.homeTeamLogoUrl)} alt="" className="w-full h-full object-contain p-0.5" />
                                                                     ) : (
                                                                         <span className="text-[8px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
                                                                     )}
@@ -118,7 +119,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                             <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                 <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                                                                     {match.awayTeamLogoUrl ? (
-                                                                        <img src={match.awayTeamLogoUrl} alt="" className="w-full h-full object-contain p-0.5" />
+                                                                        <img src={getImageUrl(match.awayTeamLogoUrl)} alt="" className="w-full h-full object-contain p-0.5" />
                                                                     ) : (
                                                                         <span className="text-[8px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
                                                                     )}

@@ -15,6 +15,7 @@ public class PublicTeamSummary {
     private UUID id;
     private String name;
     private String slug;
+    private String shortName;
     private String logoUrl;
     /** Category the team is registered under, so the public site can filter by it the
      *  same way matches, standings and stats already do. Null for uncategorised teams. */

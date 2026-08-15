@@ -324,8 +324,11 @@ public class PublicTournamentController {
                         .id(tt.getTeam().getId())
                         .name(tt.getTeam().getName())
                         .slug(tt.getTeam().getSlug())
-                        .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(tt.getTeam().getOrganisation() != null ? tt.getTeam().getOrganisation().getLogoUrl()
-                                : null))
+                        .shortName(tt.getTeam().getShortName())
+                        .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(
+                                tt.getTeam().getLogoUrl() != null && !tt.getTeam().getLogoUrl().isBlank()
+                                        ? tt.getTeam().getLogoUrl()
+                                        : (tt.getTeam().getOrganisation() != null ? tt.getTeam().getOrganisation().getLogoUrl() : null)))
                         .categoryId(tt.getCategory() != null ? tt.getCategory().getId() : null)
                         .categoryName(tt.getCategory() != null ? tt.getCategory().getName() : null)
                         .build())

@@ -18,6 +18,7 @@ import { PublicTournamentPools } from './components/PublicTournamentPools';
 import { PublicTournamentBracket } from './components/PublicTournamentBracket';
 import { PublicStats } from './components/PublicStats';
 import { formatTournamentLevel, formatTeamShortName } from '@/utils/formatters';
+import { getImageUrl } from '@/utils/image';
 
 export default function TournamentDetail() {
     const navigate = useNavigate();
@@ -326,7 +327,7 @@ export default function TournamentDetail() {
                                             >
                                                 <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
                                                     {team.logoUrl ? (
-                                                        <img src={team.logoUrl} alt={team.name} className="w-full h-full object-contain p-1" />
+                                                        <img src={getImageUrl(team.logoUrl)} alt={team.name} className="w-full h-full object-contain p-1" />
                                                     ) : (
                                                         <span className="text-sm font-bold text-slate-400">{team.name?.slice(0, 2)?.toUpperCase()}</span>
                                                     )}
@@ -389,7 +390,7 @@ export default function TournamentDetail() {
                                                     >
                                                         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0">
                                                             {team.logoUrl ? (
-                                                                <img src={team.logoUrl} alt={team.name} className="w-full h-full object-contain p-0.5" />
+                                                                <img src={getImageUrl(team.logoUrl)} alt={team.name} className="w-full h-full object-contain p-0.5" />
                                                             ) : (
                                                                 <span className="text-[10px] font-bold text-slate-400">{team.name?.slice(0, 2)?.toUpperCase()}</span>
                                                             )}
@@ -508,7 +509,7 @@ export default function TournamentDetail() {
                                                             <div className="flex-1 flex items-center gap-2 min-w-0">
                                                                 <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
                                                                     {match.homeTeamLogoUrl ? (
-                                                                        <img src={match.homeTeamLogoUrl} alt={match.homeTeamName} className="w-full h-full object-contain p-0.5" />
+                                                                        <img src={getImageUrl(match.homeTeamLogoUrl)} alt={match.homeTeamName} className="w-full h-full object-contain p-0.5" />
                                                                     ) : (
                                                                         <span className="text-[10px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
                                                                     )}
@@ -550,7 +551,7 @@ export default function TournamentDetail() {
                                                                 </div>
                                                                 <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
                                                                     {match.awayTeamLogoUrl ? (
-                                                                        <img src={match.awayTeamLogoUrl} alt={match.awayTeamName} className="w-full h-full object-contain p-0.5" />
+                                                                        <img src={getImageUrl(match.awayTeamLogoUrl)} alt={match.awayTeamName} className="w-full h-full object-contain p-0.5" />
                                                                     ) : (
                                                                         <span className="text-[10px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
                                                                     )}
