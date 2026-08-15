@@ -660,6 +660,223 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 recentMatches);
         }
 
+        @Override
+        public PlayerStatsResponse getPlayerStats(UUID playerId, UUID tournamentId) {
+                if (tournamentId == null) {
+                        return getPlayerStatsAcrossTournaments(playerId);
+                }
+
+                java.util.Objects.requireNonNull(playerId, "Player ID must not be null");
+
+                // 1. Fetch Lineups filtered to this tournament
+                List<com.athleticaos.backend.entities.MatchLineup> allLineups = matchLineupRepository
+                                .findByPlayerId(playerId);
+                List<com.athleticaos.backend.entities.MatchLineup> lineups = allLineups.stream()
+                                .filter(l -> l.getMatch() != null && l.getMatch().getTournament() != null
+                                                && l.getMatch().getTournament().getId().equals(tournamentId))
+                                .collect(Collectors.toList());
+
+                // 2. Fetch Events filtered to this tournament
+                List<MatchEvent> allPlayerEvents = matchEventRepository.findByPlayer_Id(playerId);
+                List<MatchEvent> playerEvents = allPlayerEvents.stream()
+                                .filter(e -> e.getMatch() != null && e.getMatch().getTournament() != null
+                                                && e.getMatch().getTournament().getId().equals(tournamentId))
+                                .collect(Collectors.toList());
+
+                // 3. Aggregate Stats
+                int tries = countEvents(playerEvents, MatchEventType.TRY);
+                int conversions = countEvents(playerEvents, MatchEventType.CONVERSION);
+                int penalties = countEvents(playerEvents, MatchEventType.PENALTY);
+                int dropGoals = countEvents(playerEvents, MatchEventType.DROP_GOAL);
+                int yellowCards = countEvents(playerEvents, MatchEventType.YELLOW_CARD);
+                int redCards = countEvents(playerEvents, MatchEventType.RED_CARD);
+                int totalPoints = playerEvents.stream().mapToInt(this::getPointsForEvent).sum();
+
+                // 4. Get Player Details
+                String firstName = "";
+                String lastName = "";
+                String currentTeamName = null;
+
+                if (!lineups.isEmpty()) {
+                        Player p = lineups.get(0).getPlayer();
+                        firstName = p.getPerson().getFirstName();
+                        lastName = p.getPerson().getLastName();
+                        // For tournament-scoped, use the team from this tournament's lineups
+                        currentTeamName = lineups.stream()
+                                        .filter(l -> l.getTeam() != null)
+                                        .findFirst()
+                                        .map(l -> l.getTeam().getName())
+                                        .orElse(null);
+                } else if (!playerEvents.isEmpty()) {
+                        Player p = playerEvents.get(0).getPlayer();
+                        firstName = p.getPerson().getFirstName();
+                        lastName = p.getPerson().getLastName();
+                }
+
+                // 5. Generate Match History (tournament-scoped)
+                Map<UUID, List<MatchEvent>> playerEventsByMatch = playerEvents.stream()
+                                .collect(Collectors.groupingBy(e -> e.getMatch().getId()));
+
+                Map<UUID, List<MatchEvent>> allMatchEventsCache = new HashMap<>();
+
+                List<PlayerMatchStatsDTO> recentMatches = lineups.stream()
+                                .map(lineup -> {
+                                        Match match = lineup.getMatch();
+                                        List<MatchEvent> matchPlayerEvents = playerEventsByMatch
+                                                        .getOrDefault(match.getId(), new ArrayList<>());
+
+                                        List<MatchEvent> allMatchEvents = allMatchEventsCache.computeIfAbsent(
+                                                        match.getId(),
+                                                        id -> matchEventRepository.findAllByMatchIdIncludingDeleted(id));
+
+                                        int mPoints = matchPlayerEvents.stream()
+                                                        .mapToInt(this::getPointsForEvent).sum();
+                                        int mTries = (int) matchPlayerEvents.stream()
+                                                        .filter(e -> e.getEventType() == MatchEventType.TRY).count();
+                                        int mYellow = (int) matchPlayerEvents.stream()
+                                                        .filter(e -> e.getEventType() == MatchEventType.YELLOW_CARD)
+                                                        .count();
+                                        int mRed = (int) matchPlayerEvents.stream()
+                                                        .filter(e -> e.getEventType() == MatchEventType.RED_CARD)
+                                                        .count();
+
+                                        String opponentName = "Unknown";
+                                        String result = "N/A";
+
+                                        if (match.getHomeTeam() != null && match.getAwayTeam() != null) {
+                                                boolean isHome = match.getHomeTeam().getId()
+                                                                .equals(lineup.getTeam().getId());
+                                                opponentName = isHome ? match.getAwayTeam().getName()
+                                                                : match.getHomeTeam().getName();
+
+                                                if (match.getStatus() == MatchStatus.COMPLETED
+                                                                && match.getHomeScore() != null
+                                                                && match.getAwayScore() != null) {
+                                                        int myScore = isHome ? match.getHomeScore()
+                                                                        : match.getAwayScore();
+                                                        int opScore = isHome ? match.getAwayScore()
+                                                                        : match.getHomeScore();
+                                                        String winLoss = myScore > opScore ? "W"
+                                                                        : (myScore == opScore ? "D" : "L");
+                                                        result = winLoss + " " + myScore + "-" + opScore;
+                                                }
+                                        }
+
+                                        int duration = 80;
+                                        if (match.getTournament() != null) {
+                                                UUID catId = (match.getStage() != null
+                                                                && match.getStage().getCategory() != null)
+                                                                                ? match.getStage().getCategory().getId()
+                                                                                : (match.getCategory() != null
+                                                                                                ? match.getCategory()
+                                                                                                                .getId()
+                                                                                                : null);
+                                                com.athleticaos.backend.entities.TournamentFormatConfig config = match
+                                                                .getTournament().getFormatConfig(catId);
+                                                if (config != null) {
+                                                        duration = config.getMatchDurationMinutes();
+                                                }
+                                        }
+
+                                        boolean wasSubbedIn = allMatchEvents.stream()
+                                                        .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
+                                                                        && e.getRelatedPlayer() != null
+                                                                        && e.getRelatedPlayer().getId()
+                                                                                        .equals(playerId));
+
+                                        boolean wasOriginallyStarter;
+                                        if (wasSubbedIn) {
+                                                wasOriginallyStarter = false;
+                                        } else {
+                                                boolean wasSubbedOut = allMatchEvents.stream()
+                                                                .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
+                                                                                && e.getPlayer() != null
+                                                                                && e.getPlayer().getId()
+                                                                                                .equals(playerId));
+                                                if (wasSubbedOut) {
+                                                        wasOriginallyStarter = true;
+                                                } else {
+                                                        wasOriginallyStarter = lineup
+                                                                        .getRole() == com.athleticaos.backend.enums.LineupRole.STARTER
+                                                                        || lineup.isStarter();
+                                                }
+                                        }
+
+                                        com.athleticaos.backend.enums.LineupRole effectiveRole = wasOriginallyStarter
+                                                        ? com.athleticaos.backend.enums.LineupRole.STARTER
+                                                        : com.athleticaos.backend.enums.LineupRole.BENCH;
+
+                                        int minutesPlayedVal = calculateMinutesPlayed(match, playerId,
+                                                        effectiveRole, allMatchEvents, duration);
+                                        String minutesStr = String.valueOf(minutesPlayedVal);
+                                        if (!wasOriginallyStarter && minutesPlayedVal > 0) {
+                                                minutesStr += " (Sub)";
+                                        } else if (minutesPlayedVal == 0
+                                                        && effectiveRole == com.athleticaos.backend.enums.LineupRole.BENCH) {
+                                                minutesStr = "DNP";
+                                        }
+
+                                        String teamName = lineup.getTeam() != null
+                                                        ? lineup.getTeam().getName()
+                                                        : null;
+                                        String tournamentName = match.getTournament() != null
+                                                        ? match.getTournament().getName()
+                                                        : null;
+
+                                        return new PlayerMatchStatsDTO(
+                                                        match.getId(),
+                                                        match.getMatchDate(),
+                                                        opponentName,
+                                                        result,
+                                                        mTries,
+                                                        mPoints,
+                                                        mYellow,
+                                                        mRed,
+                                                        minutesStr,
+                                                        teamName,
+                                                        tournamentName);
+                                })
+                                .sorted((m1, m2) -> {
+                                        if (m1.matchDate() == null || m2.matchDate() == null)
+                                                return 0;
+                                        return m2.matchDate().compareTo(m1.matchDate());
+                                })
+                                .collect(Collectors.toList());
+
+                int matchesPlayed = (int) recentMatches.stream()
+                                .filter(m -> !m.minutesPlayed().equals("DNP"))
+                                .count();
+
+                int totalMinutesPlayed = recentMatches.stream()
+                                .mapToInt(m -> {
+                                        try {
+                                                String minStr = m.minutesPlayed().split(" ")[0];
+                                                if (minStr.equals("DNP"))
+                                                        return 0;
+                                                return Integer.parseInt(minStr);
+                                        } catch (NumberFormatException e) {
+                                                return 0;
+                                        }
+                                })
+                                .sum();
+
+                return new PlayerStatsResponse(
+                                playerId,
+                                firstName,
+                                lastName,
+                                currentTeamName,
+                                matchesPlayed,
+                                tries,
+                                conversions,
+                                penalties,
+                                dropGoals,
+                                yellowCards,
+                                redCards,
+                                totalPoints,
+                                totalMinutesPlayed,
+                                recentMatches);
+        }
+
         /**
          * Calculates the actual minutes a player was on the field during a match.
          * 

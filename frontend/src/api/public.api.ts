@@ -262,7 +262,7 @@ export interface PublicTeamDetailResponse {
     state?: string;
     organisationName?: string;
     players: PublicPlayerSummary[];
-    tournaments?: { id: string; name: string }[];
+    tournaments?: { id: string; name: string; status?: string }[];
 }
 
 export interface PublicPlayerDetailResponse {
@@ -296,12 +296,16 @@ export const publicProfileApi = {
         });
         return response.data;
     },
-    getPlayer: async (idOrSlug: string): Promise<PublicPlayerDetailResponse> => {
-        const response = await publicApi.get(`/players/${idOrSlug}`);
+    getPlayer: async (idOrSlug: string, tournamentId?: string): Promise<PublicPlayerDetailResponse> => {
+        const response = await publicApi.get(`/players/${idOrSlug}`, {
+            params: { tournamentId }
+        });
         return response.data;
     },
-    getPlayerStats: async (idOrSlug: string): Promise<any> => {
-        const response = await publicApi.get(`/players/${idOrSlug}/stats`);
+    getPlayerStats: async (idOrSlug: string, tournamentId?: string): Promise<any> => {
+        const response = await publicApi.get(`/players/${idOrSlug}/stats`, {
+            params: { tournamentId }
+        });
         return response.data;
     },
     getTeamStats: async (idOrSlug: string, tournamentId?: string): Promise<any> => {

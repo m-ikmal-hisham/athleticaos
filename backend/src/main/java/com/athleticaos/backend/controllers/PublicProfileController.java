@@ -63,6 +63,7 @@ public class PublicProfileController {
                 .map(t -> PublicTeamDetailResponse.TournamentSummary.builder()
                     .id(t.getId())
                     .name(t.getName())
+                    .status(t.getStatus() != null ? t.getStatus().name() : null)
                     .build())
                 .collect(Collectors.toList());
                 
@@ -217,10 +218,12 @@ public class PublicProfileController {
 
     @GetMapping("/players/{idOrSlug}/stats")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public ResponseEntity<?> getPublicPlayerStats(@PathVariable String idOrSlug) {
+    public ResponseEntity<?> getPublicPlayerStats(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID tournamentId) {
         try {
             PlayerResponse player = fetchPlayer(idOrSlug);
-            var stats = statisticsService.getPlayerStatsAcrossTournaments(player.id());
+            var stats = statisticsService.getPlayerStats(player.id(), tournamentId);
             if (stats == null) {
                 return ResponseEntity.ok(java.util.Map.of(
                     "matchesPlayed", 0, "tries", 0, "conversions", 0,

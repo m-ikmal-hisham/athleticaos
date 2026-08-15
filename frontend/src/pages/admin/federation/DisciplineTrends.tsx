@@ -29,6 +29,7 @@ import {
     getActiveTournamentsHealth,
     getDisciplineSummary
 } from '@/api/federation.api';
+import { CompetitionFilterBar } from '@/components/common/CompetitionFilterBar';
 
 export const DisciplineTrends = () => {
     const [tournaments, setTournaments] = useState<CompetitionHealthSummary[]>([]);
@@ -76,7 +77,7 @@ export const DisciplineTrends = () => {
 
     return (
         <div className="space-y-6 p-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-600">
                         Discipline Trends
@@ -85,25 +86,19 @@ export const DisciplineTrends = () => {
                         Monitor card infractions and team conduct across tournaments.
                     </p>
                 </div>
-                <div className="w-full md:w-64">
-                    <div className="relative">
-                        <select
-                            aria-label="Filter by Tournament"
-                            className="w-full h-10 px-3 py-2 text-sm rounded-md border border-glass-border bg-glass-panel text-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
-                            value={selectedTournament || ''}
-                            onChange={(e) => setSelectedTournament(e.target.value)}
-                        >
-                            {!selectedTournament && <option value="" disabled>Select Tournament</option>}
-                            {tournaments.map((t) => (
-                                <option key={t.tournamentId} value={t.tournamentId}>
-                                    {t.tournamentName}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-muted">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                    </div>
+                <div>
+                    <CompetitionFilterBar
+                        tournaments={tournaments.map(t => ({
+                            id: t.tournamentId,
+                            name: t.tournamentName,
+                        }))}
+                        selectedTournamentId={selectedTournament}
+                        onSelect={(id) => {
+                            if (id) setSelectedTournament(id);
+                        }}
+                        allLabel={tournaments[0]?.tournamentName || 'Tournament'}
+                        variant="admin"
+                    />
                 </div>
             </div>
 

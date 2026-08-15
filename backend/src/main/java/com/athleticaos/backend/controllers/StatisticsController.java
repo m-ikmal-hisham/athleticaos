@@ -60,14 +60,15 @@ public class StatisticsController {
     @GetMapping("/players/{id}")
     @PreAuthorize("isAuthenticated()")
     public PlayerStatsResponse getPlayerStatsAcrossTournaments(
-            @PathVariable String id) {
+            @PathVariable String id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID tournamentId) {
         UUID uuid;
         try {
             uuid = UUID.fromString(id);
         } catch (IllegalArgumentException e) {
             uuid = playerService.getPlayerBySlug(id).id();
         }
-        return statisticsService.getPlayerStatsAcrossTournaments(uuid);
+        return statisticsService.getPlayerStats(uuid, tournamentId);
     }
 
     @GetMapping("/teams/{teamId}")

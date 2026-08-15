@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
@@ -10,6 +10,7 @@ import { calculateAge } from '@/utils/date';
 import { showToast } from '@/lib/customToast';
 import { getImageUrl } from '@/utils/image';
 import { formatGender } from '@/utils/formatters';
+import { CompetitionFilterBar, TournamentFilterOption } from '@/components/common/CompetitionFilterBar';
 
 interface PlayerStats {
     matchesPlayed: number;
@@ -57,6 +58,8 @@ interface PlayerDetail {
 export const PlayerProfile = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const initialTournamentId = searchParams.get('tournamentId') || null;
     const { user } = useAuthStore();
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
@@ -66,6 +69,7 @@ export const PlayerProfile = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(initialTournamentId);
 
     useEffect(() => {
         const loadData = async () => {
@@ -74,7 +78,7 @@ export const PlayerProfile = () => {
                 setLoading(true);
                 const [playerRes, statsRes] = await Promise.all([
                     fetchPlayerById(id),
-                    fetchPlayerStats(id).catch(() => ({ data: null }))
+                    fetchPlayerStats(id, selectedTournamentId || undefined).catch(() => ({ data: null }))
                 ]);
                 setPlayer(playerRes.data);
                 setStats(statsRes.data);
@@ -87,7 +91,22 @@ export const PlayerProfile = () => {
             }
         };
         loadData();
-    }, [id, navigate]);
+    }, [id, navigate, selectedTournamentId]);
+
+    // Derive tournament list from recent matches
+    const playerTournaments: TournamentFilterOption[] = useMemo(() => {
+        if (!stats?.recentMatches) return [];
+        const seen = new Map<string, TournamentFilterOption>();
+        stats.recentMatches.forEach((m: any) => {
+            if (m.tournamentName && !seen.has(m.tournamentName)) {
+                seen.set(m.tournamentName, {
+                    id: m.tournamentName, // Use name as key since we don't have IDs in match history
+                    name: m.tournamentName,
+                });
+            }
+        });
+        return Array.from(seen.values());
+    }, [stats]);
 
     const handleConfirmDelete = async () => {
         if (!id) return;
@@ -247,6 +266,30 @@ export const PlayerProfile = () => {
                             </button>
                         ))}
                     </div>
+
+                    {/* Tournament Filter */}
+                    {playerTournaments.length > 0 ? (
+                        <div className="pt-2">
+                            <CompetitionFilterBar
+                                tournaments={playerTournaments}
+                                selectedTournamentId={selectedTournamentId}
+                                onSelect={(id) => setSelectedTournamentId(id)}
+                                allLabel="All-Time Career"
+                                variant="admin"
+                            />
+                        </div>
+                    ) : selectedTournamentId ? (
+                        <div className="flex items-center gap-3 px-1 pt-2">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Viewing:</span>
+                            <span className="text-sm font-medium text-primary-500">Tournament-Scoped Stats</span>
+                            <button
+                                onClick={() => setSelectedTournamentId(null)}
+                                className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
+                            >
+                                View All-Time Career
+                            </button>
+                        </div>
+                    ) : null}
 
                     {stats ? (
                         <>

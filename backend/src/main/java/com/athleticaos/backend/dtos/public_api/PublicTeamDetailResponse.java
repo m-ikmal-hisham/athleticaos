@@ -32,6 +32,7 @@ public class PublicTeamDetailResponse {
     public static class TournamentSummary {
         private UUID id;
         private String name;
+        private String status;
     }
     private List<TournamentSummary> tournaments;
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicTeamDetailResponse } from '../../api/public.api';
 import { ArrowLeft, Users, Trophy, Shield, Hash, TrendingUp, Target, Zap } from 'lucide-react';
 import { RosterList } from '../../components/RosterList';
+import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 
 export function PublicTeamProfile() {
     const { id } = useParams<{ id: string }>();
@@ -13,7 +14,9 @@ export function PublicTeamProfile() {
     const [error, setError] = useState<string | null>(null);
     const [playerSearch, setPlayerSearch] = useState('');
     const [rosterView, setRosterView] = useState<'cards' | 'stats'>('cards');
-    const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+    const [searchParams] = useSearchParams();
+    const initialTournamentId = searchParams.get('tournamentId') || '';
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string>(initialTournamentId);
 
     useEffect(() => {
         const fetchTeam = async () => {
@@ -225,21 +228,18 @@ export function PublicTeamProfile() {
                                     </button>
                                 </div>
                                 {team.tournaments && team.tournaments.length > 0 && (
-                                    <div className="flex items-center gap-2 px-4">
-                                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filter by Tournament:</span>
-                                        <select
-                                            value={selectedTournamentId}
-                                            onChange={(e) => setSelectedTournamentId(e.target.value)}
-                                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        >
-                                            <option value="">All Tournaments (Global)</option>
-                                            {team.tournaments.map((t) => (
-                                                <option key={t.id} value={t.id}>
-                                                    {t.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    <CompetitionFilterBar
+                                        tournaments={team.tournaments.map(t => ({
+                                            id: t.id,
+                                            name: t.name,
+                                            status: t.status,
+                                        }))}
+                                        selectedTournamentId={selectedTournamentId || null}
+                                        onSelect={(id) => setSelectedTournamentId(id || '')}
+                                        allLabel="All Tournaments (Global)"
+                                        variant="public"
+                                        className="px-4"
+                                    />
                                 )}
                             </div>
 
@@ -249,7 +249,7 @@ export function PublicTeamProfile() {
                                         {filteredPlayers.map((player) => (
                                             <div 
                                                 key={player.id} 
-                                                onClick={() => navigate(`/players/${player.id}`)}
+                                                onClick={() => navigate(`/players/${player.id}${selectedTournamentId ? `?tournamentId=${selectedTournamentId}` : ''}`)}
                                                 className="flex items-center gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-md transition-all cursor-pointer group"
                                             >
                                                 <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center overflow-hidden relative">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
 import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target, Clock } from 'lucide-react';
 import { calculateAge } from '@/utils/date';
@@ -11,6 +11,9 @@ export function PublicPlayerProfile() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchParams] = useSearchParams();
+    const initialTournamentId = searchParams.get('tournamentId') || null;
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(initialTournamentId);
 
     useEffect(() => {
         const fetchPlayer = async () => {
@@ -18,8 +21,8 @@ export function PublicPlayerProfile() {
             try {
                 setLoading(true);
                 const [data, statsData] = await Promise.all([
-                    publicProfileApi.getPlayer(id),
-                    publicProfileApi.getPlayerStats(id).catch(() => null),
+                    publicProfileApi.getPlayer(id, selectedTournamentId || undefined),
+                    publicProfileApi.getPlayerStats(id, selectedTournamentId || undefined).catch(() => null),
                 ]);
                 setPlayer(data);
                 setStats(statsData);
@@ -32,7 +35,7 @@ export function PublicPlayerProfile() {
         };
 
         fetchPlayer();
-    }, [id]);
+    }, [id, selectedTournamentId]);
 
     if (loading) {
         return (
@@ -237,12 +240,24 @@ export function PublicPlayerProfile() {
                     )}
                 </div>
 
-                {/* Player Career Statistics */}
+                {/* Career Statistics / Tournament Statistics Section */}
                 {hasStats && (
                     <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50">
-                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                            <Trophy className="w-5 h-5 text-yellow-500" /> Career Statistics
-                        </h2>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                                <Trophy className="w-5 h-5 text-yellow-500" />
+                                {selectedTournamentId ? 'Tournament Performance' : 'Career Statistics'}
+                            </h2>
+                            {selectedTournamentId && (
+                                <button
+                                    onClick={() => setSelectedTournamentId(null)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                >
+                                    <Trophy className="w-3 h-3" />
+                                    View All-Time Career
+                                </button>
+                            )}
+                        </div>
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">

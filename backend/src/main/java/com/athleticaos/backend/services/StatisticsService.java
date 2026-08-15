@@ -20,6 +20,13 @@ public interface StatisticsService {
 
     PlayerStatsResponse getPlayerStatsAcrossTournaments(UUID playerId);
 
+    /**
+     * Get player stats optionally scoped to a specific tournament.
+     * When tournamentId is null, returns career stats across all tournaments.
+     * When tournamentId is provided, returns stats for that tournament only.
+     */
+    PlayerStatsResponse getPlayerStats(UUID playerId, UUID tournamentId);
+
     TeamStatsResponse getTeamStats(UUID teamId, UUID tournamentId);
 
     // Centralized Scoring Logic

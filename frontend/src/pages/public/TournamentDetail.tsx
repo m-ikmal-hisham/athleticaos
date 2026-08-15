@@ -322,7 +322,7 @@ export default function TournamentDetail() {
                                             .map((team) => (
                                             <div
                                                 key={team.id}
-                                                onClick={() => navigate(`/teams/${team.slug || team.id}`)}
+                                                onClick={() => navigate(`/teams/${team.slug || team.id}?tournamentId=${tournament?.id}`)}
                                                 className="group flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer"
                                             >
                                                 <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
@@ -417,7 +417,7 @@ export default function TournamentDetail() {
                                                                     {roster.map((player) => (
                                                                         <div
                                                                             key={player.id}
-                                                                            onClick={() => navigate(`/players/${player.id}`)}
+                                                                            onClick={() => navigate(`/players/${player.id}?tournamentId=${tournament?.id}`)}
                                                                             className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group"
                                                                         >
                                                                             <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0 text-xs font-bold text-slate-400">
@@ -441,7 +441,7 @@ export default function TournamentDetail() {
                                                             {/* Link to full team page */}
                                                             <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-2.5">
                                                                 <button
-                                                                    onClick={() => navigate(`/teams/${team.slug || team.id}`)}
+                                                                    onClick={() => navigate(`/teams/${team.slug || team.id}?tournamentId=${tournament?.id}`)}
                                                                     className="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1 transition-colors"
                                                                 >
                                                                     View full team profile <CaretRight className="w-3 h-3" />
