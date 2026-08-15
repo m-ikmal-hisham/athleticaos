@@ -168,8 +168,8 @@ export function PublicTeamProfile() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
                     {/* Main Content (Roster) */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50">
+                    <div className="lg:col-span-2 space-y-8 min-w-0">
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50 min-w-0">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                                 <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                                     <Users className="w-5 h-5 text-primary" /> Active Roster
@@ -204,8 +204,8 @@ export function PublicTeamProfile() {
                             )}
 
                             {/* Roster View Selector Tabs & Tournament Filter */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-700 mb-6 pb-2 gap-4">
-                                <div className="flex">
+                            <div className="flex flex-col xl:flex-row xl:items-center justify-between border-b border-slate-100 dark:border-slate-700 mb-6 pb-2 gap-4 min-w-0">
+                                <div className="flex shrink-0">
                                     <button
                                         onClick={() => setRosterView('cards')}
                                         className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
@@ -228,18 +228,20 @@ export function PublicTeamProfile() {
                                     </button>
                                 </div>
                                 {team.tournaments && team.tournaments.length > 0 && (
-                                    <CompetitionFilterBar
-                                        tournaments={team.tournaments.map(t => ({
-                                            id: t.id,
-                                            name: t.name,
-                                            status: t.status,
-                                        }))}
-                                        selectedTournamentId={selectedTournamentId || null}
-                                        onSelect={(id) => setSelectedTournamentId(id || '')}
-                                        allLabel="All Tournaments (Global)"
-                                        variant="public"
-                                        className="px-4"
-                                    />
+                                    <div className="min-w-0 max-w-full">
+                                        <CompetitionFilterBar
+                                            tournaments={team.tournaments.map(t => ({
+                                                id: t.id,
+                                                name: t.name,
+                                                status: t.status,
+                                            }))}
+                                            selectedTournamentId={selectedTournamentId || null}
+                                            onSelect={(id) => setSelectedTournamentId(id || '')}
+                                            allLabel="All Tournaments (Global)"
+                                            variant="public"
+                                            maxChips={2}
+                                        />
+                                    </div>
                                 )}
                             </div>
 

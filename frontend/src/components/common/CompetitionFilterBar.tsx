@@ -102,7 +102,7 @@ export function CompetitionFilterBar({
 
     // Pill classes
     const basePill = clsx(
-        'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border whitespace-nowrap cursor-pointer select-none',
+        'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border whitespace-nowrap cursor-pointer select-none shrink-0',
         'active:scale-95'
     );
 
@@ -121,10 +121,10 @@ export function CompetitionFilterBar({
     };
 
     return (
-        <div className={clsx('relative', className)}>
+        <div className={clsx('relative min-w-0 max-w-full', className)}>
             <div
                 ref={scrollRef}
-                className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 px-0.5"
+                className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 px-0.5 max-w-full"
             >
                 {/* All-Time / Global chip */}
                 <button

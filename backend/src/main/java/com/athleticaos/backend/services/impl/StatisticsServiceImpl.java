@@ -602,6 +602,12 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         String tournamentName = match.getTournament() != null
                                                         ? match.getTournament().getName()
                                                         : null;
+                                        UUID tId = match.getTournament() != null
+                                                        ? match.getTournament().getId()
+                                                        : null;
+                                        String tStatus = match.getTournament() != null && match.getTournament().getStatus() != null
+                                                        ? match.getTournament().getStatus().name()
+                                                        : null;
 
                                         return new PlayerMatchStatsDTO(
                                                         match.getId(),
@@ -614,7 +620,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                         mRed,
                                                         minutesStr,
                                                         teamName,
-                                                        tournamentName);
+                                                        tournamentName,
+                                                        tId,
+                                                        tStatus);
                                 })
                                 .sorted((m1, m2) -> {
                                         if (m1.matchDate() == null || m2.matchDate() == null)
@@ -822,6 +830,12 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         String tournamentName = match.getTournament() != null
                                                         ? match.getTournament().getName()
                                                         : null;
+                                        UUID tId = match.getTournament() != null
+                                                        ? match.getTournament().getId()
+                                                        : null;
+                                        String tStatus = match.getTournament() != null && match.getTournament().getStatus() != null
+                                                        ? match.getTournament().getStatus().name()
+                                                        : null;
 
                                         return new PlayerMatchStatsDTO(
                                                         match.getId(),
@@ -834,7 +848,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                         mRed,
                                                         minutesStr,
                                                         teamName,
-                                                        tournamentName);
+                                                        tournamentName,
+                                                        tId,
+                                                        tStatus);
                                 })
                                 .sorted((m1, m2) -> {
                                         if (m1.matchDate() == null || m2.matchDate() == null)

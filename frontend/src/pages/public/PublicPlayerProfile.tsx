@@ -371,6 +371,24 @@ export function PublicPlayerProfile() {
                         )}
                     </div>
                 )}
+
+                {/* Empty State when selected tournament has no match appearances */}
+                {selectedTournamentId && !hasStats && (
+                    <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-8 text-center shadow-sm border border-slate-200 dark:border-slate-700/50">
+                        <Trophy className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No Matches Recorded</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+                            No match appearances or scoring statistics recorded in this tournament yet.
+                        </p>
+                        <button
+                            onClick={() => handleTournamentSelect(null)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors shadow-md shadow-blue-600/20"
+                        >
+                            <Trophy className="w-4 h-4" />
+                            View All-Time Career
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

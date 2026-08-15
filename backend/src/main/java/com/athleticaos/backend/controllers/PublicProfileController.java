@@ -146,7 +146,7 @@ public class PublicProfileController {
             @RequestParam(required = false) UUID teamId,
             @RequestParam(required = false) String position,
             @RequestParam(required = false) String state,
-            @RequestParam(defaultValue = "1000") int limit) {
+            @RequestParam(required = false) Integer limit) {
         try {
             List<com.athleticaos.backend.entities.Player> players;
 
@@ -223,8 +223,7 @@ public class PublicProfileController {
                 log.debug("Error batch counting tournaments by player", ex);
             }
 
-            List<com.athleticaos.backend.dtos.public_api.PublicPlayerListItemResponse> responses = filteredPlayers.stream()
-                    .limit(Math.min(limit, 2000))
+            var respStream = filteredPlayers.stream()
                     .map(p -> {
                         String pos = null;
                         Integer jersey = null;
@@ -270,9 +269,13 @@ public class PublicProfileController {
                             return res.getPosition() != null && res.getPosition().equalsIgnoreCase(position);
                         }
                         return true;
-                    })
-                    .collect(Collectors.toList());
+                    });
 
+            if (limit != null && limit > 0) {
+                respStream = respStream.limit(limit);
+            }
+
+            List<com.athleticaos.backend.dtos.public_api.PublicPlayerListItemResponse> responses = respStream.collect(Collectors.toList());
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
             log.error("Error fetching public players list", e);

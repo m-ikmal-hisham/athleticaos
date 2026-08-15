@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
@@ -34,6 +34,8 @@ interface PlayerStats {
         minutesPlayed: string;
         teamName?: string;
         tournamentName?: string;
+        tournamentId?: string;
+        tournamentStatus?: string;
     }>;
 }
 
@@ -58,30 +60,69 @@ interface PlayerDetail {
 export const PlayerProfile = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const initialTournamentId = searchParams.get('tournamentId') || null;
     const { user } = useAuthStore();
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
     const [player, setPlayer] = useState<PlayerDetail | null>(null);
     const [stats, setStats] = useState<PlayerStats | null>(null);
+    const [availableTournaments, setAvailableTournaments] = useState<TournamentFilterOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(initialTournamentId);
 
+    // Keep state in sync with URL search params (e.g. browser back/forward)
+    useEffect(() => {
+        const param = searchParams.get('tournamentId');
+        setSelectedTournamentId(param || null);
+    }, [searchParams]);
+
+    const handleTournamentSelect = (tournamentId: string | null) => {
+        setSelectedTournamentId(tournamentId);
+        if (tournamentId) {
+            setSearchParams({ tournamentId });
+        } else {
+            setSearchParams({});
+        }
+    };
+
     useEffect(() => {
         const loadData = async () => {
             if (!id) return;
             try {
                 setLoading(true);
-                const [playerRes, statsRes] = await Promise.all([
+                const [playerRes, allCareerStatsRes, currentStatsRes] = await Promise.all([
                     fetchPlayerById(id),
-                    fetchPlayerStats(id, selectedTournamentId || undefined).catch(() => ({ data: null }))
+                    fetchPlayerStats(id).catch(() => ({ data: null })),
+                    selectedTournamentId ? fetchPlayerStats(id, selectedTournamentId).catch(() => ({ data: null })) : Promise.resolve(null)
                 ]);
+
                 setPlayer(playerRes.data);
-                setStats(statsRes.data);
+
+                // Populate available tournaments from all-career matches with true UUIDs
+                const allMatches = allCareerStatsRes.data?.recentMatches || [];
+                const seen = new Map<string, TournamentFilterOption>();
+                allMatches.forEach((m: any) => {
+                    const tId = m.tournamentId;
+                    if (tId && m.tournamentName && !seen.has(tId)) {
+                        seen.set(tId, {
+                            id: tId,
+                            name: m.tournamentName,
+                            status: m.tournamentStatus,
+                        });
+                    }
+                });
+                setAvailableTournaments(Array.from(seen.values()));
+
+                // Set active stats (scoped or all career)
+                if (selectedTournamentId && currentStatsRes) {
+                    setStats(currentStatsRes.data);
+                } else {
+                    setStats(allCareerStatsRes.data);
+                }
             } catch (error) {
                 console.error("Failed to load player profile", error);
                 showToast.error("Failed to load player profile");
@@ -92,21 +133,6 @@ export const PlayerProfile = () => {
         };
         loadData();
     }, [id, navigate, selectedTournamentId]);
-
-    // Derive tournament list from recent matches
-    const playerTournaments: TournamentFilterOption[] = useMemo(() => {
-        if (!stats?.recentMatches) return [];
-        const seen = new Map<string, TournamentFilterOption>();
-        stats.recentMatches.forEach((m: any) => {
-            if (m.tournamentName && !seen.has(m.tournamentName)) {
-                seen.set(m.tournamentName, {
-                    id: m.tournamentName, // Use name as key since we don't have IDs in match history
-                    name: m.tournamentName,
-                });
-            }
-        });
-        return Array.from(seen.values());
-    }, [stats]);
 
     const handleConfirmDelete = async () => {
         if (!id) return;
@@ -268,12 +294,12 @@ export const PlayerProfile = () => {
                     </div>
 
                     {/* Tournament Filter */}
-                    {playerTournaments.length > 0 ? (
-                        <div className="pt-2">
+                    {availableTournaments.length > 0 ? (
+                        <div className="pt-2 min-w-0 max-w-full">
                             <CompetitionFilterBar
-                                tournaments={playerTournaments}
+                                tournaments={availableTournaments}
                                 selectedTournamentId={selectedTournamentId}
-                                onSelect={(id) => setSelectedTournamentId(id)}
+                                onSelect={(id) => handleTournamentSelect(id)}
                                 allLabel="All-Time Career"
                                 variant="admin"
                             />
@@ -283,7 +309,7 @@ export const PlayerProfile = () => {
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Viewing:</span>
                             <span className="text-sm font-medium text-primary-500">Tournament-Scoped Stats</span>
                             <button
-                                onClick={() => setSelectedTournamentId(null)}
+                                onClick={() => handleTournamentSelect(null)}
                                 className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
                             >
                                 View All-Time Career
