@@ -482,7 +482,7 @@ export default function TournamentDetail() {
                                                 {dateMatches.map(match => (
                                                     <Link
                                                         key={match.id}
-                                                        to={`/matches/${match.code || match.id}`}
+                                                        to={`/matches/${match.id}`}
                                                         className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden"
                                                     >
                                                         {/* Status Indicator */}

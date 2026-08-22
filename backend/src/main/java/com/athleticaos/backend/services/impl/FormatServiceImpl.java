@@ -401,7 +401,7 @@ public class FormatServiceImpl implements FormatService {
                         .kickOffTime(kickOffTime)
                         .status(MatchStatus.SCHEDULED)
                         .phase(stage.getName())
-                        .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
+                        .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 truncate(stage.getName().replace(" ", ""), 10),
                                 matchCounter + 1))
                         .matchNumber(nextMatchNumber(tournament))
@@ -410,6 +410,31 @@ public class FormatServiceImpl implements FormatService {
                 matchCounter++;
             }
         }
+    }
+
+    private String categoryAbbr(TournamentCategory category) {
+        if (category == null || category.getName() == null || category.getName().isBlank()) {
+            return "";
+        }
+        String[] words = category.getName().split("[\\s\\-_]+");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            String cleaned = word.replaceAll("[^a-zA-Z0-9]", "");
+            if (!cleaned.isEmpty()) {
+                sb.append(Character.toUpperCase(cleaned.charAt(0)));
+            }
+        }
+        String abbr = sb.toString();
+        return abbr.length() > 6 ? abbr.substring(0, 6) : abbr;
+    }
+
+    private String matchCodePrefix(Tournament tournament, TournamentCategory category, int slugLimit) {
+        String slug = truncate(tournament.getSlug(), slugLimit);
+        String catAbbr = categoryAbbr(category);
+        if (catAbbr.isEmpty()) {
+            return slug;
+        }
+        return slug + "-" + catAbbr;
     }
 
     private String truncate(String text, int length) {

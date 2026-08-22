@@ -372,7 +372,7 @@ public class BracketServiceImpl implements BracketService {
                         .venue(tournament.getVenue())
                         .status(MatchStatus.SCHEDULED)
                         .phase(truncate(poolName, 50))
-                        .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
+                        .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 truncate(poolName.replace(" ", ""), 10),
                                 i * teams.size() + j))
                         .matchNumber(nextMatchNumber(tournament))
@@ -453,7 +453,7 @@ public class BracketServiceImpl implements BracketService {
                         .venue(tournament.getVenue())
                         .status(MatchStatus.SCHEDULED)
                         .phase(stageInfo.name)
-                        .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
+                        .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 stageInfo.abbreviation, i + 1))
                         .matchNumber(nextMatchNumber(tournament))
                         .build();
@@ -744,7 +744,7 @@ public class BracketServiceImpl implements BracketService {
                     .venue(tournament.getVenue())
                     .status(MatchStatus.SCHEDULED)
                     .phase(stage.getName())
-                    .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20), abbr, i + 1))
+                    .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20), abbr, i + 1))
                     .matchNumber(nextMatchNumber(tournament))
                     .homeTeamPlaceholder("TBD")
                     .awayTeamPlaceholder("TBD")
@@ -906,7 +906,7 @@ public class BracketServiceImpl implements BracketService {
                     .venue(tournament.getVenue())
                     .status(MatchStatus.SCHEDULED)
                     .phase(truncate(name, 50))
-                    .matchCode(String.format("%s-%s%d", truncate(tournament.getSlug(), 30), getStageAbbreviation(type),
+                    .matchCode(String.format("%s-%s%d", matchCodePrefix(tournament, stage.getCategory(), 30), getStageAbbreviation(type),
                             (i + 1)))
                     .matchNumber(nextMatchNumber(tournament))
                     .build();
@@ -1197,7 +1197,7 @@ public class BracketServiceImpl implements BracketService {
                         .venue(tournament.getVenue())
                         .status(MatchStatus.SCHEDULED)
                         .phase(truncate(stageInfo.name, 50))
-                        .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
+                        .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 stageInfo.abbreviation, i + 1))
                         .matchNumber(nextMatchNumber(tournament))
                         .build();
@@ -1602,6 +1602,41 @@ public class BracketServiceImpl implements BracketService {
         return value.substring(0, limit);
     }
 
+    /**
+     * Generates a short abbreviation from a category name for use in match codes.
+     * Takes the first letter of each word and strips non-alphanumeric characters,
+     * capped at 6 characters. Returns empty string if category is null.
+     * Example: "Men's U21 7s - Women" → "MU27W"
+     */
+    private String categoryAbbr(TournamentCategory category) {
+        if (category == null || category.getName() == null || category.getName().isBlank()) {
+            return "";
+        }
+        String[] words = category.getName().split("[\\s\\-_]+");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            String cleaned = word.replaceAll("[^a-zA-Z0-9]", "");
+            if (!cleaned.isEmpty()) {
+                sb.append(Character.toUpperCase(cleaned.charAt(0)));
+            }
+        }
+        String abbr = sb.toString();
+        return abbr.length() > 6 ? abbr.substring(0, 6) : abbr;
+    }
+
+    /**
+     * Builds a match code prefix that includes the tournament slug and, when present,
+     * a category abbreviation to ensure uniqueness across categories.
+     */
+    private String matchCodePrefix(Tournament tournament, TournamentCategory category, int slugLimit) {
+        String slug = truncate(tournament.getSlug(), slugLimit);
+        String catAbbr = categoryAbbr(category);
+        if (catAbbr.isEmpty()) {
+            return slug;
+        }
+        return slug + "-" + catAbbr;
+    }
+
     /** Returns the next sequential match number for the given tournament. */
     private int nextMatchNumber(Tournament tournament) {
         return matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1;
@@ -1679,7 +1714,7 @@ public class BracketServiceImpl implements BracketService {
                         .venue(tournament.getVenue())
                         .status(MatchStatus.SCHEDULED)
                         .phase(stageName)
-                        .matchCode(String.format("%s-%s-M%d", truncate(tournament.getSlug(), 20),
+                        .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, category, 20),
                                 type.name().substring(0, Math.min(2, type.name().length())) + stageInfo.abbreviation, i + 1))
                         .matchNumber(nextMatchNumber(tournament))
                         .homeTeamPlaceholder("TBD")
