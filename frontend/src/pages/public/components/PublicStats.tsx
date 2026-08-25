@@ -155,6 +155,8 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
     const hasData = stats.topScorers.length > 0 || stats.topOffenders.length > 0 || tryScorers.length > 0;
     const totalYellowCards = stats.totalYellowCards ?? stats.topOffenders.reduce((total, player) => total + player.yellowCards, 0);
     const totalRedCards = stats.totalRedCards ?? stats.topOffenders.reduce((total, player) => total + player.redCards, 0);
+    const totalDoubleYellowRedCards = stats.totalDoubleYellowRedCards ?? 0;
+    const totalStraightRedCards = stats.totalStraightRedCards ?? Math.max(0, totalRedCards - totalDoubleYellowRedCards);
     const disciplinedPlayers = stats.topOffenders.filter(player => player.yellowCards > 0 || player.redCards > 0).length;
 
     if (!hasData) {
@@ -240,14 +242,18 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                             Discipline
                         </h3>
 
-                        <div className="grid grid-cols-3 gap-2 mb-4" aria-label="Tournament discipline summary">
+                        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-4" aria-label="Tournament discipline summary">
                             <div className="rounded-xl border border-yellow-300/50 dark:border-yellow-500/20 bg-yellow-50/70 dark:bg-yellow-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-yellow-700 dark:text-yellow-400">{totalYellowCards}</div>
                                 <div className="text-[10px] font-bold uppercase tracking-wide text-yellow-700/70 dark:text-yellow-400/70">Yellow</div>
                             </div>
+                            <div className="rounded-xl border border-amber-300/50 dark:border-amber-500/20 bg-amber-50/70 dark:bg-amber-500/10 p-3 text-center">
+                                <div className="text-xl font-black text-amber-700 dark:text-amber-400">{totalDoubleYellowRedCards}</div>
+                                <div className="text-[10px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">2 Yellow + Red</div>
+                            </div>
                             <div className="rounded-xl border border-red-300/50 dark:border-red-500/20 bg-red-50/70 dark:bg-red-500/10 p-3 text-center">
-                                <div className="text-xl font-black text-red-700 dark:text-red-400">{totalRedCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-red-700/70 dark:text-red-400/70">Red</div>
+                                <div className="text-xl font-black text-red-700 dark:text-red-400">{totalStraightRedCards}</div>
+                                <div className="text-[10px] font-bold uppercase tracking-wide text-red-700/70 dark:text-red-400/70">Straight Red</div>
                             </div>
                             <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/40 dark:bg-white/5 p-3 text-center">
                                 <div className="text-xl font-black text-skin-base">{disciplinedPlayers}</div>

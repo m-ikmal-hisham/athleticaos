@@ -15,6 +15,8 @@ interface TournamentSummary {
     totalPoints: number;
     totalYellowCards: number;
     totalRedCards: number;
+    totalDoubleYellowRedCards: number;
+    totalStraightRedCards: number;
     totalConversions: number;
     totalPenalties: number;
 }

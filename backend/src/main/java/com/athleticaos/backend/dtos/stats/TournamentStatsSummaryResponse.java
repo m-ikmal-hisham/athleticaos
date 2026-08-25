@@ -11,6 +11,8 @@ public record TournamentStatsSummaryResponse(
                 int totalPoints,
                 int totalYellowCards,
                 int totalRedCards,
+                int totalDoubleYellowRedCards,
+                int totalStraightRedCards,
                 int totalConversions,
                 int totalPenalties,
                 long totalTeams,

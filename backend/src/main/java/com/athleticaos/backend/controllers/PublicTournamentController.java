@@ -615,6 +615,8 @@ public class PublicTournamentController {
                 .totalPenalties(summary.totalPenalties())
                 .totalYellowCards(summary.totalYellowCards())
                 .totalRedCards(summary.totalRedCards())
+                .totalDoubleYellowRedCards(summary.totalDoubleYellowRedCards())
+                .totalStraightRedCards(summary.totalStraightRedCards())
                 .totalPoints(summary.totalPoints())
                 .build();
     }

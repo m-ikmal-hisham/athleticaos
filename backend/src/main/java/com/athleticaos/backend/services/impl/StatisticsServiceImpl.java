@@ -57,6 +57,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 MatchEventType.YELLOW_CARD, categoryId, categoryId == null);
                 int totalRedCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
                                 MatchEventType.RED_CARD, categoryId, categoryId == null);
+                int totalDoubleYellowRedCards = (int) matchEventRepository.countDoubleYellowRedCardsByTournamentId(
+                                tournamentId, categoryId, categoryId == null);
+                int totalStraightRedCards = Math.max(0, totalRedCards - totalDoubleYellowRedCards);
                 int totalConversions = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
                                 MatchEventType.CONVERSION, categoryId, categoryId == null);
                 int totalPenalties = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
@@ -81,6 +84,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 totalPoints,
                                 totalYellowCards,
                                 totalRedCards,
+                                totalDoubleYellowRedCards,
+                                totalStraightRedCards,
                                 totalConversions,
                                 totalPenalties,
                                 activeTeams,

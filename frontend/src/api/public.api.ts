@@ -168,6 +168,8 @@ export interface PublicTournamentStats {
     totalPenalties?: number;
     totalYellowCards?: number;
     totalRedCards?: number;
+    totalDoubleYellowRedCards?: number;
+    totalStraightRedCards?: number;
     totalPoints?: number;
 }
 

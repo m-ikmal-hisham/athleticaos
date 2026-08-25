@@ -18,5 +18,7 @@ public class PublicTournamentStatsResponse {
     private int totalPenalties;
     private int totalYellowCards;
     private int totalRedCards;
+    private int totalDoubleYellowRedCards;
+    private int totalStraightRedCards;
     private int totalPoints;
 }
