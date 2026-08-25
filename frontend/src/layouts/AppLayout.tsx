@@ -180,7 +180,7 @@ export const AppLayout = () => {
     const { user, checkTokenValidity } = useAuthStore();
     const { setBrandingFromOrganisation, resetBranding, primaryColor, secondaryColor, accentColor, logoUrl: brandLogoUrl } = useBrandingStore();
     const effectiveTheme = useEffectiveTheme();
-    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
 
     // Check token validity on mount
     useEffect(() => {
