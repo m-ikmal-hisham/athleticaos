@@ -53,13 +53,13 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const categoryStages = useMemo(() => {
         const knockoutOnly = stages.filter(s => s.knockoutStage);
         if (!selectedCategoryId) return knockoutOnly;
-        return knockoutOnly.filter(s => s.categoryId === selectedCategoryId || !s.categoryId);
+        return knockoutOnly.filter(s => s.categoryId === selectedCategoryId);
     }, [stages, selectedCategoryId]);
 
     // Filter matches by category first if category is selected
     const categoryMatches = useMemo(() => {
         if (!selectedCategoryId) return matches;
-        return matches.filter(m => m.stage?.categoryId === selectedCategoryId || !m.stage?.categoryId);
+        return matches.filter(m => m.stage?.categoryId === selectedCategoryId);
     }, [matches, selectedCategoryId]);
 
     // Check which bracket types already exist for the current category

@@ -20,6 +20,7 @@ import {
 import { fetchTeams } from '@/api/teams.api';
 import { getTeamPerformanceTrends, TeamPerformanceTrend } from '@/api/analytics.api';
 import { TrendUp, User } from '@phosphor-icons/react';
+import { CompetitionFilterBar } from '@/components/common/CompetitionFilterBar';
 
 interface Team {
     id: string;
@@ -73,22 +74,24 @@ export const TeamAnalyticsDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Team Analytics</h1>
                     <p className="text-muted text-sm">Deep dive into team performance form and history.</p>
                 </div>
                 <div>
-                    <select
-                        className="h-10 px-3 py-2 rounded-md border border-glass-border bg-glass-panel text-foreground"
-                        value={selectedTeam || ''}
-                        onChange={(e) => setSelectedTeam(e.target.value)}
-                        aria-label="Select Team"
-                    >
-                        {teams.map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                    </select>
+                    <CompetitionFilterBar
+                        tournaments={teams.map(t => ({
+                            id: t.id,
+                            name: t.name,
+                        }))}
+                        selectedTournamentId={selectedTeam}
+                        onSelect={(id) => {
+                            if (id) setSelectedTeam(id);
+                        }}
+                        allLabel={teams[0]?.name || 'Team'}
+                        variant="admin"
+                    />
                 </div>
             </div>
 

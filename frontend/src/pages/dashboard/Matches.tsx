@@ -299,7 +299,7 @@ export const Matches = () => {
                                         if (isSelectionMode) {
                                             toggleSelection(m.id, e);
                                         } else {
-                                            navigate(`/dashboard/matches/${m.matchCode || m.id}`);
+                                            navigate(`/dashboard/matches/${m.id}`);
                                         }
                                     }}
                                 >

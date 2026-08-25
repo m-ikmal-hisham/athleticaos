@@ -5,7 +5,7 @@ import {
     ArrowsClockwise,
     Trophy
 } from '@phosphor-icons/react';
-import { PublicMatchDetail } from '../../../api/public.api';
+import { PublicMatchDetail, PublicMatchEvent } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
 import { getImageUrl } from '@/utils/image';
 import { formatOfficialRole } from '@/utils/rugbyPositions';
@@ -20,6 +20,38 @@ interface MatchHeroCardProps {
 export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroCardProps) => {
     const isLive = match.status === 'LIVE' || match.status === 'ONGOING';
     const isCompleted = match.status === 'COMPLETED' || match.status === 'FULL_TIME';
+
+    const getPlayerShortName = (name?: string) => {
+        if (!name) return 'Team';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length <= 2) return name;
+        return `${parts[0]} ${parts[parts.length - 1]}`;
+    };
+
+    const summaryEvents = (teamName: string) => (match.events || [])
+        .filter(event => event.teamName === teamName && (
+            (event.points || 0) > 0 || event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD'
+        ))
+        .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
+
+    const renderEventSummary = (event: PublicMatchEvent, index: number) => {
+        const isCard = event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD';
+        const label = formatEnum(event.eventType);
+        return (
+            <div key={`${event.eventType}-${event.minute}-${index}`} className="flex items-center justify-between gap-2 text-[11px] md:text-xs">
+                <span className="min-w-0 truncate text-slate-600 dark:text-slate-300">
+                    <span className="font-semibold">{getPlayerShortName(event.playerName)}</span>
+                    <span className="text-slate-400"> · {label}</span>
+                </span>
+                <span className={`shrink-0 font-bold ${isCard ? (event.eventType === 'RED_CARD' ? 'text-red-500' : 'text-yellow-600 dark:text-yellow-400') : 'text-slate-500 dark:text-slate-400'}`}>
+                    {event.minute ?? 0}'{!isCard && event.points ? ` · +${event.points}` : ''}
+                </span>
+            </div>
+        );
+    };
+
+    const homeSummary = summaryEvents(match.homeTeamName);
+    const awaySummary = summaryEvents(match.awayTeamName);
 
     const formatMatchCode = (code?: string) => {
         if (!code) return null;
@@ -160,6 +192,11 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             )}
                         </div>
                         <div className="h-0.5 md:h-1 w-8 md:w-12 bg-blue-500 rounded-full opacity-80 md:ml-0 mt-1" />
+                        {homeSummary.length > 0 && (
+                            <div className="w-full max-w-xs mt-3 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
+                                {homeSummary.map(renderEventSummary)}
+                            </div>
+                        )}
                     </div>
 
                     {/* Score Board */}
@@ -220,6 +257,11 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             )}
                         </div>
                         <div className="h-0.5 md:h-1 w-8 md:w-12 bg-red-500 rounded-full opacity-80 md:mr-0 mt-1" />
+                        {awaySummary.length > 0 && (
+                            <div className="w-full max-w-xs mt-3 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
+                                {awaySummary.map(renderEventSummary)}
+                            </div>
+                        )}
                     </div>
                 </div>
 

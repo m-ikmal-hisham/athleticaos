@@ -29,8 +29,8 @@ export const fetchCurrentPlayer = () =>
     api.get(`/players/me`);
 
 
-export const fetchPlayerStats = (playerId: string) =>
-    api.get(`/stats/players/${playerId}`);
+export const fetchPlayerStats = (playerId: string, tournamentId?: string) =>
+    api.get(`/stats/players/${playerId}`, { params: { tournamentId } });
 
 export const deletePlayer = (id: string) =>
     api.delete(`/players/${id}`);

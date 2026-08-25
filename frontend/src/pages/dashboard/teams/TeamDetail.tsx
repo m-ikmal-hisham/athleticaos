@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/Card';
 import { Button } from '../../../components/Button';
@@ -16,6 +16,7 @@ import { TeamStaffPanel } from '@/components/admin/team/TeamStaffPanel';
 import { useAuthStore } from '../../../store/auth.store';
 import { BulkPasteRosterModal } from '@/components/modals/BulkPasteRosterModal';
 import ConfirmDeleteModal from '../../../components/modals/ConfirmDeleteModal';
+import { CompetitionFilterBar } from '@/components/common/CompetitionFilterBar';
 
 interface TeamDetail {
     id: string;
@@ -28,7 +29,7 @@ interface TeamDetail {
     organisationId: string;
     organisationName?: string;
     logoUrl?: string;
-    tournaments?: { id: string; name: string }[];
+    tournaments?: { id: string; name: string; status?: string }[];
 }
 
 interface TeamStats {
@@ -79,11 +80,13 @@ export default function TeamDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [searchParams] = useSearchParams();
+    const initialTournamentId = searchParams.get('tournamentId') || '';
     // Roster expand/search state — collapsed by default
     const [rosterExpanded, setRosterExpanded] = useState(false);
     const [rosterSearch, setRosterSearch] = useState('');
     const [showRosterStats, setShowRosterStats] = useState(false);
-    const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string>(initialTournamentId);
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
     const [removeModalOpen, setRemoveModalOpen] = useState(false);
     const [isRemoving, setIsRemoving] = useState(false);
@@ -480,21 +483,18 @@ export default function TeamDetail() {
                                             </Button>
                                         )}
                                         {team.tournaments && team.tournaments.length > 0 && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tournament:</span>
-                                                <select
-                                                    value={selectedTournamentId}
-                                                    onChange={(e) => setSelectedTournamentId(e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                                >
-                                                    <option value="">All (Global)</option>
-                                                    {team.tournaments.map((t) => (
-                                                        <option key={t.id} value={t.id}>
-                                                            {t.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <CompetitionFilterBar
+                                                tournaments={team.tournaments.map(t => ({
+                                                    id: t.id,
+                                                    name: t.name,
+                                                    status: t.status,
+                                                }))}
+                                                selectedTournamentId={selectedTournamentId || null}
+                                                onSelect={(id) => setSelectedTournamentId(id || '')}
+                                                allLabel="All (Global)"
+                                                variant="admin"
+                                                className="w-full sm:w-auto"
+                                            />
                                         )}
                                     </div>
                                 </div>

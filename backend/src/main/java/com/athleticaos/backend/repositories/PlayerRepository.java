@@ -36,4 +36,7 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
 
     @org.springframework.data.jpa.repository.Query("SELECT p.person.id FROM Player p WHERE p.deleted = false")
     java.util.Set<UUID> findAllPersonIds();
+
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Player p JOIN FETCH p.person WHERE p.deleted = false ORDER BY p.createdAt DESC")
+    List<Player> findAllWithPersonByDeletedFalseOrderByCreatedAtDesc();
 }

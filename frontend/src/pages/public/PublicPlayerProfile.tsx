@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
 import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target, Clock } from 'lucide-react';
 import { calculateAge } from '@/utils/date';
+import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 
 export function PublicPlayerProfile() {
     const { id } = useParams<{ id: string }>();
@@ -11,6 +12,24 @@ export function PublicPlayerProfile() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialTournamentId = searchParams.get('tournamentId') || null;
+    const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(initialTournamentId);
+
+    // Keep state in sync with URL search params (e.g. browser back/forward)
+    useEffect(() => {
+        const param = searchParams.get('tournamentId');
+        setSelectedTournamentId(param || null);
+    }, [searchParams]);
+
+    const handleTournamentSelect = (tournamentId: string | null) => {
+        setSelectedTournamentId(tournamentId);
+        if (tournamentId) {
+            setSearchParams({ tournamentId });
+        } else {
+            setSearchParams({});
+        }
+    };
 
     useEffect(() => {
         const fetchPlayer = async () => {
@@ -18,8 +37,8 @@ export function PublicPlayerProfile() {
             try {
                 setLoading(true);
                 const [data, statsData] = await Promise.all([
-                    publicProfileApi.getPlayer(id),
-                    publicProfileApi.getPlayerStats(id).catch(() => null),
+                    publicProfileApi.getPlayer(id, selectedTournamentId || undefined),
+                    publicProfileApi.getPlayerStats(id, selectedTournamentId || undefined).catch(() => null),
                 ]);
                 setPlayer(data);
                 setStats(statsData);
@@ -32,7 +51,7 @@ export function PublicPlayerProfile() {
         };
 
         fetchPlayer();
-    }, [id]);
+    }, [id, selectedTournamentId]);
 
     if (loading) {
         return (
@@ -135,6 +154,28 @@ export function PublicPlayerProfile() {
 
             {/* Content */}
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+                {/* Competition Filter Bar */}
+                {player.tournaments && player.tournaments.length > 0 && (
+                    <div className="mb-8 bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white shrink-0">
+                            <Trophy className="w-4 h-4 text-yellow-500" />
+                            <span>Filter by Tournament:</span>
+                        </div>
+                        <CompetitionFilterBar
+                            tournaments={player.tournaments.map(t => ({
+                                id: t.id,
+                                name: t.name,
+                                status: t.status,
+                            }))}
+                            selectedTournamentId={selectedTournamentId}
+                            onSelect={handleTournamentSelect}
+                            allLabel="All-Time Career (Global)"
+                            variant="public"
+                            className="w-full sm:w-auto"
+                        />
+                    </div>
+                )}
+
                 {/* Quick Stats Row */}
                 {(age || player.gender || player.country || player.jerseyNumber) && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
@@ -212,7 +253,7 @@ export function PublicPlayerProfile() {
                                 <Shield className="w-5 h-5 text-blue-500" /> Team
                             </h2>
                             <div 
-                                onClick={() => player.currentTeamId ? navigate(`/teams/${player.currentTeamId}`) : null}
+                                onClick={() => player.currentTeamId ? navigate(`/teams/${player.currentTeamId}${selectedTournamentId ? `?tournamentId=${selectedTournamentId}` : ''}`) : null}
                                 className={`flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 ${player.currentTeamId ? 'hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md cursor-pointer transition-all group' : ''}`}
                             >
                                 <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">
@@ -237,12 +278,31 @@ export function PublicPlayerProfile() {
                     )}
                 </div>
 
-                {/* Player Career Statistics */}
+                {/* Career Statistics / Tournament Statistics Section */}
                 {hasStats && (
                     <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50">
-                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                            <Trophy className="w-5 h-5 text-yellow-500" /> Career Statistics
-                        </h2>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <h2 className="text-xl font-bold flex flex-wrap items-center gap-2 text-slate-900 dark:text-white">
+                                <span className="flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-yellow-500" />
+                                    {selectedTournamentId ? 'Tournament Performance' : 'Career Statistics'}
+                                </span>
+                                {selectedTournamentId && (
+                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+                                        {player?.tournaments?.find(t => t.id === selectedTournamentId)?.name || 'Tournament Filtered'}
+                                    </span>
+                                )}
+                            </h2>
+                            {selectedTournamentId && (
+                                <button
+                                    onClick={() => handleTournamentSelect(null)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                >
+                                    <Trophy className="w-3 h-3" />
+                                    View All-Time Career
+                                </button>
+                            )}
+                        </div>
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
@@ -309,6 +369,24 @@ export function PublicPlayerProfile() {
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Empty State when selected tournament has no match appearances */}
+                {selectedTournamentId && !hasStats && (
+                    <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-8 text-center shadow-sm border border-slate-200 dark:border-slate-700/50">
+                        <Trophy className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No Matches Recorded</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+                            No match appearances or scoring statistics recorded in this tournament yet.
+                        </p>
+                        <button
+                            onClick={() => handleTournamentSelect(null)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors shadow-md shadow-blue-600/20"
+                        >
+                            <Trophy className="w-4 h-4" />
+                            View All-Time Career
+                        </button>
                     </div>
                 )}
             </div>

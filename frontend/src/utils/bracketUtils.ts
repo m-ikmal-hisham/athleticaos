@@ -37,11 +37,14 @@ export function getRoundWeight(roundName: string, stageType?: string): number {
             return 1;
         }
     }
+    if (name.includes('64')) return 64;
+    if (name.includes('32')) return 32;
+    if (name.includes('16')) return 16;
+    const namedRound = name.match(/round\s+of\s+(\d+)/);
+    if (namedRound) return Number(namedRound[1]);
     if (isSemi || type === 'semi_final') return 4;
     if (isQuarter || type === 'quarter_final') return 8;
-    if (name.includes('16') || type === 'round_of_16') return 16;
-    if (name.includes('32')) return 32;
-    if (name.includes('64')) return 64;
+    if (type === 'round_of_16') return 16;
     return 100; // Fallback
 }
 

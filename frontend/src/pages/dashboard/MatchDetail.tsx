@@ -620,6 +620,30 @@ export const MatchDetail = () => {
         return { starters: [], bench: [], other: all };
     };
 
+    const renderTeamEventSummary = (teamId: string) => events
+        .filter(event => event.teamId === teamId && (
+            (SCORING_RULES[event.eventType] || 0) > 0 || event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD'
+        ))
+        .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0))
+        .map((event, index) => {
+            const parts = (event.playerName || 'Team').trim().split(/\s+/);
+            const playerName = parts.length > 2 ? `${parts[0]} ${parts[parts.length - 1]}` : (event.playerName || 'Team');
+            const label = event.eventType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (char: string) => char.toUpperCase());
+            const isCard = event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD';
+
+            return (
+                <div key={`${event.id}-${index}`} className="flex items-center justify-between gap-2 text-[11px] md:text-xs">
+                    <span className="min-w-0 truncate text-slate-600 dark:text-slate-300">
+                        <span className="font-semibold">{playerName}</span>
+                        <span className="text-slate-400"> · {label}</span>
+                    </span>
+                    <span className={`shrink-0 font-bold ${isCard ? (event.eventType === 'RED_CARD' ? 'text-red-500' : 'text-yellow-600 dark:text-yellow-400') : 'text-slate-500 dark:text-slate-400'}`}>
+                        {event.minute ?? 0}'{!isCard ? ` · +${SCORING_RULES[event.eventType] || 0}` : ''}
+                    </span>
+                </div>
+            );
+        });
+
 
 
     return (
@@ -715,6 +739,9 @@ export const MatchDetail = () => {
                                             {selectedMatch.homeTeamName || ''}
                                         </div>
                                     )}
+                                    <div className="mt-4 w-48 md:w-64 space-y-1.5 rounded-xl bg-white/50 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
+                                        {renderTeamEventSummary(selectedMatch.homeTeamId)}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-10">
@@ -760,6 +787,9 @@ export const MatchDetail = () => {
                                             {selectedMatch.awayTeamName}
                                         </div>
                                     )}
+                                    <div className="mt-4 w-48 md:w-64 space-y-1.5 rounded-xl bg-white/50 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
+                                        {renderTeamEventSummary(selectedMatch.awayTeamId)}
+                                    </div>
                                 </div>
                             </GlassCardContent>
                         </GlassCard>

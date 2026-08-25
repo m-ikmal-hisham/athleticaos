@@ -8,6 +8,7 @@ import {
 import { getActiveTournamentsHealth, CompetitionHealthSummary } from '@/api/federation.api';
 import { getSeasonSummary, SeasonSummary } from '@/api/analytics.api';
 import { Trophy, ChartLineUp, Flag } from '@phosphor-icons/react';
+import { CompetitionFilterBar } from '@/components/common/CompetitionFilterBar';
 
 export const SeasonSummaryReport = () => {
     const [tournaments, setTournaments] = useState<CompetitionHealthSummary[]>([]);
@@ -48,22 +49,24 @@ export const SeasonSummaryReport = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Season Summary</h1>
                     <p className="text-muted text-sm">High-level overview of the competition.</p>
                 </div>
                 <div>
-                    <select
-                        className="h-10 px-3 py-2 rounded-md border border-glass-border bg-glass-panel text-foreground"
-                        value={selectedTournament || ''}
-                        onChange={(e) => setSelectedTournament(e.target.value)}
-                        aria-label="Select Tournament"
-                    >
-                        {tournaments.map(t => (
-                            <option key={t.tournamentId} value={t.tournamentId}>{t.tournamentName}</option>
-                        ))}
-                    </select>
+                    <CompetitionFilterBar
+                        tournaments={tournaments.map(t => ({
+                            id: t.tournamentId,
+                            name: t.tournamentName,
+                        }))}
+                        selectedTournamentId={selectedTournament}
+                        onSelect={(id) => {
+                            if (id) setSelectedTournament(id);
+                        }}
+                        allLabel={tournaments[0]?.tournamentName || 'Tournament'}
+                        variant="admin"
+                    />
                 </div>
             </div>
 

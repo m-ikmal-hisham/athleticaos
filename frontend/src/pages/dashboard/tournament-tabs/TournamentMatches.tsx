@@ -292,7 +292,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                         <MatchCard
                                             key={match.id}
                                             match={match}
-                                            onClick={() => navigate(`/dashboard/matches/${match.matchCode || match.id}`)}
+                                            onClick={() => navigate(`/dashboard/matches/${match.id}`)}
                                             onEdit={(e) => openEditModal(match, e)}
                                             onDelete={(e) => handleDeleteMatch(match.id, e)}
                                         />

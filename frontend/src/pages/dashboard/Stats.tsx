@@ -182,6 +182,13 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
     const sortedScorers = getSortedData(playerStats, 'scorers');
     const sortedDiscipline = getSortedData(disciplineStats, 'discipline');
     const sortedTeams = getSortedData(teamStats, 'teams');
+    const disciplineSummary = {
+        yellow: summary?.totalYellowCards ?? disciplineStats.reduce((total: number, player: any) => total + (player.yellowCards || 0), 0),
+        red: summary?.totalRedCards ?? disciplineStats.reduce((total: number, player: any) => total + (player.redCards || 0), 0),
+        doubleYellowRed: summary?.totalDoubleYellowRedCards ?? 0,
+        straightRed: summary?.totalStraightRedCards ?? Math.max(0, (summary?.totalRedCards ?? 0) - (summary?.totalDoubleYellowRedCards ?? 0)),
+        players: disciplineStats.filter((player: any) => (player.yellowCards || 0) > 0 || (player.redCards || 0) > 0).length,
+    };
 
     if (loading) {
         return (
@@ -343,6 +350,24 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                 <Flag className="w-5 h-5" />
                             </div>
                             <h3 className="font-bold text-lg text-foreground">Discipline</h3>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 px-6 py-4 border-b border-white/5" aria-label="Tournament discipline summary">
+                        <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-center">
+                            <div className="text-xl font-black text-yellow-500">{disciplineSummary.yellow}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-yellow-500/70">Yellow</div>
+                        </div>
+                        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-center">
+                            <div className="text-xl font-black text-amber-500">{disciplineSummary.doubleYellowRed}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-amber-500/70">2 Yellow + Red</div>
+                        </div>
+                        <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-center">
+                            <div className="text-xl font-black text-red-500">{disciplineSummary.straightRed}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-red-500/70">Straight Red</div>
+                        </div>
+                        <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 text-center">
+                            <div className="text-xl font-black text-foreground">{disciplineSummary.players}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Players</div>
                         </div>
                     </div>
                     <div className="overflow-x-auto flex-1">

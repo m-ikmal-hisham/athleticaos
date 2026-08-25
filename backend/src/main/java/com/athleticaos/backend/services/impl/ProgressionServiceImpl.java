@@ -2,6 +2,8 @@ package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
+import com.athleticaos.backend.entities.Tournament;
+import com.athleticaos.backend.entities.TournamentCategory;
 import com.athleticaos.backend.entities.TournamentStage;
 import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
@@ -316,7 +318,7 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .venue(completedMatch.getTournament().getVenue())
                 .status(MatchStatus.SCHEDULED)
                 .phase(placementStage.getName())
-                .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
+                .matchCode(String.format("%s-%s-M%d", matchCodePrefix(completedMatch.getTournament(), placementStage.getCategory()),
                         getStageAbbreviation(placementStage.getStageType()),
                         existingMatches.size() + 1))
                 .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(
@@ -392,7 +394,7 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .venue(completedMatch.getTournament().getVenue())
                 .status(MatchStatus.SCHEDULED)
                 .phase(nextStage.getName())
-                .matchCode(String.format("%s-%s-M%d", completedMatch.getTournament().getSlug(),
+                .matchCode(String.format("%s-%s-M%d", matchCodePrefix(completedMatch.getTournament(), nextStage.getCategory()),
                         getStageAbbreviation(nextStage.getStageType()),
                         nextStageMatchIndex + 1))
                 .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(
@@ -496,5 +498,30 @@ public class ProgressionServiceImpl implements ProgressionService {
             case THIRD_PLACE -> "3P";
             default -> stageType.name().substring(0, 2);
         };
+    }
+
+    private String categoryAbbr(TournamentCategory category) {
+        if (category == null || category.getName() == null || category.getName().isBlank()) {
+            return "";
+        }
+        String[] words = category.getName().split("[\\s\\-_]+");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            String cleaned = word.replaceAll("[^a-zA-Z0-9]", "");
+            if (!cleaned.isEmpty()) {
+                sb.append(Character.toUpperCase(cleaned.charAt(0)));
+            }
+        }
+        String abbr = sb.toString();
+        return abbr.length() > 6 ? abbr.substring(0, 6) : abbr;
+    }
+
+    private String matchCodePrefix(Tournament tournament, TournamentCategory category) {
+        String slug = tournament != null && tournament.getSlug() != null ? tournament.getSlug() : "";
+        String catAbbr = categoryAbbr(category);
+        if (catAbbr.isEmpty()) {
+            return slug;
+        }
+        return slug + "-" + catAbbr;
     }
 }

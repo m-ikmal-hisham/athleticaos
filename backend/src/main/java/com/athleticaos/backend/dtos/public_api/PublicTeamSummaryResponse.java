@@ -12,7 +12,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PublicTeamDetailResponse {
+public class PublicTeamSummaryResponse {
     private UUID id;
     private String name;
     private String shortName;
@@ -23,17 +23,6 @@ public class PublicTeamDetailResponse {
     private String division;
     private String state;
     private String organisationName;
-    private List<PublicPlayerSummary> players;
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class TournamentSummary {
-        private UUID id;
-        private String name;
-        private String status;
-    }
-    private List<TournamentSummary> tournaments;
+    private int playerCount;
+    private List<PublicTeamDetailResponse.TournamentSummary> tournaments;
 }
-

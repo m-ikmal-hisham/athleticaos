@@ -22,5 +22,11 @@ public interface FormatService {
 
     void clearSchedule(UUID tournamentId, boolean clearStructure);
 
+    /**
+     * Clear the schedule for a single category, leaving every other category's
+     * stages and matches untouched. A null categoryId clears the whole tournament.
+     */
+    void clearSchedule(UUID tournamentId, UUID categoryId, boolean clearStructure);
+
     void updateStageName(UUID stageId, String name);
 }

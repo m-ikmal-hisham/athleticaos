@@ -55,6 +55,18 @@ export default function PublicLayout() {
                                 Tournaments
                             </Link>
                             <Link
+                                to="/teams"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            >
+                                Teams
+                            </Link>
+                            <Link
+                                to="/players"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            >
+                                Players
+                            </Link>
+                            <Link
                                 to="/how-it-works"
                                 className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                             >
@@ -94,6 +106,20 @@ export default function PublicLayout() {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             Tournaments
+                        </Link>
+                        <Link
+                            to="/teams"
+                            className="block text-base font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2 border-b border-slate-100 dark:border-white/5"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            Teams
+                        </Link>
+                        <Link
+                            to="/players"
+                            className="block text-base font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2 border-b border-slate-100 dark:border-white/5"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            Players
                         </Link>
                         <Link
                             to="/how-it-works"
