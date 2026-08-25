@@ -315,8 +315,13 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
 
             {isExpanded && (
                 <div className="relative space-y-0">
+                    <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 pb-5 mb-2 border-b border-slate-200 dark:border-white/5">
+                        <div className="text-right font-bold text-blue-600 dark:text-blue-400 truncate">{match.homeTeamName}</div>
+                        <div className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Min</div>
+                        <div className="text-left font-bold text-red-600 dark:text-red-400 truncate">{match.awayTeamName}</div>
+                    </div>
                     {/* Vertical Timeline Line */}
-                    <div className="absolute top-4 bottom-4 left-[2.45rem] w-px bg-slate-200 dark:bg-slate-800 z-0" />
+                    <div className="absolute top-14 bottom-4 left-1/2 -translate-x-1/2 w-px bg-slate-200 dark:bg-slate-800 z-0" />
 
                 {sortedEvents.length === 0 && replayMode && (
                     <div className="py-12 text-center text-slate-400 italic">
@@ -327,6 +332,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 {sortedEvents.map((event, index) => {
                     const style = getEventStyle(event.eventType);
                     const isScore = event.points && event.points > 0;
+                    const isHomeEvent = event.teamName === match.homeTeamName;
 
                     // Parse substitution notes if available
                     let subInName = '';
@@ -340,11 +346,11 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                     }
 
                     return (
-                        <div key={index} className="relative z-10 flex gap-4 group py-3 first:pt-0 last:pb-0 animate-fade-in-up">
+                        <div key={index} className="relative z-10 grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 group py-3 first:pt-0 last:pb-0 animate-fade-in-up">
                             {/* Time Badge */}
-                            <div className="flex-shrink-0 w-20 flex flex-col items-center">
+                            <div className="col-start-2 row-start-1 flex flex-col items-center">
                                 <div className={`
-                                    w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm shadow-sm border
+                                    w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shadow-sm border
                                     ${style.bg} ${style.border} ${style.text}
                                 `}>
                                     {event.minute}'
@@ -353,14 +359,15 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
 
                             {/* Content Card */}
                             <div className={`
-                                flex-1 rounded-xl border p-4 transition-all hover:shadow-md
+                                row-start-1 rounded-xl border p-3 md:p-4 transition-all hover:shadow-md min-w-0
+                                ${isHomeEvent ? 'col-start-1 text-right' : 'col-start-3 text-left'}
                                 ${style.bg} ${style.border}
                                 ${style.size === 'large' ? 'shadow-sm' : ''}
                                 ${style.size === 'muted' ? 'opacity-80 hover:opacity-100' : ''}
                             `}>
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
+                                <div className={`flex items-start gap-3 ${isHomeEvent ? 'flex-row-reverse' : 'justify-between'}`}>
+                                    <div className="space-y-1 min-w-0">
+                                        <div className={`flex flex-wrap items-center gap-2 ${isHomeEvent ? 'justify-end' : ''}`}>
                                             <span className={`font-bold ${style.size === 'large' ? 'text-lg' : 'text-base'} text-slate-900 dark:text-white`}>
                                                 {event.teamName}
                                             </span>
@@ -379,7 +386,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                                 const outEntry = findPlayerLineupEntry(subOutName, event.teamName);
                                                 const inEntry = findPlayerLineupEntry(subInName, event.teamName);
                                                 return (
-                                                    <div className="flex flex-col gap-1 mt-1">
+                                                    <div className={`flex flex-col gap-1 mt-1 ${isHomeEvent ? 'items-end' : 'items-start'}`}>
                                                         <div className="flex items-center gap-2 text-sm text-red-500 dark:text-red-400">
                                                             <ArrowDown className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
                                                             <span className="font-medium">{subOutName || 'Unknown'}</span>
@@ -425,7 +432,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                             })()
                                         ) : (
                                             event.playerName && (
-                                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium text-sm">
+                                                <div className={`flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium text-sm ${isHomeEvent ? 'justify-end' : ''}`}>
                                                     <span>{event.playerName}</span>
                                                     {(() => {
                                                         const entry = findPlayerLineupEntry(event.playerName, event.teamName);
@@ -468,4 +475,3 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
         </GlassCard>
     );
 };
-

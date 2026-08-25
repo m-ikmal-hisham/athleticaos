@@ -181,7 +181,11 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
         try {
             setStructureLoading(true);
             // First save config
-            await tournamentService.updateFormatConfig(tournamentId, config);
+            await tournamentService.updateFormatConfig(tournamentId, {
+                ...config,
+                tournamentId,
+                categoryId: selectedCategoryId || undefined
+            });
 
             // Call generateStructure
             await tournamentService.generateStructure(
@@ -220,7 +224,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                 useExistingGroups, // Use the manual pools!
                 selectedCategoryId || undefined,
                 config.includePlacementStages,
-                teams.filter(t => !selectedCategoryId || !t.tournamentCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned').map(t => t.id),
+                teams.filter(t => !selectedCategoryId || t.tournamentCategoryId === selectedCategoryId).map(t => t.id),
                 config.placementBracketSize ?? 4
             );
             showToast.success('Schedule generated!');
@@ -261,7 +265,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
     const hasEmptyPools = useMemo(() => {
         if (config.formatType === 'KNOCKOUT') {
             // For KNOCKOUT, check if there are any relevant teams
-            const relevantTeams = teams.filter(t => !selectedCategoryId || t.tournamentCategoryId === selectedCategoryId || t.category === 'Unassigned');
+            const relevantTeams = teams.filter(t => !selectedCategoryId || t.tournamentCategoryId === selectedCategoryId);
             return relevantTeams.length === 0;
         }
 
@@ -272,7 +276,10 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
 
         // Check if ANY pool has no teams assigned
         for (const pool of poolStages) {
-             const teamsInPool = teams.filter(t => t.poolNumber === pool.name);
+             const teamsInPool = teams.filter(t =>
+                 t.poolNumber === pool.name
+                 && (!selectedCategoryId || t.tournamentCategoryId === selectedCategoryId)
+             );
              if (teamsInPool.length === 0) {
                  return true;
              }

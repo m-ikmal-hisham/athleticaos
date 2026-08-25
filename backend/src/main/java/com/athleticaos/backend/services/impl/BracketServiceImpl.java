@@ -25,7 +25,6 @@ public class BracketServiceImpl implements BracketService {
     private final TournamentRepository tournamentRepository;
     private final TournamentStageRepository stageRepository;
     private final MatchRepository matchRepository;
-    private final TeamRepository teamRepository;
     private final TournamentTeamRepository tournamentTeamRepository;
     private final MatchEventRepository matchEventRepository;
     private final MatchLineupRepository matchLineupRepository;
@@ -77,7 +76,7 @@ public class BracketServiceImpl implements BracketService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         // Get teams to participate
-        List<Team> teams = getTeamsForBracket(request);
+        List<Team> teams = getTeamsForBracket(tournamentId, request);
         if (teams.isEmpty()) {
             throw new IllegalArgumentException(
                     "No teams provided for bracket generation. Please specify teamIds in the request.");
@@ -138,14 +137,27 @@ public class BracketServiceImpl implements BracketService {
     }
 
     @SuppressWarnings("null")
-    private List<Team> getTeamsForBracket(BracketGenerationRequest request) {
+    private List<Team> getTeamsForBracket(UUID tournamentId, BracketGenerationRequest request) {
         if (request.getTeamIds() == null || request.getTeamIds().isEmpty()) {
             return Collections.emptyList();
         }
 
         return request.getTeamIds().stream()
-                .map(teamId -> teamRepository.findById(teamId)
-                        .orElseThrow(() -> new EntityNotFoundException("Team not found: " + teamId)))
+                .distinct()
+                .map(teamId -> {
+                    TournamentTeam entry = tournamentTeamRepository.findByTournamentIdAndTeamId(tournamentId, teamId)
+                            .filter(TournamentTeam::isActive)
+                            .filter(tt -> !tt.isDeleted())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Team is not an active participant in this tournament: " + teamId));
+                    if (request.getCategoryId() != null
+                            && (entry.getCategory() == null
+                                    || !request.getCategoryId().equals(entry.getCategory().getId()))) {
+                        throw new IllegalArgumentException(
+                                "Team does not belong to the selected tournament category: " + teamId);
+                    }
+                    return entry.getTeam();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -405,6 +417,7 @@ public class BracketServiceImpl implements BracketService {
     @SuppressWarnings("null")
     private void legacyKnockoutGeneration(Tournament tournament, List<Team> teams, boolean includePlacement, TournamentCategory category) {
         int teamCount = teams.size();
+        int drawSize = nextPowerOfTwo(teamCount);
 
         // Check if team count is power of 2
         if (!isPowerOfTwo(teamCount)) {
@@ -412,13 +425,13 @@ public class BracketServiceImpl implements BracketService {
         }
 
         // Determine knockout stages needed
-        List<KnockoutStageInfo> stages = determineKnockoutStages(teamCount);
+        List<KnockoutStageInfo> stages = determineKnockoutStages(drawSize);
         // Map to store matches by stage type for linking losers later
         Map<TournamentStageType, List<Match>> matchesByStageType = new HashMap<>();
 
         int stageOrder = 1;
-        int currentTeamCount = teamCount;
-        List<Team> currentRoundTeams = new ArrayList<>(teams);
+        int currentTeamCount = drawSize;
+        List<Team> currentRoundTeams = buildOpeningRoundSlots(teams, drawSize);
 
         List<Match> previousRoundMatches = new ArrayList<>();
 
@@ -485,6 +498,23 @@ public class BracketServiceImpl implements BracketService {
         if (includePlacement) {
             generateAndLinkPlacementMatches(tournament, matchesByStageType, stageOrder, category);
         }
+    }
+
+    /** Places every bye beside a real team so the bye processor can advance it. */
+    static List<Team> buildOpeningRoundSlots(List<Team> teams, int drawSize) {
+        List<Team> slots = new ArrayList<>(drawSize);
+        int byeCount = drawSize - teams.size();
+        int teamIndex = 0;
+
+        for (int matchIndex = 0; matchIndex < drawSize / 2; matchIndex++) {
+            slots.add(teams.get(teamIndex++));
+            if (matchIndex < byeCount) {
+                slots.add(null);
+            } else {
+                slots.add(teams.get(teamIndex++));
+            }
+        }
+        return slots;
     }
 
     private void generateAndLinkPlacementMatches(Tournament tournament,
@@ -1017,7 +1047,13 @@ public class BracketServiceImpl implements BracketService {
     }
 
     /** Smallest power of two greater than or equal to n, with a floor of 2 (a draw needs two slots). */
-    private int nextPowerOfTwo(int n) {
+    static int nextPowerOfTwo(int n) {
+        if (n < 1) {
+            throw new IllegalArgumentException("A knockout draw needs at least one team");
+        }
+        if (n > (1 << 20)) {
+            throw new IllegalArgumentException("Knockout draw is too large: " + n);
+        }
         int result = 2;
         while (result < n) {
             result <<= 1;
@@ -1033,25 +1069,21 @@ public class BracketServiceImpl implements BracketService {
      * stage type because the enum has no dedicated value for them; the stage name still
      * distinguishes them, and getRoundWeight() on the frontend orders them by name.
      */
-    private List<KnockoutStageInfo> determineKnockoutStages(int teamCount) {
+    static List<KnockoutStageInfo> determineKnockoutStages(int teamCount) {
         List<KnockoutStageInfo> stages = new ArrayList<>();
 
-        if (teamCount >= 64) {
-            stages.add(new KnockoutStageInfo("Round of 64", TournamentStageType.ROUND_OF_16, "R64"));
+        int drawSize = nextPowerOfTwo(teamCount);
+        for (int roundSize = drawSize; roundSize >= 16; roundSize /= 2) {
+            stages.add(new KnockoutStageInfo("Round of " + roundSize,
+                    TournamentStageType.ROUND_OF_16, "R" + roundSize));
         }
-        if (teamCount >= 32) {
-            stages.add(new KnockoutStageInfo("Round of 32", TournamentStageType.ROUND_OF_16, "R32"));
-        }
-        if (teamCount >= 16) {
-            stages.add(new KnockoutStageInfo("Round of 16", TournamentStageType.ROUND_OF_16, "R16"));
-        }
-        if (teamCount >= 8) {
+        if (drawSize >= 8) {
             stages.add(new KnockoutStageInfo("Quarter Finals", TournamentStageType.QUARTER_FINAL, "QF"));
         }
-        if (teamCount >= 4) {
+        if (drawSize >= 4) {
             stages.add(new KnockoutStageInfo("Semi Finals", TournamentStageType.SEMI_FINAL, "SF"));
         }
-        if (teamCount >= 2) {
+        if (drawSize >= 2) {
             stages.add(new KnockoutStageInfo("Final", TournamentStageType.FINAL, "F"));
         }
 
@@ -1097,6 +1129,9 @@ public class BracketServiceImpl implements BracketService {
                     .findByTournamentIdOrderByDisplayOrderAsc(tournament.getId());
             List<TournamentStage> poolStages = existingStages.stream()
                     .filter(s -> s.getStageType() == TournamentStageType.POOL)
+                    .filter(s -> category == null
+                            ? s.getCategory() == null
+                            : s.getCategory() != null && category.getId().equals(s.getCategory().getId()))
                     .collect(Collectors.toList());
 
             if (poolStages.isEmpty()) {
@@ -1108,6 +1143,11 @@ public class BracketServiceImpl implements BracketService {
                 // Regenerate matches for these pools
                 for (TournamentStage stage : poolStages) {
                     List<Team> poolTeams = tournamentTeamRepository.findByTournamentId(tournament.getId()).stream()
+                            .filter(TournamentTeam::isActive)
+                            .filter(tt -> !tt.isDeleted())
+                            .filter(tt -> category == null
+                                    ? tt.getCategory() == null
+                                    : tt.getCategory() != null && category.getId().equals(tt.getCategory().getId()))
                             .filter(tt -> stage.getName().equals(tt.getPoolNumber()))
                             .map(TournamentTeam::getTeam)
                             .collect(Collectors.toList());
