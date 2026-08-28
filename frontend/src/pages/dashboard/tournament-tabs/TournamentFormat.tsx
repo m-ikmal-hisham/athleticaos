@@ -429,11 +429,25 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                         >
                                             <option value={4}>4 teams — Semi Finals → Final</option>
                                             <option value={8}>8 teams — Quarter Finals → Semi Finals → Final</option>
+                                            <option value={16}>16 teams — Round of 16 → Quarter Finals → Semi Finals → Final</option>
+                                            <option value={32}>32 teams — Round of 32 → Round of 16 → Quarter Finals → Semi Finals → Final</option>
                                         </select>
                                         <p className="text-xs text-muted-foreground">
-                                            {(config.placementBracketSize ?? 4) === 4
-                                                ? 'Each bracket decides 4 places: Cup 1st–4th, Plate 5th–8th, Bowl 9th–12th, and so on. A 4-team bracket has no quarter-final — its first round is the semi-final.'
-                                                : 'Each bracket decides 8 places: Cup 1st–8th, Plate 9th–16th, Bowl 17th–24th, and so on. Teams knocked out in the quarter-finals are not ranked further within their bracket.'}
+                                            {(() => {
+                                                const size = config.placementBracketSize ?? 4;
+                                                switch (size) {
+                                                    case 4:
+                                                        return 'Each bracket decides 4 places: Cup 1st–4th, Plate 5th–8th, Bowl 9th–12th, and so on. A 4-team bracket has no quarter-final — its first round is the semi-final.';
+                                                    case 8:
+                                                        return 'Each bracket decides 8 places: Cup 1st–8th, Plate 9th–16th, Bowl 17th–24th, and so on. Teams knocked out in the quarter-finals are not ranked further within their bracket.';
+                                                    case 16:
+                                                        return 'Each bracket decides 16 places: Cup 1st–16th, Plate 17th–32nd, and so on. Teams knocked out in the Round of 16 are not ranked further within their bracket.';
+                                                    case 32:
+                                                        return 'Each bracket decides 32 places: Cup 1st–32nd, Plate 33rd–64th, and so on. Teams knocked out in the Round of 32 are not ranked further within their bracket.';
+                                                    default:
+                                                        return `Each bracket decides ${size} places.`;
+                                                }
+                                            })()}
                                         </p>
                                     </div>
                                 )}
