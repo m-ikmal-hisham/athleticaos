@@ -9,7 +9,7 @@ import { clsx } from 'clsx';
 
 export default function PublicLayout() {
     const effectiveTheme = useEffectiveTheme();
-    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
 

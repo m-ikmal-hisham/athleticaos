@@ -43,7 +43,7 @@ const AccessGate = ({ onGranted }: { onGranted: () => void }) => {
     const [error, setError] = useState('');
     const [attempts, setAttempts] = useState(0);
     const effectiveTheme = useEffectiveTheme();
-    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -221,7 +221,7 @@ export const Login = () => {
     };
 
     const effectiveTheme = useEffectiveTheme();
-    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-hq-secondary.png' : '/athleticaos-logo-hq-first.png';
+    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
     const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
 
     // ─── Show Access Gate if not yet granted ──────────────────────────
