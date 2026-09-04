@@ -17,6 +17,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
+        identificationType: 'MALAYSIAN_IC',
         icOrPassport: '',
         dob: '',
         gender: '',
@@ -34,7 +35,8 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             setFormData({
                 firstName: person.firstName || '',
                 lastName: person.lastName || '',
-                icOrPassport: person.icOrPassport || '',
+                identificationType: person.identificationType || 'MALAYSIAN_IC',
+                icOrPassport: '', // Phase 1: do not preload raw identification
                 dob: person.dob || '',
                 gender: person.gender || '',
                 nationality: person.nationality || '',
@@ -54,7 +56,11 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
         setLoading(true);
         try {
-            await updatePerson(person.id, formData);
+            const payload = {
+                ...formData,
+                icOrPassport: formData.icOrPassport.trim() ? formData.icOrPassport.trim() : undefined
+            };
+            await updatePerson(person.id, payload as any);
             showToast.success('Person updated successfully');
             onSuccess();
             onClose();
@@ -88,13 +94,36 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                     </div>
                 </div>
 
-                <div>
-                    <label className="text-sm font-medium mb-1 block">IC or Passport</label>
-                    <Input
-                        required
-                        value={formData.icOrPassport}
-                        onChange={(e) => setFormData({ ...formData, icOrPassport: e.target.value })}
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-sm font-medium mb-1 block">Identification Type</label>
+                        <select
+                            aria-label="Identification Type"
+                            value={formData.identificationType}
+                            onChange={(e) => setFormData({ ...formData, identificationType: e.target.value })}
+                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0"
+                        >
+                            {formData.identificationType === 'IC' && <option value="IC">IC (Legacy)</option>}
+                            <option value="MALAYSIAN_IC">Malaysian IC</option>
+                            <option value="PASSPORT">Passport</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-medium block">IC or Passport</label>
+                            {person?.identificationPresent && (
+                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    ID on file: PRESENT
+                                </span>
+                            )}
+                        </div>
+                        <Input
+                            value={formData.icOrPassport}
+                            onChange={(e) => setFormData({ ...formData, icOrPassport: e.target.value })}
+                            placeholder={person?.identificationPresent ? "Leave blank to keep existing ID" : "ID / Passport Number"}
+                        />
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

@@ -14,7 +14,10 @@ import java.time.LocalDate;
 public class PersonUpdateRequest {
     private String firstName;
     private String lastName;
+    // icOrPassport: null = leave existing value unchanged; non-blank = validate and replace
     private String icOrPassport;
+    // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
+    private String identificationType;
     private LocalDate dob;
     private String gender;
     private String nationality;

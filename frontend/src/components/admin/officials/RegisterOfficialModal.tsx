@@ -141,7 +141,7 @@ export const RegisterOfficialModal: React.FC<RegisterOfficialModalProps> = ({ is
                                 onChange={(val) => setFormData({ ...formData, personId: val as string })}
                                 options={[
                                     { value: '', label: 'Select Person...' },
-                                    ...persons.map(p => ({ value: p.id, label: `${p.firstName} ${p.lastName} (${p.icOrPassport})` }))
+                                    ...persons.map(p => ({ value: p.id, label: p.email ? `${p.firstName} ${p.lastName} (${p.email})` : `${p.firstName} ${p.lastName}` }))
                                 ]}
                                 placeholder="Select Person"
                             />

@@ -36,8 +36,9 @@ export const EditPlayer = () => {
     const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("IC");
+    const [identificationType, setIdentificationType] = useState("MALAYSIAN_IC");
     const [identificationValue, setIdentificationValue] = useState("");
+    const [identificationPresent, setIdentificationPresent] = useState(false);
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
     const [duplicateIcError, setDuplicateIcError] = useState("");
@@ -93,8 +94,9 @@ export const EditPlayer = () => {
                 setPhotoUrl(player.photoUrl || "");
                 setGender(player.gender || Gender.MALE);
                 setDob(player.dob || "");
-                setIdentificationType(player.identificationType || "IC");
-                setIdentificationValue(player.identificationValue || player.icOrPassport || "");
+                setIdentificationType(player.identificationType || "MALAYSIAN_IC");
+                setIdentificationPresent(Boolean(player.identificationPresent));
+                setIdentificationValue(""); // Phase 1: do not preload raw identification
                 setNationality(player.nationality || "");
                 setPhone(player.phone || "");
 
@@ -142,8 +144,7 @@ export const EditPlayer = () => {
             gender: String(gender),
             dob,
             identificationType,
-            identificationValue,
-            icOrPassport: identificationValue,
+            icOrPassport: identificationValue.trim() ? identificationValue.trim() : undefined,
             nationality,
             phone: phone || undefined,
             addressLine1,
@@ -327,7 +328,8 @@ export const EditPlayer = () => {
                                     value={identificationType}
                                     onChange={(value) => setIdentificationType(value as string)}
                                     options={[
-                                        { value: 'IC', label: 'IC' },
+                                        ...(identificationType === 'IC' ? [{ value: 'IC', label: 'IC (Legacy)' }] : []),
+                                        { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
                                         { value: 'PASSPORT', label: 'Passport' },
                                         { value: 'OTHER', label: 'Other' }
                                     ]}
@@ -335,9 +337,16 @@ export const EditPlayer = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Identification Value *
-                                </label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-muted-foreground">
+                                        Identification / Passport Number
+                                    </label>
+                                    {identificationPresent && (
+                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                            ID on file: PRESENT
+                                        </span>
+                                    )}
+                                </div>
                                 <input
                                     type="text"
                                     value={identificationValue}
@@ -345,11 +354,13 @@ export const EditPlayer = () => {
                                         setIdentificationValue(e.target.value);
                                         if (duplicateIcError) setDuplicateIcError("");
                                     }}
-                                    required
                                     className="input-base w-full"
-                                    placeholder="ID / Passport Number"
+                                    placeholder={identificationPresent ? "Leave blank to keep existing ID on file" : "Enter ID / Passport Number"}
                                     aria-label="Identification Value"
                                 />
+                                <p className="text-xs text-muted">
+                                    {identificationPresent ? "Leave blank to keep the existing identification on file unchanged." : "Enter a new identification number."}
+                                </p>
                                 {duplicateIcError && (
                                     <p className="text-xs text-red-500 mt-1">{duplicateIcError}</p>
                                 )}

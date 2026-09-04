@@ -40,11 +40,11 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
         org.springframework.data.domain.Pageable pageable
     );
 
+    // Phase 1: IC/passport substring search removed to prevent PII exposure in search logs/results.
     @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
            "WHERE op.organisation.id IN :orgIds AND (" +
            "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.icOrPassport) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')))")
     org.springframework.data.domain.Page<Person> searchPersonsByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,

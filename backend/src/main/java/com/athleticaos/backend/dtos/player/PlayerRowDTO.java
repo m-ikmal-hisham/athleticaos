@@ -11,6 +11,7 @@ public record PlayerRowDTO(
     @NotBlank(message = "Last name is required") String lastName,
     @NotBlank(message = "Gender is required") String gender,
     @NotNull(message = "Date of birth is required") @Past(message = "Date of birth must be in the past") LocalDate dob,
+    @NotBlank(message = "Identification type is required") String identificationType, // MALAYSIAN_IC | PASSPORT | OTHER
     @NotBlank(message = "IC or Passport is required") String icOrPassport,
     @NotBlank(message = "Nationality is required") String nationality,
     @Email(message = "Invalid email format") String email,

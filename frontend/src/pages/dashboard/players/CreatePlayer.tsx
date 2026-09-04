@@ -33,7 +33,7 @@ export const CreatePlayer = () => {
     const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("IC");
+    const [identificationType, setIdentificationType] = useState("MALAYSIAN_IC");
     const [identificationValue, setIdentificationValue] = useState("");
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
@@ -95,7 +95,6 @@ export const CreatePlayer = () => {
             gender: String(gender),
             dob,
             identificationType,
-            identificationValue,
             icOrPassport: identificationValue,
             nationality,
             phone: phone || undefined,
@@ -248,7 +247,7 @@ export const CreatePlayer = () => {
                                     value={identificationType}
                                     onChange={(value) => setIdentificationType(value as string)}
                                     options={[
-                                        { value: 'IC', label: 'IC' },
+                                        { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
                                         { value: 'PASSPORT', label: 'Passport' },
                                         { value: 'OTHER', label: 'Other' }
                                     ]}

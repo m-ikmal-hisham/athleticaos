@@ -11,6 +11,7 @@ import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerBatchHelper;
+import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,8 +36,8 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
         log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
 
-        // 1. Normalize IC
-        String normalizedIc = row.icOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        // 1. Normalise IC using shared utility
+        String normalizedIc = IdentificationUtil.normalize(row.icOrPassport());
 
         // 2. Create Person record
         Person person = Person.builder()
@@ -45,6 +46,7 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
                 .gender(row.gender().trim().toUpperCase())
                 .dob(row.dob())
                 .icOrPassport(normalizedIc)
+                .identificationType(row.identificationType())
                 .nationality(row.nationality().trim())
                 .email(row.email() != null && !row.email().trim().isEmpty() ? row.email().trim().toLowerCase() : null)
                 .state(row.state() != null ? row.state().trim() : null)

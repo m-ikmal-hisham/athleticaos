@@ -11,9 +11,10 @@ public record PlayerUpdateRequest(
         String lastName,
         String gender,
         @JsonFormat(pattern = "yyyy-MM-dd") LocalDate dob,
+        // icOrPassport: null = leave existing value unchanged; non-blank = validate and replace
         String icOrPassport,
+        // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
         String identificationType,
-        String identificationValue,
         String nationality,
 
         @Email(message = "Invalid email format") String email,

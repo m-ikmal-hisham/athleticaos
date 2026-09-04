@@ -164,9 +164,9 @@ export interface Player {
     lastName: string;
     gender: Gender;
     dob: string;
-    icOrPassport: string; // Now included in response
+    identificationPresent?: boolean;
     identificationType?: string;
-    identificationValue?: string;
+    identificationDisplay?: string | null;
     nationality: string;
     email?: string;
     phone?: string;
@@ -226,7 +226,6 @@ export interface PlayerCreateRequest {
     dob: string;
     icOrPassport: string;
     identificationType?: string;
-    identificationValue?: string;
     nationality: string;
     email: string;
     phone?: string;
@@ -248,7 +247,6 @@ export interface PlayerUpdateRequest {
     dob?: string;
     icOrPassport?: string;
     identificationType?: string;
-    identificationValue?: string;
     nationality?: string;
     email?: string;
     phone?: string;

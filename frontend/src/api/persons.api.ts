@@ -4,7 +4,9 @@ export interface PersonResponseDTO {
     id: string;
     firstName: string;
     lastName: string;
-    icOrPassport: string;
+    identificationPresent?: boolean;
+    identificationType?: string;
+    identificationDisplay?: string | null;
     dob: string;
     gender: string;
     nationality: string;
@@ -36,7 +38,8 @@ export interface PaginatedResponse<T> {
 export interface PersonUpdateRequest {
     firstName: string;
     lastName: string;
-    icOrPassport: string;
+    icOrPassport?: string;
+    identificationType?: string;
     dob: string;
     gender: string;
     nationality: string;
@@ -48,7 +51,8 @@ export interface PersonUpdateRequest {
 export interface CreatePersonRequest {
     firstName: string;
     lastName: string;
-    icOrPassport: string;
+    icOrPassport?: string;
+    identificationType?: string;
     dob: string;
     gender: string;
     nationality: string;

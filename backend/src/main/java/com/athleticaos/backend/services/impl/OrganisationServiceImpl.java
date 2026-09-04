@@ -20,6 +20,7 @@ import com.athleticaos.backend.dtos.team.PersonSummaryDTO;
 
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.utils.IdentificationUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -474,12 +475,11 @@ public class OrganisationServiceImpl implements OrganisationService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + organisationId));
 
-        String normalizedIc = null;
-        if (request.getIcOrPassport() != null) {
-            normalizedIc = request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-        }
-
+        // Phase 1: use shared utility for normalisation and validation
+        String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
         if (normalizedIc != null && !normalizedIc.isEmpty()) {
+            IdentificationUtil.validateNewSubmission(
+                    normalizedIc, request.getIdentificationType(), request.getDob(), request.getGender());
             if (personRepository.existsByIcOrPassport(normalizedIc)) {
                 throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC or Passport already exists in the system.");
             }
@@ -489,6 +489,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .icOrPassport(normalizedIc)
+                .identificationType(request.getIdentificationType())
                 .dob(request.getDob())
                 .gender(request.getGender())
                 .nationality(request.getNationality())
@@ -521,7 +522,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                         .id(p.getId().toString())
                         .firstName(p.getFirstName())
                         .lastName(p.getLastName())
-                        .icOrPassport(p.getIcOrPassport())
+                        // Phase 1: icOrPassport removed from PersonSummaryDTO
                         .email(p.getEmail())
                         .build();
                 })

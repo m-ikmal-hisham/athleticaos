@@ -15,6 +15,8 @@ public class CreatePersonRequest {
     private String firstName;
     private String lastName;
     private String icOrPassport;
+    // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
+    private String identificationType;
     private LocalDate dob;
     private String gender;
     private String nationality;

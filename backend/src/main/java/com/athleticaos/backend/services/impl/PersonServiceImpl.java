@@ -15,6 +15,7 @@ import com.athleticaos.backend.entities.OfficialRegistry;
 import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -163,9 +164,12 @@ public class PersonServiceImpl implements PersonService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
+        // Phase 1: use shared utility for normalisation and validation
         if (request.getIcOrPassport() != null && !request.getIcOrPassport().trim().isEmpty()) {
-            String normalizedIc = request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-            if (personRepository.existsByIcOrPassport(normalizedIc)) {
+            String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
+            IdentificationUtil.validateNewSubmission(
+                    normalizedIc, request.getIdentificationType(), request.getDob(), request.getGender());
+            if (normalizedIc != null && personRepository.existsByIcOrPassport(normalizedIc)) {
                 throw new IllegalArgumentException("IC or Passport already exists in the system.");
             }
         }
@@ -173,7 +177,9 @@ public class PersonServiceImpl implements PersonService {
         Person person = new Person();
         person.setFirstName(request.getFirstName());
         person.setLastName(request.getLastName());
-        person.setIcOrPassport(request.getIcOrPassport() != null ? request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "") : null);
+        String normalizedIcForSave = IdentificationUtil.normalize(request.getIcOrPassport());
+        person.setIcOrPassport(normalizedIcForSave);
+        person.setIdentificationType(request.getIdentificationType());
         person.setDob(request.getDob());
         person.setGender(request.getGender());
         person.setNationality(request.getNationality());
@@ -221,24 +227,37 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
-        String normalizedIc = null;
+        // Phase 1: null icOrPassport = leave existing unchanged.
+        // Non-blank value triggers normalisation, validation, and duplicate check.
         if (request.getIcOrPassport() != null) {
-            normalizedIc = request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-            if (!normalizedIc.equals(person.getIcOrPassport()) && personRepository.existsByIcOrPassport(normalizedIc)) {
-                throw new IllegalArgumentException("IC or Passport already exists in the system.");
+            String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
+            if (normalizedIc != null && !normalizedIc.isEmpty()) {
+                IdentificationUtil.validateNewSubmission(
+                        normalizedIc, request.getIdentificationType(),
+                        request.getDob() != null ? request.getDob() : person.getDob(),
+                        request.getGender() != null ? request.getGender() : person.getGender());
+                if (!normalizedIc.equals(person.getIcOrPassport())
+                        && personRepository.existsByIcOrPassport(normalizedIc)) {
+                    throw new IllegalArgumentException("IC or Passport already exists in the system.");
+                }
+                person.setIcOrPassport(normalizedIc);
             }
+            // Empty-after-normalise = no-op (leave existing value).
+        }
+        if (request.getIdentificationType() != null) {
+            person.setIdentificationType(request.getIdentificationType());
         }
 
-        person.setFirstName(request.getFirstName());
-        person.setLastName(request.getLastName());
-        person.setIcOrPassport(normalizedIc);
-        person.setDob(request.getDob());
-        person.setGender(request.getGender());
-        person.setNationality(request.getNationality());
-        person.setEmail(request.getEmail());
-        person.setPhone(request.getPhone());
-        person.setNationalPlayerStatus(request.getNationalPlayerStatus());
-        
+        // Null-safe updates for all other PII fields
+        if (request.getFirstName() != null) person.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) person.setLastName(request.getLastName());
+        if (request.getDob() != null) person.setDob(request.getDob());
+        if (request.getGender() != null) person.setGender(request.getGender());
+        if (request.getNationality() != null) person.setNationality(request.getNationality());
+        if (request.getEmail() != null) person.setEmail(request.getEmail());
+        if (request.getPhone() != null) person.setPhone(request.getPhone());
+        if (request.getNationalPlayerStatus() != null) person.setNationalPlayerStatus(request.getNationalPlayerStatus());
+
         if (request.getIsStaff() != null) {
             person.setIsStaff(request.getIsStaff());
         }
@@ -345,11 +364,17 @@ public class PersonServiceImpl implements PersonService {
 
         boolean isWR = wrStaffIds.contains(pid) || wrOfficialIds.contains(pid);
 
+        // Phase 1: raw IC is NOT exposed in API responses.
+        boolean identificationPresent = p.getIcOrPassport() != null && !p.getIcOrPassport().isBlank();
+
         return PersonResponseDTO.builder()
                 .id(pid.toString())
                 .firstName(p.getFirstName())
                 .lastName(p.getLastName())
-                .icOrPassport(p.getIcOrPassport())
+                // Identification — presence indicator only, never raw value
+                .identificationPresent(identificationPresent)
+                .identificationType(p.getIdentificationType())
+                .identificationDisplay(identificationPresent ? "PRESENT" : null)
                 .dob(p.getDob())
                 .gender(p.getGender())
                 .nationality(p.getNationality())

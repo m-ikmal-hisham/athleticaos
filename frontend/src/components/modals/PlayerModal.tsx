@@ -32,8 +32,9 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
     const [email, setEmail] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("IC");
+    const [identificationType, setIdentificationType] = useState("MALAYSIAN_IC");
     const [identificationValue, setIdentificationValue] = useState("");
+    const [identificationPresent, setIdentificationPresent] = useState(false);
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
 
@@ -70,8 +71,9 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             setEmail(initialPlayer.email || "");
             setGender(initialPlayer.gender || Gender.MALE);
             setDob(initialPlayer.dob || "");
-            setIdentificationType(initialPlayer.identificationType || "IC");
-            setIdentificationValue(initialPlayer.identificationValue || initialPlayer.icOrPassport || "");
+            setIdentificationType(initialPlayer.identificationType || "MALAYSIAN_IC");
+            setIdentificationPresent(Boolean(initialPlayer.identificationPresent));
+            setIdentificationValue(""); // Phase 1: do not preload raw identification
             setNationality(initialPlayer.nationality || "");
             setPhone(initialPlayer.phone || "");
 
@@ -170,8 +172,7 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             gender: String(gender),
             dob,
             identificationType,
-            identificationValue,
-            icOrPassport: identificationValue, // Legacy
+            icOrPassport: identificationValue.trim() ? identificationValue.trim() : (mode === 'create' ? identificationValue : undefined),
             nationality,
             phone: phone || undefined,
 
@@ -319,7 +320,8 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                                 value={identificationType}
                                 onChange={(value) => setIdentificationType(value as string)}
                                 options={[
-                                    { value: 'IC', label: 'IC' },
+                                    ...(identificationType === 'IC' ? [{ value: 'IC', label: 'IC (Legacy)' }] : []),
+                                    { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
                                     { value: 'PASSPORT', label: 'Passport' },
                                     { value: 'OTHER', label: 'Other' }
                                 ]}
@@ -327,17 +329,29 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">
-                                Identification Value {mode === 'create' && '*'}
-                            </label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-muted">
+                                    Identification / Passport Number {mode === 'create' && '*'}
+                                </label>
+                                {mode === 'edit' && identificationPresent && (
+                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                        ID on file: PRESENT
+                                    </span>
+                                )}
+                            </div>
                             <input
                                 type="text"
                                 value={identificationValue}
                                 onChange={(e) => setIdentificationValue(e.target.value)}
                                 required={mode === 'create'}
                                 className="input-base w-full"
-                                placeholder="ID / Passport Number"
+                                placeholder={mode === 'edit' && identificationPresent ? "Leave blank to keep existing ID on file" : "ID / Passport Number"}
                             />
+                            {mode === 'edit' && identificationPresent && (
+                                <p className="text-xs text-muted">
+                                    Leave blank to keep the existing identification on file.
+                                </p>
+                            )}
                         </div>
                     </div>
 

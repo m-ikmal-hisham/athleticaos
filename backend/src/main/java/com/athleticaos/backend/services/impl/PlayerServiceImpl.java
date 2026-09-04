@@ -5,6 +5,7 @@ import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.utils.IdentificationUtil;
 import com.athleticaos.backend.entities.PlayerTeam;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.TournamentPlayer;
@@ -154,11 +155,12 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
-        // Normalize IC/Passport (Strict Alpha-Numeric)
-        String normalizedIc = null;
-        if (request.icOrPassport() != null) {
-            normalizedIc = normalizeIc(request.icOrPassport());
-        }
+        // Normalise IC/Passport using shared utility (trim, uppercase, alphanumeric only)
+        String normalizedIc = IdentificationUtil.normalize(request.icOrPassport());
+
+        // Validate format and IC-DOB/gender consistency for new submissions
+        IdentificationUtil.validateNewSubmission(
+                normalizedIc, request.identificationType(), request.dob(), request.gender());
 
         if (normalizedIc != null && !normalizedIc.isEmpty()) {
             checkDuplicateIc(normalizedIc, null);
@@ -179,7 +181,6 @@ public class PlayerServiceImpl implements PlayerService {
                 .dob(request.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(request.identificationType())
-                .identificationValue(request.identificationValue())
                 .nationality(request.nationality())
                 .email(request.email())
                 .phone(request.phone())
@@ -269,25 +270,22 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.dob() != null) {
             person.setDob(request.dob());
         }
+        // Phase 1: null icOrPassport means "leave existing value unchanged".
+        // Non-blank value triggers normalisation, validation, and duplicate check.
         if (request.icOrPassport() != null) {
-            String normalizedIcUpdate = normalizeIc(request.icOrPassport());
-
-            // Validate only if different or new (though duplicate check handles
-            // self-exclusion)
+            String normalizedIcUpdate = IdentificationUtil.normalize(request.icOrPassport());
             if (normalizedIcUpdate != null && !normalizedIcUpdate.isEmpty()) {
+                IdentificationUtil.validateNewSubmission(
+                        normalizedIcUpdate, request.identificationType(),
+                        request.dob() != null ? request.dob() : person.getDob(),
+                        request.gender() != null ? request.gender() : person.getGender());
                 checkDuplicateIc(normalizedIcUpdate, person.getId());
                 person.setIcOrPassport(normalizedIcUpdate);
-            } else {
-                // If explicitly cleared (empty), allow setting to null or empty?
-                // Assuming empty string means clear.
-                person.setIcOrPassport(normalizedIcUpdate);
             }
+            // Empty string after normalisation is treated as no-op (leave existing value).
         }
         if (request.identificationType() != null) {
             person.setIdentificationType(request.identificationType());
-        }
-        if (request.identificationValue() != null) {
-            person.setIdentificationValue(request.identificationValue());
         }
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
@@ -351,21 +349,18 @@ public class PlayerServiceImpl implements PlayerService {
     // ... (keeping other methods unchanged, skipping to checkDuplicateIc
     // replacement)
 
-    private String normalizeIc(String ic) {
-        if (ic == null)
-            return null;
-        return ic.trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-    }
-
     /**
-     * Helper method to perform robust duplicate checking for IC/Passport.
-     * Uses strict normalization and Database uniqueness check.
+     * Duplicate IC/Passport check using exact-match on the normalised value.
+     * Uses {@link IdentificationUtil#normalize} before calling this method.
      *
-     * @param ic              The normalized (strict alphanumeric) input string
-     * @param excludePersonId The Person ID to exclude from the check (for updates)
+     * <p>Phase 1: raw IC is NOT logged to avoid PII in log files.
+     *
+     * @param ic              the normalised (strict alphanumeric) input string
+     * @param excludePersonId the Person ID to exclude from the check (for updates); null for new records
      */
     private void checkDuplicateIc(String ic, UUID excludePersonId) {
-        log.debug("Checking for duplicate IC: {} (excluding: {})", ic, excludePersonId);
+        // Phase 1: log only the excluded person ID, never the raw IC value.
+        log.debug("Duplicate identification check (excluding person: {})", excludePersonId);
         if (ic == null || ic.isEmpty())
             return;
 
@@ -377,7 +372,7 @@ public class PlayerServiceImpl implements PlayerService {
         }
 
         if (exists) {
-            log.warn("Duplicate IC/Passport detected: {}", ic);
+            log.warn("Duplicate identification value detected for person (excluding: {})", excludePersonId);
             throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC number already exists");
         }
     }
@@ -546,8 +541,6 @@ public class PlayerServiceImpl implements PlayerService {
         String organisationName = null;
         java.util.List<String> teamNames = new java.util.ArrayList<>();
 
-        // Helper filter for active assignments usually won't include deleted players
-        // unless logic is flawed
         List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
                 .findByPlayerIdAndIsActiveTrue(player.getId());
         // Sort by most recent assignment first so current team drives org display
@@ -557,19 +550,20 @@ public class PlayerServiceImpl implements PlayerService {
             return d2.compareTo(d1);
         });
         if (!playerTeams.isEmpty()) {
-            // Get the first (most recent) active team assignment
             var playerTeam = playerTeams.get(0);
-
             if (playerTeam.getTeam() != null && playerTeam.getTeam().getOrganisation() != null) {
                 organisationId = playerTeam.getTeam().getOrganisation().getId();
                 organisationName = playerTeam.getTeam().getOrganisation().getName();
             }
-
-            // Collect all active team names (most recent first)
             teamNames = playerTeams.stream()
                     .map(pt -> pt.getTeam().getName())
                     .collect(java.util.stream.Collectors.toList());
         }
+
+        // Phase 1: raw IC/passport is NOT included in API responses.
+        boolean identificationPresent = person.getIcOrPassport() != null
+                && !person.getIcOrPassport().isBlank();
+
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
@@ -578,9 +572,10 @@ public class PlayerServiceImpl implements PlayerService {
                 .lastName(person.getLastName())
                 .gender(person.getGender())
                 .dob(person.getDob())
-                .icOrPassport(person.getIcOrPassport()) // Include for update flow
+                // Identification — presence indicator only, never raw value
+                .identificationPresent(identificationPresent)
                 .identificationType(person.getIdentificationType())
-                .identificationValue(person.getIdentificationValue())
+                .identificationDisplay(identificationPresent ? "PRESENT" : null)
                 .nationality(person.getNationality())
                 .email(person.getEmail())
                 .phone(person.getPhone())
@@ -635,8 +630,9 @@ public class PlayerServiceImpl implements PlayerService {
 
             // 2. Pre-check database constraint duplicate rules if no validation errors yet
             if (rowErrors.isEmpty()) {
-                String normalizedIc = row.icOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-                if (personRepository.existsByIcOrPassport(normalizedIc)) {
+                // Use shared utility for consistent normalisation
+                String normalizedIc = IdentificationUtil.normalize(row.icOrPassport());
+                if (normalizedIc != null && personRepository.existsByIcOrPassport(normalizedIc)) {
                     rowErrors.add("Player with this IC or Passport already exists");
                 }
                 

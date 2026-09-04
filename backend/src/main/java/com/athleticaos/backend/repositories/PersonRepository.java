@@ -16,11 +16,11 @@ import java.util.UUID;
 @Repository
 public interface PersonRepository extends JpaRepository<Person, UUID> {
 
-        // Server-side search across name, IC/passport, and email
+        // Phase 1: IC/passport substring search removed to prevent PII exposure in search logs/results.
+        // Search covers name and email only. IC duplicate-checking uses normalised exact-match methods below.
         @Query("SELECT p FROM Person p WHERE " +
                "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
                "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(p.icOrPassport) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
                "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%'))")
         Page<Person> searchAllPersons(@Param("search") String search, Pageable pageable);
         Optional<Person> findByEmail(String email);

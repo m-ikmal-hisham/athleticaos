@@ -133,17 +133,25 @@ public class SeedingServiceImpl implements SeedingService {
         // Person
         String firstName = faker.name().firstName();
         String lastName = faker.name().lastName();
+
+        // Synthetic Malaysian IC for seeding: YYMMDD + 2-digit state code + 3-digit sequence + 1 last digit (odd for MALE)
+        java.time.LocalDate seedDob = LocalDate.of(1990 + faker.random().nextInt(15), 1 + faker.random().nextInt(11),
+                1 + faker.random().nextInt(27));
+        String dobPart = seedDob.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+        String statePart = String.format("%02d", 10 + faker.random().nextInt(14)); // 10-23 for Malaysian state codes
+        int seq3 = faker.random().nextInt(1000);
+        int lastDigit = (faker.random().nextInt(5) * 2) + 1; // 1,3,5,7,9 — odd for MALE
+        String syntheticIc = dobPart + statePart + String.format("%03d", seq3) + lastDigit;
+
         Person person = Person.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(faker.internet().emailAddress(firstName.toLowerCase() + "." + lastName.toLowerCase()))
                 .gender("MALE")
-                .dob(LocalDate.of(1990 + faker.random().nextInt(15), 1 + faker.random().nextInt(11),
-                        1 + faker.random().nextInt(27)))
+                .dob(seedDob)
                 .nationality("Malaysia")
-                .icOrPassport(faker.number().digits(12))
-                .identificationType("IC")
-                .identificationValue(faker.number().digits(12))
+                .icOrPassport(syntheticIc)
+                .identificationType("MALAYSIAN_IC")
                 .state(org.getState())
                 .build();
         person = personRepository.save(person);

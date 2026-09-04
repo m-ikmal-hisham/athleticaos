@@ -300,7 +300,7 @@ const PeopleDirectory: React.FC = () => {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="font-mono text-xs text-muted">{p.icOrPassport}</TableCell>
+                                        <TableCell className="font-mono text-xs text-muted">{p.identificationDisplay || '—'}</TableCell>
                                         <TableCell>
                                             <div className="text-sm">
                                                 {p.email && <div className="text-foreground">{p.email}</div>}

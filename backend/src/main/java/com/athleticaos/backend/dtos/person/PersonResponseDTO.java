@@ -18,7 +18,10 @@ public class PersonResponseDTO {
     private String id;
     private String firstName;
     private String lastName;
-    private String icOrPassport;
+    // Identification — raw value NOT exposed in responses (Phase 1 containment)
+    private boolean identificationPresent;
+    private String identificationType;
+    private String identificationDisplay; // "PRESENT" when an IC/passport is stored, null otherwise
     private LocalDate dob;
     private String gender;
     private String nationality;

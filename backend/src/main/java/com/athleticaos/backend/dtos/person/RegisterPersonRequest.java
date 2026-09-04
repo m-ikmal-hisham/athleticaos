@@ -16,6 +16,9 @@ public class RegisterPersonRequest {
     @NotBlank(message = "IC or Passport is required")
     private String icOrPassport;
     
+    // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
+    private String identificationType;
+    
     @NotNull(message = "Date of birth is required")
     private LocalDate dob;
     

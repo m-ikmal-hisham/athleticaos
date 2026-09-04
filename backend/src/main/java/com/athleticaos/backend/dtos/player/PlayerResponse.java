@@ -18,9 +18,10 @@ public record PlayerResponse(
                 String lastName,
                 String gender,
                 LocalDate dob,
-                String icOrPassport, // Full value for updates (not masked for now)
+                // Identification — raw value NOT exposed in responses (Phase 1 containment)
+                boolean identificationPresent,
                 String identificationType,
-                String identificationValue,
+                String identificationDisplay, // "PRESENT" when an IC/passport is stored, null otherwise
                 String nationality,
                 String email,
                 String phone,
