@@ -43,4 +43,12 @@ application:
       refresh-token:
         expiration: 604800000
 
-# CI/CD test 20260314005950
+athleticaos:
+  security:
+    identification-hmac-secret: ${ATHLETICAOS_IDENTIFICATION_HMAC_SECRET:}
+    identification-hmac-version: ${ATHLETICAOS_IDENTIFICATION_HMAC_VERSION:1}
+  backfill:
+    identification:
+      enabled: ${ATHLETICAOS_BACKFILL_IDENTIFICATION_ENABLED:false}
+      dry-run: ${ATHLETICAOS_BACKFILL_IDENTIFICATION_DRY_RUN:true}
+      batch-size: ${ATHLETICAOS_BACKFILL_IDENTIFICATION_BATCH_SIZE:100}

@@ -54,20 +54,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         // Build a user-friendly message
         String message = "Database error: Duplicate record or constraint violation.";
-        if (ex.getCause() != null && ex.getCause().getCause() != null) {
-            String detail = ex.getCause().getCause().getMessage();
-            if (detail.contains("ic_or_passport")) {
-                message = "Person with this IC/Passport already exists";
-            } else if (detail.contains("Duplicate entry")) {
-                message = "This record already exists (duplicate entry).";
-            }
-        }
-        // Fallback for H2 or other DBs if message structure differs
-        if (ex.getMessage() != null && ex.getMessage().contains("ic_or_passport")) {
+        String errorCode = null;
+        String fullDetail = (ex.getCause() != null && ex.getCause().getCause() != null)
+                ? ex.getCause().getCause().getMessage()
+                : (ex.getMessage() != null ? ex.getMessage() : "");
+
+        if (fullDetail.contains("uc_persons_identification_hash") || fullDetail.contains("identification_hash")) {
+            message = "Identification number already exists in the system.";
+            errorCode = "DUPLICATE_IDENTIFICATION";
+        } else if (fullDetail.contains("ic_or_passport")) {
             message = "Person with this IC/Passport already exists";
+            errorCode = "DUPLICATE_IC";
+        } else if (fullDetail.contains("Duplicate entry")) {
+            message = "This record already exists (duplicate entry).";
         }
 
-        return buildResponse(HttpStatus.CONFLICT, message);
+        return buildResponseDetailed(HttpStatus.CONFLICT, message, errorCode);
     }
 
     @ExceptionHandler(DuplicateIcException.class)

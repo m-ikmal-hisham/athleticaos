@@ -47,6 +47,9 @@ class PlayerServiceImplTest {
     @Mock
     private jakarta.validation.Validator validator;
 
+    @Mock
+    private com.athleticaos.backend.services.IdentificationHashService identificationHashService;
+
     @InjectMocks
     private PlayerServiceImpl playerService;
 

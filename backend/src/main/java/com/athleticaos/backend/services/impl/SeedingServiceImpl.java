@@ -24,6 +24,7 @@ public class SeedingServiceImpl implements SeedingService {
     private final PlayerRepository playerRepository;
     private final PersonRepository personRepository;
     private final PlayerTeamRepository playerTeamRepository;
+    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
     // Removed SlugGenerator injection
 
     private static final String[] STATES = {
@@ -143,6 +144,9 @@ public class SeedingServiceImpl implements SeedingService {
         int lastDigit = (faker.random().nextInt(5) * 2) + 1; // 1,3,5,7,9 — odd for MALE
         String syntheticIc = dobPart + statePart + String.format("%03d", seq3) + lastDigit;
 
+        String idHash = identificationHashService.hash(syntheticIc);
+        Integer hashVersion = identificationHashService.getCurrentVersion();
+
         Person person = Person.builder()
                 .firstName(firstName)
                 .lastName(lastName)
@@ -152,6 +156,9 @@ public class SeedingServiceImpl implements SeedingService {
                 .nationality("Malaysia")
                 .icOrPassport(syntheticIc)
                 .identificationType("MALAYSIAN_IC")
+                .identificationHash(idHash)
+                .identificationHashVersion(hashVersion)
+                .identificationVerificationStatus("UNVERIFIED")
                 .state(org.getState())
                 .build();
         person = personRepository.save(person);

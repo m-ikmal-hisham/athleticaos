@@ -30,6 +30,7 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     private final PlayerRepository playerRepository;
     private final PlayerTeamRepository playerTeamRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
+    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -41,6 +42,9 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
         IdentificationUtil.validateNewSubmission(
                 normalizedIc, row.identificationType(), row.dob(), row.gender());
 
+        String idHash = identificationHashService.hash(normalizedIc);
+        Integer hashVersion = identificationHashService.getCurrentVersion();
+
         // 2. Create Person record
         Person person = Person.builder()
                 .firstName(row.firstName().trim())
@@ -49,6 +53,9 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
                 .dob(row.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(row.identificationType())
+                .identificationHash(idHash)
+                .identificationHashVersion(hashVersion)
+                .identificationVerificationStatus("UNVERIFIED")
                 .nationality(row.nationality().trim())
                 .email(row.email() != null && !row.email().trim().isEmpty() ? row.email().trim().toLowerCase() : null)
                 .state(row.state() != null ? row.state().trim() : null)

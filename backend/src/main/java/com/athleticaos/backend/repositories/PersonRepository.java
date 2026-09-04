@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +34,25 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
         // Strict check for duplicate IC/Passport excluding specific ID (for updates)
         @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE REPLACE(REPLACE(UPPER(p.icOrPassport), '-', ''), ' ', '') = :icOrPassport AND p.id <> :id")
         boolean existsByIcOrPassportAndIdNot(@Param("icOrPassport") String icOrPassport, @Param("id") UUID id);
+
+        // Phase 2: HMAC identification hash methods
+        Optional<Person> findByIdentificationHash(String identificationHash);
+
+        boolean existsByIdentificationHash(String identificationHash);
+
+        boolean existsByIdentificationHashAndIdNot(String identificationHash, UUID id);
+
+        @Query("SELECT p FROM Person p WHERE p.identificationHash IS NULL AND p.icOrPassport IS NOT NULL ORDER BY p.id ASC")
+        Page<Person> findByIdentificationHashIsNullAndIcOrPassportIsNotNullOrderByIdAsc(Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE p.identificationHash IS NULL AND p.icOrPassport IS NOT NULL AND p.id > :id ORDER BY p.id ASC")
+        Page<Person> findByIdentificationHashIsNullAndIcOrPassportIsNotNullAndIdGreaterThanOrderByIdAsc(@Param("id") UUID id, Pageable pageable);
+
+        @Query("SELECT COUNT(p) FROM Person p WHERE p.identificationHash IS NOT NULL")
+        long countWithIdentificationHash();
+
+        @Query("SELECT COUNT(p) FROM Person p WHERE p.identificationHash IS NULL AND p.icOrPassport IS NOT NULL")
+        long countUnprocessedWithIcOrPassport();
 
         boolean existsByUserId(UUID userId);
 }

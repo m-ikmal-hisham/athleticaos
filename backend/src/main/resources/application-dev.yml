@@ -18,3 +18,7 @@ logging:
     org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+athleticaos:
+  security:
+    identification-hmac-secret: "ZGV2LWxvY2FsLW9ubHktaWRlbnRpZmljYXRpb24ta2V5LTMyYiE="

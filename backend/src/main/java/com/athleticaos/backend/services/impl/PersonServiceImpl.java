@@ -15,6 +15,7 @@ import com.athleticaos.backend.entities.OfficialRegistry;
 import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,7 @@ public class PersonServiceImpl implements PersonService {
     private final TournamentOfficialRepository tournamentOfficialRepository;
     private final UserRepository userRepository;
     private final OrganisationRepository organisationRepository;
+    private final IdentificationHashService identificationHashService;
     private final OrganisationService organisationService;
     private final UserService userService;
 
@@ -166,13 +168,21 @@ public class PersonServiceImpl implements PersonService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
-        // Phase 1: use shared utility for normalisation and validation
+        // Phase 1 & 2: use shared utility for normalisation and validation; dual-lookup
         if (request.getIcOrPassport() != null && !request.getIcOrPassport().trim().isEmpty()) {
             String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
             IdentificationUtil.validateNewSubmission(
                     normalizedIc, request.getIdentificationType(), request.getDob(), request.getGender());
-            if (normalizedIc != null && personRepository.existsByIcOrPassport(normalizedIc)) {
-                throw new IllegalArgumentException("IC or Passport already exists in the system.");
+            if (normalizedIc != null) {
+                if (identificationHashService.isConfigured()) {
+                    String hash = identificationHashService.computeHash(normalizedIc);
+                    if (hash != null && personRepository.existsByIdentificationHash(hash)) {
+                        throw new IllegalArgumentException("IC or Passport already exists in the system.");
+                    }
+                }
+                if (personRepository.existsByIcOrPassport(normalizedIc)) {
+                    throw new IllegalArgumentException("IC or Passport already exists in the system.");
+                }
             }
         }
 
@@ -183,6 +193,11 @@ public class PersonServiceImpl implements PersonService {
         person.setIcOrPassport(normalizedIcForSave);
         person.setIdentificationType(
                 normalizedIcForSave != null ? IdentificationType.from(request.getIdentificationType()).name() : null);
+        if (normalizedIcForSave != null && identificationHashService.isConfigured()) {
+            person.setIdentificationHash(identificationHashService.computeHash(normalizedIcForSave));
+            person.setIdentificationHashVersion(identificationHashService.getActiveVersion());
+            person.setIdentificationVerificationStatus("UNVERIFIED");
+        }
         person.setDob(request.getDob());
         person.setGender(request.getGender());
         person.setNationality(request.getNationality());
@@ -230,8 +245,8 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
-        // Phase 1.1: null icOrPassport = leave existing unchanged.
-        // Non-blank value triggers atomic normalisation, validation, and duplicate check.
+        // Phase 1.1 & 2: null icOrPassport = leave existing unchanged.
+        // Non-blank value triggers atomic normalisation, validation, dual duplicate check, and dual write.
         // identificationType alone cannot mutate the stored record without a replacement ID.
         if (request.getIcOrPassport() != null) {
             String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
@@ -243,12 +258,23 @@ public class PersonServiceImpl implements PersonService {
                 String effectiveGender = request.getGender() != null ? request.getGender() : person.getGender();
                 IdentificationUtil.validateNewSubmission(
                         normalizedIc, request.getIdentificationType(), effectiveDob, effectiveGender);
+                if (identificationHashService.isConfigured()) {
+                    String hash = identificationHashService.computeHash(normalizedIc);
+                    if (hash != null && personRepository.existsByIdentificationHashAndIdNot(hash, person.getId())) {
+                        throw new IllegalArgumentException("IC or Passport already exists in the system.");
+                    }
+                }
                 if (!normalizedIc.equals(person.getIcOrPassport())
                         && personRepository.existsByIcOrPassport(normalizedIc)) {
                     throw new IllegalArgumentException("IC or Passport already exists in the system.");
                 }
                 person.setIcOrPassport(normalizedIc);
                 person.setIdentificationType(IdentificationType.from(request.getIdentificationType()).name());
+                if (identificationHashService.isConfigured()) {
+                    person.setIdentificationHash(identificationHashService.computeHash(normalizedIc));
+                    person.setIdentificationHashVersion(identificationHashService.getActiveVersion());
+                    person.setIdentificationVerificationStatus("UNVERIFIED");
+                }
             }
             // Empty-after-normalise = no-op (leave existing value and type unchanged).
         }

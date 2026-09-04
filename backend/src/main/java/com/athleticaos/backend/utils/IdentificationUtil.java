@@ -73,9 +73,9 @@ public final class IdentificationUtil {
         }
 
         // When nonblank identification is submitted, enforce canonical type
-        com.athleticaos.backend.enums.IdentificationType idType = com.athleticaos.backend.enums.IdentificationType.from(type);
+        IdentificationType idType = IdentificationType.from(type);
 
-        if (idType == com.athleticaos.backend.enums.IdentificationType.MALAYSIAN_IC) {
+        if (idType == IdentificationType.MALAYSIAN_IC) {
             validateMalaysianIc(normalized, dob, gender);
         }
         // PASSPORT and OTHER skip Malaysian IC format/DOB/gender rules.

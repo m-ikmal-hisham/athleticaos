@@ -44,6 +44,16 @@ public class Person {
     @Column(name = "identification_value")
     private String identificationValue;
 
+    @Column(name = "identification_hash", length = 64)
+    private String identificationHash;
+
+    @Column(name = "identification_hash_version")
+    private Integer identificationHashVersion;
+
+    @Column(name = "identification_verification_status", length = 32, nullable = false)
+    @Builder.Default
+    private String identificationVerificationStatus = "UNVERIFIED";
+
     @Column(nullable = false)
     private String nationality;
 

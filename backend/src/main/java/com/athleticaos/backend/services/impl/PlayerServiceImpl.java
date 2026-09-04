@@ -56,6 +56,7 @@ public class PlayerServiceImpl implements PlayerService {
     private final MatchEventRepository matchEventRepository;
     private final PlayerSuspensionRepository playerSuspensionRepository;
     private final com.athleticaos.backend.services.OrganisationService organisationService;
+    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
     private final PlayerBatchHelper playerBatchHelper;
     private final Validator validator;
 
@@ -175,6 +176,13 @@ public class PlayerServiceImpl implements PlayerService {
         }
 
         // Create Person record (PII)
+        String identificationHash = null;
+        Integer hashVersion = null;
+        if (normalizedIc != null && identificationHashService.isConfigured()) {
+            identificationHash = identificationHashService.computeHash(normalizedIc);
+            hashVersion = identificationHashService.getActiveVersion();
+        }
+
         Person person = Person.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
@@ -182,6 +190,9 @@ public class PlayerServiceImpl implements PlayerService {
                 .dob(request.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(normalizedIc != null ? IdentificationType.from(request.identificationType()).name() : null)
+                .identificationHash(identificationHash)
+                .identificationHashVersion(hashVersion)
+                .identificationVerificationStatus("UNVERIFIED")
                 .nationality(request.nationality())
                 .email(request.email())
                 .phone(request.phone())
@@ -287,6 +298,11 @@ public class PlayerServiceImpl implements PlayerService {
                 checkDuplicateIc(normalizedIcUpdate, person.getId());
                 person.setIcOrPassport(normalizedIcUpdate);
                 person.setIdentificationType(IdentificationType.from(request.identificationType()).name());
+                if (identificationHashService.isConfigured()) {
+                    person.setIdentificationHash(identificationHashService.computeHash(normalizedIcUpdate));
+                    person.setIdentificationHashVersion(identificationHashService.getActiveVersion());
+                    person.setIdentificationVerificationStatus("UNVERIFIED");
+                }
             }
             // Empty string after normalisation is treated as no-op (leave existing value and type unchanged).
         }
@@ -362,10 +378,23 @@ public class PlayerServiceImpl implements PlayerService {
      * @param excludePersonId the Person ID to exclude from the check (for updates); null for new records
      */
     private void checkDuplicateIc(String ic, UUID excludePersonId) {
-        // Phase 1: log only the excluded person ID, never the raw IC value.
+        // Phase 1 & 2: log only the excluded person ID, never the raw IC value.
         log.debug("Duplicate identification check (excluding person: {})", excludePersonId);
         if (ic == null || ic.isEmpty())
             return;
+
+        if (identificationHashService.isConfigured()) {
+            String hash = identificationHashService.computeHash(ic);
+            if (hash != null) {
+                boolean hashExists = (excludePersonId == null)
+                        ? personRepository.existsByIdentificationHash(hash)
+                        : personRepository.existsByIdentificationHashAndIdNot(hash, excludePersonId);
+                if (hashExists) {
+                    log.warn("Duplicate identification hash detected for person (excluding: {})", excludePersonId);
+                    throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC number already exists");
+                }
+            }
+        }
 
         boolean exists;
         if (excludePersonId == null) {
@@ -643,8 +672,16 @@ public class PlayerServiceImpl implements PlayerService {
 
                 // Only perform duplicate lookup when format validation succeeds
                 if (rowErrors.isEmpty()) {
-                    if (normalizedIc != null && personRepository.existsByIcOrPassport(normalizedIc)) {
-                        rowErrors.add("Player with this IC or Passport already exists");
+                    if (normalizedIc != null) {
+                        if (identificationHashService.isConfigured()) {
+                            String hash = identificationHashService.computeHash(normalizedIc);
+                            if (hash != null && personRepository.existsByIdentificationHash(hash)) {
+                                rowErrors.add("Player with this IC or Passport already exists");
+                            }
+                        }
+                        if (rowErrors.isEmpty() && personRepository.existsByIcOrPassport(normalizedIc)) {
+                            rowErrors.add("Player with this IC or Passport already exists");
+                        }
                     }
 
                     if (row.email() != null && !row.email().trim().isEmpty()) {
