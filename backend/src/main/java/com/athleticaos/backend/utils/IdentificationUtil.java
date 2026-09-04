@@ -1,5 +1,6 @@
 package com.athleticaos.backend.utils;
 
+import com.athleticaos.backend.enums.IdentificationType;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -71,10 +72,13 @@ public final class IdentificationUtil {
             return; // Nothing submitted — no validation required.
         }
 
-        if ("MALAYSIAN_IC".equals(type)) {
+        // When nonblank identification is submitted, enforce canonical type
+        com.athleticaos.backend.enums.IdentificationType idType = com.athleticaos.backend.enums.IdentificationType.from(type);
+
+        if (idType == com.athleticaos.backend.enums.IdentificationType.MALAYSIAN_IC) {
             validateMalaysianIc(normalized, dob, gender);
         }
-        // PASSPORT, OTHER, null type, and any unknown type are accepted without format rules.
+        // PASSPORT and OTHER skip Malaysian IC format/DOB/gender rules.
     }
 
     // -------------------------------------------------------------------------
@@ -93,33 +97,37 @@ public final class IdentificationUtil {
                     "Malaysian IC must contain only numeric digits.");
         }
 
-        // First 6 digits must equal DOB formatted as YYMMDD.
-        if (dob != null) {
-            String expectedPrefix = dob.format(YYMMDD);
-            String actualPrefix = normalized.substring(0, 6);
-            if (!expectedPrefix.equals(actualPrefix)) {
-                throw new IllegalArgumentException(
-                        "Malaysian IC date prefix does not match the provided date of birth.");
-            }
+        // DOB is strictly required for Malaysian IC validation.
+        if (dob == null) {
+            throw new IllegalArgumentException("Date of birth is required for Malaysian IC validation.");
+        }
+        String expectedPrefix = dob.format(YYMMDD);
+        String actualPrefix = normalized.substring(0, 6);
+        if (!expectedPrefix.equals(actualPrefix)) {
+            throw new IllegalArgumentException(
+                    "Malaysian IC date prefix does not match the provided date of birth.");
         }
 
-        // Last digit parity must match gender.
-        if (gender != null) {
-            int lastDigit = normalized.charAt(11) - '0';
-            boolean isOdd = (lastDigit % 2) != 0;
+        // Gender is strictly required for Malaysian IC validation.
+        if (gender == null || gender.trim().isEmpty()) {
+            throw new IllegalArgumentException("Gender is required for Malaysian IC validation.");
+        }
+        String normGender = gender.trim().toUpperCase(Locale.ROOT);
+        if (!"MALE".equals(normGender) && !"FEMALE".equals(normGender)) {
+            throw new IllegalArgumentException(
+                    "Malaysian IC validation requires gender MALE or FEMALE; got: " + gender);
+        }
 
-            if (!"MALE".equalsIgnoreCase(gender) && !"FEMALE".equalsIgnoreCase(gender)) {
-                throw new IllegalArgumentException(
-                        "Malaysian IC validation requires gender MALE or FEMALE; got: " + gender);
-            }
-            if ("MALE".equalsIgnoreCase(gender) && !isOdd) {
-                throw new IllegalArgumentException(
-                        "Malaysian IC last digit must be odd for gender MALE.");
-            }
-            if ("FEMALE".equalsIgnoreCase(gender) && isOdd) {
-                throw new IllegalArgumentException(
-                        "Malaysian IC last digit must be even for gender FEMALE.");
-            }
+        int lastDigit = normalized.charAt(11) - '0';
+        boolean isOdd = (lastDigit % 2) != 0;
+
+        if ("MALE".equals(normGender) && !isOdd) {
+            throw new IllegalArgumentException(
+                    "Malaysian IC last digit must be odd for gender MALE.");
+        }
+        if ("FEMALE".equals(normGender) && isOdd) {
+            throw new IllegalArgumentException(
+                    "Malaysian IC last digit must be even for gender FEMALE.");
         }
     }
 }

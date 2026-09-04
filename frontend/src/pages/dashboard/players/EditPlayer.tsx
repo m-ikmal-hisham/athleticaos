@@ -36,7 +36,8 @@ export const EditPlayer = () => {
     const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("MALAYSIAN_IC");
+    const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
+    const [replacementIdentificationType, setReplacementIdentificationType] = useState("");
     const [identificationValue, setIdentificationValue] = useState("");
     const [identificationPresent, setIdentificationPresent] = useState(false);
     const [nationality, setNationality] = useState("");
@@ -94,7 +95,8 @@ export const EditPlayer = () => {
                 setPhotoUrl(player.photoUrl || "");
                 setGender(player.gender || Gender.MALE);
                 setDob(player.dob || "");
-                setIdentificationType(player.identificationType || "MALAYSIAN_IC");
+                setExistingIdentificationType(player.identificationType || null);
+                setReplacementIdentificationType("");
                 setIdentificationPresent(Boolean(player.identificationPresent));
                 setIdentificationValue(""); // Phase 1: do not preload raw identification
                 setNationality(player.nationality || "");
@@ -135,6 +137,13 @@ export const EditPlayer = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
+
+        const hasReplacementId = Boolean(identificationValue.trim());
+        if (hasReplacementId && !replacementIdentificationType) {
+            showToast.error("Please select an identification type for the replacement ID");
+            return;
+        }
+
         setSaving(true);
 
         const payload: any = {
@@ -143,8 +152,8 @@ export const EditPlayer = () => {
             email,
             gender: String(gender),
             dob,
-            identificationType,
-            icOrPassport: identificationValue.trim() ? identificationValue.trim() : undefined,
+            identificationType: hasReplacementId ? replacementIdentificationType : undefined,
+            icOrPassport: hasReplacementId ? identificationValue.trim() : undefined,
             nationality,
             phone: phone || undefined,
             addressLine1,
@@ -323,18 +332,32 @@ export const EditPlayer = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Identification Type</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-muted-foreground">
+                                        Identification Type {identificationValue.trim() ? "*" : ""}
+                                    </label>
+                                    {existingIdentificationType && (
+                                        <span className="text-[11px] font-medium text-muted-foreground">
+                                            Current: <span className="font-semibold text-foreground">{existingIdentificationType}</span>
+                                        </span>
+                                    )}
+                                </div>
                                 <SearchableSelect
-                                    value={identificationType}
-                                    onChange={(value) => setIdentificationType(value as string)}
+                                    value={replacementIdentificationType}
+                                    onChange={(value) => setReplacementIdentificationType(value as string)}
                                     options={[
-                                        ...(identificationType === 'IC' ? [{ value: 'IC', label: 'IC (Legacy)' }] : []),
                                         { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
                                         { value: 'PASSPORT', label: 'Passport' },
                                         { value: 'OTHER', label: 'Other' }
                                     ]}
-                                    placeholder="Select ID type"
+                                    placeholder={identificationValue.trim() ? "Select replacement ID type" : "Only required if replacing ID"}
+                                    disabled={!identificationValue.trim()}
                                 />
+                                <p className="text-xs text-muted">
+                                    {identificationValue.trim()
+                                        ? "Select the canonical type for the new identification."
+                                        : "Type is locked unless a replacement ID is entered."}
+                                </p>
                             </div>
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">

@@ -29,7 +29,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        identificationType: 'MALAYSIAN_IC',
+        identificationType: '',
         icOrPassport: '',
         dob: '',
         gender: '',
@@ -102,6 +102,11 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             return;
         }
 
+        if (formData.icOrPassport && !formData.identificationType) {
+            showToast.error('Please select an identification type');
+            return;
+        }
+
         setLoading(true);
         try {
             await createPerson(orgIdToUse, formData);
@@ -112,7 +117,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             setFormData({
                 firstName: '',
                 lastName: '',
-                identificationType: 'MALAYSIAN_IC',
+                identificationType: '',
                 icOrPassport: '',
                 dob: '',
                 gender: '',
@@ -164,7 +169,9 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                             className="w-full h-10 px-3 rounded-lg border border-border bg-input-bg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                             value={formData.identificationType}
                             onChange={(e) => setFormData({ ...formData, identificationType: e.target.value })}
+                            required
                         >
+                            <option value="" disabled>Select identification type</option>
                             <option value="MALAYSIAN_IC">Malaysian IC</option>
                             <option value="PASSPORT">Passport</option>
                             <option value="OTHER">Other</option>

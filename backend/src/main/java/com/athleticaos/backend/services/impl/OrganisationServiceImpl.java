@@ -18,6 +18,7 @@ import com.athleticaos.backend.entities.OrganisationPerson;
 import com.athleticaos.backend.dtos.person.RegisterPersonRequest;
 import com.athleticaos.backend.dtos.team.PersonSummaryDTO;
 
+import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.utils.IdentificationUtil;
@@ -489,7 +490,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .icOrPassport(normalizedIc)
-                .identificationType(request.getIdentificationType())
+                .identificationType(normalizedIc != null ? IdentificationType.from(request.getIdentificationType()).name() : null)
                 .dob(request.getDob())
                 .gender(request.getGender())
                 .nationality(request.getNationality())

@@ -36,8 +36,10 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
         log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
 
-        // 1. Normalise IC using shared utility
+        // 1. Defensively normalise and validate identification using shared utility
         String normalizedIc = IdentificationUtil.normalize(row.icOrPassport());
+        IdentificationUtil.validateNewSubmission(
+                normalizedIc, row.identificationType(), row.dob(), row.gender());
 
         // 2. Create Person record
         Person person = Person.builder()

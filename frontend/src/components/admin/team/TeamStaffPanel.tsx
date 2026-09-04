@@ -27,7 +27,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
     const [isAdding, setIsAdding] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
     const [newStaff, setNewStaff] = useState({ personId: '', staffRoleId: 0, isWorldRugbyCertified: false });
-    const [newPerson, setNewPerson] = useState({ firstName: '', lastName: '', identificationType: 'MALAYSIAN_IC', icOrPassport: '', dob: '', gender: '', nationality: '', nationalPlayerStatus: 'NONE' });
+    const [newPerson, setNewPerson] = useState({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', nationalPlayerStatus: 'NONE' });
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
         title: '',
@@ -92,6 +92,11 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
             showToast.error('Missing organisation ID');
             return;
         }
+        if (newPerson.icOrPassport && !newPerson.identificationType) {
+            showToast.error('Please select an identification type');
+            return;
+        }
+
         try {
             const newlyCreatedPerson = await registerPerson(organisationId, newPerson);
             showToast.success('Person registered successfully');
@@ -100,7 +105,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
             setNewStaff(prev => ({ ...prev, personId: newlyCreatedPerson.id }));
             
             // Reset form and switch back to Add Staff view
-            setNewPerson({ firstName: '', lastName: '', identificationType: 'MALAYSIAN_IC', icOrPassport: '', dob: '', gender: '', nationality: '', nationalPlayerStatus: 'NONE' });
+            setNewPerson({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', nationalPlayerStatus: 'NONE' });
             setIsRegistering(false);
             
             // Reload persons to reflect the new addition
@@ -269,7 +274,9 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                                             value={newPerson.identificationType} 
                                             onChange={e => setNewPerson({...newPerson, identificationType: e.target.value})}
                                             className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0"
+                                            required
                                         >
+                                            <option value="" disabled>Select ID type</option>
                                             <option value="MALAYSIAN_IC">Malaysian IC</option>
                                             <option value="PASSPORT">Passport</option>
                                             <option value="OTHER">Other</option>

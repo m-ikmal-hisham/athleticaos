@@ -38,6 +38,15 @@ class PlayerServiceImplTest {
     @Mock
     private PlayerTeamRepository playerTeamRepository;
 
+    @Mock
+    private com.athleticaos.backend.repositories.TeamRepository teamRepository;
+
+    @Mock
+    private com.athleticaos.backend.services.PlayerBatchHelper playerBatchHelper;
+
+    @Mock
+    private jakarta.validation.Validator validator;
+
     @InjectMocks
     private PlayerServiceImpl playerService;
 
@@ -159,5 +168,69 @@ class PlayerServiceImplTest {
 
         assertThat(response.identificationPresent()).isFalse();
         assertThat(response.identificationDisplay()).isNull();
+    }
+
+    @Test
+    void updatePlayer_withTypeOnly_doesNotMutateType() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        // Attempting to change type to PASSPORT without providing icOrPassport
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                null, // icOrPassport is null
+                "PASSPORT", // type provided without ID
+                null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        // Type must remain unchanged (MALAYSIAN_IC)
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
+    }
+
+    @Test
+    void updatePlayer_withNewIc_missingIdentificationType_throwsException() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                "950520-14-5553",
+                null, // missing identificationType
+                null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("identificationType is required");
+    }
+
+    @Test
+    void createBatchPlayers_invalidDobMismatch_returnsErrorAndDoesNotPersist() {
+        UUID teamId = UUID.randomUUID();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(new com.athleticaos.backend.entities.Team()));
+
+        com.athleticaos.backend.dtos.player.PlayerRowDTO row = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
+                "Test", "Player", "MALE", LocalDate.of(1995, 5, 20),
+                "MALAYSIAN_IC", "900101145551", "Malaysian", null, null, null
+        );
+
+        when(validator.validate(any())).thenReturn(Collections.emptySet());
+
+        com.athleticaos.backend.dtos.player.PlayerBatchResponse response =
+                playerService.createBatchPlayers(teamId, java.util.List.of(row));
+
+        assertThat(response.failCount()).isEqualTo(1);
+        assertThat(response.successCount()).isEqualTo(0);
+        assertThat(response.results().get(0).errors()).anyMatch(e -> e.contains("Malaysian IC date prefix"));
+        verify(playerBatchHelper, org.mockito.Mockito.never()).savePlayerInNewTransaction(any(), any());
     }
 }

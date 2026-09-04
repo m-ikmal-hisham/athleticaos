@@ -5,6 +5,7 @@ import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import com.athleticaos.backend.entities.PlayerTeam;
 import com.athleticaos.backend.entities.Team;
@@ -180,7 +181,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .gender(request.gender())
                 .dob(request.dob())
                 .icOrPassport(normalizedIc)
-                .identificationType(request.identificationType())
+                .identificationType(normalizedIc != null ? IdentificationType.from(request.identificationType()).name() : null)
                 .nationality(request.nationality())
                 .email(request.email())
                 .phone(request.phone())
@@ -270,22 +271,24 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.dob() != null) {
             person.setDob(request.dob());
         }
-        // Phase 1: null icOrPassport means "leave existing value unchanged".
-        // Non-blank value triggers normalisation, validation, and duplicate check.
+        // Phase 1.1: null icOrPassport means "leave existing value unchanged".
+        // Non-blank value triggers atomic normalisation, validation, and duplicate check.
+        // identificationType alone cannot mutate the stored record without a replacement ID.
         if (request.icOrPassport() != null) {
             String normalizedIcUpdate = IdentificationUtil.normalize(request.icOrPassport());
             if (normalizedIcUpdate != null && !normalizedIcUpdate.isEmpty()) {
+                if (request.identificationType() == null || request.identificationType().trim().isEmpty()) {
+                    throw new IllegalArgumentException("identificationType is required when updating identification value");
+                }
+                LocalDate effectiveDob = request.dob() != null ? request.dob() : person.getDob();
+                String effectiveGender = request.gender() != null ? request.gender() : person.getGender();
                 IdentificationUtil.validateNewSubmission(
-                        normalizedIcUpdate, request.identificationType(),
-                        request.dob() != null ? request.dob() : person.getDob(),
-                        request.gender() != null ? request.gender() : person.getGender());
+                        normalizedIcUpdate, request.identificationType(), effectiveDob, effectiveGender);
                 checkDuplicateIc(normalizedIcUpdate, person.getId());
                 person.setIcOrPassport(normalizedIcUpdate);
+                person.setIdentificationType(IdentificationType.from(request.identificationType()).name());
             }
-            // Empty string after normalisation is treated as no-op (leave existing value).
-        }
-        if (request.identificationType() != null) {
-            person.setIdentificationType(request.identificationType());
+            // Empty string after normalisation is treated as no-op (leave existing value and type unchanged).
         }
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
@@ -628,17 +631,26 @@ public class PlayerServiceImpl implements PlayerService {
                 }
             }
 
-            // 2. Pre-check database constraint duplicate rules if no validation errors yet
+            // 2. Validate identification and pre-check database constraints if no validation errors yet
             if (rowErrors.isEmpty()) {
-                // Use shared utility for consistent normalisation
                 String normalizedIc = IdentificationUtil.normalize(row.icOrPassport());
-                if (normalizedIc != null && personRepository.existsByIcOrPassport(normalizedIc)) {
-                    rowErrors.add("Player with this IC or Passport already exists");
+                try {
+                    IdentificationUtil.validateNewSubmission(
+                            normalizedIc, row.identificationType(), row.dob(), row.gender());
+                } catch (IllegalArgumentException e) {
+                    rowErrors.add(e.getMessage());
                 }
-                
-                if (row.email() != null && !row.email().trim().isEmpty()) {
-                    if (personRepository.existsByEmail(row.email().trim().toLowerCase())) {
-                        rowErrors.add("Player with this email already exists");
+
+                // Only perform duplicate lookup when format validation succeeds
+                if (rowErrors.isEmpty()) {
+                    if (normalizedIc != null && personRepository.existsByIcOrPassport(normalizedIc)) {
+                        rowErrors.add("Player with this IC or Passport already exists");
+                    }
+
+                    if (row.email() != null && !row.email().trim().isEmpty()) {
+                        if (personRepository.existsByEmail(row.email().trim().toLowerCase())) {
+                            rowErrors.add("Player with this email already exists");
+                        }
                     }
                 }
             }

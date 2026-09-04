@@ -139,12 +139,12 @@ class IdentificationUtilTest {
     }
 
     @Test
-    void validate_malaysianIc_nullDob_skips_dobCheck() {
-        // null dob = skip DOB check, should still validate other rules
+    void validate_malaysianIc_nullDob_throws() {
         String ic = "900123" + "14" + "567" + "1";
-        assertThatCode(() -> IdentificationUtil.validateNewSubmission(
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
                 ic, "MALAYSIAN_IC", null, "MALE"))
-                .doesNotThrowAnyException();
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Date of birth is required");
     }
 
     // -----------------------------------------------------------------------
@@ -172,11 +172,28 @@ class IdentificationUtilTest {
     }
 
     @Test
-    void validate_malaysianIc_nullGender_skips_parityCheck() {
-        // null gender = skip parity check
+    void validate_malaysianIc_nullGender_throws() {
+        String ic = "900123" + "14" + "567" + "1";
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
+                ic, "MALAYSIAN_IC", LocalDate.of(1990, 1, 23), null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Gender is required");
+    }
+
+    @Test
+    void validate_malaysianIc_unknownGender_throws() {
+        String ic = "900123" + "14" + "567" + "1";
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
+                ic, "MALAYSIAN_IC", LocalDate.of(1990, 1, 23), "OTHER"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("MALE or FEMALE");
+    }
+
+    @Test
+    void validate_malaysianIc_caseInsensitiveGender_succeeds() {
         String ic = "900123" + "14" + "567" + "1";
         assertThatCode(() -> IdentificationUtil.validateNewSubmission(
-                ic, "MALAYSIAN_IC", LocalDate.of(1990, 1, 23), null))
+                ic, "MALAYSIAN_IC", LocalDate.of(1990, 1, 23), "male"))
                 .doesNotThrowAnyException();
     }
 
@@ -199,20 +216,40 @@ class IdentificationUtilTest {
     }
 
     // -----------------------------------------------------------------------
-    // Unknown / null type — accepted without IC rules (legacy safety)
+    // Type validation — mandatory & canonical
     // -----------------------------------------------------------------------
 
     @Test
-    void validate_unknownType_doesNotThrow() {
-        assertThatCode(() -> IdentificationUtil.validateNewSubmission(
+    void validate_unknownType_throws() {
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
                 "IC1234567890", "LEGACY_IC", LocalDate.of(2000, 1, 1), "MALE"))
-                .doesNotThrowAnyException();
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid identification type: 'LEGACY_IC'");
     }
 
     @Test
-    void validate_nullType_doesNotThrow() {
-        assertThatCode(() -> IdentificationUtil.validateNewSubmission(
+    void validate_nullType_throws() {
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
                 "IC1234567890", null, null, null))
-                .doesNotThrowAnyException();
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Identification type is required");
+    }
+
+    @Test
+    void validate_blankType_throws() {
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
+                "IC1234567890", "   ", null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Identification type is required");
+    }
+
+    @Test
+    void validate_legacyAliasIc_rejectedOnBackend() {
+        // Backend rejects legacy 'IC' on new submissions; frontend canonicalizes it prior to submission
+        String ic = "900123" + "14" + "567" + "1";
+        assertThatThrownBy(() -> IdentificationUtil.validateNewSubmission(
+                ic, "IC", LocalDate.of(1990, 1, 23), "MALE"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid identification type: 'IC'");
     }
 }

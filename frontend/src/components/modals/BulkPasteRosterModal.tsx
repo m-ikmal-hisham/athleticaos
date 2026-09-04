@@ -75,11 +75,11 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             
             // Map cells to exactly our 10 expected fields: First Name | Last Name | Gender | DOB | ID Type | IC/Passport | Nationality | Email | State | Medical Notes
             let rawType = (cells[4]?.trim() || '').toUpperCase();
-            let idType = 'MALAYSIAN_IC';
+            let idType = '';
             if (rawType === 'PASSPORT') idType = 'PASSPORT';
             else if (rawType === 'OTHER') idType = 'OTHER';
             else if (rawType === 'IC' || rawType === 'MALAYSIAN_IC' || rawType === 'MALAYSIAN IC') idType = 'MALAYSIAN_IC';
-            else if (rawType) idType = rawType;
+            else if (rawType) idType = rawType; // unknown non-blank string, will be caught by validation
 
             const newRow: PlayerRow = {
                 firstName: cells[0]?.trim() || '',
@@ -132,7 +132,12 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             }
         }
 
-        if (!row.identificationType) rowErr.identificationType = 'ID Type is required';
+        const validTypes = ['MALAYSIAN_IC', 'PASSPORT', 'OTHER'];
+        if (!row.identificationType) {
+            rowErr.identificationType = 'ID Type is required';
+        } else if (!validTypes.includes(row.identificationType)) {
+            rowErr.identificationType = 'ID Type must be MALAYSIAN_IC, PASSPORT, or OTHER';
+        }
         if (!row.icOrPassport) rowErr.icOrPassport = 'IC or Passport is required';
         if (!row.nationality) rowErr.nationality = 'Nationality is required';
 
@@ -191,7 +196,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             lastName: '',
             gender: 'MALE',
             dob: '',
-            identificationType: 'MALAYSIAN_IC',
+            identificationType: '',
             icOrPassport: '',
             nationality: 'Malaysia',
             email: '',
@@ -447,9 +452,13 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         onKeyDown={e => handleKeyDown(e, rIdx, 4)}
                                                         className={`w-full px-2 py-1.5 bg-black text-xs text-foreground focus:outline-none focus:bg-white/5 border rounded transition-all ${errors[rIdx]?.identificationType ? 'border-red-500/50 focus:border-red-500' : 'border-transparent focus:border-white/20'}`}
                                                     >
+                                                        <option value="" disabled>Select Type</option>
                                                         <option value="MALAYSIAN_IC">MALAYSIAN_IC</option>
                                                         <option value="PASSPORT">PASSPORT</option>
                                                         <option value="OTHER">OTHER</option>
+                                                        {row.identificationType && !['MALAYSIAN_IC', 'PASSPORT', 'OTHER'].includes(row.identificationType) && (
+                                                            <option value={row.identificationType}>{row.identificationType} (Invalid)</option>
+                                                        )}
                                                     </select>
                                                 </td>
 

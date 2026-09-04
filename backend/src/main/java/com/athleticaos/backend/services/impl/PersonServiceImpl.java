@@ -15,6 +15,7 @@ import com.athleticaos.backend.entities.OfficialRegistry;
 import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 import java.util.ArrayList;
@@ -179,7 +181,8 @@ public class PersonServiceImpl implements PersonService {
         person.setLastName(request.getLastName());
         String normalizedIcForSave = IdentificationUtil.normalize(request.getIcOrPassport());
         person.setIcOrPassport(normalizedIcForSave);
-        person.setIdentificationType(request.getIdentificationType());
+        person.setIdentificationType(
+                normalizedIcForSave != null ? IdentificationType.from(request.getIdentificationType()).name() : null);
         person.setDob(request.getDob());
         person.setGender(request.getGender());
         person.setNationality(request.getNationality());
@@ -227,25 +230,27 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
-        // Phase 1: null icOrPassport = leave existing unchanged.
-        // Non-blank value triggers normalisation, validation, and duplicate check.
+        // Phase 1.1: null icOrPassport = leave existing unchanged.
+        // Non-blank value triggers atomic normalisation, validation, and duplicate check.
+        // identificationType alone cannot mutate the stored record without a replacement ID.
         if (request.getIcOrPassport() != null) {
             String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
             if (normalizedIc != null && !normalizedIc.isEmpty()) {
+                if (request.getIdentificationType() == null || request.getIdentificationType().trim().isEmpty()) {
+                    throw new IllegalArgumentException("identificationType is required when updating identification value");
+                }
+                LocalDate effectiveDob = request.getDob() != null ? request.getDob() : person.getDob();
+                String effectiveGender = request.getGender() != null ? request.getGender() : person.getGender();
                 IdentificationUtil.validateNewSubmission(
-                        normalizedIc, request.getIdentificationType(),
-                        request.getDob() != null ? request.getDob() : person.getDob(),
-                        request.getGender() != null ? request.getGender() : person.getGender());
+                        normalizedIc, request.getIdentificationType(), effectiveDob, effectiveGender);
                 if (!normalizedIc.equals(person.getIcOrPassport())
                         && personRepository.existsByIcOrPassport(normalizedIc)) {
                     throw new IllegalArgumentException("IC or Passport already exists in the system.");
                 }
                 person.setIcOrPassport(normalizedIc);
+                person.setIdentificationType(IdentificationType.from(request.getIdentificationType()).name());
             }
-            // Empty-after-normalise = no-op (leave existing value).
-        }
-        if (request.getIdentificationType() != null) {
-            person.setIdentificationType(request.getIdentificationType());
+            // Empty-after-normalise = no-op (leave existing value and type unchanged).
         }
 
         // Null-safe updates for all other PII fields

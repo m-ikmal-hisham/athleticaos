@@ -33,7 +33,7 @@ export const CreatePlayer = () => {
     const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("MALAYSIAN_IC");
+    const [identificationType, setIdentificationType] = useState("");
     const [identificationValue, setIdentificationValue] = useState("");
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
@@ -86,6 +86,10 @@ export const CreatePlayer = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (identificationValue && !identificationType) {
+            showToast.error("Please select an identification type");
+            return;
+        }
         setLoading(true);
 
         const payload: any = {
@@ -251,7 +255,7 @@ export const CreatePlayer = () => {
                                         { value: 'PASSPORT', label: 'Passport' },
                                         { value: 'OTHER', label: 'Other' }
                                     ]}
-                                    placeholder="Select ID type"
+                                    placeholder="Select identification type"
                                 />
                             </div>
                             <div className="space-y-1.5">

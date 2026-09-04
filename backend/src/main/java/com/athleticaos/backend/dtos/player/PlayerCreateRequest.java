@@ -19,7 +19,7 @@ public record PlayerCreateRequest(
         @NotBlank(message = "IC or Passport is required") String icOrPassport,
 
         // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
-        String identificationType,
+        @NotBlank(message = "Identification type is required") String identificationType,
 
         @NotBlank(message = "Nationality is required") String nationality,
 

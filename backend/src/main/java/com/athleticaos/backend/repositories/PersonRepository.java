@@ -27,8 +27,6 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
         boolean existsByEmail(String email);
 
-        @Query("SELECT p FROM Person p WHERE TRIM(UPPER(p.icOrPassport)) = TRIM(UPPER(:icOrPassport))")
-        List<Person> findAllByIcOrPassportNormalized(@Param("icOrPassport") String icOrPassport);
 
         // Strict check for duplicate IC/Passport (expects normalized input)
         @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE REPLACE(REPLACE(UPPER(p.icOrPassport), '-', ''), ' ', '') = :icOrPassport")

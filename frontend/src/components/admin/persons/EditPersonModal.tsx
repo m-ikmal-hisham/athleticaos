@@ -14,10 +14,11 @@ interface EditPersonModalProps {
 
 export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClose, person, onSuccess }) => {
     const [loading, setLoading] = useState(false);
+    const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
+    const [replacementIdentificationType, setReplacementIdentificationType] = useState('');
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        identificationType: 'MALAYSIAN_IC',
         icOrPassport: '',
         dob: '',
         gender: '',
@@ -32,10 +33,11 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
     useEffect(() => {
         if (person && isOpen) {
+            setExistingIdentificationType(person.identificationType || null);
+            setReplacementIdentificationType('');
             setFormData({
                 firstName: person.firstName || '',
                 lastName: person.lastName || '',
-                identificationType: person.identificationType || 'MALAYSIAN_IC',
                 icOrPassport: '', // Phase 1: do not preload raw identification
                 dob: person.dob || '',
                 gender: person.gender || '',
@@ -54,11 +56,18 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         e.preventDefault();
         if (!person) return;
 
+        const hasReplacementId = Boolean(formData.icOrPassport.trim());
+        if (hasReplacementId && !replacementIdentificationType) {
+            showToast.error('Please select an identification type for the replacement ID');
+            return;
+        }
+
         setLoading(true);
         try {
             const payload = {
                 ...formData,
-                icOrPassport: formData.icOrPassport.trim() ? formData.icOrPassport.trim() : undefined
+                identificationType: hasReplacementId ? replacementIdentificationType : undefined,
+                icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined
             };
             await updatePerson(person.id, payload as any);
             showToast.success('Person updated successfully');
@@ -96,14 +105,26 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Identification Type</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-medium block">
+                                Identification Type {formData.icOrPassport.trim() ? '*' : ''}
+                            </label>
+                            {existingIdentificationType && (
+                                <span className="text-[11px] font-medium text-muted-foreground">
+                                    Current: <span className="font-semibold text-foreground">{existingIdentificationType}</span>
+                                </span>
+                            )}
+                        </div>
                         <select
                             aria-label="Identification Type"
-                            value={formData.identificationType}
-                            onChange={(e) => setFormData({ ...formData, identificationType: e.target.value })}
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0"
+                            value={replacementIdentificationType}
+                            onChange={(e) => setReplacementIdentificationType(e.target.value)}
+                            disabled={!formData.icOrPassport.trim()}
+                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:opacity-50"
                         >
-                            {formData.identificationType === 'IC' && <option value="IC">IC (Legacy)</option>}
+                            <option value="" disabled>
+                                {formData.icOrPassport.trim() ? 'Select replacement ID type' : 'Only required if replacing ID'}
+                            </option>
                             <option value="MALAYSIAN_IC">Malaysian IC</option>
                             <option value="PASSPORT">Passport</option>
                             <option value="OTHER">Other</option>

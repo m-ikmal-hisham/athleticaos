@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +50,7 @@ public class PersonController {
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<PersonResponseDTO> createPerson(
             @PathVariable UUID orgId,
-            @RequestBody com.athleticaos.backend.dtos.person.CreatePersonRequest request) {
+            @RequestBody @Valid com.athleticaos.backend.dtos.person.CreatePersonRequest request) {
         return ResponseEntity.ok(personService.createPerson(orgId, request));
     }
 
@@ -63,7 +64,7 @@ public class PersonController {
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<PersonResponseDTO> updatePerson(
             @PathVariable UUID id,
-            @RequestBody PersonUpdateRequest request) {
+            @RequestBody @Valid PersonUpdateRequest request) {
         return ResponseEntity.ok(personService.updatePerson(id, request));
     }
 
