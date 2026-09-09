@@ -239,7 +239,6 @@ export function PublicTeamProfile() {
                                             onSelect={(id) => setSelectedTournamentId(id || '')}
                                             allLabel="All Tournaments (Global)"
                                             variant="public"
-                                            maxChips={2}
                                         />
                                     </div>
                                 )}

@@ -171,7 +171,6 @@ export function PublicPlayerProfile() {
                             onSelect={handleTournamentSelect}
                             allLabel="All-Time Career (Global)"
                             variant="public"
-                            className="w-full sm:w-auto"
                         />
                     </div>
                 )}

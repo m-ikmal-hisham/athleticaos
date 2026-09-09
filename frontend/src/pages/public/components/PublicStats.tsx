@@ -111,23 +111,27 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        let active = true;
         const fetchStats = async () => {
             setLoading(true);
             try {
                 const data = await publicTournamentApi.getTournamentStats(tournamentId, categoryId);
+                if (!active) return;
                 setStats(data);
                 setError(null);
             } catch (err) {
+                if (!active) return;
                 console.error("Failed to load stats", err);
                 setError("Failed to load statistics.");
             } finally {
-                setLoading(false);
+                if (active) setLoading(false);
             }
         };
 
         if (tournamentId) {
             fetchStats();
         }
+        return () => { active = false; };
     }, [tournamentId, categoryId]);
 
     if (loading) {

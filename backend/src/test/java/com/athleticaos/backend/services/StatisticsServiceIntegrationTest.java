@@ -280,4 +280,53 @@ public class StatisticsServiceIntegrationTest {
                 // Assert
                 assertThat(response.topPlayers()).isEmpty(); // Should be empty as no player linked
         }
+
+        @Test
+        void selectedCategoriesExcludeOtherAndUncategorisedMatches() {
+                Organisation org = entityManager.persist(Organisation.builder().name("Category Org")
+                        .slug("category-org").orgType("CLUB").build());
+                Tournament tournament = entityManager.persist(Tournament.builder().name("Categories")
+                        .slug("categories").organiserOrg(org).startDate(LocalDate.now())
+                        .endDate(LocalDate.now().plusDays(1)).venue("Venue").level("NATIONAL").build());
+                TournamentCategory men = entityManager.persist(TournamentCategory.builder()
+                        .tournament(tournament).name("Men").build());
+                TournamentCategory women = entityManager.persist(TournamentCategory.builder()
+                        .tournament(tournament).name("Women").build());
+                TournamentCategory[] categories = {men, women, null, null};
+                for (int i = 0; i < categories.length; i++) {
+                        TournamentStage stage = i == 3 ? null : entityManager.persist(TournamentStage.builder()
+                                .tournament(tournament).category(categories[i]).name("Stage " + i).displayOrder(i)
+                                .stageType(com.athleticaos.backend.enums.TournamentStageType.POOL).build());
+                        Team team = entityManager.persist(Team.builder().name("Team " + i).slug("category-team-" + i)
+                                .organisation(org).category("OPEN").ageGroup("SENIOR").status("ACTIVE").build());
+                        Person person = entityManager.persist(Person.builder().firstName("Player" + i).lastName("Test")
+                                .dob(LocalDate.of(2000, 1, 1)).gender("MALE").nationality("Malaysia")
+                                .icOrPassport("CATEGORY-TEST-" + i).build());
+                        Player player = entityManager.persist(Player.builder().person(person).status("ACTIVE").build());
+                        Match match = entityManager.persist(Match.builder().tournament(tournament).stage(stage)
+                                .homeTeam(team).awayTeam(team).matchDate(LocalDate.now()).kickOffTime(LocalTime.NOON)
+                                .status(MatchStatus.COMPLETED).build());
+                        entityManager.persist(MatchLineup.builder().match(match).team(team).player(player)
+                                .role(LineupRole.STARTER).isStarter(true).build());
+                        entityManager.persist(MatchEvent.builder().match(match).team(team).player(player)
+                                .eventType(MatchEventType.TRY).minute(1).build());
+                }
+                entityManager.flush();
+                entityManager.clear();
+                for (TournamentCategory category : new TournamentCategory[]{men, women}) {
+                        var summary = statisticsService.getTournamentSummary(tournament.getId(), category.getId());
+                        assertThat(summary.totalMatches()).isEqualTo(1);
+                        assertThat(summary.completedMatches()).isEqualTo(1);
+                        assertThat(summary.totalTries()).isEqualTo(1);
+                        assertThat(summary.totalPoints()).isEqualTo(5);
+                        assertThat(summary.totalTeams()).isEqualTo(1);
+                        assertThat(summary.totalPlayers()).isEqualTo(1);
+                        assertThat(statisticsService.getPlayerStatsForTournament(tournament.getId(), category.getId())).hasSize(1);
+                        assertThat(statisticsService.getTeamStatsForTournament(tournament.getId(), category.getId())).hasSize(1);
+                }
+                assertThat(statisticsService.getTournamentSummary(tournament.getId(), null).totalMatches()).isEqualTo(4);
+                assertThat(statisticsService.getTournamentSummary(tournament.getId(), null).totalPoints()).isEqualTo(20);
+                assertThat(statisticsService.getPlayerStatsForTournament(tournament.getId(), null)).hasSize(4);
+                assertThat(statisticsService.getTeamStatsForTournament(tournament.getId(), null)).hasSize(4);
+        }
 }

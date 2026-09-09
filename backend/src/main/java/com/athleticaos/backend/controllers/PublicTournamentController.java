@@ -88,7 +88,7 @@ public class PublicTournamentController {
 
             if (categoryId != null) {
                 matches = matches.stream()
-                        .filter(m -> m.getStage() == null || m.getStage().getCategoryId() == null ||
+                        .filter(m -> m.getStage() != null && m.getStage().getCategoryId() != null &&
                                 m.getStage().getCategoryId().equals(categoryId))
                         .collect(Collectors.toList());
             }
@@ -249,7 +249,7 @@ public class PublicTournamentController {
 
             if (categoryId != null) {
                 standings = standings.stream()
-                        .filter(s -> s.getCategoryId() == null || s.getCategoryId().equals(categoryId))
+                        .filter(s -> categoryId.equals(s.getCategoryId()))
                         .collect(Collectors.toList());
             }
             return ResponseEntity.ok(standings);

@@ -103,15 +103,15 @@ public class StatisticsServiceImpl implements StatisticsService {
                 // Filter by category
                 if (categoryId != null) {
                         events = events.stream()
-                                        .filter(e -> e.getMatch().getStage() == null ||
-                                                        e.getMatch().getStage().getCategory() == null ||
+                                        .filter(e -> e.getMatch().getStage() != null &&
+                                                        e.getMatch().getStage().getCategory() != null &&
                                                         e.getMatch().getStage().getCategory().getId()
                                                                         .equals(categoryId))
                                         .collect(Collectors.toList());
 
                         lineups = lineups.stream()
-                                        .filter(l -> l.getMatch().getStage() == null ||
-                                                        l.getMatch().getStage().getCategory() == null ||
+                                        .filter(l -> l.getMatch().getStage() != null &&
+                                                        l.getMatch().getStage().getCategory() != null &&
                                                         l.getMatch().getStage().getCategory().getId()
                                                                         .equals(categoryId))
                                         .collect(Collectors.toList());
@@ -220,7 +220,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 // Filter matches
                 if (categoryId != null) {
                         matches = matches.stream()
-                                        .filter(m -> m.getStage() == null || m.getStage().getCategory() == null ||
+                                        .filter(m -> m.getStage() != null && m.getStage().getCategory() != null &&
                                                         m.getStage().getCategory().getId().equals(categoryId))
                                         .collect(Collectors.toList());
                 }
