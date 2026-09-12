@@ -236,4 +236,57 @@ class PlayerServiceImplTest {
         assertThat(response.results().get(0).errors()).anyMatch(e -> e.contains("Malaysian IC date prefix"));
         verify(playerBatchHelper, org.mockito.Mockito.never()).savePlayerInNewTransaction(any(), any());
     }
+
+    @Test
+    void updatePlayer_maskedValue_throwsAndNeverSaves() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                "******9001", // masked value
+                "PASSPORT", null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("masked");
+
+        verify(personRepository, org.mockito.Mockito.never()).save(any(Person.class));
+    }
+
+    @Test
+    void createBatchPlayers_maskedRowAndValidRow() {
+        UUID teamId = UUID.randomUUID();
+        com.athleticaos.backend.entities.Team team = new com.athleticaos.backend.entities.Team();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+
+        // Row 0: masked → should fail
+        com.athleticaos.backend.dtos.player.PlayerRowDTO maskedRow = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
+                "Bad", "Player", "MALE", LocalDate.of(1995, 5, 20),
+                "PASSPORT", "XXXX-XXXX-9002", "Malaysian", null, null, null
+        );
+
+        // Row 1: valid passport → should succeed
+        com.athleticaos.backend.dtos.player.PlayerRowDTO validRow = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
+                "Good", "Player", "MALE", LocalDate.of(1995, 5, 20),
+                "PASSPORT", "A12345678", "Malaysian", null, null, null
+        );
+
+        when(validator.validate(any())).thenReturn(Collections.emptySet());
+        when(personRepository.existsByIcOrPassport("A12345678")).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(false);
+        UUID newPlayerId = UUID.randomUUID();
+        when(playerBatchHelper.savePlayerInNewTransaction(validRow, team)).thenReturn(newPlayerId);
+
+        com.athleticaos.backend.dtos.player.PlayerBatchResponse response =
+                playerService.createBatchPlayers(teamId, java.util.List.of(maskedRow, validRow));
+
+        assertThat(response.failCount()).isEqualTo(1);
+        assertThat(response.successCount()).isEqualTo(1);
+        assertThat(response.results().get(0).errors()).anyMatch(e -> e.contains("masked"));
+        assertThat(response.results().get(1).status()).isEqualTo("SUCCESS");
+    }
 }

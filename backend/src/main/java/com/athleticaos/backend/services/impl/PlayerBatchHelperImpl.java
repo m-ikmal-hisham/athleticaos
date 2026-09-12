@@ -12,6 +12,7 @@ import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerBatchHelper;
 import com.athleticaos.backend.utils.IdentificationUtil;
+import com.athleticaos.backend.services.IdentificationHashResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,13 +38,11 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
         log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
 
-        // 1. Defensively normalise and validate identification using shared utility
-        String normalizedIc = IdentificationUtil.normalize(row.icOrPassport());
-        IdentificationUtil.validateNewSubmission(
-                normalizedIc, row.identificationType(), row.dob(), row.gender());
+        // 1. Defensively validate and normalise identification using shared utility
+        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                row.icOrPassport(), row.identificationType(), row.dob(), row.gender());
 
-        String idHash = identificationHashService.hash(normalizedIc);
-        Integer hashVersion = identificationHashService.getCurrentVersion();
+        IdentificationHashResult hashResult = IdentificationHashResult.compute(identificationHashService, normalizedIc);
 
         // 2. Create Person record
         Person person = Person.builder()
@@ -53,8 +52,8 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
                 .dob(row.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(row.identificationType())
-                .identificationHash(idHash)
-                .identificationHashVersion(hashVersion)
+                .identificationHash(hashResult != null ? hashResult.hash() : null)
+                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .nationality(row.nationality().trim())
                 .email(row.email() != null && !row.email().trim().isEmpty() ? row.email().trim().toLowerCase() : null)

@@ -477,17 +477,15 @@ public class OrganisationServiceImpl implements OrganisationService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + organisationId));
 
-        // Phase 1 & 2: use shared utility for normalisation, validation, dual-lookup and dual-write
-        String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
-        String idHash = null;
-        Integer hashVersion = null;
+        // Phase 2.1: use shared utility for normalisation, mask/placeholder rejection, validation, dual-lookup and dual-write
+        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), request.getGender());
+        com.athleticaos.backend.services.IdentificationHashResult hashResult = null;
         if (normalizedIc != null && !normalizedIc.isEmpty()) {
-            IdentificationUtil.validateNewSubmission(
-                    normalizedIc, request.getIdentificationType(), request.getDob(), request.getGender());
-            idHash = identificationHashService.hash(normalizedIc);
-            hashVersion = identificationHashService.getCurrentVersion();
+            hashResult = com.athleticaos.backend.services.IdentificationHashResult.compute(
+                    identificationHashService, normalizedIc);
             if (personRepository.existsByIcOrPassport(normalizedIc)
-                    || (idHash != null && personRepository.existsByIdentificationHash(idHash))) {
+                    || (hashResult != null && personRepository.existsByIdentificationHash(hashResult.hash()))) {
                 throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC or Passport already exists in the system.");
             }
         }
@@ -497,8 +495,8 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .lastName(request.getLastName())
                 .icOrPassport(normalizedIc)
                 .identificationType(normalizedIc != null ? IdentificationType.from(request.getIdentificationType()).name() : null)
-                .identificationHash(idHash)
-                .identificationHashVersion(hashVersion)
+                .identificationHash(hashResult != null ? hashResult.hash() : null)
+                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .dob(request.getDob())
                 .gender(request.getGender())

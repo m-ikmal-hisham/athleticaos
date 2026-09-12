@@ -16,7 +16,9 @@ import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.services.IdentificationHashService;
+import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.enums.IdentificationType;
+import com.athleticaos.backend.exceptions.DuplicateIcException;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -168,34 +170,33 @@ public class PersonServiceImpl implements PersonService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
-        // Phase 1 & 2: use shared utility for normalisation and validation; dual-lookup
-        if (request.getIcOrPassport() != null && !request.getIcOrPassport().trim().isEmpty()) {
-            String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
-            IdentificationUtil.validateNewSubmission(
-                    normalizedIc, request.getIdentificationType(), request.getDob(), request.getGender());
-            if (normalizedIc != null) {
-                if (identificationHashService.isConfigured()) {
-                    String hash = identificationHashService.computeHash(normalizedIc);
-                    if (hash != null && personRepository.existsByIdentificationHash(hash)) {
-                        throw new IllegalArgumentException("IC or Passport already exists in the system.");
-                    }
+        // Phase 2.1: single entry point for normalisation, mask/placeholder rejection, and type-specific validation
+        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), request.getGender());
+
+        // Duplicate check (dual: hash + plaintext)
+        if (normalizedIc != null) {
+            if (identificationHashService.isConfigured()) {
+                String hash = identificationHashService.computeHash(normalizedIc);
+                if (hash != null && personRepository.existsByIdentificationHash(hash)) {
+                    throw new DuplicateIcException("IC or Passport already exists in the system.");
                 }
-                if (personRepository.existsByIcOrPassport(normalizedIc)) {
-                    throw new IllegalArgumentException("IC or Passport already exists in the system.");
-                }
+            }
+            if (personRepository.existsByIcOrPassport(normalizedIc)) {
+                throw new DuplicateIcException("IC or Passport already exists in the system.");
             }
         }
 
         Person person = new Person();
         person.setFirstName(request.getFirstName());
         person.setLastName(request.getLastName());
-        String normalizedIcForSave = IdentificationUtil.normalize(request.getIcOrPassport());
-        person.setIcOrPassport(normalizedIcForSave);
+        person.setIcOrPassport(normalizedIc);
         person.setIdentificationType(
-                normalizedIcForSave != null ? IdentificationType.from(request.getIdentificationType()).name() : null);
-        if (normalizedIcForSave != null && identificationHashService.isConfigured()) {
-            person.setIdentificationHash(identificationHashService.computeHash(normalizedIcForSave));
-            person.setIdentificationHashVersion(identificationHashService.getActiveVersion());
+                normalizedIc != null ? IdentificationType.from(request.getIdentificationType()).name() : null);
+        IdentificationHashResult hashResult = IdentificationHashResult.compute(identificationHashService, normalizedIc);
+        if (hashResult != null) {
+            person.setIdentificationHash(hashResult.hash());
+            person.setIdentificationHashVersion(hashResult.version());
             person.setIdentificationVerificationStatus("UNVERIFIED");
         }
         person.setDob(request.getDob());
@@ -245,38 +246,40 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
-        // Phase 1.1 & 2: null icOrPassport = leave existing unchanged.
+        // Phase 2.1: null icOrPassport = leave existing unchanged.
         // Non-blank value triggers atomic normalisation, validation, dual duplicate check, and dual write.
         // identificationType alone cannot mutate the stored record without a replacement ID.
         if (request.getIcOrPassport() != null) {
-            String normalizedIc = IdentificationUtil.normalize(request.getIcOrPassport());
-            if (normalizedIc != null && !normalizedIc.isEmpty()) {
-                if (request.getIdentificationType() == null || request.getIdentificationType().trim().isEmpty()) {
-                    throw new IllegalArgumentException("identificationType is required when updating identification value");
-                }
-                LocalDate effectiveDob = request.getDob() != null ? request.getDob() : person.getDob();
-                String effectiveGender = request.getGender() != null ? request.getGender() : person.getGender();
-                IdentificationUtil.validateNewSubmission(
-                        normalizedIc, request.getIdentificationType(), effectiveDob, effectiveGender);
+            if (request.getIdentificationType() == null || request.getIdentificationType().trim().isEmpty()) {
+                throw new IllegalArgumentException("identificationType is required when updating identification value");
+            }
+            LocalDate effectiveDob = request.getDob() != null ? request.getDob() : person.getDob();
+            String effectiveGender = request.getGender() != null ? request.getGender() : person.getGender();
+            String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                    request.getIcOrPassport(), request.getIdentificationType(), effectiveDob, effectiveGender);
+            if (normalizedIc != null) {
                 if (identificationHashService.isConfigured()) {
                     String hash = identificationHashService.computeHash(normalizedIc);
                     if (hash != null && personRepository.existsByIdentificationHashAndIdNot(hash, person.getId())) {
-                        throw new IllegalArgumentException("IC or Passport already exists in the system.");
+                        throw new DuplicateIcException("IC or Passport already exists in the system.");
                     }
                 }
-                if (!normalizedIc.equals(person.getIcOrPassport())
-                        && personRepository.existsByIcOrPassport(normalizedIc)) {
-                    throw new IllegalArgumentException("IC or Passport already exists in the system.");
+                if (personRepository.existsByIcOrPassportAndIdNot(normalizedIc, person.getId())) {
+                    throw new DuplicateIcException("IC or Passport already exists in the system.");
                 }
                 person.setIcOrPassport(normalizedIc);
                 person.setIdentificationType(IdentificationType.from(request.getIdentificationType()).name());
                 if (identificationHashService.isConfigured()) {
-                    person.setIdentificationHash(identificationHashService.computeHash(normalizedIc));
-                    person.setIdentificationHashVersion(identificationHashService.getActiveVersion());
-                    person.setIdentificationVerificationStatus("UNVERIFIED");
+                    IdentificationHashResult hashResult = IdentificationHashResult.compute(
+                            identificationHashService, normalizedIc);
+                    if (hashResult != null) {
+                        person.setIdentificationHash(hashResult.hash());
+                        person.setIdentificationHashVersion(hashResult.version());
+                        person.setIdentificationVerificationStatus("UNVERIFIED");
+                    }
                 }
             }
-            // Empty-after-normalise = no-op (leave existing value and type unchanged).
+            // null return from validateAndNormalizeNewSubmission = raw was empty/whitespace → no-op.
         }
 
         // Null-safe updates for all other PII fields

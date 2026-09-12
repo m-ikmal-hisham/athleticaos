@@ -17,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "persons")
+@lombok.ToString(exclude = {"icOrPassport", "identificationValue", "identificationHash"})
 public class Person {
 
     @Id

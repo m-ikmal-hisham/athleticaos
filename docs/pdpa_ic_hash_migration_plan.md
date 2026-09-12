@@ -1,11 +1,14 @@
 # PDPA/ISO — `ic_or_passport` → `identification_hash` Migration
 
-**Status:** DEFERRED — planned, not yet implemented. Parked here on 2026-07-18 to resume later
-(intended to be picked up in Google Antigravity or any other agent/IDE — this doc is written to be
-self-contained so a fresh session with no memory of the planning conversation can execute it).
+**Status:** IN PROGRESS (Phases 1, 1.1, 2, and 2.1 COMPLETED)
+- Phase 1 (94af546): Identification containment & masking
+- Phase 1.1 (2865123): Canonical types, batch validation & atomic updates
+- Phase 2 (ac703ba): Additive HMAC-SHA256 storage, versioning & backfill facility (V152)
+- Phase 2.1: HMAC configuration hardening, V153 database constraints, atomic IdentificationHashResult writes, backfill persister transaction safety, PII exposure remediation & dev rehearsal
+- Upcoming Phase 3: Hash-only cutover, legacy plaintext nullification & column removal
 
 **Owner:** ops@karunasarawak.com
-**Branch:** `dev`
+**Branch:** `feature/phase2-1-identification-hardening` (targeting `dev`)
 **Repo:** athleticaos (backend = Spring Boot / Postgres+Flyway prod, H2 in tests; frontend = React/Vite)
 
 ---

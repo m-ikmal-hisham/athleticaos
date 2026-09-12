@@ -4,6 +4,11 @@ spring:
 
   profiles:
     active: dev
+
+  datasource:
+    hikari:
+      data-source-properties:
+        logServerErrorDetail: false
   jpa:
     open-in-view: false
     hibernate:
@@ -47,6 +52,7 @@ athleticaos:
   security:
     identification-hmac-secret: ${ATHLETICAOS_IDENTIFICATION_HMAC_SECRET:}
     identification-hmac-version: ${ATHLETICAOS_IDENTIFICATION_HMAC_VERSION:1}
+    identification-hmac-required: ${IDENTIFICATION_HMAC_REQUIRED:false}
   backfill:
     identification:
       enabled: ${ATHLETICAOS_BACKFILL_IDENTIFICATION_ENABLED:false}

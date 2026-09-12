@@ -28,11 +28,17 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
 
         // Strict check for duplicate IC/Passport (expects normalized input)
-        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE REPLACE(REPLACE(UPPER(p.icOrPassport), '-', ''), ' ', '') = :icOrPassport")
+        // Low-1: Extended REPLACE chain matches IdentificationUtil.normalize() stripping
+        // of all non-alphanumeric characters (hyphens, spaces, dots, slashes, underscores, parens, tabs).
+        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE " +
+               "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
+               "UPPER(p.icOrPassport), '-', ''), ' ', ''), '.', ''), '/', ''), '_', ''), '(', ''), ')', ''), '\t', '') = :icOrPassport")
         boolean existsByIcOrPassport(@Param("icOrPassport") String icOrPassport);
 
         // Strict check for duplicate IC/Passport excluding specific ID (for updates)
-        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE REPLACE(REPLACE(UPPER(p.icOrPassport), '-', ''), ' ', '') = :icOrPassport AND p.id <> :id")
+        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE " +
+               "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(" +
+               "UPPER(p.icOrPassport), '-', ''), ' ', ''), '.', ''), '/', ''), '_', ''), '(', ''), ')', ''), '\t', '') = :icOrPassport AND p.id <> :id")
         boolean existsByIcOrPassportAndIdNot(@Param("icOrPassport") String icOrPassport, @Param("id") UUID id);
 
         // Phase 2: HMAC identification hash methods
@@ -42,17 +48,23 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
         boolean existsByIdentificationHashAndIdNot(String identificationHash, UUID id);
 
-        @Query("SELECT p FROM Person p WHERE p.identificationHash IS NULL AND p.icOrPassport IS NOT NULL ORDER BY p.id ASC")
-        Page<Person> findByIdentificationHashIsNullAndIcOrPassportIsNotNullOrderByIdAsc(Pageable pageable);
+        // Phase 2.1: Backfill queries — include records with either primary or secondary source
+        @Query("SELECT p FROM Person p WHERE p.identificationHash IS NULL " +
+               "AND (p.icOrPassport IS NOT NULL OR p.identificationValue IS NOT NULL) " +
+               "ORDER BY p.id ASC")
+        Page<Person> findUnhashedWithIdentificationOrderByIdAsc(Pageable pageable);
 
-        @Query("SELECT p FROM Person p WHERE p.identificationHash IS NULL AND p.icOrPassport IS NOT NULL AND p.id > :id ORDER BY p.id ASC")
-        Page<Person> findByIdentificationHashIsNullAndIcOrPassportIsNotNullAndIdGreaterThanOrderByIdAsc(@Param("id") UUID id, Pageable pageable);
+        @Query("SELECT p FROM Person p WHERE p.identificationHash IS NULL " +
+               "AND (p.icOrPassport IS NOT NULL OR p.identificationValue IS NOT NULL) " +
+               "AND p.id > :id ORDER BY p.id ASC")
+        Page<Person> findUnhashedWithIdentificationAndIdGreaterThanOrderByIdAsc(@Param("id") UUID id, Pageable pageable);
 
         @Query("SELECT COUNT(p) FROM Person p WHERE p.identificationHash IS NOT NULL")
         long countWithIdentificationHash();
 
-        @Query("SELECT COUNT(p) FROM Person p WHERE p.identificationHash IS NULL AND p.icOrPassport IS NOT NULL")
-        long countUnprocessedWithIcOrPassport();
+        @Query("SELECT COUNT(p) FROM Person p WHERE p.identificationHash IS NULL " +
+               "AND (p.icOrPassport IS NOT NULL OR p.identificationValue IS NOT NULL)")
+        long countUnprocessedWithIdentification();
 
         boolean existsByUserId(UUID userId);
 }

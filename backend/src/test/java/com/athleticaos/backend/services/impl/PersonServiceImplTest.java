@@ -32,6 +32,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,9 +91,9 @@ class PersonServiceImplTest {
                 .lastName("Ibrahim")
                 .gender("MALE")
                 .dob(LocalDate.of(1990, 1, 1))
-                .icOrPassport("900101011234")
+                .icOrPassport("900101011235")
                 .identificationType("MALAYSIAN_IC")
-                .identificationHash("hash900101011234")
+                .identificationHash("hash900101011235")
                 .identificationHashVersion(1)
                 .identificationVerificationStatus("UNVERIFIED")
                 .build();
@@ -155,7 +156,7 @@ class PersonServiceImplTest {
         when(personRepository.existsByIdentificationHash("hash-existing")).thenReturn(true);
 
         assertThatThrownBy(() -> personService.createPerson(organisationId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(com.athleticaos.backend.exceptions.DuplicateIcException.class)
                 .hasMessageContaining("already exists");
     }
 
@@ -172,8 +173,8 @@ class PersonServiceImplTest {
         PersonResponseDTO response = personService.updatePerson(personId, request);
 
         assertThat(response).isNotNull();
-        assertThat(existingPerson.getIcOrPassport()).isEqualTo("900101011234");
-        assertThat(existingPerson.getIdentificationHash()).isEqualTo("hash900101011234");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("900101011235");
+        assertThat(existingPerson.getIdentificationHash()).isEqualTo("hash900101011235");
     }
 
     @Test
@@ -189,7 +190,7 @@ class PersonServiceImplTest {
         when(identificationHashService.computeHash("900101015679")).thenReturn("hashNew900101015679");
         when(identificationHashService.getActiveVersion()).thenReturn(1);
         when(personRepository.existsByIdentificationHashAndIdNot("hashNew900101015679", personId)).thenReturn(false);
-        when(personRepository.existsByIcOrPassport("900101015679")).thenReturn(false);
+        when(personRepository.existsByIcOrPassportAndIdNot("900101015679", personId)).thenReturn(false);
         when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
 
         personService.updatePerson(personId, request);
@@ -198,5 +199,95 @@ class PersonServiceImplTest {
         assertThat(existingPerson.getIdentificationHash()).isEqualTo("hashNew900101015679");
         assertThat(existingPerson.getIdentificationHashVersion()).isEqualTo(1);
         assertThat(existingPerson.getIdentificationVerificationStatus()).isEqualTo("UNVERIFIED");
+    }
+
+    @Test
+    void updatePerson_unrelatedEdit_preservesAllIdentificationFields() {
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setFirstName("Ahmad Updated");
+        request.setLastName("Ibrahim Updated");
+        // No IC or identification changes in request
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getFirstName()).isEqualTo("Ahmad Updated");
+        assertThat(existingPerson.getLastName()).isEqualTo("Ibrahim Updated");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("900101011235");
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
+        assertThat(existingPerson.getIdentificationHash()).isEqualTo("hash900101011235");
+        assertThat(existingPerson.getIdentificationHashVersion()).isEqualTo(1);
+        assertThat(existingPerson.getIdentificationVerificationStatus()).isEqualTo("UNVERIFIED");
+    }
+
+    @Test
+    void createPerson_duplicateIc_throwsDuplicateIcException() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("Ali");
+        request.setLastName("Hassan");
+        request.setDob(LocalDate.of(1992, 2, 2));
+        request.setGender("FEMALE");
+        request.setIcOrPassport("920202-02-2346");
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(identificationHashService.isConfigured()).thenReturn(false);
+        when(personRepository.existsByIcOrPassport("920202022346")).thenReturn(true);
+
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.DuplicateIcException.class)
+                .hasMessageContaining("already exists");
+    }
+
+    @Test
+    void updatePerson_duplicateIc_throwsDuplicateIcException() {
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setIcOrPassport("920202-02-2346");
+        request.setIdentificationType("MALAYSIAN_IC");
+        request.setDob(LocalDate.of(1992, 2, 2));
+        request.setGender("FEMALE");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(identificationHashService.isConfigured()).thenReturn(false);
+        when(personRepository.existsByIcOrPassportAndIdNot("920202022346", personId)).thenReturn(true);
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.DuplicateIcException.class)
+                .hasMessageContaining("already exists");
+    }
+
+    @Test
+    void updatePerson_ownStoredIc_doesNotReportDuplicate() {
+        // Re-submitting the person's own identity must succeed (not treated as duplicate)
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setIcOrPassport("900101-01-1235"); // same as existingPerson's IC after normalisation
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(identificationHashService.isConfigured()).thenReturn(false);
+        when(personRepository.existsByIcOrPassportAndIdNot("900101011235", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("900101011235");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePerson_maskedValue_throwsAndNeverSaves() {
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setIcOrPassport("******9001");
+        request.setIdentificationType("PASSPORT");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("masked");
+
+        verify(personRepository, never()).save(any(Person.class));
     }
 }

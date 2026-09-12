@@ -7,6 +7,7 @@ import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.utils.IdentificationUtil;
+import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.entities.PlayerTeam;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.TournamentPlayer;
@@ -157,12 +158,9 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
-        // Normalise IC/Passport using shared utility (trim, uppercase, alphanumeric only)
-        String normalizedIc = IdentificationUtil.normalize(request.icOrPassport());
-
-        // Validate format and IC-DOB/gender consistency for new submissions
-        IdentificationUtil.validateNewSubmission(
-                normalizedIc, request.identificationType(), request.dob(), request.gender());
+        // Phase 2.1: single entry point for normalisation, mask/placeholder rejection, and type-specific validation
+        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                request.icOrPassport(), request.identificationType(), request.dob(), request.gender());
 
         if (normalizedIc != null && !normalizedIc.isEmpty()) {
             checkDuplicateIc(normalizedIc, null);
@@ -176,12 +174,8 @@ public class PlayerServiceImpl implements PlayerService {
         }
 
         // Create Person record (PII)
-        String identificationHash = null;
-        Integer hashVersion = null;
-        if (normalizedIc != null && identificationHashService.isConfigured()) {
-            identificationHash = identificationHashService.computeHash(normalizedIc);
-            hashVersion = identificationHashService.getActiveVersion();
-        }
+        IdentificationHashResult hashResult = IdentificationHashResult.compute(
+                identificationHashService, normalizedIc);
 
         Person person = Person.builder()
                 .firstName(request.firstName())
@@ -190,8 +184,8 @@ public class PlayerServiceImpl implements PlayerService {
                 .dob(request.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(normalizedIc != null ? IdentificationType.from(request.identificationType()).name() : null)
-                .identificationHash(identificationHash)
-                .identificationHashVersion(hashVersion)
+                .identificationHash(hashResult != null ? hashResult.hash() : null)
+                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .nationality(request.nationality())
                 .email(request.email())
@@ -282,29 +276,32 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.dob() != null) {
             person.setDob(request.dob());
         }
-        // Phase 1.1: null icOrPassport means "leave existing value unchanged".
+        // Phase 2.1: null icOrPassport means "leave existing value unchanged".
         // Non-blank value triggers atomic normalisation, validation, and duplicate check.
         // identificationType alone cannot mutate the stored record without a replacement ID.
         if (request.icOrPassport() != null) {
-            String normalizedIcUpdate = IdentificationUtil.normalize(request.icOrPassport());
-            if (normalizedIcUpdate != null && !normalizedIcUpdate.isEmpty()) {
-                if (request.identificationType() == null || request.identificationType().trim().isEmpty()) {
-                    throw new IllegalArgumentException("identificationType is required when updating identification value");
-                }
-                LocalDate effectiveDob = request.dob() != null ? request.dob() : person.getDob();
-                String effectiveGender = request.gender() != null ? request.gender() : person.getGender();
-                IdentificationUtil.validateNewSubmission(
-                        normalizedIcUpdate, request.identificationType(), effectiveDob, effectiveGender);
+            if (request.identificationType() == null || request.identificationType().trim().isEmpty()) {
+                throw new IllegalArgumentException("identificationType is required when updating identification value");
+            }
+            String normalizedIcUpdate = IdentificationUtil.validateAndNormalizeNewSubmission(
+                    request.icOrPassport(), request.identificationType(),
+                    request.dob() != null ? request.dob() : person.getDob(),
+                    request.gender() != null ? request.gender() : person.getGender());
+            if (normalizedIcUpdate != null) {
                 checkDuplicateIc(normalizedIcUpdate, person.getId());
                 person.setIcOrPassport(normalizedIcUpdate);
                 person.setIdentificationType(IdentificationType.from(request.identificationType()).name());
                 if (identificationHashService.isConfigured()) {
-                    person.setIdentificationHash(identificationHashService.computeHash(normalizedIcUpdate));
-                    person.setIdentificationHashVersion(identificationHashService.getActiveVersion());
-                    person.setIdentificationVerificationStatus("UNVERIFIED");
+                    IdentificationHashResult hashResult = IdentificationHashResult.compute(
+                            identificationHashService, normalizedIcUpdate);
+                    if (hashResult != null) {
+                        person.setIdentificationHash(hashResult.hash());
+                        person.setIdentificationHashVersion(hashResult.version());
+                        person.setIdentificationVerificationStatus("UNVERIFIED");
+                    }
                 }
             }
-            // Empty string after normalisation is treated as no-op (leave existing value and type unchanged).
+            // null return from validateAndNormalizeNewSubmission = raw was empty/whitespace → no-op.
         }
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
@@ -662,12 +659,13 @@ public class PlayerServiceImpl implements PlayerService {
 
             // 2. Validate identification and pre-check database constraints if no validation errors yet
             if (rowErrors.isEmpty()) {
-                String normalizedIc = IdentificationUtil.normalize(row.icOrPassport());
+                String normalizedIc;
                 try {
-                    IdentificationUtil.validateNewSubmission(
-                            normalizedIc, row.identificationType(), row.dob(), row.gender());
+                    normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                            row.icOrPassport(), row.identificationType(), row.dob(), row.gender());
                 } catch (IllegalArgumentException e) {
                     rowErrors.add(e.getMessage());
+                    normalizedIc = null;
                 }
 
                 // Only perform duplicate lookup when format validation succeeds

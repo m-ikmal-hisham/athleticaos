@@ -17,8 +17,15 @@ logging:
   level:
     org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # Phase 2.1: BasicBinder TRACE removed to prevent identification parameters
+    # from appearing in Hibernate bind-parameter log output.
+    # org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 athleticaos:
   security:
-    identification-hmac-secret: "ZGV2LWxvY2FsLW9ubHktaWRlbnRpZmljYXRpb24ta2V5LTMyYiE="
+    # Phase 2.1: dev HMAC secret removed from committed config.
+    # Set via environment variable:
+    #   export ATHLETICAOS_IDENTIFICATION_HMAC_SECRET="<your-base64-key>"
+    # Generate a dev-only key:
+    #   openssl rand -base64 32
+    identification-hmac-secret: ${ATHLETICAOS_IDENTIFICATION_HMAC_SECRET:}

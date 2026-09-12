@@ -265,9 +265,9 @@ export default function Players() {
                 isOpen={uploadModalOpen}
                 onClose={() => setUploadModalOpen(false)}
                 title="Bulk Upload Players"
-                expectedColumns={["firstName", "lastName", "dob", "gender", "email", "teamId", "organisationId"]}
+                expectedColumns={["firstName", "lastName", "dob", "gender", "email", "teamId", "organisationId", "nationality", "identificationType", "icOrPassport"]}
                 onUpload={handleUpload}
-                sampleCsvHeader="firstName,lastName,dob,gender,email,teamId,organisationId,nationality,state,medicalNotes\nJohn,Doe,1995-05-12,MALE,john@example.com,UUID-HERE,UUID-HERE,Malaysia,Selangor,"
+                sampleCsvHeader="firstName,lastName,dob,gender,email,teamId,organisationId,nationality,identificationType,icOrPassport,state,medicalNotes\nJohn,Doe,1995-05-12,MALE,john@example.com,UUID-HERE,UUID-HERE,Malaysia,MALAYSIAN_IC,950512-14-5671,Selangor,"
             />
         </div>
     );

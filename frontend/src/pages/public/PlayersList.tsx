@@ -62,8 +62,7 @@ export default function PlayersList() {
                 const matchesName = fullName.includes(q);
                 const matchesTeam = player.currentTeamName?.toLowerCase().includes(q);
                 const matchesPos = player.position?.toLowerCase().includes(q);
-                const matchesCity = player.city?.toLowerCase().includes(q);
-                if (!matchesName && !matchesTeam && !matchesPos && !matchesCity) {
+                if (!matchesName && !matchesTeam && !matchesPos) {
                     return false;
                 }
             }
@@ -108,7 +107,7 @@ export default function PlayersList() {
                     <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Search players by name, team, position, or city..."
+                        placeholder="Search players by name, team, or position..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400 text-sm"

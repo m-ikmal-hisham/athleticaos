@@ -17,7 +17,6 @@ public class PublicPlayerSummary {
     private String lastName;
     private String idType;
     private String idNumber;
-    private String dateOfBirth;
     private String position;
     private String position2;
     private Integer jerseyNumber;

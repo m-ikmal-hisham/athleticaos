@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
+import com.athleticaos.backend.services.IdentificationHashResult;
 
 @Service
 @RequiredArgsConstructor
@@ -144,8 +145,8 @@ public class SeedingServiceImpl implements SeedingService {
         int lastDigit = (faker.random().nextInt(5) * 2) + 1; // 1,3,5,7,9 — odd for MALE
         String syntheticIc = dobPart + statePart + String.format("%03d", seq3) + lastDigit;
 
-        String idHash = identificationHashService.hash(syntheticIc);
-        Integer hashVersion = identificationHashService.getCurrentVersion();
+        IdentificationHashResult hashResult = com.athleticaos.backend.services.IdentificationHashResult.compute(
+                identificationHashService, syntheticIc);
 
         Person person = Person.builder()
                 .firstName(firstName)
@@ -156,8 +157,8 @@ public class SeedingServiceImpl implements SeedingService {
                 .nationality("Malaysia")
                 .icOrPassport(syntheticIc)
                 .identificationType("MALAYSIAN_IC")
-                .identificationHash(idHash)
-                .identificationHashVersion(hashVersion)
+                .identificationHash(hashResult != null ? hashResult.hash() : null)
+                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .state(org.getState())
                 .build();

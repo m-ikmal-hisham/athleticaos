@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -258,9 +260,7 @@ public class PublicProfileController {
                                 .organisationName(orgName)
                                 .profilePictureUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(p.getPhotoUrl()))
                                 .state(p.getPerson() != null ? p.getPerson().getState() : null)
-                                .city(p.getPerson() != null ? p.getPerson().getCity() : null)
                                 .gender(p.getPerson() != null ? p.getPerson().getGender() : null)
-                                .dateOfBirth(p.getPerson() != null && p.getPerson().getDob() != null ? p.getPerson().getDob().toString() : null)
                                 .tournamentCount(tCount)
                                 .build();
                     })
@@ -524,7 +524,7 @@ public class PublicProfileController {
                     .lastName(player.lastName())
                     .idType(player.identificationType())
                     .idNumber("XXX") // Hide for public
-                    .dateOfBirth(player.dob() != null ? player.dob().toString() : null)
+                    .age(player.dob() != null ? Period.between(player.dob(), LocalDate.now()).getYears() : null)
                     .gender(player.gender())
                     .country(player.country())
                     .state(player.state())
