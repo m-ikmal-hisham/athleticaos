@@ -29,6 +29,7 @@ public class OrganisationController {
 
     private final OrganisationService organisationService;
     private final OrganisationRepository organisationRepository;
+    private final com.athleticaos.backend.repositories.PersonRepository personRepository;
     private final AuditLogger auditLogger;
 
     @PreAuthorize("isAuthenticated()")
@@ -147,10 +148,20 @@ public class OrganisationController {
 
     @PostMapping("/{id}/persons")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PersonSummaryDTO> registerPerson(
             @PathVariable UUID id,
-            @RequestBody @Valid RegisterPersonRequest request) {
+            @RequestBody @Valid RegisterPersonRequest request,
+            HttpServletRequest httpRequest) {
         log.info("Registering new person under organisation: {}", id);
-        return ResponseEntity.ok(organisationService.registerPerson(id, request));
+        PersonSummaryDTO response = organisationService.registerPerson(id, request);
+        if (response != null && response.getId() != null) {
+            com.athleticaos.backend.entities.Person person = personRepository.findById(UUID.fromString(response.getId())).orElse(null);
+            Organisation org = organisationRepository.findById(id).orElse(null);
+            if (person != null) {
+                auditLogger.logPersonCreated(person, org != null ? org.getName() : null, httpRequest);
+            }
+        }
+        return ResponseEntity.ok(response);
     }
 }

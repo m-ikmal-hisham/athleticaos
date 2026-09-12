@@ -10,7 +10,7 @@ COPY pom.xml mvnw ./
 COPY .mvn .mvn
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 
-# Copy source and build (skip tests — they run in CI)
+# Copy source and build (skip tests here — unit and integration test gates run in CI before image build)
 COPY src src
 ARG GIT_SHA=unknown
 RUN ./mvnw package -DskipTests -B -Dgit.commit.id.full=${GIT_SHA} && \

@@ -48,6 +48,33 @@ class PublicTournamentCategoryTest {
         assertThat(controller.getTournamentStandings(tournamentId.toString(), null).getBody()).hasSize(3);
     }
 
+    @Test
+    void unknownTournamentReturns404ForMatchesAndStandings() {
+        var tournaments = mock(TournamentService.class);
+        var matches = mock(MatchService.class);
+        var standings = mock(StandingsService.class);
+        var officials = mock(MatchOfficialRepository.class);
+        var stages = mock(TournamentStageRepository.class);
+        var controller = new PublicTournamentController(tournaments, matches, standings,
+                null, null, null, null, null, officials, stages, null);
+
+        UUID unknownId = UUID.randomUUID();
+        when(tournaments.getTournamentById(unknownId)).thenThrow(new jakarta.persistence.EntityNotFoundException("Tournament not found"));
+        when(tournaments.getTournamentBySlug("non-existent")).thenThrow(new jakarta.persistence.EntityNotFoundException("Tournament not found"));
+
+        var matchesByIdResponse = controller.getTournamentMatches(unknownId.toString(), null, null);
+        assertThat(matchesByIdResponse.getStatusCode().value()).isEqualTo(404);
+
+        var matchesBySlugResponse = controller.getTournamentMatches("non-existent", null, null);
+        assertThat(matchesBySlugResponse.getStatusCode().value()).isEqualTo(404);
+
+        var standingsByIdResponse = controller.getTournamentStandings(unknownId.toString(), null);
+        assertThat(standingsByIdResponse.getStatusCode().value()).isEqualTo(404);
+
+        var standingsBySlugResponse = controller.getTournamentStandings("non-existent", null);
+        assertThat(standingsBySlugResponse.getStatusCode().value()).isEqualTo(404);
+    }
+
     private MatchResponse match(UUID category) {
         return MatchResponse.builder().id(UUID.randomUUID()).stage(MatchResponse.StageInfo.builder()
                 .id(UUID.randomUUID().toString()).name("Final").categoryId(category).build()).build();

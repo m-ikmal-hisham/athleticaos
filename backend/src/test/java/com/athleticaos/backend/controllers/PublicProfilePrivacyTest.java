@@ -231,4 +231,32 @@ class PublicProfilePrivacyTest {
                 .doesNotContain("dateOfBirth")
                 .doesNotContain("dob");
     }
+
+    @Test
+    @DisplayName("Public player detail returns 404 when player is not found by ID or slug")
+    void publicPlayerDetailReturns404WhenNotFound() {
+        UUID unknownId = UUID.randomUUID();
+        when(playerService.getPlayerById(unknownId)).thenThrow(new jakarta.persistence.EntityNotFoundException("Player not found"));
+        when(playerService.getPlayerBySlug("unknown-slug")).thenThrow(new jakarta.persistence.EntityNotFoundException("Player not found"));
+
+        ResponseEntity<PublicPlayerDetailResponse> idResponse = controller.getPublicPlayer(unknownId.toString(), null);
+        assertThat(idResponse.getStatusCode().value()).isEqualTo(404);
+
+        ResponseEntity<PublicPlayerDetailResponse> slugResponse = controller.getPublicPlayer("unknown-slug", null);
+        assertThat(slugResponse.getStatusCode().value()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("Public player stats returns 404 when player is not found by ID or slug")
+    void publicPlayerStatsReturns404WhenNotFound() {
+        UUID unknownId = UUID.randomUUID();
+        when(playerService.getPlayerById(unknownId)).thenThrow(new jakarta.persistence.EntityNotFoundException("Player not found"));
+        when(playerService.getPlayerBySlug("unknown-slug")).thenThrow(new jakarta.persistence.EntityNotFoundException("Player not found"));
+
+        var idResponse = controller.getPublicPlayerStats(unknownId.toString(), null);
+        assertThat(idResponse.getStatusCode().value()).isEqualTo(404);
+
+        var slugResponse = controller.getPublicPlayerStats("unknown-slug", null);
+        assertThat(slugResponse.getStatusCode().value()).isEqualTo(404);
+    }
 }

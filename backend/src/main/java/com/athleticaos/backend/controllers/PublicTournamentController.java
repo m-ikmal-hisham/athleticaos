@@ -8,10 +8,9 @@ import com.athleticaos.backend.services.MatchService;
 import com.athleticaos.backend.services.StandingsService;
 import com.athleticaos.backend.services.TournamentService;
 import lombok.RequiredArgsConstructor;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +35,6 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.services.MatchLineupService matchLineupService;
 
     @GetMapping("/tournaments")
-    @Transactional(readOnly = true)
     public ResponseEntity<List<PublicTournamentSummaryResponse>> getPublicTournaments(
             @RequestParam(required = false) String seasonId,
             @RequestParam(required = false) String status) {
@@ -53,7 +51,6 @@ public class PublicTournamentController {
     }
 
     @GetMapping("/tournaments/{idOrSlug}")
-    @Transactional(readOnly = true)
     public ResponseEntity<PublicTournamentDetailResponse> getTournamentDetail(@PathVariable String idOrSlug) {
         try {
             TournamentResponse tournament = fetchTournament(idOrSlug);
@@ -64,14 +61,12 @@ public class PublicTournamentController {
 
             PublicTournamentDetailResponse response = mapToPublicDetail(tournament);
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error fetching tournament detail for id {}", idOrSlug, e);
-            return ResponseEntity.internalServerError().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/tournaments/{idOrSlug}/matches")
-    @Transactional(readOnly = true)
     public ResponseEntity<List<PublicMatchSummaryResponse>> getTournamentMatches(
             @PathVariable String idOrSlug,
             @RequestParam(required = false) String stage,
@@ -140,39 +135,40 @@ public class PublicTournamentController {
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error fetching matches for tournament {}", idOrSlug, e);
-            return ResponseEntity.internalServerError().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/matches/{idOrSlug}")
-    @Transactional(readOnly = true)
     public ResponseEntity<PublicMatchDetailResponse> getMatchDetail(@PathVariable String idOrSlug) {
-        // Resolve UUID or matchCode
-        UUID matchId;
         try {
-            matchId = UUID.fromString(idOrSlug);
-        } catch (IllegalArgumentException e) {
-            // Not a UUID, try to find by matchCode
-            MatchResponse matchByCode = matchService.getMatchByCode(idOrSlug);
-            matchId = matchByCode.getId();
-        }
+            // Resolve UUID or matchCode
+            UUID matchId;
+            try {
+                matchId = UUID.fromString(idOrSlug);
+            } catch (IllegalArgumentException e) {
+                // Not a UUID, try to find by matchCode
+                MatchResponse matchByCode = matchService.getMatchByCode(idOrSlug);
+                matchId = matchByCode.getId();
+            }
 
-        MatchResponse match = matchService.getMatchById(matchId);
+            MatchResponse match = matchService.getMatchById(matchId);
 
-        // Verify tournament is published
-        TournamentResponse tournament = tournamentService.getTournamentById(match.getTournamentId());
-        if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+            // Verify tournament is published
+            TournamentResponse tournament = tournamentService.getTournamentById(match.getTournamentId());
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            PublicMatchDetailResponse response = mapToPublicMatchDetail(match);
+            return ResponseEntity.ok(response);
+        } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
-
-        PublicMatchDetailResponse response = mapToPublicMatchDetail(match);
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/matches/{idOrSlug}/lineups")
-    @Transactional(readOnly = true)
     public ResponseEntity<PublicMatchLineupsResponse> getMatchLineups(@PathVariable String idOrSlug) {
         try {
             // Resolve match ID
@@ -227,14 +223,12 @@ public class PublicTournamentController {
                     .build();
 
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error fetching lineups for match {}", idOrSlug, e);
-            return ResponseEntity.internalServerError().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/tournaments/{idOrSlug}/standings")
-    @Transactional(readOnly = true)
     public ResponseEntity<List<StandingsResponse>> getTournamentStandings(
             @PathVariable String idOrSlug,
             @RequestParam(required = false) UUID categoryId) {
@@ -253,14 +247,12 @@ public class PublicTournamentController {
                         .collect(Collectors.toList());
             }
             return ResponseEntity.ok(standings);
-        } catch (Exception e) {
-            log.error("Error fetching standings for tournament {}", idOrSlug, e);
-            return ResponseEntity.internalServerError().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/tournaments/{idOrSlug}/stats")
-    @Transactional(readOnly = true)
     public ResponseEntity<PublicTournamentStatsResponse> getTournamentStats(
             @PathVariable String idOrSlug,
             @RequestParam(required = false) UUID categoryId) {
@@ -277,9 +269,8 @@ public class PublicTournamentController {
 
             PublicTournamentStatsResponse response = mapToPublicStats(leaderboard, summary);
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error fetching stats for tournament {}", idOrSlug, e);
-            return ResponseEntity.internalServerError().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

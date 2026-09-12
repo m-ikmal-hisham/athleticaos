@@ -271,6 +271,7 @@ public class TeamServiceImpl implements TeamService {
                 .build();
         
         teamStaff = teamStaffRepository.save(teamStaff);
+        auditLogger.logTeamStaffAdded(teamStaff, httpRequest);
         
         // Auto-link person to organisation
         UUID orgId = team.getOrganisation().getId();

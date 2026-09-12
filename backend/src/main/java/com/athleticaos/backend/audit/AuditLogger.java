@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 /**
  * Helper component for creating audit log entries.
  * Provides convenience methods for common audit logging scenarios.
@@ -332,10 +334,73 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        // ==================== PERSON ACTIONS ====================
+
+        public void logPersonCreated(Person person, String organisationName, HttpServletRequest request) {
+                String summary = String.format("Person created: %s %s (ID: %s%s)",
+                                person.getFirstName(), person.getLastName(), person.getId(),
+                                organisationName != null ? ", Organisation: " + organisationName : "");
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PERSON_CREATED")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPersonCreated(Person person, HttpServletRequest request) {
+                logPersonCreated(person, null, request);
+        }
+
+        public void logPersonUpdated(Person person, String organisationName, HttpServletRequest request) {
+                String summary = String.format("Person updated: %s %s (ID: %s%s)",
+                                person.getFirstName(), person.getLastName(), person.getId(),
+                                organisationName != null ? ", Organisation: " + organisationName : "");
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PERSON_UPDATED")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPersonUpdated(Person person, HttpServletRequest request) {
+                logPersonUpdated(person, null, request);
+        }
+
+        // ==================== TEAM STAFF ACTIONS ====================
+
+        public void logTeamStaffAdded(TeamStaff teamStaff, HttpServletRequest request) {
+                String staffName = teamStaff.getPerson() != null
+                                ? teamStaff.getPerson().getFirstName() + " " + teamStaff.getPerson().getLastName()
+                                : "Unknown";
+                String teamName = teamStaff.getTeam() != null ? teamStaff.getTeam().getName() : "Unknown";
+                String roleName = teamStaff.getStaffRole() != null ? teamStaff.getStaffRole().getName() : "Staff";
+                String summary = String.format("Staff %s added to team %s as %s", staffName, teamName, roleName);
+
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TEAM_STAFF_ADDED")
+                                .entityType("TEAM_STAFF")
+                                .entityId(teamStaff.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         public void logBulkAction(String actionType, String entityType, String summary, HttpServletRequest request) {
+                logBulkAction(actionType, entityType, null, summary, request);
+        }
+
+        public void logBulkAction(String actionType, String entityType, UUID entityId, String summary, HttpServletRequest request) {
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType(actionType)
                                 .entityType(entityType)
+                                .entityId(entityId != null ? entityId : UUID.randomUUID())
                                 .entitySummary(summary)
                                 .build();
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));

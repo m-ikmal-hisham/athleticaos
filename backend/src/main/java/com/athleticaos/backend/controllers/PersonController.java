@@ -28,6 +28,8 @@ public class PersonController {
     private final TeamStaffRepository teamStaffRepository;
     private final OfficialRegistryRepository officialRegistryRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
+    private final com.athleticaos.backend.audit.AuditLogger auditLogger;
+    private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
@@ -48,10 +50,20 @@ public class PersonController {
 
     @PostMapping("/organisation/{orgId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PersonResponseDTO> createPerson(
             @PathVariable UUID orgId,
-            @RequestBody @Valid com.athleticaos.backend.dtos.person.CreatePersonRequest request) {
-        return ResponseEntity.ok(personService.createPerson(orgId, request));
+            @RequestBody @Valid com.athleticaos.backend.dtos.person.CreatePersonRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        PersonResponseDTO response = personService.createPerson(orgId, request);
+        if (response != null && response.getId() != null) {
+            com.athleticaos.backend.entities.Person person = personRepository.findById(UUID.fromString(response.getId())).orElse(null);
+            com.athleticaos.backend.entities.Organisation org = organisationRepository.findById(orgId).orElse(null);
+            if (person != null) {
+                auditLogger.logPersonCreated(person, org != null ? org.getName() : null, httpRequest);
+            }
+        }
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -62,10 +74,17 @@ public class PersonController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PersonResponseDTO> updatePerson(
             @PathVariable UUID id,
-            @RequestBody @Valid PersonUpdateRequest request) {
-        return ResponseEntity.ok(personService.updatePerson(id, request));
+            @RequestBody @Valid PersonUpdateRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        PersonResponseDTO response = personService.updatePerson(id, request);
+        com.athleticaos.backend.entities.Person person = personRepository.findById(id).orElse(null);
+        if (person != null) {
+            auditLogger.logPersonUpdated(person, httpRequest);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
