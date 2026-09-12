@@ -8,6 +8,7 @@ import com.athleticaos.backend.services.OfficialService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class OfficialServiceImpl implements OfficialService {
     private final OfficialRoleRepository officialRoleRepository;
     private final TournamentOfficialRepository tournamentOfficialRepository;
     private final AuditLogger auditLogger;
-    private final HttpServletRequest request;
+    private final ObjectProvider<HttpServletRequest> requestProvider;
 
     // ─── Registry Management ────────────────────────────────────────────
 
@@ -142,7 +143,7 @@ public class OfficialServiceImpl implements OfficialService {
                 .build();
 
         MatchOfficial saved = matchOfficialRepository.save(assignment);
-        auditLogger.logOfficialAssigned(saved, request);
+        auditLogger.logOfficialAssigned(saved, requestProvider.getIfAvailable());
         return toMatchOfficialDTO(saved);
     }
 
