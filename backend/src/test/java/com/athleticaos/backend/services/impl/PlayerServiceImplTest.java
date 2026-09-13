@@ -453,4 +453,103 @@ class PlayerServiceImplTest {
                 .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class)
                 .satisfies(ex -> assertThat(ex.getMessage()).doesNotMatch(".*\\d.*"));
     }
+
+    @Test
+    void updatePlayer_nullStoredType_dobChanged_noIdentity_throwsReentryRequired() {
+        existingPerson.setIdentificationType(null);
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, LocalDate.of(1991, 6, 6),
+                null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class);
+
+        verify(personRepository, org.mockito.Mockito.never()).save(any(Person.class));
+        assertThat(existingPerson.getDob()).isEqualTo(LocalDate.of(1995, 5, 20));
+    }
+
+    @Test
+    void updatePlayer_nonCanonicalStoredType_genderChanged_reenteredIc_succeedsWithCanonicalType() {
+        existingPerson.setIdentificationType("IC");
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("950520145552", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("950520145552")).thenReturn("hashFemale950520");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("hashFemale950520", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        // Gender changed to FEMALE, re-entered consistent IC (even last digit) with canonical type MALAYSIAN_IC
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "FEMALE", null,
+                "950520-14-5552", "MALAYSIAN_IC", null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        assertThat(existingPerson.getGender()).isEqualTo("FEMALE");
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("950520145552");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePlayer_nullStoredType_dobChanged_reenteredPassport_succeedsWithPassportType() {
+        existingPerson.setIdentificationType(null);
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("A98765432", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("A98765432")).thenReturn("hashPassport");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("hashPassport", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, LocalDate.of(1992, 2, 2),
+                "A98765432", "PASSPORT", null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        assertThat(existingPerson.getDob()).isEqualTo(LocalDate.of(1992, 2, 2));
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("PASSPORT");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("A98765432");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePlayer_invalidGenderOther_throwsIllegalArgument() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "OTHER", null,
+                null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Gender must be MALE or FEMALE.");
+
+        verify(personRepository, org.mockito.Mockito.never()).save(any(Person.class));
+        assertThat(existingPerson.getGender()).isEqualTo("MALE");
+    }
 }

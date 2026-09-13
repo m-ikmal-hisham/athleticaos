@@ -11,7 +11,7 @@ package com.athleticaos.backend.exceptions;
 public class IdentificationReentryRequiredException extends RuntimeException {
 
     private static final String MESSAGE =
-            "Changing date of birth or gender for a Malaysian IC holder requires re-entering the IC number.";
+            "Changing date of birth or gender requires re-entering the identification number.";
 
     public IdentificationReentryRequiredException() {
         super(MESSAGE);

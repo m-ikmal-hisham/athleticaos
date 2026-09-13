@@ -34,7 +34,7 @@ export const EditPlayer = () => {
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [photoUrl, setPhotoUrl] = useState("");
-    const [gender, setGender] = useState<Gender>(Gender.MALE);
+    const [gender, setGender] = useState<Gender | "">("");
     const [dob, setDob] = useState("");
     const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
     const [replacementIdentificationType, setReplacementIdentificationType] = useState("");
@@ -97,10 +97,12 @@ export const EditPlayer = () => {
                 setLastName(player.lastName || "");
                 setEmail(player.email || "");
                 setPhotoUrl(player.photoUrl || "");
-                setGender(player.gender || Gender.MALE);
+                const rawGender = (player.gender || "").trim().toUpperCase();
+                const initialGender = (rawGender === Gender.MALE || rawGender === Gender.FEMALE) ? (rawGender as Gender) : "";
+                setGender(initialGender);
                 setDob(player.dob || "");
                 loadedDob.current = player.dob || "";
-                loadedGender.current = player.gender || "";
+                loadedGender.current = rawGender;
                 setExistingIdentificationType(player.identificationType || null);
                 setReplacementIdentificationType("");
                 setIdentificationPresent(Boolean(player.identificationPresent));
@@ -140,11 +142,19 @@ export const EditPlayer = () => {
         ? teams.filter(t => t.organisationId === selectedOrganisationId)
         : teams;
 
-    // OBS-05B: Determine if IC reentry is required due to DOB/gender change on a Malaysian IC holder
-    const isReentryRequired = existingIdentificationType === 'MALAYSIAN_IC' && (
-        (dob && dob !== loadedDob.current) ||
-        (String(gender).trim().toUpperCase() !== loadedGender.current.trim().toUpperCase())
-    );
+    // OBS-05B: Determine if identification reentry is required due to DOB/gender change
+    const storedType = (existingIdentificationType || '').trim().toUpperCase();
+    const exempt = storedType === 'PASSPORT' || storedType === 'OTHER';
+    const genderChanged = Boolean(gender) && String(gender).trim().toUpperCase() !== loadedGender.current;
+    const dobChanged = Boolean(dob) && dob !== loadedDob.current;
+    const isReentryRequired = !exempt && (dobChanged || genderChanged);
+
+    const reentryNotice = storedType === 'MALAYSIAN_IC'
+        ? 'Changing date of birth or gender requires re-entering the IC number.'
+        : "This record's identification type is missing or outdated. Changing date of birth or gender requires re-entering the identification number and selecting its type.";
+
+    // Effective type: auto-preselect MALAYSIAN_IC only when storedType was MALAYSIAN_IC
+    const effectiveIdType = replacementIdentificationType || (isReentryRequired && storedType === 'MALAYSIAN_IC' ? 'MALAYSIAN_IC' : '');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -152,15 +162,17 @@ export const EditPlayer = () => {
 
         const hasReplacementId = Boolean(identificationValue.trim());
 
-        // OBS-05B: Block submit if reentry is required but IC is not provided
+        // OBS-05B: Block submit if reentry is required but ID is not provided
         if (isReentryRequired && !hasReplacementId) {
-            setDuplicateIcError("Changing date of birth or gender requires re-entering the IC number.");
-            showToast.error("Changing date of birth or gender requires re-entering the IC number.");
+            setDuplicateIcError(reentryNotice);
+            showToast.error(reentryNotice);
             return;
         }
 
-        // Effective type: auto-preselect MALAYSIAN_IC when reentry triggers and user hasn't changed it
-        const effectiveIdType = replacementIdentificationType || (isReentryRequired ? 'MALAYSIAN_IC' : '');
+        if (!gender) {
+            showToast.error("Please select a gender");
+            return;
+        }
 
         if (hasReplacementId && !effectiveIdType) {
             showToast.error("Please select an identification type for the replacement ID");
@@ -202,8 +214,8 @@ export const EditPlayer = () => {
         } catch (error: any) {
             console.error('Update failed', error.response?.status, error.response?.data?.errorCode);
             if (error.response?.data?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
-                setDuplicateIcError(error.response?.data?.message || 'Changing date of birth or gender requires re-entering the IC number.');
-                showToast.error('IC re-entry required');
+                setDuplicateIcError(error.response?.data?.message || reentryNotice);
+                showToast.error('Identification re-entry required');
             } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
                 showToast.error("Duplicate IC found");
@@ -353,6 +365,11 @@ export const EditPlayer = () => {
                                     ]}
                                     placeholder="Select gender"
                                 />
+                                {loadedGender.current && loadedGender.current !== Gender.MALE && loadedGender.current !== Gender.FEMALE && !gender && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                        Gender on file is not MALE or FEMALE — please select one.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -369,7 +386,7 @@ export const EditPlayer = () => {
                                     )}
                                 </div>
                                 <SearchableSelect
-                                    value={isReentryRequired && !replacementIdentificationType ? 'MALAYSIAN_IC' : replacementIdentificationType}
+                                    value={effectiveIdType}
                                     onChange={(value) => setReplacementIdentificationType(value as string)}
                                     options={[
                                         { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
@@ -410,7 +427,7 @@ export const EditPlayer = () => {
                                 />
                                 {isReentryRequired && (
                                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                        Changing date of birth or gender requires re-entering the IC number.
+                                        {reentryNotice}
                                     </p>
                                 )}
                                 <p className="text-xs text-muted">

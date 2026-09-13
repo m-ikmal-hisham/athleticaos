@@ -704,9 +704,43 @@ class IdentificationUtilTest {
     }
 
     @Test
-    void requiresReentry_nullType_dobChanged_returnsFalse() {
+    void requiresReentry_nullType_dobChanged_returnsTrue() {
         assertThat(IdentificationUtil.requiresIdentityReentry(
                 null,
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isTrue();
+    }
+
+    @Test
+    void requiresReentry_nonCanonicalIcType_dobChanged_returnsTrue() {
+        // Non-canonical type "IC" is not PASSPORT or OTHER — re-entry is required.
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "IC",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isTrue();
+    }
+
+    @Test
+    void requiresReentry_blankType_dobChanged_returnsTrue() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "   ",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isTrue();
+    }
+
+    @Test
+    void requiresReentry_spacedPassport_dobChanged_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                " passport ",
                 LocalDate.of(1991, 6, 6),
                 "MALE",
                 LocalDate.of(2000, 1, 1),
@@ -715,15 +749,26 @@ class IdentificationUtilTest {
     }
 
     @Test
-    void requiresReentry_nonCanonicalIcType_dobChanged_returnsFalse() {
-        // Legacy value "IC" is not "MALAYSIAN_IC" — no re-entry required.
+    void requiresReentry_spacedOther_dobChanged_returnsFalse() {
         assertThat(IdentificationUtil.requiresIdentityReentry(
-                "IC",
+                " other ",
                 LocalDate.of(1991, 6, 6),
                 "MALE",
                 LocalDate.of(2000, 1, 1),
                 null
         )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_storedOtherGender_requestMale_returnsTrue() {
+        // Legacy stored gender OTHER changed to canonical MALE counts as changed.
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "OTHER",
+                null,
+                "MALE"
+        )).isTrue();
     }
 
     @Test

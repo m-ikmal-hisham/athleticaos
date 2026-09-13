@@ -128,7 +128,7 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.errorCode").value("IDENTIFICATION_REENTRY_REQUIRED"))
                 .andExpect(jsonPath("$.message").value(
-                        "Changing date of birth or gender for a Malaysian IC holder requires re-entering the IC number."))
+                        "Changing date of birth or gender requires re-entering the identification number."))
                 // Must not contain any digit in the message
                 .andExpect(jsonPath("$.message").value(not(org.hamcrest.Matchers.matchesRegex(".*\\d.*"))));
     }

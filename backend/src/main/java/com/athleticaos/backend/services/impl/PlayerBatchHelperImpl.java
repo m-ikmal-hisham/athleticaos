@@ -38,9 +38,12 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
         log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
 
+        // Canonicalise gender before any identity validation or entity mutation
+        String canonicalGender = com.athleticaos.backend.enums.Gender.from(row.gender()).name();
+
         // 1. Defensively validate and normalise identification using shared utility
         String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                row.icOrPassport(), row.identificationType(), row.dob(), row.gender());
+                row.icOrPassport(), row.identificationType(), row.dob(), canonicalGender);
 
         IdentificationHashResult hashResult = IdentificationHashResult.compute(identificationHashService, normalizedIc);
 
@@ -48,7 +51,7 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
         Person person = Person.builder()
                 .firstName(row.firstName().trim())
                 .lastName(row.lastName().trim())
-                .gender(row.gender().trim().toUpperCase())
+                .gender(canonicalGender)
                 .dob(row.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(row.identificationType())

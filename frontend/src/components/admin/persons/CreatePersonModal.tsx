@@ -207,9 +207,9 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                             onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                            <option value="" disabled>Select gender</option>
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
                         </select>
                     </div>
                 </div>

@@ -5,6 +5,7 @@ import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
+import com.athleticaos.backend.enums.Gender;
 import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
 import com.athleticaos.backend.utils.IdentificationUtil;
@@ -160,8 +161,9 @@ public class PlayerServiceImpl implements PlayerService {
         log.info("Creating player: {}", request.email());
 
         // Phase 2.1: single entry point for normalisation, mask/placeholder rejection, and type-specific validation
+        String canonicalGender = Gender.from(request.gender()).name();
         String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                request.icOrPassport(), request.identificationType(), request.dob(), request.gender());
+                request.icOrPassport(), request.identificationType(), request.dob(), canonicalGender);
 
         if (normalizedIc != null && !normalizedIc.isEmpty()) {
             checkDuplicateIc(normalizedIc, null);
@@ -181,7 +183,7 @@ public class PlayerServiceImpl implements PlayerService {
         Person person = Person.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .gender(request.gender())
+                .gender(canonicalGender)
                 .dob(request.dob())
                 .icOrPassport(normalizedIc)
                 .identificationType(normalizedIc != null ? IdentificationType.from(request.identificationType()).name() : null)
@@ -264,11 +266,13 @@ public class PlayerServiceImpl implements PlayerService {
         // Force initialization (double safety, though implicit load should suffice)
         log.debug("Loaded person for update: {}", person.getId());
 
-        // OBS-05B: If DOB or gender is changing for a MALAYSIAN_IC holder,
-        // require the IC to be re-entered in the same request.
+        String canonicalGender = request.gender() != null ? Gender.from(request.gender()).name() : null;
+
+        // OBS-05B: If DOB or gender is changing for an applicable record,
+        // require the identification to be re-entered in the same request.
         if (IdentificationUtil.requiresIdentityReentry(
                 person.getIdentificationType(), person.getDob(), person.getGender(),
-                request.dob(), request.gender())) {
+                request.dob(), canonicalGender)) {
             if (request.icOrPassport() == null || request.icOrPassport().trim().isEmpty()) {
                 throw new IdentificationReentryRequiredException();
             }
@@ -281,8 +285,8 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.lastName() != null) {
             person.setLastName(request.lastName());
         }
-        if (request.gender() != null) {
-            person.setGender(request.gender());
+        if (canonicalGender != null) {
+            person.setGender(canonicalGender);
         }
         if (request.dob() != null) {
             person.setDob(request.dob());
@@ -294,10 +298,11 @@ public class PlayerServiceImpl implements PlayerService {
             if (request.identificationType() == null || request.identificationType().trim().isEmpty()) {
                 throw new IllegalArgumentException("identificationType is required when updating identification value");
             }
+            String effectiveGender = canonicalGender != null ? canonicalGender : person.getGender();
             String normalizedIcUpdate = IdentificationUtil.validateAndNormalizeNewSubmission(
                     request.icOrPassport(), request.identificationType(),
                     request.dob() != null ? request.dob() : person.getDob(),
-                    request.gender() != null ? request.gender() : person.getGender());
+                    effectiveGender);
             if (normalizedIcUpdate != null) {
                 checkDuplicateIc(normalizedIcUpdate, person.getId());
                 person.setIcOrPassport(normalizedIcUpdate);
@@ -670,13 +675,22 @@ public class PlayerServiceImpl implements PlayerService {
 
             // 2. Validate identification and pre-check database constraints if no validation errors yet
             if (rowErrors.isEmpty()) {
-                String normalizedIc;
+                String canonicalGender = null;
                 try {
-                    normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                            row.icOrPassport(), row.identificationType(), row.dob(), row.gender());
+                    canonicalGender = Gender.from(row.gender()).name();
                 } catch (IllegalArgumentException e) {
-                    rowErrors.add(e.getMessage());
-                    normalizedIc = null;
+                    rowErrors.add("Gender must be MALE or FEMALE.");
+                }
+
+                String normalizedIc = null;
+                if (rowErrors.isEmpty()) {
+                    try {
+                        normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
+                                row.icOrPassport(), row.identificationType(), row.dob(), canonicalGender);
+                    } catch (IllegalArgumentException e) {
+                        rowErrors.add(e.getMessage());
+                        normalizedIc = null;
+                    }
                 }
 
                 // Only perform duplicate lookup when format validation succeeds

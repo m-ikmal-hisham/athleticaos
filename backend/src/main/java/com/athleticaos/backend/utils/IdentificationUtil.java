@@ -166,25 +166,27 @@ public final class IdentificationUtil {
     }
 
     /**
-     * Determines whether a DOB or gender update requires the person to re-enter
-     * their identification number.
+     * Determines whether an update to a person's date of birth or gender requires
+     * re-entering their identification number.
      *
-     * <p>Re-entry is required when <b>all</b> of the following hold:
+     * <p>Re-entry is required when <b>both</b> of the following hold:
      * <ol>
-     *   <li>The person's stored identification type, after trimming and
-     *       uppercasing, equals {@code "MALAYSIAN_IC"}.</li>
+     *   <li>The person's stored identification type, after trimming and uppercasing,
+     *       is <b>not</b> {@code "PASSPORT"} and <b>not</b> {@code "OTHER"}. Records
+     *       with {@code "MALAYSIAN_IC"}, null, blank, or any non-canonical type are
+     *       required to re-enter identification.</li>
      *   <li>The request changes DOB (non-null and differs from stored) <b>or</b>
      *       changes gender (non-null and differs case-insensitively from stored).</li>
      * </ol>
      *
      * <p>This method is <b>pure</b>: no I/O, no database access, no logging.
      *
-     * @param storedType   the person's current {@code identificationType} (may be null)
+     * @param storedType   the person's current {@code identificationType} (may be null, blank, or legacy)
      * @param storedDob    the person's current {@code dob} (may be null)
      * @param storedGender the person's current {@code gender} (may be null)
      * @param requestDob   the DOB value from the update request (null = not changing)
      * @param requestGender the gender value from the update request (null = not changing)
-     * @return {@code true} if the update requires IC re-entry
+     * @return {@code true} if the update requires identification re-entry
      */
     public static boolean requiresIdentityReentry(
             String storedType,
@@ -193,12 +195,12 @@ public final class IdentificationUtil {
             LocalDate requestDob,
             String requestGender) {
 
-        // Only applies to MALAYSIAN_IC holders (case-insensitive, trimmed).
-        if (storedType == null) {
-            return false;
-        }
-        if (!"MALAYSIAN_IC".equals(storedType.trim().toUpperCase(Locale.ROOT))) {
-            return false;
+        // Exempt if stored type, trimmed and uppercase, is PASSPORT or OTHER.
+        if (storedType != null) {
+            String normType = storedType.trim().toUpperCase(Locale.ROOT);
+            if ("PASSPORT".equals(normType) || "OTHER".equals(normType)) {
+                return false;
+            }
         }
 
         // DOB changed: request DOB is non-null AND differs from stored.

@@ -416,4 +416,82 @@ class PersonServiceImplTest {
                 .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class)
                 .satisfies(ex -> assertThat(ex.getMessage()).doesNotMatch(".*\\d.*"));
     }
+
+    @Test
+    void updatePerson_nullStoredType_dobChanged_noIdentity_throwsReentryRequired() {
+        existingPerson.setIdentificationType(null);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(LocalDate.of(1991, 6, 6)); // changed from 1990-01-01
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class);
+
+        verify(personRepository, never()).save(any(Person.class));
+        assertThat(existingPerson.getDob()).isEqualTo(LocalDate.of(1990, 1, 1));
+    }
+
+    @Test
+    void updatePerson_nonCanonicalStoredType_genderChanged_reenteredIc_succeedsWithCanonicalType() {
+        existingPerson.setIdentificationType("IC");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("900101145552", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("900101145552")).thenReturn("hashFemale900101");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("hashFemale900101", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setGender("FEMALE");
+        request.setIcOrPassport("900101-14-5552");
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getGender()).isEqualTo("FEMALE");
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("900101145552");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePerson_nullStoredType_dobChanged_reenteredPassport_succeedsWithPassportType() {
+        existingPerson.setIdentificationType(null);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("A98765432", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("A98765432")).thenReturn("hashPassport");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("hashPassport", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(LocalDate.of(1992, 2, 2));
+        request.setIcOrPassport("A98765432");
+        request.setIdentificationType("PASSPORT");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getDob()).isEqualTo(LocalDate.of(1992, 2, 2));
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("PASSPORT");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("A98765432");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePerson_invalidGenderOther_throwsIllegalArgument() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setGender("OTHER");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Gender must be MALE or FEMALE.");
+
+        verify(personRepository, never()).save(any(Person.class));
+        assertThat(existingPerson.getGender()).isEqualTo("MALE");
+    }
 }

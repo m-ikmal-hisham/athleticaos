@@ -477,9 +477,12 @@ public class OrganisationServiceImpl implements OrganisationService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + organisationId));
 
+        // Canonicalise gender before any identity validation or entity mutation
+        String canonicalGender = com.athleticaos.backend.enums.Gender.from(request.getGender()).name();
+
         // Phase 2.1: use shared utility for normalisation, mask/placeholder rejection, validation, dual-lookup and dual-write
         String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), request.getGender());
+                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), canonicalGender);
         com.athleticaos.backend.services.IdentificationHashResult hashResult = null;
         if (normalizedIc != null && !normalizedIc.isEmpty()) {
             hashResult = com.athleticaos.backend.services.IdentificationHashResult.compute(
@@ -499,7 +502,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .dob(request.getDob())
-                .gender(request.getGender())
+                .gender(canonicalGender)
                 .nationality(request.getNationality())
                 .nationalPlayerStatus(request.getNationalPlayerStatus())
                 .build();

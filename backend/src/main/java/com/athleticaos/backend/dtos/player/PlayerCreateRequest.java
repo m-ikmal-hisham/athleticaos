@@ -12,7 +12,7 @@ public record PlayerCreateRequest(
 
         @NotBlank(message = "Last name is required") String lastName,
 
-        @NotBlank(message = "Gender is required") String gender, // MALE, FEMALE, OTHER
+        @NotBlank(message = "Gender is required") String gender, // MALE or FEMALE
 
         @NotNull(message = "Date of birth is required") LocalDate dob,
 

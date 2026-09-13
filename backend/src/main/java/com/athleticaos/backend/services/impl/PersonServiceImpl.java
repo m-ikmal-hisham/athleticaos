@@ -17,6 +17,7 @@ import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.services.IdentificationHashResult;
+import com.athleticaos.backend.enums.Gender;
 import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
 import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
@@ -172,8 +173,9 @@ public class PersonServiceImpl implements PersonService {
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
         // Phase 2.1: single entry point for normalisation, mask/placeholder rejection, and type-specific validation
+        String canonicalGender = Gender.from(request.getGender()).name();
         String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), request.getGender());
+                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), canonicalGender);
 
         // Duplicate check (dual: hash + plaintext)
         if (normalizedIc != null) {
@@ -201,7 +203,7 @@ public class PersonServiceImpl implements PersonService {
             person.setIdentificationVerificationStatus("UNVERIFIED");
         }
         person.setDob(request.getDob());
-        person.setGender(request.getGender());
+        person.setGender(canonicalGender);
         person.setNationality(request.getNationality());
         person.setEmail(request.getEmail());
         person.setPhone(request.getPhone());
@@ -247,11 +249,13 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
-        // OBS-05B: If DOB or gender is changing for a MALAYSIAN_IC holder,
-        // require the IC to be re-entered in the same request.
+        String canonicalGender = request.getGender() != null ? Gender.from(request.getGender()).name() : null;
+
+        // OBS-05B: If DOB or gender is changing for an applicable record,
+        // require the identification to be re-entered in the same request.
         if (IdentificationUtil.requiresIdentityReentry(
                 person.getIdentificationType(), person.getDob(), person.getGender(),
-                request.getDob(), request.getGender())) {
+                request.getDob(), canonicalGender)) {
             if (request.getIcOrPassport() == null || request.getIcOrPassport().trim().isEmpty()) {
                 throw new IdentificationReentryRequiredException();
             }
@@ -265,7 +269,7 @@ public class PersonServiceImpl implements PersonService {
                 throw new IllegalArgumentException("identificationType is required when updating identification value");
             }
             LocalDate effectiveDob = request.getDob() != null ? request.getDob() : person.getDob();
-            String effectiveGender = request.getGender() != null ? request.getGender() : person.getGender();
+            String effectiveGender = canonicalGender != null ? canonicalGender : person.getGender();
             String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
                     request.getIcOrPassport(), request.getIdentificationType(), effectiveDob, effectiveGender);
             if (normalizedIc != null) {
@@ -297,7 +301,7 @@ public class PersonServiceImpl implements PersonService {
         if (request.getFirstName() != null) person.setFirstName(request.getFirstName());
         if (request.getLastName() != null) person.setLastName(request.getLastName());
         if (request.getDob() != null) person.setDob(request.getDob());
-        if (request.getGender() != null) person.setGender(request.getGender());
+        if (canonicalGender != null) person.setGender(canonicalGender);
         if (request.getNationality() != null) person.setNationality(request.getNationality());
         if (request.getEmail() != null) person.setEmail(request.getEmail());
         if (request.getPhone() != null) person.setPhone(request.getPhone());

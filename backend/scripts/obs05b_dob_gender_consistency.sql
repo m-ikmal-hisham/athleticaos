@@ -39,6 +39,8 @@ UNION ALL SELECT 'type_PASSPORT',                count(*) FROM p WHERE id_type =
 UNION ALL SELECT 'type_OTHER',                   count(*) FROM p WHERE id_type = 'OTHER'
 UNION ALL SELECT 'type_null_or_noncanonical',    count(*) FROM p WHERE id_type NOT IN ('MALAYSIAN_IC', 'PASSPORT', 'OTHER')
 UNION ALL SELECT 'noncanonical_type_looks_like_ic', count(*) FROM p
-          WHERE id_type NOT IN ('MALAYSIAN_IC', 'PASSPORT', 'OTHER') AND norm ~ '^[0-9]{12}$';
+          WHERE id_type NOT IN ('MALAYSIAN_IC', 'PASSPORT', 'OTHER') AND norm ~ '^[0-9]{12}$'
+UNION ALL SELECT 'all_gender_not_male_female',   count(*) FROM p WHERE g NOT IN ('MALE', 'FEMALE')
+UNION ALL SELECT 'all_gender_noncanonical_case', count(*) FROM p WHERE g IN ('MALE', 'FEMALE') AND g_raw <> g;
 
 ROLLBACK;

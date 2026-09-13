@@ -74,7 +74,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             const cells = trimmed.split('\t');
             
             // Map cells to exactly our 10 expected fields: First Name | Last Name | Gender | DOB | ID Type | IC/Passport | Nationality | Email | State | Medical Notes
-            let rawType = (cells[4]?.trim() || '').toUpperCase();
+            const rawType = (cells[4]?.trim() || '').toUpperCase();
             let idType = '';
             if (rawType === 'PASSPORT') idType = 'PASSPORT';
             else if (rawType === 'OTHER') idType = 'OTHER';
@@ -115,8 +115,8 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
         const genderVal = row.gender.toUpperCase();
         if (!row.gender) {
             rowErr.gender = 'Gender is required';
-        } else if (genderVal !== 'MALE' && genderVal !== 'FEMALE' && genderVal !== 'OTHER') {
-            rowErr.gender = 'Gender must be MALE, FEMALE, or OTHER';
+        } else if (genderVal !== 'MALE' && genderVal !== 'FEMALE') {
+            rowErr.gender = 'Gender must be MALE or FEMALE';
         }
 
         // Validate date: YYYY-MM-DD
@@ -426,7 +426,6 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         <option value="">Select</option>
                                                         <option value="MALE">MALE</option>
                                                         <option value="FEMALE">FEMALE</option>
-                                                        <option value="OTHER">OTHER</option>
                                                     </select>
                                                 </td>
 
