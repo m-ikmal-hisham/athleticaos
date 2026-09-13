@@ -19,6 +19,7 @@ import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
+import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -245,6 +246,16 @@ public class PersonServiceImpl implements PersonService {
     public PersonResponseDTO updatePerson(UUID id, PersonUpdateRequest request) {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+
+        // OBS-05B: If DOB or gender is changing for a MALAYSIAN_IC holder,
+        // require the IC to be re-entered in the same request.
+        if (IdentificationUtil.requiresIdentityReentry(
+                person.getIdentificationType(), person.getDob(), person.getGender(),
+                request.getDob(), request.getGender())) {
+            if (request.getIcOrPassport() == null || request.getIcOrPassport().trim().isEmpty()) {
+                throw new IdentificationReentryRequiredException();
+            }
+        }
 
         // Phase 2.1: null icOrPassport = leave existing unchanged.
         // Non-blank value triggers atomic normalisation, validation, dual duplicate check, and dual write.

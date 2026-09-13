@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
@@ -43,6 +43,10 @@ export const EditPlayer = () => {
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
     const [duplicateIcError, setDuplicateIcError] = useState("");
+
+    // OBS-05B: Track loaded DOB and gender for reentry detection
+    const loadedDob = useRef("");
+    const loadedGender = useRef("");
 
     // Address
     const [addressLine1, setAddressLine1] = useState("");
@@ -95,6 +99,8 @@ export const EditPlayer = () => {
                 setPhotoUrl(player.photoUrl || "");
                 setGender(player.gender || Gender.MALE);
                 setDob(player.dob || "");
+                loadedDob.current = player.dob || "";
+                loadedGender.current = player.gender || "";
                 setExistingIdentificationType(player.identificationType || null);
                 setReplacementIdentificationType("");
                 setIdentificationPresent(Boolean(player.identificationPresent));
@@ -134,12 +140,29 @@ export const EditPlayer = () => {
         ? teams.filter(t => t.organisationId === selectedOrganisationId)
         : teams;
 
+    // OBS-05B: Determine if IC reentry is required due to DOB/gender change on a Malaysian IC holder
+    const isReentryRequired = existingIdentificationType === 'MALAYSIAN_IC' && (
+        (dob && dob !== loadedDob.current) ||
+        (String(gender).trim().toUpperCase() !== loadedGender.current.trim().toUpperCase())
+    );
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
 
         const hasReplacementId = Boolean(identificationValue.trim());
-        if (hasReplacementId && !replacementIdentificationType) {
+
+        // OBS-05B: Block submit if reentry is required but IC is not provided
+        if (isReentryRequired && !hasReplacementId) {
+            setDuplicateIcError("Changing date of birth or gender requires re-entering the IC number.");
+            showToast.error("Changing date of birth or gender requires re-entering the IC number.");
+            return;
+        }
+
+        // Effective type: auto-preselect MALAYSIAN_IC when reentry triggers and user hasn't changed it
+        const effectiveIdType = replacementIdentificationType || (isReentryRequired ? 'MALAYSIAN_IC' : '');
+
+        if (hasReplacementId && !effectiveIdType) {
             showToast.error("Please select an identification type for the replacement ID");
             return;
         }
@@ -152,7 +175,7 @@ export const EditPlayer = () => {
             email,
             gender: String(gender),
             dob,
-            identificationType: hasReplacementId ? replacementIdentificationType : undefined,
+            identificationType: hasReplacementId ? effectiveIdType : undefined,
             icOrPassport: hasReplacementId ? identificationValue.trim() : undefined,
             nationality,
             phone: phone || undefined,
@@ -177,8 +200,11 @@ export const EditPlayer = () => {
             showToast.success("Player updated successfully");
             navigate('/dashboard/players');
         } catch (error: any) {
-            console.error(error);
-            if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
+            console.error('Update failed', error.response?.status, error.response?.data?.errorCode);
+            if (error.response?.data?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
+                setDuplicateIcError(error.response?.data?.message || 'Changing date of birth or gender requires re-entering the IC number.');
+                showToast.error('IC re-entry required');
+            } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
                 showToast.error("Duplicate IC found");
             } else {
@@ -334,7 +360,7 @@ export const EditPlayer = () => {
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-muted-foreground">
-                                        Identification Type {identificationValue.trim() ? "*" : ""}
+                                        Identification Type {(identificationValue.trim() || isReentryRequired) ? "*" : ""}
                                     </label>
                                     {existingIdentificationType && (
                                         <span className="text-[11px] font-medium text-muted-foreground">
@@ -343,15 +369,15 @@ export const EditPlayer = () => {
                                     )}
                                 </div>
                                 <SearchableSelect
-                                    value={replacementIdentificationType}
+                                    value={isReentryRequired && !replacementIdentificationType ? 'MALAYSIAN_IC' : replacementIdentificationType}
                                     onChange={(value) => setReplacementIdentificationType(value as string)}
                                     options={[
                                         { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
                                         { value: 'PASSPORT', label: 'Passport' },
                                         { value: 'OTHER', label: 'Other' }
                                     ]}
-                                    placeholder={identificationValue.trim() ? "Select replacement ID type" : "Only required if replacing ID"}
-                                    disabled={!identificationValue.trim()}
+                                    placeholder={identificationValue.trim() || isReentryRequired ? "Select replacement ID type" : "Only required if replacing ID"}
+                                    disabled={!identificationValue.trim() && !isReentryRequired}
                                 />
                                 <p className="text-xs text-muted">
                                     {identificationValue.trim()
@@ -362,7 +388,7 @@ export const EditPlayer = () => {
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-muted-foreground">
-                                        Identification / Passport Number
+                                        Identification / Passport Number {isReentryRequired ? "*" : ""}
                                     </label>
                                     {identificationPresent && (
                                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -377,10 +403,16 @@ export const EditPlayer = () => {
                                         setIdentificationValue(e.target.value);
                                         if (duplicateIcError) setDuplicateIcError("");
                                     }}
-                                    className="input-base w-full"
-                                    placeholder={identificationPresent ? "Leave blank to keep existing ID on file" : "Enter ID / Passport Number"}
+                                    required={isReentryRequired}
+                                    className={`input-base w-full ${duplicateIcError ? 'ring-2 ring-amber-500' : ''}`}
+                                    placeholder={isReentryRequired ? "IC re-entry required" : (identificationPresent ? "Leave blank to keep existing ID on file" : "Enter ID / Passport Number")}
                                     aria-label="Identification Value"
                                 />
+                                {isReentryRequired && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                        Changing date of birth or gender requires re-entering the IC number.
+                                    </p>
+                                )}
                                 <p className="text-xs text-muted">
                                     {identificationPresent ? "Leave blank to keep the existing identification on file unchanged." : "Enter a new identification number."}
                                 </p>

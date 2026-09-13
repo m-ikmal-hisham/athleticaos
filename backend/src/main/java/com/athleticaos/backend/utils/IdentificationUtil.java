@@ -165,6 +165,58 @@ public final class IdentificationUtil {
         // PASSPORT and OTHER skip Malaysian IC format/DOB/gender rules.
     }
 
+    /**
+     * Determines whether a DOB or gender update requires the person to re-enter
+     * their identification number.
+     *
+     * <p>Re-entry is required when <b>all</b> of the following hold:
+     * <ol>
+     *   <li>The person's stored identification type, after trimming and
+     *       uppercasing, equals {@code "MALAYSIAN_IC"}.</li>
+     *   <li>The request changes DOB (non-null and differs from stored) <b>or</b>
+     *       changes gender (non-null and differs case-insensitively from stored).</li>
+     * </ol>
+     *
+     * <p>This method is <b>pure</b>: no I/O, no database access, no logging.
+     *
+     * @param storedType   the person's current {@code identificationType} (may be null)
+     * @param storedDob    the person's current {@code dob} (may be null)
+     * @param storedGender the person's current {@code gender} (may be null)
+     * @param requestDob   the DOB value from the update request (null = not changing)
+     * @param requestGender the gender value from the update request (null = not changing)
+     * @return {@code true} if the update requires IC re-entry
+     */
+    public static boolean requiresIdentityReentry(
+            String storedType,
+            LocalDate storedDob,
+            String storedGender,
+            LocalDate requestDob,
+            String requestGender) {
+
+        // Only applies to MALAYSIAN_IC holders (case-insensitive, trimmed).
+        if (storedType == null) {
+            return false;
+        }
+        if (!"MALAYSIAN_IC".equals(storedType.trim().toUpperCase(Locale.ROOT))) {
+            return false;
+        }
+
+        // DOB changed: request DOB is non-null AND differs from stored.
+        boolean dobChanged = requestDob != null && !requestDob.equals(storedDob);
+
+        // Gender changed: request gender is non-null AND differs case-insensitively.
+        boolean genderChanged = false;
+        if (requestGender != null) {
+            String normRequest = requestGender.trim().toUpperCase(Locale.ROOT);
+            String normStored = storedGender != null
+                    ? storedGender.trim().toUpperCase(Locale.ROOT)
+                    : "";
+            genderChanged = !normRequest.equals(normStored);
+        }
+
+        return dobChanged || genderChanged;
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

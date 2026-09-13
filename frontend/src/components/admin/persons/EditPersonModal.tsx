@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -16,6 +16,11 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     const [loading, setLoading] = useState(false);
     const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
     const [replacementIdentificationType, setReplacementIdentificationType] = useState('');
+    const [duplicateIcError, setDuplicateIcError] = useState('');
+
+    // OBS-05B: Track loaded DOB and gender for reentry detection
+    const loadedDob = useRef('');
+    const loadedGender = useRef('');
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -35,6 +40,9 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         if (person && isOpen) {
             setExistingIdentificationType(person.identificationType || null);
             setReplacementIdentificationType('');
+            setDuplicateIcError('');
+            loadedDob.current = person.dob || '';
+            loadedGender.current = person.gender || '';
             setFormData({
                 firstName: person.firstName || '',
                 lastName: person.lastName || '',
@@ -52,12 +60,29 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         }
     }, [person, isOpen]);
 
+    // OBS-05B: Determine if IC reentry is required due to DOB/gender change on a Malaysian IC holder
+    const isReentryRequired = existingIdentificationType === 'MALAYSIAN_IC' && (
+        (formData.dob && formData.dob !== loadedDob.current) ||
+        (formData.gender && formData.gender.trim().toUpperCase() !== loadedGender.current.trim().toUpperCase())
+    );
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!person) return;
 
         const hasReplacementId = Boolean(formData.icOrPassport.trim());
-        if (hasReplacementId && !replacementIdentificationType) {
+
+        // OBS-05B: Block submit if reentry is required but IC is not provided
+        if (isReentryRequired && !hasReplacementId) {
+            setDuplicateIcError('Changing date of birth or gender requires re-entering the IC number.');
+            showToast.error('Changing date of birth or gender requires re-entering the IC number.');
+            return;
+        }
+
+        // Effective type: auto-preselect MALAYSIAN_IC when reentry triggers and user hasn't changed it
+        const effectiveIdType = replacementIdentificationType || (isReentryRequired ? 'MALAYSIAN_IC' : '');
+
+        if (hasReplacementId && !effectiveIdType) {
             showToast.error('Please select an identification type for the replacement ID');
             return;
         }
@@ -66,7 +91,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         try {
             const payload = {
                 ...formData,
-                identificationType: hasReplacementId ? replacementIdentificationType : undefined,
+                identificationType: hasReplacementId ? effectiveIdType : undefined,
                 icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined
             };
             await updatePerson(person.id, payload as any);
@@ -74,8 +99,13 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             onSuccess();
             onClose();
         } catch (error: any) {
-            console.error('Update failed', error);
-            showToast.error(error.response?.data?.message || 'Failed to update person');
+            console.error('Update failed', error.response?.status, error.response?.data?.errorCode);
+            if (error.response?.data?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
+                setDuplicateIcError(error.response?.data?.message || 'Changing date of birth or gender requires re-entering the IC number.');
+                showToast.error('IC re-entry required');
+            } else {
+                showToast.error(error.response?.data?.message || 'Failed to update person');
+            }
         } finally {
             setLoading(false);
         }
@@ -107,7 +137,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                     <div>
                         <div className="flex items-center justify-between mb-1">
                             <label className="text-sm font-medium block">
-                                Identification Type {formData.icOrPassport.trim() ? '*' : ''}
+                                Identification Type {(formData.icOrPassport.trim() || isReentryRequired) ? '*' : ''}
                             </label>
                             {existingIdentificationType && (
                                 <span className="text-[11px] font-medium text-muted-foreground">
@@ -117,13 +147,13 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         </div>
                         <select
                             aria-label="Identification Type"
-                            value={replacementIdentificationType}
+                            value={isReentryRequired && !replacementIdentificationType ? 'MALAYSIAN_IC' : replacementIdentificationType}
                             onChange={(e) => setReplacementIdentificationType(e.target.value)}
-                            disabled={!formData.icOrPassport.trim()}
+                            disabled={!formData.icOrPassport.trim() && !isReentryRequired}
                             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:opacity-50"
                         >
                             <option value="" disabled>
-                                {formData.icOrPassport.trim() ? 'Select replacement ID type' : 'Only required if replacing ID'}
+                                {formData.icOrPassport.trim() || isReentryRequired ? 'Select replacement ID type' : 'Only required if replacing ID'}
                             </option>
                             <option value="MALAYSIAN_IC">Malaysian IC</option>
                             <option value="PASSPORT">Passport</option>
@@ -132,7 +162,9 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                     </div>
                     <div>
                         <div className="flex items-center justify-between mb-1">
-                            <label className="text-sm font-medium block">IC or Passport</label>
+                            <label className="text-sm font-medium block">
+                                IC or Passport {isReentryRequired ? '*' : ''}
+                            </label>
                             {person?.identificationPresent && (
                                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                     ID on file: PRESENT
@@ -141,9 +173,24 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         </div>
                         <Input
                             value={formData.icOrPassport}
-                            onChange={(e) => setFormData({ ...formData, icOrPassport: e.target.value })}
-                            placeholder={person?.identificationPresent ? "Leave blank to keep existing ID" : "ID / Passport Number"}
+                            onChange={(e) => {
+                                setFormData({ ...formData, icOrPassport: e.target.value });
+                                if (duplicateIcError) setDuplicateIcError('');
+                            }}
+                            required={isReentryRequired ? true : undefined}
+                            className={duplicateIcError ? 'ring-2 ring-amber-500' : ''}
+                            placeholder={isReentryRequired ? 'IC re-entry required' : (person?.identificationPresent ? 'Leave blank to keep existing ID' : 'ID / Passport Number')}
                         />
+                        {isReentryRequired && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Changing date of birth or gender requires re-entering the IC number.
+                            </p>
+                        )}
+                        {duplicateIcError && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                {duplicateIcError}
+                            </p>
+                        )}
                     </div>
                 </div>
 

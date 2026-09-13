@@ -289,4 +289,168 @@ class PlayerServiceImplTest {
         assertThat(response.results().get(0).errors()).anyMatch(e -> e.contains("masked"));
         assertThat(response.results().get(1).status()).isEqualTo("SUCCESS");
     }
+
+    // -----------------------------------------------------------------------
+    // OBS-05B: DOB / gender reentry guard
+    // -----------------------------------------------------------------------
+
+    @Test
+    void updatePlayer_icHolder_dobChanged_noIc_throwsReentryRequired() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        // Change DOB from 1995-05-20 to 1991-06-06, but supply no IC
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, LocalDate.of(1991, 6, 6),
+                null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class);
+
+        verify(personRepository, org.mockito.Mockito.never()).save(any(Person.class));
+        // Entity fields must be unchanged
+        assertThat(existingPerson.getDob()).isEqualTo(LocalDate.of(1995, 5, 20));
+        assertThat(existingPerson.getGender()).isEqualTo("MALE");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("950520145551");
+    }
+
+    @Test
+    void updatePlayer_icHolder_genderChanged_noIc_throwsReentryRequired() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        // Change gender from MALE to FEMALE, but supply no IC
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "FEMALE", null,
+                null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class);
+
+        verify(personRepository, org.mockito.Mockito.never()).save(any(Person.class));
+        assertThat(existingPerson.getGender()).isEqualTo("MALE");
+    }
+
+    @Test
+    void updatePlayer_icHolder_unchangedDobGender_changePhone_succeeds() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        // Re-send the same DOB and gender (as all edit forms do), but change phone
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "MALE", LocalDate.of(1995, 5, 20),
+                null, null, null, null, "0123456789",
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        assertThat(existingPerson.getPhone()).isEqualTo("0123456789");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("950520145551");
+        assertThat(existingPerson.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePlayer_icHolder_dobChanged_validReenteredIc_succeeds() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("910606145551", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("910606145551")).thenReturn("hashNew910606");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("hashNew910606", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        // DOB changed from 1995-05-20 to 1991-06-06, re-entered IC matching new DOB, MALE (odd last digit)
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "MALE", LocalDate.of(1991, 6, 6),
+                "910606-14-5551", "MALAYSIAN_IC", null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("910606145551");
+        assertThat(existingPerson.getIdentificationHash()).isEqualTo("hashNew910606");
+        assertThat(existingPerson.getIdentificationVerificationStatus()).isEqualTo("UNVERIFIED");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePlayer_icHolder_dobChanged_reenteredIcMatchesOldDob_throwsIllegalArgument() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        // DOB changed from 1995-05-20 to 1991-06-06, but IC prefix matches old DOB (950520)
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "MALE", LocalDate.of(1991, 6, 6),
+                "950520-14-5551", "MALAYSIAN_IC", null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Malaysian IC date prefix");
+
+        verify(personRepository, org.mockito.Mockito.never()).save(any(Person.class));
+    }
+
+    @Test
+    void updatePlayer_passportHolder_dobAndGenderChanged_noIc_succeeds() {
+        existingPerson.setIdentificationType("PASSPORT");
+        existingPerson.setIcOrPassport("A12345678");
+
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        // Change both DOB and gender without supplying IC — allowed for PASSPORT holders
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "FEMALE", LocalDate.of(2000, 1, 1),
+                null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        assertThat(existingPerson.getDob()).isEqualTo(LocalDate.of(2000, 1, 1));
+        assertThat(existingPerson.getGender()).isEqualTo("FEMALE");
+        assertThat(existingPerson.getIcOrPassport()).isEqualTo("A12345678");
+        verify(personRepository).save(existingPerson);
+    }
+
+    @Test
+    void updatePlayer_reentryException_messageContainsNoDigits() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "FEMALE", null,
+                null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(com.athleticaos.backend.exceptions.IdentificationReentryRequiredException.class)
+                .satisfies(ex -> assertThat(ex.getMessage()).doesNotMatch(".*\\d.*"));
+    }
 }

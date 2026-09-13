@@ -609,4 +609,132 @@ class IdentificationUtilTest {
             }
         }
     }
+
+    // -----------------------------------------------------------------------
+    // requiresIdentityReentry()
+    // -----------------------------------------------------------------------
+
+    @Test
+    void requiresReentry_icHolder_dobChanged_returnsTrue() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(1992, 7, 7),   // different DOB
+                null                          // gender not in request
+        )).isTrue();
+    }
+
+    @Test
+    void requiresReentry_icHolder_genderChanged_returnsTrue() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                null,                         // DOB not in request
+                "FEMALE"                      // different gender
+        )).isTrue();
+    }
+
+    @Test
+    void requiresReentry_icHolder_bothUnchanged_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(1991, 6, 6),    // same DOB
+                "MALE"                        // same gender
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_icHolder_genderMaleVsMixedCase_returnsFalse() {
+        // DEF-06C: stored data has mixed casing ('Male' vs 'MALE'); must not count as a change.
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "Male",                       // stored with mixed case
+                null,
+                "MALE"                        // request uppercase
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_icHolder_nullRequestDob_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                null,                          // null DOB = not changing
+                null                           // null gender = not changing
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_icHolder_nullRequestGender_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "MALAYSIAN_IC",
+                LocalDate.of(1991, 6, 6),
+                "FEMALE",
+                LocalDate.of(1991, 6, 6),      // same DOB
+                null                            // null gender = not changing
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_passportHolder_dobChanged_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "PASSPORT",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                "FEMALE"
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_otherHolder_dobChanged_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "OTHER",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_nullType_dobChanged_returnsFalse() {
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                null,
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_nonCanonicalIcType_dobChanged_returnsFalse() {
+        // Legacy value "IC" is not "MALAYSIAN_IC" — no re-entry required.
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                "IC",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isFalse();
+    }
+
+    @Test
+    void requiresReentry_spacedLowercaseType_dobChanged_returnsTrue() {
+        // Type with whitespace/case variations must still match.
+        assertThat(IdentificationUtil.requiresIdentityReentry(
+                " malaysian_ic ",
+                LocalDate.of(1991, 6, 6),
+                "MALE",
+                LocalDate.of(2000, 1, 1),
+                null
+        )).isTrue();
+    }
 }

@@ -121,6 +121,18 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.details").doesNotExist());
     }
 
+    @Test
+    void identificationReentryRequired_returns400WithCorrectErrorCode() throws Exception {
+        mockMvc.perform(get("/test-errors/identification-reentry"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errorCode").value("IDENTIFICATION_REENTRY_REQUIRED"))
+                .andExpect(jsonPath("$.message").value(
+                        "Changing date of birth or gender for a Malaysian IC holder requires re-entering the IC number."))
+                // Must not contain any digit in the message
+                .andExpect(jsonPath("$.message").value(not(org.hamcrest.Matchers.matchesRegex(".*\\d.*"))));
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -166,6 +178,11 @@ public class GlobalExceptionHandlerTest {
         @GetMapping("/generic-error")
         public String testGenericError() {
             throw new RuntimeException("Sensitive internal database connection detail or secret message");
+        }
+
+        @GetMapping("/identification-reentry")
+        public String testIdentificationReentry() {
+            throw new IdentificationReentryRequiredException();
         }
     }
 

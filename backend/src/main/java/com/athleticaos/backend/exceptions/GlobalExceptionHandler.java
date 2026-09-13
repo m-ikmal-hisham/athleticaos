@@ -139,6 +139,13 @@ public class GlobalExceptionHandler {
         return buildResponseDetailed(status, message, errorCode, request);
     }
 
+    @ExceptionHandler(IdentificationReentryRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleIdentificationReentryRequired(
+            IdentificationReentryRequiredException ex, HttpServletRequest request) {
+        return buildResponseDetailed(HttpStatus.BAD_REQUEST, ex.getMessage(),
+                "IDENTIFICATION_REENTRY_REQUIRED", request);
+    }
+
     @ExceptionHandler(DuplicateIcException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateIc(DuplicateIcException ex, HttpServletRequest request) {
         return buildResponseDetailed(HttpStatus.CONFLICT, ex.getMessage(), "DUPLICATE_IC", request);

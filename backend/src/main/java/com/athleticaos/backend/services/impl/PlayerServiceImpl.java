@@ -6,6 +6,7 @@ import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.enums.IdentificationType;
+import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.entities.PlayerTeam;
@@ -262,6 +263,16 @@ public class PlayerServiceImpl implements PlayerService {
 
         // Force initialization (double safety, though implicit load should suffice)
         log.debug("Loaded person for update: {}", person.getId());
+
+        // OBS-05B: If DOB or gender is changing for a MALAYSIAN_IC holder,
+        // require the IC to be re-entered in the same request.
+        if (IdentificationUtil.requiresIdentityReentry(
+                person.getIdentificationType(), person.getDob(), person.getGender(),
+                request.dob(), request.gender())) {
+            if (request.icOrPassport() == null || request.icOrPassport().trim().isEmpty()) {
+                throw new IdentificationReentryRequiredException();
+            }
+        }
 
         // Update Person (PII) fields
         if (request.firstName() != null) {
