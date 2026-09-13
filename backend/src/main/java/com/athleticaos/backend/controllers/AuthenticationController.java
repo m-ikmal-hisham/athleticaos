@@ -1,6 +1,7 @@
 package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.auth.AuthResponse;
+import com.athleticaos.backend.dtos.auth.ChangePasswordRequest;
 import com.athleticaos.backend.dtos.auth.LoginRequest;
 import com.athleticaos.backend.dtos.auth.RegisterRequest;
 import com.athleticaos.backend.dtos.user.UserRolesResponse;
@@ -10,6 +11,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,7 +62,7 @@ public class AuthenticationController {
         }
 
         try {
-            AuthResponse response = authService.login(request);
+            AuthResponse response = authService.login(request, httpRequest);
             String token = response.getToken();
             if (token == null) {
                 throw new IllegalStateException("Authentication failed: No token generated");
@@ -72,6 +75,12 @@ public class AuthenticationController {
             return ResponseEntity.ok()
                     .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
                     .body(response);
+        } catch (CredentialsExpiredException e) {
+            // Password matched, but a change is required first. No session cookie is issued.
+            return ResponseEntity.status(403)
+                    .body(java.util.Map.of(
+                            "code", "PASSWORD_CHANGE_REQUIRED",
+                            "message", "You must set a new password before continuing."));
         } catch (Exception e) {
             // Login failed — record the failure
             loginAttemptService.recordFailure(clientIp);
@@ -85,6 +94,38 @@ public class AuthenticationController {
                         ));
             }
 
+            return ResponseEntity.status(401)
+                    .body(java.util.Map.of("message", "Invalid email or password"));
+        }
+    }
+
+    /**
+     * Self-service password change (also completes a forced change). Shares the login lockout counter.
+     * Policy violations surface as 400 via GlobalExceptionHandler.
+     */
+    @PostMapping("/change-password")
+    @SuppressWarnings("null")
+    public ResponseEntity<?> changePassword(@RequestBody @Valid ChangePasswordRequest request,
+                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = getClientIp(httpRequest);
+        if (loginAttemptService.isBlocked(clientIp)) {
+            long remainingMinutes = loginAttemptService.getRemainingLockoutMinutes(clientIp);
+            return ResponseEntity.status(423)
+                    .body(java.util.Map.of(
+                            "message", "Too many failed attempts. Please try again in " + remainingMinutes + " minute(s).",
+                            "remainingMinutes", remainingMinutes
+                    ));
+        }
+
+        try {
+            AuthResponse response = authService.changePassword(request, httpRequest);
+            loginAttemptService.recordSuccess(clientIp);
+            org.springframework.http.ResponseCookie cookie = cookieUtils.createSessionCookie(response.getToken());
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(response);
+        } catch (BadCredentialsException e) {
+            loginAttemptService.recordFailure(clientIp);
             return ResponseEntity.status(401)
                     .body(java.util.Map.of("message", "Invalid email or password"));
         }

@@ -1,5 +1,6 @@
 package com.athleticaos.backend.services;
 
+import com.athleticaos.backend.dtos.user.AdminPasswordResetRequest;
 import com.athleticaos.backend.dtos.user.InviteUserRequest;
 import com.athleticaos.backend.dtos.user.InviteUserResponse;
 import com.athleticaos.backend.dtos.user.UserCreateRequest;
@@ -14,11 +15,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.security.PasswordPolicy;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +38,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final PlayerTeamService playerTeamService;
     private final AuditLogger auditLogger;
+    private final PasswordPolicy passwordPolicy;
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers(UUID organisationId) {
@@ -174,13 +179,14 @@ public class UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
+        passwordPolicy.validate(request.getPassword(), request.getEmail());
 
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
-                .passwordHash(passwordEncoder
-                        .encode(request.getPassword() != null ? request.getPassword() : "DefaultPass123!"))
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .mustChangePassword(true)
                 .isActive(true)
                 .build();
 
@@ -213,6 +219,23 @@ public class UserService {
     }
 
     @Transactional
+    @SuppressWarnings("null")
+    public UserResponse resetPassword(UUID id, AdminPasswordResetRequest request, HttpServletRequest httpRequest) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        passwordPolicy.validate(request.getNewPassword(), user.getEmail());
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setMustChangePassword(true);
+        // Revokes every token issued before now (JwtAuthenticationFilter)
+        user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+
+        User savedUser = userRepository.save(user);
+        auditLogger.logPasswordReset(savedUser, httpRequest);
+        return mapToResponse(savedUser);
+    }
+
+    @Transactional
     public InviteUserResponse inviteUser(InviteUserRequest request, HttpServletRequest httpRequest) {
         User currentUser = getCurrentUser();
 
@@ -236,6 +259,7 @@ public class UserService {
 
         // Validate role permissions
         validateInvitePermissions(currentUser, roleName, request.getOrganisationId());
+        passwordPolicy.validate(request.getPassword(), request.getEmail());
 
         // Fetch organisation
         @SuppressWarnings("null")
@@ -247,12 +271,13 @@ public class UserService {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new EntityNotFoundException("Role not found: " + roleName));
 
-        // Create user with default password
+        // Inviter-set initial password; the user must replace it at first sign-in
         User newUser = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
-                .passwordHash(passwordEncoder.encode("DefaultPass123!"))
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .mustChangePassword(true)
                 .isActive(true)
                 .organisation(organisation)
                 .roles(Collections.singleton(role))
@@ -268,7 +293,7 @@ public class UserService {
                 .role(roleName)
                 .organisationId(organisation.getId())
                 .inviteStatus("PENDING")
-                .message("User invited successfully. Default password: DefaultPass123!")
+                .message("User invited. Share the initial password with them through a secure channel; they must change it at first sign-in.")
                 .build();
     }
 

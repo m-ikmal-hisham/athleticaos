@@ -150,7 +150,7 @@ docker exec -it athleticaos-postgres psql -U postgres -d athleticaos -c "SELECT 
 ### 3. Invalid Seed Data (Bad Credentials) ❌
 **Fixed**: The initial seed data had an incorrect password hash. 
 - Dropped and recreated the database.
-- Updated `V3__seed_admin_user.sql` with a valid BCrypt hash for password `password123`.
+- Updated `V3__seed_admin_user.sql` with a valid BCrypt hash for password `<ADMIN_PASSWORD>`.
 
 ## Verification Steps
 
@@ -162,7 +162,7 @@ npm run dev
 
 ### 2. Login with Correct Credentials
 - **Email**: `admin@athleticaos.com`
-- **Password**: `password123` (Note: Updated from 'password')
+- **Password**: `<ADMIN_PASSWORD>` (Note: Updated from 'password')
 
 ### 3. Verify Success
 - Login should succeed
@@ -174,14 +174,14 @@ npm run dev
 I have simulated the login process using an automated browser agent and confirmed it works:
 
 1. **Navigated to**: `http://localhost:5173`
-2. **Entered Credentials**: `admin@athleticaos.com` / `password123`
+2. **Entered Credentials**: `admin@athleticaos.com` / `<ADMIN_PASSWORD>`
 3. **Result**: Successfully redirected to `/dashboard`
 
 ### If you still face issues:
 1. **Clear Browser Cache**: The browser might be holding onto the old "Network Error" state.
 2. **Use Incognito Mode**: Try opening a private/incognito window.
 3. **Check URL**: Ensure you are on `http://localhost:5173` (not https).
-4. **Check Password**: Ensure you are using `password123`.
+4. **Check Password**: Ensure you are using `<ADMIN_PASSWORD>`.
 
 The system is confirmed to be working correctly on the server side.
 

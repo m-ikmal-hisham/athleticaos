@@ -6,16 +6,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import com.athleticaos.backend.services.UserService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
 @Import(com.athleticaos.backend.security.SecurityConfig.class)
+@SuppressWarnings("null")
 public class UserControllerSecurityTest {
 
     @Autowired
@@ -54,5 +57,23 @@ public class UserControllerSecurityTest {
     void anonymousCannotAccessGetAllUsers() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "ORG_ADMIN")
+    void nonSuperAdminCannotResetPassword() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{id}/reset-password", java.util.UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"Violet-Kettle-Harbour-58\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "SUPER_ADMIN")
+    void superAdminCanResetPassword() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{id}/reset-password", java.util.UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"Violet-Kettle-Harbour-58\"}"))
+                .andExpect(status().isOk());
     }
 }

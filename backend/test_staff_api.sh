@@ -1,6 +1,7 @@
 #!/bin/bash
+: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in your environment}"
 export PGPASSWORD=postgres
-TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"admin@athleticaos.com", "password":"password123"}' | grep -o 'token":"[^"]*' | cut -d'"' -f3)
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"admin@athleticaos.com", "password":"'"$ADMIN_PASSWORD"'"}' | grep -o 'token":"[^"]*' | cut -d'"' -f3)
 if [ -z "$TOKEN" ]; then echo "Failed to get token!"; exit 1; fi
 
 TEAM_ID=$(psql -U postgres -h localhost -p 5432 -d athleticaos -t -c "SELECT team_id FROM tournament_teams LIMIT 1;" | xargs)

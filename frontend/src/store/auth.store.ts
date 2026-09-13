@@ -14,6 +14,7 @@ interface AuthState {
 
     // Actions
     login: (credentials: { email: string; password: string }) => Promise<void>;
+    changePassword: (data: { email: string; currentPassword: string; newPassword: string }) => Promise<void>;
     setAuth: (user: User) => void;
     setUser: (user: User) => void;
     logout: () => void;
@@ -47,11 +48,26 @@ export const useAuthStore = create<AuthState>()(
                     set({ user, isAuthenticated: true, primaryRole, isInitialized: true });
                     showToast.success('Login successful!');
                 } catch (error: unknown) {
-                    const axiosError = error as AxiosError<{ message: string }>;
-                    const errorMessage = axiosError.response?.data?.message || 'Login failed';
-                    showToast.error(errorMessage);
+                    const axiosError = error as AxiosError<{ message: string; code?: string }>;
+                    // A forced password change is a step in the flow, not a failure; Login.tsx handles it
+                    if (axiosError.response?.data?.code !== 'PASSWORD_CHANGE_REQUIRED') {
+                        const errorMessage = axiosError.response?.data?.message || 'Login failed';
+                        showToast.error(errorMessage);
+                    }
                     throw error;
                 }
+            },
+
+            changePassword: async (data) => {
+                // Like login, a successful change sets the HttpOnly session cookie
+                const response = await authApi.changePassword(data);
+                const { user } = response.data;
+                const primaryRole = user.roles && user.roles.length > 0
+                    ? user.roles[0].replace('ROLE_', '')
+                    : null;
+
+                set({ user, isAuthenticated: true, primaryRole, isInitialized: true });
+                showToast.success('Password updated');
             },
 
             setAuth: (user: User) => {
@@ -95,7 +111,7 @@ export const useAuthStore = create<AuthState>()(
                         : null;
 
                     set({ user, isAuthenticated: true, primaryRole });
-                } catch (error: any) {
+                } catch (error: unknown) {
                     console.error('Token check FAILED:', error);
                     // Session invalid or expired
                     set({ user: null, isAuthenticated: false, primaryRole: null });

@@ -144,7 +144,7 @@
                         "description": "",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"roles\": [\n        \"ROLE_USER\"\n    ],\n    \"organisationId\": \"\"\n}"
+                            "raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"{{password}}\",\n    \"roles\": [\n        \"ROLE_USER\"\n    ],\n    \"organisationId\": \"\"\n}"
                         }
                     },
                     "response": []

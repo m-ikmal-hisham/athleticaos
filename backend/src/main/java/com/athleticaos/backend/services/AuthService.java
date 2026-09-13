@@ -1,6 +1,8 @@
 package com.athleticaos.backend.services;
 
+import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.dtos.auth.AuthResponse;
+import com.athleticaos.backend.dtos.auth.ChangePasswordRequest;
 import com.athleticaos.backend.dtos.auth.LoginRequest;
 import com.athleticaos.backend.dtos.auth.RegisterRequest;
 import com.athleticaos.backend.dtos.user.UserResponse;
@@ -9,14 +11,20 @@ import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.repositories.RoleRepository;
 import com.athleticaos.backend.repositories.UserRepository;
 import com.athleticaos.backend.security.JwtService;
+import com.athleticaos.backend.security.PasswordPolicy;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,6 +37,8 @@ public class AuthService {
         private final PasswordEncoder passwordEncoder;
         private final JwtService jwtService;
         private final AuthenticationManager authenticationManager;
+        private final PasswordPolicy passwordPolicy;
+        private final AuditLogger auditLogger;
 
         @Transactional
         @SuppressWarnings("null")
@@ -36,6 +46,7 @@ public class AuthService {
                 if (userRepository.existsByEmail(request.getEmail())) {
                         throw new IllegalArgumentException("Email already in use");
                 }
+                passwordPolicy.validate(request.getPassword(), request.getEmail());
 
                 Role publicRole = roleRepository.findByName("ROLE_PUBLIC")
                                 .orElseThrow(() -> new IllegalStateException("Default role not found"));
@@ -75,7 +86,11 @@ public class AuthService {
                                 .build();
         }
 
-        public AuthResponse login(LoginRequest request) {
+        /**
+         * Throws CredentialsExpiredException (after the password has matched) when the user must
+         * change their password first; the controller maps that to PASSWORD_CHANGE_REQUIRED.
+         */
+        public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
                 authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(
                                                 request.getEmail(),
@@ -103,11 +118,45 @@ public class AuthService {
                 var jwtToken = jwtService.generateToken(userDetails);
                 var refreshToken = jwtService.generateRefreshToken(userDetails);
 
+                auditLogger.logLoginSuccess(user, httpRequest);
+
                 return AuthResponse.builder()
                                 .token(jwtToken)
                                 .refreshToken(refreshToken)
                                 .user(mapToUserResponse(user))
                                 .build();
+        }
+
+        /**
+         * Unauthenticated self-service change: verifies email + current password itself, so it also
+         * serves users blocked by must_change_password. Revokes older tokens and signs the user in.
+         */
+        @Transactional
+        public AuthResponse changePassword(ChangePasswordRequest request, HttpServletRequest httpRequest) {
+                Optional<User> found = userRepository.findByEmail(request.getEmail());
+                if (found.isEmpty()) {
+                        passwordEncoder.encode(request.getCurrentPassword()); // keep timing similar to the found path
+                        throw new BadCredentialsException("Invalid credentials");
+                }
+                User user = found.get();
+                if (!user.isActive() || !passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+                        throw new BadCredentialsException("Invalid credentials");
+                }
+                if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+                        throw new IllegalArgumentException("New password must be different from the current password");
+                }
+                passwordPolicy.validate(request.getNewPassword(), user.getEmail());
+
+                user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+                user.setMustChangePassword(false);
+                user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+                userRepository.save(user);
+                auditLogger.logPasswordChanged(user, httpRequest);
+
+                return login(LoginRequest.builder()
+                                .email(user.getEmail())
+                                .password(request.getNewPassword())
+                                .build(), httpRequest);
         }
 
         private UserResponse mapToUserResponse(User user) {

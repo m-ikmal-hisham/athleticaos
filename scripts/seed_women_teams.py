@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 import random
@@ -5,7 +6,7 @@ import sys
 
 BASE_URL = "http://localhost:8080/api/v1"
 EMAIL = "admin@athleticaos.com"
-PASSWORD = "password123"
+PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 def login():
     url = f"{BASE_URL}/auth/login"

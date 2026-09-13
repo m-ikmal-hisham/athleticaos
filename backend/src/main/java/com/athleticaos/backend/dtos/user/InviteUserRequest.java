@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.UUID;
 
@@ -31,4 +32,9 @@ public class InviteUserRequest {
 
     @NotNull(message = "Organisation ID is required")
     private UUID organisationId;
+
+    // Inviter-set initial password; validated by PasswordPolicy. The user must change it at first sign-in.
+    @NotBlank(message = "Password is required")
+    @ToString.Exclude
+    private String password;
 }

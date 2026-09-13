@@ -3,7 +3,7 @@
 # Configuration
 BASE_URL="http://localhost:8080/api/v1"
 EMAIL="admin@athleticaos.com"
-PASSWORD="password123" # Adjust if needed
+PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in your environment}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -49,7 +49,7 @@ CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/players" \
     \"firstName\": \"Test\",
     \"lastName\": \"Player\",
     \"email\": \"$PLAYER_EMAIL\",
-    \"password\": \"password123\"
+    \"password\": \"$PASSWORD\"
   }")
 
 PLAYER_ID=$(echo $CREATE_RESPONSE | grep -o '"id":"[^"]*' | head -n 1 | cut -d'"' -f4)

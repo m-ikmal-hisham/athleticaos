@@ -12,12 +12,16 @@ import lombok.ToString;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginRequest {
+public class ChangePasswordRequest {
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "Current password is required")
     @ToString.Exclude
-    private String password;
+    private String currentPassword;
+
+    @NotBlank(message = "New password is required")
+    @ToString.Exclude
+    private String newPassword;
 }

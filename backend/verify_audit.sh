@@ -1,10 +1,11 @@
 #!/bin/bash
+: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in your environment}"
 
 # Authenticate and get token
 echo "Authenticating..."
 AUTH_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@athleticaos.com","password":"password123"}')
+  -d '{"email":"admin@athleticaos.com","password":"'"$ADMIN_PASSWORD"'"}')
 
 TOKEN=$(echo $AUTH_RESPONSE | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 

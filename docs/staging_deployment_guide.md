@@ -658,7 +658,7 @@ curl https://staging-api.athleticaos.com/actuator/health
 # Auth test (try logging in)
 curl -X POST https://staging-api.athleticaos.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@athleticaos.com", "password": "password123"}'
+  -d '{"email": "admin@athleticaos.com", "password": "<ADMIN_PASSWORD>"}'
 
 # Open Swagger UI in browser
 open https://staging-api.athleticaos.com/swagger-ui/index.html

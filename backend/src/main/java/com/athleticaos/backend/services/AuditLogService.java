@@ -33,35 +33,46 @@ public class AuditLogService {
      * @param userAgent The user agent of the request (nullable)
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @SuppressWarnings("null")
     public void log(AuditLogEntry entry, String ipAddress, String userAgent) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(email).orElse(null);
+        userRepository.findByEmail(email).ifPresent(user -> save(user, entry, ipAddress, userAgent));
+    }
 
-        if (user != null) {
-            String actorRole = user.getRoles().stream()
-                    .findFirst()
-                    .map(role -> role.getName())
-                    .orElse("UNKNOWN");
+    /**
+     * Creates an audit log entry with an explicit actor, for unauthenticated flows (login, self-service
+     * password change) where the SecurityContext does not hold the user yet.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @SuppressWarnings("null")
+    public void logAs(User actor, AuditLogEntry entry, String ipAddress, String userAgent) {
+        // Re-load inside this transaction so lazy associations (organisation) are readable
+        userRepository.findById(actor.getId()).ifPresent(user -> save(user, entry, ipAddress, userAgent));
+    }
 
-            AuditLog log = AuditLog.builder()
-                    .timestamp(LocalDateTime.now())
-                    .actorUserId(user.getId())
-                    .actorEmail(user.getEmail())
-                    .actorRole(actorRole)
-                    .organisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null)
-                    .organisationName(user.getOrganisation() != null ? user.getOrganisation().getName() : null)
-                    .actionType(entry.getActionType())
-                    .entityType(entry.getEntityType())
-                    .entityId(entry.getEntityId())
-                    .entitySummary(entry.getEntitySummary())
-                    .detailsJson(entry.getDetailsJson())
-                    .ipAddress(ipAddress)
-                    .userAgent(userAgent)
-                    .build();
+    @SuppressWarnings("null")
+    private void save(User user, AuditLogEntry entry, String ipAddress, String userAgent) {
+        String actorRole = user.getRoles().stream()
+                .findFirst()
+                .map(role -> role.getName())
+                .orElse("UNKNOWN");
 
-            auditLogRepository.save(log);
-        }
+        AuditLog log = AuditLog.builder()
+                .timestamp(LocalDateTime.now())
+                .actorUserId(user.getId())
+                .actorEmail(user.getEmail())
+                .actorRole(actorRole)
+                .organisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null)
+                .organisationName(user.getOrganisation() != null ? user.getOrganisation().getName() : null)
+                .actionType(entry.getActionType())
+                .entityType(entry.getEntityType())
+                .entityId(entry.getEntityId())
+                .entitySummary(entry.getEntitySummary())
+                .detailsJson(entry.getDetailsJson())
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .build();
+
+        auditLogRepository.save(log);
     }
 
     /**

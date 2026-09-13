@@ -130,7 +130,7 @@ register_body = {
     "firstName": "John",
     "lastName": "Doe",
     "email": "john.doe@example.com",
-    "password": "password123",
+    "password": "{{password}}",
     "roles": ["ROLE_USER"],
     "organisationId": ""
 }

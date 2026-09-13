@@ -99,7 +99,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"email\": \"new.player@example.com\",\n    \"password\": \"password123\",\n    \"firstName\": \"New\",\n    \"lastName\": \"Player\",\n    \"phone\": \"+60123456789\"\n}"
+                            "raw": "{\n    \"email\": \"new.player@example.com\",\n    \"password\": \"{{password}}\",\n    \"firstName\": \"New\",\n    \"lastName\": \"Player\",\n    \"phone\": \"+60123456789\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/v1/auth/register",

@@ -245,6 +245,31 @@ public class AuditLogger {
                                 .entitySummary(String.format("User logged in: %s", user.getEmail()))
                                 .build();
 
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPasswordChanged(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PASSWORD_CHANGED")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("User changed own password: %s", user.getEmail()))
+                                .build();
+
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPasswordReset(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PASSWORD_RESET_BY_ADMIN")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("Temporary password set by admin (change required): %s",
+                                                user.getEmail()))
+                                .build();
+
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
