@@ -22,7 +22,8 @@ const PeopleDirectory: React.FC = () => {
         totalElements: 0,
         size: 50
     });
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -76,6 +77,7 @@ const PeopleDirectory: React.FC = () => {
             showToast.error("Failed to load directory");
         } finally {
             setLoading(false);
+            setInitialLoading(false);
         }
     };
 
@@ -106,7 +108,7 @@ const PeopleDirectory: React.FC = () => {
             try {
                 await deletePerson(id);
                 showToast.success('Person removed');
-                loadPersons();
+                loadPersons(pagination.currentPage);
             } catch (err: any) {
                 console.error('Failed to delete', err);
                 showToast.error(err.response?.data?.message || 'Failed to delete person');
@@ -119,7 +121,7 @@ const PeopleDirectory: React.FC = () => {
         setIsEditModalOpen(true);
     };
 
-    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading People Directory...</div>;
+    if (initialLoading) return <div className="p-8 text-center text-muted-foreground">Loading People Directory...</div>;
 
     return (
         <div className="space-y-8 p-6">
@@ -253,7 +255,7 @@ const PeopleDirectory: React.FC = () => {
                 </div>
             </div>
 
-            <Card className="border-none shadow-xl bg-glass-bg backdrop-blur-xl">
+            <Card className={`border-none shadow-xl bg-glass-bg backdrop-blur-xl transition-opacity duration-200 ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
@@ -437,7 +439,11 @@ const PeopleDirectory: React.FC = () => {
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 person={selectedPerson}
-                onSuccess={loadPersons}
+                onPersonUpdated={(updated) => {
+                    setSelectedPerson(updated);
+                    loadPersons(pagination.currentPage);
+                }}
+                onSuccess={() => loadPersons(pagination.currentPage)}
             />
 
             <ConnectUserModal 

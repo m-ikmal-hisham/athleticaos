@@ -737,10 +737,27 @@ class PersonServiceImplTest {
         request.setGender("MALE");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        when(personRepository.existsByEmail("taken@example.com")).thenReturn(true);
+        when(personRepository.existsByEmailIgnoreCase("taken@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> personService.createPerson(organisationId, request))
                 .isInstanceOf(DuplicateEmailException.class);
+        verify(personRepository).existsByEmailIgnoreCase("taken@example.com");
+    }
+
+    @Test
+    void createPerson_duplicateEmailIgnoreCase_storedMixedCaseBlocksNewSubmission() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("case@example.test");
+        request.setGender("MALE");
+
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(personRepository.existsByEmailIgnoreCase("case@example.test")).thenReturn(true);
+
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(DuplicateEmailException.class);
+        verify(personRepository).existsByEmailIgnoreCase("case@example.test");
     }
 
     @Test
@@ -775,20 +792,35 @@ class PersonServiceImplTest {
     void updatePerson_duplicateEmail_throwsDuplicateEmailException() {
         existingPerson.setEmail("existing@example.com");
         when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
-        when(personRepository.existsByEmailAndIdNot("other@example.com", personId)).thenReturn(true);
+        when(personRepository.existsByEmailIgnoreCaseAndIdNot("other@example.com", personId)).thenReturn(true);
 
         PersonUpdateRequest request = new PersonUpdateRequest();
         request.setEmail("other@example.com");
 
         assertThatThrownBy(() -> personService.updatePerson(personId, request))
                 .isInstanceOf(DuplicateEmailException.class);
+        verify(personRepository).existsByEmailIgnoreCaseAndIdNot("other@example.com", personId);
+    }
+
+    @Test
+    void updatePerson_duplicateEmailIgnoreCase_storedMixedCaseBlocksUpdate() {
+        existingPerson.setEmail("myemail@example.com");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByEmailIgnoreCaseAndIdNot("case@example.test", personId)).thenReturn(true);
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail("case@example.test");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(DuplicateEmailException.class);
+        verify(personRepository).existsByEmailIgnoreCaseAndIdNot("case@example.test", personId);
     }
 
     @Test
     void updatePerson_sameEmail_succeeds() {
         existingPerson.setEmail("existing@example.com");
         when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
-        when(personRepository.existsByEmailAndIdNot("existing@example.com", personId)).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCaseAndIdNot("existing@example.com", personId)).thenReturn(false);
         when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
 
         PersonUpdateRequest request = new PersonUpdateRequest();
@@ -797,5 +829,6 @@ class PersonServiceImplTest {
         personService.updatePerson(personId, request);
 
         assertThat(existingPerson.getEmail()).isEqualTo("existing@example.com");
+        verify(personRepository).existsByEmailIgnoreCaseAndIdNot("existing@example.com", personId);
     }
 }

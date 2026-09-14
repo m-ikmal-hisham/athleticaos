@@ -11,9 +11,10 @@ interface EditPersonModalProps {
     onClose: () => void;
     person: PersonResponseDTO | null;
     onSuccess: () => void;
+    onPersonUpdated?: (updated: PersonResponseDTO) => void;
 }
 
-export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClose, person, onSuccess }) => {
+export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClose, person, onSuccess, onPersonUpdated }) => {
     const [loading, setLoading] = useState(false);
     const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
     const [replacementIdentificationType, setReplacementIdentificationType] = useState('');
@@ -40,13 +41,13 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
     const [emailError, setEmailError] = useState('');
 
+    // Initialize form fields only when dialog opens or a different person is loaded
     useEffect(() => {
         if (person && isOpen) {
             setExistingIdentificationType(person.identificationType || null);
             setReplacementIdentificationType('');
             setDuplicateIcError('');
             setEmailError('');
-            setIdentityVerification(person.identityVerification || null);
             loadedDob.current = person.dob || '';
             const rawGender = (person.gender || '').trim().toUpperCase();
             const initialGender = (rawGender === 'MALE' || rawGender === 'FEMALE') ? rawGender : '';
@@ -66,7 +67,16 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                 isStaff: person.isStaff || false
             });
         }
-    }, [person, isOpen]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [person?.id, isOpen]);
+
+    // Keep identity verification state synchronized if person verification status updates
+    useEffect(() => {
+        if (person && isOpen) {
+            setIdentityVerification(person.identityVerification || null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [person?.identityVerification, isOpen]);
 
     // OBS-05B: Determine if identification reentry is required due to DOB/gender change
     const storedType = (existingIdentificationType || '').trim().toUpperCase();
@@ -353,7 +363,11 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         identityVerification={identityVerification}
                         onVerificationChanged={(updated) => {
                             setIdentityVerification(updated.identityVerification || null);
-                            onSuccess();
+                            if (onPersonUpdated) {
+                                onPersonUpdated(updated);
+                            } else {
+                                onSuccess();
+                            }
                         }}
                         disabled={loading}
                     />

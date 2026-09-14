@@ -54,7 +54,11 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
     const handleVerifySubmit = async (e?: React.SyntheticEvent) => {
         e?.preventDefault?.();
         e?.stopPropagation?.();
-        if (!personId || !idValue.trim() || !attested) return;
+        if (!personId || !idValue.trim()) return;
+        if (!attested) {
+            setErrorMessage('Tick the confirmation box first.');
+            return;
+        }
 
         try {
             setSubmitting(true);
@@ -82,13 +86,15 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
                 setErrorMessage('Too many verification attempts for this record. Try again in 15 minutes.');
             } else if (errorCode === 'IDENTITY_VERIFICATION_NOT_ALLOWED' || resStatus === 409) {
                 setErrorMessage(message || 'Identity verification is not allowed for this record.');
+            } else if (resStatus === 400) {
+                const prefix = "This number was not checked against the record — it is not valid for this person's date of birth or gender.";
+                setErrorMessage(message ? `${prefix}\n${message}` : prefix);
             } else {
                 setErrorMessage(message || 'Failed to verify identity. Please try again.');
             }
         } finally {
             setSubmitting(false);
             setIdValue('');
-            setAttested(false);
         }
     };
 
@@ -245,7 +251,7 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
                     {errorMessage && (
                         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 flex items-start gap-2">
                             <ShieldWarning size={16} className="shrink-0 mt-0.5" />
-                            <span>{errorMessage}</span>
+                            <span className="whitespace-pre-line">{errorMessage}</span>
                         </div>
                     )}
 
@@ -263,6 +269,11 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     e.preventDefault();
+                                    if (!idValue.trim()) return;
+                                    if (!attested) {
+                                        setErrorMessage('Tick the confirmation box first.');
+                                        return;
+                                    }
                                     handleVerifySubmit(e);
                                 }
                             }}

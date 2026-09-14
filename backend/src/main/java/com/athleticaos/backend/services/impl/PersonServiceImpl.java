@@ -217,7 +217,7 @@ public class PersonServiceImpl implements PersonService {
         person.setGender(canonicalGender);
         person.setNationality(request.getNationality());
         String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
-        if (normalizedEmail != null && personRepository.existsByEmail(normalizedEmail)) {
+        if (normalizedEmail != null && personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new DuplicateEmailException();
         }
         person.setEmail(normalizedEmail);
@@ -331,7 +331,7 @@ public class PersonServiceImpl implements PersonService {
         if (request.getNationality() != null) person.setNationality(request.getNationality());
         if (request.getEmail() != null) {
             String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
-            if (normalizedEmail != null && personRepository.existsByEmailAndIdNot(normalizedEmail, person.getId())) {
+            if (normalizedEmail != null && personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
                 throw new DuplicateEmailException();
             }
             person.setEmail(normalizedEmail);

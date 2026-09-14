@@ -9,6 +9,7 @@ import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
+import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -804,5 +805,40 @@ class PlayerServiceImplTest {
 
         verify(personRepository).save(existingPerson);
         assertThat(existingPerson.getEmail()).isNull();
+    }
+
+    @Test
+    void createPlayer_duplicateEmailIgnoreCase_throwsDuplicateEmailException() {
+        PlayerCreateRequest request = new PlayerCreateRequest(
+                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5),
+                "950505145555", "MALAYSIAN_IC", "MALAYSIAN",
+                "case@example.test", null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null
+        );
+
+        when(personRepository.existsByEmailIgnoreCase("case@example.test")).thenReturn(true);
+
+        assertThatThrownBy(() -> playerService.createPlayer(request))
+                .isInstanceOf(DuplicateEmailException.class);
+        verify(personRepository).existsByEmailIgnoreCase("case@example.test");
+    }
+
+    @Test
+    void updatePlayer_duplicateEmailIgnoreCase_throwsDuplicateEmailException() {
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByEmailIgnoreCaseAndIdNot("case@example.test", personId)).thenReturn(true);
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                null, null, null,
+                "case@example.test", null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(DuplicateEmailException.class);
+        verify(personRepository).existsByEmailIgnoreCaseAndIdNot("case@example.test", personId);
     }
 }

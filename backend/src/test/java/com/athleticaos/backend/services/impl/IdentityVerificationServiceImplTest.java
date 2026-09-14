@@ -28,12 +28,17 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import org.mockito.InOrder;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -141,7 +146,44 @@ class IdentityVerificationServiceImplTest {
         assertThat(saved.getIdentificationVerificationMethod()).isEqualTo("PRE_REGISTRATION_RECORD");
 
         verify(identificationHashService).computeHash(VALID_SYNTHETIC_IC, 1);
-        verify(auditLogger).logIdentityVerified(saved, "PRE_REGISTRATION_RECORD", httpServletRequest);
+        InOrder inOrder = inOrder(personRepository, auditLogger);
+        inOrder.verify(personRepository).save(any(Person.class));
+        inOrder.verify(auditLogger).logIdentityVerified(saved, "PRE_REGISTRATION_RECORD", httpServletRequest);
+    }
+
+    @Test
+    @DisplayName("1b. Match with active transaction defers audit logging to afterCommit")
+    void match_withActiveTransaction_auditDeferredToAfterCommit() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(person));
+        when(userService.getCurrentUser()).thenReturn(adminUser);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash(VALID_SYNTHETIC_IC, 1)).thenReturn(STORED_HASH);
+        when(personRepository.save(any(Person.class))).thenAnswer(inv -> inv.getArgument(0));
+        PersonResponseDTO expectedResponse = PersonResponseDTO.builder().id(personId.toString()).build();
+        when(personService.getPersonById(personId)).thenReturn(expectedResponse);
+
+        IdentityVerificationRequest request = new IdentityVerificationRequest(
+                VALID_SYNTHETIC_IC, "PRE_REGISTRATION_RECORD", true);
+
+        try {
+            TransactionSynchronizationManager.initSynchronization();
+            PersonResponseDTO result = service.verify(personId, request, httpServletRequest);
+            assertThat(result).isNotNull();
+
+            // BEFORE commit: audit logger must NOT have been called
+            verify(auditLogger, never()).logIdentityVerified(any(), any(), any());
+
+            // Trigger afterCommit
+            assertThat(TransactionSynchronizationManager.getSynchronizations()).isNotEmpty();
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+
+            // AFTER commit: auditLogger called
+            verify(auditLogger).logIdentityVerified(any(Person.class), eq("PRE_REGISTRATION_RECORD"), eq(httpServletRequest));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     @Test
@@ -161,6 +203,29 @@ class IdentityVerificationServiceImplTest {
 
         verify(personRepository, never()).save(any());
         verify(auditLogger).logIdentityVerificationFailed(person, httpServletRequest);
+    }
+
+    @Test
+    @DisplayName("2b. Mismatch with active transaction audits failure immediately without waiting for commit")
+    void mismatch_withActiveTransaction_auditImmediate() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(person));
+        when(userService.getCurrentUser()).thenReturn(adminUser);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash(WRONG_SYNTHETIC_IC, 1)).thenReturn(WRONG_HASH);
+
+        IdentityVerificationRequest request = new IdentityVerificationRequest(
+                WRONG_SYNTHETIC_IC, "DOCUMENT_SIGHTED", true);
+
+        try {
+            TransactionSynchronizationManager.initSynchronization();
+            assertThatThrownBy(() -> service.verify(personId, request, httpServletRequest))
+                    .isInstanceOf(IdentityVerificationMismatchException.class);
+
+            // Audit was logged immediately
+            verify(auditLogger).logIdentityVerificationFailed(person, httpServletRequest);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     @Test
@@ -345,7 +410,43 @@ class IdentityVerificationServiceImplTest {
         assertThat(revoked.getIdentificationVerifiedByName()).isNull();
         assertThat(revoked.getIdentificationVerificationMethod()).isNull();
 
-        verify(auditLogger).logIdentityVerificationRevoked(revoked, httpServletRequest);
+        InOrder inOrder = inOrder(personRepository, auditLogger);
+        inOrder.verify(personRepository).save(any(Person.class));
+        inOrder.verify(auditLogger).logIdentityVerificationRevoked(revoked, httpServletRequest);
+    }
+
+    @Test
+    @DisplayName("7c. Revoke with active transaction defers audit logging to afterCommit")
+    void revoke_withActiveTransaction_auditDeferredToAfterCommit() {
+        person.setIdentificationVerificationStatus("VERIFIED");
+        person.setIdentificationVerifiedAt(LocalDateTime.now());
+        person.setIdentificationVerifiedBy(adminId);
+        person.setIdentificationVerifiedByName("Super Admin");
+        person.setIdentificationVerificationMethod("PRE_REGISTRATION_RECORD");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(person));
+        when(personRepository.save(any(Person.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(personService.getPersonById(personId)).thenReturn(PersonResponseDTO.builder().id(personId.toString()).build());
+
+        try {
+            TransactionSynchronizationManager.initSynchronization();
+            PersonResponseDTO response = service.revoke(personId, httpServletRequest);
+            assertThat(response).isNotNull();
+
+            // BEFORE commit: auditLogger not called
+            verify(auditLogger, never()).logIdentityVerificationRevoked(any(), any());
+
+            // Trigger afterCommit
+            assertThat(TransactionSynchronizationManager.getSynchronizations()).isNotEmpty();
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+
+            // AFTER commit: auditLogger called
+            verify(auditLogger).logIdentityVerificationRevoked(any(Person.class), eq(httpServletRequest));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     @Test

@@ -180,7 +180,7 @@ public class PlayerServiceImpl implements PlayerService {
         // Check if person with email already exists (only if email provided)
         String normalizedEmail = EmailUtil.normalizeEmail(request.email());
         if (normalizedEmail != null) {
-            if (personRepository.existsByEmail(normalizedEmail)) {
+            if (personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
                 throw new DuplicateEmailException();
             }
         }
@@ -344,7 +344,7 @@ public class PlayerServiceImpl implements PlayerService {
         }
         if (request.email() != null) {
             String normalizedEmail = EmailUtil.normalizeEmail(request.email());
-            if (normalizedEmail != null && personRepository.existsByEmailAndIdNot(normalizedEmail, person.getId())) {
+            if (normalizedEmail != null && personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
                 throw new DuplicateEmailException();
             }
             person.setEmail(normalizedEmail);
@@ -756,7 +756,7 @@ public class PlayerServiceImpl implements PlayerService {
                     }
 
                     if (row.email() != null && !row.email().trim().isEmpty()) {
-                        if (personRepository.existsByEmail(row.email().trim().toLowerCase())) {
+                        if (personRepository.existsByEmailIgnoreCase(row.email().trim())) {
                             rowErrors.add("Player with this email already exists");
                         }
                     }

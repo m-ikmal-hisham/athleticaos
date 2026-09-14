@@ -23,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -112,7 +114,18 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
         person.setIdentificationVerificationMethod(method.name());
 
         person = personRepository.save(person);
-        auditLogger.logIdentityVerified(person, method.name(), http);
+        final Person personForAudit = person;
+        final String methodName = method.name();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    auditLogger.logIdentityVerified(personForAudit, methodName, http);
+                }
+            });
+        } else {
+            auditLogger.logIdentityVerified(personForAudit, methodName, http);
+        }
 
         return personService.getPersonById(person.getId());
     }
@@ -129,7 +142,17 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
 
         person.clearIdentityVerification("UNVERIFIED");
         person = personRepository.save(person);
-        auditLogger.logIdentityVerificationRevoked(person, http);
+        final Person personForAudit = person;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    auditLogger.logIdentityVerificationRevoked(personForAudit, http);
+                }
+            });
+        } else {
+            auditLogger.logIdentityVerificationRevoked(personForAudit, http);
+        }
 
         return personService.getPersonById(person.getId());
     }
