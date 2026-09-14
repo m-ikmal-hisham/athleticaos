@@ -19,8 +19,10 @@ import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.enums.Gender;
 import com.athleticaos.backend.enums.IdentificationType;
+import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
 import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
+import com.athleticaos.backend.utils.EmailUtil;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -214,7 +216,11 @@ public class PersonServiceImpl implements PersonService {
         person.setDob(request.getDob());
         person.setGender(canonicalGender);
         person.setNationality(request.getNationality());
-        person.setEmail(request.getEmail());
+        String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
+        if (normalizedEmail != null && personRepository.existsByEmail(normalizedEmail)) {
+            throw new DuplicateEmailException();
+        }
+        person.setEmail(normalizedEmail);
         person.setPhone(request.getPhone());
         person.setNationalPlayerStatus(request.getNationalPlayerStatus());
         person.setIsStaff(Boolean.TRUE.equals(request.getIsStaff()));
@@ -323,7 +329,13 @@ public class PersonServiceImpl implements PersonService {
         if (request.getDob() != null) person.setDob(request.getDob());
         if (canonicalGender != null) person.setGender(canonicalGender);
         if (request.getNationality() != null) person.setNationality(request.getNationality());
-        if (request.getEmail() != null) person.setEmail(request.getEmail());
+        if (request.getEmail() != null) {
+            String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
+            if (normalizedEmail != null && personRepository.existsByEmailAndIdNot(normalizedEmail, person.getId())) {
+                throw new DuplicateEmailException();
+            }
+            person.setEmail(normalizedEmail);
+        }
         if (request.getPhone() != null) person.setPhone(request.getPhone());
         if (request.getNationalPlayerStatus() != null) person.setNationalPlayerStatus(request.getNationalPlayerStatus());
 

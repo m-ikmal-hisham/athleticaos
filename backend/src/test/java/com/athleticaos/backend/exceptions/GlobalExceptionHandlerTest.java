@@ -160,6 +160,27 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").value("Too many verification attempts for this record. Try again in 15 minutes."));
     }
 
+    @Test
+    void duplicateEmailException_returns409WithDuplicateEmailCode() throws Exception {
+        mockMvc.perform(get("/test-errors/duplicate-email"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_EMAIL"))
+                .andExpect(jsonPath("$.message").value("A person with this email already exists."))
+                .andExpect(jsonPath("$.message").value(not(containsString("@"))));
+    }
+
+    @Test
+    void dataIntegrityViolation_uniqueViolationEmail_returns409WithDuplicateEmailCode() throws Exception {
+        mockMvc.perform(get("/test-errors/unique-violation-email"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_EMAIL"))
+                .andExpect(jsonPath("$.message").value("A person with this email already exists."))
+                .andExpect(jsonPath("$.message").value(not(containsString("idx_persons_email_unique"))))
+                .andExpect(jsonPath("$.message").value(not(containsString("@"))));
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -225,6 +246,18 @@ public class GlobalExceptionHandlerTest {
         @GetMapping("/identity-locked")
         public String testIdentityLocked() {
             throw new IdentityVerificationLockedException();
+        }
+
+        @GetMapping("/duplicate-email")
+        public String testDuplicateEmail() {
+            throw new DuplicateEmailException();
+        }
+
+        @GetMapping("/unique-violation-email")
+        public String testUniqueViolationEmail() {
+            SQLException sqlEx = new SQLException("duplicate key value violates unique constraint \"idx_persons_email_unique\"", "23505");
+            ConstraintViolationException cve = new ConstraintViolationException("Unique violation", sqlEx, "idx_persons_email_unique");
+            throw new DataIntegrityViolationException("Data integrity violation", cve);
         }
     }
 

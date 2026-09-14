@@ -42,6 +42,8 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
         isStaff: false
     });
 
+    const [emailError, setEmailError] = useState('');
+
     const hasAnyRole = formData.isPlayer || formData.isOfficial || formData.isStaff;
 
     // Load organisations when Super Admin opens with a role selected
@@ -49,7 +51,10 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
         if (isOpen && isSuperAdmin && hasAnyRole && organisations.length === 0) {
             loadOrganisations();
         }
-    }, [isOpen, isSuperAdmin, hasAnyRole]);
+        if (isOpen) {
+            setEmailError('');
+        }
+    }, [isOpen, isSuperAdmin, hasAnyRole, organisations.length]);
 
     // For non-Super Admin, always pre-select their org
     useEffect(() => {
@@ -109,7 +114,11 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
 
         setLoading(true);
         try {
-            await createPerson(orgIdToUse, formData);
+            const payload = {
+                ...formData,
+                email: formData.email.trim() || undefined
+            };
+            await createPerson(orgIdToUse, payload);
             showToast.success('Person created successfully');
             onSuccess();
             onClose();
@@ -129,11 +138,17 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                 isOfficial: false,
                 isStaff: false
             });
+            setEmailError('');
             setSelectedOrgId(organisationId || '');
             setOrgSearchQuery('');
         } catch (error: any) {
             console.error('Create failed', error);
-            showToast.error(error.response?.data?.message || 'Failed to create person');
+            if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
+                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
+            } else {
+                showToast.error(error.response?.data?.message || 'Failed to create person');
+            }
         } finally {
             setLoading(false);
         }
@@ -361,8 +376,14 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                         <Input
                             type="email"
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            onChange={(e) => {
+                                setFormData({ ...formData, email: e.target.value });
+                                if (emailError) setEmailError('');
+                            }}
                         />
+                        {emailError && (
+                            <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                        )}
                     </div>
                     <div>
                         <label className="text-sm font-medium mb-1 block">Phone</label>

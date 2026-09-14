@@ -1,7 +1,9 @@
 package com.athleticaos.backend.services.impl;
 
+import com.athleticaos.backend.dtos.player.PlayerCreateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
+import org.mockito.ArgumentCaptor;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.repositories.PersonRepository;
@@ -748,5 +750,59 @@ class PlayerServiceImplTest {
                 .isInstanceOf(DuplicateIcException.class);
 
         verify(auditLogger, never()).logIdentityVerificationReset(any(), any());
+    }
+
+    // -----------------------------------------------------------------------
+    // DEF-R01: Email normalisation & duplicate handling
+    // -----------------------------------------------------------------------
+
+    @Test
+    void createPlayer_blankEmail_savedWithNull() {
+        PlayerCreateRequest request = new PlayerCreateRequest(
+                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5),
+                "950505145555", "MALAYSIAN_IC", "MALAYSIAN",
+                "   ", null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null
+        );
+
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> {
+            Person p = i.getArgument(0);
+            p.setId(UUID.randomUUID());
+            return p;
+        });
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> {
+            Player pl = i.getArgument(0);
+            pl.setId(UUID.randomUUID());
+            return pl;
+        });
+
+        playerService.createPlayer(request);
+
+        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository).save(captor.capture());
+        assertThat(captor.getValue().getEmail()).isNull();
+    }
+
+    @Test
+    void updatePlayer_blankEmail_clearsEmailToNull() {
+        existingPerson.setEmail("player@example.com");
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                null, null, null,
+                "   ", null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        verify(personRepository).save(existingPerson);
+        assertThat(existingPerson.getEmail()).isNull();
     }
 }

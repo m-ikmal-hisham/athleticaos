@@ -7,7 +7,9 @@ import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.enums.Gender;
 import com.athleticaos.backend.enums.IdentificationType;
+import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
+import com.athleticaos.backend.utils.EmailUtil;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.entities.PlayerTeam;
@@ -176,9 +178,10 @@ public class PlayerServiceImpl implements PlayerService {
         }
 
         // Check if person with email already exists (only if email provided)
-        if (request.email() != null && !request.email().isEmpty()) {
-            if (personRepository.existsByEmail(request.email())) {
-                throw new IllegalArgumentException("Email already exists");
+        String normalizedEmail = EmailUtil.normalizeEmail(request.email());
+        if (normalizedEmail != null) {
+            if (personRepository.existsByEmail(normalizedEmail)) {
+                throw new DuplicateEmailException();
             }
         }
 
@@ -197,7 +200,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .nationality(request.nationality())
-                .email(request.email())
+                .email(normalizedEmail)
                 .phone(request.phone())
                 .addressLine1(request.addressLine1())
                 .addressLine2(request.addressLine2())
@@ -340,7 +343,11 @@ public class PlayerServiceImpl implements PlayerService {
             person.setNationality(request.nationality());
         }
         if (request.email() != null) {
-            person.setEmail(request.email());
+            String normalizedEmail = EmailUtil.normalizeEmail(request.email());
+            if (normalizedEmail != null && personRepository.existsByEmailAndIdNot(normalizedEmail, person.getId())) {
+                throw new DuplicateEmailException();
+            }
+            person.setEmail(normalizedEmail);
         }
         if (request.phone() != null) {
             person.setPhone(request.phone());

@@ -26,6 +26,7 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
 
         boolean existsByEmail(String email);
 
+        boolean existsByEmailAndIdNot(String email, UUID id);
 
         // Strict check for duplicate IC/Passport (expects normalized input)
         // Low-1: Extended REPLACE chain matches IdentificationUtil.normalize() stripping

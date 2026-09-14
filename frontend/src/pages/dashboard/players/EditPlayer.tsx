@@ -44,6 +44,7 @@ export const EditPlayer = () => {
     const [identificationPresent, setIdentificationPresent] = useState(false);
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
+    const [emailError, setEmailError] = useState("");
     const [duplicateIcError, setDuplicateIcError] = useState("");
     const [personId, setPersonId] = useState("");
     const [identityVerification, setIdentityVerification] = useState<IdentityVerificationSummary | null>(null);
@@ -100,6 +101,7 @@ export const EditPlayer = () => {
                 setFirstName(player.firstName || "");
                 setLastName(player.lastName || "");
                 setEmail(player.email || "");
+                setEmailError("");
                 setPhotoUrl(player.photoUrl || "");
                 const rawGender = (player.gender || "").trim().toUpperCase();
                 const initialGender = (rawGender === Gender.MALE || rawGender === Gender.FEMALE) ? (rawGender as Gender) : "";
@@ -193,7 +195,7 @@ export const EditPlayer = () => {
         const payload: any = {
             firstName,
             lastName,
-            email,
+            email: email.trim() || null,
             gender: String(gender),
             dob,
             identificationType: hasReplacementId ? effectiveIdType : undefined,
@@ -228,6 +230,9 @@ export const EditPlayer = () => {
             } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
                 showToast.error("Duplicate IC found");
+            } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
+                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
             } else {
                 showToast.error(error.response?.data?.message || 'Failed to update player');
             }
@@ -272,7 +277,7 @@ export const EditPlayer = () => {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/players')}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/dashboard/players')}>
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <PageHeader
@@ -326,15 +331,20 @@ export const EditPlayer = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Email *</label>
+                                <label className="text-sm font-medium text-muted-foreground">Email</label>
                                 <input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        if (emailError) setEmailError("");
+                                    }}
                                     className="input-base w-full"
                                     aria-label="Email"
                                 />
+                                {emailError && (
+                                    <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                                )}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Phone</label>
@@ -464,17 +474,6 @@ export const EditPlayer = () => {
                             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
                                 Saving these changes will remove the identity verification.
                             </div>
-                        )}
-
-                        {personId && (
-                            <IdentityVerificationPanel
-                                personId={personId}
-                                identityVerification={identityVerification}
-                                onVerificationChanged={(updated) => {
-                                    setIdentityVerification(updated.identityVerification || null);
-                                }}
-                                disabled={saving}
-                            />
                         )}
                     </div>
 
@@ -673,6 +672,19 @@ export const EditPlayer = () => {
                         </Button>
                     </div>
                 </form>
+
+                {personId && (
+                    <div className="mt-8 pt-6 border-t border-white/10">
+                        <IdentityVerificationPanel
+                            personId={personId}
+                            identityVerification={identityVerification}
+                            onVerificationChanged={(updated) => {
+                                setIdentityVerification(updated.identityVerification || null);
+                            }}
+                            disabled={saving}
+                        />
+                    </div>
+                )}
             </GlassCard>
         </div>
     );

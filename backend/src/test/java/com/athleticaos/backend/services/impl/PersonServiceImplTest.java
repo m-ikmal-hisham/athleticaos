@@ -18,7 +18,9 @@ import com.athleticaos.backend.repositories.UserRepository;
 import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
+import org.mockito.ArgumentCaptor;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -661,5 +664,138 @@ class PersonServiceImplTest {
                 .isInstanceOf(DuplicateIcException.class);
 
         verify(auditLogger, never()).logIdentityVerificationReset(any(), any());
+    }
+
+    // -----------------------------------------------------------------------
+    // DEF-R01: Email normalisation & duplicate handling
+    // -----------------------------------------------------------------------
+
+    @Test
+    void createPerson_blankEmail_savedWithNull() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("   ");
+        request.setGender("MALE");
+
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        UUID newId = UUID.randomUUID();
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> {
+            Person p = i.getArgument(0);
+            p.setId(newId);
+            return p;
+        });
+        when(personRepository.findById(newId)).thenAnswer(i -> Optional.of(Person.builder().id(newId).build()));
+
+        personService.createPerson(organisationId, request);
+
+        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository).save(captor.capture());
+        assertThat(captor.getValue().getEmail()).isNull();
+    }
+
+    @Test
+    void createPerson_twoCreatesWithBlankEmail_bothSucceed() {
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> {
+            Person p = i.getArgument(0);
+            p.setId(UUID.randomUUID());
+            return p;
+        });
+        when(personRepository.findById(any(UUID.class))).thenAnswer(i -> {
+            UUID id = i.getArgument(0);
+            return Optional.of(Person.builder().id(id).build());
+        });
+
+        CreatePersonRequest req1 = new CreatePersonRequest();
+        req1.setFirstName("Person");
+        req1.setLastName("One");
+        req1.setEmail("");
+        req1.setGender("MALE");
+        personService.createPerson(organisationId, req1);
+
+        CreatePersonRequest req2 = new CreatePersonRequest();
+        req2.setFirstName("Person");
+        req2.setLastName("Two");
+        req2.setEmail("   ");
+        req2.setGender("FEMALE");
+        personService.createPerson(organisationId, req2);
+
+        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        List<Person> saved = captor.getAllValues();
+        assertThat(saved.get(0).getEmail()).isNull();
+        assertThat(saved.get(1).getEmail()).isNull();
+    }
+
+    @Test
+    void createPerson_duplicateEmail_throwsDuplicateEmailException() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail("taken@example.com");
+        request.setGender("MALE");
+
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(personRepository.existsByEmail("taken@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(DuplicateEmailException.class);
+    }
+
+    @Test
+    void updatePerson_blankEmail_clearsEmailToNull() {
+        existingPerson.setEmail("existing@example.com");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail("   ");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getEmail()).isNull();
+    }
+
+    @Test
+    void updatePerson_nullEmail_leavesEmailUnchanged() {
+        existingPerson.setEmail("existing@example.com");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail(null);
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getEmail()).isEqualTo("existing@example.com");
+    }
+
+    @Test
+    void updatePerson_duplicateEmail_throwsDuplicateEmailException() {
+        existingPerson.setEmail("existing@example.com");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByEmailAndIdNot("other@example.com", personId)).thenReturn(true);
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail("other@example.com");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(DuplicateEmailException.class);
+    }
+
+    @Test
+    void updatePerson_sameEmail_succeeds() {
+        existingPerson.setEmail("existing@example.com");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByEmailAndIdNot("existing@example.com", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail(" existing@example.com ");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getEmail()).isEqualTo("existing@example.com");
     }
 }

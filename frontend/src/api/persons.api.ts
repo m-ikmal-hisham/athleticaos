@@ -77,8 +77,8 @@ export interface CreatePersonRequest {
     dob: string;
     gender: string;
     nationality: string;
-    email: string;
-    phone: string;
+    email?: string;
+    phone?: string;
     nationalPlayerStatus: string;
 }
 

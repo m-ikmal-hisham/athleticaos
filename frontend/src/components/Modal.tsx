@@ -1,4 +1,5 @@
 import { Fragment, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { GlassCard } from './GlassCard';
@@ -21,7 +22,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         xl: 'max-w-4xl',
     };
 
-    return (
+    return createPortal(
         <Fragment>
             {/* Backdrop */}
             <div
@@ -45,6 +46,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                         <div className="flex items-center justify-between p-6 border-b border-white/10">
                             <h2 className="text-xl font-semibold text-foreground">{title}</h2>
                             <button
+                                type="button"
                                 onClick={onClose}
                                 className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-white/5"
                                 aria-label="Close"
@@ -58,6 +60,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                     <div className={title ? "p-6" : ""}>{children}</div>
                 </GlassCard>
             </div>
-        </Fragment>
+        </Fragment>,
+        document.body
     );
 };

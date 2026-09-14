@@ -118,10 +118,15 @@ public class GlobalExceptionHandler {
                     && (constraintName.contains("identification_hash")
                             || constraintName.contains("ic_or_passport")
                             || constraintName.contains("identification"));
+            boolean isEmailConstraint = constraintName != null
+                    && constraintName.toLowerCase(Locale.ROOT).contains("email");
 
             if (isIdentificationConstraint) {
                 message = "Person with this IC/Passport already exists";
                 errorCode = "DUPLICATE_IC";
+            } else if (isEmailConstraint) {
+                message = "A person with this email already exists.";
+                errorCode = "DUPLICATE_EMAIL";
             } else {
                 message = "A record with this identifier already exists.";
             }
@@ -137,6 +142,11 @@ public class GlobalExceptionHandler {
         }
 
         return buildResponseDetailed(status, message, errorCode, request);
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException ex, HttpServletRequest request) {
+        return buildResponseDetailed(HttpStatus.CONFLICT, "A person with this email already exists.", "DUPLICATE_EMAIL", request);
     }
 
     @ExceptionHandler(IdentificationReentryRequiredException.class)

@@ -11,6 +11,7 @@ import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerBatchHelper;
+import com.athleticaos.backend.utils.EmailUtil;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.enums.IdentificationType;
@@ -60,7 +61,7 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
                 .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")
                 .nationality(row.nationality().trim())
-                .email(row.email() != null && !row.email().trim().isEmpty() ? row.email().trim().toLowerCase() : null)
+                .email(EmailUtil.normalizeEmail(row.email()))
                 .state(row.state() != null ? row.state().trim() : null)
                 .isStaff(false)
                 .build();

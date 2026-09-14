@@ -38,11 +38,14 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         isStaff: false
     });
 
+    const [emailError, setEmailError] = useState('');
+
     useEffect(() => {
         if (person && isOpen) {
             setExistingIdentificationType(person.identificationType || null);
             setReplacementIdentificationType('');
             setDuplicateIcError('');
+            setEmailError('');
             setIdentityVerification(person.identityVerification || null);
             loadedDob.current = person.dob || '';
             const rawGender = (person.gender || '').trim().toUpperCase();
@@ -109,6 +112,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         try {
             const payload = {
                 ...formData,
+                email: formData.email !== undefined ? (formData.email.trim() || null) : undefined,
                 identificationType: hasReplacementId ? effectiveIdType : undefined,
                 icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined
             };
@@ -121,6 +125,9 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             if (error.response?.data?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
                 setDuplicateIcError(error.response?.data?.message || reentryNotice);
                 showToast.error('Identification re-entry required');
+            } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
+                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
             } else {
                 showToast.error(error.response?.data?.message || 'Failed to update person');
             }
@@ -290,8 +297,14 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         <Input
                             type="email"
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            onChange={(e) => {
+                                setFormData({ ...formData, email: e.target.value });
+                                if (emailError) setEmailError('');
+                            }}
                         />
+                        {emailError && (
+                            <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                        )}
                     </div>
                     <div>
                         <label className="text-sm font-medium mb-1 block">Phone</label>
@@ -323,18 +336,6 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                     </div>
                 )}
 
-                {person && (
-                    <IdentityVerificationPanel
-                        personId={person.id}
-                        identityVerification={identityVerification}
-                        onVerificationChanged={(updated) => {
-                            setIdentityVerification(updated.identityVerification || null);
-                            onSuccess();
-                        }}
-                        disabled={loading}
-                    />
-                )}
-
                 <div className="flex justify-end gap-3 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={onClose}>
                         Cancel
@@ -344,6 +345,20 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                     </Button>
                 </div>
             </form>
+
+            {person && (
+                <div className="pt-4 border-t">
+                    <IdentityVerificationPanel
+                        personId={person.id}
+                        identityVerification={identityVerification}
+                        onVerificationChanged={(updated) => {
+                            setIdentityVerification(updated.identityVerification || null);
+                            onSuccess();
+                        }}
+                        disabled={loading}
+                    />
+                </div>
+            )}
         </Modal>
     );
 };

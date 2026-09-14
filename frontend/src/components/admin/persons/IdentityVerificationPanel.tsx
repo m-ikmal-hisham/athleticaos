@@ -51,8 +51,9 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
         setErrorMessage('');
     };
 
-    const handleVerifySubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleVerifySubmit = async (e?: React.SyntheticEvent) => {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
         if (!personId || !idValue.trim() || !attested) return;
 
         try {
@@ -91,7 +92,9 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
         }
     };
 
-    const handleRevokeSubmit = async () => {
+    const handleRevokeSubmit = async (e?: React.SyntheticEvent) => {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
         if (!personId) return;
 
         try {
@@ -234,7 +237,7 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
 
             {/* Verify Modal */}
             <Modal isOpen={isVerifyModalOpen} onClose={closeVerifyModal} title="Verify Person Identity">
-                <form onSubmit={handleVerifySubmit} className="space-y-4">
+                <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
                         Re-type the identification number directly from the source document. The backend will compare it with the stored hash to confirm a match.
                     </p>
@@ -257,11 +260,16 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
                                 setIdValue(e.target.value);
                                 if (errorMessage) setErrorMessage('');
                             }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleVerifySubmit(e);
+                                }
+                            }}
                             placeholder="Re-enter IC / Passport Number"
                             autoComplete="off"
                             autoCorrect="off"
                             spellCheck={false}
-                            name="verifyIdNo_no_autofill"
                             required
                         />
                     </div>
@@ -304,14 +312,15 @@ export const IdentityVerificationPanel: React.FC<IdentityVerificationPanelProps>
                             Cancel
                         </Button>
                         <Button
-                            type="submit"
+                            type="button"
+                            onClick={handleVerifySubmit}
                             disabled={submitting || !idValue.trim() || !attested}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white"
                         >
                             {submitting ? 'Verifying...' : 'Confirm Verification'}
                         </Button>
                     </div>
-                </form>
+                </div>
             </Modal>
 
             {/* Revoke Confirmation Modal */}
