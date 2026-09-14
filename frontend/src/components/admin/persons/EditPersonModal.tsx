@@ -112,7 +112,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         try {
             const payload = {
                 ...formData,
-                email: formData.email !== undefined ? (formData.email.trim() || null) : undefined,
+                email: formData.email.trim(),
                 identificationType: hasReplacementId ? effectiveIdType : undefined,
                 icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined
             };

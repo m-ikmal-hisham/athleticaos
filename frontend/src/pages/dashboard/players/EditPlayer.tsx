@@ -195,7 +195,7 @@ export const EditPlayer = () => {
         const payload: any = {
             firstName,
             lastName,
-            email: email.trim() || null,
+            email: email.trim(),
             gender: String(gender),
             dob,
             identificationType: hasReplacementId ? effectiveIdType : undefined,
