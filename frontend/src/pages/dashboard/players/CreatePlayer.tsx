@@ -38,6 +38,7 @@ export const CreatePlayer = () => {
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
     const [duplicateIcError, setDuplicateIcError] = useState("");
+    const [emailError, setEmailError] = useState("");
 
     // Address
     const [addressLine1, setAddressLine1] = useState("");
@@ -95,7 +96,7 @@ export const CreatePlayer = () => {
         const payload: any = {
             firstName,
             lastName,
-            email,
+            email: email.trim() || undefined,
             gender: String(gender),
             dob,
             identificationType,
@@ -128,6 +129,9 @@ export const CreatePlayer = () => {
             if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
                 showToast.error("Duplicate IC found");
+            } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
+                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
             } else {
                 showToast.error(error.response?.data?.message || 'Failed to create player');
             }
@@ -193,15 +197,20 @@ export const CreatePlayer = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Email *</label>
+                                <label className="text-sm font-medium text-muted-foreground">Email</label>
                                 <input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        if (emailError) setEmailError("");
+                                    }}
                                     className="input-base w-full"
                                     aria-label="Email"
                                 />
+                                {emailError && (
+                                    <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                                )}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Phone</label>
