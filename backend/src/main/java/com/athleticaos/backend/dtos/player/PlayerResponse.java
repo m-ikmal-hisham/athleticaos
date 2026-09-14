@@ -48,5 +48,6 @@ public record PlayerResponse(
                 String organisationName,
                 java.util.List<String> teamNames,
 
-                LocalDateTime createdAt) {
+                LocalDateTime createdAt,
+                com.athleticaos.backend.dtos.person.IdentityVerificationSummary identityVerification) {
 }

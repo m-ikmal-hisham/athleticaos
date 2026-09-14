@@ -151,6 +151,27 @@ public class GlobalExceptionHandler {
         return buildResponseDetailed(HttpStatus.CONFLICT, ex.getMessage(), "DUPLICATE_IC", request);
     }
 
+    @ExceptionHandler(IdentityVerificationMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleIdentityVerificationMismatch(
+            IdentityVerificationMismatchException ex, HttpServletRequest request) {
+        return buildResponseDetailed(HttpStatus.BAD_REQUEST, ex.getMessage(),
+                "IDENTITY_VERIFICATION_MISMATCH", request);
+    }
+
+    @ExceptionHandler(IdentityVerificationNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleIdentityVerificationNotAllowed(
+            IdentityVerificationNotAllowedException ex, HttpServletRequest request) {
+        return buildResponseDetailed(HttpStatus.CONFLICT, ex.getMessage(),
+                "IDENTITY_VERIFICATION_NOT_ALLOWED", request);
+    }
+
+    @ExceptionHandler(IdentityVerificationLockedException.class)
+    public ResponseEntity<ErrorResponse> handleIdentityVerificationLocked(
+            IdentityVerificationLockedException ex, HttpServletRequest request) {
+        return buildResponseDetailed(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(),
+                "IDENTITY_VERIFICATION_LOCKED", request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest request) {
         String correlationId = UUID.randomUUID().toString().substring(0, 8);

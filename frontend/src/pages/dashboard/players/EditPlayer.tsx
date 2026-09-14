@@ -15,6 +15,8 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
+import { IdentityVerificationPanel } from '@/components/admin/persons/IdentityVerificationPanel';
+import { IdentityVerificationSummary } from '@/api/persons.api';
 
 interface Team {
     id: string;
@@ -43,6 +45,8 @@ export const EditPlayer = () => {
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
     const [duplicateIcError, setDuplicateIcError] = useState("");
+    const [personId, setPersonId] = useState("");
+    const [identityVerification, setIdentityVerification] = useState<IdentityVerificationSummary | null>(null);
 
     // OBS-05B: Track loaded DOB and gender for reentry detection
     const loadedDob = useRef("");
@@ -109,6 +113,8 @@ export const EditPlayer = () => {
                 setIdentificationValue(""); // Phase 1: do not preload raw identification
                 setNationality(player.nationality || "");
                 setPhone(player.phone || "");
+                setPersonId(player.personId || "");
+                setIdentityVerification(player.identityVerification || null);
 
                 setAddressLine1(player.addressLine1 || player.address || "");
                 setAddressLine2(player.addressLine2 || "");
@@ -148,6 +154,9 @@ export const EditPlayer = () => {
     const genderChanged = Boolean(gender) && String(gender).trim().toUpperCase() !== loadedGender.current;
     const dobChanged = Boolean(dob) && dob !== loadedDob.current;
     const isReentryRequired = !exempt && (dobChanged || genderChanged);
+
+    const isVerified = identityVerification?.status === 'VERIFIED';
+    const willResetVerification = isVerified && (dobChanged || genderChanged || Boolean(identificationValue.trim()));
 
     const reentryNotice = storedType === 'MALAYSIAN_IC'
         ? 'Changing date of birth or gender requires re-entering the IC number.'
@@ -450,6 +459,23 @@ export const EditPlayer = () => {
                                 aria-label="Nationality"
                             />
                         </div>
+
+                        {willResetVerification && (
+                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+                                Saving these changes will remove the identity verification.
+                            </div>
+                        )}
+
+                        {personId && (
+                            <IdentityVerificationPanel
+                                personId={personId}
+                                identityVerification={identityVerification}
+                                onVerificationChanged={(updated) => {
+                                    setIdentityVerification(updated.identityVerification || null);
+                                }}
+                                disabled={saving}
+                            />
+                        )}
                     </div>
 
                     {/* Address Details */}

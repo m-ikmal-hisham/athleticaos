@@ -18,12 +18,16 @@ import com.athleticaos.backend.repositories.UserRepository;
 import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.exceptions.DuplicateIcException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -32,6 +36,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,6 +48,8 @@ class PersonServiceImplTest {
 
     @Mock
     private PersonRepository personRepository;
+    @Mock
+    private ObjectProvider<HttpServletRequest> requestProvider;
     @Mock
     private OrganisationPersonRepository organisationPersonRepository;
     @Mock
@@ -66,6 +74,8 @@ class PersonServiceImplTest {
     private OrganisationService organisationService;
     @Mock
     private UserService userService;
+    @Mock
+    private com.athleticaos.backend.audit.AuditLogger auditLogger;
 
     @InjectMocks
     private PersonServiceImpl personService;
@@ -493,5 +503,163 @@ class PersonServiceImplTest {
 
         verify(personRepository, never()).save(any(Person.class));
         assertThat(existingPerson.getGender()).isEqualTo("MALE");
+    }
+
+    @Test
+    void updatePerson_verified_dobChangedWithValidReentry_clearsVerificationAndAuditsReset() {
+        existingPerson.setIdentificationVerificationStatus("VERIFIED");
+        existingPerson.setIdentificationVerifiedAt(java.time.LocalDateTime.now());
+        existingPerson.setIdentificationVerifiedBy(UUID.randomUUID());
+        existingPerson.setIdentificationVerifiedByName("Admin User");
+        existingPerson.setIdentificationVerificationMethod("DOCUMENT_SIGHTED");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("950505145555", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("950505145555")).thenReturn("newHash");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("newHash", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(LocalDate.of(1995, 5, 5));
+        request.setIcOrPassport("950505145555");
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getIdentificationVerificationStatus()).isEqualTo("UNVERIFIED");
+        assertThat(existingPerson.getIdentificationVerifiedAt()).isNull();
+        assertThat(existingPerson.getIdentificationVerifiedBy()).isNull();
+        assertThat(existingPerson.getIdentificationVerifiedByName()).isNull();
+        assertThat(existingPerson.getIdentificationVerificationMethod()).isNull();
+        verify(auditLogger).logIdentityVerificationReset(eq(existingPerson), any());
+    }
+
+    @Test
+    void updatePerson_verified_phoneOnlyChange_resendingSameDobAndGender_staysVerified() {
+        existingPerson.setIdentificationVerificationStatus("VERIFIED");
+        java.time.LocalDateTime verifiedAt = java.time.LocalDateTime.now();
+        UUID adminId = UUID.randomUUID();
+        existingPerson.setIdentificationVerifiedAt(verifiedAt);
+        existingPerson.setIdentificationVerifiedBy(adminId);
+        existingPerson.setIdentificationVerifiedByName("Admin User");
+        existingPerson.setIdentificationVerificationMethod("PRE_REGISTRATION_RECORD");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(existingPerson.getDob());
+        request.setGender(existingPerson.getGender());
+        request.setPhone("+60123456789");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getIdentificationVerificationStatus()).isEqualTo("VERIFIED");
+        assertThat(existingPerson.getIdentificationVerifiedAt()).isEqualTo(verifiedAt);
+        assertThat(existingPerson.getIdentificationVerifiedBy()).isEqualTo(adminId);
+        assertThat(existingPerson.getIdentificationVerifiedByName()).isEqualTo("Admin User");
+        assertThat(existingPerson.getIdentificationVerificationMethod()).isEqualTo("PRE_REGISTRATION_RECORD");
+        verify(auditLogger, never()).logIdentityVerificationReset(any(), any());
+    }
+
+    @Test
+    void updatePerson_verified_passportHolder_genderChanged_clearsVerificationAndAuditsReset() {
+        existingPerson.setIdentificationType("PASSPORT");
+        existingPerson.setIcOrPassport("A12345678");
+        existingPerson.setGender("MALE");
+        existingPerson.setIdentificationVerificationStatus("VERIFIED");
+        existingPerson.setIdentificationVerifiedAt(java.time.LocalDateTime.now());
+        existingPerson.setIdentificationVerifiedBy(UUID.randomUUID());
+        existingPerson.setIdentificationVerifiedByName("Admin User");
+        existingPerson.setIdentificationVerificationMethod("DOCUMENT_SIGHTED");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setGender("FEMALE");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getGender()).isEqualTo("FEMALE");
+        assertThat(existingPerson.getIdentificationVerificationStatus()).isEqualTo("UNVERIFIED");
+        assertThat(existingPerson.getIdentificationVerifiedAt()).isNull();
+        assertThat(existingPerson.getIdentificationVerifiedBy()).isNull();
+        assertThat(existingPerson.getIdentificationVerifiedByName()).isNull();
+        assertThat(existingPerson.getIdentificationVerificationMethod()).isNull();
+        verify(auditLogger).logIdentityVerificationReset(eq(existingPerson), any());
+    }
+
+    @Test
+    void updatePerson_verified_dobChanged_contradictingIc_neverAuditsReset() {
+        existingPerson.setIdentificationVerificationStatus("VERIFIED");
+        existingPerson.setIdentificationVerifiedAt(java.time.LocalDateTime.now());
+        existingPerson.setIdentificationVerifiedBy(UUID.randomUUID());
+        existingPerson.setIdentificationVerifiedByName("Admin User");
+        existingPerson.setIdentificationVerificationMethod("DOCUMENT_SIGHTED");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(LocalDate.of(1995, 5, 5));
+        request.setIcOrPassport("900101011235");
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(auditLogger, never()).logIdentityVerificationReset(any(), any());
+    }
+
+    @Test
+    void updatePerson_verified_dobChanged_validReEntry_auditsResetAfterSave() {
+        existingPerson.setIdentificationVerificationStatus("VERIFIED");
+        existingPerson.setIdentificationVerifiedAt(java.time.LocalDateTime.now());
+        existingPerson.setIdentificationVerifiedBy(UUID.randomUUID());
+        existingPerson.setIdentificationVerifiedByName("Admin User");
+        existingPerson.setIdentificationVerificationMethod("DOCUMENT_SIGHTED");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("950505145555", personId)).thenReturn(false);
+        when(identificationHashService.isConfigured()).thenReturn(true);
+        when(identificationHashService.computeHash("950505145555")).thenReturn("newHash");
+        when(identificationHashService.getActiveVersion()).thenReturn(1);
+        when(personRepository.existsByIdentificationHashAndIdNot("newHash", personId)).thenReturn(false);
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(LocalDate.of(1995, 5, 5));
+        request.setIcOrPassport("950505145555");
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        personService.updatePerson(personId, request);
+
+        InOrder inOrder = inOrder(personRepository, auditLogger);
+        inOrder.verify(personRepository).save(any(Person.class));
+        inOrder.verify(auditLogger).logIdentityVerificationReset(eq(existingPerson), any());
+    }
+
+    @Test
+    void updatePerson_verified_dobChanged_duplicateIc_neverAuditsReset() {
+        existingPerson.setIdentificationVerificationStatus("VERIFIED");
+        existingPerson.setIdentificationVerifiedAt(java.time.LocalDateTime.now());
+        existingPerson.setIdentificationVerifiedBy(UUID.randomUUID());
+        existingPerson.setIdentificationVerifiedByName("Admin User");
+        existingPerson.setIdentificationVerificationMethod("DOCUMENT_SIGHTED");
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.existsByIcOrPassportAndIdNot("950505145555", personId)).thenReturn(true);
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setDob(LocalDate.of(1995, 5, 5));
+        request.setIcOrPassport("950505145555");
+        request.setIdentificationType("MALAYSIAN_IC");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(DuplicateIcException.class);
+
+        verify(auditLogger, never()).logIdentityVerificationReset(any(), any());
     }
 }

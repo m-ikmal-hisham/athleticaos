@@ -13,6 +13,7 @@ import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerBatchHelper;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import com.athleticaos.backend.services.IdentificationHashResult;
+import com.athleticaos.backend.enums.IdentificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,7 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
                 .gender(canonicalGender)
                 .dob(row.dob())
                 .icOrPassport(normalizedIc)
-                .identificationType(row.identificationType())
+                .identificationType(normalizedIc != null ? IdentificationType.from(row.identificationType()).name() : null)
                 .identificationHash(hashResult != null ? hashResult.hash() : null)
                 .identificationHashVersion(hashResult != null ? hashResult.version() : null)
                 .identificationVerificationStatus("UNVERIFIED")

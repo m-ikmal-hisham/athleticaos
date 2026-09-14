@@ -166,6 +166,12 @@ export interface Player {
     identificationPresent?: boolean;
     identificationType?: string;
     identificationDisplay?: string | null;
+    identityVerification?: {
+        status: string;
+        verifiedAt?: string;
+        verifiedByName?: string;
+        method?: string;
+    } | null;
     nationality: string;
     email?: string;
     phone?: string;

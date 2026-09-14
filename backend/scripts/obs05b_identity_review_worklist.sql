@@ -7,6 +7,7 @@
 -- Never paste the output into chat, tickets, GitHub issues, commits or logs. Delete the file when the review is done.
 -- Relies on persons.ic_or_passport plaintext: valid only BEFORE the hash-only cutover.
 -- IC_BIRTHPLACE_UNASSIGNED is a heuristic ("suspect"), not proof: confirm against the official JPN code list.
+-- Records an administrator has VERIFIED (V156 attestation) are excluded.
 BEGIN TRANSACTION READ ONLY;
 
 WITH p AS (
@@ -15,6 +16,7 @@ WITH p AS (
         pl.id                                                                AS player_id,
         pe.first_name,
         pe.last_name,
+        pe.identification_verification_status                               AS v_status,
         upper(coalesce(trim(pe.identification_type), ''))                    AS id_type,
         regexp_replace(upper(trim(pe.ic_or_passport)), '[^A-Z0-9]', '', 'g') AS norm,
         pe.dob,
@@ -50,7 +52,7 @@ r AS (
     FROM ic
 ),
 w AS (
-    SELECT person_id, player_id, first_name, last_name,
+    SELECT person_id, player_id, first_name, last_name, v_status,
         concat_ws(';',
             CASE WHEN id_type = '' THEN 'TYPE_MISSING' END,
             CASE WHEN id_type <> '' AND type_not_canonical THEN 'TYPE_NONCANONICAL' END,
@@ -67,13 +69,15 @@ w AS (
                   AND substr(norm, 7, 2) IN ('00','17','18','19','20','69','70','73','80','81','94','95','96','97')
                  THEN 'IC_BIRTHPLACE_UNASSIGNED' END,
             CASE WHEN g NOT IN ('MALE', 'FEMALE') THEN 'GENDER_NOT_MALE_FEMALE' END,
-            CASE WHEN g IN ('MALE', 'FEMALE') AND g_raw <> g THEN 'GENDER_CASE' END
+            CASE WHEN g IN ('MALE', 'FEMALE') AND g_raw <> g THEN 'GENDER_CASE' END,
+            CASE WHEN v_status = 'FLAGGED' THEN 'STATUS_FLAGGED_DUPLICATE' END
         ) AS reasons
     FROM r
 )
-SELECT person_id, player_id, first_name, last_name, reasons
+SELECT person_id, player_id, first_name, last_name, v_status AS verification_status, reasons
 FROM w
 WHERE reasons <> ''
+  AND v_status IS DISTINCT FROM 'VERIFIED'
 ORDER BY reasons, last_name, first_name;
 
 ROLLBACK;

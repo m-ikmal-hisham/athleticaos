@@ -1,5 +1,25 @@
 import api from './axios';
 
+export const IDENTITY_VERIFICATION_METHODS = [
+    { value: 'PRE_REGISTRATION_RECORD', label: 'Pre-registration record' },
+    { value: 'DOCUMENT_SIGHTED', label: 'Document sighted' }
+] as const;
+
+export type IdentityVerificationMethod = typeof IDENTITY_VERIFICATION_METHODS[number]['value'];
+
+export interface IdentityVerificationSummary {
+    status: 'VERIFIED' | 'UNVERIFIED' | 'LEGACY' | 'FLAGGED';
+    verifiedAt?: string | null;
+    verifiedByName?: string | null;
+    method?: IdentityVerificationMethod | string | null;
+}
+
+export interface IdentityVerificationRequest {
+    identificationValue: string;
+    method: IdentityVerificationMethod;
+    attested: boolean;
+}
+
 export interface PersonResponseDTO {
     id: string;
     firstName: string;
@@ -7,6 +27,7 @@ export interface PersonResponseDTO {
     identificationPresent?: boolean;
     identificationType?: string;
     identificationDisplay?: string | null;
+    identityVerification?: IdentityVerificationSummary | null;
     dob: string;
     gender: string;
     nationality: string;
@@ -110,5 +131,20 @@ export const getUnlinkedUsers = async (orgId: string): Promise<any[]> => {
 
 export const linkPersonToUser = async (personId: string, userId: string): Promise<PersonResponseDTO> => {
     const response = await api.post(`/persons/${personId}/link-user/${userId}`);
+    return response.data;
+};
+
+export const verifyPersonIdentity = async (
+    personId: string,
+    request: IdentityVerificationRequest
+): Promise<PersonResponseDTO> => {
+    const response = await api.post(`/persons/${personId}/identity-verification`, request);
+    return response.data;
+};
+
+export const revokePersonIdentityVerification = async (
+    personId: string
+): Promise<PersonResponseDTO> => {
+    const response = await api.delete(`/persons/${personId}/identity-verification`);
     return response.data;
 };

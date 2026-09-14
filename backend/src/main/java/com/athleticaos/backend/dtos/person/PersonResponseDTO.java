@@ -46,4 +46,6 @@ public class PersonResponseDTO {
     
     @JsonProperty("isWorldRugbyCertified")
     private boolean isWorldRugbyCertified;
+
+    private IdentityVerificationSummary identityVerification;
 }

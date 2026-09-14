@@ -55,6 +55,26 @@ public class Person {
     @Builder.Default
     private String identificationVerificationStatus = "UNVERIFIED";
 
+    @Column(name = "identification_verified_at")
+    private LocalDateTime identificationVerifiedAt;
+
+    @Column(name = "identification_verified_by")
+    private UUID identificationVerifiedBy;
+
+    @Column(name = "identification_verified_by_name")
+    private String identificationVerifiedByName;
+
+    @Column(name = "identification_verification_method", length = 32)
+    private String identificationVerificationMethod;
+
+    public void clearIdentityVerification(String newStatus) {
+        this.identificationVerificationStatus = newStatus;
+        this.identificationVerifiedAt = null;
+        this.identificationVerifiedBy = null;
+        this.identificationVerifiedByName = null;
+        this.identificationVerificationMethod = null;
+    }
+
     @Column(nullable = false)
     private String nationality;
 

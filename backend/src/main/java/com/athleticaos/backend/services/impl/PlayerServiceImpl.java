@@ -42,6 +42,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +66,8 @@ public class PlayerServiceImpl implements PlayerService {
     private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
     private final PlayerBatchHelper playerBatchHelper;
     private final Validator validator;
+    private final com.athleticaos.backend.audit.AuditLogger auditLogger;
+    private final ObjectProvider<HttpServletRequest> requestProvider;
 
     @Override
     @Transactional(readOnly = true)
@@ -278,6 +284,17 @@ public class PlayerServiceImpl implements PlayerService {
             }
         }
 
+        boolean dobChanged = request.dob() != null && !request.dob().equals(person.getDob());
+        boolean genderChanged = canonicalGender != null && !canonicalGender.equals(person.getGender());
+        boolean nonBlankIdSubmitted = request.icOrPassport() != null && !request.icOrPassport().trim().isEmpty();
+
+        boolean verificationReset = false;
+        if ("VERIFIED".equals(person.getIdentificationVerificationStatus())
+                && (dobChanged || genderChanged || nonBlankIdSubmitted)) {
+            person.clearIdentityVerification("UNVERIFIED");
+            verificationReset = true;
+        }
+
         // Update Person (PII) fields
         if (request.firstName() != null) {
             person.setFirstName(request.firstName());
@@ -313,7 +330,7 @@ public class PlayerServiceImpl implements PlayerService {
                     if (hashResult != null) {
                         person.setIdentificationHash(hashResult.hash());
                         person.setIdentificationHashVersion(hashResult.version());
-                        person.setIdentificationVerificationStatus("UNVERIFIED");
+                        person.clearIdentityVerification("UNVERIFIED");
                     }
                 }
             }
@@ -374,6 +391,21 @@ public class PlayerServiceImpl implements PlayerService {
         }
         player = playerRepository.save(player);
         log.info("Updated player: {}", id);
+
+        if (verificationReset) {
+            final Person personForAudit = person;
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+            }
+        }
 
         return mapToPlayerResponse(player);
     }
@@ -609,6 +641,14 @@ public class PlayerServiceImpl implements PlayerService {
         boolean identificationPresent = person.getIcOrPassport() != null
                 && !person.getIcOrPassport().isBlank();
 
+        com.athleticaos.backend.dtos.person.IdentityVerificationSummary identityVerification = person.getIdentificationVerificationStatus() != null
+                ? new com.athleticaos.backend.dtos.person.IdentityVerificationSummary(
+                        person.getIdentificationVerificationStatus(),
+                        person.getIdentificationVerifiedAt(),
+                        person.getIdentificationVerifiedByName(),
+                        person.getIdentificationVerificationMethod())
+                : null;
+
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
@@ -643,6 +683,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .organisationName(organisationName)
                 .teamNames(teamNames)
                 .createdAt(player.getCreatedAt())
+                .identityVerification(identityVerification)
                 .build();
     }
 

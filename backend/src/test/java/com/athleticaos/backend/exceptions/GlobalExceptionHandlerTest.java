@@ -133,6 +133,33 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").value(not(org.hamcrest.Matchers.matchesRegex(".*\\d.*"))));
     }
 
+    @Test
+    void identityVerificationMismatch_returns400WithErrorCode() throws Exception {
+        mockMvc.perform(get("/test-errors/identity-mismatch"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errorCode").value("IDENTITY_VERIFICATION_MISMATCH"))
+                .andExpect(jsonPath("$.message").value("The identification number entered does not match the record on file."));
+    }
+
+    @Test
+    void identityVerificationNotAllowed_returns409WithErrorCode() throws Exception {
+        mockMvc.perform(get("/test-errors/identity-not-allowed"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value("IDENTITY_VERIFICATION_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.message").value("This record is already verified."));
+    }
+
+    @Test
+    void identityVerificationLocked_returns429WithErrorCode() throws Exception {
+        mockMvc.perform(get("/test-errors/identity-locked"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.errorCode").value("IDENTITY_VERIFICATION_LOCKED"))
+                .andExpect(jsonPath("$.message").value("Too many verification attempts for this record. Try again in 15 minutes."));
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -183,6 +210,21 @@ public class GlobalExceptionHandlerTest {
         @GetMapping("/identification-reentry")
         public String testIdentificationReentry() {
             throw new IdentificationReentryRequiredException();
+        }
+
+        @GetMapping("/identity-mismatch")
+        public String testIdentityMismatch() {
+            throw new IdentityVerificationMismatchException();
+        }
+
+        @GetMapping("/identity-not-allowed")
+        public String testIdentityNotAllowed() {
+            throw new IdentityVerificationNotAllowedException("This record is already verified.");
+        }
+
+        @GetMapping("/identity-locked")
+        public String testIdentityLocked() {
+            throw new IdentityVerificationLockedException();
         }
     }
 

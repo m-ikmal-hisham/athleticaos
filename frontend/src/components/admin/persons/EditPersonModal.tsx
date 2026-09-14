@@ -3,7 +3,8 @@ import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { showToast } from '@/lib/customToast';
-import { updatePerson, PersonResponseDTO } from '@/api/persons.api';
+import { updatePerson, PersonResponseDTO, IdentityVerificationSummary } from '@/api/persons.api';
+import { IdentityVerificationPanel } from './IdentityVerificationPanel';
 
 interface EditPersonModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
     const [replacementIdentificationType, setReplacementIdentificationType] = useState('');
     const [duplicateIcError, setDuplicateIcError] = useState('');
+    const [identityVerification, setIdentityVerification] = useState<IdentityVerificationSummary | null>(null);
 
     // OBS-05B: Track loaded DOB and gender for reentry detection
     const loadedDob = useRef('');
@@ -41,6 +43,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             setExistingIdentificationType(person.identificationType || null);
             setReplacementIdentificationType('');
             setDuplicateIcError('');
+            setIdentityVerification(person.identityVerification || null);
             loadedDob.current = person.dob || '';
             const rawGender = (person.gender || '').trim().toUpperCase();
             const initialGender = (rawGender === 'MALE' || rawGender === 'FEMALE') ? rawGender : '';
@@ -68,6 +71,9 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     const genderChanged = Boolean(formData.gender) && formData.gender.trim().toUpperCase() !== loadedGender.current;
     const dobChanged = Boolean(formData.dob) && formData.dob !== loadedDob.current;
     const isReentryRequired = !exempt && (dobChanged || genderChanged);
+
+    const isVerified = identityVerification?.status === 'VERIFIED';
+    const willResetVerification = isVerified && (dobChanged || genderChanged || Boolean(formData.icOrPassport.trim()));
 
     const reentryNotice = storedType === 'MALAYSIAN_IC'
         ? 'Changing date of birth or gender requires re-entering the IC number.'
@@ -310,6 +316,24 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         <option value="FORMER">Former National Player</option>
                     </select>
                 </div>
+
+                {willResetVerification && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+                        Saving these changes will remove the identity verification.
+                    </div>
+                )}
+
+                {person && (
+                    <IdentityVerificationPanel
+                        personId={person.id}
+                        identityVerification={identityVerification}
+                        onVerificationChanged={(updated) => {
+                            setIdentityVerification(updated.identityVerification || null);
+                            onSuccess();
+                        }}
+                        disabled={loading}
+                    />
+                )}
 
                 <div className="flex justify-end gap-3 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={onClose}>

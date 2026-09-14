@@ -30,6 +30,7 @@ public class PersonController {
     private final OrganisationPersonRepository organisationPersonRepository;
     private final com.athleticaos.backend.audit.AuditLogger auditLogger;
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
+    private final com.athleticaos.backend.services.IdentityVerificationService identityVerificationService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
@@ -116,5 +117,22 @@ public class PersonController {
         counts.put("totalOfficials", officialRegistryRepository.count());
         counts.put("totalOrgPersons", organisationPersonRepository.count());
         return ResponseEntity.ok(counts);
+    }
+
+    @PostMapping("/{id}/identity-verification")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PersonResponseDTO> verifyIdentity(
+            @PathVariable UUID id,
+            @RequestBody @Valid com.athleticaos.backend.dtos.person.IdentityVerificationRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(identityVerificationService.verify(id, request, httpRequest));
+    }
+
+    @DeleteMapping("/{id}/identity-verification")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PersonResponseDTO> revokeIdentity(
+            @PathVariable UUID id,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(identityVerificationService.revoke(id, httpRequest));
     }
 }

@@ -41,6 +41,10 @@ UNION ALL SELECT 'type_null_or_noncanonical',    count(*) FROM p WHERE id_type N
 UNION ALL SELECT 'noncanonical_type_looks_like_ic', count(*) FROM p
           WHERE id_type NOT IN ('MALAYSIAN_IC', 'PASSPORT', 'OTHER') AND norm ~ '^[0-9]{12}$'
 UNION ALL SELECT 'all_gender_not_male_female',   count(*) FROM p WHERE g NOT IN ('MALE', 'FEMALE')
-UNION ALL SELECT 'all_gender_noncanonical_case', count(*) FROM p WHERE g IN ('MALE', 'FEMALE') AND g_raw <> g;
+UNION ALL SELECT 'all_gender_noncanonical_case', count(*) FROM p WHERE g IN ('MALE', 'FEMALE') AND g_raw <> g
+UNION ALL SELECT 'status_VERIFIED',   (SELECT count(*) FROM persons WHERE identification_verification_status = 'VERIFIED')
+UNION ALL SELECT 'status_UNVERIFIED', (SELECT count(*) FROM persons WHERE identification_verification_status = 'UNVERIFIED')
+UNION ALL SELECT 'status_LEGACY',     (SELECT count(*) FROM persons WHERE identification_verification_status = 'LEGACY')
+UNION ALL SELECT 'status_FLAGGED',    (SELECT count(*) FROM persons WHERE identification_verification_status = 'FLAGGED');
 
 ROLLBACK;

@@ -43,6 +43,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.athleticaos.backend.dtos.person.IdentityVerificationSummary;
+import com.athleticaos.backend.audit.AuditLogger;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import jakarta.servlet.http.HttpServletRequest;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -61,6 +68,8 @@ public class PersonServiceImpl implements PersonService {
     private final IdentificationHashService identificationHashService;
     private final OrganisationService organisationService;
     private final UserService userService;
+    private final AuditLogger auditLogger;
+    private final ObjectProvider<HttpServletRequest> requestProvider;
 
     @Override
     @Transactional(readOnly = true)
@@ -261,6 +270,17 @@ public class PersonServiceImpl implements PersonService {
             }
         }
 
+        boolean dobChanged = request.getDob() != null && !request.getDob().equals(person.getDob());
+        boolean genderChanged = canonicalGender != null && !canonicalGender.equals(person.getGender());
+        boolean nonBlankIdSubmitted = request.getIcOrPassport() != null && !request.getIcOrPassport().trim().isEmpty();
+
+        boolean verificationReset = false;
+        if ("VERIFIED".equals(person.getIdentificationVerificationStatus())
+                && (dobChanged || genderChanged || nonBlankIdSubmitted)) {
+            person.clearIdentityVerification("UNVERIFIED");
+            verificationReset = true;
+        }
+
         // Phase 2.1: null icOrPassport = leave existing unchanged.
         // Non-blank value triggers atomic normalisation, validation, dual duplicate check, and dual write.
         // identificationType alone cannot mutate the stored record without a replacement ID.
@@ -290,7 +310,7 @@ public class PersonServiceImpl implements PersonService {
                     if (hashResult != null) {
                         person.setIdentificationHash(hashResult.hash());
                         person.setIdentificationHashVersion(hashResult.version());
-                        person.setIdentificationVerificationStatus("UNVERIFIED");
+                        person.clearIdentityVerification("UNVERIFIED");
                     }
                 }
             }
@@ -364,6 +384,21 @@ public class PersonServiceImpl implements PersonService {
             }
         }
 
+        if (verificationReset) {
+            final Person personForAudit = person;
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+            }
+        }
+
         return getPersonById(id);
     }
 
@@ -416,6 +451,14 @@ public class PersonServiceImpl implements PersonService {
         // Phase 1: raw IC is NOT exposed in API responses.
         boolean identificationPresent = p.getIcOrPassport() != null && !p.getIcOrPassport().isBlank();
 
+        IdentityVerificationSummary identityVerification = p.getIdentificationVerificationStatus() != null
+                ? new IdentityVerificationSummary(
+                        p.getIdentificationVerificationStatus(),
+                        p.getIdentificationVerifiedAt(),
+                        p.getIdentificationVerifiedByName(),
+                        p.getIdentificationVerificationMethod())
+                : null;
+
         return PersonResponseDTO.builder()
                 .id(pid.toString())
                 .firstName(p.getFirstName())
@@ -438,6 +481,7 @@ public class PersonServiceImpl implements PersonService {
                 .isStaff(isStaff)
                 .isOfficial(isOfficial)
                 .isWorldRugbyCertified(isWR)
+                .identityVerification(identityVerification)
                 .build();
     }
 
