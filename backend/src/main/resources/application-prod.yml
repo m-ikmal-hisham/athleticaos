@@ -40,9 +40,3 @@ application:
     cookie:
       secure: true
       same-site: Lax
-
-athleticaos:
-  security:
-    identification-hmac-secret: ${ATHLETICAOS_IDENTIFICATION_HMAC_SECRET}
-    identification-hmac-version: ${ATHLETICAOS_IDENTIFICATION_HMAC_VERSION:1}
-    identification-hmac-required: true

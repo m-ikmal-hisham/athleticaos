@@ -9,7 +9,6 @@ import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
-import com.athleticaos.backend.services.IdentificationHashService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,8 +39,6 @@ class PlayerBatchHelperImplTest {
     private PlayerTeamRepository playerTeamRepository;
     @Mock
     private OrganisationPersonRepository organisationPersonRepository;
-    @Mock
-    private IdentificationHashService identificationHashService;
 
     @InjectMocks
     private PlayerBatchHelperImpl playerBatchHelper;
@@ -63,15 +60,13 @@ class PlayerBatchHelperImplTest {
     }
 
     @Test
-    @DisplayName("Batch row with lowercase 'malaysian_ic' stores canonical type 'MALAYSIAN_IC'")
-    void savePlayerInNewTransaction_nonCanonicalType_storesCanonicalType() {
+    @DisplayName("Batch row saves person with UNVERIFIED status and canonical gender")
+    void savePlayerInNewTransaction_savesPersonCorrectly() {
         PlayerRowDTO row = new PlayerRowDTO(
                 "Ali",
                 "Hassan",
-                "MALE",
+                "male",
                 LocalDate.of(2000, 1, 1),
-                "malaysian_ic",
-                "000101141235",
                 "MALAYSIAN",
                 "ali.hassan@example.com",
                 "Selangor",
@@ -96,6 +91,8 @@ class PlayerBatchHelperImplTest {
         verify(personRepository).save(personCaptor.capture());
         Person savedPerson = personCaptor.getValue();
 
-        assertThat(savedPerson.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
+        assertThat(savedPerson.getRecordVerificationStatus()).isEqualTo("UNVERIFIED");
+        assertThat(savedPerson.getGender()).isEqualTo("MALE");
+        assertThat(savedPerson.getEmail()).isEqualTo("ali.hassan@example.com");
     }
 }

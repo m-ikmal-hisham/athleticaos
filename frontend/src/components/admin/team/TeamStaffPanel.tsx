@@ -28,7 +28,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
     const [isAdding, setIsAdding] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
     const [newStaff, setNewStaff] = useState({ personId: '', staffRoleId: 0, isWorldRugbyCertified: false });
-    const [newPerson, setNewPerson] = useState({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', email: '', nationalPlayerStatus: 'NONE' });
+    const [newPerson, setNewPerson] = useState({ firstName: '', lastName: '', dob: '', gender: '', nationality: '', email: '', nationalPlayerStatus: 'NONE' });
     const [emailError, setEmailError] = useState('');
     const [duplicateData, setDuplicateData] = useState<{
         visibleMatches: PossibleDuplicateMatchItem[];
@@ -98,10 +98,6 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
             showToast.error('Missing organisation ID');
             return;
         }
-        if (newPerson.icOrPassport && !newPerson.identificationType) {
-            showToast.error('Please select an identification type');
-            return;
-        }
         if (!newPerson.email.trim()) {
             setEmailError('Email is required.');
             showToast.error('Email is required.');
@@ -122,7 +118,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
             setNewStaff(prev => ({ ...prev, personId: newlyCreatedPerson.id }));
 
             // Reset form and switch back to Add Staff view
-            setNewPerson({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', email: '', nationalPlayerStatus: 'NONE' });
+            setNewPerson({ firstName: '', lastName: '', dob: '', gender: '', nationality: '', email: '', nationalPlayerStatus: 'NONE' });
             setEmailError('');
             setIsRegistering(false);
 
@@ -318,33 +314,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                                         <p className="text-xs text-destructive mt-1">{emailError}</p>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-xs text-muted-foreground mb-1 block">ID Type</label>
-                                        <select 
-                                            aria-label="ID Type"
-                                            value={newPerson.identificationType} 
-                                            onChange={e => setNewPerson({...newPerson, identificationType: e.target.value})}
-                                            className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0"
-                                            required
-                                        >
-                                            <option value="" disabled>Select ID type</option>
-                                            <option value="MALAYSIAN_IC">Malaysian IC</option>
-                                            <option value="PASSPORT">Passport</option>
-                                            <option value="OTHER">Other</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-muted-foreground mb-1 block">IC or Passport</label>
-                                        <Input 
-                                            required 
-                                            value={newPerson.icOrPassport} 
-                                            onChange={e => setNewPerson({...newPerson, icOrPassport: e.target.value})}
-                                            className="h-8 text-sm"
-                                            placeholder="ID Number"
-                                        />
-                                    </div>
-                                </div>
+
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1 block">Gender</label>

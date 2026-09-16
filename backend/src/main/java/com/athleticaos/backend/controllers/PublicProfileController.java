@@ -509,8 +509,6 @@ public class PublicProfileController {
                     .id(player.id())
                     .firstName(player.firstName())
                     .lastName(player.lastName())
-                    .idType(player.identificationType())
-                    .idNumber("XXX") // Hide for public
                     .age(player.dob() != null ? Period.between(player.dob(), LocalDate.now()).getYears() : null)
                     .gender(player.gender())
                     .country(player.country())

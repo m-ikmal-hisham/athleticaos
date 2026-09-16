@@ -6,12 +6,8 @@ import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.enums.Gender;
-import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
-import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
 import com.athleticaos.backend.utils.EmailUtil;
-import com.athleticaos.backend.utils.IdentificationUtil;
-import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.entities.PlayerTeam;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.TournamentPlayer;
@@ -69,7 +65,6 @@ public class PlayerServiceImpl implements PlayerService {
     private final MatchEventRepository matchEventRepository;
     private final PlayerSuspensionRepository playerSuspensionRepository;
     private final com.athleticaos.backend.services.OrganisationService organisationService;
-    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
     private final PlayerBatchHelper playerBatchHelper;
     private final Validator validator;
     private final com.athleticaos.backend.audit.AuditLogger auditLogger;
@@ -173,14 +168,7 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
 
-        // Phase 2.1: single entry point for normalisation, mask/placeholder rejection, and type-specific validation
         String canonicalGender = Gender.from(request.gender()).name();
-        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                request.icOrPassport(), request.identificationType(), request.dob(), canonicalGender);
-
-        if (normalizedIc != null && !normalizedIc.isEmpty()) {
-            checkDuplicateIc(normalizedIc, null);
-        }
 
         // Check if email provided and normalize
         String normalizedEmail = EmailUtil.normalizeEmail(request.email());
@@ -208,19 +196,12 @@ public class PlayerServiceImpl implements PlayerService {
         }
 
         // Create Person record (PII)
-        IdentificationHashResult hashResult = IdentificationHashResult.compute(
-                identificationHashService, normalizedIc);
-
         Person person = Person.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .gender(canonicalGender)
                 .dob(request.dob())
-                .icOrPassport(normalizedIc)
-                .identificationType(normalizedIc != null ? IdentificationType.from(request.identificationType()).name() : null)
-                .identificationHash(hashResult != null ? hashResult.hash() : null)
-                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
-                .identificationVerificationStatus("UNVERIFIED")
+                .recordVerificationStatus("UNVERIFIED")
                 .nationality(request.nationality())
                 .email(normalizedEmail)
                 .phone(request.phone())
@@ -321,67 +302,30 @@ public class PlayerServiceImpl implements PlayerService {
 
         String canonicalGender = request.gender() != null ? Gender.from(request.gender()).name() : null;
 
-        // OBS-05B: If DOB or gender is changing for an applicable record,
-        // require the identification to be re-entered in the same request.
-        if (IdentificationUtil.requiresIdentityReentry(
-                person.getIdentificationType(), person.getDob(), person.getGender(),
-                request.dob(), canonicalGender)) {
-            if (request.icOrPassport() == null || request.icOrPassport().trim().isEmpty()) {
-                throw new IdentificationReentryRequiredException();
-            }
-        }
-
+        boolean nameChanged = (request.firstName() != null && !request.firstName().trim().equals(person.getFirstName()))
+                || (request.lastName() != null && !request.lastName().trim().equals(person.getLastName()));
         boolean dobChanged = request.dob() != null && !request.dob().equals(person.getDob());
         boolean genderChanged = canonicalGender != null && !canonicalGender.equals(person.getGender());
-        boolean nonBlankIdSubmitted = request.icOrPassport() != null && !request.icOrPassport().trim().isEmpty();
 
         boolean verificationReset = false;
-        if ("VERIFIED".equals(person.getIdentificationVerificationStatus())
-                && (dobChanged || genderChanged || nonBlankIdSubmitted)) {
-            person.clearIdentityVerification("UNVERIFIED");
+        if ("VERIFIED".equals(person.getRecordVerificationStatus())
+                && (nameChanged || dobChanged || genderChanged)) {
+            person.clearRecordVerification("UNVERIFIED");
             verificationReset = true;
         }
 
         // Update Person (PII) fields
         if (request.firstName() != null) {
-            person.setFirstName(request.firstName());
+            person.setFirstName(request.firstName().trim());
         }
         if (request.lastName() != null) {
-            person.setLastName(request.lastName());
+            person.setLastName(request.lastName().trim());
         }
         if (canonicalGender != null) {
             person.setGender(canonicalGender);
         }
         if (request.dob() != null) {
             person.setDob(request.dob());
-        }
-        // Phase 2.1: null icOrPassport means "leave existing value unchanged".
-        // Non-blank value triggers atomic normalisation, validation, and duplicate check.
-        // identificationType alone cannot mutate the stored record without a replacement ID.
-        if (request.icOrPassport() != null) {
-            if (request.identificationType() == null || request.identificationType().trim().isEmpty()) {
-                throw new IllegalArgumentException("identificationType is required when updating identification value");
-            }
-            String effectiveGender = canonicalGender != null ? canonicalGender : person.getGender();
-            String normalizedIcUpdate = IdentificationUtil.validateAndNormalizeNewSubmission(
-                    request.icOrPassport(), request.identificationType(),
-                    request.dob() != null ? request.dob() : person.getDob(),
-                    effectiveGender);
-            if (normalizedIcUpdate != null) {
-                checkDuplicateIc(normalizedIcUpdate, person.getId());
-                person.setIcOrPassport(normalizedIcUpdate);
-                person.setIdentificationType(IdentificationType.from(request.identificationType()).name());
-                if (identificationHashService.isConfigured()) {
-                    IdentificationHashResult hashResult = IdentificationHashResult.compute(
-                            identificationHashService, normalizedIcUpdate);
-                    if (hashResult != null) {
-                        person.setIdentificationHash(hashResult.hash());
-                        person.setIdentificationHashVersion(hashResult.version());
-                        person.clearIdentityVerification("UNVERIFIED");
-                    }
-                }
-            }
-            // null return from validateAndNormalizeNewSubmission = raw was empty/whitespace → no-op.
         }
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
@@ -502,59 +446,15 @@ public class PlayerServiceImpl implements PlayerService {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+                        auditLogger.logRecordVerificationReset(personForAudit, currentRequest);
                     }
                 });
             } else {
-                auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+                auditLogger.logRecordVerificationReset(personForAudit, currentRequest);
             }
         }
 
         return mapToPlayerResponse(player);
-    }
-
-    // ... (keeping other methods unchanged, skipping to checkDuplicateIc
-    // replacement)
-
-    /**
-     * Duplicate IC/Passport check using exact-match on the normalised value.
-     * Uses {@link IdentificationUtil#normalize} before calling this method.
-     *
-     * <p>Phase 1: raw IC is NOT logged to avoid PII in log files.
-     *
-     * @param ic              the normalised (strict alphanumeric) input string
-     * @param excludePersonId the Person ID to exclude from the check (for updates); null for new records
-     */
-    private void checkDuplicateIc(String ic, UUID excludePersonId) {
-        // Phase 1 & 2: log only the excluded person ID, never the raw IC value.
-        log.debug("Duplicate identification check (excluding person: {})", excludePersonId);
-        if (ic == null || ic.isEmpty())
-            return;
-
-        if (identificationHashService.isConfigured()) {
-            String hash = identificationHashService.computeHash(ic);
-            if (hash != null) {
-                boolean hashExists = (excludePersonId == null)
-                        ? personRepository.existsByIdentificationHash(hash)
-                        : personRepository.existsByIdentificationHashAndIdNot(hash, excludePersonId);
-                if (hashExists) {
-                    log.warn("Duplicate identification hash detected for person (excluding: {})", excludePersonId);
-                    throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC number already exists");
-                }
-            }
-        }
-
-        boolean exists;
-        if (excludePersonId == null) {
-            exists = personRepository.existsByIcOrPassport(ic);
-        } else {
-            exists = personRepository.existsByIcOrPassportAndIdNot(ic, excludePersonId);
-        }
-
-        if (exists) {
-            log.warn("Duplicate identification value detected for person (excluding: {})", excludePersonId);
-            throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC number already exists");
-        }
     }
 
     @Override
@@ -740,16 +640,12 @@ public class PlayerServiceImpl implements PlayerService {
                     .collect(java.util.stream.Collectors.toList());
         }
 
-        // Phase 1: raw IC/passport is NOT included in API responses.
-        boolean identificationPresent = person.getIcOrPassport() != null
-                && !person.getIcOrPassport().isBlank();
-
-        com.athleticaos.backend.dtos.person.IdentityVerificationSummary identityVerification = person.getIdentificationVerificationStatus() != null
-                ? new com.athleticaos.backend.dtos.person.IdentityVerificationSummary(
-                        person.getIdentificationVerificationStatus(),
-                        person.getIdentificationVerifiedAt(),
-                        person.getIdentificationVerifiedByName(),
-                        person.getIdentificationVerificationMethod())
+        com.athleticaos.backend.dtos.person.RecordVerificationSummary recordVerification = person.getRecordVerificationStatus() != null
+                ? new com.athleticaos.backend.dtos.person.RecordVerificationSummary(
+                        person.getRecordVerificationStatus(),
+                        person.getRecordVerifiedAt(),
+                        person.getRecordVerifiedByName(),
+                        person.getRecordVerificationMethod())
                 : null;
 
         return PlayerResponse.builder()
@@ -761,10 +657,6 @@ public class PlayerServiceImpl implements PlayerService {
                 .lastName(person.getLastName())
                 .gender(person.getGender())
                 .dob(person.getDob())
-                // Identification — presence indicator only, never raw value
-                .identificationPresent(identificationPresent)
-                .identificationType(person.getIdentificationType())
-                .identificationDisplay(identificationPresent ? "PRESENT" : null)
                 .nationality(person.getNationality())
                 .email(person.getEmail())
                 .phone(person.getPhone())
@@ -787,7 +679,7 @@ public class PlayerServiceImpl implements PlayerService {
                 .organisationName(organisationName)
                 .teamNames(teamNames)
                 .createdAt(player.getCreatedAt())
-                .identityVerification(identityVerification)
+                .recordVerification(recordVerification)
                 .build();
     }
 
@@ -819,7 +711,6 @@ public class PlayerServiceImpl implements PlayerService {
             }
 
             String canonicalGender = null;
-            // 2. Validate identification and pre-check database constraints if no validation errors yet
             if (rowErrors.isEmpty()) {
                 try {
                     canonicalGender = Gender.from(row.gender()).name();
@@ -827,31 +718,7 @@ public class PlayerServiceImpl implements PlayerService {
                     rowErrors.add("Gender must be MALE or FEMALE.");
                 }
 
-                String normalizedIc = null;
                 if (rowErrors.isEmpty()) {
-                    try {
-                        normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                                row.icOrPassport(), row.identificationType(), row.dob(), canonicalGender);
-                    } catch (IllegalArgumentException e) {
-                        rowErrors.add(e.getMessage());
-                        normalizedIc = null;
-                    }
-                }
-
-                // Only perform duplicate lookup when format validation succeeds
-                if (rowErrors.isEmpty()) {
-                    if (normalizedIc != null) {
-                        if (identificationHashService.isConfigured()) {
-                            String hash = identificationHashService.computeHash(normalizedIc);
-                            if (hash != null && personRepository.existsByIdentificationHash(hash)) {
-                                rowErrors.add("Player with this IC or Passport already exists");
-                            }
-                        }
-                        if (rowErrors.isEmpty() && personRepository.existsByIcOrPassport(normalizedIc)) {
-                            rowErrors.add("Player with this IC or Passport already exists");
-                        }
-                    }
-
                     if (row.email() == null || row.email().trim().isEmpty()) {
                         rowErrors.add("Email is required.");
                     } else {

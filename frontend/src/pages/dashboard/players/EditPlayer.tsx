@@ -15,8 +15,8 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
-import { IdentityVerificationPanel } from '@/components/admin/persons/IdentityVerificationPanel';
-import { IdentityVerificationSummary } from '@/api/persons.api';
+import { RecordVerificationPanel } from '@/components/admin/persons/RecordVerificationPanel';
+import { RecordVerificationSummary } from '@/api/persons.api';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
 interface Team {
@@ -45,18 +45,15 @@ export const EditPlayer = () => {
     const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender | "">("");
     const [dob, setDob] = useState("");
-    const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
-    const [replacementIdentificationType, setReplacementIdentificationType] = useState("");
-    const [identificationValue, setIdentificationValue] = useState("");
-    const [identificationPresent, setIdentificationPresent] = useState(false);
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
     const [emailError, setEmailError] = useState("");
-    const [duplicateIcError, setDuplicateIcError] = useState("");
     const [personId, setPersonId] = useState("");
-    const [identityVerification, setIdentityVerification] = useState<IdentityVerificationSummary | null>(null);
+    const [recordVerification, setRecordVerification] = useState<RecordVerificationSummary | null>(null);
 
-    // OBS-05B: Track loaded DOB and gender for reentry detection
+    // Track loaded identity fields for verification reset detection
+    const loadedFirstName = useRef("");
+    const loadedLastName = useRef("");
     const loadedDob = useRef("");
     const loadedGender = useRef("");
 
@@ -115,16 +112,14 @@ export const EditPlayer = () => {
                 const initialGender = (rawGender === Gender.MALE || rawGender === Gender.FEMALE) ? (rawGender as Gender) : "";
                 setGender(initialGender);
                 setDob(player.dob || "");
+                loadedFirstName.current = player.firstName || "";
+                loadedLastName.current = player.lastName || "";
                 loadedDob.current = player.dob || "";
                 loadedGender.current = rawGender;
-                setExistingIdentificationType(player.identificationType || null);
-                setReplacementIdentificationType("");
-                setIdentificationPresent(Boolean(player.identificationPresent));
-                setIdentificationValue(""); // Phase 1: do not preload raw identification
                 setNationality(player.nationality || "");
                 setPhone(player.phone || "");
                 setPersonId(player.personId || "");
-                setIdentityVerification(player.identityVerification || null);
+                setRecordVerification(player.recordVerification || null);
 
                 setAddressLine1(player.addressLine1 || player.address || "");
                 setAddressLine2(player.addressLine2 || "");
@@ -158,42 +153,17 @@ export const EditPlayer = () => {
         ? teams.filter(t => t.organisationId === selectedOrganisationId)
         : teams;
 
-    // OBS-05B: Determine if identification reentry is required due to DOB/gender change
-    const storedType = (existingIdentificationType || '').trim().toUpperCase();
-    const exempt = storedType === 'PASSPORT' || storedType === 'OTHER';
-    const genderChanged = Boolean(gender) && String(gender).trim().toUpperCase() !== loadedGender.current;
+    const isVerified = recordVerification?.status === 'VERIFIED';
+    const nameChanged = (firstName.trim() !== loadedFirstName.current) || (lastName.trim() !== loadedLastName.current);
     const dobChanged = Boolean(dob) && dob !== loadedDob.current;
-    const isReentryRequired = !exempt && (dobChanged || genderChanged);
-
-    const isVerified = identityVerification?.status === 'VERIFIED';
-    const willResetVerification = isVerified && (dobChanged || genderChanged || Boolean(identificationValue.trim()));
-
-    const reentryNotice = storedType === 'MALAYSIAN_IC'
-        ? 'Changing date of birth or gender requires re-entering the IC number.'
-        : "This record's identification type is missing or outdated. Changing date of birth or gender requires re-entering the identification number and selecting its type.";
-
-    // Effective type: auto-preselect MALAYSIAN_IC only when storedType was MALAYSIAN_IC
-    const effectiveIdType = replacementIdentificationType || (isReentryRequired && storedType === 'MALAYSIAN_IC' ? 'MALAYSIAN_IC' : '');
+    const genderChanged = Boolean(gender) && String(gender).trim().toUpperCase() !== loadedGender.current;
+    const willResetVerification = isVerified && (nameChanged || dobChanged || genderChanged);
 
     const submitPlayer = async (confirmPossibleDuplicate = false) => {
         if (!id) return;
 
-        const hasReplacementId = Boolean(identificationValue.trim());
-
-        // OBS-05B: Block submit if reentry is required but ID is not provided
-        if (isReentryRequired && !hasReplacementId) {
-            setDuplicateIcError(reentryNotice);
-            showToast.error(reentryNotice);
-            return;
-        }
-
         if (!gender) {
             showToast.error("Please select a gender");
-            return;
-        }
-
-        if (hasReplacementId && !effectiveIdType) {
-            showToast.error("Please select an identification type for the replacement ID");
             return;
         }
 
@@ -211,8 +181,6 @@ export const EditPlayer = () => {
             email: email.trim(),
             gender: String(gender),
             dob,
-            identificationType: hasReplacementId ? effectiveIdType : undefined,
-            icOrPassport: hasReplacementId ? identificationValue.trim() : undefined,
             nationality,
             phone: phone || undefined,
             addressLine1,
@@ -249,12 +217,6 @@ export const EditPlayer = () => {
             } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
                 setEmailError(errData.message || 'This person has no email address. Add one to save changes.');
                 showToast.error(errData.message || 'This person has no email address. Add one to save changes.');
-            } else if (errData?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
-                setDuplicateIcError(errData.message || reentryNotice);
-                showToast.error('Identification re-entry required');
-            } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
-                setDuplicateIcError("This IC/Passport number is already registered.");
-                showToast.error("Duplicate IC found");
             } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
                 setEmailError(error.response?.data?.message || 'A person with this email already exists.');
                 showToast.error(error.response?.data?.message || 'A person with this email already exists.');
@@ -422,72 +384,6 @@ export const EditPlayer = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-muted-foreground">
-                                        Identification Type {(identificationValue.trim() || isReentryRequired) ? "*" : ""}
-                                    </label>
-                                    {existingIdentificationType && (
-                                        <span className="text-[11px] font-medium text-muted-foreground">
-                                            Current: <span className="font-semibold text-foreground">{existingIdentificationType}</span>
-                                        </span>
-                                    )}
-                                </div>
-                                <SearchableSelect
-                                    value={effectiveIdType}
-                                    onChange={(value) => setReplacementIdentificationType(value as string)}
-                                    options={[
-                                        { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
-                                        { value: 'PASSPORT', label: 'Passport' },
-                                        { value: 'OTHER', label: 'Other' }
-                                    ]}
-                                    placeholder={identificationValue.trim() || isReentryRequired ? "Select replacement ID type" : "Only required if replacing ID"}
-                                    disabled={!identificationValue.trim() && !isReentryRequired}
-                                />
-                                <p className="text-xs text-muted">
-                                    {identificationValue.trim()
-                                        ? "Select the canonical type for the new identification."
-                                        : "Type is locked unless a replacement ID is entered."}
-                                </p>
-                            </div>
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-muted-foreground">
-                                        Identification / Passport Number {isReentryRequired ? "*" : ""}
-                                    </label>
-                                    {identificationPresent && (
-                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                            ID on file: PRESENT
-                                        </span>
-                                    )}
-                                </div>
-                                <input
-                                    type="text"
-                                    value={identificationValue}
-                                    onChange={(e) => {
-                                        setIdentificationValue(e.target.value);
-                                        if (duplicateIcError) setDuplicateIcError("");
-                                    }}
-                                    required={isReentryRequired}
-                                    className={`input-base w-full ${duplicateIcError ? 'ring-2 ring-amber-500' : ''}`}
-                                    placeholder={isReentryRequired ? "IC re-entry required" : (identificationPresent ? "Leave blank to keep existing ID on file" : "Enter ID / Passport Number")}
-                                    aria-label="Identification Value"
-                                />
-                                {isReentryRequired && (
-                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                        {reentryNotice}
-                                    </p>
-                                )}
-                                <p className="text-xs text-muted">
-                                    {identificationPresent ? "Leave blank to keep the existing identification on file unchanged." : "Enter a new identification number."}
-                                </p>
-                                {duplicateIcError && (
-                                    <p className="text-xs text-red-500 mt-1">{duplicateIcError}</p>
-                                )}
-                            </div>
-                        </div>
-
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted-foreground">Nationality *</label>
                             <input
@@ -502,7 +398,7 @@ export const EditPlayer = () => {
 
                         {willResetVerification && (
                             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
-                                Saving these changes will remove the identity verification.
+                                Saving changes to name, date of birth, or gender will reset the record verification.
                             </div>
                         )}
                     </div>
@@ -705,11 +601,11 @@ export const EditPlayer = () => {
 
                 {personId && (
                     <div className="mt-8 pt-6 border-t border-white/10">
-                        <IdentityVerificationPanel
+                        <RecordVerificationPanel
                             personId={personId}
-                            identityVerification={identityVerification}
+                            recordVerification={recordVerification}
                             onVerificationChanged={(updated) => {
-                                setIdentityVerification(updated.identityVerification || null);
+                                setRecordVerification(updated.recordVerification || null);
                             }}
                             disabled={saving}
                         />

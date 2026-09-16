@@ -3,9 +3,9 @@ package com.athleticaos.backend.enums;
 import java.util.Locale;
 
 /**
- * Method of identity verification used by an administrator.
+ * Method of record verification used by an administrator.
  */
-public enum IdentityVerificationMethod {
+public enum RecordVerificationMethod {
     PRE_REGISTRATION_RECORD,
     DOCUMENT_SIGHTED;
 
@@ -14,10 +14,10 @@ public enum IdentityVerificationMethod {
      * Fixed error message, never echoing the input string.
      *
      * @param raw the raw method string
-     * @return the canonical IdentityVerificationMethod
+     * @return the canonical RecordVerificationMethod
      * @throws IllegalArgumentException if raw is null, blank, or unrecognized
      */
-    public static IdentityVerificationMethod from(String raw) {
+    public static RecordVerificationMethod from(String raw) {
         if (raw == null || raw.trim().isEmpty()) {
             throw new IllegalArgumentException("Verification method is required.");
         }

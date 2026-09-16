@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
@@ -17,7 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "persons")
-@lombok.ToString(exclude = {"icOrPassport", "identificationValue", "identificationHash"})
+@ToString
 public class Person {
 
     @Id
@@ -40,43 +41,28 @@ public class Person {
     @Column(nullable = false)
     private LocalDate dob;
 
-    @Column(name = "ic_or_passport", nullable = false, unique = true)
-    private String icOrPassport; // Encrypted
-
-    @Column(name = "identification_type")
-    private String identificationType; // IC, PASSPORT, OTHER
-
-    @Column(name = "identification_value")
-    private String identificationValue;
-
-    @Column(name = "identification_hash", length = 64)
-    private String identificationHash;
-
-    @Column(name = "identification_hash_version")
-    private Integer identificationHashVersion;
-
-    @Column(name = "identification_verification_status", length = 32, nullable = false)
+    @Column(name = "record_verification_status", length = 32, nullable = false)
     @Builder.Default
-    private String identificationVerificationStatus = "UNVERIFIED";
+    private String recordVerificationStatus = "UNVERIFIED";
 
-    @Column(name = "identification_verified_at")
-    private LocalDateTime identificationVerifiedAt;
+    @Column(name = "record_verified_at")
+    private LocalDateTime recordVerifiedAt;
 
-    @Column(name = "identification_verified_by")
-    private UUID identificationVerifiedBy;
+    @Column(name = "record_verified_by")
+    private UUID recordVerifiedBy;
 
-    @Column(name = "identification_verified_by_name")
-    private String identificationVerifiedByName;
+    @Column(name = "record_verified_by_name")
+    private String recordVerifiedByName;
 
-    @Column(name = "identification_verification_method", length = 32)
-    private String identificationVerificationMethod;
+    @Column(name = "record_verification_method", length = 32)
+    private String recordVerificationMethod;
 
-    public void clearIdentityVerification(String newStatus) {
-        this.identificationVerificationStatus = newStatus;
-        this.identificationVerifiedAt = null;
-        this.identificationVerifiedBy = null;
-        this.identificationVerifiedByName = null;
-        this.identificationVerificationMethod = null;
+    public void clearRecordVerification(String newStatus) {
+        this.recordVerificationStatus = newStatus;
+        this.recordVerifiedAt = null;
+        this.recordVerifiedBy = null;
+        this.recordVerifiedByName = null;
+        this.recordVerificationMethod = null;
     }
 
     @Column(nullable = false)

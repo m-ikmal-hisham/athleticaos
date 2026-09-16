@@ -64,12 +64,13 @@ class V158MigrationTest {
             insertPerson(conn, PERSON_ID_FEMALE, "FEMALE");
         }
 
-        // 3. Migrate to latest (applies V158)
-        Flyway flywayLatest = Flyway.configure()
+        // 3. Migrate up to V158
+        Flyway flyway158 = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("158")
                 .load();
-        flywayLatest.migrate();
+        flyway158.migrate();
     }
 
     private static void insertPerson(Connection conn, UUID id, String gender) throws SQLException {

@@ -73,12 +73,13 @@ class V158PreflightMigrationTest {
     @Test
     @DisplayName("Preflight check fails if a person row has gender other than MALE or FEMALE before V158")
     void v158Migration_failsWithPreflightMessage_whenInvalidGenderExists() {
-        Flyway flywayLatest = Flyway.configure()
+        Flyway flyway158 = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("158")
                 .load();
 
-        assertThatThrownBy(flywayLatest::migrate)
+        assertThatThrownBy(flyway158::migrate)
                 .isInstanceOf(FlywayException.class)
                 .hasMessageContaining("V158 preflight failed");
     }

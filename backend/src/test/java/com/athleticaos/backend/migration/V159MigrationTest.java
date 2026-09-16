@@ -71,12 +71,13 @@ class V159MigrationTest {
             insertPersonWithCreatedAt(conn, PERSON_ID_4, Timestamp.valueOf("2024-01-03 10:00:00"));
         }
 
-        // 3. Migrate to latest (applies V159)
-        Flyway flywayLatest = Flyway.configure()
+        // 3. Migrate up to V159
+        Flyway flyway159 = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("159")
                 .load();
-        flywayLatest.migrate();
+        flyway159.migrate();
     }
 
     private static void insertPersonWithCreatedAt(Connection conn, UUID id, Timestamp createdAt) throws SQLException {

@@ -1,7 +1,7 @@
 package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.audit.AuditLogger;
-import com.athleticaos.backend.dtos.person.IdentityVerificationRequest;
+import com.athleticaos.backend.dtos.person.RecordVerificationRequest;
 import com.athleticaos.backend.dtos.person.PersonResponseDTO;
 import com.athleticaos.backend.repositories.OfficialRegistryRepository;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
@@ -11,7 +11,7 @@ import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.TeamStaffRepository;
 import com.athleticaos.backend.security.JwtAuthenticationFilter;
 import com.athleticaos.backend.security.SecurityConfig;
-import com.athleticaos.backend.services.IdentityVerificationService;
+import com.athleticaos.backend.services.RecordVerificationService;
 import com.athleticaos.backend.services.PersonService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ public class PersonControllerSecurityTest {
     @MockBean
     private OrganisationRepository organisationRepository;
     @MockBean
-    private IdentityVerificationService identityVerificationService;
+    private RecordVerificationService recordVerificationService;
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean
@@ -82,11 +82,11 @@ public class PersonControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "ORG_ADMIN")
-    void nonSuperAdminCannotVerifyIdentity() throws Exception {
-        IdentityVerificationRequest request = new IdentityVerificationRequest(
-                "000101141235", "PRE_REGISTRATION_RECORD", true);
+    void nonSuperAdminCannotVerifyRecord() throws Exception {
+        RecordVerificationRequest request = new RecordVerificationRequest(
+                "PRE_REGISTRATION_RECORD", true);
 
-        mockMvc.perform(post("/api/v1/persons/{id}/identity-verification", personId)
+        mockMvc.perform(post("/api/v1/persons/{id}/record-verification", personId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -94,14 +94,14 @@ public class PersonControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "SUPER_ADMIN")
-    void superAdminCanVerifyIdentity() throws Exception {
-        IdentityVerificationRequest request = new IdentityVerificationRequest(
-                "000101141235", "PRE_REGISTRATION_RECORD", true);
+    void superAdminCanVerifyRecord() throws Exception {
+        RecordVerificationRequest request = new RecordVerificationRequest(
+                "PRE_REGISTRATION_RECORD", true);
 
-        when(identityVerificationService.verify(eq(personId), any(), any()))
+        when(recordVerificationService.verify(eq(personId), any(), any()))
                 .thenReturn(PersonResponseDTO.builder().id(personId.toString()).build());
 
-        mockMvc.perform(post("/api/v1/persons/{id}/identity-verification", personId)
+        mockMvc.perform(post("/api/v1/persons/{id}/record-verification", personId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -109,18 +109,18 @@ public class PersonControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "ORG_ADMIN")
-    void nonSuperAdminCannotRevokeIdentity() throws Exception {
-        mockMvc.perform(delete("/api/v1/persons/{id}/identity-verification", personId))
+    void nonSuperAdminCannotRevokeRecordVerification() throws Exception {
+        mockMvc.perform(delete("/api/v1/persons/{id}/record-verification", personId))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "SUPER_ADMIN")
-    void superAdminCanRevokeIdentity() throws Exception {
-        when(identityVerificationService.revoke(eq(personId), any()))
+    void superAdminCanRevokeRecordVerification() throws Exception {
+        when(recordVerificationService.revoke(eq(personId), any()))
                 .thenReturn(PersonResponseDTO.builder().id(personId.toString()).build());
 
-        mockMvc.perform(delete("/api/v1/persons/{id}/identity-verification", personId))
+        mockMvc.perform(delete("/api/v1/persons/{id}/record-verification", personId))
                 .andExpect(status().isOk());
     }
 

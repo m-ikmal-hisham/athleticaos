@@ -73,12 +73,13 @@ class V156PreflightMigrationTest {
     @Test
     @DisplayName("Preflight check fails if a row already has VERIFIED status before V156")
     void v156Migration_failsWithPreflightMessage_whenVerifiedRowExists() {
-        Flyway flywayLatest = Flyway.configure()
+        Flyway flyway156 = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("156")
                 .load();
 
-        assertThatThrownBy(flywayLatest::migrate)
+        assertThatThrownBy(flyway156::migrate)
                 .isInstanceOf(FlywayException.class)
                 .hasMessageContaining("V156 preflight failed:")
                 .hasMessageContaining("already have status VERIFIED without attestation data");

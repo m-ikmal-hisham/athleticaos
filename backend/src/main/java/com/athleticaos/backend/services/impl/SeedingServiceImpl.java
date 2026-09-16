@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
-import com.athleticaos.backend.services.IdentificationHashResult;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +24,6 @@ public class SeedingServiceImpl implements SeedingService {
     private final PlayerRepository playerRepository;
     private final PersonRepository personRepository;
     private final PlayerTeamRepository playerTeamRepository;
-    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
     // Removed SlugGenerator injection
 
     private static final String[] STATES = {
@@ -136,17 +134,8 @@ public class SeedingServiceImpl implements SeedingService {
         String firstName = faker.name().firstName();
         String lastName = faker.name().lastName();
 
-        // Synthetic Malaysian IC for seeding: YYMMDD + 2-digit state code + 3-digit sequence + 1 last digit (odd for MALE)
         java.time.LocalDate seedDob = LocalDate.of(1990 + faker.random().nextInt(15), 1 + faker.random().nextInt(11),
                 1 + faker.random().nextInt(27));
-        String dobPart = seedDob.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
-        String statePart = String.format("%02d", 10 + faker.random().nextInt(14)); // 10-23 for Malaysian state codes
-        int seq3 = faker.random().nextInt(1000);
-        int lastDigit = (faker.random().nextInt(5) * 2) + 1; // 1,3,5,7,9 — odd for MALE
-        String syntheticIc = dobPart + statePart + String.format("%03d", seq3) + lastDigit;
-
-        IdentificationHashResult hashResult = com.athleticaos.backend.services.IdentificationHashResult.compute(
-                identificationHashService, syntheticIc);
 
         Person person = Person.builder()
                 .firstName(firstName)
@@ -155,11 +144,7 @@ public class SeedingServiceImpl implements SeedingService {
                 .gender("MALE")
                 .dob(seedDob)
                 .nationality("Malaysia")
-                .icOrPassport(syntheticIc)
-                .identificationType("MALAYSIAN_IC")
-                .identificationHash(hashResult != null ? hashResult.hash() : null)
-                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
-                .identificationVerificationStatus("UNVERIFIED")
+                .recordVerificationStatus("UNVERIFIED")
                 .state(org.getState())
                 .build();
         person = personRepository.save(person);

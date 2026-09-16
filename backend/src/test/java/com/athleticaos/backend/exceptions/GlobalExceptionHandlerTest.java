@@ -76,16 +76,6 @@ public class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void dataIntegrityViolation_uniqueViolationIc_returns409WithDuplicateIc() throws Exception {
-        mockMvc.perform(get("/test-errors/unique-violation-ic"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_IC"))
-                .andExpect(jsonPath("$.message").value("Person with this IC/Passport already exists"))
-                .andExpect(jsonPath("$.message").value(not(containsString("uc_persons_identification_hash"))));
-    }
-
-    @Test
     void dataIntegrityViolation_uniqueViolationOther_returns409WithGenericMessage() throws Exception {
         mockMvc.perform(get("/test-errors/unique-violation-other"))
                 .andExpect(status().isConflict())
@@ -100,7 +90,7 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("Required data is missing or invalid."))
-                .andExpect(jsonPath("$.message").value(not(containsString("ic_or_passport"))));
+                .andExpect(jsonPath("$.message").value(not(containsString("first_name"))));
     }
 
     @Test
@@ -124,42 +114,12 @@ public class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void identificationReentryRequired_returns400WithCorrectErrorCode() throws Exception {
-        mockMvc.perform(get("/test-errors/identification-reentry"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.errorCode").value("IDENTIFICATION_REENTRY_REQUIRED"))
-                .andExpect(jsonPath("$.message").value(
-                        "Changing date of birth or gender requires re-entering the identification number."))
-                // Must not contain any digit in the message
-                .andExpect(jsonPath("$.message").value(not(org.hamcrest.Matchers.matchesRegex(".*\\d.*"))));
-    }
-
-    @Test
-    void identityVerificationMismatch_returns400WithErrorCode() throws Exception {
-        mockMvc.perform(get("/test-errors/identity-mismatch"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.errorCode").value("IDENTITY_VERIFICATION_MISMATCH"))
-                .andExpect(jsonPath("$.message").value("The identification number entered does not match the record on file."));
-    }
-
-    @Test
-    void identityVerificationNotAllowed_returns409WithErrorCode() throws Exception {
-        mockMvc.perform(get("/test-errors/identity-not-allowed"))
+    void recordVerificationNotAllowed_returns409WithErrorCode() throws Exception {
+        mockMvc.perform(get("/test-errors/record-not-allowed"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.errorCode").value("IDENTITY_VERIFICATION_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.errorCode").value("RECORD_VERIFICATION_NOT_ALLOWED"))
                 .andExpect(jsonPath("$.message").value("This record is already verified."));
-    }
-
-    @Test
-    void identityVerificationLocked_returns429WithErrorCode() throws Exception {
-        mockMvc.perform(get("/test-errors/identity-locked"))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.status").value(429))
-                .andExpect(jsonPath("$.errorCode").value("IDENTITY_VERIFICATION_LOCKED"))
-                .andExpect(jsonPath("$.message").value("Too many verification attempts for this record. Try again in 15 minutes."));
     }
 
     @Test
@@ -234,13 +194,6 @@ public class GlobalExceptionHandlerTest {
             return "ok: " + items.size();
         }
 
-        @GetMapping("/unique-violation-ic")
-        public String testUniqueViolationIc() {
-            SQLException sqlEx = new SQLException("duplicate key value violates unique constraint \"uc_persons_identification_hash\"", "23505");
-            ConstraintViolationException cve = new ConstraintViolationException("Unique violation", sqlEx, "uc_persons_identification_hash");
-            throw new DataIntegrityViolationException("Data integrity violation", cve);
-        }
-
         @GetMapping("/unique-violation-other")
         public String testUniqueViolationOther() {
             SQLException sqlEx = new SQLException("duplicate key value violates unique constraint \"uk_tournaments_name\"", "23505");
@@ -250,15 +203,15 @@ public class GlobalExceptionHandlerTest {
 
         @GetMapping("/not-null-violation")
         public String testNotNullViolation() {
-            SQLException sqlEx = new SQLException("null value in column \"ic_or_passport\" violates not-null constraint", "23502");
-            ConstraintViolationException cve = new ConstraintViolationException("Not null violation", sqlEx, "persons_ic_or_passport_not_null");
+            SQLException sqlEx = new SQLException("null value in column \"first_name\" violates not-null constraint", "23502");
+            ConstraintViolationException cve = new ConstraintViolationException("Not null violation", sqlEx, "persons_first_name_not_null");
             throw new DataIntegrityViolationException("Data integrity violation", cve);
         }
 
         @GetMapping("/check-violation")
         public String testCheckViolation() {
-            SQLException sqlEx = new SQLException("new row for relation \"persons\" violates check constraint \"chk_persons_identification_hash_format\"", "23514");
-            ConstraintViolationException cve = new ConstraintViolationException("Check constraint violation", sqlEx, "chk_persons_identification_hash_format");
+            SQLException sqlEx = new SQLException("new row for relation \"persons\" violates check constraint \"chk_persons_gender\"", "23514");
+            ConstraintViolationException cve = new ConstraintViolationException("Check constraint violation", sqlEx, "chk_persons_gender");
             throw new DataIntegrityViolationException("Data integrity violation", cve);
         }
 
@@ -267,24 +220,9 @@ public class GlobalExceptionHandlerTest {
             throw new RuntimeException("Sensitive internal database connection detail or secret message");
         }
 
-        @GetMapping("/identification-reentry")
-        public String testIdentificationReentry() {
-            throw new IdentificationReentryRequiredException();
-        }
-
-        @GetMapping("/identity-mismatch")
-        public String testIdentityMismatch() {
-            throw new IdentityVerificationMismatchException();
-        }
-
-        @GetMapping("/identity-not-allowed")
-        public String testIdentityNotAllowed() {
-            throw new IdentityVerificationNotAllowedException("This record is already verified.");
-        }
-
-        @GetMapping("/identity-locked")
-        public String testIdentityLocked() {
-            throw new IdentityVerificationLockedException();
+        @GetMapping("/record-not-allowed")
+        public String testRecordNotAllowed() {
+            throw new RecordVerificationNotAllowedException("This record is already verified.");
         }
 
         @GetMapping("/duplicate-email")

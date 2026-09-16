@@ -52,6 +52,7 @@ class V153MigrationTest {
         Flyway flyway = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("153")
                 .load();
         flyway.migrate();
     }

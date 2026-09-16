@@ -114,17 +114,10 @@ public class GlobalExceptionHandler {
 
         if ("23505".equals(sqlState)) {
             status = HttpStatus.CONFLICT;
-            boolean isIdentificationConstraint = constraintName != null
-                    && (constraintName.contains("identification_hash")
-                            || constraintName.contains("ic_or_passport")
-                            || constraintName.contains("identification"));
             boolean isEmailConstraint = constraintName != null
                     && constraintName.toLowerCase(Locale.ROOT).contains("email");
 
-            if (isIdentificationConstraint) {
-                message = "Person with this IC/Passport already exists";
-                errorCode = "DUPLICATE_IC";
-            } else if (isEmailConstraint) {
+            if (isEmailConstraint) {
                 message = "A person with this email already exists.";
                 errorCode = "DUPLICATE_EMAIL";
             } else {
@@ -171,37 +164,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler(IdentificationReentryRequiredException.class)
-    public ResponseEntity<ErrorResponse> handleIdentificationReentryRequired(
-            IdentificationReentryRequiredException ex, HttpServletRequest request) {
-        return buildResponseDetailed(HttpStatus.BAD_REQUEST, ex.getMessage(),
-                "IDENTIFICATION_REENTRY_REQUIRED", request);
-    }
-
-    @ExceptionHandler(DuplicateIcException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateIc(DuplicateIcException ex, HttpServletRequest request) {
-        return buildResponseDetailed(HttpStatus.CONFLICT, ex.getMessage(), "DUPLICATE_IC", request);
-    }
-
-    @ExceptionHandler(IdentityVerificationMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleIdentityVerificationMismatch(
-            IdentityVerificationMismatchException ex, HttpServletRequest request) {
-        return buildResponseDetailed(HttpStatus.BAD_REQUEST, ex.getMessage(),
-                "IDENTITY_VERIFICATION_MISMATCH", request);
-    }
-
-    @ExceptionHandler(IdentityVerificationNotAllowedException.class)
-    public ResponseEntity<ErrorResponse> handleIdentityVerificationNotAllowed(
-            IdentityVerificationNotAllowedException ex, HttpServletRequest request) {
+    @ExceptionHandler(RecordVerificationNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleRecordVerificationNotAllowed(
+            RecordVerificationNotAllowedException ex, HttpServletRequest request) {
         return buildResponseDetailed(HttpStatus.CONFLICT, ex.getMessage(),
-                "IDENTITY_VERIFICATION_NOT_ALLOWED", request);
-    }
-
-    @ExceptionHandler(IdentityVerificationLockedException.class)
-    public ResponseEntity<ErrorResponse> handleIdentityVerificationLocked(
-            IdentityVerificationLockedException ex, HttpServletRequest request) {
-        return buildResponseDetailed(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(),
-                "IDENTITY_VERIFICATION_LOCKED", request);
+                "RECORD_VERIFICATION_NOT_ALLOWED", request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -236,15 +203,6 @@ public class GlobalExceptionHandler {
             if (current instanceof ConstraintViolationException cve) {
                 if (cve.getConstraintName() != null && !cve.getConstraintName().isBlank()) {
                     return cve.getConstraintName().toLowerCase(Locale.ROOT);
-                }
-            }
-            if (current.getMessage() != null) {
-                String msg = current.getMessage().toLowerCase(Locale.ROOT);
-                if (msg.contains("uc_persons_identification_hash") || msg.contains("identification_hash")) {
-                    return "identification_hash";
-                }
-                if (msg.contains("uc_persons_ic_or_passport") || msg.contains("ic_or_passport")) {
-                    return "ic_or_passport";
                 }
             }
             current = current.getCause();

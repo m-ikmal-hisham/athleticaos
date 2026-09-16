@@ -16,11 +16,6 @@ public record PlayerCreateRequest(
 
         @NotNull(message = "Date of birth is required") LocalDate dob,
 
-        @NotBlank(message = "IC or Passport is required") String icOrPassport,
-
-        // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
-        @NotBlank(message = "Identification type is required") String identificationType,
-
         @NotBlank(message = "Nationality is required") String nationality,
 
         @NotBlank(message = "Email is required")
@@ -59,13 +54,12 @@ public record PlayerCreateRequest(
 
     public PlayerCreateRequest(
             String firstName, String lastName, String gender, LocalDate dob,
-            String icOrPassport, String identificationType, String nationality,
-            String email, String phone, String addressLine1, String addressLine2,
+            String nationality, String email, String phone, String addressLine1, String addressLine2,
             String postcode, String city, String state, String country,
             String address, java.util.UUID teamId, java.util.UUID organisationId,
             String status, String dominantHand, String dominantLeg,
             Integer heightCm, Integer weightKg, String photoUrl) {
-        this(firstName, lastName, gender, dob, icOrPassport, identificationType,
+        this(firstName, lastName, gender, dob,
                 nationality, email, phone, addressLine1, addressLine2, postcode,
                 city, state, country, address, teamId, organisationId, status,
                 dominantHand, dominantLeg, heightCm, weightKg, photoUrl, null);

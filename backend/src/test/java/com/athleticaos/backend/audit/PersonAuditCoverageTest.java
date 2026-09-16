@@ -38,20 +38,15 @@ class PersonAuditCoverageTest {
     }
 
     @Test
-    @DisplayName("logPersonCreated writes PERSON_CREATED without IC, hash, or DOB in summary")
+    @DisplayName("logPersonCreated writes PERSON_CREATED without DOB in summary")
     void logPersonCreated_WritesAuditLog_WithoutPii() {
         UUID personId = UUID.randomUUID();
-        String icNumber = "990101-14-5555";
-        String icHash = "abc123hashdef456";
         LocalDate dob = LocalDate.of(1999, 1, 1);
 
         Person person = Person.builder()
                 .id(personId)
                 .firstName("Ali")
                 .lastName("Ahmad")
-                .identificationType("MALAYSIAN_IC")
-                .identificationValue(icNumber)
-                .identificationHash(icHash)
                 .dob(dob)
                 .build();
 
@@ -70,27 +65,19 @@ class PersonAuditCoverageTest {
 
         assertThat(log.getEntitySummary()).contains("Ali Ahmad");
         assertThat(log.getEntitySummary()).contains("Harimau Club");
-        assertThat(log.getEntitySummary()).doesNotContain(icNumber);
-        assertThat(log.getEntitySummary()).doesNotContain(icHash);
         assertThat(log.getEntitySummary()).doesNotContain(dob.toString());
-        assertThat(log.getEntitySummary()).doesNotContain("MALAYSIAN_IC");
     }
 
     @Test
-    @DisplayName("logPersonUpdated writes PERSON_UPDATED without IC, hash, or DOB in summary")
+    @DisplayName("logPersonUpdated writes PERSON_UPDATED without DOB in summary")
     void logPersonUpdated_WritesAuditLog_WithoutPii() {
         UUID personId = UUID.randomUUID();
-        String icNumber = "880202-08-6666";
-        String icHash = "hash789xyz";
         LocalDate dob = LocalDate.of(1988, 2, 2);
 
         Person person = Person.builder()
                 .id(personId)
                 .firstName("Badrul")
                 .lastName("Hisham")
-                .identificationType("PASSPORT")
-                .identificationValue(icNumber)
-                .identificationHash(icHash)
                 .dob(dob)
                 .build();
 
@@ -109,9 +96,83 @@ class PersonAuditCoverageTest {
 
         assertThat(log.getEntitySummary()).contains("Badrul Hisham");
         assertThat(log.getEntitySummary()).contains("Eagle Academy");
-        assertThat(log.getEntitySummary()).doesNotContain(icNumber);
-        assertThat(log.getEntitySummary()).doesNotContain(icHash);
         assertThat(log.getEntitySummary()).doesNotContain(dob.toString());
+    }
+
+    @Test
+    @DisplayName("logRecordVerified writes RECORD_VERIFIED audit entry")
+    void logRecordVerified_WritesAuditLog() {
+        UUID personId = UUID.randomUUID();
+        Person person = Person.builder()
+                .id(personId)
+                .registrationNo("AOS-000100")
+                .firstName("Ali")
+                .lastName("Ahmad")
+                .build();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("10.0.0.3");
+
+        auditLogger.logRecordVerified(person, "DOCUMENT_SIGHTED", request);
+
+        ArgumentCaptor<AuditLogEntry> captor = ArgumentCaptor.forClass(AuditLogEntry.class);
+        verify(auditLogService).log(captor.capture(), eq("10.0.0.3"), any());
+
+        AuditLogEntry log = captor.getValue();
+        assertThat(log.getActionType()).isEqualTo("RECORD_VERIFIED");
+        assertThat(log.getEntityType()).isEqualTo("PERSON");
+        assertThat(log.getEntityId()).isEqualTo(personId);
+        assertThat(log.getEntitySummary()).contains("DOCUMENT_SIGHTED");
+    }
+
+    @Test
+    @DisplayName("logRecordVerificationRevoked writes RECORD_VERIFICATION_REVOKED audit entry")
+    void logRecordVerificationRevoked_WritesAuditLog() {
+        UUID personId = UUID.randomUUID();
+        Person person = Person.builder()
+                .id(personId)
+                .registrationNo("AOS-000100")
+                .firstName("Ali")
+                .lastName("Ahmad")
+                .build();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("10.0.0.4");
+
+        auditLogger.logRecordVerificationRevoked(person, request);
+
+        ArgumentCaptor<AuditLogEntry> captor = ArgumentCaptor.forClass(AuditLogEntry.class);
+        verify(auditLogService).log(captor.capture(), eq("10.0.0.4"), any());
+
+        AuditLogEntry log = captor.getValue();
+        assertThat(log.getActionType()).isEqualTo("RECORD_VERIFICATION_REVOKED");
+        assertThat(log.getEntityType()).isEqualTo("PERSON");
+        assertThat(log.getEntityId()).isEqualTo(personId);
+    }
+
+    @Test
+    @DisplayName("logRecordVerificationReset writes RECORD_VERIFICATION_RESET audit entry")
+    void logRecordVerificationReset_WritesAuditLog() {
+        UUID personId = UUID.randomUUID();
+        Person person = Person.builder()
+                .id(personId)
+                .registrationNo("AOS-000100")
+                .firstName("Ali")
+                .lastName("Ahmad")
+                .build();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("10.0.0.5");
+
+        auditLogger.logRecordVerificationReset(person, request);
+
+        ArgumentCaptor<AuditLogEntry> captor = ArgumentCaptor.forClass(AuditLogEntry.class);
+        verify(auditLogService).log(captor.capture(), eq("10.0.0.5"), any());
+
+        AuditLogEntry log = captor.getValue();
+        assertThat(log.getActionType()).isEqualTo("RECORD_VERIFICATION_RESET");
+        assertThat(log.getEntityType()).isEqualTo("PERSON");
+        assertThat(log.getEntityId()).isEqualTo(personId);
     }
 
     @Test

@@ -164,10 +164,7 @@ export interface Player {
     lastName: string;
     gender: Gender;
     dob: string;
-    identificationPresent?: boolean;
-    identificationType?: string;
-    identificationDisplay?: string | null;
-    identityVerification?: {
+    recordVerification?: {
         status: string;
         verifiedAt?: string;
         verifiedByName?: string;
@@ -231,8 +228,6 @@ export interface PlayerCreateRequest {
     lastName: string;
     gender: Gender;
     dob: string;
-    icOrPassport: string;
-    identificationType?: string;
     nationality: string;
     email: string;
     phone?: string;
@@ -253,8 +248,6 @@ export interface PlayerUpdateRequest {
     lastName?: string;
     gender?: string;
     dob?: string;
-    icOrPassport?: string;
-    identificationType?: string;
     nationality?: string;
     email?: string;
     phone?: string;

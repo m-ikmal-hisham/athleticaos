@@ -15,19 +15,14 @@ import com.athleticaos.backend.entities.OfficialRegistry;
 import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
-import com.athleticaos.backend.services.IdentificationHashService;
-import com.athleticaos.backend.services.IdentificationHashResult;
 import com.athleticaos.backend.enums.Gender;
-import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
-import com.athleticaos.backend.exceptions.DuplicateIcException;
 import com.athleticaos.backend.exceptions.EmailRequiredException;
-import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
 import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
 import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
+import com.athleticaos.backend.dtos.person.RecordVerificationSummary;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.utils.EmailUtil;
-import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -49,7 +44,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.athleticaos.backend.dtos.person.IdentityVerificationSummary;
 import com.athleticaos.backend.audit.AuditLogger;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -71,7 +65,6 @@ public class PersonServiceImpl implements PersonService {
     private final TournamentOfficialRepository tournamentOfficialRepository;
     private final UserRepository userRepository;
     private final OrganisationRepository organisationRepository;
-    private final IdentificationHashService identificationHashService;
     private final OrganisationService organisationService;
     private final UserService userService;
     private final AuditLogger auditLogger;
@@ -212,36 +205,12 @@ public class PersonServiceImpl implements PersonService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
-        // Phase 2.1: single entry point for normalisation, mask/placeholder rejection, and type-specific validation
         String canonicalGender = Gender.from(request.getGender()).name();
-        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), canonicalGender);
-
-        // Duplicate check (dual: hash + plaintext)
-        if (normalizedIc != null) {
-            if (identificationHashService.isConfigured()) {
-                String hash = identificationHashService.computeHash(normalizedIc);
-                if (hash != null && personRepository.existsByIdentificationHash(hash)) {
-                    throw new DuplicateIcException("IC or Passport already exists in the system.");
-                }
-            }
-            if (personRepository.existsByIcOrPassport(normalizedIc)) {
-                throw new DuplicateIcException("IC or Passport already exists in the system.");
-            }
-        }
 
         Person person = new Person();
         person.setFirstName(request.getFirstName());
         person.setLastName(request.getLastName());
-        person.setIcOrPassport(normalizedIc);
-        person.setIdentificationType(
-                normalizedIc != null ? IdentificationType.from(request.getIdentificationType()).name() : null);
-        IdentificationHashResult hashResult = IdentificationHashResult.compute(identificationHashService, normalizedIc);
-        if (hashResult != null) {
-            person.setIdentificationHash(hashResult.hash());
-            person.setIdentificationHashVersion(hashResult.version());
-            person.setIdentificationVerificationStatus("UNVERIFIED");
-        }
+        person.setRecordVerificationStatus("UNVERIFIED");
         person.setDob(request.getDob());
         person.setGender(canonicalGender);
         person.setNationality(request.getNationality());
@@ -323,61 +292,16 @@ public class PersonServiceImpl implements PersonService {
 
         String canonicalGender = request.getGender() != null ? Gender.from(request.getGender()).name() : null;
 
-        // OBS-05B: If DOB or gender is changing for an applicable record,
-        // require the identification to be re-entered in the same request.
-        if (IdentificationUtil.requiresIdentityReentry(
-                person.getIdentificationType(), person.getDob(), person.getGender(),
-                request.getDob(), canonicalGender)) {
-            if (request.getIcOrPassport() == null || request.getIcOrPassport().trim().isEmpty()) {
-                throw new IdentificationReentryRequiredException();
-            }
-        }
-
+        boolean nameChanged = (request.getFirstName() != null && !request.getFirstName().trim().equals(person.getFirstName()))
+                || (request.getLastName() != null && !request.getLastName().trim().equals(person.getLastName()));
         boolean dobChanged = request.getDob() != null && !request.getDob().equals(person.getDob());
         boolean genderChanged = canonicalGender != null && !canonicalGender.equals(person.getGender());
-        boolean nonBlankIdSubmitted = request.getIcOrPassport() != null && !request.getIcOrPassport().trim().isEmpty();
 
         boolean verificationReset = false;
-        if ("VERIFIED".equals(person.getIdentificationVerificationStatus())
-                && (dobChanged || genderChanged || nonBlankIdSubmitted)) {
-            person.clearIdentityVerification("UNVERIFIED");
+        if ("VERIFIED".equals(person.getRecordVerificationStatus())
+                && (nameChanged || dobChanged || genderChanged)) {
+            person.clearRecordVerification("UNVERIFIED");
             verificationReset = true;
-        }
-
-        // Phase 2.1: null icOrPassport = leave existing unchanged.
-        // Non-blank value triggers atomic normalisation, validation, dual duplicate check, and dual write.
-        // identificationType alone cannot mutate the stored record without a replacement ID.
-        if (request.getIcOrPassport() != null) {
-            if (request.getIdentificationType() == null || request.getIdentificationType().trim().isEmpty()) {
-                throw new IllegalArgumentException("identificationType is required when updating identification value");
-            }
-            LocalDate effectiveDob = request.getDob() != null ? request.getDob() : person.getDob();
-            String effectiveGender = canonicalGender != null ? canonicalGender : person.getGender();
-            String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                    request.getIcOrPassport(), request.getIdentificationType(), effectiveDob, effectiveGender);
-            if (normalizedIc != null) {
-                if (identificationHashService.isConfigured()) {
-                    String hash = identificationHashService.computeHash(normalizedIc);
-                    if (hash != null && personRepository.existsByIdentificationHashAndIdNot(hash, person.getId())) {
-                        throw new DuplicateIcException("IC or Passport already exists in the system.");
-                    }
-                }
-                if (personRepository.existsByIcOrPassportAndIdNot(normalizedIc, person.getId())) {
-                    throw new DuplicateIcException("IC or Passport already exists in the system.");
-                }
-                person.setIcOrPassport(normalizedIc);
-                person.setIdentificationType(IdentificationType.from(request.getIdentificationType()).name());
-                if (identificationHashService.isConfigured()) {
-                    IdentificationHashResult hashResult = IdentificationHashResult.compute(
-                            identificationHashService, normalizedIc);
-                    if (hashResult != null) {
-                        person.setIdentificationHash(hashResult.hash());
-                        person.setIdentificationHashVersion(hashResult.version());
-                        person.clearIdentityVerification("UNVERIFIED");
-                    }
-                }
-            }
-            // null return from validateAndNormalizeNewSubmission = raw was empty/whitespace → no-op.
         }
 
         // Effective email rule
@@ -513,11 +437,11 @@ public class PersonServiceImpl implements PersonService {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+                        auditLogger.logRecordVerificationReset(personForAudit, currentRequest);
                     }
                 });
             } else {
-                auditLogger.logIdentityVerificationReset(personForAudit, currentRequest);
+                auditLogger.logRecordVerificationReset(personForAudit, currentRequest);
             }
         }
 
@@ -570,15 +494,12 @@ public class PersonServiceImpl implements PersonService {
 
         boolean isWR = wrStaffIds.contains(pid) || wrOfficialIds.contains(pid);
 
-        // Phase 1: raw IC is NOT exposed in API responses.
-        boolean identificationPresent = p.getIcOrPassport() != null && !p.getIcOrPassport().isBlank();
-
-        IdentityVerificationSummary identityVerification = p.getIdentificationVerificationStatus() != null
-                ? new IdentityVerificationSummary(
-                        p.getIdentificationVerificationStatus(),
-                        p.getIdentificationVerifiedAt(),
-                        p.getIdentificationVerifiedByName(),
-                        p.getIdentificationVerificationMethod())
+        RecordVerificationSummary recordVerification = p.getRecordVerificationStatus() != null
+                ? new RecordVerificationSummary(
+                        p.getRecordVerificationStatus(),
+                        p.getRecordVerifiedAt(),
+                        p.getRecordVerifiedByName(),
+                        p.getRecordVerificationMethod())
                 : null;
 
         return PersonResponseDTO.builder()
@@ -586,10 +507,6 @@ public class PersonServiceImpl implements PersonService {
                 .registrationNo(p.getRegistrationNo())
                 .firstName(p.getFirstName())
                 .lastName(p.getLastName())
-                // Identification — presence indicator only, never raw value
-                .identificationPresent(identificationPresent)
-                .identificationType(p.getIdentificationType())
-                .identificationDisplay(identificationPresent ? "PRESENT" : null)
                 .dob(p.getDob())
                 .gender(p.getGender())
                 .nationality(p.getNationality())
@@ -604,7 +521,7 @@ public class PersonServiceImpl implements PersonService {
                 .isStaff(isStaff)
                 .isOfficial(isOfficial)
                 .isWorldRugbyCertified(isWR)
-                .identityVerification(identityVerification)
+                .recordVerification(recordVerification)
                 .build();
     }
 

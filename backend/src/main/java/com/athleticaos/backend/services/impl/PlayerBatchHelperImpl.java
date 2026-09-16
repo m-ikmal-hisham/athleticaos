@@ -12,9 +12,6 @@ import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerBatchHelper;
 import com.athleticaos.backend.utils.EmailUtil;
-import com.athleticaos.backend.utils.IdentificationUtil;
-import com.athleticaos.backend.services.IdentificationHashResult;
-import com.athleticaos.backend.enums.IdentificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,33 +30,22 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     private final PlayerRepository playerRepository;
     private final PlayerTeamRepository playerTeamRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
-    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
         log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
 
-        // Canonicalise gender before any identity validation or entity mutation
+        // Canonicalise gender
         String canonicalGender = com.athleticaos.backend.enums.Gender.from(row.gender()).name();
 
-        // 1. Defensively validate and normalise identification using shared utility
-        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                row.icOrPassport(), row.identificationType(), row.dob(), canonicalGender);
-
-        IdentificationHashResult hashResult = IdentificationHashResult.compute(identificationHashService, normalizedIc);
-
-        // 2. Create Person record
+        // Create Person record
         Person person = Person.builder()
                 .firstName(row.firstName().trim())
                 .lastName(row.lastName().trim())
                 .gender(canonicalGender)
                 .dob(row.dob())
-                .icOrPassport(normalizedIc)
-                .identificationType(normalizedIc != null ? IdentificationType.from(row.identificationType()).name() : null)
-                .identificationHash(hashResult != null ? hashResult.hash() : null)
-                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
-                .identificationVerificationStatus("UNVERIFIED")
+                .recordVerificationStatus("UNVERIFIED")
                 .nationality(row.nationality().trim())
                 .email(EmailUtil.normalizeEmail(row.email()))
                 .state(row.state() != null ? row.state().trim() : null)

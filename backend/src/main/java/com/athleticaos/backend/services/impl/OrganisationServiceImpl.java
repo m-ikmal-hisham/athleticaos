@@ -20,7 +20,6 @@ import com.athleticaos.backend.dtos.team.PersonSummaryDTO;
 
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
-import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.EmailRequiredException;
 import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
@@ -28,7 +27,6 @@ import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.utils.EmailUtil;
-import com.athleticaos.backend.utils.IdentificationUtil;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +51,6 @@ public class OrganisationServiceImpl implements OrganisationService {
     private final PersonRepository personRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
     private final UserService userService;
-    private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
     private final PersonDuplicateService personDuplicateService;
     private final AuditLogger auditLogger;
     private final ObjectProvider<HttpServletRequest> requestProvider;
@@ -494,19 +491,6 @@ public class OrganisationServiceImpl implements OrganisationService {
         // Canonicalise gender before any identity validation or entity mutation
         String canonicalGender = com.athleticaos.backend.enums.Gender.from(request.getGender()).name();
 
-        // Phase 2.1: use shared utility for normalisation, mask/placeholder rejection, validation, dual-lookup and dual-write
-        String normalizedIc = IdentificationUtil.validateAndNormalizeNewSubmission(
-                request.getIcOrPassport(), request.getIdentificationType(), request.getDob(), canonicalGender);
-        com.athleticaos.backend.services.IdentificationHashResult hashResult = null;
-        if (normalizedIc != null && !normalizedIc.isEmpty()) {
-            hashResult = com.athleticaos.backend.services.IdentificationHashResult.compute(
-                    identificationHashService, normalizedIc);
-            if (personRepository.existsByIcOrPassport(normalizedIc)
-                    || (hashResult != null && personRepository.existsByIdentificationHash(hashResult.hash()))) {
-                throw new com.athleticaos.backend.exceptions.DuplicateIcException("IC or Passport already exists in the system.");
-            }
-        }
-
         String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
         if (normalizedEmail == null) {
             throw new EmailRequiredException();
@@ -526,11 +510,7 @@ public class OrganisationServiceImpl implements OrganisationService {
         Person person = Person.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .icOrPassport(normalizedIc)
-                .identificationType(normalizedIc != null ? IdentificationType.from(request.getIdentificationType()).name() : null)
-                .identificationHash(hashResult != null ? hashResult.hash() : null)
-                .identificationHashVersion(hashResult != null ? hashResult.version() : null)
-                .identificationVerificationStatus("UNVERIFIED")
+                .recordVerificationStatus("UNVERIFIED")
                 .dob(request.getDob())
                 .gender(canonicalGender)
                 .nationality(request.getNationality())
@@ -583,7 +563,6 @@ public class OrganisationServiceImpl implements OrganisationService {
                         .registrationNo(p.getRegistrationNo())
                         .firstName(p.getFirstName())
                         .lastName(p.getLastName())
-                        // Phase 1: icOrPassport removed from PersonSummaryDTO
                         .email(p.getEmail())
                         .build();
                 })

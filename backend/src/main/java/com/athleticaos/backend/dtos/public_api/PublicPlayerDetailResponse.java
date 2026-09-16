@@ -15,8 +15,6 @@ public class PublicPlayerDetailResponse {
     private UUID id;
     private String firstName;
     private String lastName;
-    private String idType;
-    private String idNumber;
     private Integer age;
     private String gender;
     private String country;

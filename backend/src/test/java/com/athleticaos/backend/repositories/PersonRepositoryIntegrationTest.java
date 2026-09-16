@@ -14,7 +14,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,9 +49,8 @@ class PersonRepositoryIntegrationTest {
                 .lastName("Tester")
                 .dob(LocalDate.of(2000, 1, 1))
                 .gender("MALE")
-                .icOrPassport("TEST-IC-" + UUID.randomUUID())
                 .nationality("MALAYSIAN")
-                .identificationVerificationStatus("UNVERIFIED")
+                .recordVerificationStatus("UNVERIFIED")
                 .email("test.integration@example.invalid")
                 .build();
 

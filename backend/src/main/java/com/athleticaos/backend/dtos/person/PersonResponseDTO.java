@@ -19,10 +19,6 @@ public class PersonResponseDTO {
     private String registrationNo;
     private String firstName;
     private String lastName;
-    // Identification — raw value NOT exposed in responses (Phase 1 containment)
-    private boolean identificationPresent;
-    private String identificationType;
-    private String identificationDisplay; // "PRESENT" when an IC/passport is stored, null otherwise
     private LocalDate dob;
     private String gender;
     private String nationality;
@@ -48,5 +44,5 @@ public class PersonResponseDTO {
     @JsonProperty("isWorldRugbyCertified")
     private boolean isWorldRugbyCertified;
 
-    private IdentityVerificationSummary identityVerification;
+    private RecordVerificationSummary recordVerification;
 }

@@ -10,8 +10,6 @@ interface PlayerRow {
     lastName: string;
     gender: string;
     dob: string;
-    identificationType: string;
-    icOrPassport: string;
     nationality: string;
     email: string;
     state: string;
@@ -24,8 +22,6 @@ interface RowError {
     lastName?: string;
     gender?: string;
     dob?: string;
-    identificationType?: string;
-    icOrPassport?: string;
     nationality?: string;
     email?: string;
     state?: string;
@@ -78,25 +74,16 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
 
             const cells = trimmed.split('\t');
             
-            // Map cells to exactly our 10 expected fields: First Name | Last Name | Gender | DOB | ID Type | IC/Passport | Nationality | Email | State | Medical Notes
-            const rawType = (cells[4]?.trim() || '').toUpperCase();
-            let idType = '';
-            if (rawType === 'PASSPORT') idType = 'PASSPORT';
-            else if (rawType === 'OTHER') idType = 'OTHER';
-            else if (rawType === 'IC' || rawType === 'MALAYSIAN_IC' || rawType === 'MALAYSIAN IC') idType = 'MALAYSIAN_IC';
-            else if (rawType) idType = rawType; // unknown non-blank string, will be caught by validation
-
+            // Map cells to exactly our 8 expected fields: First Name | Last Name | Gender | DOB | Nationality | Email | State | Medical Notes
             const newRow: PlayerRow = {
                 firstName: cells[0]?.trim() || '',
                 lastName: cells[1]?.trim() || '',
                 gender: (cells[2]?.trim() || '').toUpperCase(),
                 dob: cells[3]?.trim() || '',
-                identificationType: idType,
-                icOrPassport: cells[5]?.trim() || '',
-                nationality: cells[6]?.trim() || '',
-                email: cells[7]?.trim() || '',
-                state: cells[8]?.trim() || '',
-                medicalNotes: cells[9]?.trim() || '',
+                nationality: cells[4]?.trim() || '',
+                email: cells[5]?.trim() || '',
+                state: cells[6]?.trim() || '',
+                medicalNotes: cells[7]?.trim() || '',
             };
 
             parsedRows.push(newRow);
@@ -137,13 +124,6 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             }
         }
 
-        const validTypes = ['MALAYSIAN_IC', 'PASSPORT', 'OTHER'];
-        if (!row.identificationType) {
-            rowErr.identificationType = 'ID Type is required';
-        } else if (!validTypes.includes(row.identificationType)) {
-            rowErr.identificationType = 'ID Type must be MALAYSIAN_IC, PASSPORT, or OTHER';
-        }
-        if (!row.icOrPassport) rowErr.icOrPassport = 'IC or Passport is required';
         if (!row.nationality) rowErr.nationality = 'Nationality is required';
 
         if (!row.email || !row.email.trim()) {
@@ -169,34 +149,39 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
         setErrors(newErrors);
     };
 
-    // Handle single cell modification
+    // Individual Cell Edits
     const handleCellChange = (rowIndex: number, field: keyof PlayerRow, value: string) => {
-        const updatedRows = [...rows];
-        updatedRows[rowIndex] = { ...updatedRows[rowIndex], [field]: value };
-        setRows(updatedRows);
+        const updated = [...rows];
+        updated[rowIndex] = {
+            ...updated[rowIndex],
+            [field]: value
+        };
+        setRows(updated);
 
-        // Update validation errors
-        const rowErr = validateRow(updatedRows[rowIndex]);
-        setErrors(prev => {
-            const updated = { ...prev };
-            if (Object.keys(rowErr).length > 0) {
-                updated[rowIndex] = rowErr;
-            } else {
-                delete updated[rowIndex];
-            }
-            return updated;
-        });
-
-        // Clear server error if user edits the row
-        if (serverErrors[rowIndex]) {
-            setServerErrors(prev => {
-                const updated = { ...prev };
-                delete updated[rowIndex];
-                return updated;
-            });
-        }
+        // Clear warning if field is updated
         if (duplicateWarnings[rowIndex]) {
             setDuplicateWarnings(prev => {
+                const updatedWarn = { ...prev };
+                delete updatedWarn[rowIndex];
+                return updatedWarn;
+            });
+        }
+
+        // Run local row validation
+        const rowErr = validateRow(updated[rowIndex]);
+        setErrors(prev => {
+            const newErrs = { ...prev };
+            if (Object.keys(rowErr).length > 0) {
+                newErrs[rowIndex] = rowErr;
+            } else {
+                delete newErrs[rowIndex];
+            }
+            return newErrs;
+        });
+
+        // Clear server error on cell change
+        if (serverErrors[rowIndex]) {
+            setServerErrors(prev => {
                 const updated = { ...prev };
                 delete updated[rowIndex];
                 return updated;
@@ -210,8 +195,6 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             lastName: '',
             gender: 'MALE',
             dob: '',
-            identificationType: '',
-            icOrPassport: '',
             nationality: 'Malaysia',
             email: '',
             state: '',
@@ -353,7 +336,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                 Copy columns from Excel/Google Sheets in this order:
                             </p>
                             <div className="text-[10px] text-primary/70 bg-primary-500/10 border border-primary-500/20 px-3 py-1.5 rounded-lg mt-3 font-mono font-medium tracking-wide">
-                                First Name | Last Name | Gender (MALE/FEMALE) | DOB (YYYY-MM-DD) | ID Type (MALAYSIAN_IC/PASSPORT/OTHER) | IC/Passport | Nationality | Email | State | Medical Notes
+                                First Name | Last Name | Gender (MALE/FEMALE) | DOB (YYYY-MM-DD) | Nationality | Email | State | Medical Notes
                             </div>
                         </div>
                     </div>
@@ -379,8 +362,6 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                         <th className="px-3 py-3 text-left font-semibold">Last Name <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">Gender <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">DOB <span className="text-red-500">*</span></th>
-                                        <th className="px-3 py-3 text-left font-semibold">ID Type <span className="text-red-500">*</span></th>
-                                        <th className="px-3 py-3 text-left font-semibold">IC / Passport <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">Nationality <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">Email <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">State</th>
@@ -442,7 +423,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                     )}
                                                 </td>
 
-                                                {/* Cells inputs */}
+                                                {/* First Name & Last Name */}
                                                 {[
                                                     { field: 'firstName' as const, colIdx: 0 },
                                                     { field: 'lastName' as const, colIdx: 1 }
@@ -492,32 +473,12 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                     />
                                                 </td>
 
-                                                {/* ID Type Select */}
-                                                <td className="px-1 py-1">
-                                                    <select
-                                                        ref={el => { cellRefs.current[`${rIdx}-4`] = el; }}
-                                                        value={row.identificationType}
-                                                        onChange={e => handleCellChange(rIdx, 'identificationType', e.target.value)}
-                                                        onKeyDown={e => handleKeyDown(e, rIdx, 4)}
-                                                        className={`w-full px-2 py-1.5 bg-black text-xs text-foreground focus:outline-none focus:bg-white/5 border rounded transition-all ${errors[rIdx]?.identificationType ? 'border-red-500/50 focus:border-red-500' : 'border-transparent focus:border-white/20'}`}
-                                                    >
-                                                        <option value="" disabled>Select Type</option>
-                                                        <option value="MALAYSIAN_IC">MALAYSIAN_IC</option>
-                                                        <option value="PASSPORT">PASSPORT</option>
-                                                        <option value="OTHER">OTHER</option>
-                                                        {row.identificationType && !['MALAYSIAN_IC', 'PASSPORT', 'OTHER'].includes(row.identificationType) && (
-                                                            <option value={row.identificationType}>{row.identificationType} (Invalid)</option>
-                                                        )}
-                                                    </select>
-                                                </td>
-
-                                                {/* IC, Nationality, Email, State, Medical Notes */}
+                                                {/* Nationality, Email, State, Medical Notes */}
                                                 {[
-                                                    { field: 'icOrPassport' as const, colIdx: 5, placeholder: 'IC/Passport' },
-                                                    { field: 'nationality' as const, colIdx: 6, placeholder: 'Nationality' },
-                                                    { field: 'email' as const, colIdx: 7, placeholder: 'Email' },
-                                                    { field: 'state' as const, colIdx: 8, placeholder: 'State' },
-                                                    { field: 'medicalNotes' as const, colIdx: 9, placeholder: 'Notes' }
+                                                    { field: 'nationality' as const, colIdx: 4, placeholder: 'Nationality' },
+                                                    { field: 'email' as const, colIdx: 5, placeholder: 'Email' },
+                                                    { field: 'state' as const, colIdx: 6, placeholder: 'State' },
+                                                    { field: 'medicalNotes' as const, colIdx: 7, placeholder: 'Notes' }
                                                 ].map((col) => {
                                                     const fieldName = col.field;
                                                     const fieldErr = errors[rIdx]?.[fieldName];

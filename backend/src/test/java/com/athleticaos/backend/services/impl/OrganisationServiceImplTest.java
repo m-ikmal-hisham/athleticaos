@@ -9,7 +9,6 @@ import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
-import com.athleticaos.backend.services.IdentificationHashService;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,8 +42,6 @@ class OrganisationServiceImplTest {
     private OrganisationPersonRepository organisationPersonRepository;
     @Mock
     private UserService userService;
-    @Mock
-    private IdentificationHashService identificationHashService;
     @Mock
     private PersonDuplicateService personDuplicateService;
     @Mock

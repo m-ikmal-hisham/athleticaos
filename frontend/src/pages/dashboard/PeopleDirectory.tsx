@@ -289,7 +289,7 @@ const PeopleDirectory: React.FC = () => {
                             <TableRow className="border-b-0 hover:bg-transparent">
                                 <TableHead className="pl-6 h-14">Name</TableHead>
                                 <TableHead>Reg No.</TableHead>
-                                <TableHead>IC/Passport</TableHead>
+                                <TableHead>Verification</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead>Roles</TableHead>
                                 <TableHead>User Link</TableHead>
@@ -343,20 +343,13 @@ const PeopleDirectory: React.FC = () => {
                                         </TableCell>
                                         <TableCell className="font-mono text-xs text-muted">
                                             <div className="flex flex-col gap-1 items-start">
-                                                <span>{p.identificationDisplay || '—'}</span>
-                                                {p.identityVerification?.status === 'VERIFIED' && (
+                                                {p.recordVerification?.status === 'VERIFIED' ? (
                                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                                         VERIFIED
                                                     </span>
-                                                )}
-                                                {p.identityVerification?.status === 'FLAGGED' && (
-                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                                                        FLAGGED
-                                                    </span>
-                                                )}
-                                                {p.identityVerification?.status === 'LEGACY' && (
+                                                ) : (
                                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
-                                                        LEGACY
+                                                        UNVERIFIED
                                                     </span>
                                                 )}
                                             </div>

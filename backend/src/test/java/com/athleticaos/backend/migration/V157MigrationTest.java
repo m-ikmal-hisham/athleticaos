@@ -70,12 +70,13 @@ class V157MigrationTest {
             }
         }
 
-        // 3. Migrate to latest (applies V157)
-        Flyway flywayLatest = Flyway.configure()
+        // 3. Migrate up to V157
+        Flyway flyway157 = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("157")
                 .load();
-        flywayLatest.migrate();
+        flyway157.migrate();
     }
 
     private static void insertPerson(PreparedStatement ps, UUID id, String email) throws SQLException {

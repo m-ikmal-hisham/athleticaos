@@ -35,8 +35,6 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        identificationType: '',
-        icOrPassport: '',
         dob: '',
         gender: '',
         nationality: 'Malaysian',
@@ -111,11 +109,6 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             return;
         }
 
-        if (formData.icOrPassport && !formData.identificationType) {
-            showToast.error('Please select an identification type');
-            return;
-        }
-
         if (!formData.email.trim()) {
             setEmailError('Email is required.');
             showToast.error('Email is required.');
@@ -138,8 +131,6 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             setFormData({
                 firstName: '',
                 lastName: '',
-                identificationType: '',
-                icOrPassport: '',
                 dob: '',
                 gender: '',
                 nationality: 'Malaysian',
@@ -203,32 +194,6 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-sm font-medium mb-1 block">Identification Type</label>
-                        <select
-                            aria-label="Identification Type"
-                            className="w-full h-10 px-3 rounded-lg border border-border bg-input-bg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            value={formData.identificationType}
-                            onChange={(e) => setFormData({ ...formData, identificationType: e.target.value })}
-                            required
-                        >
-                            <option value="" disabled>Select identification type</option>
-                            <option value="MALAYSIAN_IC">Malaysian IC</option>
-                            <option value="PASSPORT">Passport</option>
-                            <option value="OTHER">Other</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium mb-1 block">IC or Passport</label>
-                        <Input
-                            required
-                            value={formData.icOrPassport}
-                            onChange={(e) => setFormData({ ...formData, icOrPassport: e.target.value })}
-                            placeholder="ID / Passport Number"
-                        />
-                    </div>
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

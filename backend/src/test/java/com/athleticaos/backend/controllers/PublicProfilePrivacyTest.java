@@ -90,7 +90,9 @@ class PublicProfilePrivacyTest {
                     .as("DTO %s should not declare dateOfBirth or dob", dtoClass.getSimpleName())
                     .doesNotContain("dateOfBirth", "dob")
                     .as("DTO %s should not declare registrationNo or registration_no", dtoClass.getSimpleName())
-                    .doesNotContain("registrationNo", "registration_no");
+                    .doesNotContain("registrationNo", "registration_no")
+                    .as("DTO %s should not declare identification fields", dtoClass.getSimpleName())
+                    .doesNotContain("idType", "idNumber", "identificationType", "icOrPassport");
         }
 
         // PublicPlayerListItemResponse must also not declare city or age
@@ -180,7 +182,6 @@ class PublicProfilePrivacyTest {
                 .country("Malaysia")
                 .state("Kuala Lumpur")
                 .city("Cheras")
-                .identificationType("MALAYSIAN_IC")
                 .build();
 
         when(playerService.getPlayerById(playerId)).thenReturn(playerResponse);

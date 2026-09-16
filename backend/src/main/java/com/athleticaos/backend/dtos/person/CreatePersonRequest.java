@@ -21,13 +21,6 @@ public class CreatePersonRequest {
     @NotBlank(message = "Last name is required")
     private String lastName;
 
-    @NotBlank(message = "IC or Passport is required")
-    private String icOrPassport;
-
-    // identificationType: MALAYSIAN_IC | PASSPORT | OTHER (canonical Phase 1 values)
-    @NotBlank(message = "identificationType is required")
-    private String identificationType;
-
     @NotNull(message = "Date of birth is required")
     private LocalDate dob;
 

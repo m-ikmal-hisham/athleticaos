@@ -39,11 +39,8 @@ export const CreatePlayer = () => {
     const [photoUrl, setPhotoUrl] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("");
-    const [identificationValue, setIdentificationValue] = useState("");
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
-    const [duplicateIcError, setDuplicateIcError] = useState("");
     const [emailError, setEmailError] = useState("");
 
     // Address
@@ -92,11 +89,6 @@ export const CreatePlayer = () => {
         : teams;
 
     const submitPlayer = async (confirmPossibleDuplicate = false) => {
-        if (identificationValue && !identificationType) {
-            showToast.error("Please select an identification type");
-            return;
-        }
-
         if (!email.trim()) {
             setEmailError("Email is required.");
             showToast.error("Email is required.");
@@ -111,8 +103,6 @@ export const CreatePlayer = () => {
             email: email.trim(),
             gender: String(gender),
             dob,
-            identificationType,
-            icOrPassport: identificationValue,
             nationality,
             phone: phone || undefined,
             addressLine1,
@@ -149,10 +139,6 @@ export const CreatePlayer = () => {
                 setShowDuplicateDialog(true);
             } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
                 setEmailError(errData.message || 'Email is required.');
-                showToast.error(errData.message || 'Email is required.');
-            } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
-                setDuplicateIcError("This IC/Passport number is already registered.");
-                showToast.error("Duplicate IC found");
             } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
                 setEmailError(error.response?.data?.message || 'A person with this email already exists.');
                 showToast.error(error.response?.data?.message || 'A person with this email already exists.');
@@ -283,41 +269,7 @@ export const CreatePlayer = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Identification Type</label>
-                                <SearchableSelect
-                                    value={identificationType}
-                                    onChange={(value) => setIdentificationType(value as string)}
-                                    options={[
-                                        { value: 'MALAYSIAN_IC', label: 'Malaysian IC' },
-                                        { value: 'PASSPORT', label: 'Passport' },
-                                        { value: 'OTHER', label: 'Other' }
-                                    ]}
-                                    placeholder="Select identification type"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Identification Value *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={identificationValue}
-                                    onChange={(e) => {
-                                        setIdentificationValue(e.target.value);
-                                        if (duplicateIcError) setDuplicateIcError("");
-                                    }}
-                                    required
-                                    className="input-base w-full"
-                                    placeholder="ID / Passport Number"
-                                    aria-label="Identification Value"
-                                />
-                                {duplicateIcError && (
-                                    <p className="text-xs text-red-500 mt-1">{duplicateIcError}</p>
-                                )}
-                            </div>
-                        </div>
+
 
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-muted-foreground">Nationality *</label>

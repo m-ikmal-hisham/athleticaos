@@ -89,7 +89,6 @@ public class StatisticsServiceIntegrationTest {
                                 .dob(LocalDate.of(1990, 1, 1))
                                 .nationality("Country")
                                 .gender("MALE")
-                                .icOrPassport("123456789")
                                 .build();
                 entityManager.persist(person);
 
@@ -208,7 +207,6 @@ public class StatisticsServiceIntegrationTest {
                         MatchEventType... events) {
                 Person person = Person.builder().firstName(fName).lastName(lName).email(fName + lName + "@test.com")
                                 .dob(LocalDate.now().minusYears(20)).gender("MALE")
-                                .icOrPassport("123" + fName + lName)
                                 .nationality("Country")
                                 .build();
                 entityManager.persist(person);
@@ -301,7 +299,7 @@ public class StatisticsServiceIntegrationTest {
                                 .organisation(org).category("OPEN").ageGroup("SENIOR").status("ACTIVE").build());
                         Person person = entityManager.persist(Person.builder().firstName("Player" + i).lastName("Test")
                                 .dob(LocalDate.of(2000, 1, 1)).gender("MALE").nationality("Malaysia")
-                                .icOrPassport("CATEGORY-TEST-" + i).build());
+                                .email("player" + i + "@example.com").build());
                         Player player = entityManager.persist(Player.builder().person(person).status("ACTIVE").build());
                         Match match = entityManager.persist(Match.builder().tournament(tournament).stage(stage)
                                 .homeTeam(team).awayTeam(team).matchDate(LocalDate.now()).kickOffTime(LocalTime.NOON)

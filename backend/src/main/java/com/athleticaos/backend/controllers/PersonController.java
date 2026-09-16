@@ -30,7 +30,7 @@ public class PersonController {
     private final OrganisationPersonRepository organisationPersonRepository;
     private final com.athleticaos.backend.audit.AuditLogger auditLogger;
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
-    private final com.athleticaos.backend.services.IdentityVerificationService identityVerificationService;
+    private final com.athleticaos.backend.services.RecordVerificationService recordVerificationService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
@@ -121,20 +121,20 @@ public class PersonController {
         return ResponseEntity.ok(counts);
     }
 
-    @PostMapping("/{id}/identity-verification")
+    @PostMapping("/{id}/record-verification")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<PersonResponseDTO> verifyIdentity(
+    public ResponseEntity<PersonResponseDTO> verifyRecord(
             @PathVariable UUID id,
-            @RequestBody @Valid com.athleticaos.backend.dtos.person.IdentityVerificationRequest request,
+            @RequestBody @Valid com.athleticaos.backend.dtos.person.RecordVerificationRequest request,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(identityVerificationService.verify(id, request, httpRequest));
+        return ResponseEntity.ok(recordVerificationService.verify(id, request, httpRequest));
     }
 
-    @DeleteMapping("/{id}/identity-verification")
+    @DeleteMapping("/{id}/record-verification")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<PersonResponseDTO> revokeIdentity(
+    public ResponseEntity<PersonResponseDTO> revokeRecordVerification(
             @PathVariable UUID id,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(identityVerificationService.revoke(id, httpRequest));
+        return ResponseEntity.ok(recordVerificationService.revoke(id, httpRequest));
     }
 }

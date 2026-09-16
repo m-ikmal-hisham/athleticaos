@@ -79,12 +79,13 @@ class V156MigrationTest {
             }
         }
 
-        // Apply V156 (and any subsequent migrations)
-        Flyway flywayLatest = Flyway.configure()
+        // Apply V156
+        Flyway flyway156 = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("classpath:db/migration")
+                .target("156")
                 .load();
-        flywayLatest.migrate();
+        flyway156.migrate();
     }
 
     private static void insertPerson(PreparedStatement ps, UUID id) throws SQLException {

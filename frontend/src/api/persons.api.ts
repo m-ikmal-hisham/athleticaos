@@ -1,22 +1,21 @@
 import api from './axios';
 
-export const IDENTITY_VERIFICATION_METHODS = [
+export const RECORD_VERIFICATION_METHODS = [
     { value: 'PRE_REGISTRATION_RECORD', label: 'Pre-registration record' },
     { value: 'DOCUMENT_SIGHTED', label: 'Document sighted' }
 ] as const;
 
-export type IdentityVerificationMethod = typeof IDENTITY_VERIFICATION_METHODS[number]['value'];
+export type RecordVerificationMethod = typeof RECORD_VERIFICATION_METHODS[number]['value'];
 
-export interface IdentityVerificationSummary {
-    status: 'VERIFIED' | 'UNVERIFIED' | 'LEGACY' | 'FLAGGED';
+export interface RecordVerificationSummary {
+    status: 'VERIFIED' | 'UNVERIFIED';
     verifiedAt?: string | null;
     verifiedByName?: string | null;
-    method?: IdentityVerificationMethod | string | null;
+    method?: RecordVerificationMethod | string | null;
 }
 
-export interface IdentityVerificationRequest {
-    identificationValue: string;
-    method: IdentityVerificationMethod;
+export interface RecordVerificationRequest {
+    method: RecordVerificationMethod;
     attested: boolean;
 }
 
@@ -25,10 +24,7 @@ export interface PersonResponseDTO {
     registrationNo?: string | null;
     firstName: string;
     lastName: string;
-    identificationPresent?: boolean;
-    identificationType?: string;
-    identificationDisplay?: string | null;
-    identityVerification?: IdentityVerificationSummary | null;
+    recordVerification?: RecordVerificationSummary | null;
     dob: string;
     gender: string;
     nationality: string;
@@ -60,8 +56,6 @@ export interface PaginatedResponse<T> {
 export interface PersonUpdateRequest {
     firstName: string;
     lastName: string;
-    icOrPassport?: string;
-    identificationType?: string;
     dob: string;
     gender: string;
     nationality: string;
@@ -74,8 +68,6 @@ export interface PersonUpdateRequest {
 export interface CreatePersonRequest {
     firstName: string;
     lastName: string;
-    icOrPassport?: string;
-    identificationType?: string;
     dob: string;
     gender: string;
     nationality: string;
@@ -139,17 +131,17 @@ export const linkPersonToUser = async (personId: string, userId: string): Promis
     return response.data;
 };
 
-export const verifyPersonIdentity = async (
+export const verifyPersonRecord = async (
     personId: string,
-    request: IdentityVerificationRequest
+    request: RecordVerificationRequest
 ): Promise<PersonResponseDTO> => {
-    const response = await api.post(`/persons/${personId}/identity-verification`, request);
+    const response = await api.post(`/persons/${personId}/record-verification`, request);
     return response.data;
 };
 
-export const revokePersonIdentityVerification = async (
+export const revokePersonRecordVerification = async (
     personId: string
 ): Promise<PersonResponseDTO> => {
-    const response = await api.delete(`/persons/${personId}/identity-verification`);
+    const response = await api.delete(`/persons/${personId}/record-verification`);
     return response.data;
 };

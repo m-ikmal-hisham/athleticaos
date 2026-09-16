@@ -397,11 +397,11 @@ public class AuditLogger {
                 logPersonUpdated(person, null, request);
         }
 
-        public void logIdentityVerified(Person person, String method, HttpServletRequest request) {
-                String summary = String.format("Identity verified for person: %s %s (ID: %s, Method: %s)",
+        public void logRecordVerified(Person person, String method, HttpServletRequest request) {
+                String summary = String.format("Record verified for person: %s %s (ID: %s, Method: %s)",
                                 person.getFirstName(), person.getLastName(), person.getId(), method);
                 AuditLogEntry entry = AuditLogEntry.builder()
-                                .actionType("IDENTITY_VERIFIED")
+                                .actionType("RECORD_VERIFIED")
                                 .entityType("PERSON")
                                 .entityId(person.getId())
                                 .entitySummary(summary)
@@ -410,11 +410,11 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
-        public void logIdentityVerificationFailed(Person person, HttpServletRequest request) {
-                String summary = String.format("Identity verification failed for person: %s %s (ID: %s)",
+        public void logRecordVerificationRevoked(Person person, HttpServletRequest request) {
+                String summary = String.format("Record verification revoked for person: %s %s (ID: %s)",
                                 person.getFirstName(), person.getLastName(), person.getId());
                 AuditLogEntry entry = AuditLogEntry.builder()
-                                .actionType("IDENTITY_VERIFICATION_FAILED")
+                                .actionType("RECORD_VERIFICATION_REVOKED")
                                 .entityType("PERSON")
                                 .entityId(person.getId())
                                 .entitySummary(summary)
@@ -423,24 +423,11 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
-        public void logIdentityVerificationRevoked(Person person, HttpServletRequest request) {
-                String summary = String.format("Identity verification revoked for person: %s %s (ID: %s)",
+        public void logRecordVerificationReset(Person person, HttpServletRequest request) {
+                String summary = String.format("Record verification reset for person: %s %s (ID: %s)",
                                 person.getFirstName(), person.getLastName(), person.getId());
                 AuditLogEntry entry = AuditLogEntry.builder()
-                                .actionType("IDENTITY_VERIFICATION_REVOKED")
-                                .entityType("PERSON")
-                                .entityId(person.getId())
-                                .entitySummary(summary)
-                                .build();
-
-                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
-        }
-
-        public void logIdentityVerificationReset(Person person, HttpServletRequest request) {
-                String summary = String.format("Identity verification reset for person: %s %s (ID: %s)",
-                                person.getFirstName(), person.getLastName(), person.getId());
-                AuditLogEntry entry = AuditLogEntry.builder()
-                                .actionType("IDENTITY_VERIFICATION_RESET")
+                                .actionType("RECORD_VERIFICATION_RESET")
                                 .entityType("PERSON")
                                 .entityId(person.getId())
                                 .entitySummary(summary)

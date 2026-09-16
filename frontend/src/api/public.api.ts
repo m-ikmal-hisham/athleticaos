@@ -236,8 +236,6 @@ export interface PublicPlayerSummary {
     id: string;
     firstName: string;
     lastName: string;
-    idType: string;
-    idNumber: string;
     position?: string;
     position2?: string;
     jerseyNumber?: number;
@@ -270,8 +268,6 @@ export interface PublicPlayerDetailResponse {
     id: string;
     firstName: string;
     lastName: string;
-    idType: string;
-    idNumber: string;
     age?: number | null;
     gender?: string;
     country?: string;

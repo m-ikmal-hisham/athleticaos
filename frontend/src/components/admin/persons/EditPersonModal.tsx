@@ -3,8 +3,8 @@ import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { showToast } from '@/lib/customToast';
-import { updatePerson, PersonResponseDTO, IdentityVerificationSummary } from '@/api/persons.api';
-import { IdentityVerificationPanel } from './IdentityVerificationPanel';
+import { updatePerson, PersonResponseDTO, RecordVerificationSummary } from '@/api/persons.api';
+import { RecordVerificationPanel } from './RecordVerificationPanel';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from './PossibleDuplicateDialog';
 
 interface EditPersonModalProps {
@@ -17,23 +17,21 @@ interface EditPersonModalProps {
 
 export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClose, person, onSuccess, onPersonUpdated }) => {
     const [loading, setLoading] = useState(false);
-    const [existingIdentificationType, setExistingIdentificationType] = useState<string | null>(null);
-    const [replacementIdentificationType, setReplacementIdentificationType] = useState('');
-    const [duplicateIcError, setDuplicateIcError] = useState('');
-    const [identityVerification, setIdentityVerification] = useState<IdentityVerificationSummary | null>(null);
+    const [recordVerification, setRecordVerification] = useState<RecordVerificationSummary | null>(null);
     const [duplicateData, setDuplicateData] = useState<{
         visibleMatches: PossibleDuplicateMatchItem[];
         otherOrganisationsCount: number;
     } | null>(null);
     const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
-    // OBS-05B: Track loaded DOB and gender for reentry detection
+    // Track loaded core identity fields for verification reset detection
+    const loadedFirstName = useRef('');
+    const loadedLastName = useRef('');
     const loadedDob = useRef('');
     const loadedGender = useRef('');
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        icOrPassport: '',
         dob: '',
         gender: '',
         nationality: '',
@@ -50,10 +48,9 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     // Initialize form fields only when dialog opens or a different person is loaded
     useEffect(() => {
         if (person && isOpen) {
-            setExistingIdentificationType(person.identificationType || null);
-            setReplacementIdentificationType('');
-            setDuplicateIcError('');
             setEmailError('');
+            loadedFirstName.current = person.firstName || '';
+            loadedLastName.current = person.lastName || '';
             loadedDob.current = person.dob || '';
             const rawGender = (person.gender || '').trim().toUpperCase();
             const initialGender = (rawGender === 'MALE' || rawGender === 'FEMALE') ? rawGender : '';
@@ -61,7 +58,6 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             setFormData({
                 firstName: person.firstName || '',
                 lastName: person.lastName || '',
-                icOrPassport: '', // Phase 1: do not preload raw identification
                 dob: person.dob || '',
                 gender: initialGender,
                 nationality: person.nationality || '',
@@ -76,50 +72,26 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [person?.id, isOpen]);
 
-    // Keep identity verification state synchronized if person verification status updates
+    // Keep record verification state synchronized if person verification status updates
     useEffect(() => {
         if (person && isOpen) {
-            setIdentityVerification(person.identityVerification || null);
+            setRecordVerification(person.recordVerification || null);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [person?.identityVerification, isOpen]);
+    }, [person?.recordVerification, isOpen]);
 
-    // OBS-05B: Determine if identification reentry is required due to DOB/gender change
-    const storedType = (existingIdentificationType || '').trim().toUpperCase();
-    const exempt = storedType === 'PASSPORT' || storedType === 'OTHER';
+    const nameChanged = (formData.firstName.trim() !== loadedFirstName.current) || (formData.lastName.trim() !== loadedLastName.current);
     const genderChanged = Boolean(formData.gender) && formData.gender.trim().toUpperCase() !== loadedGender.current;
     const dobChanged = Boolean(formData.dob) && formData.dob !== loadedDob.current;
-    const isReentryRequired = !exempt && (dobChanged || genderChanged);
 
-    const isVerified = identityVerification?.status === 'VERIFIED';
-    const willResetVerification = isVerified && (dobChanged || genderChanged || Boolean(formData.icOrPassport.trim()));
-
-    const reentryNotice = storedType === 'MALAYSIAN_IC'
-        ? 'Changing date of birth or gender requires re-entering the IC number.'
-        : "This record's identification type is missing or outdated. Changing date of birth or gender requires re-entering the identification number and selecting its type.";
-
-    // Effective type: auto-preselect MALAYSIAN_IC only when storedType was MALAYSIAN_IC
-    const effectiveIdType = replacementIdentificationType || (isReentryRequired && storedType === 'MALAYSIAN_IC' ? 'MALAYSIAN_IC' : '');
+    const isVerified = recordVerification?.status === 'VERIFIED';
+    const willResetVerification = isVerified && (nameChanged || dobChanged || genderChanged);
 
     const submitPerson = async (confirmPossibleDuplicate = false) => {
         if (!person) return;
 
-        const hasReplacementId = Boolean(formData.icOrPassport.trim());
-
-        // OBS-05B: Block submit if reentry is required but ID is not provided
-        if (isReentryRequired && !hasReplacementId) {
-            setDuplicateIcError(reentryNotice);
-            showToast.error(reentryNotice);
-            return;
-        }
-
         if (!formData.gender) {
             showToast.error('Please select a gender');
-            return;
-        }
-
-        if (hasReplacementId && !effectiveIdType) {
-            showToast.error('Please select an identification type for the replacement ID');
             return;
         }
 
@@ -134,8 +106,6 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             const payload = {
                 ...formData,
                 email: formData.email.trim(),
-                identificationType: hasReplacementId ? effectiveIdType : undefined,
-                icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined,
                 confirmPossibleDuplicate
             };
             await updatePerson(person.id, payload as any);
@@ -155,9 +125,6 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
                 setEmailError(errData.message || 'This person has no email address. Add one to save changes.');
                 showToast.error(errData.message || 'This person has no email address. Add one to save changes.');
-            } else if (errData?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
-                setDuplicateIcError(errData.message || reentryNotice);
-                showToast.error('Identification re-entry required');
             } else if (errData?.errorCode === 'DUPLICATE_EMAIL') {
                 setEmailError(errData.message || 'A person with this email already exists.');
                 showToast.error(errData.message || 'A person with this email already exists.');
@@ -198,67 +165,6 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                             value={formData.lastName}
                             onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                         />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="text-sm font-medium block">
-                                Identification Type {(formData.icOrPassport.trim() || isReentryRequired) ? '*' : ''}
-                            </label>
-                            {existingIdentificationType && (
-                                <span className="text-[11px] font-medium text-muted-foreground">
-                                    Current: <span className="font-semibold text-foreground">{existingIdentificationType}</span>
-                                </span>
-                            )}
-                        </div>
-                        <select
-                            aria-label="Identification Type"
-                            value={effectiveIdType}
-                            onChange={(e) => setReplacementIdentificationType(e.target.value)}
-                            disabled={!formData.icOrPassport.trim() && !isReentryRequired}
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:opacity-50"
-                        >
-                            <option value="" disabled>
-                                {formData.icOrPassport.trim() || isReentryRequired ? 'Select replacement ID type' : 'Only required if replacing ID'}
-                            </option>
-                            <option value="MALAYSIAN_IC">Malaysian IC</option>
-                            <option value="PASSPORT">Passport</option>
-                            <option value="OTHER">Other</option>
-                        </select>
-                    </div>
-                    <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="text-sm font-medium block">
-                                IC or Passport {isReentryRequired ? '*' : ''}
-                            </label>
-                            {person?.identificationPresent && (
-                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                    ID on file: PRESENT
-                                </span>
-                            )}
-                        </div>
-                        <Input
-                            value={formData.icOrPassport}
-                            onChange={(e) => {
-                                setFormData({ ...formData, icOrPassport: e.target.value });
-                                if (duplicateIcError) setDuplicateIcError('');
-                            }}
-                            required={isReentryRequired ? true : undefined}
-                            className={duplicateIcError ? 'ring-2 ring-amber-500' : ''}
-                            placeholder={isReentryRequired ? 'IC re-entry required' : (person?.identificationPresent ? 'Leave blank to keep existing ID' : 'ID / Passport Number')}
-                        />
-                        {isReentryRequired && (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                {reentryNotice}
-                            </p>
-                        )}
-                        {duplicateIcError && (
-                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                                {duplicateIcError}
-                            </p>
-                        )}
                     </div>
                 </div>
 
@@ -376,7 +282,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
                 {willResetVerification && (
                     <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
-                        Saving these changes will remove the identity verification.
+                        Saving changes to name, date of birth, or gender will reset the record verification.
                     </div>
                 )}
 
@@ -392,11 +298,11 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
             {person && (
                 <div className="pt-4 border-t">
-                    <IdentityVerificationPanel
+                    <RecordVerificationPanel
                         personId={person.id}
-                        identityVerification={identityVerification}
+                        recordVerification={recordVerification}
                         onVerificationChanged={(updated) => {
-                            setIdentityVerification(updated.identityVerification || null);
+                            setRecordVerification(updated.recordVerification || null);
                             if (onPersonUpdated) {
                                 onPersonUpdated(updated);
                             } else {

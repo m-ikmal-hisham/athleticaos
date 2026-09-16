@@ -19,10 +19,6 @@ public record PlayerResponse(
                 String lastName,
                 String gender,
                 LocalDate dob,
-                // Identification — raw value NOT exposed in responses (Phase 1 containment)
-                boolean identificationPresent,
-                String identificationType,
-                String identificationDisplay, // "PRESENT" when an IC/passport is stored, null otherwise
                 String nationality,
                 String email,
                 String phone,
@@ -50,5 +46,5 @@ public record PlayerResponse(
                 java.util.List<String> teamNames,
 
                 LocalDateTime createdAt,
-                com.athleticaos.backend.dtos.person.IdentityVerificationSummary identityVerification) {
+                com.athleticaos.backend.dtos.person.RecordVerificationSummary recordVerification) {
 }
