@@ -304,19 +304,20 @@ public class PersonServiceImpl implements PersonService {
             verificationReset = true;
         }
 
-        // Effective email rule
+        // Effective email rule (CR-4): a real address may not be removed, but a record that has
+        // none — or only a machine-generated placeholder — can still be edited and saved.
         if (request.getEmail() != null) {
-            if (request.getEmail().trim().isEmpty()) {
-                throw new EmailRequiredException();
-            }
             String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
-            if (normalizedEmail != null && personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
-                throw new DuplicateEmailException();
-            }
-            person.setEmail(normalizedEmail);
-        } else {
-            if (person.getEmail() == null || person.getEmail().trim().isEmpty()) {
-                throw new EmailRequiredException("This person has no email address. Add one to save changes.");
+            if (normalizedEmail == null) {
+                if (!EmailUtil.isMissingOrPlaceholder(person.getEmail())) {
+                    throw new EmailRequiredException("An existing email address cannot be removed.");
+                }
+                person.setEmail(null);
+            } else {
+                if (personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
+                    throw new DuplicateEmailException();
+                }
+                person.setEmail(normalizedEmail);
             }
         }
 

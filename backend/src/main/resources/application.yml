@@ -47,3 +47,12 @@ application:
       expiration: 86400000
       refresh-token:
         expiration: 604800000
+
+athleticaos:
+  backfill:
+    # One-off placeholder email backfill (CR-4). Never enable it for the long-running app:
+    # pass the switches on the command line of a temporary container instead.
+    placeholder-email:
+      enabled: ${ATHLETICAOS_BACKFILL_PLACEHOLDER_EMAIL_ENABLED:false}
+      dry-run: ${ATHLETICAOS_BACKFILL_PLACEHOLDER_EMAIL_DRY_RUN:true}
+      batch-size: ${ATHLETICAOS_BACKFILL_PLACEHOLDER_EMAIL_BATCH_SIZE:200}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { getPersonsByOrganisation, getAllPersons, deletePerson, PersonResponseDTO } from '@/api/persons.api';
+import { getPersonsByOrganisation, getAllPersons, deletePerson, PersonResponseDTO, isPlaceholderEmail } from '@/api/persons.api';
 import { Card, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
@@ -270,7 +270,7 @@ const PeopleDirectory: React.FC = () => {
                 <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 px-4 py-3 rounded-xl flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                         <span className="font-semibold text-amber-400">Missing Email Filter Active:</span>
-                        <span>Showing persons without an email address. Add an email to maintain account access and update records.</span>
+                        <span>Showing people with no email address, or only a generated placeholder. Records can still be edited; add a real address when you have one.</span>
                     </div>
                     <button
                         type="button"
@@ -356,7 +356,11 @@ const PeopleDirectory: React.FC = () => {
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm">
-                                                {p.email && <div className="text-foreground">{p.email}</div>}
+                                                {p.email && (
+                                                    isPlaceholderEmail(p.email)
+                                                        ? <div className="text-amber-500 italic text-xs">No email (placeholder)</div>
+                                                        : <div className="text-foreground">{p.email}</div>
+                                                )}
                                                 {p.phone && <div className="text-xs text-muted">{p.phone}</div>}
                                                 {(!p.email && !p.phone) && <span className="text-muted">-</span>}
                                             </div>

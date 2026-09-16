@@ -3,7 +3,7 @@ import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { showToast } from '@/lib/customToast';
-import { updatePerson, PersonResponseDTO, RecordVerificationSummary } from '@/api/persons.api';
+import { updatePerson, PersonResponseDTO, RecordVerificationSummary, isPlaceholderEmail } from '@/api/persons.api';
 import { RecordVerificationPanel } from './RecordVerificationPanel';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from './PossibleDuplicateDialog';
 
@@ -254,6 +254,9 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         />
                         {emailError && (
                             <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                        )}
+                        {isPlaceholderEmail(formData.email) && (
+                            <p className="text-xs text-amber-500 mt-1">Placeholder address on file — replace it with a real one when you have it.</p>
                         )}
                     </div>
                     <div>

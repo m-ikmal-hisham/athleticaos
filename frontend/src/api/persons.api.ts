@@ -1,5 +1,12 @@
 import api from './axios';
 
+/** Machine-generated stand-in addresses use this domain; they are never deliverable. */
+export const PLACEHOLDER_EMAIL_DOMAIN = '@placeholder.invalid';
+
+/** True when the stored address is a generated placeholder rather than a real contact. */
+export const isPlaceholderEmail = (email?: string | null): boolean =>
+    !!email && email.trim().toLowerCase().endsWith(PLACEHOLDER_EMAIL_DOMAIN);
+
 export const RECORD_VERIFICATION_METHODS = [
     { value: 'PRE_REGISTRATION_RECORD', label: 'Pre-registration record' },
     { value: 'DOCUMENT_SIGHTED', label: 'Document sighted' }

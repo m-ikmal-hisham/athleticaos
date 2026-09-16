@@ -346,20 +346,51 @@ class PersonServiceImplTest {
 
         assertThatThrownBy(() -> personService.updatePerson(personId, request))
                 .isInstanceOf(EmailRequiredException.class)
-                .hasMessage("Email is required.");
+                .hasMessage("An existing email address cannot be removed.");
     }
 
     @Test
-    void updatePerson_legacyPersonWithoutEmail_noEmailInRequest_throwsEmailRequiredException() {
+    void updatePerson_legacyPersonWithoutEmail_noEmailInRequest_succeeds() {
         existingPerson.setEmail(null);
         when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
 
         PersonUpdateRequest request = new PersonUpdateRequest();
         request.setPhone("0123456789");
 
-        assertThatThrownBy(() -> personService.updatePerson(personId, request))
-                .isInstanceOf(EmailRequiredException.class)
-                .hasMessage("This person has no email address. Add one to save changes.");
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getPhone()).isEqualTo("0123456789");
+        assertThat(existingPerson.getEmail()).isNull();
+    }
+
+    @Test
+    void updatePerson_legacyPersonWithoutEmail_blankEmailInRequest_succeeds() {
+        existingPerson.setEmail(null);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail("   ");
+        request.setPhone("0123456789");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getEmail()).isNull();
+    }
+
+    @Test
+    void updatePerson_placeholderEmail_canBeCleared() {
+        existingPerson.setEmail("aos-000123@placeholder.invalid");
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail("");
+
+        personService.updatePerson(personId, request);
+
+        assertThat(existingPerson.getEmail()).isNull();
     }
 
     @Test

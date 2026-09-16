@@ -1,6 +1,7 @@
 package com.athleticaos.backend.repositories;
 
 import com.athleticaos.backend.entities.Person;
+import com.athleticaos.backend.utils.EmailUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,5 +59,42 @@ class PersonRepositoryIntegrationTest {
 
         assertThat(saved.getRegistrationNo()).isNotNull();
         assertThat(saved.getRegistrationNo()).matches("^AOS-\\d{6,}$");
+    }
+
+    @Test
+    @DisplayName("Missing-email queries treat a placeholder address as missing, a real address as present")
+    void missingEmailQueries_treatPlaceholderAsMissing() {
+        Person withPlaceholder = personRepository.saveAndFlush(java.util.Objects.requireNonNull(
+                Person.builder().firstName("Placeholder").lastName("Case")
+                        .dob(LocalDate.of(1999, 5, 5)).gender("FEMALE").nationality("MALAYSIAN")
+                        .recordVerificationStatus("UNVERIFIED").build()));
+        withPlaceholder.setEmail(EmailUtil.placeholderFor(withPlaceholder.getRegistrationNo()));
+        personRepository.saveAndFlush(withPlaceholder);
+
+        Person withRealEmail = personRepository.saveAndFlush(java.util.Objects.requireNonNull(
+                Person.builder().firstName("Real").lastName("Case")
+                        .dob(LocalDate.of(1999, 6, 6)).gender("MALE").nationality("MALAYSIAN")
+                        .recordVerificationStatus("UNVERIFIED")
+                        .email("real.case@example.invalid").build()));
+
+        Person withNoEmail = personRepository.saveAndFlush(java.util.Objects.requireNonNull(
+                Person.builder().firstName("Absent").lastName("Case")
+                        .dob(LocalDate.of(1999, 7, 7)).gender("MALE").nationality("MALAYSIAN")
+                        .recordVerificationStatus("UNVERIFIED").build()));
+
+        java.util.List<java.util.UUID> missing = personRepository
+                .findPersonsWithMissingEmail(org.springframework.data.domain.PageRequest.of(0, 100))
+                .getContent().stream().map(Person::getId).toList();
+
+        assertThat(missing).contains(withPlaceholder.getId(), withNoEmail.getId());
+        assertThat(missing).doesNotContain(withRealEmail.getId());
+
+        // The backfill only targets rows with no address at all — never overwrites a placeholder
+        java.util.List<java.util.UUID> needingPlaceholder = personRepository
+                .findPersonsNeedingPlaceholderEmail(org.springframework.data.domain.PageRequest.of(0, 100))
+                .getContent().stream().map(Person::getId).toList();
+
+        assertThat(needingPlaceholder).contains(withNoEmail.getId());
+        assertThat(needingPlaceholder).doesNotContain(withPlaceholder.getId(), withRealEmail.getId());
     }
 }

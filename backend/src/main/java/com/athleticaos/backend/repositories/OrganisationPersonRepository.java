@@ -54,14 +54,14 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
     );
 
     @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
-           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '')")
+           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '' OR LOWER(op.person.email) LIKE '%@placeholder.invalid')")
     org.springframework.data.domain.Page<Person> findUniquePersonsWithMissingEmailByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,
         org.springframework.data.domain.Pageable pageable
     );
 
     @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
-           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '') AND (" +
+           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '' OR LOWER(op.person.email) LIKE '%@placeholder.invalid') AND (" +
            "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")

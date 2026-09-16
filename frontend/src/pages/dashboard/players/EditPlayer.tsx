@@ -16,7 +16,7 @@ import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
 import { RecordVerificationPanel } from '@/components/admin/persons/RecordVerificationPanel';
-import { RecordVerificationSummary } from '@/api/persons.api';
+import { RecordVerificationSummary, isPlaceholderEmail } from '@/api/persons.api';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
 interface Team {
@@ -334,6 +334,9 @@ export const EditPlayer = () => {
                                     className="input-base w-full"
                                     aria-label="Email"
                                 />
+                                {isPlaceholderEmail(email) && (
+                                    <p className="text-xs text-amber-500 mt-1">Placeholder address on file — replace it with a real one when you have it.</p>
+                                )}
                                 {emailError && (
                                     <p className="text-xs text-red-500 mt-1">{emailError}</p>
                                 )}

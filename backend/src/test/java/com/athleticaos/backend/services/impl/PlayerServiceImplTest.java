@@ -313,7 +313,30 @@ class PlayerServiceImplTest {
 
         assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
                 .isInstanceOf(EmailRequiredException.class)
-                .hasMessage("Email is required.");
+                .hasMessage("An existing email address cannot be removed.");
+    }
+
+    @Test
+    void updatePlayer_legacyPersonWithoutEmail_editingOtherFields_succeeds() {
+        existingPerson.setEmail(null);
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        // (firstName, lastName, gender, dob, nationality, email, phone, address…)
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                null, null, "0129998887",
+                null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        assertThat(existingPerson.getEmail()).isNull();
+        assertThat(existingPerson.getPhone()).isEqualTo("0129998887");
     }
 
     @Test
