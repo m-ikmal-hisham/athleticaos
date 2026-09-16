@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
 @Tag("integration")
+@SuppressWarnings("null")
 class PersonRepositoryIntegrationTest {
 
     @Container
