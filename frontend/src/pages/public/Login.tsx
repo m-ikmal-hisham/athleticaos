@@ -19,6 +19,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 // ─── Access Gate Constants ────────────────────────────────────────────
+// Curtain only, not a security control: this value is compiled into the public bundle.
+// Access is actually enforced server-side by authentication and role checks.
 const ACCESS_CODE = import.meta.env.VITE_ADMIN_ACCESS_CODE || 'AOS3R26ADMINDev';
 const ENV = import.meta.env.VITE_ENV || 'development';
 const SESSION_KEY = 'aos_access_granted';

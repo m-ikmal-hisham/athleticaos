@@ -23,7 +23,12 @@ class IdentificationRemovalGuardTest {
             "identificationType",
             "MALAYSIAN_IC",
             "IdentificationUtil",
-            "identification-hmac"
+            "identification-hmac",
+            "identificationValue",
+            "identification_value",
+            "identity-verification",
+            "DUPLICATE_IC",
+            "IC/Passport"
     );
 
     @Test

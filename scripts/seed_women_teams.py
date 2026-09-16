@@ -81,7 +81,6 @@ def create_player(headers, first_name, last_name):
         "email": f"{first_name.lower()}.{last_name.lower()}@example.com",
         "gender": "FEMALE",
         "dob": "2000-01-01",  # Changed from dateOfBirth
-        "icOrPassport": f"P{random.randint(1000000, 9999999)}", # Changed from icOrPassportNumber
         "nationality": "Malaysian" # Added
     }
     response = requests.post(url, json=payload, headers=headers)
@@ -89,10 +88,6 @@ def create_player(headers, first_name, last_name):
         return response.json()["id"]
     else:
         # print(f"Failed to create player {first_name} {last_name}: {response.text}")
-        # If duplicated IC, retry?
-        if "IC or Passport" in response.text:
-             payload["icOrPassport"] = f"P{random.randint(1000000, 9999999)}"
-             return requests.post(url, json=payload, headers=headers).json().get("id")
         return None
 
 def assign_player(headers, player_id, team_id):

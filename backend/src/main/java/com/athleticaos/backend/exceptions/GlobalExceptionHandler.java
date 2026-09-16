@@ -32,9 +32,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
-        if (ex.getMessage() != null && ex.getMessage().contains("Person with this IC/Passport already exists")) {
-            return buildResponseDetailed(HttpStatus.CONFLICT, ex.getMessage(), "DUPLICATE_IC", request);
-        }
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 

@@ -34,8 +34,8 @@ This document outlines the functional and non-functional requirements for the At
 ## 3. Non-Functional Requirements
 
 ### 3.1 Security & Compliance
-- **NFR-001**: **PDPA Compliance**: All personal data (IC/Passport, Contact) must be handled according to Malaysian PDPA regulations.
-- **NFR-002**: **Encryption**: Sensitive fields (IC/Passport) must be encrypted at rest.
+- **NFR-001**: **PDPA Compliance**: All personal data (name, date of birth, contact details) must be handled according to Malaysian PDPA regulations.
+- **NFR-002**: **Data minimisation**: identification numbers (IC/passport) are **not** collected or stored. Each person is identified internally by a UUID and externally by a generated registration number (`AOS-000123`).
 - **NFR-003**: **Authentication**: Use JWT for stateless authentication.
 
 ### 3.2 Performance & Scalability

@@ -534,7 +534,7 @@
                         "description": "",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"firstName\": \"Player\",\n    \"lastName\": \"One\",\n    \"gender\": \"MALE\",\n    \"dob\": \"1990-01-01\",\n    \"icOrPassport\": \"A1234567\",\n    \"nationality\": \"Malaysia\",\n    \"email\": \"player@example.com\",\n    \"phone\": \"+60123456789\",\n    \"address\": \"123 Street\",\n    \"dominantHand\": \"RIGHT\",\n    \"dominantLeg\": \"RIGHT\",\n    \"heightCm\": 180,\n    \"weightKg\": 90\n}"
+                            "raw": "{\n    \"firstName\": \"Player\",\n    \"lastName\": \"One\",\n    \"gender\": \"MALE\",\n    \"dob\": \"1990-01-01\",\n    \"nationality\": \"Malaysia\",\n    \"email\": \"player@example.com\",\n    \"phone\": \"+60123456789\",\n    \"address\": \"123 Street\",\n    \"dominantHand\": \"RIGHT\",\n    \"dominantLeg\": \"RIGHT\",\n    \"heightCm\": 180,\n    \"weightKg\": 90\n}"
                         }
                     },
                     "response": []

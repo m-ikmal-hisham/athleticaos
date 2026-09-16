@@ -35,7 +35,7 @@ digraph ERD {
   User_Role [label="{User_Role|user_id|role_id}"];
   Organisation [label="{Organisation|id|name|org_type|parent_org_id|primary_color|secondary_color|logo_url|created_at}"];
   User_Organisation [label="{User_Organisation|user_id|organisation_id|role}"];
-  Person [label="{Person|id|first_name|last_name|gender|dob|ic_or_passport|nationality|email|phone|address|created_at}"];
+  Person [label="{Person|id|first_name|last_name|gender|dob|registration_no|nationality|email|phone|address|created_at}"];
   Player [label="{Player|id|person_id|status|dominant_hand|dominant_leg|height_cm|weight_kg|created_at}"];
   Player_Season_Lifecycle [label="{Player_Season_Lifecycle|id|player_id|organisation_id|season_year|age_group|auto_age_up}"];
   Team [label="{Team|id|organisation_id|name|category|age_group|created_at}"];

@@ -24,7 +24,7 @@
 ## 2. Player Lifecycle Management
 
 ### 2.1 Player Registration
-- **Data Capture**: Full Name, IC/Passport (Encrypted), DOB, Gender, Nationality, Contact Info, Emergency Contact.
+- **Data Capture**: Full Name, DOB, Gender, Nationality, Contact Info (email required), Emergency Contact. A platform registration number (`AOS-000123`) is generated automatically. **IC and passport numbers are not collected or stored.**
 - **Physical Stats**: Height (cm), Weight (kg), Dominant Hand/Leg.
 - **Document Upload**: Photo ID, Medical Clearance (optional).
 
@@ -71,7 +71,7 @@
 ## 5. Data Validation & Error Handling
 
 ### 5.1 Validation Rules
-- **IC/Passport**: Check format (Malaysian IC: YYMMDD-PB-####).
+- **Possible duplicate**: matching first name, last name, DOB and gender raises a warning that an administrator must confirm before the record is created.
 - **Email**: Standard regex validation.
 - **Dates**: End Date >= Start Date.
 - **Scores**: Cannot be negative.

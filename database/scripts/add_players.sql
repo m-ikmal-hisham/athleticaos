@@ -22,14 +22,13 @@ BEGIN
             player_uuid := gen_random_uuid();
             
             -- Create person
-            INSERT INTO persons (id, first_name, last_name, gender, dob, ic_or_passport, nationality, email, created_at)
+            INSERT INTO persons (id, first_name, last_name, gender, dob, nationality, email, created_at)
             VALUES (
                 person_uuid,
                 player_names[i],
                 last_names[i],
                 'MALE',
                 CURRENT_DATE - (20 + i)::integer * INTERVAL '1 year',
-                '000000-00-000' || jersey::text,
                 'Malaysian',
                 lower(player_names[i]) || '.' || lower(replace(team_record.name, ' ', '')) || '_' || jersey || '@test.com',
                 CURRENT_TIMESTAMP
