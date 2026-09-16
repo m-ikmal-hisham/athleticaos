@@ -156,6 +156,7 @@ export enum DominantSide {
 
 export interface Player {
     id: string;
+    registrationNo?: string | null;
     personId: string;
     slug?: string;
     // Person (PII) fields
@@ -205,6 +206,7 @@ export interface Player {
 
 export interface TeamPlayer {
     playerId: string;
+    registrationNo?: string | null;
     firstName: string;
     lastName: string;
     email: string;
@@ -235,6 +237,7 @@ export interface PlayerCreateRequest {
     email: string;
     phone?: string;
     address?: string;
+    confirmPossibleDuplicate?: boolean;
     // Player (Rugby-specific) fields - optional
     status?: string;
     dominantHand?: DominantSide;
@@ -256,6 +259,7 @@ export interface PlayerUpdateRequest {
     email?: string;
     phone?: string;
     address?: string;
+    confirmPossibleDuplicate?: boolean;
     // Player (Rugby-specific) fields - all optional
     status?: string;
     dominantHand?: string;

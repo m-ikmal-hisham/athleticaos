@@ -36,6 +36,7 @@ public class CreatePersonRequest {
 
     private String nationality;
 
+    @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     private String email;
     private String phone;
@@ -43,4 +44,5 @@ public class CreatePersonRequest {
     private Boolean isPlayer;
     private Boolean isOfficial;
     private Boolean isStaff;
+    private Boolean confirmPossibleDuplicate;
 }

@@ -149,6 +149,28 @@ public class GlobalExceptionHandler {
         return buildResponseDetailed(HttpStatus.CONFLICT, "A person with this email already exists.", "DUPLICATE_EMAIL", request);
     }
 
+    @ExceptionHandler(EmailRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleEmailRequired(EmailRequiredException ex, HttpServletRequest request) {
+        return buildResponseDetailed(HttpStatus.BAD_REQUEST, ex.getMessage(), "EMAIL_REQUIRED", request);
+    }
+
+    @ExceptionHandler(PossibleDuplicatePersonException.class)
+    public ResponseEntity<com.athleticaos.backend.dtos.person.PossibleDuplicateErrorResponse> handlePossibleDuplicatePerson(
+            PossibleDuplicatePersonException ex, HttpServletRequest request) {
+        com.athleticaos.backend.dtos.person.PossibleDuplicateErrorResponse error = new com.athleticaos.backend.dtos.person.PossibleDuplicateErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                "A person with the same name, date of birth and gender already exists.",
+                null,
+                "POSSIBLE_DUPLICATE_PERSON",
+                request != null ? request.getRequestURI() : null,
+                LocalDateTime.now(),
+                ex.getMatches(),
+                ex.getOtherOrganisationMatches()
+        );
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(IdentificationReentryRequiredException.class)
     public ResponseEntity<ErrorResponse> handleIdentificationReentryRequired(
             IdentificationReentryRequiredException ex, HttpServletRequest request) {

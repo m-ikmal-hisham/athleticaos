@@ -24,6 +24,10 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @org.hibernate.annotations.Generated
+    @Column(name = "registration_no", insertable = false, updatable = false)
+    private String registrationNo;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 

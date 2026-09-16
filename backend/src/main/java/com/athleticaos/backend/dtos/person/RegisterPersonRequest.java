@@ -29,5 +29,11 @@ public class RegisterPersonRequest {
     @NotBlank(message = "Nationality is required")
     private String nationality;
     
+    @jakarta.validation.constraints.NotBlank(message = "Email is required")
+    @jakarta.validation.constraints.Email(message = "Invalid email format")
+    private String email;
+
     private String nationalPlayerStatus;
+
+    private Boolean confirmPossibleDuplicate;
 }

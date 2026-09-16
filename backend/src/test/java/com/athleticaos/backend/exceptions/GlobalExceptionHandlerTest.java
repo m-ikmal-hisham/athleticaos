@@ -1,5 +1,7 @@
 package com.athleticaos.backend.exceptions;
 
+import com.athleticaos.backend.dtos.person.PossibleDuplicateMatch;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -181,6 +183,43 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").value(not(containsString("@"))));
     }
 
+    @Test
+    void emailRequiredException_returns400WithEmailRequiredCode() throws Exception {
+        mockMvc.perform(get("/test-errors/email-required"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errorCode").value("EMAIL_REQUIRED"))
+                .andExpect(jsonPath("$.message").value("Email is required"));
+    }
+
+    @Test
+    void possibleDuplicatePersonException_returns409WithCorrectContract() throws Exception {
+        String responseContent = mockMvc.perform(get("/test-errors/possible-duplicate"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value("POSSIBLE_DUPLICATE_PERSON"))
+                .andExpect(jsonPath("$.matches").isArray())
+                .andExpect(jsonPath("$.otherOrganisationMatches").value(2))
+                .andExpect(jsonPath("$.matches[0].registrationNo").value("AOS-000001"))
+                .andExpect(jsonPath("$.matches[0].firstName").value("Jane"))
+                .andExpect(jsonPath("$.matches[0].lastName").value("Doe"))
+                .andExpect(jsonPath("$.matches[0].email").doesNotExist())
+                .andExpect(jsonPath("$.matches[0].dob").doesNotExist())
+                .andExpect(jsonPath("$.matches[0].id").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+
+        JsonNode root = objectMapper.readTree(responseContent);
+        org.assertj.core.api.Assertions.assertThat(root.has("matches")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(root.has("otherOrganisationMatches")).isTrue();
+        JsonNode matchNode = root.get("matches").get(0);
+        org.assertj.core.api.Assertions.assertThat(matchNode.has("registrationNo")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(matchNode.has("firstName")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(matchNode.has("lastName")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(matchNode.has("email")).isFalse();
+        org.assertj.core.api.Assertions.assertThat(matchNode.has("dob")).isFalse();
+        org.assertj.core.api.Assertions.assertThat(matchNode.has("id")).isFalse();
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -258,6 +297,19 @@ public class GlobalExceptionHandlerTest {
             SQLException sqlEx = new SQLException("duplicate key value violates unique constraint \"idx_persons_email_unique\"", "23505");
             ConstraintViolationException cve = new ConstraintViolationException("Unique violation", sqlEx, "idx_persons_email_unique");
             throw new DataIntegrityViolationException("Data integrity violation", cve);
+        }
+
+        @GetMapping("/email-required")
+        public String testEmailRequired() {
+            throw new EmailRequiredException("Email is required");
+        }
+
+        @GetMapping("/possible-duplicate")
+        public String testPossibleDuplicate() {
+            List<PossibleDuplicateMatch> matches = List.of(
+                    new PossibleDuplicateMatch("AOS-000001", "Jane", "Doe")
+            );
+            throw new PossibleDuplicatePersonException(matches, 2);
         }
     }
 

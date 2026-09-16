@@ -88,7 +88,9 @@ class PublicProfilePrivacyTest {
                     .toList();
             assertThat(fieldNames)
                     .as("DTO %s should not declare dateOfBirth or dob", dtoClass.getSimpleName())
-                    .doesNotContain("dateOfBirth", "dob");
+                    .doesNotContain("dateOfBirth", "dob")
+                    .as("DTO %s should not declare registrationNo or registration_no", dtoClass.getSimpleName())
+                    .doesNotContain("registrationNo", "registration_no");
         }
 
         // PublicPlayerListItemResponse must also not declare city or age
@@ -115,6 +117,7 @@ class PublicProfilePrivacyTest {
         LocalDate fabricatedDob = LocalDate.of(1998, 5, 21);
 
         Person person = Person.builder()
+                .registrationNo("AOS-000123")
                 .firstName("Test")
                 .lastName("Player")
                 .dob(fabricatedDob)
@@ -156,7 +159,9 @@ class PublicProfilePrivacyTest {
                 .doesNotContain("city")
                 .doesNotContain("Petaling Jaya")
                 .doesNotContain("age")
-                .doesNotContain("1998-05-21");
+                .doesNotContain("1998-05-21")
+                .doesNotContain("registrationNo")
+                .doesNotContain("AOS-");
     }
 
     @Test
@@ -167,6 +172,7 @@ class PublicProfilePrivacyTest {
 
         PlayerResponse playerResponse = PlayerResponse.builder()
                 .id(playerId)
+                .registrationNo("AOS-000456")
                 .firstName("Fabricated")
                 .lastName("Athlete")
                 .dob(fabricatedDob)
@@ -196,6 +202,8 @@ class PublicProfilePrivacyTest {
                 .doesNotContain("dateOfBirth")
                 .doesNotContain("dob")
                 .doesNotContain(fabricatedDob.toString())
+                .doesNotContain("registrationNo")
+                .doesNotContain("AOS-")
                 .contains("\"age\":22");
     }
 

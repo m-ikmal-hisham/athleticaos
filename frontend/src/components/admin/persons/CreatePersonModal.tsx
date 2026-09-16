@@ -7,6 +7,7 @@ import { createPerson } from '@/api/persons.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { useAuthStore } from '@/store/auth.store';
 import { Buildings, MagnifyingGlass } from '@phosphor-icons/react';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from './PossibleDuplicateDialog';
 
 interface CreatePersonModalProps {
     isOpen: boolean;
@@ -25,6 +26,11 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
     const [selectedOrgId, setSelectedOrgId] = useState<string>(organisationId || '');
     const [orgSearchQuery, setOrgSearchQuery] = useState('');
     const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -91,9 +97,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
         return 'Selected Organisation';
     }, [selectedOrgId, organisations, user]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const submitPerson = async (confirmPossibleDuplicate = false) => {
         // Validate organisation if any role is selected
         if (hasAnyRole && !selectedOrgId) {
             showToast.error('Please select an organisation when assigning a role.');
@@ -112,14 +116,22 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             return;
         }
 
+        if (!formData.email.trim()) {
+            setEmailError('Email is required.');
+            showToast.error('Email is required.');
+            return;
+        }
+
         setLoading(true);
         try {
             const payload = {
                 ...formData,
-                email: formData.email.trim() || undefined
+                email: formData.email.trim(),
+                confirmPossibleDuplicate
             };
             await createPerson(orgIdToUse, payload);
             showToast.success('Person created successfully');
+            setShowDuplicateDialog(false);
             onSuccess();
             onClose();
             // Reset form
@@ -143,15 +155,30 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             setOrgSearchQuery('');
         } catch (error: any) {
             console.error('Create failed', error);
-            if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
-                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
-                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
+            const errData = error.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'Email is required.');
+                showToast.error(errData.message || 'Email is required.');
+            } else if (errData?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(errData.message || 'A person with this email already exists.');
+                showToast.error(errData.message || 'A person with this email already exists.');
             } else {
-                showToast.error(error.response?.data?.message || 'Failed to create person');
+                showToast.error(errData?.message || 'Failed to create person');
             }
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitPerson(false);
     };
 
     return (
@@ -372,9 +399,10 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Email</label>
+                        <label className="text-sm font-medium mb-1 block">Email *</label>
                         <Input
                             type="email"
+                            required
                             value={formData.email}
                             onChange={(e) => {
                                 setFormData({ ...formData, email: e.target.value });
@@ -404,6 +432,19 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                     </Button>
                 </div>
             </form>
+
+            {showDuplicateDialog && duplicateData && (
+                <PossibleDuplicateDialog
+                    isOpen={showDuplicateDialog}
+                    onClose={() => setShowDuplicateDialog(false)}
+                    onConfirmAnyway={() => submitPerson(true)}
+                    visibleMatches={duplicateData.visibleMatches}
+                    otherOrganisationsCount={duplicateData.otherOrganisationsCount}
+                    isSubmitting={loading}
+                    title="Possible duplicate person detected"
+                    confirmButtonText="Create anyway"
+                />
+            )}
         </Modal>
     );
 };

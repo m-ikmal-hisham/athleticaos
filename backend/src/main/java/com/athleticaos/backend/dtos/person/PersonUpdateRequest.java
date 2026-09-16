@@ -27,4 +27,5 @@ public class PersonUpdateRequest {
     private Boolean isPlayer;
     private Boolean isOfficial;
     private Boolean isStaff;
+    private Boolean confirmPossibleDuplicate;
 }

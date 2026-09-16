@@ -11,6 +11,7 @@ import { SearchableSelect } from '@/components/SearchableSelect';
 import { Badge } from '@/components/Badge';
 import { Input } from '@/components/Input';
 import { registerPerson } from '@/api/organisations.api';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
 interface TeamStaffPanelProps {
     teamId: string;
@@ -27,7 +28,13 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
     const [isAdding, setIsAdding] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
     const [newStaff, setNewStaff] = useState({ personId: '', staffRoleId: 0, isWorldRugbyCertified: false });
-    const [newPerson, setNewPerson] = useState({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', nationalPlayerStatus: 'NONE' });
+    const [newPerson, setNewPerson] = useState({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', email: '', nationalPlayerStatus: 'NONE' });
+    const [emailError, setEmailError] = useState('');
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
         title: '',
@@ -86,8 +93,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
         }
     };
 
-    const handleRegisterPerson = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const registerNewPerson = async (confirmPossibleDuplicate = false) => {
         if (!organisationId) {
             showToast.error('Missing organisation ID');
             return;
@@ -96,24 +102,53 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
             showToast.error('Please select an identification type');
             return;
         }
+        if (!newPerson.email.trim()) {
+            setEmailError('Email is required.');
+            showToast.error('Email is required.');
+            return;
+        }
 
         try {
-            const newlyCreatedPerson = await registerPerson(organisationId, newPerson);
+            const payload = {
+                ...newPerson,
+                email: newPerson.email.trim(),
+                confirmPossibleDuplicate
+            };
+            const newlyCreatedPerson = await registerPerson(organisationId, payload);
             showToast.success('Person registered successfully');
-            
+            setShowDuplicateDialog(false);
+
             // Auto-select the newly created person in the Staff dropdown
             setNewStaff(prev => ({ ...prev, personId: newlyCreatedPerson.id }));
-            
+
             // Reset form and switch back to Add Staff view
-            setNewPerson({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', nationalPlayerStatus: 'NONE' });
+            setNewPerson({ firstName: '', lastName: '', identificationType: '', icOrPassport: '', dob: '', gender: '', nationality: '', email: '', nationalPlayerStatus: 'NONE' });
+            setEmailError('');
             setIsRegistering(false);
-            
+
             // Reload persons to reflect the new addition
             loadData();
         } catch (err: any) {
             console.error("Failed to register person", err);
-            showToast.error(err.response?.data?.message || 'Failed to register person');
+            const errData = err.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'Email is required.');
+                showToast.error(errData.message || 'Email is required.');
+            } else {
+                showToast.error(errData?.message || 'Failed to register person');
+            }
         }
+    };
+
+    const handleRegisterPerson = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await registerNewPerson(false);
     };
 
     const handleRemove = (staffId: string, name: string) => {
@@ -192,7 +227,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                                                 .filter(p => !staff.some(s => s.personId === p.id))
                                                 .map(p => ({
                                                     value: p.id,
-                                                    label: `${p.firstName} ${p.lastName}`
+                                                    label: `${p.firstName} ${p.lastName}${p.registrationNo ? ` (${p.registrationNo})` : ''}`
                                                 }))
                                         ]}
                                         placeholder="Select Person"
@@ -265,6 +300,23 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                                         onChange={e => setNewPerson({...newPerson, lastName: e.target.value})}
                                         className="h-8 text-sm"
                                     />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Email *</label>
+                                    <Input 
+                                        type="email"
+                                        required 
+                                        value={newPerson.email} 
+                                        onChange={e => {
+                                            setNewPerson({...newPerson, email: e.target.value});
+                                            if (emailError) setEmailError('');
+                                        }}
+                                        className="h-8 text-sm"
+                                        placeholder="email@example.com"
+                                    />
+                                    {emailError && (
+                                        <p className="text-xs text-destructive mt-1">{emailError}</p>
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
@@ -411,6 +463,14 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                 message={confirmModal.message}
                 confirmText={confirmModal.confirmText}
                 variant={confirmModal.variant}
+            />
+
+            <PossibleDuplicateDialog
+                isOpen={showDuplicateDialog}
+                onClose={() => setShowDuplicateDialog(false)}
+                onConfirmAnyway={() => registerNewPerson(true)}
+                visibleMatches={duplicateData?.visibleMatches || []}
+                otherOrganisationsCount={duplicateData?.otherOrganisationsCount || 0}
             />
         </div>
     );

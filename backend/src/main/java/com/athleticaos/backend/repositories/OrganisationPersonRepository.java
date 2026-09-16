@@ -45,8 +45,27 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
            "WHERE op.organisation.id IN :orgIds AND (" +
            "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
     org.springframework.data.domain.Page<Person> searchPersonsByOrganisationIds(
+        @Param("orgIds") java.util.Collection<UUID> orgIds,
+        @Param("search") String search,
+        org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
+           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '')")
+    org.springframework.data.domain.Page<Person> findUniquePersonsWithMissingEmailByOrganisationIds(
+        @Param("orgIds") java.util.Collection<UUID> orgIds,
+        org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
+           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '') AND (" +
+           "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
+    org.springframework.data.domain.Page<Person> searchPersonsWithMissingEmailByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,
         @Param("search") String search,
         org.springframework.data.domain.Pageable pageable

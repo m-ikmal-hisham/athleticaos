@@ -17,6 +17,7 @@ import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
 import { IdentityVerificationPanel } from '@/components/admin/persons/IdentityVerificationPanel';
 import { IdentityVerificationSummary } from '@/api/persons.api';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
 interface Team {
     id: string;
@@ -30,6 +31,12 @@ export const EditPlayer = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [registrationNo, setRegistrationNo] = useState<string | null>(null);
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     // Form Stats
     const [firstName, setFirstName] = useState("");
@@ -98,6 +105,7 @@ export const EditPlayer = () => {
                 setTeams(teamsData);
 
                 // Populate Form
+                setRegistrationNo(player.registrationNo || null);
                 setFirstName(player.firstName || "");
                 setLastName(player.lastName || "");
                 setEmail(player.email || "");
@@ -167,8 +175,7 @@ export const EditPlayer = () => {
     // Effective type: auto-preselect MALAYSIAN_IC only when storedType was MALAYSIAN_IC
     const effectiveIdType = replacementIdentificationType || (isReentryRequired && storedType === 'MALAYSIAN_IC' ? 'MALAYSIAN_IC' : '');
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const submitPlayer = async (confirmPossibleDuplicate = false) => {
         if (!id) return;
 
         const hasReplacementId = Boolean(identificationValue.trim());
@@ -187,6 +194,12 @@ export const EditPlayer = () => {
 
         if (hasReplacementId && !effectiveIdType) {
             showToast.error("Please select an identification type for the replacement ID");
+            return;
+        }
+
+        if (!email.trim()) {
+            setEmailError("Email is required.");
+            showToast.error("Email is required.");
             return;
         }
 
@@ -215,17 +228,29 @@ export const EditPlayer = () => {
             weightKg: weightKg ? parseInt(weightKg) : undefined,
             dominantHand: dominantHand ? String(dominantHand) : undefined,
             dominantLeg: dominantLeg ? String(dominantLeg) : undefined,
-            organisationId: selectedOrganisationId || undefined
+            organisationId: selectedOrganisationId || undefined,
+            confirmPossibleDuplicate
         };
 
         try {
             await updatePlayer(id, payload);
             showToast.success("Player updated successfully");
+            setShowDuplicateDialog(false);
             navigate('/dashboard/players');
         } catch (error: any) {
             console.error('Update failed', error.response?.status, error.response?.data?.errorCode);
-            if (error.response?.data?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
-                setDuplicateIcError(error.response?.data?.message || reentryNotice);
+            const errData = error.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'This person has no email address. Add one to save changes.');
+                showToast.error(errData.message || 'This person has no email address. Add one to save changes.');
+            } else if (errData?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
+                setDuplicateIcError(errData.message || reentryNotice);
                 showToast.error('Identification re-entry required');
             } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
@@ -239,6 +264,11 @@ export const EditPlayer = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitPlayer(false);
     };
 
     const handleAssignTeamDirectly = async () => {
@@ -258,7 +288,6 @@ export const EditPlayer = () => {
             setSelectedTeamId("");
             setJerseyNumber("");
             setPosition("");
-            setShowTeamAssignment(false);
         } catch (err: any) {
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to assign player to team";
             showToast.error(errorMsg);
@@ -281,7 +310,7 @@ export const EditPlayer = () => {
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <PageHeader
-                    title="Edit Player"
+                    title={registrationNo ? `Edit Player (${registrationNo})` : "Edit Player"}
                     description={`Editing ${firstName} ${lastName}`}
                 />
             </div>
@@ -331,9 +360,10 @@ export const EditPlayer = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Email</label>
+                                <label className="text-sm font-medium text-muted-foreground">Email *</label>
                                 <input
                                     type="email"
+                                    required
                                     value={email}
                                     onChange={(e) => {
                                         setEmail(e.target.value);
@@ -686,6 +716,19 @@ export const EditPlayer = () => {
                     </div>
                 )}
             </GlassCard>
+
+            {showDuplicateDialog && duplicateData && (
+                <PossibleDuplicateDialog
+                    isOpen={showDuplicateDialog}
+                    onClose={() => setShowDuplicateDialog(false)}
+                    onConfirmAnyway={() => submitPlayer(true)}
+                    visibleMatches={duplicateData.visibleMatches}
+                    otherOrganisationsCount={duplicateData.otherOrganisationsCount}
+                    isSubmitting={saving}
+                    title="Possible duplicate player detected"
+                    confirmButtonText="Save anyway"
+                />
+            )}
         </div>
     );
 };

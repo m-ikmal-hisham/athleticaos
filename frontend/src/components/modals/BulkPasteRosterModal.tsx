@@ -16,6 +16,7 @@ interface PlayerRow {
     email: string;
     state: string;
     medicalNotes: string;
+    confirmPossibleDuplicate?: boolean;
 }
 
 interface RowError {
@@ -27,6 +28,8 @@ interface RowError {
     icOrPassport?: string;
     nationality?: string;
     email?: string;
+    state?: string;
+    medicalNotes?: string;
 }
 
 interface BulkPasteRosterModalProps {
@@ -46,6 +49,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
     const [rows, setRows] = useState<PlayerRow[]>([]);
     const [errors, setErrors] = useState<{ [key: number]: RowError }>({});
     const [serverErrors, setServerErrors] = useState<{ [key: number]: string[] }>({});
+    const [duplicateWarnings, setDuplicateWarnings] = useState<{ [key: number]: string[] }>({});
     const [loading, setLoading] = useState(false);
     const cellRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | null }>({});
 
@@ -55,6 +59,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             setRows([]);
             setErrors({});
             setServerErrors({});
+            setDuplicateWarnings({});
         }
     }, [isOpen]);
 
@@ -141,9 +146,11 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
         if (!row.icOrPassport) rowErr.icOrPassport = 'IC or Passport is required';
         if (!row.nationality) rowErr.nationality = 'Nationality is required';
 
-        if (row.email) {
+        if (!row.email || !row.email.trim()) {
+            rowErr.email = 'Email is required';
+        } else {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(row.email)) {
+            if (!emailRegex.test(row.email.trim())) {
                 rowErr.email = 'Invalid email format';
             }
         }
@@ -188,6 +195,13 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                 return updated;
             });
         }
+        if (duplicateWarnings[rowIndex]) {
+            setDuplicateWarnings(prev => {
+                const updated = { ...prev };
+                delete updated[rowIndex];
+                return updated;
+            });
+        }
     };
 
     const addEmptyRow = () => {
@@ -218,6 +232,11 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
             const updatedServer = { ...prev };
             delete updatedServer[idx];
             return updatedServer;
+        });
+        setDuplicateWarnings(prev => {
+            const updatedDup = { ...prev };
+            delete updatedDup[idx];
+            return updatedDup;
         });
     };
 
@@ -271,6 +290,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
 
         setLoading(true);
         setServerErrors({});
+        setDuplicateWarnings({});
 
         try {
             const response = await createBatchPlayers(teamId, rows);
@@ -281,10 +301,11 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                 onSuccess();
                 onClose();
             } else {
-                showToast.error(`Saved ${data.successCount} players, but ${data.failCount} rows failed constraint checks.`);
+                showToast.error(`Saved ${data.successCount} players, but ${data.failCount} rows require attention.`);
                 
                 // Map failures to grid errors and remove successful rows from state
                 const newServerErrors: { [key: number]: string[] } = {};
+                const newDuplicateWarnings: { [key: number]: string[] } = {};
                 const remainingRows: PlayerRow[] = [];
                 const successfulIndices = new Set<number>();
 
@@ -292,6 +313,9 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                     if (res.status === 'ERROR') {
                         newServerErrors[remainingRows.length] = res.errors || ['Server validation failed'];
                         remainingRows.push(rows[res.index]);
+                    } else if (res.status === 'POSSIBLE_DUPLICATE') {
+                        newDuplicateWarnings[remainingRows.length] = res.errors || ['Possible duplicate person found'];
+                        remainingRows.push({ ...rows[res.index], confirmPossibleDuplicate: false });
                     } else {
                         successfulIndices.add(res.index);
                     }
@@ -299,6 +323,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
 
                 setRows(remainingRows);
                 setServerErrors(newServerErrors);
+                setDuplicateWarnings(newDuplicateWarnings);
                 validateAll(remainingRows);
             }
         } catch (error: any) {
@@ -357,7 +382,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                         <th className="px-3 py-3 text-left font-semibold">ID Type <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">IC / Passport <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">Nationality <span className="text-red-500">*</span></th>
-                                        <th className="px-3 py-3 text-left font-semibold">Email</th>
+                                        <th className="px-3 py-3 text-left font-semibold">Email <span className="text-red-500">*</span></th>
                                         <th className="px-3 py-3 text-left font-semibold">State</th>
                                         <th className="px-3 py-3 text-left font-semibold">Medical Notes</th>
                                         <th className="px-3 py-3 text-center w-12 font-semibold">Action</th>
@@ -367,10 +392,12 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                     {rows.map((row, rIdx) => {
                                         const hasRowErrors = errors[rIdx] && Object.keys(errors[rIdx]).length > 0;
                                         const rowServerErrors = serverErrors[rIdx];
+                                        const rowDuplicateWarnings = duplicateWarnings[rIdx];
                                         const isRowInvalid = hasRowErrors || (rowServerErrors && rowServerErrors.length > 0);
+                                        const isRowDuplicate = !isRowInvalid && rowDuplicateWarnings && rowDuplicateWarnings.length > 0;
 
                                         return (
-                                            <tr key={rIdx} className={isRowInvalid ? "bg-red-500/5 hover:bg-red-500/10 transition-colors" : "hover:bg-white/5 transition-colors"}>
+                                            <tr key={rIdx} className={isRowInvalid ? "bg-red-500/5 hover:bg-red-500/10 transition-colors" : isRowDuplicate ? "bg-amber-500/5 hover:bg-amber-500/10 transition-colors" : "hover:bg-white/5 transition-colors"}>
                                                 {/* Status Indicator */}
                                                 <td className="px-3 py-2 text-center whitespace-nowrap">
                                                     {isRowInvalid ? (
@@ -385,6 +412,29 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                                 ))}
                                                             </div>
                                                         </div>
+                                                    ) : isRowDuplicate ? (
+                                                        <div className="group relative flex flex-col items-center justify-center cursor-pointer">
+                                                            <WarningCircle className="w-5 h-5 text-amber-500" />
+                                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover:block bg-amber-950/95 border border-amber-500/50 p-2.5 rounded-lg text-[10px] w-64 text-left shadow-xl z-20 space-y-1 text-amber-200">
+                                                                <div className="font-semibold text-amber-300">Possible Duplicate</div>
+                                                                {rowDuplicateWarnings.map((msg, eIdx) => (
+                                                                    <div key={eIdx}>• {msg}</div>
+                                                                ))}
+                                                            </div>
+                                                            <label className="flex items-center gap-1 text-[9px] text-amber-400 cursor-pointer mt-0.5 whitespace-nowrap" title="Create anyway">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!row.confirmPossibleDuplicate}
+                                                                    onChange={e => {
+                                                                        const updated = [...rows];
+                                                                        updated[rIdx] = { ...updated[rIdx], confirmPossibleDuplicate: e.target.checked };
+                                                                        setRows(updated);
+                                                                    }}
+                                                                    className="rounded border-amber-500 text-amber-500 focus:ring-amber-500 h-3 w-3"
+                                                                />
+                                                                Override
+                                                            </label>
+                                                        </div>
                                                     ) : (
                                                         <div className="flex justify-center">
                                                             <CheckCircle className="w-5 h-5 text-green-500" />
@@ -394,17 +444,17 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
 
                                                 {/* Cells inputs */}
                                                 {[
-                                                    { field: 'firstName', colIdx: 0 },
-                                                    { field: 'lastName', colIdx: 1 }
+                                                    { field: 'firstName' as const, colIdx: 0 },
+                                                    { field: 'lastName' as const, colIdx: 1 }
                                                 ].map((col) => {
-                                                    const fieldName = col.field as keyof PlayerRow;
-                                                    const fieldErr = errors[rIdx]?.[fieldName as keyof RowError];
+                                                    const fieldName = col.field;
+                                                    const fieldErr = errors[rIdx]?.[fieldName];
                                                     return (
                                                         <td key={col.field} className="px-1 py-1">
                                                             <input
                                                                 ref={el => { cellRefs.current[`${rIdx}-${col.colIdx}`] = el; }}
                                                                 type="text"
-                                                                value={row[fieldName]}
+                                                                value={(row[fieldName] as string) || ''}
                                                                 onChange={e => handleCellChange(rIdx, fieldName, e.target.value)}
                                                                 onKeyDown={e => handleKeyDown(e, rIdx, col.colIdx)}
                                                                 className={`w-full px-2 py-1.5 bg-transparent text-xs text-foreground focus:outline-none focus:bg-white/5 border rounded transition-all placeholder-white/20 ${fieldErr ? 'border-red-500/50 focus:border-red-500' : 'border-transparent focus:border-white/20'}`}
@@ -463,20 +513,20 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
 
                                                 {/* IC, Nationality, Email, State, Medical Notes */}
                                                 {[
-                                                    { field: 'icOrPassport', colIdx: 5, placeholder: 'IC/Passport' },
-                                                    { field: 'nationality', colIdx: 6, placeholder: 'Nationality' },
-                                                    { field: 'email', colIdx: 7, placeholder: 'Email' },
-                                                    { field: 'state', colIdx: 8, placeholder: 'State' },
-                                                    { field: 'medicalNotes', colIdx: 9, placeholder: 'Notes' }
+                                                    { field: 'icOrPassport' as const, colIdx: 5, placeholder: 'IC/Passport' },
+                                                    { field: 'nationality' as const, colIdx: 6, placeholder: 'Nationality' },
+                                                    { field: 'email' as const, colIdx: 7, placeholder: 'Email' },
+                                                    { field: 'state' as const, colIdx: 8, placeholder: 'State' },
+                                                    { field: 'medicalNotes' as const, colIdx: 9, placeholder: 'Notes' }
                                                 ].map((col) => {
-                                                    const fieldName = col.field as keyof PlayerRow;
-                                                    const fieldErr = errors[rIdx]?.[fieldName as keyof RowError];
+                                                    const fieldName = col.field;
+                                                    const fieldErr = errors[rIdx]?.[fieldName];
                                                     return (
                                                         <td key={col.field} className="px-1 py-1">
                                                             <input
                                                                 ref={el => { cellRefs.current[`${rIdx}-${col.colIdx}`] = el; }}
                                                                 type="text"
-                                                                value={row[fieldName]}
+                                                                value={(row[fieldName] as string) || ''}
                                                                 onChange={e => handleCellChange(rIdx, fieldName, e.target.value)}
                                                                 onKeyDown={e => handleKeyDown(e, rIdx, col.colIdx)}
                                                                 placeholder={col.placeholder}

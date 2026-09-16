@@ -13,6 +13,7 @@ public record PlayerResponse(
 
                 // Person (PII) fields
                 UUID personId,
+                String registrationNo,
                 String slug,
                 String firstName,
                 String lastName,

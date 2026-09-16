@@ -322,6 +322,7 @@ public class TeamServiceImpl implements TeamService {
                 .map(op -> op.getPerson())
                 .map(p -> com.athleticaos.backend.dtos.team.PersonSummaryDTO.builder()
                         .id(p.getId().toString())
+                        .registrationNo(p.getRegistrationNo())
                         .firstName(p.getFirstName())
                         .lastName(p.getLastName())
                         .email(p.getEmail())

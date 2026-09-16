@@ -449,6 +449,21 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logPersonPossibleDuplicateOverride(Person person, int matchCount, int otherOrganisationMatches, HttpServletRequest request) {
+                int totalMatches = matchCount + otherOrganisationMatches;
+                String summary = "Possible duplicate confirmed: " + person.getRegistrationNo() + " (" + totalMatches + " existing match(es))";
+                String detailsJson = String.format("{\"matchCount\":%d,\"otherOrganisationMatches\":%d}", matchCount, otherOrganisationMatches);
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PERSON_POSSIBLE_DUPLICATE_OVERRIDE")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .detailsJson(detailsJson)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== TEAM STAFF ACTIONS ====================
 
         public void logTeamStaffAdded(TeamStaff teamStaff, HttpServletRequest request) {

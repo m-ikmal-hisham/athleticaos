@@ -22,6 +22,7 @@ export interface IdentityVerificationRequest {
 
 export interface PersonResponseDTO {
     id: string;
+    registrationNo?: string | null;
     firstName: string;
     lastName: string;
     identificationPresent?: boolean;
@@ -64,9 +65,10 @@ export interface PersonUpdateRequest {
     dob: string;
     gender: string;
     nationality: string;
-    email: string;
+    email?: string;
     phone: string;
     nationalPlayerStatus: string;
+    confirmPossibleDuplicate?: boolean;
 }
 
 export interface CreatePersonRequest {
@@ -77,18 +79,20 @@ export interface CreatePersonRequest {
     dob: string;
     gender: string;
     nationality: string;
-    email?: string;
+    email: string;
     phone?: string;
     nationalPlayerStatus: string;
+    confirmPossibleDuplicate?: boolean;
 }
 
 export const getAllPersons = async (
     page: number = 0,
     size: number = 50,
-    search?: string
+    search?: string,
+    missingEmail?: boolean
 ): Promise<PaginatedResponse<PersonResponseDTO>> => {
     const response = await api.get(`/persons`, {
-        params: { page, size, ...(search ? { search } : {}) }
+        params: { page, size, ...(search ? { search } : {}), ...(missingEmail ? { missingEmail } : {}) }
     });
     return response.data;
 };
@@ -97,10 +101,11 @@ export const getPersonsByOrganisation = async (
     orgId: string,
     page: number = 0,
     size: number = 50,
-    search?: string
+    search?: string,
+    missingEmail?: boolean
 ): Promise<PaginatedResponse<PersonResponseDTO>> => {
     const response = await api.get(`/persons/organisation/${orgId}`, {
-        params: { page, size, ...(search ? { search } : {}) }
+        params: { page, size, ...(search ? { search } : {}), ...(missingEmail ? { missingEmail } : {}) }
     });
     return response.data;
 };

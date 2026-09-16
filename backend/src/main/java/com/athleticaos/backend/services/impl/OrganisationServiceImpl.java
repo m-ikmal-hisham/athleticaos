@@ -18,15 +18,26 @@ import com.athleticaos.backend.entities.OrganisationPerson;
 import com.athleticaos.backend.dtos.person.RegisterPersonRequest;
 import com.athleticaos.backend.dtos.team.PersonSummaryDTO;
 
+import com.athleticaos.backend.audit.AuditLogger;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
 import com.athleticaos.backend.enums.IdentificationType;
+import com.athleticaos.backend.exceptions.DuplicateEmailException;
+import com.athleticaos.backend.exceptions.EmailRequiredException;
+import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
 import com.athleticaos.backend.services.OrganisationService;
+import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.utils.EmailUtil;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +54,9 @@ public class OrganisationServiceImpl implements OrganisationService {
     private final OrganisationPersonRepository organisationPersonRepository;
     private final UserService userService;
     private final com.athleticaos.backend.services.IdentificationHashService identificationHashService;
+    private final PersonDuplicateService personDuplicateService;
+    private final AuditLogger auditLogger;
+    private final ObjectProvider<HttpServletRequest> requestProvider;
 
     @Transactional(readOnly = true)
     public List<OrganisationResponse> getAllOrganisations() {
@@ -493,6 +507,22 @@ public class OrganisationServiceImpl implements OrganisationService {
             }
         }
 
+        String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
+        if (normalizedEmail == null) {
+            throw new EmailRequiredException();
+        }
+        if (personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new DuplicateEmailException();
+        }
+
+        PossibleDuplicateCheck dupCheck = personDuplicateService.check(
+                request.getFirstName(), request.getLastName(), request.getDob(), canonicalGender, null);
+        if (dupCheck != null && dupCheck.hasMatches()) {
+            if (!Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+                throw new PossibleDuplicatePersonException(dupCheck.visibleMatches(), dupCheck.otherOrganisationMatches());
+            }
+        }
+
         Person person = Person.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -504,10 +534,28 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .dob(request.getDob())
                 .gender(canonicalGender)
                 .nationality(request.getNationality())
+                .email(normalizedEmail)
                 .nationalPlayerStatus(request.getNationalPlayerStatus())
                 .build();
 
-        person = personRepository.save(person);
+        person = personRepository.saveAndFlush(person);
+
+        if (dupCheck != null && dupCheck.hasMatches() && Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = dupCheck.visibleMatches().size();
+            final int otherOrgMatches = dupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
 
         OrganisationPerson op = OrganisationPerson.builder()
                 .organisation(org)
@@ -517,6 +565,7 @@ public class OrganisationServiceImpl implements OrganisationService {
 
         return PersonSummaryDTO.builder()
                 .id(person.getId().toString())
+                .registrationNo(person.getRegistrationNo())
                 .firstName(person.getFirstName())
                 .lastName(person.getLastName())
                 .email(person.getEmail())
@@ -531,6 +580,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                     Person p = op.getPerson();
                     return PersonSummaryDTO.builder()
                         .id(p.getId().toString())
+                        .registrationNo(p.getRegistrationNo())
                         .firstName(p.getFirstName())
                         .lastName(p.getLastName())
                         // Phase 1: icOrPassport removed from PersonSummaryDTO

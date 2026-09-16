@@ -20,8 +20,44 @@ public interface PersonRepository extends JpaRepository<Person, UUID> {
         @Query("SELECT p FROM Person p WHERE " +
                "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
                "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%'))")
+               "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%'))")
         Page<Person> searchAllPersons(@Param("search") String search, Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE p.email IS NULL OR TRIM(p.email) = ''")
+        Page<Person> findPersonsWithMissingEmail(Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE (p.email IS NULL OR TRIM(p.email) = '') AND (" +
+               "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
+        Page<Person> searchPersonsWithMissingEmail(@Param("search") String search, Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE " +
+               "LOWER(TRIM(p.firstName)) = LOWER(TRIM(:firstName)) AND " +
+               "LOWER(TRIM(p.lastName)) = LOWER(TRIM(:lastName)) AND " +
+               "p.dob = :dob AND " +
+               "p.gender = :gender")
+        java.util.List<Person> findPossibleDuplicates(
+                @Param("firstName") String firstName,
+                @Param("lastName") String lastName,
+                @Param("dob") java.time.LocalDate dob,
+                @Param("gender") String gender,
+                Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE " +
+               "LOWER(TRIM(p.firstName)) = LOWER(TRIM(:firstName)) AND " +
+               "LOWER(TRIM(p.lastName)) = LOWER(TRIM(:lastName)) AND " +
+               "p.dob = :dob AND " +
+               "p.gender = :gender AND " +
+               "p.id <> :excludePersonId")
+        java.util.List<Person> findPossibleDuplicatesExcludingId(
+                @Param("firstName") String firstName,
+                @Param("lastName") String lastName,
+                @Param("dob") java.time.LocalDate dob,
+                @Param("gender") String gender,
+                @Param("excludePersonId") UUID excludePersonId,
+                Pageable pageable);
         Optional<Person> findByEmail(String email);
 
         boolean existsByEmail(String email);

@@ -58,6 +58,7 @@ export const removeTeamStaff = async (teamId: string, staffAssignmentId: string)
 
 export interface PersonSummaryDTO {
     id: string;
+    registrationNo?: string | null;
     firstName: string;
     lastName: string;
     email?: string;

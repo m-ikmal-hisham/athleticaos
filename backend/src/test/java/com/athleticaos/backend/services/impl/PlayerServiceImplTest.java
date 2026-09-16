@@ -3,7 +3,6 @@ package com.athleticaos.backend.services.impl;
 import com.athleticaos.backend.dtos.player.PlayerCreateRequest;
 import com.athleticaos.backend.dtos.player.PlayerResponse;
 import com.athleticaos.backend.dtos.player.PlayerUpdateRequest;
-import org.mockito.ArgumentCaptor;
 import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.repositories.PersonRepository;
@@ -11,6 +10,12 @@ import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
+import com.athleticaos.backend.exceptions.EmailRequiredException;
+import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateMatch;
+import com.athleticaos.backend.services.PersonDuplicateService;
+import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +28,7 @@ import org.springframework.beans.factory.ObjectProvider;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -63,6 +69,10 @@ class PlayerServiceImplTest {
     private com.athleticaos.backend.audit.AuditLogger auditLogger;
     @Mock
     private ObjectProvider<HttpServletRequest> requestProvider;
+    @Mock
+    private PersonDuplicateService personDuplicateService;
+    @Mock
+    private OrganisationPersonRepository organisationPersonRepository;
 
     @InjectMocks
     private PlayerServiceImpl playerService;
@@ -280,13 +290,13 @@ class PlayerServiceImplTest {
         // Row 0: masked → should fail
         com.athleticaos.backend.dtos.player.PlayerRowDTO maskedRow = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
                 "Bad", "Player", "MALE", LocalDate.of(1995, 5, 20),
-                "PASSPORT", "XXXX-XXXX-9002", "Malaysian", null, null, null
+                "PASSPORT", "XXXX-XXXX-9002", "Malaysian", "bad.player@example.invalid", null, null
         );
 
         // Row 1: valid passport → should succeed
         com.athleticaos.backend.dtos.player.PlayerRowDTO validRow = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
                 "Good", "Player", "MALE", LocalDate.of(1995, 5, 20),
-                "PASSPORT", "A12345678", "Malaysian", null, null, null
+                "PASSPORT", "A12345678", "Malaysian", "good.player@example.invalid", null, null
         );
 
         when(validator.validate(any())).thenReturn(Collections.emptySet());
@@ -766,32 +776,16 @@ class PlayerServiceImplTest {
                 null, null, null, null, null, null, null, null, null
         );
 
-        when(personRepository.save(any(Person.class))).thenAnswer(i -> {
-            Person p = i.getArgument(0);
-            p.setId(UUID.randomUUID());
-            return p;
-        });
-        when(playerRepository.save(any(Player.class))).thenAnswer(i -> {
-            Player pl = i.getArgument(0);
-            pl.setId(UUID.randomUUID());
-            return pl;
-        });
-
-        playerService.createPlayer(request);
-
-        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
-        verify(personRepository).save(captor.capture());
-        assertThat(captor.getValue().getEmail()).isNull();
+        assertThatThrownBy(() -> playerService.createPlayer(request))
+                .isInstanceOf(EmailRequiredException.class)
+                .hasMessage("Email is required.");
     }
 
     @Test
-    void updatePlayer_blankEmail_clearsEmailToNull() {
+    void updatePlayer_blankEmail_throwsEmailRequiredException() {
         existingPerson.setEmail("player@example.com");
         when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
         when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
-        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
-        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
-        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
 
         PlayerUpdateRequest request = new PlayerUpdateRequest(
                 null, null, null, null,
@@ -801,10 +795,9 @@ class PlayerServiceImplTest {
                 null, null, null, null, null, null
         );
 
-        playerService.updatePlayer(playerId, request);
-
-        verify(personRepository).save(existingPerson);
-        assertThat(existingPerson.getEmail()).isNull();
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(EmailRequiredException.class)
+                .hasMessage("Email is required.");
     }
 
     @Test
@@ -840,5 +833,153 @@ class PlayerServiceImplTest {
         assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
                 .isInstanceOf(DuplicateEmailException.class);
         verify(personRepository).existsByEmailIgnoreCaseAndIdNot("case@example.test", personId);
+    }
+
+    @Test
+    void updatePlayer_changingDobIntoMatch_throwsPossibleDuplicatePersonException() {
+        existingPerson.setDob(LocalDate.of(2000, 1, 1));
+        existingPerson.setFirstName("Ali");
+        existingPerson.setLastName("Abu");
+        existingPerson.setGender("MALE");
+        existingPerson.setEmail("existing@example.com");
+        existingPerson.setIdentificationType("PASSPORT");
+
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+
+        LocalDate newDob = LocalDate.of(2001, 2, 2);
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, newDob,
+                null, null, null,
+                null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        PossibleDuplicateCheck matchCheck = new PossibleDuplicateCheck(
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
+        when(personDuplicateService.check("Ali", "Abu", newDob, "MALE", personId))
+                .thenReturn(matchCheck);
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(PossibleDuplicatePersonException.class);
+    }
+
+    @Test
+    void createPlayer_withoutEmail_throwsEmailRequiredException() {
+        PlayerCreateRequest request = new PlayerCreateRequest(
+                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5),
+                "950505145555", "MALAYSIAN_IC", "MALAYSIAN",
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.createPlayer(request))
+                .isInstanceOf(EmailRequiredException.class);
+    }
+
+    @Test
+    void updatePlayer_changingOnlyPhone_duplicateServiceNeverCalled() {
+        existingPerson.setEmail("existing@example.com");
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findPersonByPlayerId(playerId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+        when(playerRepository.save(any(Player.class))).thenAnswer(i -> i.getArgument(0));
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, null, null,
+                null, null, null,
+                null, "0123456789",
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null
+        );
+
+        playerService.updatePlayer(playerId, request);
+
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void createBatchPlayers_rowWithBlankEmail_returnsRowErrorAndDoesNotSave() {
+        UUID teamId = UUID.randomUUID();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(new com.athleticaos.backend.entities.Team()));
+
+        com.athleticaos.backend.dtos.player.PlayerRowDTO row = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
+                "Test", "Player", "MALE", LocalDate.of(1995, 5, 20),
+                "PASSPORT", "A12345678", "Malaysian", "   ", null, null
+        );
+
+        when(validator.validate(any())).thenReturn(Collections.emptySet());
+
+        com.athleticaos.backend.dtos.player.PlayerBatchResponse response =
+                playerService.createBatchPlayers(teamId, List.of(row));
+
+        assertThat(response.failCount()).isEqualTo(1);
+        assertThat(response.successCount()).isEqualTo(0);
+        assertThat(response.results().get(0).errors()).contains("Email is required.");
+        verify(playerBatchHelper, never()).savePlayerInNewTransaction(any(), any());
+    }
+
+    @Test
+    void createBatchPlayers_rowWithPossibleDuplicate_noFlag_returnsPossibleDuplicateStatusAndDoesNotSave() {
+        UUID teamId = UUID.randomUUID();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(new com.athleticaos.backend.entities.Team()));
+
+        com.athleticaos.backend.dtos.player.PlayerRowDTO row = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
+                "Test", "Player", "MALE", LocalDate.of(1995, 5, 20),
+                "PASSPORT", "A12345678", "Malaysian", "test@example.invalid", null, null, false
+        );
+
+        when(validator.validate(any())).thenReturn(Collections.emptySet());
+        when(personRepository.existsByIcOrPassport("A12345678")).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCase("test@example.invalid")).thenReturn(false);
+
+        PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Test", "Player")), 0);
+        when(personDuplicateService.check("Test", "Player", LocalDate.of(1995, 5, 20), "MALE", null))
+                .thenReturn(dupCheck);
+
+        com.athleticaos.backend.dtos.player.PlayerBatchResponse response =
+                playerService.createBatchPlayers(teamId, List.of(row));
+
+        assertThat(response.failCount()).isEqualTo(1);
+        assertThat(response.successCount()).isEqualTo(0);
+        assertThat(response.results().get(0).status()).isEqualTo("POSSIBLE_DUPLICATE");
+        verify(playerBatchHelper, never()).savePlayerInNewTransaction(any(), any());
+    }
+
+    @Test
+    void createBatchPlayers_rowWithPossibleDuplicate_confirmFlagTrue_savesPlayerAndAudits() {
+        UUID teamId = UUID.randomUUID();
+        com.athleticaos.backend.entities.Team team = new com.athleticaos.backend.entities.Team();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+
+        com.athleticaos.backend.dtos.player.PlayerRowDTO row = new com.athleticaos.backend.dtos.player.PlayerRowDTO(
+                "Test", "Player", "MALE", LocalDate.of(1995, 5, 20),
+                "PASSPORT", "A12345678", "Malaysian", "test@example.invalid", null, null, true
+        );
+
+        when(validator.validate(any())).thenReturn(Collections.emptySet());
+        when(personRepository.existsByIcOrPassport("A12345678")).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCase("test@example.invalid")).thenReturn(false);
+
+        PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Test", "Player")), 0);
+        when(personDuplicateService.check("Test", "Player", LocalDate.of(1995, 5, 20), "MALE", null))
+                .thenReturn(dupCheck);
+
+        UUID newPlayerId = UUID.randomUUID();
+        when(playerBatchHelper.savePlayerInNewTransaction(row, team)).thenReturn(newPlayerId);
+        Player savedPlayer = Player.builder().person(existingPerson).build();
+        when(playerRepository.findByIdWithPerson(newPlayerId)).thenReturn(Optional.of(savedPlayer));
+
+        com.athleticaos.backend.dtos.player.PlayerBatchResponse response =
+                playerService.createBatchPlayers(teamId, List.of(row));
+
+        assertThat(response.failCount()).isEqualTo(0);
+        assertThat(response.successCount()).isEqualTo(1);
+        assertThat(response.results().get(0).status()).isEqualTo("SUCCESS");
+        verify(playerBatchHelper).savePlayerInNewTransaction(row, team);
+        verify(auditLogger).logPersonPossibleDuplicateOverride(eq(existingPerson), eq(1), eq(0), any());
     }
 }

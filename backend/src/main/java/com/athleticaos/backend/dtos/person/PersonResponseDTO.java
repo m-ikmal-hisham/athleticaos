@@ -16,6 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PersonResponseDTO {
     private String id;
+    private String registrationNo;
     private String firstName;
     private String lastName;
     // Identification — raw value NOT exposed in responses (Phase 1 containment)

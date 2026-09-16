@@ -48,6 +48,10 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import jakarta.servlet.http.HttpServletRequest;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
+import com.athleticaos.backend.exceptions.EmailRequiredException;
+import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
+import com.athleticaos.backend.services.PersonDuplicateService;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +74,7 @@ public class PlayerServiceImpl implements PlayerService {
     private final Validator validator;
     private final com.athleticaos.backend.audit.AuditLogger auditLogger;
     private final ObjectProvider<HttpServletRequest> requestProvider;
+    private final PersonDuplicateService personDuplicateService;
 
     @Override
     @Transactional(readOnly = true)
@@ -177,11 +182,28 @@ public class PlayerServiceImpl implements PlayerService {
             checkDuplicateIc(normalizedIc, null);
         }
 
-        // Check if person with email already exists (only if email provided)
+        // Check if email provided and normalize
         String normalizedEmail = EmailUtil.normalizeEmail(request.email());
-        if (normalizedEmail != null) {
-            if (personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-                throw new DuplicateEmailException();
+        if (normalizedEmail == null) {
+            throw new EmailRequiredException();
+        }
+        if (personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new DuplicateEmailException();
+        }
+
+        PossibleDuplicateCheck dupCheck = personDuplicateService.check(
+                request.firstName(),
+                request.lastName(),
+                request.dob(),
+                canonicalGender,
+                null
+        );
+        if (dupCheck.hasMatches()) {
+            if (!Boolean.TRUE.equals(request.confirmPossibleDuplicate())) {
+                throw new PossibleDuplicatePersonException(
+                        dupCheck.visibleMatches(),
+                        dupCheck.otherOrganisationMatches()
+                );
             }
         }
 
@@ -214,8 +236,25 @@ public class PlayerServiceImpl implements PlayerService {
         if (person == null) {
             throw new IllegalStateException("Person cannot be null");
         }
-        person = personRepository.save(person);
+        person = personRepository.saveAndFlush(person);
         log.info("Created person record with id: {}", person.getId());
+
+        if (dupCheck.hasMatches() && Boolean.TRUE.equals(request.confirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = dupCheck.visibleMatches().size();
+            final int otherOrgMatches = dupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
 
         // Generate slug
         String name = person.getFirstName() + " " + person.getLastName();
@@ -274,6 +313,11 @@ public class PlayerServiceImpl implements PlayerService {
 
         // Force initialization (double safety, though implicit load should suffice)
         log.debug("Loaded person for update: {}", person.getId());
+
+        final String origFirstName = person.getFirstName();
+        final String origLastName = person.getLastName();
+        final LocalDate origDob = person.getDob();
+        final String origGender = person.getGender();
 
         String canonicalGender = request.gender() != null ? Gender.from(request.gender()).name() : null;
 
@@ -342,13 +386,65 @@ public class PlayerServiceImpl implements PlayerService {
         if (request.nationality() != null) {
             person.setNationality(request.nationality());
         }
+
+        // Effective email rule
         if (request.email() != null) {
+            if (request.email().trim().isEmpty()) {
+                throw new EmailRequiredException();
+            }
             String normalizedEmail = EmailUtil.normalizeEmail(request.email());
             if (normalizedEmail != null && personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
                 throw new DuplicateEmailException();
             }
             person.setEmail(normalizedEmail);
+        } else {
+            if (person.getEmail() == null || person.getEmail().trim().isEmpty()) {
+                throw new EmailRequiredException("This person has no email address. Add one to save changes.");
+            }
         }
+
+        // Possible duplicate check on changed identity fields
+        String origFirst = origFirstName != null ? origFirstName.trim().toLowerCase() : "";
+        String origLast = origLastName != null ? origLastName.trim().toLowerCase() : "";
+
+        String newFirst = request.firstName() != null ? request.firstName().trim().toLowerCase() : origFirst;
+        String newLast = request.lastName() != null ? request.lastName().trim().toLowerCase() : origLast;
+        LocalDate newDob = request.dob() != null ? request.dob() : origDob;
+        String newGender = canonicalGender != null ? canonicalGender : origGender;
+
+        boolean identityFieldsChanged = !newFirst.equals(origFirst) || !newLast.equals(origLast)
+                || !java.util.Objects.equals(newDob, origDob) || !java.util.Objects.equals(newGender, origGender);
+
+        PossibleDuplicateCheck updateDupCheck = null;
+        if (identityFieldsChanged) {
+            updateDupCheck = personDuplicateService.check(
+                    request.firstName() != null ? request.firstName() : origFirstName,
+                    request.lastName() != null ? request.lastName() : origLastName,
+                    newDob, newGender, person.getId());
+            if (updateDupCheck != null && updateDupCheck.hasMatches()) {
+                if (!Boolean.TRUE.equals(request.confirmPossibleDuplicate())) {
+                    throw new PossibleDuplicatePersonException(updateDupCheck.visibleMatches(), updateDupCheck.otherOrganisationMatches());
+                }
+            }
+        }
+
+        if (updateDupCheck != null && updateDupCheck.hasMatches() && Boolean.TRUE.equals(request.confirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = updateDupCheck.visibleMatches().size();
+            final int otherOrgMatches = updateDupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
+
         if (request.phone() != null) {
             person.setPhone(request.phone());
         }
@@ -659,6 +755,7 @@ public class PlayerServiceImpl implements PlayerService {
         return PlayerResponse.builder()
                 .id(player.getId())
                 .personId(person.getId())
+                .registrationNo(person.getRegistrationNo())
                 .slug(player.getSlug())
                 .firstName(person.getFirstName())
                 .lastName(person.getLastName())
@@ -721,9 +818,9 @@ public class PlayerServiceImpl implements PlayerService {
                 }
             }
 
+            String canonicalGender = null;
             // 2. Validate identification and pre-check database constraints if no validation errors yet
             if (rowErrors.isEmpty()) {
-                String canonicalGender = null;
                 try {
                     canonicalGender = Gender.from(row.gender()).name();
                 } catch (IllegalArgumentException e) {
@@ -755,11 +852,41 @@ public class PlayerServiceImpl implements PlayerService {
                         }
                     }
 
-                    if (row.email() != null && !row.email().trim().isEmpty()) {
-                        if (personRepository.existsByEmailIgnoreCase(row.email().trim())) {
+                    if (row.email() == null || row.email().trim().isEmpty()) {
+                        rowErrors.add("Email is required.");
+                    } else {
+                        String normalizedBatchEmail = EmailUtil.normalizeEmail(row.email());
+                        if (normalizedBatchEmail == null) {
+                            rowErrors.add("Email is required.");
+                        } else if (personRepository.existsByEmailIgnoreCase(normalizedBatchEmail)) {
                             rowErrors.add("Player with this email already exists");
                         }
                     }
+                }
+            }
+
+            PossibleDuplicateCheck dupCheck = null;
+            if (rowErrors.isEmpty()) {
+                dupCheck = personDuplicateService.check(
+                        row.firstName(),
+                        row.lastName(),
+                        row.dob(),
+                        canonicalGender,
+                        null
+                );
+                if (dupCheck != null && dupCheck.hasMatches() && !Boolean.TRUE.equals(row.confirmPossibleDuplicate())) {
+                    List<String> dupMessages = new ArrayList<>();
+                    for (com.athleticaos.backend.dtos.person.PossibleDuplicateMatch match : dupCheck.visibleMatches()) {
+                        dupMessages.add(String.format("Possible duplicate: %s %s (Reg: %s)",
+                                match.firstName(), match.lastName(),
+                                match.registrationNo() != null ? match.registrationNo() : "N/A"));
+                    }
+                    if (dupCheck.otherOrganisationMatches() > 0) {
+                        dupMessages.add(String.format("%d additional match(es) in other organisations.", dupCheck.otherOrganisationMatches()));
+                    }
+                    results.add(new PlayerRowResult(i, "POSSIBLE_DUPLICATE", null, dupMessages));
+                    failCount++;
+                    continue;
                 }
             }
 
@@ -767,6 +894,17 @@ public class PlayerServiceImpl implements PlayerService {
             if (rowErrors.isEmpty()) {
                 try {
                     UUID playerId = playerBatchHelper.savePlayerInNewTransaction(row, team);
+                    if (dupCheck != null && dupCheck.hasMatches() && Boolean.TRUE.equals(row.confirmPossibleDuplicate())) {
+                        final PossibleDuplicateCheck finalDupCheck = dupCheck;
+                        playerRepository.findByIdWithPerson(playerId).ifPresent(p -> {
+                            auditLogger.logPersonPossibleDuplicateOverride(
+                                    p.getPerson(),
+                                    finalDupCheck.visibleMatches().size(),
+                                    finalDupCheck.otherOrganisationMatches(),
+                                    requestProvider.getIfAvailable()
+                            );
+                        });
+                    }
                     results.add(new PlayerRowResult(i, "SUCCESS", playerId, null));
                     successCount++;
                 } catch (Exception e) {

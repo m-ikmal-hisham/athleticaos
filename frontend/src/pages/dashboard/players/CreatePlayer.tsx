@@ -14,6 +14,7 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
 interface Team {
     id: string;
@@ -25,6 +26,11 @@ interface Team {
 export const CreatePlayer = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     // Form Stats
     const [firstName, setFirstName] = useState("");
@@ -85,18 +91,24 @@ export const CreatePlayer = () => {
         ? teams.filter(t => t.organisationId === selectedOrganisationId)
         : teams;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const submitPlayer = async (confirmPossibleDuplicate = false) => {
         if (identificationValue && !identificationType) {
             showToast.error("Please select an identification type");
             return;
         }
+
+        if (!email.trim()) {
+            setEmailError("Email is required.");
+            showToast.error("Email is required.");
+            return;
+        }
+
         setLoading(true);
 
         const payload: any = {
             firstName,
             lastName,
-            email: email.trim() || undefined,
+            email: email.trim(),
             gender: String(gender),
             dob,
             identificationType,
@@ -117,16 +129,28 @@ export const CreatePlayer = () => {
             dominantHand: dominantHand ? String(dominantHand) : undefined,
             dominantLeg: dominantLeg ? String(dominantLeg) : undefined,
             teamId: selectedTeamId || undefined,
-            organisationId: selectedOrganisationId || undefined
+            organisationId: selectedOrganisationId || undefined,
+            confirmPossibleDuplicate
         };
 
         try {
             await createPlayer(payload);
             showToast.success("Player created successfully");
+            setShowDuplicateDialog(false);
             navigate('/dashboard/players');
         } catch (error: any) {
             console.error(error);
-            if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
+            const errData = error.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'Email is required.');
+                showToast.error(errData.message || 'Email is required.');
+            } else if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
                 setDuplicateIcError("This IC/Passport number is already registered.");
                 showToast.error("Duplicate IC found");
             } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
@@ -138,6 +162,11 @@ export const CreatePlayer = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitPlayer(false);
     };
 
     return (
@@ -197,9 +226,10 @@ export const CreatePlayer = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Email</label>
+                                <label className="text-sm font-medium text-muted-foreground">Email *</label>
                                 <input
                                     type="email"
+                                    required
                                     value={email}
                                     onChange={(e) => {
                                         setEmail(e.target.value);
@@ -467,6 +497,19 @@ export const CreatePlayer = () => {
 
                 </form>
             </GlassCard>
+
+            {showDuplicateDialog && duplicateData && (
+                <PossibleDuplicateDialog
+                    isOpen={showDuplicateDialog}
+                    onClose={() => setShowDuplicateDialog(false)}
+                    onConfirmAnyway={() => submitPlayer(true)}
+                    visibleMatches={duplicateData.visibleMatches}
+                    otherOrganisationsCount={duplicateData.otherOrganisationsCount}
+                    isSubmitting={loading}
+                    title="Possible duplicate player detected"
+                    confirmButtonText="Create anyway"
+                />
+            )}
         </div>
     );
 };

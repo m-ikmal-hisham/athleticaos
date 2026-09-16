@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -121,5 +122,32 @@ public class PersonControllerSecurityTest {
 
         mockMvc.perform(delete("/api/v1/persons/{id}/identity-verification", personId))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPER_ADMIN")
+    void getAllPersons_withMissingEmailTrue_callsServiceWithMissingEmailTrue() throws Exception {
+        org.springframework.data.domain.Page<PersonResponseDTO> emptyPage = new org.springframework.data.domain.PageImpl<>(
+                java.util.Collections.emptyList(), org.springframework.data.domain.PageRequest.of(0, 50), 0);
+        when(personService.getAllPersons(any(org.springframework.data.domain.Pageable.class), eq(null), eq(true))).thenReturn(emptyPage);
+
+        mockMvc.perform(get("/api/v1/persons?missingEmail=true"))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(personService).getAllPersons(any(org.springframework.data.domain.Pageable.class), eq(null), eq(true));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORG_ADMIN")
+    void getPersonsByOrganisation_withMissingEmailTrue_callsServiceWithMissingEmailTrue() throws Exception {
+        UUID orgId = UUID.randomUUID();
+        org.springframework.data.domain.Page<PersonResponseDTO> emptyPage = new org.springframework.data.domain.PageImpl<>(
+                java.util.Collections.emptyList(), org.springframework.data.domain.PageRequest.of(0, 50), 0);
+        when(personService.getPersonsByOrganisation(eq(orgId), any(org.springframework.data.domain.Pageable.class), eq(null), eq(true))).thenReturn(emptyPage);
+
+        mockMvc.perform(get("/api/v1/persons/organisation/{orgId}?missingEmail=true", orgId))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(personService).getPersonsByOrganisation(eq(orgId), any(org.springframework.data.domain.Pageable.class), eq(null), eq(true));
     }
 }

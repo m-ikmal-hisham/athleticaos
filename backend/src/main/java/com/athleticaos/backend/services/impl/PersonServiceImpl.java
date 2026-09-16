@@ -21,7 +21,11 @@ import com.athleticaos.backend.enums.Gender;
 import com.athleticaos.backend.enums.IdentificationType;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
+import com.athleticaos.backend.exceptions.EmailRequiredException;
 import com.athleticaos.backend.exceptions.IdentificationReentryRequiredException;
+import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
+import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.utils.EmailUtil;
 import com.athleticaos.backend.utils.IdentificationUtil;
 import lombok.RequiredArgsConstructor;
@@ -72,30 +76,49 @@ public class PersonServiceImpl implements PersonService {
     private final UserService userService;
     private final AuditLogger auditLogger;
     private final ObjectProvider<HttpServletRequest> requestProvider;
+    private final PersonDuplicateService personDuplicateService;
 
     @Override
     @Transactional(readOnly = true)
     public Page<PersonResponseDTO> getAllPersons(Pageable pageable, String search) {
+        return getAllPersons(pageable, search, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PersonResponseDTO> getAllPersons(Pageable pageable, String search, boolean missingEmail) {
         // Delegates to getPersonsByOrganisation which already handles Super Admin
         // (returns all persons when accessibleIds is null)
-        return getPersonsByOrganisation(null, pageable, search);
+        return getPersonsByOrganisation(null, pageable, search, missingEmail);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search) {
+        return getPersonsByOrganisation(organisationId, pageable, search, false);
     }
 
     @Override
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
-    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search) {
+    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search, boolean missingEmail) {
         Objects.requireNonNull(pageable);
         boolean hasSearch = search != null && !search.trim().isEmpty();
         String searchTerm = hasSearch ? search.trim() : null;
-        log.info("Fetching hierarchical persons for organisation: {}, search: {}", organisationId, searchTerm);
+        log.info("Fetching hierarchical persons for organisation: {}, search: {}, missingEmail: {}", organisationId, searchTerm, missingEmail);
 
         Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         Page<Person> personsToMap;
 
         if (accessibleIds == null) {
-            // Super Admin -> fetch everyone paginated, with optional search
-            if (hasSearch) {
+            // Super Admin -> fetch everyone paginated, with optional search and missingEmail
+            if (missingEmail) {
+                if (hasSearch) {
+                    personsToMap = personRepository.searchPersonsWithMissingEmail(searchTerm, pageable);
+                } else {
+                    personsToMap = personRepository.findPersonsWithMissingEmail(pageable);
+                }
+            } else if (hasSearch) {
                 personsToMap = personRepository.searchAllPersons(searchTerm, pageable);
             } else {
                 personsToMap = personRepository.findAll(pageable);
@@ -111,6 +134,12 @@ public class PersonServiceImpl implements PersonService {
 
             if (orgIds.isEmpty()) {
                 return Page.empty(pageable);
+            } else if (missingEmail) {
+                if (hasSearch) {
+                    personsToMap = organisationPersonRepository.searchPersonsWithMissingEmailByOrganisationIds(orgIds, searchTerm, pageable);
+                } else {
+                    personsToMap = organisationPersonRepository.findUniquePersonsWithMissingEmailByOrganisationIds(orgIds, pageable);
+                }
             } else if (hasSearch) {
                 personsToMap = organisationPersonRepository.searchPersonsByOrganisationIds(orgIds, searchTerm, pageable);
             } else {
@@ -217,7 +246,10 @@ public class PersonServiceImpl implements PersonService {
         person.setGender(canonicalGender);
         person.setNationality(request.getNationality());
         String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
-        if (normalizedEmail != null && personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+        if (normalizedEmail == null) {
+            throw new EmailRequiredException();
+        }
+        if (personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new DuplicateEmailException();
         }
         person.setEmail(normalizedEmail);
@@ -225,7 +257,32 @@ public class PersonServiceImpl implements PersonService {
         person.setNationalPlayerStatus(request.getNationalPlayerStatus());
         person.setIsStaff(Boolean.TRUE.equals(request.getIsStaff()));
 
-        person = personRepository.save(person);
+        PossibleDuplicateCheck dupCheck = personDuplicateService.check(
+                request.getFirstName(), request.getLastName(), request.getDob(), canonicalGender, null);
+        if (dupCheck != null && dupCheck.hasMatches()) {
+            if (!Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+                throw new PossibleDuplicatePersonException(dupCheck.visibleMatches(), dupCheck.otherOrganisationMatches());
+            }
+        }
+
+        person = personRepository.saveAndFlush(person);
+
+        if (dupCheck != null && dupCheck.hasMatches() && Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = dupCheck.visibleMatches().size();
+            final int otherOrgMatches = dupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
 
         OrganisationPerson op = new OrganisationPerson();
         op.setOrganisation(org);
@@ -323,19 +380,55 @@ public class PersonServiceImpl implements PersonService {
             // null return from validateAndNormalizeNewSubmission = raw was empty/whitespace → no-op.
         }
 
+        // Effective email rule
+        if (request.getEmail() != null) {
+            if (request.getEmail().trim().isEmpty()) {
+                throw new EmailRequiredException();
+            }
+            String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
+            if (normalizedEmail != null && personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
+                throw new DuplicateEmailException();
+            }
+            person.setEmail(normalizedEmail);
+        } else {
+            if (person.getEmail() == null || person.getEmail().trim().isEmpty()) {
+                throw new EmailRequiredException("This person has no email address. Add one to save changes.");
+            }
+        }
+
+        // Possible duplicate check on changed identity fields
+        String origFirst = person.getFirstName() != null ? person.getFirstName().trim().toLowerCase() : "";
+        String origLast = person.getLastName() != null ? person.getLastName().trim().toLowerCase() : "";
+        LocalDate origDob = person.getDob();
+        String origGender = person.getGender();
+
+        String newFirst = request.getFirstName() != null ? request.getFirstName().trim().toLowerCase() : origFirst;
+        String newLast = request.getLastName() != null ? request.getLastName().trim().toLowerCase() : origLast;
+        LocalDate newDob = request.getDob() != null ? request.getDob() : origDob;
+        String newGender = canonicalGender != null ? canonicalGender : origGender;
+
+        boolean identityFieldsChanged = !newFirst.equals(origFirst) || !newLast.equals(origLast)
+                || !Objects.equals(newDob, origDob) || !Objects.equals(newGender, origGender);
+
+        PossibleDuplicateCheck dupCheck = null;
+        if (identityFieldsChanged) {
+            dupCheck = personDuplicateService.check(
+                    request.getFirstName() != null ? request.getFirstName() : person.getFirstName(),
+                    request.getLastName() != null ? request.getLastName() : person.getLastName(),
+                    newDob, newGender, person.getId());
+            if (dupCheck != null && dupCheck.hasMatches()) {
+                if (!Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+                    throw new PossibleDuplicatePersonException(dupCheck.visibleMatches(), dupCheck.otherOrganisationMatches());
+                }
+            }
+        }
+
         // Null-safe updates for all other PII fields
         if (request.getFirstName() != null) person.setFirstName(request.getFirstName());
         if (request.getLastName() != null) person.setLastName(request.getLastName());
         if (request.getDob() != null) person.setDob(request.getDob());
         if (canonicalGender != null) person.setGender(canonicalGender);
         if (request.getNationality() != null) person.setNationality(request.getNationality());
-        if (request.getEmail() != null) {
-            String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
-            if (normalizedEmail != null && personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
-                throw new DuplicateEmailException();
-            }
-            person.setEmail(normalizedEmail);
-        }
         if (request.getPhone() != null) person.setPhone(request.getPhone());
         if (request.getNationalPlayerStatus() != null) person.setNationalPlayerStatus(request.getNationalPlayerStatus());
 
@@ -344,6 +437,23 @@ public class PersonServiceImpl implements PersonService {
         }
 
         person = personRepository.save(person);
+
+        if (dupCheck != null && dupCheck.hasMatches() && Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = dupCheck.visibleMatches().size();
+            final int otherOrgMatches = dupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
 
         // Handle Player Toggle
         if (request.getIsPlayer() != null) {
@@ -473,6 +583,7 @@ public class PersonServiceImpl implements PersonService {
 
         return PersonResponseDTO.builder()
                 .id(pid.toString())
+                .registrationNo(p.getRegistrationNo())
                 .firstName(p.getFirstName())
                 .lastName(p.getLastName())
                 // Identification — presence indicator only, never raw value

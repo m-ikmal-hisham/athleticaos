@@ -20,7 +20,11 @@ import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.DuplicateIcException;
-import org.mockito.ArgumentCaptor;
+import com.athleticaos.backend.exceptions.EmailRequiredException;
+import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateMatch;
+import com.athleticaos.backend.services.PersonDuplicateService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +83,8 @@ class PersonServiceImplTest {
     private UserService userService;
     @Mock
     private com.athleticaos.backend.audit.AuditLogger auditLogger;
+    @Mock
+    private PersonDuplicateService personDuplicateService;
 
     @InjectMocks
     private PersonServiceImpl personService;
@@ -109,6 +115,7 @@ class PersonServiceImplTest {
                 .identificationHash("hash900101011235")
                 .identificationHashVersion(1)
                 .identificationVerificationStatus("UNVERIFIED")
+                .email("ahmad.ibrahim@example.invalid")
                 .build();
     }
 
@@ -121,6 +128,7 @@ class PersonServiceImplTest {
         request.setGender("FEMALE");
         request.setIcOrPassport("920202-02-2346"); // even last digit for female
         request.setIdentificationType("MALAYSIAN_IC");
+        request.setEmail("siti.nur@example.invalid");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
         when(identificationHashService.isConfigured()).thenReturn(true);
@@ -142,7 +150,7 @@ class PersonServiceImplTest {
                 .identificationVerificationStatus("UNVERIFIED")
                 .build();
 
-        when(personRepository.save(any(Person.class))).thenReturn(savedPerson);
+        when(personRepository.saveAndFlush(any(Person.class))).thenReturn(savedPerson);
         when(personRepository.findById(newPersonId)).thenReturn(Optional.of(savedPerson));
 
         PersonResponseDTO response = personService.createPerson(organisationId, request);
@@ -150,7 +158,7 @@ class PersonServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(response.isIdentificationPresent()).isTrue();
         assertThat(response.getIdentificationType()).isEqualTo("MALAYSIAN_IC");
-        verify(personRepository).save(any(Person.class));
+        verify(personRepository).saveAndFlush(any(Person.class));
     }
 
     @Test
@@ -671,7 +679,7 @@ class PersonServiceImplTest {
     // -----------------------------------------------------------------------
 
     @Test
-    void createPerson_blankEmail_savedWithNull() {
+    void createPerson_blankEmail_throwsEmailRequiredException() {
         CreatePersonRequest request = new CreatePersonRequest();
         request.setFirstName("John");
         request.setLastName("Doe");
@@ -679,53 +687,25 @@ class PersonServiceImplTest {
         request.setGender("MALE");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        UUID newId = UUID.randomUUID();
-        when(personRepository.save(any(Person.class))).thenAnswer(i -> {
-            Person p = i.getArgument(0);
-            p.setId(newId);
-            return p;
-        });
-        when(personRepository.findById(newId)).thenAnswer(i -> Optional.of(Person.builder().id(newId).build()));
 
-        personService.createPerson(organisationId, request);
-
-        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
-        verify(personRepository).save(captor.capture());
-        assertThat(captor.getValue().getEmail()).isNull();
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(EmailRequiredException.class)
+                .hasMessage("Email is required.");
     }
 
     @Test
-    void createPerson_twoCreatesWithBlankEmail_bothSucceed() {
+    void createPerson_nullEmail_throwsEmailRequiredException() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("John");
+        request.setLastName("Doe");
+        request.setEmail(null);
+        request.setGender("MALE");
+
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        when(personRepository.save(any(Person.class))).thenAnswer(i -> {
-            Person p = i.getArgument(0);
-            p.setId(UUID.randomUUID());
-            return p;
-        });
-        when(personRepository.findById(any(UUID.class))).thenAnswer(i -> {
-            UUID id = i.getArgument(0);
-            return Optional.of(Person.builder().id(id).build());
-        });
 
-        CreatePersonRequest req1 = new CreatePersonRequest();
-        req1.setFirstName("Person");
-        req1.setLastName("One");
-        req1.setEmail("");
-        req1.setGender("MALE");
-        personService.createPerson(organisationId, req1);
-
-        CreatePersonRequest req2 = new CreatePersonRequest();
-        req2.setFirstName("Person");
-        req2.setLastName("Two");
-        req2.setEmail("   ");
-        req2.setGender("FEMALE");
-        personService.createPerson(organisationId, req2);
-
-        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
-        verify(personRepository, org.mockito.Mockito.times(2)).save(captor.capture());
-        List<Person> saved = captor.getAllValues();
-        assertThat(saved.get(0).getEmail()).isNull();
-        assertThat(saved.get(1).getEmail()).isNull();
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(EmailRequiredException.class)
+                .hasMessage("Email is required.");
     }
 
     @Test
@@ -761,17 +741,43 @@ class PersonServiceImplTest {
     }
 
     @Test
-    void updatePerson_blankEmail_clearsEmailToNull() {
+    void updatePerson_blankEmail_throwsEmailRequiredException() {
         existingPerson.setEmail("existing@example.com");
         when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
-        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
 
         PersonUpdateRequest request = new PersonUpdateRequest();
         request.setEmail("   ");
 
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(EmailRequiredException.class)
+                .hasMessage("Email is required.");
+    }
+
+    @Test
+    void updatePerson_legacyPersonWithoutEmail_noEmailInRequest_throwsEmailRequiredException() {
+        existingPerson.setEmail(null);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setPhone("0123456789");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(EmailRequiredException.class)
+                .hasMessage("This person has no email address. Add one to save changes.");
+    }
+
+    @Test
+    void updatePerson_legacyPersonWithoutEmail_providingEmail_succeeds() {
+        existingPerson.setEmail(null);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(personRepository.save(any(Person.class))).thenAnswer(i -> i.getArgument(0));
+
+        PersonUpdateRequest request = new PersonUpdateRequest();
+        request.setEmail("new.added@example.invalid");
+
         personService.updatePerson(personId, request);
 
-        assertThat(existingPerson.getEmail()).isNull();
+        assertThat(existingPerson.getEmail()).isEqualTo("new.added@example.invalid");
     }
 
     @Test
@@ -830,5 +836,66 @@ class PersonServiceImplTest {
 
         assertThat(existingPerson.getEmail()).isEqualTo("existing@example.com");
         verify(personRepository).existsByEmailIgnoreCaseAndIdNot("existing@example.com", personId);
+    }
+
+    @Test
+    void createPerson_withPossibleDuplicateMatch_noFlag_throwsPossibleDuplicatePersonException() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("Ali");
+        request.setLastName("Abu");
+        request.setEmail("ali.abu@example.invalid");
+        request.setGender("MALE");
+        request.setDob(LocalDate.of(2000, 1, 1));
+        request.setNationality("MALAYSIAN");
+
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(personRepository.existsByEmailIgnoreCase("ali.abu@example.invalid")).thenReturn(false);
+
+        PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
+        when(personDuplicateService.check("Ali", "Abu", LocalDate.of(2000, 1, 1), "MALE", null))
+                .thenReturn(dupCheck);
+
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(PossibleDuplicatePersonException.class);
+        verify(personRepository, never()).save(any(Person.class));
+        verify(personRepository, never()).saveAndFlush(any(Person.class));
+    }
+
+    @Test
+    void createPerson_withPossibleDuplicateMatch_confirmFlagTrue_savesPersonAndAudits() {
+        CreatePersonRequest request = new CreatePersonRequest();
+        request.setFirstName("Ali");
+        request.setLastName("Abu");
+        request.setEmail("ali.abu@example.invalid");
+        request.setGender("MALE");
+        request.setDob(LocalDate.of(2000, 1, 1));
+        request.setNationality("MALAYSIAN");
+        request.setConfirmPossibleDuplicate(true);
+
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(personRepository.existsByEmailIgnoreCase("ali.abu@example.invalid")).thenReturn(false);
+        Person savedPerson = Person.builder()
+                .id(personId)
+                .firstName("Ali")
+                .lastName("Abu")
+                .email("ali.abu@example.invalid")
+                .gender("MALE")
+                .dob(LocalDate.of(2000, 1, 1))
+                .nationality("MALAYSIAN")
+                .build();
+        when(personRepository.saveAndFlush(any(Person.class))).thenReturn(savedPerson);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(savedPerson));
+
+        PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
+        when(personDuplicateService.check("Ali", "Abu", LocalDate.of(2000, 1, 1), "MALE", null))
+                .thenReturn(dupCheck);
+
+        PersonResponseDTO response = personService.createPerson(organisationId, request);
+
+        assertThat(response).isNotNull();
+        verify(personRepository).saveAndFlush(any(Person.class));
+        verify(auditLogger).logPersonPossibleDuplicateOverride(any(Person.class), eq(1), eq(0), any());
     }
 }

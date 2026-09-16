@@ -36,8 +36,9 @@ public class PersonController {
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<Page<PersonResponseDTO>> getAllPersons(
             @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
-            @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(personService.getAllPersons(pageable, search));
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean missingEmail) {
+        return ResponseEntity.ok(personService.getAllPersons(pageable, search, missingEmail));
     }
 
     @GetMapping("/organisation/{orgId}")
@@ -45,8 +46,9 @@ public class PersonController {
     public ResponseEntity<Page<PersonResponseDTO>> getPersonsByOrganisation(
             @PathVariable UUID orgId,
             @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
-            @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable, search));
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean missingEmail) {
+        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable, search, missingEmail));
     }
 
     @PostMapping("/organisation/{orgId}")

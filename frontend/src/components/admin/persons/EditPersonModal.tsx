@@ -5,6 +5,7 @@ import { Input } from '@/components/Input';
 import { showToast } from '@/lib/customToast';
 import { updatePerson, PersonResponseDTO, IdentityVerificationSummary } from '@/api/persons.api';
 import { IdentityVerificationPanel } from './IdentityVerificationPanel';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from './PossibleDuplicateDialog';
 
 interface EditPersonModalProps {
     isOpen: boolean;
@@ -20,6 +21,11 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     const [replacementIdentificationType, setReplacementIdentificationType] = useState('');
     const [duplicateIcError, setDuplicateIcError] = useState('');
     const [identityVerification, setIdentityVerification] = useState<IdentityVerificationSummary | null>(null);
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     // OBS-05B: Track loaded DOB and gender for reentry detection
     const loadedDob = useRef('');
@@ -95,8 +101,7 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
     // Effective type: auto-preselect MALAYSIAN_IC only when storedType was MALAYSIAN_IC
     const effectiveIdType = replacementIdentificationType || (isReentryRequired && storedType === 'MALAYSIAN_IC' ? 'MALAYSIAN_IC' : '');
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const submitPerson = async (confirmPossibleDuplicate = false) => {
         if (!person) return;
 
         const hasReplacementId = Boolean(formData.icOrPassport.trim());
@@ -118,36 +123,64 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
             return;
         }
 
+        if (!formData.email.trim()) {
+            setEmailError('Email is required.');
+            showToast.error('Email is required.');
+            return;
+        }
+
         setLoading(true);
         try {
             const payload = {
                 ...formData,
                 email: formData.email.trim(),
                 identificationType: hasReplacementId ? effectiveIdType : undefined,
-                icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined
+                icOrPassport: hasReplacementId ? formData.icOrPassport.trim() : undefined,
+                confirmPossibleDuplicate
             };
             await updatePerson(person.id, payload as any);
             showToast.success('Person updated successfully');
+            setShowDuplicateDialog(false);
             onSuccess();
             onClose();
         } catch (error: any) {
             console.error('Update failed', error.response?.status, error.response?.data?.errorCode);
-            if (error.response?.data?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
-                setDuplicateIcError(error.response?.data?.message || reentryNotice);
+            const errData = error.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'This person has no email address. Add one to save changes.');
+                showToast.error(errData.message || 'This person has no email address. Add one to save changes.');
+            } else if (errData?.errorCode === 'IDENTIFICATION_REENTRY_REQUIRED') {
+                setDuplicateIcError(errData.message || reentryNotice);
                 showToast.error('Identification re-entry required');
-            } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
-                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
-                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
+            } else if (errData?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(errData.message || 'A person with this email already exists.');
+                showToast.error(errData.message || 'A person with this email already exists.');
             } else {
-                showToast.error(error.response?.data?.message || 'Failed to update person');
+                showToast.error(errData?.message || 'Failed to update person');
             }
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitPerson(false);
+    };
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Edit Person Details" size="md">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={person?.registrationNo ? `Edit Person - ${person.firstName} ${person.lastName} (${person.registrationNo})` : "Edit Person Details"}
+            size="md"
+        >
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -303,9 +336,10 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Email</label>
+                        <label className="text-sm font-medium mb-1 block">Email *</label>
                         <Input
                             type="email"
+                            required
                             value={formData.email}
                             onChange={(e) => {
                                 setFormData({ ...formData, email: e.target.value });
@@ -372,6 +406,19 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         disabled={loading}
                     />
                 </div>
+            )}
+
+            {showDuplicateDialog && duplicateData && (
+                <PossibleDuplicateDialog
+                    isOpen={showDuplicateDialog}
+                    onClose={() => setShowDuplicateDialog(false)}
+                    onConfirmAnyway={() => submitPerson(true)}
+                    visibleMatches={duplicateData.visibleMatches}
+                    otherOrganisationsCount={duplicateData.otherOrganisationsCount}
+                    isSubmitting={loading}
+                    title="Possible duplicate person detected"
+                    confirmButtonText="Save anyway"
+                />
             )}
         </Modal>
     );

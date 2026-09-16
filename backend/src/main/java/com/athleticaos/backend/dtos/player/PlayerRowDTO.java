@@ -16,5 +16,14 @@ public record PlayerRowDTO(
     @NotBlank(message = "Nationality is required") String nationality,
     @Email(message = "Invalid email format") String email,
     String state,
-    String medicalNotes
-) {}
+    String medicalNotes,
+    Boolean confirmPossibleDuplicate
+) {
+    public PlayerRowDTO(
+            String firstName, String lastName, String gender, LocalDate dob,
+            String identificationType, String icOrPassport, String nationality,
+            String email, String state, String medicalNotes) {
+        this(firstName, lastName, gender, dob, identificationType, icOrPassport,
+                nationality, email, state, medicalNotes, null);
+    }
+}
