@@ -23,12 +23,15 @@ public interface TournamentPlayerRepository extends JpaRepository<TournamentPlay
     @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.isActive = true AND tp.player.deleted = false")
     List<TournamentPlayer> findByTournamentIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp JOIN FETCH tp.player p JOIN FETCH p.person WHERE tp.tournament.id = :tournamentId AND tp.isActive = true AND p.deleted = false")
+    List<TournamentPlayer> findByTournamentIdAndIsActiveTrueWithPlayerAndPerson(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
     @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.tournament.id = :tournamentId AND tp.team.id = :teamId AND tp.isActive = true AND tp.player.deleted = false")
     List<TournamentPlayer> findByTournamentIdAndTeamIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId, @org.springframework.data.repository.query.Param("teamId") UUID teamId);
 
     List<TournamentPlayer> findByPlayerId(UUID playerId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp WHERE tp.player.id = :playerId AND tp.isActive = true AND tp.player.deleted = false")
+    @org.springframework.data.jpa.repository.Query("SELECT tp FROM TournamentPlayer tp LEFT JOIN FETCH tp.tournament LEFT JOIN FETCH tp.team t LEFT JOIN FETCH t.organisation WHERE tp.player.id = :playerId AND tp.isActive = true AND tp.player.deleted = false")
     List<TournamentPlayer> findByPlayerIdAndIsActiveTrue(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
 
     @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(tp) > 0 THEN TRUE ELSE FALSE END FROM TournamentPlayer tp WHERE tp.player.person.id = :personId AND tp.player.deleted = false")

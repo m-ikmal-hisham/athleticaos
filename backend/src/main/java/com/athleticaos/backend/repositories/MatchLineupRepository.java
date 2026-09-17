@@ -23,7 +23,7 @@ public interface MatchLineupRepository extends JpaRepository<MatchLineup, UUID> 
 
     void deleteByMatch_Tournament_Id(UUID tournamentId);
 
-        @org.springframework.data.jpa.repository.Query("SELECT l FROM MatchLineup l WHERE l.player.id = :playerId AND l.match.deleted = false")
+        @org.springframework.data.jpa.repository.Query("SELECT l FROM MatchLineup l JOIN FETCH l.match m JOIN FETCH m.tournament LEFT JOIN FETCH l.team t LEFT JOIN FETCH t.organisation WHERE l.player.id = :playerId AND m.deleted = false")
         List<MatchLineup> findByPlayerId(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
 
     List<MatchLineup> findByMatchIdAndPlayerIdIn(UUID matchId, List<UUID> playerIds);

@@ -46,16 +46,14 @@ public class PublicProfileController {
             @RequestParam(required = false) String state) {
         List<com.athleticaos.backend.entities.Team> teams;
         if (tournamentId != null) {
-            var ttList = tournamentTeamRepository.findByTournamentId(tournamentId);
+            var ttList = tournamentTeamRepository.findByTournamentIdWithTeamAndOrganisation(tournamentId);
             teams = ttList.stream()
                     .filter(tt -> tt != null && tt.getTeam() != null && tt.isActive() && !tt.isDeleted())
                     .map(tt -> tt.getTeam())
                     .distinct()
                     .collect(Collectors.toList());
         } else {
-            teams = teamRepository.findAll().stream()
-                    .filter(t -> t.getStatus() == null || !"Inactive".equalsIgnoreCase(t.getStatus()))
-                    .collect(Collectors.toList());
+            teams = teamRepository.findAllActiveWithOrganisation();
         }
 
         var stream = teams.stream();
@@ -146,7 +144,7 @@ public class PublicProfileController {
         List<com.athleticaos.backend.entities.Player> players;
 
         if (tournamentId != null) {
-            var tpList = tournamentPlayerRepository.findByTournamentIdAndIsActiveTrue(tournamentId);
+            var tpList = tournamentPlayerRepository.findByTournamentIdAndIsActiveTrueWithPlayerAndPerson(tournamentId);
             players = tpList.stream()
                     .filter(tp -> tp != null && tp.getPlayer() != null && !Boolean.TRUE.equals(tp.getPlayer().getDeleted()))
                     .map(tp -> tp.getPlayer())
