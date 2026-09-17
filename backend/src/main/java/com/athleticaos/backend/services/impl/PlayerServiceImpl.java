@@ -122,12 +122,9 @@ public class PlayerServiceImpl implements PlayerService {
             }
         }
 
-        UUID currentUserId = null;
-        try {
-            com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
-            currentUserId = currentUser != null ? currentUser.getId() : null;
-        } catch (Exception ignored) {
-        }
+        // The caller is authenticated here: getAccessibleOrgIdsForCurrentUser() already resolved them
+        com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
+        UUID currentUserId = currentUser != null ? currentUser.getId() : null;
         log.warn("Access denied for player record outside accessible organisation scope: userId={}, playerId={}",
                 currentUserId, player.getId());
         throw new EntityNotFoundException("Player not found");

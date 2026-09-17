@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,10 +22,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -116,5 +121,36 @@ public class PlayerControllerSecurityTest {
                 .andExpect(jsonPath("$.id").value(playerId.toString()));
 
         verify(playerService).getPlayerInScope(playerId.toString());
+    }
+
+    @Test
+    @WithMockUser(roles = "CLUB_ADMIN")
+    void updatePlayer_whenOutOfScopeOrMissing_returns404AndWritesNoAudit() throws Exception {
+        UUID playerId = UUID.randomUUID();
+        when(playerService.updatePlayer(eq(playerId), any()))
+                .thenThrow(new EntityNotFoundException("Player not found"));
+
+        mockMvc.perform(put("/api/v1/players/{idOrSlug}", playerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"heightCm\": 180}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Player not found"));
+
+        verify(playerService).updatePlayer(eq(playerId), any());
+        verify(auditLogger, never()).logPlayerUpdated(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "CLUB_ADMIN")
+    void deletePlayer_whenOutOfScopeOrMissing_returns404AndWritesNoAudit() throws Exception {
+        UUID playerId = UUID.randomUUID();
+        doThrow(new EntityNotFoundException("Player not found")).when(playerService).deletePlayer(playerId);
+
+        mockMvc.perform(delete("/api/v1/players/{idOrSlug}", playerId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Player not found"));
+
+        verify(playerService).deletePlayer(playerId);
+        verify(auditLogger, never()).logPlayerDeleted(any(), any());
     }
 }

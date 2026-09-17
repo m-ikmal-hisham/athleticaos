@@ -588,6 +588,10 @@ class PlayerServiceImplTest {
         assertThatThrownBy(() -> playerService.getPlayerInScope(playerId.toString()))
                 .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
                 .hasMessage("Player not found");
+
+        // An empty set must never reach the IN-clause scope queries
+        verify(organisationPersonRepository, never()).existsByPersonIdAndOrganisationIdIn(any(), any());
+        verify(playerTeamRepository, never()).existsActiveByPlayerIdAndOrganisationIdIn(any(), any());
     }
 
     @Test

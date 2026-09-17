@@ -358,17 +358,7 @@ public class UserService {
     public UserRolesResponse getUserRoles(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        List<String> roles = user.getRoles().stream()
-                .map(role -> role.getName().replace("ROLE_", ""))
-                .collect(Collectors.toList());
-
-        String primaryRole = roles.isEmpty() ? "USER" : roles.get(0);
-
-        return UserRolesResponse.builder()
-                .roles(roles)
-                .primaryRole(primaryRole)
-                .build();
+        return buildRolesResponse(user);
     }
 
     @Transactional(readOnly = true)
@@ -377,7 +367,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         assertUserInScope(user);
+        return buildRolesResponse(user);
+    }
 
+    private UserRolesResponse buildRolesResponse(User user) {
         List<String> roles = user.getRoles().stream()
                 .map(role -> role.getName().replace("ROLE_", ""))
                 .collect(Collectors.toList());
