@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(PlayerController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@SuppressWarnings("null")
 public class PlayerControllerSecurityTest {
 
     @Autowired
