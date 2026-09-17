@@ -13,9 +13,6 @@ public class RegisterPersonRequest {
     @NotBlank(message = "Last name is required")
     private String lastName;
     
-    @NotBlank(message = "IC or Passport is required")
-    private String icOrPassport;
-    
     @NotNull(message = "Date of birth is required")
     private LocalDate dob;
     
@@ -25,5 +22,11 @@ public class RegisterPersonRequest {
     @NotBlank(message = "Nationality is required")
     private String nationality;
     
+    @jakarta.validation.constraints.NotBlank(message = "Email is required")
+    @jakarta.validation.constraints.Email(message = "Invalid email format")
+    private String email;
+
     private String nationalPlayerStatus;
+
+    private Boolean confirmPossibleDuplicate;
 }

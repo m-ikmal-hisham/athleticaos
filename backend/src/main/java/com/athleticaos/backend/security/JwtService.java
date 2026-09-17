@@ -37,6 +37,10 @@ public class JwtService {
         return extractClaim(token, claims -> claims.getSubject());
     }
 
+    public Date extractIssuedAt(String token) {
+        return extractClaim(token, claims -> claims.getIssuedAt());
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);

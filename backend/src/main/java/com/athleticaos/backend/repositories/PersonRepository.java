@@ -9,34 +9,69 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface PersonRepository extends JpaRepository<Person, UUID> {
 
-        // Server-side search across name, IC/passport, and email
+        // Search covers name, email, and registration number.
         @Query("SELECT p FROM Person p WHERE " +
                "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
                "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(p.icOrPassport) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-               "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%'))")
+               "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%'))")
         Page<Person> searchAllPersons(@Param("search") String search, Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE (p.email IS NULL OR TRIM(p.email) = '' OR LOWER(p.email) LIKE '%@placeholder.invalid')")
+        Page<Person> findPersonsWithMissingEmail(Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE (p.email IS NULL OR TRIM(p.email) = '' OR LOWER(p.email) LIKE '%@placeholder.invalid') AND (" +
+               "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
+        Page<Person> searchPersonsWithMissingEmail(@Param("search") String search, Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE " +
+               "LOWER(TRIM(p.firstName)) = LOWER(TRIM(:firstName)) AND " +
+               "LOWER(TRIM(p.lastName)) = LOWER(TRIM(:lastName)) AND " +
+               "p.dob = :dob AND " +
+               "p.gender = :gender")
+        java.util.List<Person> findPossibleDuplicates(
+                @Param("firstName") String firstName,
+                @Param("lastName") String lastName,
+                @Param("dob") java.time.LocalDate dob,
+                @Param("gender") String gender,
+                Pageable pageable);
+
+        @Query("SELECT p FROM Person p WHERE " +
+               "LOWER(TRIM(p.firstName)) = LOWER(TRIM(:firstName)) AND " +
+               "LOWER(TRIM(p.lastName)) = LOWER(TRIM(:lastName)) AND " +
+               "p.dob = :dob AND " +
+               "p.gender = :gender AND " +
+               "p.id <> :excludePersonId")
+        java.util.List<Person> findPossibleDuplicatesExcludingId(
+                @Param("firstName") String firstName,
+                @Param("lastName") String lastName,
+                @Param("dob") java.time.LocalDate dob,
+                @Param("gender") String gender,
+                @Param("excludePersonId") UUID excludePersonId,
+                Pageable pageable);
+        @Query("SELECT p FROM Person p WHERE (p.email IS NULL OR TRIM(p.email) = '') " +
+               "AND p.registrationNo IS NOT NULL ORDER BY p.id ASC")
+        Page<Person> findPersonsNeedingPlaceholderEmail(Pageable pageable);
+
+        @Query("SELECT COUNT(p) FROM Person p WHERE (p.email IS NULL OR TRIM(p.email) = '') " +
+               "AND p.registrationNo IS NOT NULL")
+        long countPersonsNeedingPlaceholderEmail();
+
         Optional<Person> findByEmail(String email);
 
         boolean existsByEmail(String email);
+        boolean existsByEmailIgnoreCase(String email);
 
-        @Query("SELECT p FROM Person p WHERE TRIM(UPPER(p.icOrPassport)) = TRIM(UPPER(:icOrPassport))")
-        List<Person> findAllByIcOrPassportNormalized(@Param("icOrPassport") String icOrPassport);
-
-        // Strict check for duplicate IC/Passport (expects normalized input)
-        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE REPLACE(REPLACE(UPPER(p.icOrPassport), '-', ''), ' ', '') = :icOrPassport")
-        boolean existsByIcOrPassport(@Param("icOrPassport") String icOrPassport);
-
-        // Strict check for duplicate IC/Passport excluding specific ID (for updates)
-        @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Person p WHERE REPLACE(REPLACE(UPPER(p.icOrPassport), '-', ''), ' ', '') = :icOrPassport AND p.id <> :id")
-        boolean existsByIcOrPassportAndIdNot(@Param("icOrPassport") String icOrPassport, @Param("id") UUID id);
+        boolean existsByEmailAndIdNot(String email, UUID id);
+        boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
 
         boolean existsByUserId(UUID userId);
 }

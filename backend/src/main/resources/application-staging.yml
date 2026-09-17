@@ -10,7 +10,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
@@ -22,8 +22,8 @@ server:
 logging:
   level:
     root: INFO
-    com.athleticaos: DEBUG
-    org.hibernate.SQL: DEBUG
+    com.athleticaos: INFO
+    org.hibernate.SQL: WARN
 
 application:
   security:

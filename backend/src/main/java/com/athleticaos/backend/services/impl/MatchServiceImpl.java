@@ -11,6 +11,7 @@ import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.TournamentFormatConfig;
+import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
@@ -420,6 +421,8 @@ public class MatchServiceImpl implements MatchService {
             }
         }
 
+        deriveWinnerAndResultType(match);
+
         Match updatedMatch = matchRepository.save(match);
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
         triggerAutoProgression(updatedMatch);
@@ -685,6 +688,7 @@ public class MatchServiceImpl implements MatchService {
 
         match.setHomeScore(homeScore);
         match.setAwayScore(awayScore);
+        deriveWinnerAndResultType(match);
         Match updatedMatch = matchRepository.save(match);
         triggerAutoProgression(updatedMatch);
     }
@@ -715,6 +719,8 @@ public class MatchServiceImpl implements MatchService {
             }
             suspensionService.decrementSuspensions(match);
         }
+
+        deriveWinnerAndResultType(match);
 
         Match updatedMatch = matchRepository.save(match);
         triggerAutoProgression(updatedMatch);
@@ -858,8 +864,35 @@ public class MatchServiceImpl implements MatchService {
 
     /** Byes and walkovers are decided by an explicit winner rather than by scores. */
     private boolean hasExplicitResult(Match match) {
-        return match.getResultType() == com.athleticaos.backend.enums.MatchResultType.BYE
-                || match.getResultType() == com.athleticaos.backend.enums.MatchResultType.WALKOVER;
+        return match.getResultType() == MatchResultType.BYE
+                || match.getResultType() == MatchResultType.WALKOVER;
+    }
+
+    /**
+     * Automatically derives the winner and result type for completed matches, or clears
+     * them if a match is moved out of COMPLETED status (unless it is an unplayed WALKOVER/BYE).
+     */
+    private void deriveWinnerAndResultType(Match match) {
+        if (match == null || hasExplicitResult(match)) {
+            return;
+        }
+        if (match.getStatus() == MatchStatus.COMPLETED) {
+            if (match.getHomeScore() != null && match.getAwayScore() != null) {
+                match.setResultType(MatchResultType.NORMAL);
+                if (match.getHomeScore() > match.getAwayScore()) {
+                    match.setWinnerTeam(match.getHomeTeam());
+                } else if (match.getAwayScore() > match.getHomeScore()) {
+                    match.setWinnerTeam(match.getAwayTeam());
+                } else {
+                    match.setWinnerTeam(null);
+                }
+            }
+        } else {
+            if (match.getResultType() == MatchResultType.NORMAL) {
+                match.setResultType(null);
+            }
+            match.setWinnerTeam(null);
+        }
     }
 
     /** True when another match is scheduled to feed the given slot, so it is not truly empty. */

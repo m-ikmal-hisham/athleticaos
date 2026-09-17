@@ -9,8 +9,53 @@ concurrency:
   group: deploy-backend-staging-${{ github.ref }}
   cancel-in-progress: true
 
+# NOTE: Tests must pass before deployment to staging.
+# TODO: Frontend lint gate is intentionally deferred. Currently `npm run lint` fails
+# with 8 pre-existing errors and 215 warnings under zero-warning policy. Enable frontend
+# lint gate once those issues are resolved.
+
 jobs:
+  test:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Unit Tests
+        working-directory: backend
+        run: ./mvnw test -B
+
+  integration-test:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Integration Tests
+        working-directory: backend
+        run: ./mvnw test -B -Pintegration
+
   deploy:
+    name: Deploy Backend
+    needs: [test, integration-test]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

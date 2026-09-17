@@ -9,6 +9,10 @@ concurrency:
   group: deploy-frontend-staging-${{ github.ref }}
   cancel-in-progress: true
 
+# TODO: Enable frontend lint and test gate jobs once existing lint issues are resolved.
+# Currently `npm run lint` fails with 8 pre-existing errors and 215 warnings under zero-warning policy.
+# When fixed, add a lint job (running `npm run lint`) and make `deploy` depend on it (`needs: [lint]`).
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

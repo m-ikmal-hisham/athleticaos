@@ -8,7 +8,7 @@
 # ------------------------------------------------------------
 BASE_URL="http://localhost:8080/api/v1"
 ADMIN_EMAIL="admin@athleticaos.com"
-ADMIN_PASSWORD="password123"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in your environment}"
 
 # Helper function for authenticated requests
 auth_header() {

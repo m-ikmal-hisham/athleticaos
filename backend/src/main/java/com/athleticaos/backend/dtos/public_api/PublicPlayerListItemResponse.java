@@ -24,8 +24,6 @@ public class PublicPlayerListItemResponse {
     private String organisationName;
     private String profilePictureUrl;
     private String state;
-    private String city;
     private String gender;
-    private String dateOfBirth;
     private int tournamentCount;
 }

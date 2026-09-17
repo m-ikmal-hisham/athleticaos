@@ -1,0 +1,61 @@
+name: Backend CI
+
+on:
+  push:
+    branches-ignore:
+      - staging
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci-backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci-backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+# TODO: Enable frontend lint and test gate jobs once existing lint issues are resolved.
+# Currently `npm run lint` fails with 8 pre-existing errors and 215 warnings under zero-warning policy.
+# When resolved, add a frontend lint/test workflow or job.
+
+jobs:
+  test:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Unit Tests
+        working-directory: backend
+        run: ./mvnw test -B
+
+  integration-test:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Integration Tests
+        working-directory: backend
+        run: ./mvnw test -B -Pintegration

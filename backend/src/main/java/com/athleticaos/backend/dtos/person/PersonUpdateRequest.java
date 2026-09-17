@@ -14,7 +14,6 @@ import java.time.LocalDate;
 public class PersonUpdateRequest {
     private String firstName;
     private String lastName;
-    private String icOrPassport;
     private LocalDate dob;
     private String gender;
     private String nationality;
@@ -24,4 +23,5 @@ public class PersonUpdateRequest {
     private Boolean isPlayer;
     private Boolean isOfficial;
     private Boolean isStaff;
+    private Boolean confirmPossibleDuplicate;
 }

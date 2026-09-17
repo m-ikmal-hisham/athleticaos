@@ -11,9 +11,6 @@ public record PlayerUpdateRequest(
         String lastName,
         String gender,
         @JsonFormat(pattern = "yyyy-MM-dd") LocalDate dob,
-        String icOrPassport,
-        String identificationType,
-        String identificationValue,
         String nationality,
 
         @Email(message = "Invalid email format") String email,
@@ -36,5 +33,18 @@ public record PlayerUpdateRequest(
         String dominantLeg,
         Integer heightCm,
         Integer weightKg,
-        String photoUrl) {
+        String photoUrl,
+        Boolean confirmPossibleDuplicate) {
+
+    public PlayerUpdateRequest(
+            String firstName, String lastName, String gender, LocalDate dob,
+            String nationality, String email, String phone, String addressLine1, String addressLine2,
+            String postcode, String city, String state, String country,
+            String address, String status, String dominantHand,
+            String dominantLeg, Integer heightCm, Integer weightKg, String photoUrl) {
+        this(firstName, lastName, gender, dob,
+                nationality, email, phone, addressLine1, addressLine2, postcode,
+                city, state, country, address, status, dominantHand,
+                dominantLeg, heightCm, weightKg, photoUrl, null);
+    }
 }

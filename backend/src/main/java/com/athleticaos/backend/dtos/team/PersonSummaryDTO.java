@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PersonSummaryDTO {
     private String id;
+    private String registrationNo;
     private String firstName;
     private String lastName;
-    private String icOrPassport;
     private String email;
 }

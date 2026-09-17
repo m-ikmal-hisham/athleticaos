@@ -30,6 +30,7 @@ public class TeamController {
 
     private final TeamService teamService;
     private final PlayerService playerService;
+    private final com.athleticaos.backend.audit.AuditLogger auditLogger;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -122,9 +123,15 @@ public class TeamController {
     @PreAuthorize("hasAnyAuthority('ROLE_CLUB_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<PlayerBatchResponse> createBatchPlayers(
             @PathVariable UUID teamId,
-            @RequestBody List<PlayerRowDTO> requests) {
+            @RequestBody List<PlayerRowDTO> requests,
+            HttpServletRequest httpRequest) {
         log.info("Request to bulk onboard players for team ID: {}, size: {}", teamId, requests.size());
         PlayerBatchResponse response = playerService.createBatchPlayers(teamId, requests);
+        int success = response != null ? response.successCount() : 0;
+        int failed = response != null ? response.failCount() : 0;
+        auditLogger.logBulkAction("BATCH_PLAYER_IMPORT", "PLAYER", teamId,
+                String.format("Batch imported players for team %s: %d created, %d failed", teamId, success, failed),
+                httpRequest);
         return ResponseEntity.ok(response);
     }
 }

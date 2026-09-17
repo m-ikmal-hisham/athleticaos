@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/login",
+                                // Verifies email + current password itself; rate-limited like login
+                                "/api/v1/auth/change-password",
                                 // "/api/v1/auth/register" — removed: now requires SUPER_ADMIN authentication
                                 "/api/v1/auth/logout",
                                 "/api/v1/auth/me",

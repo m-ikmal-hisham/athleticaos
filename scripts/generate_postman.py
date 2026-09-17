@@ -130,7 +130,7 @@ register_body = {
     "firstName": "John",
     "lastName": "Doe",
     "email": "john.doe@example.com",
-    "password": "password123",
+    "password": "{{password}}",
     "roles": ["ROLE_USER"],
     "organisationId": ""
 }
@@ -243,7 +243,6 @@ player_create_body = {
     "lastName": "One",
     "gender": "MALE",
     "dob": "1990-01-01",
-    "icOrPassport": "A1234567",
     "nationality": "Malaysia",
     "email": "player@example.com",
     "phone": "+60123456789",

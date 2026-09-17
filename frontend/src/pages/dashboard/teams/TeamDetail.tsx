@@ -493,7 +493,6 @@ export default function TeamDetail() {
                                                 onSelect={(id) => setSelectedTournamentId(id || '')}
                                                 allLabel="All (Global)"
                                                 variant="admin"
-                                                className="w-full sm:w-auto"
                                             />
                                         )}
                                     </div>

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
@@ -17,5 +18,6 @@ public class LoginRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
+    @ToString.Exclude
     private String password;
 }

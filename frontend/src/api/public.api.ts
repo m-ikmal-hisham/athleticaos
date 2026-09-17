@@ -236,9 +236,6 @@ export interface PublicPlayerSummary {
     id: string;
     firstName: string;
     lastName: string;
-    idType: string;
-    idNumber: string;
-    dateOfBirth?: string;
     position?: string;
     position2?: string;
     jerseyNumber?: number;
@@ -271,9 +268,7 @@ export interface PublicPlayerDetailResponse {
     id: string;
     firstName: string;
     lastName: string;
-    idType: string;
-    idNumber: string;
-    dateOfBirth?: string;
+    age?: number | null;
     gender?: string;
     country?: string;
     state?: string;
@@ -328,9 +323,7 @@ export interface PublicPlayerDirectoryItem {
     organisationName?: string;
     profilePictureUrl?: string;
     state?: string;
-    city?: string;
     gender?: string;
-    dateOfBirth?: string;
     tournamentCount: number;
 }
 

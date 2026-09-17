@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
@@ -22,7 +23,10 @@ public class UserCreateRequest {
     @Email(message = "Email must be valid")
     private String email;
 
-    private String password; // Optional, can generate default if null
+    // Admin-set initial password; validated by PasswordPolicy. The user must change it at first sign-in.
+    @NotBlank(message = "Password is required")
+    @ToString.Exclude
+    private String password;
 
     private String role; // e.g. "PLAYER"
 

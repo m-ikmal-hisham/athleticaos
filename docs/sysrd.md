@@ -21,7 +21,7 @@
 ### 1.4 Security Layer
 - **Authentication**: Spring Security + JWT (Stateless).
 - **Password Storage**: BCrypt hashing.
-- **Encryption**: AES-256 for sensitive columns (IC/Passport) using a custom AttributeConverter.
+- **Personal data**: no identification numbers are stored (removed in migration V160); persons carry a generated registration number instead.
 - **CORS**: Configured to allow requests from the frontend domain only.
 
 ### 1.5 Logging

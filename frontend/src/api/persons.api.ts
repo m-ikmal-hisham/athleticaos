@@ -1,10 +1,37 @@
 import api from './axios';
 
+/** Machine-generated stand-in addresses use this domain; they are never deliverable. */
+export const PLACEHOLDER_EMAIL_DOMAIN = '@placeholder.invalid';
+
+/** True when the stored address is a generated placeholder rather than a real contact. */
+export const isPlaceholderEmail = (email?: string | null): boolean =>
+    !!email && email.trim().toLowerCase().endsWith(PLACEHOLDER_EMAIL_DOMAIN);
+
+export const RECORD_VERIFICATION_METHODS = [
+    { value: 'PRE_REGISTRATION_RECORD', label: 'Pre-registration record' },
+    { value: 'DOCUMENT_SIGHTED', label: 'Document sighted' }
+] as const;
+
+export type RecordVerificationMethod = typeof RECORD_VERIFICATION_METHODS[number]['value'];
+
+export interface RecordVerificationSummary {
+    status: 'VERIFIED' | 'UNVERIFIED';
+    verifiedAt?: string | null;
+    verifiedByName?: string | null;
+    method?: RecordVerificationMethod | string | null;
+}
+
+export interface RecordVerificationRequest {
+    method: RecordVerificationMethod;
+    attested: boolean;
+}
+
 export interface PersonResponseDTO {
     id: string;
+    registrationNo?: string | null;
     firstName: string;
     lastName: string;
-    icOrPassport: string;
+    recordVerification?: RecordVerificationSummary | null;
     dob: string;
     gender: string;
     nationality: string;
@@ -36,34 +63,35 @@ export interface PaginatedResponse<T> {
 export interface PersonUpdateRequest {
     firstName: string;
     lastName: string;
-    icOrPassport: string;
     dob: string;
     gender: string;
     nationality: string;
-    email: string;
+    email?: string;
     phone: string;
     nationalPlayerStatus: string;
+    confirmPossibleDuplicate?: boolean;
 }
 
 export interface CreatePersonRequest {
     firstName: string;
     lastName: string;
-    icOrPassport: string;
     dob: string;
     gender: string;
     nationality: string;
     email: string;
-    phone: string;
+    phone?: string;
     nationalPlayerStatus: string;
+    confirmPossibleDuplicate?: boolean;
 }
 
 export const getAllPersons = async (
     page: number = 0,
     size: number = 50,
-    search?: string
+    search?: string,
+    missingEmail?: boolean
 ): Promise<PaginatedResponse<PersonResponseDTO>> => {
     const response = await api.get(`/persons`, {
-        params: { page, size, ...(search ? { search } : {}) }
+        params: { page, size, ...(search ? { search } : {}), ...(missingEmail ? { missingEmail } : {}) }
     });
     return response.data;
 };
@@ -72,10 +100,11 @@ export const getPersonsByOrganisation = async (
     orgId: string,
     page: number = 0,
     size: number = 50,
-    search?: string
+    search?: string,
+    missingEmail?: boolean
 ): Promise<PaginatedResponse<PersonResponseDTO>> => {
     const response = await api.get(`/persons/organisation/${orgId}`, {
-        params: { page, size, ...(search ? { search } : {}) }
+        params: { page, size, ...(search ? { search } : {}), ...(missingEmail ? { missingEmail } : {}) }
     });
     return response.data;
 };
@@ -106,5 +135,20 @@ export const getUnlinkedUsers = async (orgId: string): Promise<any[]> => {
 
 export const linkPersonToUser = async (personId: string, userId: string): Promise<PersonResponseDTO> => {
     const response = await api.post(`/persons/${personId}/link-user/${userId}`);
+    return response.data;
+};
+
+export const verifyPersonRecord = async (
+    personId: string,
+    request: RecordVerificationRequest
+): Promise<PersonResponseDTO> => {
+    const response = await api.post(`/persons/${personId}/record-verification`, request);
+    return response.data;
+};
+
+export const revokePersonRecordVerification = async (
+    personId: string
+): Promise<PersonResponseDTO> => {
+    const response = await api.delete(`/persons/${personId}/record-verification`);
     return response.data;
 };

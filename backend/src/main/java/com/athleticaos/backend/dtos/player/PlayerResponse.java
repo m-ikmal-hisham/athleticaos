@@ -13,14 +13,12 @@ public record PlayerResponse(
 
                 // Person (PII) fields
                 UUID personId,
+                String registrationNo,
                 String slug,
                 String firstName,
                 String lastName,
                 String gender,
                 LocalDate dob,
-                String icOrPassport, // Full value for updates (not masked for now)
-                String identificationType,
-                String identificationValue,
                 String nationality,
                 String email,
                 String phone,
@@ -47,5 +45,6 @@ public record PlayerResponse(
                 String organisationName,
                 java.util.List<String> teamNames,
 
-                LocalDateTime createdAt) {
+                LocalDateTime createdAt,
+                com.athleticaos.backend.dtos.person.RecordVerificationSummary recordVerification) {
 }

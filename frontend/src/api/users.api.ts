@@ -6,6 +6,8 @@ export interface InviteUserRequest {
     email: string;
     role: string;
     organisationId: string;
+    /** Initial password; the user must change it at first sign-in. */
+    password: string;
 }
 
 export interface InviteUserResponse {
@@ -53,6 +55,12 @@ export const usersApi = {
 
     updateUser: async (id: string, request: UserUpdateRequest) => {
         const response = await api.put(`/users/${id}`, request);
+        return response;
+    },
+
+    // SUPER_ADMIN: sets a temporary password, forces a change at next sign-in and revokes sessions
+    resetPassword: async (id: string, newPassword: string) => {
+        const response = await api.post(`/users/${id}/reset-password`, { newPassword });
         return response;
     },
 

@@ -54,7 +54,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         userEmail = jwtService.extractUsername(jwt);
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (jwtService.isTokenValid(jwt, userDetails)
+                    && isAccountUsable(userDetails)
+                    && !issuedBeforePasswordChange(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
@@ -65,5 +67,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    // Deactivated users and users with a pending forced password change get no authenticated
+    // access, even with an otherwise-valid token.
+    private boolean isAccountUsable(UserDetails userDetails) {
+        return userDetails.isEnabled() && userDetails.isAccountNonLocked() && userDetails.isCredentialsNonExpired();
+    }
+
+    // A password change or admin reset revokes every token issued before it.
+    private boolean issuedBeforePasswordChange(String jwt, UserDetails userDetails) {
+        if (!(userDetails instanceof AthleticaUserDetails details) || details.getPasswordChangedAt() == null) {
+            return false;
+        }
+        java.util.Date issuedAt = jwtService.extractIssuedAt(jwt);
+        if (issuedAt == null) {
+            return true;
+        }
+        java.time.Instant changedAt = details.getPasswordChangedAt()
+                .atZone(java.time.ZoneId.systemDefault()).toInstant();
+        return issuedAt.toInstant().isBefore(changedAt);
     }
 }

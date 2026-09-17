@@ -1,6 +1,7 @@
 package com.athleticaos.backend.controllers;
 
 import com.athleticaos.backend.dtos.player.PlayerResponse;
+import com.athleticaos.backend.dtos.user.AdminPasswordResetRequest;
 import com.athleticaos.backend.dtos.user.InviteUserRequest;
 import com.athleticaos.backend.dtos.user.InviteUserResponse;
 import com.athleticaos.backend.dtos.user.UserResponse;
@@ -61,6 +62,16 @@ public class UserController {
             @RequestParam String status,
             HttpServletRequest httpRequest) {
         return ResponseEntity.ok(userService.updateUserStatus(id, status, httpRequest));
+    }
+
+    // Sets a temporary password (policy-checked), forces a change at next sign-in and revokes existing sessions.
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<UserResponse> resetPassword(
+            @PathVariable UUID id,
+            @RequestBody @jakarta.validation.Valid AdminPasswordResetRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(userService.resetPassword(id, request, httpRequest));
     }
 
     @PostMapping("/invite")

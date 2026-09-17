@@ -146,7 +146,6 @@ export interface TeamCreateRequest {
 export enum Gender {
     MALE = 'MALE',
     FEMALE = 'FEMALE',
-    OTHER = 'OTHER',
 }
 
 export enum DominantSide {
@@ -157,6 +156,7 @@ export enum DominantSide {
 
 export interface Player {
     id: string;
+    registrationNo?: string | null;
     personId: string;
     slug?: string;
     // Person (PII) fields
@@ -164,9 +164,12 @@ export interface Player {
     lastName: string;
     gender: Gender;
     dob: string;
-    icOrPassport: string; // Now included in response
-    identificationType?: string;
-    identificationValue?: string;
+    recordVerification?: {
+        status: string;
+        verifiedAt?: string;
+        verifiedByName?: string;
+        method?: string;
+    } | null;
     nationality: string;
     email?: string;
     phone?: string;
@@ -200,6 +203,7 @@ export interface Player {
 
 export interface TeamPlayer {
     playerId: string;
+    registrationNo?: string | null;
     firstName: string;
     lastName: string;
     email: string;
@@ -224,13 +228,11 @@ export interface PlayerCreateRequest {
     lastName: string;
     gender: Gender;
     dob: string;
-    icOrPassport: string;
-    identificationType?: string;
-    identificationValue?: string;
     nationality: string;
     email: string;
     phone?: string;
     address?: string;
+    confirmPossibleDuplicate?: boolean;
     // Player (Rugby-specific) fields - optional
     status?: string;
     dominantHand?: DominantSide;
@@ -246,13 +248,11 @@ export interface PlayerUpdateRequest {
     lastName?: string;
     gender?: string;
     dob?: string;
-    icOrPassport?: string;
-    identificationType?: string;
-    identificationValue?: string;
     nationality?: string;
     email?: string;
     phone?: string;
     address?: string;
+    confirmPossibleDuplicate?: boolean;
     // Player (Rugby-specific) fields - all optional
     status?: string;
     dominantHand?: string;

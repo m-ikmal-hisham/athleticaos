@@ -7,6 +7,7 @@ import { createPerson } from '@/api/persons.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
 import { useAuthStore } from '@/store/auth.store';
 import { Buildings, MagnifyingGlass } from '@phosphor-icons/react';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from './PossibleDuplicateDialog';
 
 interface CreatePersonModalProps {
     isOpen: boolean;
@@ -25,11 +26,15 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
     const [selectedOrgId, setSelectedOrgId] = useState<string>(organisationId || '');
     const [orgSearchQuery, setOrgSearchQuery] = useState('');
     const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        icOrPassport: '',
         dob: '',
         gender: '',
         nationality: 'Malaysian',
@@ -41,6 +46,8 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
         isStaff: false
     });
 
+    const [emailError, setEmailError] = useState('');
+
     const hasAnyRole = formData.isPlayer || formData.isOfficial || formData.isStaff;
 
     // Load organisations when Super Admin opens with a role selected
@@ -48,7 +55,10 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
         if (isOpen && isSuperAdmin && hasAnyRole && organisations.length === 0) {
             loadOrganisations();
         }
-    }, [isOpen, isSuperAdmin, hasAnyRole]);
+        if (isOpen) {
+            setEmailError('');
+        }
+    }, [isOpen, isSuperAdmin, hasAnyRole, organisations.length]);
 
     // For non-Super Admin, always pre-select their org
     useEffect(() => {
@@ -85,9 +95,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
         return 'Selected Organisation';
     }, [selectedOrgId, organisations, user]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const submitPerson = async (confirmPossibleDuplicate = false) => {
         // Validate organisation if any role is selected
         if (hasAnyRole && !selectedOrgId) {
             showToast.error('Please select an organisation when assigning a role.');
@@ -101,17 +109,28 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
             return;
         }
 
+        if (!formData.email.trim()) {
+            setEmailError('Email is required.');
+            showToast.error('Email is required.');
+            return;
+        }
+
         setLoading(true);
         try {
-            await createPerson(orgIdToUse, formData);
+            const payload = {
+                ...formData,
+                email: formData.email.trim(),
+                confirmPossibleDuplicate
+            };
+            await createPerson(orgIdToUse, payload);
             showToast.success('Person created successfully');
+            setShowDuplicateDialog(false);
             onSuccess();
             onClose();
             // Reset form
             setFormData({
                 firstName: '',
                 lastName: '',
-                icOrPassport: '',
                 dob: '',
                 gender: '',
                 nationality: 'Malaysian',
@@ -122,14 +141,35 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                 isOfficial: false,
                 isStaff: false
             });
+            setEmailError('');
             setSelectedOrgId(organisationId || '');
             setOrgSearchQuery('');
         } catch (error: any) {
             console.error('Create failed', error);
-            showToast.error(error.response?.data?.message || 'Failed to create person');
+            const errData = error.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'Email is required.');
+                showToast.error(errData.message || 'Email is required.');
+            } else if (errData?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(errData.message || 'A person with this email already exists.');
+                showToast.error(errData.message || 'A person with this email already exists.');
+            } else {
+                showToast.error(errData?.message || 'Failed to create person');
+            }
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitPerson(false);
     };
 
     return (
@@ -154,14 +194,6 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                     </div>
                 </div>
 
-                <div>
-                    <label className="text-sm font-medium mb-1 block">IC or Passport <span className="text-xs text-muted font-normal">(Required for tracking roles)</span></label>
-                    <Input
-                        required
-                        value={formData.icOrPassport}
-                        onChange={(e) => setFormData({ ...formData, icOrPassport: e.target.value })}
-                    />
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -182,9 +214,9 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                             onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                            <option value="" disabled>Select gender</option>
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
                         </select>
                     </div>
                 </div>
@@ -332,12 +364,19 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Email</label>
+                        <label className="text-sm font-medium mb-1 block">Email *</label>
                         <Input
                             type="email"
+                            required
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            onChange={(e) => {
+                                setFormData({ ...formData, email: e.target.value });
+                                if (emailError) setEmailError('');
+                            }}
                         />
+                        {emailError && (
+                            <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                        )}
                     </div>
                     <div>
                         <label className="text-sm font-medium mb-1 block">Phone</label>
@@ -358,6 +397,19 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                     </Button>
                 </div>
             </form>
+
+            {showDuplicateDialog && duplicateData && (
+                <PossibleDuplicateDialog
+                    isOpen={showDuplicateDialog}
+                    onClose={() => setShowDuplicateDialog(false)}
+                    onConfirmAnyway={() => submitPerson(true)}
+                    visibleMatches={duplicateData.visibleMatches}
+                    otherOrganisationsCount={duplicateData.otherOrganisationsCount}
+                    isSubmitting={loading}
+                    title="Possible duplicate person detected"
+                    confirmButtonText="Create anyway"
+                />
+            )}
         </Modal>
     );
 };

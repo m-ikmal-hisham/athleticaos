@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
@@ -15,6 +15,9 @@ import { ImageUpload } from '@/components/common/ImageUpload';
 import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
+import { RecordVerificationPanel } from '@/components/admin/persons/RecordVerificationPanel';
+import { RecordVerificationSummary, isPlaceholderEmail } from '@/api/persons.api';
+import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
 interface Team {
     id: string;
@@ -28,19 +31,31 @@ export const EditPlayer = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [registrationNo, setRegistrationNo] = useState<string | null>(null);
+    const [duplicateData, setDuplicateData] = useState<{
+        visibleMatches: PossibleDuplicateMatchItem[];
+        otherOrganisationsCount: number;
+    } | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     // Form Stats
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [photoUrl, setPhotoUrl] = useState("");
-    const [gender, setGender] = useState<Gender>(Gender.MALE);
+    const [gender, setGender] = useState<Gender | "">("");
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("IC");
-    const [identificationValue, setIdentificationValue] = useState("");
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
-    const [duplicateIcError, setDuplicateIcError] = useState("");
+    const [emailError, setEmailError] = useState("");
+    const [personId, setPersonId] = useState("");
+    const [recordVerification, setRecordVerification] = useState<RecordVerificationSummary | null>(null);
+
+    // Track loaded identity fields for verification reset detection
+    const loadedFirstName = useRef("");
+    const loadedLastName = useRef("");
+    const loadedDob = useRef("");
+    const loadedGender = useRef("");
 
     // Address
     const [addressLine1, setAddressLine1] = useState("");
@@ -87,16 +102,24 @@ export const EditPlayer = () => {
                 setTeams(teamsData);
 
                 // Populate Form
+                setRegistrationNo(player.registrationNo || null);
                 setFirstName(player.firstName || "");
                 setLastName(player.lastName || "");
                 setEmail(player.email || "");
+                setEmailError("");
                 setPhotoUrl(player.photoUrl || "");
-                setGender(player.gender || Gender.MALE);
+                const rawGender = (player.gender || "").trim().toUpperCase();
+                const initialGender = (rawGender === Gender.MALE || rawGender === Gender.FEMALE) ? (rawGender as Gender) : "";
+                setGender(initialGender);
                 setDob(player.dob || "");
-                setIdentificationType(player.identificationType || "IC");
-                setIdentificationValue(player.identificationValue || player.icOrPassport || "");
+                loadedFirstName.current = player.firstName || "";
+                loadedLastName.current = player.lastName || "";
+                loadedDob.current = player.dob || "";
+                loadedGender.current = rawGender;
                 setNationality(player.nationality || "");
                 setPhone(player.phone || "");
+                setPersonId(player.personId || "");
+                setRecordVerification(player.recordVerification || null);
 
                 setAddressLine1(player.addressLine1 || player.address || "");
                 setAddressLine2(player.addressLine2 || "");
@@ -130,20 +153,34 @@ export const EditPlayer = () => {
         ? teams.filter(t => t.organisationId === selectedOrganisationId)
         : teams;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const isVerified = recordVerification?.status === 'VERIFIED';
+    const nameChanged = (firstName.trim() !== loadedFirstName.current) || (lastName.trim() !== loadedLastName.current);
+    const dobChanged = Boolean(dob) && dob !== loadedDob.current;
+    const genderChanged = Boolean(gender) && String(gender).trim().toUpperCase() !== loadedGender.current;
+    const willResetVerification = isVerified && (nameChanged || dobChanged || genderChanged);
+
+    const submitPlayer = async (confirmPossibleDuplicate = false) => {
         if (!id) return;
+
+        if (!gender) {
+            showToast.error("Please select a gender");
+            return;
+        }
+
+        if (!email.trim()) {
+            setEmailError("Email is required.");
+            showToast.error("Email is required.");
+            return;
+        }
+
         setSaving(true);
 
         const payload: any = {
             firstName,
             lastName,
-            email,
+            email: email.trim(),
             gender: String(gender),
             dob,
-            identificationType,
-            identificationValue,
-            icOrPassport: identificationValue,
             nationality,
             phone: phone || undefined,
             addressLine1,
@@ -159,24 +196,41 @@ export const EditPlayer = () => {
             weightKg: weightKg ? parseInt(weightKg) : undefined,
             dominantHand: dominantHand ? String(dominantHand) : undefined,
             dominantLeg: dominantLeg ? String(dominantLeg) : undefined,
-            organisationId: selectedOrganisationId || undefined
+            organisationId: selectedOrganisationId || undefined,
+            confirmPossibleDuplicate
         };
 
         try {
             await updatePlayer(id, payload);
             showToast.success("Player updated successfully");
+            setShowDuplicateDialog(false);
             navigate('/dashboard/players');
         } catch (error: any) {
-            console.error(error);
-            if (error.response?.data?.errorCode === 'DUPLICATE_IC') {
-                setDuplicateIcError("This IC/Passport number is already registered.");
-                showToast.error("Duplicate IC found");
+            console.error('Update failed', error.response?.status, error.response?.data?.errorCode);
+            const errData = error.response?.data;
+            if (errData?.errorCode === 'POSSIBLE_DUPLICATE_PERSON') {
+                setDuplicateData({
+                    visibleMatches: errData.matches || [],
+                    otherOrganisationsCount: errData.otherOrganisationMatches || 0
+                });
+                setShowDuplicateDialog(true);
+            } else if (errData?.errorCode === 'EMAIL_REQUIRED') {
+                setEmailError(errData.message || 'This person has no email address. Add one to save changes.');
+                showToast.error(errData.message || 'This person has no email address. Add one to save changes.');
+            } else if (error.response?.data?.errorCode === 'DUPLICATE_EMAIL') {
+                setEmailError(error.response?.data?.message || 'A person with this email already exists.');
+                showToast.error(error.response?.data?.message || 'A person with this email already exists.');
             } else {
                 showToast.error(error.response?.data?.message || 'Failed to update player');
             }
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitPlayer(false);
     };
 
     const handleAssignTeamDirectly = async () => {
@@ -196,7 +250,6 @@ export const EditPlayer = () => {
             setSelectedTeamId("");
             setJerseyNumber("");
             setPosition("");
-            setShowTeamAssignment(false);
         } catch (err: any) {
             const errorMsg = err?.response?.data?.message || err?.message || "Failed to assign player to team";
             showToast.error(errorMsg);
@@ -215,11 +268,11 @@ export const EditPlayer = () => {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/players')}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/dashboard/players')}>
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <PageHeader
-                    title="Edit Player"
+                    title={registrationNo ? `Edit Player (${registrationNo})` : "Edit Player"}
                     description={`Editing ${firstName} ${lastName}`}
                 />
             </div>
@@ -272,12 +325,21 @@ export const EditPlayer = () => {
                                 <label className="text-sm font-medium text-muted-foreground">Email *</label>
                                 <input
                                     type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
                                     required
+                                    value={email}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        if (emailError) setEmailError("");
+                                    }}
                                     className="input-base w-full"
                                     aria-label="Email"
                                 />
+                                {isPlaceholderEmail(email) && (
+                                    <p className="text-xs text-amber-500 mt-1">Placeholder address on file — replace it with a real one when you have it.</p>
+                                )}
+                                {emailError && (
+                                    <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                                )}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Phone</label>
@@ -317,41 +379,10 @@ export const EditPlayer = () => {
                                     ]}
                                     placeholder="Select gender"
                                 />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">Identification Type</label>
-                                <SearchableSelect
-                                    value={identificationType}
-                                    onChange={(value) => setIdentificationType(value as string)}
-                                    options={[
-                                        { value: 'IC', label: 'IC' },
-                                        { value: 'PASSPORT', label: 'Passport' },
-                                        { value: 'OTHER', label: 'Other' }
-                                    ]}
-                                    placeholder="Select ID type"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-muted-foreground">
-                                    Identification Value *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={identificationValue}
-                                    onChange={(e) => {
-                                        setIdentificationValue(e.target.value);
-                                        if (duplicateIcError) setDuplicateIcError("");
-                                    }}
-                                    required
-                                    className="input-base w-full"
-                                    placeholder="ID / Passport Number"
-                                    aria-label="Identification Value"
-                                />
-                                {duplicateIcError && (
-                                    <p className="text-xs text-red-500 mt-1">{duplicateIcError}</p>
+                                {loadedGender.current && loadedGender.current !== Gender.MALE && loadedGender.current !== Gender.FEMALE && !gender && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                        Gender on file is not MALE or FEMALE — please select one.
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -367,6 +398,12 @@ export const EditPlayer = () => {
                                 aria-label="Nationality"
                             />
                         </div>
+
+                        {willResetVerification && (
+                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+                                Saving changes to name, date of birth, or gender will reset the record verification.
+                            </div>
+                        )}
                     </div>
 
                     {/* Address Details */}
@@ -564,7 +601,33 @@ export const EditPlayer = () => {
                         </Button>
                     </div>
                 </form>
+
+                {personId && (
+                    <div className="mt-8 pt-6 border-t border-white/10">
+                        <RecordVerificationPanel
+                            personId={personId}
+                            recordVerification={recordVerification}
+                            onVerificationChanged={(updated) => {
+                                setRecordVerification(updated.recordVerification || null);
+                            }}
+                            disabled={saving}
+                        />
+                    </div>
+                )}
             </GlassCard>
+
+            {showDuplicateDialog && duplicateData && (
+                <PossibleDuplicateDialog
+                    isOpen={showDuplicateDialog}
+                    onClose={() => setShowDuplicateDialog(false)}
+                    onConfirmAnyway={() => submitPlayer(true)}
+                    visibleMatches={duplicateData.visibleMatches}
+                    otherOrganisationsCount={duplicateData.otherOrganisationsCount}
+                    isSubmitting={saving}
+                    title="Possible duplicate player detected"
+                    confirmButtonText="Save anyway"
+                />
+            )}
         </div>
     );
 };

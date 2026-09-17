@@ -13,7 +13,6 @@ logs/
 .DS_Store
 .env
 .env.*
-!.env.staging
 
 # Uploads
 uploads/
@@ -22,3 +21,10 @@ uploads/
 
 # Python
 .venv/
+
+# Never track environment files or stray backend logs (public repo)
+backend/.env.staging
+# NOTE: frontend/.env.staging stays TRACKED — Vite reads it during `npm run build -- --mode staging`.
+# It must contain public build-time values only (no secrets).
+backend/backend_*.txt
+claude_audit.txt

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
@@ -17,11 +18,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "persons")
+@ToString
 public class Person {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @org.hibernate.annotations.Generated
+    @Column(name = "registration_no", insertable = false, updatable = false)
+    private String registrationNo;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -35,14 +41,29 @@ public class Person {
     @Column(nullable = false)
     private LocalDate dob;
 
-    @Column(name = "ic_or_passport", nullable = false, unique = true)
-    private String icOrPassport; // Encrypted
+    @Column(name = "record_verification_status", length = 32, nullable = false)
+    @Builder.Default
+    private String recordVerificationStatus = "UNVERIFIED";
 
-    @Column(name = "identification_type")
-    private String identificationType; // IC, PASSPORT, OTHER
+    @Column(name = "record_verified_at")
+    private LocalDateTime recordVerifiedAt;
 
-    @Column(name = "identification_value")
-    private String identificationValue;
+    @Column(name = "record_verified_by")
+    private UUID recordVerifiedBy;
+
+    @Column(name = "record_verified_by_name")
+    private String recordVerifiedByName;
+
+    @Column(name = "record_verification_method", length = 32)
+    private String recordVerificationMethod;
+
+    public void clearRecordVerification(String newStatus) {
+        this.recordVerificationStatus = newStatus;
+        this.recordVerifiedAt = null;
+        this.recordVerifiedBy = null;
+        this.recordVerifiedByName = null;
+        this.recordVerificationMethod = null;
+    }
 
     @Column(nullable = false)
     private String nationality;

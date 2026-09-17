@@ -15,6 +15,14 @@ import com.athleticaos.backend.entities.OfficialRegistry;
 import com.athleticaos.backend.services.PersonService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.enums.Gender;
+import com.athleticaos.backend.exceptions.DuplicateEmailException;
+import com.athleticaos.backend.exceptions.EmailRequiredException;
+import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
+import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
+import com.athleticaos.backend.dtos.person.RecordVerificationSummary;
+import com.athleticaos.backend.services.PersonDuplicateService;
+import com.athleticaos.backend.utils.EmailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Objects;
 
 import java.util.ArrayList;
@@ -34,6 +43,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.athleticaos.backend.audit.AuditLogger;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Slf4j
 @Service
@@ -52,30 +67,51 @@ public class PersonServiceImpl implements PersonService {
     private final OrganisationRepository organisationRepository;
     private final OrganisationService organisationService;
     private final UserService userService;
+    private final AuditLogger auditLogger;
+    private final ObjectProvider<HttpServletRequest> requestProvider;
+    private final PersonDuplicateService personDuplicateService;
 
     @Override
     @Transactional(readOnly = true)
     public Page<PersonResponseDTO> getAllPersons(Pageable pageable, String search) {
+        return getAllPersons(pageable, search, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PersonResponseDTO> getAllPersons(Pageable pageable, String search, boolean missingEmail) {
         // Delegates to getPersonsByOrganisation which already handles Super Admin
         // (returns all persons when accessibleIds is null)
-        return getPersonsByOrganisation(null, pageable, search);
+        return getPersonsByOrganisation(null, pageable, search, missingEmail);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search) {
+        return getPersonsByOrganisation(organisationId, pageable, search, false);
     }
 
     @Override
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
-    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search) {
+    public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search, boolean missingEmail) {
         Objects.requireNonNull(pageable);
         boolean hasSearch = search != null && !search.trim().isEmpty();
         String searchTerm = hasSearch ? search.trim() : null;
-        log.info("Fetching hierarchical persons for organisation: {}, search: {}", organisationId, searchTerm);
+        log.info("Fetching hierarchical persons for organisation: {}, search: {}, missingEmail: {}", organisationId, searchTerm, missingEmail);
 
         Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         Page<Person> personsToMap;
 
         if (accessibleIds == null) {
-            // Super Admin -> fetch everyone paginated, with optional search
-            if (hasSearch) {
+            // Super Admin -> fetch everyone paginated, with optional search and missingEmail
+            if (missingEmail) {
+                if (hasSearch) {
+                    personsToMap = personRepository.searchPersonsWithMissingEmail(searchTerm, pageable);
+                } else {
+                    personsToMap = personRepository.findPersonsWithMissingEmail(pageable);
+                }
+            } else if (hasSearch) {
                 personsToMap = personRepository.searchAllPersons(searchTerm, pageable);
             } else {
                 personsToMap = personRepository.findAll(pageable);
@@ -91,6 +127,12 @@ public class PersonServiceImpl implements PersonService {
 
             if (orgIds.isEmpty()) {
                 return Page.empty(pageable);
+            } else if (missingEmail) {
+                if (hasSearch) {
+                    personsToMap = organisationPersonRepository.searchPersonsWithMissingEmailByOrganisationIds(orgIds, searchTerm, pageable);
+                } else {
+                    personsToMap = organisationPersonRepository.findUniquePersonsWithMissingEmailByOrganisationIds(orgIds, pageable);
+                }
             } else if (hasSearch) {
                 personsToMap = organisationPersonRepository.searchPersonsByOrganisationIds(orgIds, searchTerm, pageable);
             } else {
@@ -163,26 +205,53 @@ public class PersonServiceImpl implements PersonService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
-        if (request.getIcOrPassport() != null && !request.getIcOrPassport().trim().isEmpty()) {
-            String normalizedIc = request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-            if (personRepository.existsByIcOrPassport(normalizedIc)) {
-                throw new IllegalArgumentException("IC or Passport already exists in the system.");
-            }
-        }
+        String canonicalGender = Gender.from(request.getGender()).name();
 
         Person person = new Person();
         person.setFirstName(request.getFirstName());
         person.setLastName(request.getLastName());
-        person.setIcOrPassport(request.getIcOrPassport() != null ? request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "") : null);
+        person.setRecordVerificationStatus("UNVERIFIED");
         person.setDob(request.getDob());
-        person.setGender(request.getGender());
+        person.setGender(canonicalGender);
         person.setNationality(request.getNationality());
-        person.setEmail(request.getEmail());
+        String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
+        if (normalizedEmail == null) {
+            throw new EmailRequiredException();
+        }
+        if (personRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new DuplicateEmailException();
+        }
+        person.setEmail(normalizedEmail);
         person.setPhone(request.getPhone());
         person.setNationalPlayerStatus(request.getNationalPlayerStatus());
         person.setIsStaff(Boolean.TRUE.equals(request.getIsStaff()));
 
-        person = personRepository.save(person);
+        PossibleDuplicateCheck dupCheck = personDuplicateService.check(
+                request.getFirstName(), request.getLastName(), request.getDob(), canonicalGender, null);
+        if (dupCheck != null && dupCheck.hasMatches()) {
+            if (!Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+                throw new PossibleDuplicatePersonException(dupCheck.visibleMatches(), dupCheck.otherOrganisationMatches());
+            }
+        }
+
+        person = personRepository.saveAndFlush(person);
+
+        if (dupCheck != null && dupCheck.hasMatches() && Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = dupCheck.visibleMatches().size();
+            final int otherOrgMatches = dupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
 
         OrganisationPerson op = new OrganisationPerson();
         op.setOrganisation(org);
@@ -221,29 +290,95 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
-        String normalizedIc = null;
-        if (request.getIcOrPassport() != null) {
-            normalizedIc = request.getIcOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
-            if (!normalizedIc.equals(person.getIcOrPassport()) && personRepository.existsByIcOrPassport(normalizedIc)) {
-                throw new IllegalArgumentException("IC or Passport already exists in the system.");
+        String canonicalGender = request.getGender() != null ? Gender.from(request.getGender()).name() : null;
+
+        boolean nameChanged = (request.getFirstName() != null && !request.getFirstName().trim().equals(person.getFirstName()))
+                || (request.getLastName() != null && !request.getLastName().trim().equals(person.getLastName()));
+        boolean dobChanged = request.getDob() != null && !request.getDob().equals(person.getDob());
+        boolean genderChanged = canonicalGender != null && !canonicalGender.equals(person.getGender());
+
+        boolean verificationReset = false;
+        if ("VERIFIED".equals(person.getRecordVerificationStatus())
+                && (nameChanged || dobChanged || genderChanged)) {
+            person.clearRecordVerification("UNVERIFIED");
+            verificationReset = true;
+        }
+
+        // Effective email rule (CR-4): a real address may not be removed, but a record that has
+        // none — or only a machine-generated placeholder — can still be edited and saved.
+        if (request.getEmail() != null) {
+            String normalizedEmail = EmailUtil.normalizeEmail(request.getEmail());
+            if (normalizedEmail == null) {
+                if (!EmailUtil.isMissingOrPlaceholder(person.getEmail())) {
+                    throw new EmailRequiredException("An existing email address cannot be removed.");
+                }
+                person.setEmail(null);
+            } else {
+                if (personRepository.existsByEmailIgnoreCaseAndIdNot(normalizedEmail, person.getId())) {
+                    throw new DuplicateEmailException();
+                }
+                person.setEmail(normalizedEmail);
             }
         }
 
-        person.setFirstName(request.getFirstName());
-        person.setLastName(request.getLastName());
-        person.setIcOrPassport(normalizedIc);
-        person.setDob(request.getDob());
-        person.setGender(request.getGender());
-        person.setNationality(request.getNationality());
-        person.setEmail(request.getEmail());
-        person.setPhone(request.getPhone());
-        person.setNationalPlayerStatus(request.getNationalPlayerStatus());
-        
+        // Possible duplicate check on changed identity fields
+        String origFirst = person.getFirstName() != null ? person.getFirstName().trim().toLowerCase() : "";
+        String origLast = person.getLastName() != null ? person.getLastName().trim().toLowerCase() : "";
+        LocalDate origDob = person.getDob();
+        String origGender = person.getGender();
+
+        String newFirst = request.getFirstName() != null ? request.getFirstName().trim().toLowerCase() : origFirst;
+        String newLast = request.getLastName() != null ? request.getLastName().trim().toLowerCase() : origLast;
+        LocalDate newDob = request.getDob() != null ? request.getDob() : origDob;
+        String newGender = canonicalGender != null ? canonicalGender : origGender;
+
+        boolean identityFieldsChanged = !newFirst.equals(origFirst) || !newLast.equals(origLast)
+                || !Objects.equals(newDob, origDob) || !Objects.equals(newGender, origGender);
+
+        PossibleDuplicateCheck dupCheck = null;
+        if (identityFieldsChanged) {
+            dupCheck = personDuplicateService.check(
+                    request.getFirstName() != null ? request.getFirstName() : person.getFirstName(),
+                    request.getLastName() != null ? request.getLastName() : person.getLastName(),
+                    newDob, newGender, person.getId());
+            if (dupCheck != null && dupCheck.hasMatches()) {
+                if (!Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+                    throw new PossibleDuplicatePersonException(dupCheck.visibleMatches(), dupCheck.otherOrganisationMatches());
+                }
+            }
+        }
+
+        // Null-safe updates for all other PII fields
+        if (request.getFirstName() != null) person.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) person.setLastName(request.getLastName());
+        if (request.getDob() != null) person.setDob(request.getDob());
+        if (canonicalGender != null) person.setGender(canonicalGender);
+        if (request.getNationality() != null) person.setNationality(request.getNationality());
+        if (request.getPhone() != null) person.setPhone(request.getPhone());
+        if (request.getNationalPlayerStatus() != null) person.setNationalPlayerStatus(request.getNationalPlayerStatus());
+
         if (request.getIsStaff() != null) {
             person.setIsStaff(request.getIsStaff());
         }
 
         person = personRepository.save(person);
+
+        if (dupCheck != null && dupCheck.hasMatches() && Boolean.TRUE.equals(request.getConfirmPossibleDuplicate())) {
+            final Person personForAudit = person;
+            final int matchCount = dupCheck.visibleMatches().size();
+            final int otherOrgMatches = dupCheck.otherOrganisationMatches();
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logPersonPossibleDuplicateOverride(personForAudit, matchCount, otherOrgMatches, currentRequest);
+            }
+        }
 
         // Handle Player Toggle
         if (request.getIsPlayer() != null) {
@@ -296,6 +431,21 @@ public class PersonServiceImpl implements PersonService {
             }
         }
 
+        if (verificationReset) {
+            final Person personForAudit = person;
+            final HttpServletRequest currentRequest = requestProvider.getIfAvailable();
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        auditLogger.logRecordVerificationReset(personForAudit, currentRequest);
+                    }
+                });
+            } else {
+                auditLogger.logRecordVerificationReset(personForAudit, currentRequest);
+            }
+        }
+
         return getPersonById(id);
     }
 
@@ -345,11 +495,19 @@ public class PersonServiceImpl implements PersonService {
 
         boolean isWR = wrStaffIds.contains(pid) || wrOfficialIds.contains(pid);
 
+        RecordVerificationSummary recordVerification = p.getRecordVerificationStatus() != null
+                ? new RecordVerificationSummary(
+                        p.getRecordVerificationStatus(),
+                        p.getRecordVerifiedAt(),
+                        p.getRecordVerifiedByName(),
+                        p.getRecordVerificationMethod())
+                : null;
+
         return PersonResponseDTO.builder()
                 .id(pid.toString())
+                .registrationNo(p.getRegistrationNo())
                 .firstName(p.getFirstName())
                 .lastName(p.getLastName())
-                .icOrPassport(p.getIcOrPassport())
                 .dob(p.getDob())
                 .gender(p.getGender())
                 .nationality(p.getNationality())
@@ -364,6 +522,7 @@ public class PersonServiceImpl implements PersonService {
                 .isStaff(isStaff)
                 .isOfficial(isOfficial)
                 .isWorldRugbyCertified(isWR)
+                .recordVerification(recordVerification)
                 .build();
     }
 

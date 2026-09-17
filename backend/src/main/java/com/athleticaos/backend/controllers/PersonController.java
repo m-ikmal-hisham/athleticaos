@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,13 +28,17 @@ public class PersonController {
     private final TeamStaffRepository teamStaffRepository;
     private final OfficialRegistryRepository officialRegistryRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
+    private final com.athleticaos.backend.audit.AuditLogger auditLogger;
+    private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
+    private final com.athleticaos.backend.services.RecordVerificationService recordVerificationService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public ResponseEntity<Page<PersonResponseDTO>> getAllPersons(
             @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
-            @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(personService.getAllPersons(pageable, search));
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean missingEmail) {
+        return ResponseEntity.ok(personService.getAllPersons(pageable, search, missingEmail));
     }
 
     @GetMapping("/organisation/{orgId}")
@@ -41,16 +46,27 @@ public class PersonController {
     public ResponseEntity<Page<PersonResponseDTO>> getPersonsByOrganisation(
             @PathVariable UUID orgId,
             @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
-            @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable, search));
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean missingEmail) {
+        return ResponseEntity.ok(personService.getPersonsByOrganisation(orgId, pageable, search, missingEmail));
     }
 
     @PostMapping("/organisation/{orgId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PersonResponseDTO> createPerson(
             @PathVariable UUID orgId,
-            @RequestBody com.athleticaos.backend.dtos.person.CreatePersonRequest request) {
-        return ResponseEntity.ok(personService.createPerson(orgId, request));
+            @RequestBody @Valid com.athleticaos.backend.dtos.person.CreatePersonRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        PersonResponseDTO response = personService.createPerson(orgId, request);
+        if (response != null && response.getId() != null) {
+            com.athleticaos.backend.entities.Person person = personRepository.findById(UUID.fromString(response.getId())).orElse(null);
+            com.athleticaos.backend.entities.Organisation org = organisationRepository.findById(orgId).orElse(null);
+            if (person != null) {
+                auditLogger.logPersonCreated(person, org != null ? org.getName() : null, httpRequest);
+            }
+        }
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -61,10 +77,17 @@ public class PersonController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @SuppressWarnings("null")
     public ResponseEntity<PersonResponseDTO> updatePerson(
             @PathVariable UUID id,
-            @RequestBody PersonUpdateRequest request) {
-        return ResponseEntity.ok(personService.updatePerson(id, request));
+            @RequestBody @Valid PersonUpdateRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        PersonResponseDTO response = personService.updatePerson(id, request);
+        com.athleticaos.backend.entities.Person person = personRepository.findById(id).orElse(null);
+        if (person != null) {
+            auditLogger.logPersonUpdated(person, httpRequest);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
@@ -96,5 +119,22 @@ public class PersonController {
         counts.put("totalOfficials", officialRegistryRepository.count());
         counts.put("totalOrgPersons", organisationPersonRepository.count());
         return ResponseEntity.ok(counts);
+    }
+
+    @PostMapping("/{id}/record-verification")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PersonResponseDTO> verifyRecord(
+            @PathVariable UUID id,
+            @RequestBody @Valid com.athleticaos.backend.dtos.person.RecordVerificationRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(recordVerificationService.verify(id, request, httpRequest));
+    }
+
+    @DeleteMapping("/{id}/record-verification")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PersonResponseDTO> revokeRecordVerification(
+            @PathVariable UUID id,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(recordVerificationService.revoke(id, httpRequest));
     }
 }

@@ -75,6 +75,11 @@ public class PlayerController {
             HttpServletRequest httpRequest) {
         log.info("Admin creating bulk players (size: {})", requests.size());
         List<PlayerResponse> responses = playerService.createBulkPlayers(requests);
+        int createdCount = responses != null ? responses.size() : 0;
+        int failedCount = requests != null ? requests.size() - createdCount : 0;
+        auditLogger.logBulkAction("BULK_PLAYER_IMPORT", "PLAYER",
+                String.format("Bulk imported players: %d created, %d failed", createdCount, failedCount),
+                httpRequest);
         return ResponseEntity.ok(responses);
     }
 

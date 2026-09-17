@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuthStore } from '@/store/auth.store';
 import { SocialButtons } from '@/components/SocialButtons';
+import { ForcedPasswordChange } from '@/components/auth/ForcedPasswordChange';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 const loginSchema = z.object({
@@ -18,6 +19,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 // ─── Access Gate Constants ────────────────────────────────────────────
+// Curtain only, not a security control: this value is compiled into the public bundle.
+// Access is actually enforced server-side by authentication and role checks.
 const ACCESS_CODE = import.meta.env.VITE_ADMIN_ACCESS_CODE || 'AOS3R26ADMINDev';
 const ENV = import.meta.env.VITE_ENV || 'development';
 const SESSION_KEY = 'aos_access_granted';
@@ -159,6 +162,8 @@ export const Login = () => {
     const { login } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
     const [lockoutMessage, setLockoutMessage] = useState('');
+    // Set when login answers PASSWORD_CHANGE_REQUIRED; held in memory only until the change completes
+    const [pendingChange, setPendingChange] = useState<{ email: string; currentPassword: string } | null>(null);
 
     // ─── Access Gate State ────────────────────────────────────────────
     const [accessGranted, setAccessGranted] = useState(
@@ -192,24 +197,29 @@ export const Login = () => {
         resolver: zodResolver(loginSchema),
     });
 
+    const redirectAfterLogin = () => {
+        // Get role-based default route
+        const defaultRoute = useAuthStore.getState().getDefaultRoute();
+
+        // Redirect to the page they tried to visit or role-based default
+        const state = location.state as { from?: { pathname: string } } | null;
+        const from = state?.from?.pathname || defaultRoute;
+        navigate(from, { replace: true });
+    };
+
     const onSubmit = async (data: LoginFormData) => {
         try {
             setIsLoading(true);
             setLockoutMessage('');
             await login(data);
-
-            // Get role-based default route
-            const defaultRoute = useAuthStore.getState().getDefaultRoute();
-
-            // Redirect to the page they tried to visit or role-based default
-            const state = location.state as { from?: { pathname: string } } | null;
-            const from = state?.from?.pathname || defaultRoute;
-            navigate(from, { replace: true });
+            redirectAfterLogin();
         } catch (err: unknown) {
             // Check for 423 Locked response (brute-force lockout)
             if (err && typeof err === 'object' && 'response' in err) {
-                const axiosErr = err as { response?: { status?: number; data?: { message?: string; remainingMinutes?: number } } };
-                if (axiosErr.response?.status === 423) {
+                const axiosErr = err as { response?: { status?: number; data?: { message?: string; code?: string; remainingMinutes?: number } } };
+                if (axiosErr.response?.status === 403 && axiosErr.response.data?.code === 'PASSWORD_CHANGE_REQUIRED') {
+                    setPendingChange({ email: data.email, currentPassword: data.password });
+                } else if (axiosErr.response?.status === 423) {
                     const minutes = axiosErr.response.data?.remainingMinutes || 15;
                     setLockoutMessage(`Too many failed attempts. Please try again in ${minutes} minute(s).`);
                 }
@@ -227,6 +237,21 @@ export const Login = () => {
     // ─── Show Access Gate if not yet granted ──────────────────────────
     if (!accessGranted) {
         return <AccessGate onGranted={() => setAccessGranted(true)} />;
+    }
+
+    // ─── Forced password change (temporary / admin-set password) ──────
+    if (pendingChange) {
+        return (
+            <ForcedPasswordChange
+                email={pendingChange.email}
+                currentPassword={pendingChange.currentPassword}
+                onChanged={() => {
+                    setPendingChange(null);
+                    redirectAfterLogin();
+                }}
+                onCancel={() => setPendingChange(null)}
+            />
+        );
     }
 
     // ─── Login Form (shown after access gate is passed) ───────────────

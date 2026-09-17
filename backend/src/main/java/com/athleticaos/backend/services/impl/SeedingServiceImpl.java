@@ -133,17 +133,18 @@ public class SeedingServiceImpl implements SeedingService {
         // Person
         String firstName = faker.name().firstName();
         String lastName = faker.name().lastName();
+
+        java.time.LocalDate seedDob = LocalDate.of(1990 + faker.random().nextInt(15), 1 + faker.random().nextInt(11),
+                1 + faker.random().nextInt(27));
+
         Person person = Person.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(faker.internet().emailAddress(firstName.toLowerCase() + "." + lastName.toLowerCase()))
                 .gender("MALE")
-                .dob(LocalDate.of(1990 + faker.random().nextInt(15), 1 + faker.random().nextInt(11),
-                        1 + faker.random().nextInt(27)))
+                .dob(seedDob)
                 .nationality("Malaysia")
-                .icOrPassport(faker.number().digits(12))
-                .identificationType("IC")
-                .identificationValue(faker.number().digits(12))
+                .recordVerificationStatus("UNVERIFIED")
                 .state(org.getState())
                 .build();
         person = personRepository.save(person);

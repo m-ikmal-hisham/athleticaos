@@ -32,8 +32,6 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
     const [email, setEmail] = useState("");
     const [gender, setGender] = useState<Gender>(Gender.MALE);
     const [dob, setDob] = useState("");
-    const [identificationType, setIdentificationType] = useState("IC");
-    const [identificationValue, setIdentificationValue] = useState("");
     const [nationality, setNationality] = useState("");
     const [phone, setPhone] = useState("");
 
@@ -70,8 +68,6 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             setEmail(initialPlayer.email || "");
             setGender(initialPlayer.gender || Gender.MALE);
             setDob(initialPlayer.dob || "");
-            setIdentificationType(initialPlayer.identificationType || "IC");
-            setIdentificationValue(initialPlayer.identificationValue || initialPlayer.icOrPassport || "");
             setNationality(initialPlayer.nationality || "");
             setPhone(initialPlayer.phone || "");
 
@@ -103,8 +99,6 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             setEmail("");
             setGender(Gender.MALE);
             setDob("");
-            setIdentificationType("IC");
-            setIdentificationValue("");
             setNationality("");
             setPhone("");
 
@@ -169,9 +163,6 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
             email,
             gender: String(gender),
             dob,
-            identificationType,
-            identificationValue,
-            icOrPassport: identificationValue, // Legacy
             nationality,
             phone: phone || undefined,
 
@@ -312,34 +303,7 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">Identification Type</label>
-                            <SearchableSelect
-                                value={identificationType}
-                                onChange={(value) => setIdentificationType(value as string)}
-                                options={[
-                                    { value: 'IC', label: 'IC' },
-                                    { value: 'PASSPORT', label: 'Passport' },
-                                    { value: 'OTHER', label: 'Other' }
-                                ]}
-                                placeholder="Select ID type"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted">
-                                Identification Value {mode === 'create' && '*'}
-                            </label>
-                            <input
-                                type="text"
-                                value={identificationValue}
-                                onChange={(e) => setIdentificationValue(e.target.value)}
-                                required={mode === 'create'}
-                                className="input-base w-full"
-                                placeholder="ID / Passport Number"
-                            />
-                        </div>
-                    </div>
+
 
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-muted">Nationality *</label>

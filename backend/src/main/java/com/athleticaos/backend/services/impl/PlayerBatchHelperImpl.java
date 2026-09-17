@@ -11,6 +11,7 @@ import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.PlayerBatchHelper;
+import com.athleticaos.backend.utils.EmailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,18 +36,18 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
         log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
 
-        // 1. Normalize IC
-        String normalizedIc = row.icOrPassport().trim().toUpperCase().replaceAll("[^A-Z0-9]", "");
+        // Canonicalise gender
+        String canonicalGender = com.athleticaos.backend.enums.Gender.from(row.gender()).name();
 
-        // 2. Create Person record
+        // Create Person record
         Person person = Person.builder()
                 .firstName(row.firstName().trim())
                 .lastName(row.lastName().trim())
-                .gender(row.gender().trim().toUpperCase())
+                .gender(canonicalGender)
                 .dob(row.dob())
-                .icOrPassport(normalizedIc)
+                .recordVerificationStatus("UNVERIFIED")
                 .nationality(row.nationality().trim())
-                .email(row.email() != null && !row.email().trim().isEmpty() ? row.email().trim().toLowerCase() : null)
+                .email(EmailUtil.normalizeEmail(row.email()))
                 .state(row.state() != null ? row.state().trim() : null)
                 .isStaff(false)
                 .build();

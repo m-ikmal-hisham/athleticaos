@@ -10,7 +10,9 @@ import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/PageHeader';
 import { GlassCard } from '@/components/GlassCard';
 import { showToast } from '@/lib/customToast';
+import { generateStrongPassword, passwordProblem, PASSWORD_MIN_LENGTH } from '@/utils/password';
 import { ArrowLeft } from '@phosphor-icons/react';
+import { AxiosError } from 'axios';
 
 export const CreateUser = () => {
     const navigate = useNavigate();
@@ -23,7 +25,10 @@ export const CreateUser = () => {
         email: '',
         role: 'PLAYER',
         organisationId: '',
+        password: '',
     });
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
@@ -55,8 +60,21 @@ export const CreateUser = () => {
         return ['PLAYER'];
     };
 
+    const handleGeneratePassword = () => {
+        const generated = generateStrongPassword(formData.email);
+        setFormData({ ...formData, password: generated });
+        setConfirmPassword(generated);
+        setShowPassword(true); // so the admin can copy it and pass it on out-of-band
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const problem = passwordProblem(formData.password, formData.email)
+            ?? (formData.password !== confirmPassword ? 'Passwords do not match' : null);
+        if (problem) {
+            showToast.error(problem);
+            return;
+        }
         setLoading(true);
 
         try {
@@ -68,8 +86,9 @@ export const CreateUser = () => {
                 showToast.success(response.data.message || 'User invited successfully!');
                 navigate('/dashboard/users');
             }
-        } catch (error: any) {
-            showToast.error(error.response?.data?.message || 'Failed to invite user');
+        } catch (error: unknown) {
+            const axiosError = error as AxiosError<{ message?: string }>;
+            showToast.error(axiosError.response?.data?.message || 'Failed to invite user');
         } finally {
             setLoading(false);
         }
@@ -111,6 +130,36 @@ export const CreateUser = () => {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
                         required={formData.role !== 'PLAYER'}
                     />
+
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Input
+                                label="Initial Password"
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete="new-password"
+                                value={formData.password}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, password: e.target.value })}
+                                helperText={`At least ${PASSWORD_MIN_LENGTH} characters. The user must change it at first sign-in.`}
+                                required
+                            />
+                            <Input
+                                label="Confirm Password"
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete="new-password"
+                                value={confirmPassword}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <Button type="button" variant="ghost" size="sm" onClick={handleGeneratePassword}>
+                                Generate strong password
+                            </Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)}>
+                                {showPassword ? 'Hide' : 'Show'}
+                            </Button>
+                        </div>
+                    </div>
 
                     <div>
                         <SearchableSelect

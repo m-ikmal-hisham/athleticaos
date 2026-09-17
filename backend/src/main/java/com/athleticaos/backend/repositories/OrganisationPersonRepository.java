@@ -40,13 +40,32 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
         org.springframework.data.domain.Pageable pageable
     );
 
+    // Phase 1: IC/passport substring search removed to prevent PII exposure in search logs/results.
     @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
            "WHERE op.organisation.id IN :orgIds AND (" +
            "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.icOrPassport) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
     org.springframework.data.domain.Page<Person> searchPersonsByOrganisationIds(
+        @Param("orgIds") java.util.Collection<UUID> orgIds,
+        @Param("search") String search,
+        org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
+           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '' OR LOWER(op.person.email) LIKE '%@placeholder.invalid')")
+    org.springframework.data.domain.Page<Person> findUniquePersonsWithMissingEmailByOrganisationIds(
+        @Param("orgIds") java.util.Collection<UUID> orgIds,
+        org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
+           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '' OR LOWER(op.person.email) LIKE '%@placeholder.invalid') AND (" +
+           "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
+    org.springframework.data.domain.Page<Person> searchPersonsWithMissingEmailByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,
         @Param("search") String search,
         org.springframework.data.domain.Pageable pageable

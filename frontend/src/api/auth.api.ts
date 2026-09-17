@@ -6,6 +6,12 @@ export const authApi = {
         return response;
     },
 
+    // Unauthenticated: verifies email + current password server-side, then sets the session cookie
+    changePassword: async (data: { email: string; currentPassword: string; newPassword: string }) => {
+        const response = await api.post('/auth/change-password', data);
+        return response;
+    },
+
     register: async (data: { firstName: string; lastName: string; email: string; password: string; roles: string[] }) => {
         const response = await api.post('/auth/register', data);
         return response;

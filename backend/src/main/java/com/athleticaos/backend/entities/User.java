@@ -60,6 +60,15 @@ public class User {
     @Builder.Default
     private boolean isActive = true;
 
+    /** When true the user must set a new password before any authenticated access (see V154). */
+    @Column(name = "must_change_password", nullable = false)
+    @Builder.Default
+    private boolean mustChangePassword = false;
+
+    /** JWTs issued before this instant are rejected, so a password change/reset revokes existing sessions. */
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default

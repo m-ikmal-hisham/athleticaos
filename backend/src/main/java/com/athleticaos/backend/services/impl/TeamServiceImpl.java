@@ -271,6 +271,7 @@ public class TeamServiceImpl implements TeamService {
                 .build();
         
         teamStaff = teamStaffRepository.save(teamStaff);
+        auditLogger.logTeamStaffAdded(teamStaff, httpRequest);
         
         // Auto-link person to organisation
         UUID orgId = team.getOrganisation().getId();
@@ -321,6 +322,7 @@ public class TeamServiceImpl implements TeamService {
                 .map(op -> op.getPerson())
                 .map(p -> com.athleticaos.backend.dtos.team.PersonSummaryDTO.builder()
                         .id(p.getId().toString())
+                        .registrationNo(p.getRegistrationNo())
                         .firstName(p.getFirstName())
                         .lastName(p.getLastName())
                         .email(p.getEmail())

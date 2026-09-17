@@ -4,6 +4,11 @@ spring:
 
   profiles:
     active: dev
+
+  datasource:
+    hikari:
+      data-source-properties:
+        logServerErrorDetail: false
   jpa:
     open-in-view: false
     hibernate:
@@ -43,4 +48,11 @@ application:
       refresh-token:
         expiration: 604800000
 
-# CI/CD test 20260314005950
+athleticaos:
+  backfill:
+    # One-off placeholder email backfill (CR-4). Never enable it for the long-running app:
+    # pass the switches on the command line of a temporary container instead.
+    placeholder-email:
+      enabled: ${ATHLETICAOS_BACKFILL_PLACEHOLDER_EMAIL_ENABLED:false}
+      dry-run: ${ATHLETICAOS_BACKFILL_PLACEHOLDER_EMAIL_DRY_RUN:true}
+      batch-size: ${ATHLETICAOS_BACKFILL_PLACEHOLDER_EMAIL_BATCH_SIZE:200}

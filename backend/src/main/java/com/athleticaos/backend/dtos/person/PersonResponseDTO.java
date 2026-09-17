@@ -16,9 +16,9 @@ import java.util.List;
 @AllArgsConstructor
 public class PersonResponseDTO {
     private String id;
+    private String registrationNo;
     private String firstName;
     private String lastName;
-    private String icOrPassport;
     private LocalDate dob;
     private String gender;
     private String nationality;
@@ -43,4 +43,6 @@ public class PersonResponseDTO {
     
     @JsonProperty("isWorldRugbyCertified")
     private boolean isWorldRugbyCertified;
+
+    private RecordVerificationSummary recordVerification;
 }

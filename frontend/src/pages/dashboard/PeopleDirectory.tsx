@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { getPersonsByOrganisation, getAllPersons, deletePerson, PersonResponseDTO } from '@/api/persons.api';
+import { getPersonsByOrganisation, getAllPersons, deletePerson, PersonResponseDTO, isPlaceholderEmail } from '@/api/persons.api';
 import { Card, CardContent } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
@@ -22,12 +22,14 @@ const PeopleDirectory: React.FC = () => {
         totalElements: 0,
         size: 50
     });
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
     const [selectedPerson, setSelectedPerson] = useState<PersonResponseDTO | null>(null);
     const [filter, setFilter] = useState<'ALL' | 'STAFF' | 'OFFICIALS' | 'PLAYERS'>('ALL');
+    const [missingEmail, setMissingEmail] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -51,7 +53,7 @@ const PeopleDirectory: React.FC = () => {
         if (user) {
             loadPersons(0);
         }
-    }, [user?.organisationId, user?.id, debouncedSearch]);
+    }, [user?.organisationId, user?.id, debouncedSearch, missingEmail]);
 
     const loadPersons = async (page: number = 0) => {
         if (!user) return;
@@ -60,9 +62,9 @@ const PeopleDirectory: React.FC = () => {
             let res;
             const searchTerm = debouncedSearch || undefined;
             if (isSuperAdmin || !user.organisationId) {
-                res = await getAllPersons(page, pagination.size, searchTerm);
+                res = await getAllPersons(page, pagination.size, searchTerm, missingEmail);
             } else {
-                res = await getPersonsByOrganisation(user.organisationId, page, pagination.size, searchTerm);
+                res = await getPersonsByOrganisation(user.organisationId, page, pagination.size, searchTerm, missingEmail);
             }
             setPersons(res.content);
             setPagination({
@@ -76,6 +78,7 @@ const PeopleDirectory: React.FC = () => {
             showToast.error("Failed to load directory");
         } finally {
             setLoading(false);
+            setInitialLoading(false);
         }
     };
 
@@ -106,7 +109,7 @@ const PeopleDirectory: React.FC = () => {
             try {
                 await deletePerson(id);
                 showToast.success('Person removed');
-                loadPersons();
+                loadPersons(pagination.currentPage);
             } catch (err: any) {
                 console.error('Failed to delete', err);
                 showToast.error(err.response?.data?.message || 'Failed to delete person');
@@ -119,7 +122,7 @@ const PeopleDirectory: React.FC = () => {
         setIsEditModalOpen(true);
     };
 
-    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading People Directory...</div>;
+    if (initialLoading) return <div className="p-8 text-center text-muted-foreground">Loading People Directory...</div>;
 
     return (
         <div className="space-y-8 p-6">
@@ -233,7 +236,7 @@ const PeopleDirectory: React.FC = () => {
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Search all people by name, IC, or email..."
+                            placeholder="Search by name, email, registration number (AOS-...)..."
                             className="w-full h-[44px] bg-background border border-border rounded-xl px-10 py-2 text-sm focus:ring-2 focus:ring-primary-500/20 outline-none hover:border-primary-500 transition-all font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -251,15 +254,42 @@ const PeopleDirectory: React.FC = () => {
                         )}
                     </div>
                 </div>
+                <div className="w-full md:w-auto">
+                    <Button
+                        type="button"
+                        variant={missingEmail ? "danger" : "outline"}
+                        className={`h-[44px] rounded-xl font-medium transition-all px-4 ${missingEmail ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-600' : 'border-border text-foreground hover:bg-muted'}`}
+                        onClick={() => setMissingEmail(!missingEmail)}
+                    >
+                        {missingEmail ? 'Showing Missing Email' : 'Missing Email'}
+                    </Button>
+                </div>
             </div>
 
-            <Card className="border-none shadow-xl bg-glass-bg backdrop-blur-xl">
+            {missingEmail && (
+                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 px-4 py-3 rounded-xl flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-amber-400">Missing Email Filter Active:</span>
+                        <span>Showing people with no email address, or only a generated placeholder. Records can still be edited; add a real address when you have one.</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setMissingEmail(false)}
+                        className="text-xs text-amber-400 hover:text-amber-300 underline font-medium"
+                    >
+                        Clear Filter
+                    </button>
+                </div>
+            )}
+
+            <Card className={`border-none shadow-xl bg-glass-bg backdrop-blur-xl transition-opacity duration-200 ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="border-b-0 hover:bg-transparent">
                                 <TableHead className="pl-6 h-14">Name</TableHead>
-                                <TableHead>IC/Passport</TableHead>
+                                <TableHead>Reg No.</TableHead>
+                                <TableHead>Verification</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead>Roles</TableHead>
                                 <TableHead>User Link</TableHead>
@@ -269,7 +299,7 @@ const PeopleDirectory: React.FC = () => {
                         <TableBody>
                             {filteredPersons.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-16 text-muted-foreground">
+                                    <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
                                         <div className="flex flex-col items-center gap-2">
                                             <UsersThree size={48} weight="duotone" className="opacity-20" />
                                             <p className="text-lg">No records matching this category.</p>
@@ -300,10 +330,37 @@ const PeopleDirectory: React.FC = () => {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="font-mono text-xs text-muted">{p.icOrPassport}</TableCell>
+                                        <TableCell className="font-mono text-xs text-foreground font-semibold">
+                                            {p.registrationNo ? (
+                                                <span className="bg-primary-500/10 text-primary-400 px-2 py-0.5 rounded border border-primary-500/20">
+                                                    {p.registrationNo}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted italic text-[11px]">
+                                                    None (Legacy)
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs text-muted">
+                                            <div className="flex flex-col gap-1 items-start">
+                                                {p.recordVerification?.status === 'VERIFIED' ? (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                        VERIFIED
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                                                        UNVERIFIED
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>
                                             <div className="text-sm">
-                                                {p.email && <div className="text-foreground">{p.email}</div>}
+                                                {p.email && (
+                                                    isPlaceholderEmail(p.email)
+                                                        ? <div className="text-amber-500 italic text-xs">No email (placeholder)</div>
+                                                        : <div className="text-foreground">{p.email}</div>
+                                                )}
                                                 {p.phone && <div className="text-xs text-muted">{p.phone}</div>}
                                                 {(!p.email && !p.phone) && <span className="text-muted">-</span>}
                                             </div>
@@ -418,7 +475,11 @@ const PeopleDirectory: React.FC = () => {
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 person={selectedPerson}
-                onSuccess={loadPersons}
+                onPersonUpdated={(updated) => {
+                    setSelectedPerson(updated);
+                    loadPersons(pagination.currentPage);
+                }}
+                onSuccess={() => loadPersons(pagination.currentPage)}
             />
 
             <ConnectUserModal 

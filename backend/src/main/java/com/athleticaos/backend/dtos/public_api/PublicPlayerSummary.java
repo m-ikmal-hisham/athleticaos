@@ -15,9 +15,6 @@ public class PublicPlayerSummary {
     private UUID id;
     private String firstName;
     private String lastName;
-    private String idType;
-    private String idNumber;
-    private String dateOfBirth;
     private String position;
     private String position2;
     private Integer jerseyNumber;

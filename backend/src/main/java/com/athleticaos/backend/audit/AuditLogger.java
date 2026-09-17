@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 /**
  * Helper component for creating audit log entries.
  * Provides convenience methods for common audit logging scenarios.
@@ -243,6 +245,31 @@ public class AuditLogger {
                                 .entitySummary(String.format("User logged in: %s", user.getEmail()))
                                 .build();
 
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPasswordChanged(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PASSWORD_CHANGED")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("User changed own password: %s", user.getEmail()))
+                                .build();
+
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPasswordReset(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PASSWORD_RESET_BY_ADMIN")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("Temporary password set by admin (change required): %s",
+                                                user.getEmail()))
+                                .build();
+
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
@@ -332,10 +359,127 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        // ==================== PERSON ACTIONS ====================
+
+        public void logPersonCreated(Person person, String organisationName, HttpServletRequest request) {
+                String summary = String.format("Person created: %s %s (ID: %s%s)",
+                                person.getFirstName(), person.getLastName(), person.getId(),
+                                organisationName != null ? ", Organisation: " + organisationName : "");
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PERSON_CREATED")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPersonCreated(Person person, HttpServletRequest request) {
+                logPersonCreated(person, null, request);
+        }
+
+        public void logPersonUpdated(Person person, String organisationName, HttpServletRequest request) {
+                String summary = String.format("Person updated: %s %s (ID: %s%s)",
+                                person.getFirstName(), person.getLastName(), person.getId(),
+                                organisationName != null ? ", Organisation: " + organisationName : "");
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PERSON_UPDATED")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPersonUpdated(Person person, HttpServletRequest request) {
+                logPersonUpdated(person, null, request);
+        }
+
+        public void logRecordVerified(Person person, String method, HttpServletRequest request) {
+                String summary = String.format("Record verified for person: %s %s (ID: %s, Method: %s)",
+                                person.getFirstName(), person.getLastName(), person.getId(), method);
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("RECORD_VERIFIED")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logRecordVerificationRevoked(Person person, HttpServletRequest request) {
+                String summary = String.format("Record verification revoked for person: %s %s (ID: %s)",
+                                person.getFirstName(), person.getLastName(), person.getId());
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("RECORD_VERIFICATION_REVOKED")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logRecordVerificationReset(Person person, HttpServletRequest request) {
+                String summary = String.format("Record verification reset for person: %s %s (ID: %s)",
+                                person.getFirstName(), person.getLastName(), person.getId());
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("RECORD_VERIFICATION_RESET")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPersonPossibleDuplicateOverride(Person person, int matchCount, int otherOrganisationMatches, HttpServletRequest request) {
+                int totalMatches = matchCount + otherOrganisationMatches;
+                String summary = "Possible duplicate confirmed: " + person.getRegistrationNo() + " (" + totalMatches + " existing match(es))";
+                String detailsJson = String.format("{\"matchCount\":%d,\"otherOrganisationMatches\":%d}", matchCount, otherOrganisationMatches);
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PERSON_POSSIBLE_DUPLICATE_OVERRIDE")
+                                .entityType("PERSON")
+                                .entityId(person.getId())
+                                .entitySummary(summary)
+                                .detailsJson(detailsJson)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        // ==================== TEAM STAFF ACTIONS ====================
+
+        public void logTeamStaffAdded(TeamStaff teamStaff, HttpServletRequest request) {
+                String staffName = teamStaff.getPerson() != null
+                                ? teamStaff.getPerson().getFirstName() + " " + teamStaff.getPerson().getLastName()
+                                : "Unknown";
+                String teamName = teamStaff.getTeam() != null ? teamStaff.getTeam().getName() : "Unknown";
+                String roleName = teamStaff.getStaffRole() != null ? teamStaff.getStaffRole().getName() : "Staff";
+                String summary = String.format("Staff %s added to team %s as %s", staffName, teamName, roleName);
+
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TEAM_STAFF_ADDED")
+                                .entityType("TEAM_STAFF")
+                                .entityId(teamStaff.getId())
+                                .entitySummary(summary)
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         public void logBulkAction(String actionType, String entityType, String summary, HttpServletRequest request) {
+                logBulkAction(actionType, entityType, null, summary, request);
+        }
+
+        public void logBulkAction(String actionType, String entityType, UUID entityId, String summary, HttpServletRequest request) {
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType(actionType)
                                 .entityType(entityType)
+                                .entityId(entityId != null ? entityId : UUID.randomUUID())
                                 .entitySummary(summary)
                                 .build();
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));

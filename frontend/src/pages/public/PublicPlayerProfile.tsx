@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
 import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target, Clock } from 'lucide-react';
-import { calculateAge } from '@/utils/date';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 
 export function PublicPlayerProfile() {
@@ -78,7 +77,7 @@ export function PublicPlayerProfile() {
         );
     }
 
-    const age = calculateAge(player.dateOfBirth);
+    const age = player.age ?? null;
     const hasStats = stats && (stats.matchesPlayed > 0 || stats.totalPoints > 0 || stats.tries > 0);
 
     return (
@@ -171,7 +170,6 @@ export function PublicPlayerProfile() {
                             onSelect={handleTournamentSelect}
                             allLabel="All-Time Career (Global)"
                             variant="public"
-                            className="w-full sm:w-auto"
                         />
                     </div>
                 )}

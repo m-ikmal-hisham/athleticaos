@@ -36,11 +36,11 @@ export default function TournamentDetail() {
     // Teams belonging to the selected category. Matches, standings and stats are already
     // filtered server-side by category; the Teams and Players tabs read from the tournament
     // payload, so they have to apply the same filter here or a Mens/Womens tournament shows
-    // every team under both chips. Uncategorised teams stay visible in all categories.
+    // every team under both chips. Uncategorised teams are only visible when no category is selected.
     const categoryTeams = useMemo(() => {
         const allTeams = tournament?.teams || [];
         if (!selectedCategoryId) return allTeams;
-        return allTeams.filter(t => !t.categoryId || t.categoryId === selectedCategoryId);
+        return allTeams.filter(t => t.categoryId === selectedCategoryId);
     }, [tournament?.teams, selectedCategoryId]);
 
     useEffect(() => {
@@ -48,10 +48,30 @@ export default function TournamentDetail() {
     }, [id]);
 
     useEffect(() => {
-        if (id && tournament) { // Only fetch if tournament is loaded
-            loadCategoryData();
-        }
-    }, [selectedCategoryId]);
+        if (!id || !tournament || !selectedCategoryId) return;
+        let active = true;
+        setLoading(true);
+        const loadCategoryData = async () => {
+            try {
+                const [matchesData, standingsData] = await Promise.all([
+                    publicTournamentApi.getTournamentMatches(id, selectedCategoryId),
+                    publicTournamentApi.getTournamentStandings(id, selectedCategoryId).catch(() => []),
+                ]);
+                if (!active) return;
+                setMatches(matchesData);
+                setStandings(standingsData || []);
+            } catch (error) {
+                if (!active) return;
+                setMatches([]);
+                setStandings([]);
+                console.error('Failed to load category data:', error);
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+        loadCategoryData();
+        return () => { active = false; };
+    }, [id, tournament, selectedCategoryId]);
 
     // Apply branding
     useEffect(() => {
@@ -89,23 +109,6 @@ export default function TournamentDetail() {
             }
         } catch (error) {
             console.error('Failed to load tournament:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadCategoryData = async () => {
-        if (!id) return;
-        setLoading(true); // Maybe use a separate loading state for data refresh?
-        try {
-            const [matchesData, standingsData] = await Promise.all([
-                publicTournamentApi.getTournamentMatches(id, selectedCategoryId || undefined),
-                publicTournamentApi.getTournamentStandings(id, selectedCategoryId || undefined).catch(() => []),
-            ]);
-            setMatches(matchesData);
-            setStandings(standingsData || []);
-        } catch (error) {
-            console.error('Failed to load category data:', error);
         } finally {
             setLoading(false);
         }
