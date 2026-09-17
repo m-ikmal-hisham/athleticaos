@@ -35,7 +35,7 @@ public class UserController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+        return ResponseEntity.ok(userService.getUserByIdInScope(id));
     }
 
     @PostMapping
@@ -85,7 +85,7 @@ public class UserController {
     @GetMapping("/{id}/roles")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserRolesResponse> getUserRoles(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.getUserRoles(id));
+        return ResponseEntity.ok(userService.getUserRolesInScope(id));
     }
 
     // Player-specific endpoints

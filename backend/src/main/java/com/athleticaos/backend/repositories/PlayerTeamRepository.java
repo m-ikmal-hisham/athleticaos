@@ -48,4 +48,7 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
 
     @Query("SELECT pt.team.id, COUNT(pt) FROM PlayerTeam pt WHERE pt.isActive = true AND pt.player.deleted = false GROUP BY pt.team.id")
     List<Object[]> countActivePlayersGroupedByTeam();
+
+    @Query("SELECT CASE WHEN COUNT(pt) > 0 THEN true ELSE false END FROM PlayerTeam pt WHERE pt.player.id = :playerId AND pt.isActive = true AND pt.team.organisation.id IN :orgIds")
+    boolean existsActiveByPlayerIdAndOrganisationIdIn(@Param("playerId") UUID playerId, @Param("orgIds") java.util.Collection<UUID> orgIds);
 }

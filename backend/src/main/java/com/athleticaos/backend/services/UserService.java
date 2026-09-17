@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -104,6 +105,15 @@ public class UserService {
         return userRepository.findById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    }
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("null")
+    public UserResponse getUserByIdInScope(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        assertUserInScope(user);
+        return mapToResponse(user);
     }
 
     @Transactional
@@ -361,6 +371,25 @@ public class UserService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    @SuppressWarnings("null")
+    public UserRolesResponse getUserRolesInScope(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        assertUserInScope(user);
+
+        List<String> roles = user.getRoles().stream()
+                .map(role -> role.getName().replace("ROLE_", ""))
+                .collect(Collectors.toList());
+
+        String primaryRole = roles.isEmpty() ? "USER" : roles.get(0);
+
+        return UserRolesResponse.builder()
+                .roles(roles)
+                .primaryRole(primaryRole)
+                .build();
+    }
+
     private UserResponse mapToResponse(User user) {
         // Get team IDs for this user
         List<UUID> teamIds = playerTeamService.getPlayerTeamIds(user.getId());
@@ -440,5 +469,30 @@ public class UserService {
         String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
                 .getName();
         return userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
+    }
+
+    private void assertUserInScope(User targetUser) {
+        User currentUser = getCurrentUser();
+        java.util.Set<UUID> accessibleOrgIds = resolveAccessibleOrganisationIds(currentUser);
+
+        // SUPER_ADMIN (null set) has access to all
+        if (accessibleOrgIds == null) {
+            return;
+        }
+
+        // Caller can always view their own record
+        if (currentUser.getId().equals(targetUser.getId())) {
+            return;
+        }
+
+        // Target with an organisation in the accessible set
+        UUID targetOrgId = targetUser.getOrganisation() != null ? targetUser.getOrganisation().getId() : null;
+        if (targetOrgId != null && accessibleOrgIds.contains(targetOrgId)) {
+            return;
+        }
+
+        log.warn("Access denied for user record outside accessible organisation scope: currentUserId={}, targetUserId={}",
+                currentUser.getId(), targetUser.getId());
+        throw new EntityNotFoundException("User not found");
     }
 }

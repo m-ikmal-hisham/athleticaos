@@ -12,6 +12,8 @@ public interface PlayerService {
 
     PlayerResponse getPlayerById(UUID id);
 
+    PlayerResponse getPlayerInScope(String idOrSlug);
+
     PlayerResponse createPlayer(PlayerCreateRequest request);
 
     List<PlayerResponse> createBulkPlayers(List<PlayerCreateRequest> requests);

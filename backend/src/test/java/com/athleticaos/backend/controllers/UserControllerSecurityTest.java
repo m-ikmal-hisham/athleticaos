@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
-@Import(com.athleticaos.backend.security.SecurityConfig.class)
+@Import({com.athleticaos.backend.security.SecurityConfig.class, com.athleticaos.backend.exceptions.GlobalExceptionHandler.class})
 @SuppressWarnings("null")
 public class UserControllerSecurityTest {
 
@@ -57,6 +57,50 @@ public class UserControllerSecurityTest {
     void anonymousCannotAccessGetAllUsers() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousCannotAccessGetUserById() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{id}", java.util.UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousCannotAccessGetUserRoles() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{id}/roles", java.util.UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "PLAYER")
+    void getUserById_whenOutOfScopeOrMissing_returns404AndCallsInScopeMethod() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.when(userService.getUserByIdInScope(targetId))
+                .thenThrow(new jakarta.persistence.EntityNotFoundException("User not found"));
+
+        mockMvc.perform(get("/api/v1/users/{id}", targetId))
+                .andExpect(status().isNotFound())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("User not found"));
+
+        org.mockito.Mockito.verify(userService).getUserByIdInScope(targetId);
+        org.mockito.Mockito.verify(userService, org.mockito.Mockito.never()).getUserById(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "PLAYER")
+    void getUserRoles_whenOutOfScopeOrMissing_returns404AndCallsInScopeMethod() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.when(userService.getUserRolesInScope(targetId))
+                .thenThrow(new jakarta.persistence.EntityNotFoundException("User not found"));
+
+        mockMvc.perform(get("/api/v1/users/{id}/roles", targetId))
+                .andExpect(status().isNotFound())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("User not found"));
+
+        org.mockito.Mockito.verify(userService).getUserRolesInScope(targetId);
+        org.mockito.Mockito.verify(userService, org.mockito.Mockito.never()).getUserRoles(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

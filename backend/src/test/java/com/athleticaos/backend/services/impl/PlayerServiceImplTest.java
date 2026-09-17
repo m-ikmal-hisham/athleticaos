@@ -68,6 +68,8 @@ class PlayerServiceImplTest {
     private PersonDuplicateService personDuplicateService;
     @Mock
     private OrganisationPersonRepository organisationPersonRepository;
+    @Mock
+    private com.athleticaos.backend.services.UserService userService;
 
     @InjectMocks
     private PlayerServiceImpl playerService;
@@ -97,6 +99,8 @@ class PlayerServiceImplTest {
                 .person(existingPerson)
                 .status("ACTIVE")
                 .build();
+
+        org.mockito.Mockito.lenient().when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
     }
 
     @Test
@@ -515,5 +519,166 @@ class PlayerServiceImplTest {
         assertThat(response.results().get(0).status()).isEqualTo("SUCCESS");
         verify(playerBatchHelper).savePlayerInNewTransaction(row, team);
         verify(auditLogger).logPersonPossibleDuplicateOverride(eq(existingPerson), eq(1), eq(0), any());
+    }
+
+    @Test
+    void getPlayerInScope_superAdmin_readsAnyPlayer() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        when(playerRepository.findById(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        PlayerResponse response = playerService.getPlayerInScope(playerId.toString());
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(playerId);
+    }
+
+    @Test
+    void getPlayerInScope_orgAdmin_readsPlayerLinkedThroughOrganisationPerson() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(orgId));
+        when(playerRepository.findById(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, java.util.Set.of(orgId)))
+                .thenReturn(true);
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        PlayerResponse response = playerService.getPlayerInScope(playerId.toString());
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(playerId);
+    }
+
+    @Test
+    void getPlayerInScope_orgAdmin_readsPlayerThroughActiveTeamOnly() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(orgId));
+        when(playerRepository.findById(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(playerId, java.util.Set.of(orgId)))
+                .thenReturn(true);
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        PlayerResponse response = playerService.getPlayerInScope(playerId.toString());
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(playerId);
+    }
+
+    @Test
+    void getPlayerInScope_outOfScope_throwsNotFoundWithExactMessage() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(orgId));
+        when(playerRepository.findById(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(playerId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> playerService.getPlayerInScope(playerId.toString()))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Player not found");
+    }
+
+    @Test
+    void getPlayerInScope_emptyAccessibleSet_throwsNotFound() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Collections.emptySet());
+        when(playerRepository.findById(playerId)).thenReturn(Optional.of(existingPlayer));
+
+        assertThatThrownBy(() -> playerService.getPlayerInScope(playerId.toString()))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Player not found");
+    }
+
+    @Test
+    void getPlayerInScope_bySlug_scopedSameWay() {
+        String slug = "player-a";
+        existingPlayer.setSlug(slug);
+
+        // In scope via SUPER_ADMIN
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        when(playerRepository.findBySlug(slug)).thenReturn(Optional.of(existingPlayer));
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(Collections.emptyList());
+
+        PlayerResponse response = playerService.getPlayerInScope(slug);
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(playerId);
+
+        // Out of scope
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(orgId));
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(playerId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> playerService.getPlayerInScope(slug))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Player not found");
+    }
+
+    @Test
+    void updatePlayer_outOfScope_throwsNotFoundAndNeverSaves() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(orgId));
+        when(playerRepository.findByIdWithPerson(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(playerId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+
+        PlayerUpdateRequest request = new PlayerUpdateRequest(
+                null, null, "MALE", null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null
+        );
+
+        assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Player not found");
+
+        verify(playerRepository, never()).save(any());
+        verify(personRepository, never()).save(any());
+    }
+
+    @Test
+    void deletePlayer_outOfScope_throwsNotFoundAndNeverDeletesOrSaves() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(orgId));
+        when(playerRepository.findById(playerId)).thenReturn(Optional.of(existingPlayer));
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(playerId, java.util.Set.of(orgId)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> playerService.deletePlayer(playerId))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Player not found");
+
+        verify(playerRepository, never()).delete(any());
+        verify(playerRepository, never()).save(any());
+        verify(playerTeamRepository, never()).deleteAll(any());
+        verify(personRepository, never()).delete(any());
+    }
+
+    @Test
+    void getAllPlayers_withForeignTeamId_returnsEmpty() {
+        UUID myOrgId = UUID.randomUUID();
+        UUID foreignOrgId = UUID.randomUUID();
+        UUID foreignTeamId = UUID.randomUUID();
+
+        com.athleticaos.backend.entities.Organisation foreignOrg = com.athleticaos.backend.entities.Organisation.builder()
+                .id(foreignOrgId)
+                .build();
+        com.athleticaos.backend.entities.Team foreignTeam = com.athleticaos.backend.entities.Team.builder()
+                .id(foreignTeamId)
+                .organisation(foreignOrg)
+                .build();
+
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(myOrgId));
+        when(teamRepository.findById(foreignTeamId)).thenReturn(Optional.of(foreignTeam));
+
+        List<PlayerResponse> result = playerService.getAllPlayers(null, foreignTeamId);
+        assertThat(result).isEmpty();
+        verify(playerTeamRepository, never()).findPlayersByTeamId(any());
     }
 }
