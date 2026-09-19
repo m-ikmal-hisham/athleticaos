@@ -426,11 +426,13 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public byte[] exportMatches(UUID tournamentId) {
         return generateCsv(tournamentId, false);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public byte[] exportResults(UUID tournamentId) {
         return generateCsv(tournamentId, true);
     }
@@ -440,7 +442,7 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        List<Match> matches = matchRepository.findByTournamentId(tournamentId);
+        List<Match> matches = matchRepository.findByTournamentIdWithTeams(tournamentId);
 
         StringBuilder csv = new StringBuilder();
         csv.append("MatchCode,TournamentName,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status");
@@ -470,13 +472,20 @@ public class TournamentServiceImpl implements TournamentService {
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private String escape(String data) {
-        if (data == null)
+    String escape(String data) {
+        if (data == null) {
             return "";
+        }
+        if (!data.isEmpty()) {
+            char first = data.charAt(0);
+            if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+                data = "'" + data;
+            }
+        }
+        boolean needsQuoting = data.contains(",") || data.contains("\"") || data.contains("\n") || data.contains("\r");
         String escapedData = data.replaceAll("\\R", " ");
-        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
-            data = data.replace("\"", "\"\"");
-            escapedData = "\"" + data + "\"";
+        if (needsQuoting) {
+            escapedData = "\"" + escapedData.replace("\"", "\"\"") + "\"";
         }
         return escapedData;
     }
