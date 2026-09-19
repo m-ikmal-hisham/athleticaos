@@ -54,7 +54,7 @@ public class PlayerTeamController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<PlayerInTeamDTO>> getTeamRoster(@PathVariable UUID teamId, @RequestParam(required = false) UUID tournamentId) {
         log.info("Fetching roster for team {} with tournamentId {}", teamId, tournamentId);
-        List<PlayerInTeamDTO> roster = playerTeamService.getTeamRoster(teamId, tournamentId);
+        List<PlayerInTeamDTO> roster = playerTeamService.getTeamRosterInScope(teamId, tournamentId);
         return ResponseEntity.ok(roster);
     }
 

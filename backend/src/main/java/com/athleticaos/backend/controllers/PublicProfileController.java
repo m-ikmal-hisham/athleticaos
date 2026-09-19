@@ -512,7 +512,6 @@ public class PublicProfileController {
                     .country(player.country())
                     .state(player.state())
                     .city(player.city())
-                    .bloodGroup(null)
                     .position(position)
                     .position2(position2)
                     .jerseyNumber(jerseyNumber)
@@ -557,7 +556,7 @@ public class PublicProfileController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            log.error("Error fetching public player stats {}", idOrSlug, e);
+            log.error("Error fetching public player stats", e);
             return ResponseEntity.ok(java.util.Map.of(
                 "matchesPlayed", 0, "tries", 0, "conversions", 0,
                 "penalties", 0, "dropGoals", 0, "yellowCards", 0,

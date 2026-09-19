@@ -15,6 +15,7 @@ import com.athleticaos.backend.repositories.TournamentOfficialRepository;
 import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.repositories.TournamentStaffRepository;
 import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
@@ -31,6 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -41,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,6 +82,8 @@ class PersonServiceImplTest {
     private com.athleticaos.backend.audit.AuditLogger auditLogger;
     @Mock
     private PersonDuplicateService personDuplicateService;
+    @Mock
+    private AccessScopeService accessScopeService;
 
     @InjectMocks
     private PersonServiceImpl personService;
@@ -100,33 +105,37 @@ class PersonServiceImplTest {
 
         existingPerson = Person.builder()
                 .id(personId)
-                .firstName("Ahmad")
-                .lastName("Ibrahim")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .gender("MALE")
                 .dob(LocalDate.of(1990, 1, 1))
                 .recordVerificationStatus("UNVERIFIED")
-                .email("ahmad.ibrahim@example.invalid")
+                .email("person.synthetic.b@example.test")
                 .build();
+
+        lenient().when(accessScopeService.isOrganisationInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isPersonInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isUserInScope(any())).thenReturn(true);
     }
 
     @Test
     void createPerson_validInput_succeeds() {
         CreatePersonRequest request = new CreatePersonRequest();
-        request.setFirstName("Siti");
-        request.setLastName("Nur");
+        request.setFirstName("Person");
+        request.setLastName("Synthetic C");
         request.setDob(LocalDate.of(1992, 2, 2));
         request.setGender("FEMALE");
-        request.setEmail("siti.nur@example.invalid");
+        request.setEmail("person.c@example.invalid");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
         UUID newPersonId = UUID.randomUUID();
         Person savedPerson = Person.builder()
                 .id(newPersonId)
-                .firstName("Siti")
-                .lastName("Nur")
+                .firstName("Person")
+                .lastName("Synthetic C")
                 .dob(LocalDate.of(1992, 2, 2))
                 .gender("FEMALE")
-                .email("siti.nur@example.invalid")
+                .email("person.c@example.invalid")
                 .recordVerificationStatus("UNVERIFIED")
                 .build();
 
@@ -468,19 +477,19 @@ class PersonServiceImplTest {
     @Test
     void createPerson_withPossibleDuplicateMatch_noFlag_throwsPossibleDuplicatePersonException() {
         CreatePersonRequest request = new CreatePersonRequest();
-        request.setFirstName("Ali");
-        request.setLastName("Abu");
-        request.setEmail("ali.abu@example.invalid");
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setEmail("person.a@example.invalid");
         request.setGender("MALE");
         request.setDob(LocalDate.of(2000, 1, 1));
         request.setNationality("MALAYSIAN");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        when(personRepository.existsByEmailIgnoreCase("ali.abu@example.invalid")).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCase("person.a@example.invalid")).thenReturn(false);
 
         PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
-                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
-        when(personDuplicateService.check("Ali", "Abu", LocalDate.of(2000, 1, 1), "MALE", null))
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Person", "Synthetic A")), 0);
+        when(personDuplicateService.check("Person", "Synthetic A", LocalDate.of(2000, 1, 1), "MALE", null))
                 .thenReturn(dupCheck);
 
         assertThatThrownBy(() -> personService.createPerson(organisationId, request))
@@ -492,21 +501,21 @@ class PersonServiceImplTest {
     @Test
     void createPerson_withPossibleDuplicateMatch_confirmFlagTrue_savesPersonAndAudits() {
         CreatePersonRequest request = new CreatePersonRequest();
-        request.setFirstName("Ali");
-        request.setLastName("Abu");
-        request.setEmail("ali.abu@example.invalid");
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setEmail("person.a@example.invalid");
         request.setGender("MALE");
         request.setDob(LocalDate.of(2000, 1, 1));
         request.setNationality("MALAYSIAN");
         request.setConfirmPossibleDuplicate(true);
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        when(personRepository.existsByEmailIgnoreCase("ali.abu@example.invalid")).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCase("person.a@example.invalid")).thenReturn(false);
         Person savedPerson = Person.builder()
                 .id(personId)
-                .firstName("Ali")
-                .lastName("Abu")
-                .email("ali.abu@example.invalid")
+                .firstName("Person")
+                .lastName("Synthetic A")
+                .email("person.a@example.invalid")
                 .gender("MALE")
                 .dob(LocalDate.of(2000, 1, 1))
                 .nationality("MALAYSIAN")
@@ -515,8 +524,8 @@ class PersonServiceImplTest {
         when(personRepository.findById(personId)).thenReturn(Optional.of(savedPerson));
 
         PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
-                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
-        when(personDuplicateService.check("Ali", "Abu", LocalDate.of(2000, 1, 1), "MALE", null))
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Person", "Synthetic A")), 0);
+        when(personDuplicateService.check("Person", "Synthetic A", LocalDate.of(2000, 1, 1), "MALE", null))
                 .thenReturn(dupCheck);
 
         PersonResponseDTO response = personService.createPerson(organisationId, request);
@@ -524,5 +533,181 @@ class PersonServiceImplTest {
         assertThat(response).isNotNull();
         verify(personRepository).saveAndFlush(any(Person.class));
         verify(auditLogger).logPersonPossibleDuplicateOverride(any(Person.class), eq(1), eq(0), any());
+    }
+
+    // R5: getPersonByIdInScope
+    @Test
+    void getPersonByIdInScope_whenInScope_returnsResponse() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(true);
+
+        PersonResponseDTO response = personService.getPersonByIdInScope(personId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(personId.toString());
+        assertThat(response.getEmail()).isEqualTo("person.synthetic.b@example.test");
+    }
+
+    @Test
+    void getPersonByIdInScope_whenOutOfScope_throws404ExactMessage() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.getPersonByIdInScope(personId))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Person not found");
+    }
+
+    @Test
+    void getPersonByIdInScope_whenMissing_throws404ExactMessage() {
+        when(personRepository.findById(personId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> personService.getPersonByIdInScope(personId))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Person not found");
+    }
+
+    @Test
+    void getPersonByIdInScope_whenSuperAdmin_returnsResponse() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(true);
+
+        PersonResponseDTO response = personService.getPersonByIdInScope(personId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(personId.toString());
+    }
+
+    // R6: getUnlinkedUsersInScope
+    @Test
+    void getUnlinkedUsersInScope_whenInScope_returnsUsers() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(true);
+        com.athleticaos.backend.entities.User user = com.athleticaos.backend.entities.User.builder()
+                .id(UUID.randomUUID())
+                .firstName("User")
+                .lastName("A")
+                .email("user.a@example.test")
+                .build();
+        when(userRepository.findByOrganisationId(organisationId)).thenReturn(List.of(user));
+        when(personRepository.findAll()).thenReturn(List.of());
+
+        var users = personService.getUnlinkedUsersInScope(organisationId);
+
+        assertThat(users).hasSize(1);
+        assertThat(users.get(0).getEmail()).isEqualTo("user.a@example.test");
+    }
+
+    @Test
+    void getUnlinkedUsersInScope_whenOutOfScope_returnsEmptyList() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        var users = personService.getUnlinkedUsersInScope(organisationId);
+
+        assertThat(users).isEmpty();
+        verify(userRepository, never()).findByOrganisationId(any());
+    }
+
+    @Test
+    void getUnlinkedUsersInScope_whenSuperAdmin_returnsUsers() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(true);
+        when(userRepository.findByOrganisationId(organisationId)).thenReturn(List.of());
+        when(personRepository.findAll()).thenReturn(List.of());
+
+        var users = personService.getUnlinkedUsersInScope(organisationId);
+
+        assertThat(users).isNotNull();
+    }
+
+    // W1: updatePerson scope tests
+    @Test
+    void updatePerson_whenOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.person.PersonUpdateRequest request = new com.athleticaos.backend.dtos.person.PersonUpdateRequest();
+        request.setFirstName("Updated");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(personRepository, never()).save(any());
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+    }
+
+    // W1: deletePerson scope tests
+    @Test
+    void deletePerson_whenOutOfScope_throwsNotFoundWithExactMessageAndNeverDeletes() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.deletePerson(personId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(personRepository, never()).delete(any());
+        verify(organisationPersonRepository, never()).deleteAll(any());
+    }
+
+    // W2: linkToUser scope tests
+    @Test
+    void linkToUser_whenPersonOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        UUID userId = UUID.randomUUID();
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.linkToUser(personId, userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(userRepository, never()).findById(any());
+        verify(personRepository, never()).save(any());
+    }
+
+    @Test
+    void linkToUser_whenUserOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        UUID userId = UUID.randomUUID();
+        com.athleticaos.backend.entities.User user = com.athleticaos.backend.entities.User.builder()
+                .id(userId)
+                .build();
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(accessScopeService.isUserInScope(user)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.linkToUser(personId, userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(personRepository, never()).save(any());
+    }
+
+    // W3: createPerson scope tests
+    @Test
+    void createPerson_whenOrganisationOutOfScope_throwsNotFoundWithExactMessageAndNeverChecksDuplicates() {
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.person.CreatePersonRequest request = new com.athleticaos.backend.dtos.person.CreatePersonRequest();
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setGender("MALE");
+        request.setDob(LocalDate.of(1993, 3, 3));
+        request.setEmail("person.synthetic.a@example.test");
+
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Organisation not found");
+
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+        verify(personRepository, never()).saveAndFlush(any());
     }
 }

@@ -20,10 +20,6 @@ public class PublicPlayerDetailResponse {
     private String country;
     private String state;
     private String city;
-    private String bloodGroup;
-    private String emergencyContactName;
-    private String emergencyContactNumber;
-    private String emergencyContactRelationship;
     private String position;
     private String position2;
     private Integer jerseyNumber;

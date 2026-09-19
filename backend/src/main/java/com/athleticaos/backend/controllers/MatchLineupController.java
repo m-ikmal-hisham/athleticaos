@@ -44,7 +44,7 @@ public class MatchLineupController {
     }
 
     @PutMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
     @Operation(summary = "Update lineup for a team in a match")
     public ResponseEntity<List<MatchLineupEntryDTO>> updateLineup(
             @PathVariable String matchIdOrSlug,

@@ -40,3 +40,9 @@ application:
     cookie:
       secure: true
       same-site: Lax
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

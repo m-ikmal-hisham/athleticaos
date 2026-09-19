@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,176 +18,15 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-// ─── Access Gate Constants ────────────────────────────────────────────
-// Curtain only, not a security control: this value is compiled into the public bundle.
-// Access is actually enforced server-side by authentication and role checks.
-const ACCESS_CODE = import.meta.env.VITE_ADMIN_ACCESS_CODE || 'AOS3R26ADMINDev';
-const ENV = import.meta.env.VITE_ENV || 'development';
-const SESSION_KEY = 'aos_access_granted';
-
-/**
- * Check if the access gate should be bypassed via URL parameter.
- * Dev uses ?devkey=, Staging uses ?stgkey= — cross-env params are silently ignored.
- */
-function checkSecretUrlBypass(searchParams: URLSearchParams): boolean {
-    if (ENV === 'staging') {
-        const stgKey = searchParams.get('stgkey');
-        return stgKey === ACCESS_CODE;
-    } else {
-        // Dev / local / any non-staging
-        const devKey = searchParams.get('devkey');
-        return devKey === ACCESS_CODE;
-    }
-}
-
-// ─── Access Gate Component ────────────────────────────────────────────
-const AccessGate = ({ onGranted }: { onGranted: () => void }) => {
-    const [code, setCode] = useState('');
-    const [error, setError] = useState('');
-    const [attempts, setAttempts] = useState(0);
-    const effectiveTheme = useEffectiveTheme();
-    const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (code === ACCESS_CODE) {
-            sessionStorage.setItem(SESSION_KEY, 'true');
-            onGranted();
-        } else {
-            setAttempts(prev => prev + 1);
-            setError(attempts >= 2 ? 'Access denied. Contact your administrator.' : 'Invalid access code');
-            setCode('');
-        }
-    };
-
-    return (
-        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
-            {/* Left Side - Access Gate Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10">
-                <div className="w-full max-w-sm space-y-8">
-                    {/* Header */}
-                    <div className="flex flex-row items-center justify-center gap-5">
-                        <img
-                            src={logoSrc}
-                            alt="AthleticaOS"
-                            className="h-20 w-auto object-contain shrink-0"
-                        />
-                        <div className="flex flex-col items-start text-left">
-                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
-                                Restricted
-                            </h2>
-                            <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                Authorized access only
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Security Icon */}
-                    <div className="flex justify-center">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 flex items-center justify-center border border-indigo-200/50 dark:border-indigo-800/50">
-                            <svg className="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="text-center">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Enter your access code to continue
-                            </p>
-                        </div>
-
-                        {error && (
-                            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/20 text-center">
-                                {error}
-                            </div>
-                        )}
-
-                        <input
-                            type="password"
-                            value={code}
-                            onChange={(e) => { setCode(e.target.value); setError(''); }}
-                            placeholder="Access Code"
-                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 rounded-lg p-3 outline-none transition-all text-center tracking-widest font-mono"
-                            autoFocus
-                            disabled={attempts >= 5}
-                        />
-
-                        <button
-                            type="submit"
-                            disabled={!code.trim() || attempts >= 5}
-                            className="w-full py-3 bg-[#6366f1] hover:bg-[#5558dd] disabled:bg-gray-300 disabled:dark:bg-gray-800 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-md shadow-indigo-500/20 transition-all"
-                        >
-                            {attempts >= 5 ? 'Access Locked' : 'Verify Access'}
-                        </button>
-                    </form>
-
-                    <div className="mt-8 text-center text-xs text-gray-400 dark:text-gray-600">
-                        <p>This area is restricted to authorized administrators.</p>
-                        <p className="mt-1">If you believe this is an error, contact your system admin.</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Side - Abstract Art (same as login) */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12">
-                <img
-                    src={effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png'}
-                    alt="AthleticaOS Background"
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-
-                <div className="relative z-20 max-w-lg text-right">
-                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
-                        Secured by<br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                            AthleticaOS
-                        </span>
-                    </h2>
-                    <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-md ml-auto">
-                        Multi-layered security protecting your rugby management platform.
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // ─── Main Login Component ─────────────────────────────────────────────
 export const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [searchParams] = useSearchParams();
     const { login } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
     const [lockoutMessage, setLockoutMessage] = useState('');
     // Set when login answers PASSWORD_CHANGE_REQUIRED; held in memory only until the change completes
     const [pendingChange, setPendingChange] = useState<{ email: string; currentPassword: string } | null>(null);
-
-    // ─── Access Gate State ────────────────────────────────────────────
-    const [accessGranted, setAccessGranted] = useState(
-        ENV === 'production' || sessionStorage.getItem(SESSION_KEY) === 'true'
-    );
-
-    useEffect(() => {
-        if (ENV === 'production') {
-            setAccessGranted(true);
-            return;
-        }
-
-        // Check session first (gate was already passed in this tab session)
-        if (sessionStorage.getItem(SESSION_KEY) === 'true') {
-            setAccessGranted(true);
-            return;
-        }
-
-        // Check secret URL parameter bypass
-        if (checkSecretUrlBypass(searchParams)) {
-            sessionStorage.setItem(SESSION_KEY, 'true');
-            setAccessGranted(true);
-        }
-    }, [searchParams]);
 
     const {
         register,
@@ -233,11 +72,6 @@ export const Login = () => {
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
     const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
-
-    // ─── Show Access Gate if not yet granted ──────────────────────────
-    if (!accessGranted) {
-        return <AccessGate onGranted={() => setAccessGranted(true)} />;
-    }
 
     // ─── Forced password change (temporary / admin-set password) ──────
     if (pendingChange) {

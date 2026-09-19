@@ -881,7 +881,7 @@ export const MatchDetail = () => {
                                                 [...events].reverse().map((event) => {
                                                     // Parse substitution notes if available
                                                     let subInName = '';
-                                                    let subOutName = event.playerName;
+                                                    const subOutName = event.playerName;
 
                                                     if (event.eventType === 'SUBSTITUTION' && event.notes?.includes(' | IN: ')) {
                                                         const parts = event.notes.split(' | IN: ');

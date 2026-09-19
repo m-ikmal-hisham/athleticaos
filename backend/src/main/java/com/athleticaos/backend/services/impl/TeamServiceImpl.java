@@ -11,6 +11,7 @@ import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.TournamentTeamRepository;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.PlayerTeamService;
 import com.athleticaos.backend.services.TeamService;
 import com.athleticaos.backend.services.UserService;
@@ -53,6 +54,7 @@ public class TeamServiceImpl implements TeamService {
     private final PersonRepository personRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
     private final TournamentTeamRepository tournamentTeamRepository;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getAllTeams(UUID organisationId) {
@@ -128,11 +130,47 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new EntityNotFoundException("Team not found with slug: " + slug));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public TeamResponse getTeamByIdInScope(UUID id) {
+        Team team = teamRepository.findById(java.util.Objects.requireNonNull(id, "ID must not be null"))
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
+        return mapToResponse(team);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TeamResponse getTeamBySlugInScope(String slug) {
+        log.info("Fetching team by slug in scope: {}", slug);
+        Team team = teamRepository.findBySlug(java.util.Objects.requireNonNull(slug, "Slug must not be null"))
+                .orElseThrow(() -> new EntityNotFoundException("Team not found with slug: " + slug));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found with slug: " + slug);
+        }
+        return mapToResponse(team);
+    }
+
     @Transactional
     public TeamResponse createTeam(TeamCreateRequest request, HttpServletRequest httpRequest) {
         log.info("Creating team: {}", request.getName());
         Organisation org = organisationRepository.findById(request.getOrganisationId())
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found");
+        }
 
         // Generate unique slug
         // Generate unique slug
@@ -242,6 +280,25 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<com.athleticaos.backend.dtos.playerteam.PlayerInTeamDTO> getPlayersByTeamInScope(UUID teamId, UUID tournamentId) {
+        if (teamId == null) {
+            return java.util.Collections.emptyList();
+        }
+        Team team = teamRepository.findById(teamId).orElse(null);
+        if (team == null) {
+            return java.util.Collections.emptyList();
+        }
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team players outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            return java.util.Collections.emptyList();
+        }
+        return playerTeamService.getTeamRoster(teamId, tournamentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TeamStaffDTO> getTeamStaff(UUID teamId) {
         return teamStaffRepository.findByTeamId(teamId).stream()
                 .map(this::mapToTeamStaffDTO)
@@ -253,8 +310,20 @@ public class TeamServiceImpl implements TeamService {
     public TeamStaffDTO addTeamStaff(UUID teamId, AddTeamStaffRequest request, HttpServletRequest httpRequest) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
         Person person = personRepository.findById(request.getPersonId())
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+        if (!accessScopeService.isPersonInScope(person.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for person record outside accessible organisation scope: userId={}, personId={}",
+                    currentUserId, person.getId());
+            throw new EntityNotFoundException("Person not found");
+        }
         StaffRole role = staffRoleRepository.findById(request.getStaffRoleId())
                 .orElseThrow(() -> new EntityNotFoundException("Staff Role not found"));
 
@@ -289,6 +358,14 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public void removeTeamStaff(UUID teamId, UUID staffAssignmentId, HttpServletRequest httpRequest) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
         TeamStaff teamStaff = teamStaffRepository.findById(staffAssignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Team Staff not found"));
         if (!teamStaff.getTeam().getId().equals(teamId)) {
@@ -331,11 +408,43 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getAvailablePersonsForStaffInScope(UUID teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team available staff outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
+        UUID orgId = team.getOrganisation().getId();
+
+        return organisationPersonRepository.findByOrganisationIdOrHierarchy(orgId).stream()
+                .map(op -> op.getPerson())
+                .map(p -> com.athleticaos.backend.dtos.team.PersonSummaryDTO.builder()
+                        .id(p.getId().toString())
+                        .registrationNo(p.getRegistrationNo())
+                        .firstName(p.getFirstName())
+                        .lastName(p.getLastName())
+                        .email(p.getEmail())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public void deleteTeam(UUID id, HttpServletRequest httpRequest) {
         log.info("Deleting team: {}", id);
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
 
         teamRepository.delete(team);
         auditLogger.logTeamDeleted(team, httpRequest);

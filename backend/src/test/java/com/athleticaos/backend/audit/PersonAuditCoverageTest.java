@@ -45,8 +45,8 @@ class PersonAuditCoverageTest {
 
         Person person = Person.builder()
                 .id(personId)
-                .firstName("Ali")
-                .lastName("Ahmad")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .dob(dob)
                 .build();
 
@@ -63,7 +63,7 @@ class PersonAuditCoverageTest {
         assertThat(log.getEntityType()).isEqualTo("PERSON");
         assertThat(log.getEntityId()).isEqualTo(personId);
 
-        assertThat(log.getEntitySummary()).contains("Ali Ahmad");
+        assertThat(log.getEntitySummary()).contains("Person Synthetic B");
         assertThat(log.getEntitySummary()).contains("Harimau Club");
         assertThat(log.getEntitySummary()).doesNotContain(dob.toString());
     }
@@ -76,8 +76,8 @@ class PersonAuditCoverageTest {
 
         Person person = Person.builder()
                 .id(personId)
-                .firstName("Badrul")
-                .lastName("Hisham")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .dob(dob)
                 .build();
 
@@ -94,7 +94,7 @@ class PersonAuditCoverageTest {
         assertThat(log.getEntityType()).isEqualTo("PERSON");
         assertThat(log.getEntityId()).isEqualTo(personId);
 
-        assertThat(log.getEntitySummary()).contains("Badrul Hisham");
+        assertThat(log.getEntitySummary()).contains("Person Synthetic B");
         assertThat(log.getEntitySummary()).contains("Eagle Academy");
         assertThat(log.getEntitySummary()).doesNotContain(dob.toString());
     }
@@ -106,8 +106,8 @@ class PersonAuditCoverageTest {
         Person person = Person.builder()
                 .id(personId)
                 .registrationNo("AOS-000100")
-                .firstName("Ali")
-                .lastName("Ahmad")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .build();
 
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -132,8 +132,8 @@ class PersonAuditCoverageTest {
         Person person = Person.builder()
                 .id(personId)
                 .registrationNo("AOS-000100")
-                .firstName("Ali")
-                .lastName("Ahmad")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .build();
 
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -157,8 +157,8 @@ class PersonAuditCoverageTest {
         Person person = Person.builder()
                 .id(personId)
                 .registrationNo("AOS-000100")
-                .firstName("Ali")
-                .lastName("Ahmad")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .build();
 
         MockHttpServletRequest request = new MockHttpServletRequest();

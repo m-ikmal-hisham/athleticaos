@@ -103,13 +103,15 @@ class PublicProfilePrivacyTest {
                 .as("PublicPlayerListItemResponse should not declare city or age")
                 .doesNotContain("city", "age");
 
-        // PublicPlayerDetailResponse must declare age
+        // PublicPlayerDetailResponse must declare age and not declare unused emergency/blood fields
         List<String> detailFields = Arrays.stream(PublicPlayerDetailResponse.class.getDeclaredFields())
                 .map(field -> field.getName())
                 .toList();
         assertThat(detailFields)
                 .as("PublicPlayerDetailResponse should declare age")
-                .contains("age");
+                .contains("age")
+                .as("PublicPlayerDetailResponse should not declare unused blood or emergency contact fields")
+                .doesNotContain("bloodGroup", "emergencyContactName", "emergencyContactNumber", "emergencyContactRelationship");
     }
 
     @Test
@@ -205,6 +207,10 @@ class PublicProfilePrivacyTest {
                 .doesNotContain(fabricatedDob.toString())
                 .doesNotContain("registrationNo")
                 .doesNotContain("AOS-")
+                .doesNotContain("bloodGroup")
+                .doesNotContain("emergencyContactName")
+                .doesNotContain("emergencyContactNumber")
+                .doesNotContain("emergencyContactRelationship")
                 .contains("\"age\":22");
     }
 

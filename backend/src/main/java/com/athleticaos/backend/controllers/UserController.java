@@ -27,7 +27,7 @@ public class UserController {
     private final PlayerService playerService;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers(@RequestParam(required = false) UUID organisationId) {
         return ResponseEntity.ok(userService.getAllUsers(organisationId));
     }

@@ -34,7 +34,7 @@ public class PlayerBatchHelperImpl implements PlayerBatchHelper {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID savePlayerInNewTransaction(PlayerRowDTO row, Team team) {
-        log.info("Saving player {} {} in new transaction for team {}", row.firstName(), row.lastName(), team.getId());
+        log.info("Saving player in new transaction for team {}", team.getId());
 
         // Canonicalise gender
         String canonicalGender = com.athleticaos.backend.enums.Gender.from(row.gender()).name();

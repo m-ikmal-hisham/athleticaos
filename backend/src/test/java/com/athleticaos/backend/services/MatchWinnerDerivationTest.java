@@ -28,6 +28,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -76,6 +78,8 @@ class MatchWinnerDerivationTest {
     private ProgressionService progressionService;
     @Mock
     private BracketService bracketService;
+    @Mock
+    private PlatformTransactionManager transactionManager;
 
     private MatchServiceImpl matchService;
 
@@ -85,6 +89,9 @@ class MatchWinnerDerivationTest {
 
     @BeforeEach
     void setUp() {
+        TransactionStatus txStatus = org.mockito.Mockito.mock(TransactionStatus.class);
+        org.mockito.Mockito.lenient().when(transactionManager.getTransaction(any())).thenReturn(txStatus);
+
         matchService = new MatchServiceImpl(
                 matchRepository,
                 tournamentRepository,
@@ -101,7 +108,8 @@ class MatchWinnerDerivationTest {
                 statisticsService,
                 stageRepository,
                 progressionService,
-                bracketService
+                bracketService,
+                transactionManager
         );
 
         homeTeam = Team.builder().id(UUID.randomUUID()).name("Home Team").build();

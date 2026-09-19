@@ -15,6 +15,7 @@ import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
 import com.athleticaos.backend.dtos.person.PossibleDuplicateMatch;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,6 +72,10 @@ class PlayerServiceImplTest {
     private OrganisationPersonRepository organisationPersonRepository;
     @Mock
     private com.athleticaos.backend.services.UserService userService;
+    @Mock
+    private com.athleticaos.backend.services.AccessScopeService accessScopeService;
+    @Mock
+    private com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
 
     @InjectMocks
     private PlayerServiceImpl playerService;
@@ -101,6 +107,8 @@ class PlayerServiceImplTest {
                 .build();
 
         org.mockito.Mockito.lenient().when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        lenient().when(accessScopeService.isOrganisationInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isTeamInScope(any())).thenReturn(true);
     }
 
     @Test
@@ -291,7 +299,7 @@ class PlayerServiceImplTest {
     @Test
     void createPlayer_blankEmail_savedWithNull() {
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 "   ", null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
@@ -346,7 +354,7 @@ class PlayerServiceImplTest {
     @Test
     void createPlayer_duplicateEmailIgnoreCase_throwsDuplicateEmailException() {
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 "case@example.test", null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
@@ -380,8 +388,8 @@ class PlayerServiceImplTest {
     @Test
     void updatePlayer_changingDobIntoMatch_throwsPossibleDuplicatePersonException() {
         existingPerson.setDob(LocalDate.of(2000, 1, 1));
-        existingPerson.setFirstName("Ali");
-        existingPerson.setLastName("Abu");
+        existingPerson.setFirstName("Person");
+        existingPerson.setLastName("Synthetic A");
         existingPerson.setGender("MALE");
         existingPerson.setEmail("existing@example.com");
 
@@ -398,8 +406,8 @@ class PlayerServiceImplTest {
         );
 
         PossibleDuplicateCheck matchCheck = new PossibleDuplicateCheck(
-                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
-        when(personDuplicateService.check("Ali", "Abu", newDob, "MALE", personId))
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Person", "Synthetic A")), 0);
+        when(personDuplicateService.check("Person", "Synthetic A", newDob, "MALE", personId))
                 .thenReturn(matchCheck);
 
         assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
@@ -409,7 +417,7 @@ class PlayerServiceImplTest {
     @Test
     void createPlayer_withoutEmail_throwsEmailRequiredException() {
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
@@ -684,5 +692,59 @@ class PlayerServiceImplTest {
         List<PlayerResponse> result = playerService.getAllPlayers(null, foreignTeamId);
         assertThat(result).isEmpty();
         verify(playerTeamRepository, never()).findPlayersByTeamId(any());
+    }
+
+    @Test
+    void createPlayer_whenTeamOutOfScope_throwsEntityNotFoundException() {
+        UUID teamId = UUID.randomUUID();
+        PlayerCreateRequest request = new PlayerCreateRequest(
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "player.synthetic.a@example.test", null, null, null, null, null, null, null, null,
+                teamId, null, null, null, null, null, null, null
+        );
+        com.athleticaos.backend.entities.Team team = com.athleticaos.backend.entities.Team.builder().id(teamId).build();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(false);
+
+        assertThatThrownBy(() -> playerService.createPlayer(request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Team not found");
+
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+        verify(playerRepository, never()).save(any());
+    }
+
+    @Test
+    void createPlayer_whenOrganisationOutOfScope_throwsEntityNotFoundException() {
+        UUID orgId = UUID.randomUUID();
+        PlayerCreateRequest request = new PlayerCreateRequest(
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "player.synthetic.a@example.test", null, null, null, null, null, null, null, null,
+                null, orgId, null, null, null, null, null, null
+        );
+        com.athleticaos.backend.entities.Organisation org = com.athleticaos.backend.entities.Organisation.builder().id(orgId).build();
+        when(organisationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(accessScopeService.isOrganisationInScope(orgId)).thenReturn(false);
+
+        assertThatThrownBy(() -> playerService.createPlayer(request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Organisation not found");
+
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+        verify(playerRepository, never()).save(any());
+    }
+
+    @Test
+    void createBatchPlayers_whenTeamOutOfScope_throwsEntityNotFoundException() {
+        UUID teamId = UUID.randomUUID();
+        com.athleticaos.backend.entities.Team team = com.athleticaos.backend.entities.Team.builder().id(teamId).build();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(false);
+
+        assertThatThrownBy(() -> playerService.createBatchPlayers(teamId, List.of()))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Team not found");
+
+        verify(playerBatchHelper, never()).savePlayerInNewTransaction(any(), any());
     }
 }

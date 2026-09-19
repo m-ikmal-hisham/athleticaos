@@ -23,6 +23,7 @@ import com.athleticaos.backend.dtos.person.PossibleDuplicateCheck;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
 import com.athleticaos.backend.exceptions.EmailRequiredException;
 import com.athleticaos.backend.exceptions.PossibleDuplicatePersonException;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.services.UserService;
@@ -54,6 +55,7 @@ public class OrganisationServiceImpl implements OrganisationService {
     private final PersonDuplicateService personDuplicateService;
     private final AuditLogger auditLogger;
     private final ObjectProvider<HttpServletRequest> requestProvider;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
     public List<OrganisationResponse> getAllOrganisations() {
@@ -488,6 +490,13 @@ public class OrganisationServiceImpl implements OrganisationService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + organisationId));
 
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found with ID: " + organisationId);
+        }
+
         // Canonicalise gender before any identity validation or entity mutation
         String canonicalGender = com.athleticaos.backend.enums.Gender.from(request.getGender()).name();
 
@@ -567,5 +576,17 @@ public class OrganisationServiceImpl implements OrganisationService {
                         .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PersonSummaryDTO> getPersonsByOrganisationInScope(UUID organisationId) {
+        if (!accessScopeService.isOrganisationInScope(organisationId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation persons outside accessible organisation scope: userId={}, organisationId={}",
+                    currentUserId, organisationId);
+            return java.util.Collections.emptyList();
+        }
+        return getPersonsByOrganisation(organisationId);
     }
 }

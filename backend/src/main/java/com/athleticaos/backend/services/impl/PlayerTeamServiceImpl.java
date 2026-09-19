@@ -12,6 +12,7 @@ import com.athleticaos.backend.repositories.MatchLineupRepository;
 import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.entities.TournamentPlayer;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.PlayerTeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +38,22 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
         private final MatchLineupRepository matchLineupRepository;
         private final MatchEventRepository matchEventRepository;
         private final TournamentPlayerRepository tournamentPlayerRepository;
+        private final AccessScopeService accessScopeService;
 
         @Override
         @Transactional
         @SuppressWarnings("null")
         public void assignPlayerToTeam(AssignPlayerRequest request) {
                 log.info("Assigning player {} to team {}", request.getPlayerId(), request.getTeamId());
+
+                Team team = teamRepository.findById(request.getTeamId())
+                                .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+                if (!accessScopeService.isTeamInScope(team)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                                        currentUserId, team.getId());
+                        throw new IllegalArgumentException("Team not found");
+                }
 
                 Player player = playerRepository.findById(request.getPlayerId())
                                 .orElseThrow(() -> new IllegalArgumentException("Player not found"));
@@ -51,8 +62,12 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                         throw new IllegalArgumentException("Cannot assign a deleted player");
                 }
 
-                Team team = teamRepository.findById(request.getTeamId())
-                                .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+                if (!accessScopeService.isPlayerInScope(player)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for player record outside accessible organisation scope: userId={}, playerId={}",
+                                        currentUserId, player.getId());
+                        throw new IllegalArgumentException("Player not found");
+                }
 
                 // Enforce National Team Filter
                 if (com.athleticaos.backend.enums.OrganisationLevel.COUNTRY.equals(team.getOrganisation().getOrgLevel())) {
@@ -102,8 +117,18 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
 
         @Override
         @Transactional
+        @SuppressWarnings("null")
         public void removePlayerFromTeam(UUID playerId, UUID teamId) {
                 log.info("Removing player {} from team {}", playerId, teamId);
+
+                Team team = teamRepository.findById(teamId)
+                                .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+                if (!accessScopeService.isTeamInScope(team)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                                        currentUserId, team.getId());
+                        throw new IllegalArgumentException("Team not found");
+                }
 
                 PlayerTeam playerTeam = playerTeamRepository.findByPlayerIdAndTeamId(playerId, teamId)
                                 .orElseThrow(() -> new IllegalArgumentException("Player-team assignment not found"));
@@ -127,6 +152,25 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                                 log.error("Failed to remove player {} from team {}", playerId, teamId, e);
                         }
                 }
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<PlayerInTeamDTO> getTeamRosterInScope(UUID teamId, UUID tournamentId) {
+                if (teamId == null) {
+                        return Collections.emptyList();
+                }
+                Team team = teamRepository.findById(teamId).orElse(null);
+                if (team == null) {
+                        return Collections.emptyList();
+                }
+                if (!accessScopeService.isTeamInScope(team)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for team roster outside accessible organisation scope: userId={}, teamId={}",
+                                        currentUserId, team.getId());
+                        return Collections.emptyList();
+                }
+                return getTeamRoster(teamId, tournamentId);
         }
 
         @Override
@@ -231,7 +275,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
         @Override
         @Transactional(readOnly = true)
         public List<UUID> getPlayerTeamIds(UUID playerId) {
-                log.info("Fetching teams for player {}", playerId);
+                log.info("Fetching teams for id: {}", playerId);
 
                 List<PlayerTeam> playerTeams = playerTeamRepository.findActiveTeamsByPlayerId(playerId);
 
