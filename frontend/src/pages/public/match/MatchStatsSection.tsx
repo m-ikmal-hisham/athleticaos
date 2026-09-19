@@ -27,7 +27,6 @@ export const MatchStatsSection = ({ match }: MatchStatsSectionProps) => {
                 </div>
                 <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex relative">
                     {/* Home Bar */}
-                    {/* eslint-disable-next-line react-dom/no-missing-iframe-sandbox */}
                     <div
                         className="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-1000 ease-out w-[var(--bar-width)]"
                         ref={(el) => {

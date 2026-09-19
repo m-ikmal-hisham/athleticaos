@@ -479,7 +479,7 @@ export const router = createBrowserRouter([
 ], {
     future: {
 
-        // @ts-ignore
+        // @ts-expect-error React Router v6 future flag types
         v7_startTransition: true,
         v7_relativeSplatPath: true,
         v7_fetcherPersist: true,

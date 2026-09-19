@@ -17,9 +17,7 @@ concurrency:
   group: ci-backend-${{ github.ref }}
   cancel-in-progress: true
 
-# TODO: Enable frontend lint and test gate jobs once existing lint issues are resolved.
-# Currently `npm run lint` fails with 8 pre-existing errors and 215 warnings under zero-warning policy.
-# When resolved, add a frontend lint/test workflow or job.
+# Frontend lint gate runs in CI via lint:ci ratchet (capped at existing warnings) in deploy-frontend-staging.yml.
 
 jobs:
   test:
