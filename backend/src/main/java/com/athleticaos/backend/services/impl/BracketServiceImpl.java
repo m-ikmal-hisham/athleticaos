@@ -1678,8 +1678,7 @@ public class BracketServiceImpl implements BracketService {
     }
 
     static String[] getPoolKnockoutPlaceholders(List<String> poolNames, int matchIndex, int totalSlots) {
-        int numberOfPools = poolNames != null ? poolNames.size() : 0;
-        if (numberOfPools == 2 && matchIndex < 2) {
+        if (poolNames != null && poolNames.size() == 2 && matchIndex < 2) {
             String poolA = poolNames.get(0);
             String poolB = poolNames.get(1);
             if (matchIndex == 0) {
@@ -1687,7 +1686,7 @@ public class BracketServiceImpl implements BracketService {
             } else if (matchIndex == 1) {
                 return new String[] { "Winner " + poolB, "Runner-up " + poolA };
             }
-        } else if (numberOfPools == 4 && matchIndex < 4) {
+        } else if (poolNames != null && poolNames.size() == 4 && matchIndex < 4) {
             String poolA = poolNames.get(0);
             String poolB = poolNames.get(1);
             String poolC = poolNames.get(2);

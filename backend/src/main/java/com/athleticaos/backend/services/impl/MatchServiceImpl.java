@@ -62,6 +62,7 @@ public class MatchServiceImpl implements MatchService {
     private TransactionTemplate requiresNewTransactionTemplate;
 
     @jakarta.annotation.PostConstruct
+    @SuppressWarnings("null")
     void initTransactionTemplate() {
         this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
         this.requiresNewTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
