@@ -1199,6 +1199,26 @@ public class BracketServiceImpl implements BracketService {
                 .max()
                 .orElse(0) + 1;
 
+        List<String> actualPoolNames = existingStages.stream()
+                .filter(s -> s.getStageType() == TournamentStageType.POOL || Boolean.TRUE.equals(s.getIsGroupStage()))
+                .filter(s -> category == null
+                        ? s.getCategory() == null
+                        : s.getCategory() != null && category.getId().equals(s.getCategory().getId()))
+                .map(TournamentStage::getName)
+                .toList();
+
+        if (actualPoolNames.isEmpty()) {
+            actualPoolNames = new ArrayList<>();
+            for (int p = 0; p < (numberOfPools != null ? numberOfPools : 2); p++) {
+                if (poolNames != null && p < poolNames.size() && poolNames.get(p) != null
+                        && !poolNames.get(p).trim().isEmpty()) {
+                    actualPoolNames.add(poolNames.get(p).trim());
+                } else {
+                    actualPoolNames.add("Pool " + (char) ('A' + p));
+                }
+            }
+        }
+
         // With placement stages enabled, every team continues into a four-team placement
         // bracket (Cup 1-4, Plate 5-8, ...) rather than only the pool qualifiers playing on.
         // This is the shape that yields more than four brackets for larger draws.
@@ -1244,7 +1264,7 @@ public class BracketServiceImpl implements BracketService {
 
                 // Set initial placeholders for first round (Pool qualifiers)
                 if (previousRoundMatches.isEmpty()) {
-                    String[] placeholders = getPoolKnockoutPlaceholders(numberOfPools, i);
+                    String[] placeholders = getPoolKnockoutPlaceholders(actualPoolNames, i, knockoutTeamCount);
                     match.setHomeTeamPlaceholder(truncate(placeholders[0], 50));
                     match.setAwayTeamPlaceholder(truncate(placeholders[1], 50));
                 }
@@ -1348,26 +1368,58 @@ public class BracketServiceImpl implements BracketService {
      *
      * Slots that already hold a team are left alone, so a manual assignment is never overwritten.
      */
-    private void seedBracketsFromStandings(UUID tournamentId, UUID categoryId, List<PoolStanding> ranked) {
+    /**
+     * Normalizes a placeholder string for lookup by trimming, collapsing consecutive whitespace,
+     * and converting to lower case.
+     */
+    static String normalizePlaceholder(String label) {
+        if (label == null) {
+            return null;
+        }
+        return label.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Fills the "Seed N" placeholders left by {@link #generatePlacementLadder} with the team that
+     * finished Nth overall, across every bracket in the ladder rather than only the opening stage.
+     * Also resolves specific pool placements such as "Winner Pool A", "Runner-up Pool B", "Pool A1",
+     * and "Round Robin 1".
+     *
+     * Slots that already hold a team are left alone, so a manual assignment is never overwritten.
+     */
+    void seedBracketsFromStandings(UUID tournamentId, UUID categoryId, List<PoolStanding> ranked) {
         if (ranked.isEmpty()) {
             return;
         }
 
         Map<String, Team> teamBySeedLabel = new HashMap<>();
         for (int i = 0; i < ranked.size(); i++) {
-            teamBySeedLabel.put("Seed " + (i + 1), ranked.get(i).team);
+            teamBySeedLabel.put("seed " + (i + 1), ranked.get(i).team);
+            teamBySeedLabel.put("seed" + (i + 1), ranked.get(i).team);
         }
 
-        // Also resolve slots written as a pool position, e.g. "Pool A1" for the winner of Pool A.
-        // These are what an organiser picks when a bracket should take a specific finisher from a
-        // specific pool rather than an overall seed. Both the spaced and unspaced spellings are
-        // accepted because the generator and the editor have historically produced each.
+        // Also resolve slots written as a pool position, e.g. "Pool A1" or "Winner Pool A"
+        // for the winner of Pool A, "Runner-up Pool B" for position 2, etc.
+        // Compare labels after trimming and collapsing internal whitespace, case-insensitively,
+        // so "Round Robin 1", "round robin1", and "Round Robin1" all resolve.
         for (PoolStanding standing : ranked) {
             if (standing.poolName == null || standing.poolPosition <= 0) {
                 continue;
             }
-            teamBySeedLabel.put(standing.poolName + standing.poolPosition, standing.team);
-            teamBySeedLabel.put(standing.poolName + " " + standing.poolPosition, standing.team);
+            String poolName = standing.poolName.trim();
+            // e.g. "Pool A1" and "Pool A 1", "Round Robin1" and "Round Robin 1"
+            teamBySeedLabel.put(normalizePlaceholder(poolName + standing.poolPosition), standing.team);
+            teamBySeedLabel.put(normalizePlaceholder(poolName + " " + standing.poolPosition), standing.team);
+
+            // Winner <poolName> -> position 1
+            if (standing.poolPosition == 1) {
+                teamBySeedLabel.put(normalizePlaceholder("Winner " + poolName), standing.team);
+            }
+            // Runner-up <poolName> -> position 2 (also supporting "Runner up <poolName>")
+            if (standing.poolPosition == 2) {
+                teamBySeedLabel.put(normalizePlaceholder("Runner-up " + poolName), standing.team);
+                teamBySeedLabel.put(normalizePlaceholder("Runner up " + poolName), standing.team);
+            }
         }
 
         List<Match> knockoutMatches = matchRepository.findByTournamentId(tournamentId).stream()
@@ -1385,14 +1437,18 @@ public class BracketServiceImpl implements BracketService {
             boolean changed = false;
 
             // The seed label has served its purpose once the real team is known; clearing it
-            // keeps the slot from showing a stale "Seed 3" beside an assigned team.
-            Team home = teamBySeedLabel.get(match.getHomeTeamPlaceholder());
+            // keeps the slot from showing a stale placeholder beside an assigned team.
+            // Slots that already hold a team are left alone, so a manual assignment is never overwritten.
+            String normalizedHomePlaceholder = normalizePlaceholder(match.getHomeTeamPlaceholder());
+            Team home = normalizedHomePlaceholder != null ? teamBySeedLabel.get(normalizedHomePlaceholder) : null;
             if (home != null && match.getHomeTeam() == null) {
                 match.setHomeTeam(home);
                 match.setHomeTeamPlaceholder(null);
                 changed = true;
             }
-            Team away = teamBySeedLabel.get(match.getAwayTeamPlaceholder());
+
+            String normalizedAwayPlaceholder = normalizePlaceholder(match.getAwayTeamPlaceholder());
+            Team away = normalizedAwayPlaceholder != null ? teamBySeedLabel.get(normalizedAwayPlaceholder) : null;
             if (away != null && match.getAwayTeam() == null) {
                 match.setAwayTeam(away);
                 match.setAwayTeamPlaceholder(null);
@@ -1407,6 +1463,20 @@ public class BracketServiceImpl implements BracketService {
 
         log.info("Seeded {} ranked team(s) into {} knockout match(es) for category {}.",
                 ranked.size(), seededMatches, categoryId);
+
+        if (seededMatches == 0 && !knockoutMatches.isEmpty()) {
+            List<String> unresolved = new ArrayList<>();
+            for (Match match : knockoutMatches) {
+                if (match.getHomeTeam() == null && match.getHomeTeamPlaceholder() != null) {
+                    unresolved.add(match.getId() + "[home:" + match.getHomeTeamPlaceholder() + "]");
+                }
+                if (match.getAwayTeam() == null && match.getAwayTeamPlaceholder() != null) {
+                    unresolved.add(match.getId() + "[away:" + match.getAwayTeamPlaceholder() + "]");
+                }
+            }
+            log.warn("No knockout matches were seeded for category {} in tournament {}, but {} knockout match(es) exist with unresolved placeholders: {}",
+                    categoryId, tournamentId, knockoutMatches.size(), unresolved);
+        }
     }
 
     /**
@@ -1495,7 +1565,7 @@ public class BracketServiceImpl implements BracketService {
     }
 
     // Helper class for pool standings
-    private static class PoolStanding {
+    static class PoolStanding {
         Team team;
         // Fields for calculation logic only
         int pointsFor = 0;
@@ -1573,50 +1643,87 @@ public class BracketServiceImpl implements BracketService {
                 .build();
     }
 
-    private String[] getPoolKnockoutPlaceholders(int numberOfPools, int matchIndex) {
-        String[] placeholders = new String[] { "Pool Qualifier", "Pool Qualifier" };
-
-        if (numberOfPools == 2) {
-            // 2 Pools: A, B
-            // Match 1: Winner A vs Runner-up B
-            // Match 2: Winner B vs Runner-up A
-            if (matchIndex == 0) {
-                placeholders[0] = "Winner Pool A";
-                placeholders[1] = "Runner-up Pool B";
-            } else if (matchIndex == 1) {
-                placeholders[0] = "Winner Pool B";
-                placeholders[1] = "Runner-up Pool A";
+    /**
+     * Generates standard single-elimination bracket seed pairings for a power-of-two draw size.
+     * Ensures top seeds stay on opposite sides of the bracket so seed 1 and seed 2 can only meet
+     * in the final (e.g. for 4 slots: 1v4, 2v3; for 8 slots: 1v8, 4v5, 3v6, 2v7; general recursive
+     * order for any power of two).
+     */
+    static List<int[]> generateStandardBracketMatches(int totalSlots) {
+        if (totalSlots < 2 || (totalSlots & (totalSlots - 1)) != 0) {
+            throw new IllegalArgumentException("Total slots must be a power of two >= 2");
+        }
+        List<int[]> matches = new ArrayList<>();
+        matches.add(new int[] { 1, 2 });
+        int currentSlots = 2;
+        while (currentSlots < totalSlots) {
+            currentSlots *= 2;
+            int sum = currentSlots + 1;
+            List<int[]> nextMatches = new ArrayList<>();
+            for (int m = 0; m < matches.size(); m++) {
+                int[] match = matches.get(m);
+                int s1 = match[0];
+                int s2 = match[1];
+                if (m % 2 == 0) {
+                    nextMatches.add(new int[] { Math.min(s1, sum - s1), Math.max(s1, sum - s1) });
+                    nextMatches.add(new int[] { Math.min(s2, sum - s2), Math.max(s2, sum - s2) });
+                } else {
+                    nextMatches.add(new int[] { Math.min(s2, sum - s2), Math.max(s2, sum - s2) });
+                    nextMatches.add(new int[] { Math.min(s1, sum - s1), Math.max(s1, sum - s1) });
+                }
             }
-        } else if (numberOfPools == 4) {
-            // 4 Pools: A, B, C, D
-            // Standard Seeding for A vs D and B vs C Semis
-            // SF1: QF1 vs QF2
-            // SF2: QF3 vs QF4
+            matches = nextMatches;
+        }
+        return matches;
+    }
+
+    static String[] getPoolKnockoutPlaceholders(List<String> poolNames, int matchIndex, int totalSlots) {
+        int numberOfPools = poolNames != null ? poolNames.size() : 0;
+        if (numberOfPools == 2 && matchIndex < 2) {
+            String poolA = poolNames.get(0);
+            String poolB = poolNames.get(1);
+            if (matchIndex == 0) {
+                return new String[] { "Winner " + poolA, "Runner-up " + poolB };
+            } else if (matchIndex == 1) {
+                return new String[] { "Winner " + poolB, "Runner-up " + poolA };
+            }
+        } else if (numberOfPools == 4 && matchIndex < 4) {
+            String poolA = poolNames.get(0);
+            String poolB = poolNames.get(1);
+            String poolC = poolNames.get(2);
+            String poolD = poolNames.get(3);
             switch (matchIndex) {
                 case 0: // QF1
-                    placeholders[0] = "Winner Pool A";
-                    placeholders[1] = "Runner-up Pool B";
-                    break;
+                    return new String[] { "Winner " + poolA, "Runner-up " + poolB };
                 case 1: // QF2 - Meets QF1 in SF1
-                    placeholders[0] = "Winner Pool D";
-                    placeholders[1] = "Runner-up Pool C";
-                    break;
+                    return new String[] { "Winner " + poolD, "Runner-up " + poolC };
                 case 2: // QF3
-                    placeholders[0] = "Winner Pool B";
-                    placeholders[1] = "Runner-up Pool A";
-                    break;
+                    return new String[] { "Winner " + poolB, "Runner-up " + poolA };
                 case 3: // QF4 - Meets QF3 in SF2
-                    placeholders[0] = "Winner Pool C";
-                    placeholders[1] = "Runner-up Pool D";
-                    break;
+                    return new String[] { "Winner " + poolC, "Runner-up " + poolD };
             }
-        } else {
-            int pool1 = (matchIndex * 2) % numberOfPools;
-            int pool2 = (matchIndex * 2 + 1) % numberOfPools;
-            placeholders[0] = "Winner Pool " + (char) ('A' + pool1);
-            placeholders[1] = "Runner-up Pool " + (char) ('A' + pool2);
         }
-        return placeholders;
+
+        // Standard bracket seeding order for power-of-two draws to keep top seeds apart
+        // (e.g. for 4 slots: 1v4, 2v3; for 8 slots: 1v8, 4v5, 3v6, 2v7)
+        if (totalSlots >= 2 && (totalSlots & (totalSlots - 1)) == 0 && matchIndex < totalSlots / 2) {
+            List<int[]> standardMatches = generateStandardBracketMatches(totalSlots);
+            int[] pair = standardMatches.get(matchIndex);
+            return new String[] { "Seed " + pair[0], "Seed " + pair[1] };
+        }
+
+        // Fallback for non-power-of-two draws or extra matches
+        int homeSeed = matchIndex + 1;
+        int awaySeed = Math.max(totalSlots - matchIndex, 1);
+        return new String[] { "Seed " + homeSeed, "Seed " + awaySeed };
+    }
+
+    static String[] getPoolKnockoutPlaceholders(int numberOfPools, int matchIndex, int totalSlots) {
+        List<String> defaultPoolNames = new ArrayList<>();
+        for (int i = 0; i < numberOfPools; i++) {
+            defaultPoolNames.add("Pool " + (char) ('A' + i));
+        }
+        return getPoolKnockoutPlaceholders(defaultPoolNames, matchIndex, totalSlots);
     }
 
     // Inner DTO helper

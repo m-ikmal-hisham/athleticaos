@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @Tag("integration")
 @ActiveProfiles("staging")
+@SuppressWarnings("null")
 class ApiDocsStagingIntegrationTest {
 
     @Container

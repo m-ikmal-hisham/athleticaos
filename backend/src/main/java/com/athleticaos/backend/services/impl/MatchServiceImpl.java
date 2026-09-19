@@ -26,7 +26,10 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +57,22 @@ public class MatchServiceImpl implements MatchService {
     private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
     private final ProgressionService progressionService;
     private final BracketService bracketService;
+    private final PlatformTransactionManager transactionManager;
+
+    private TransactionTemplate requiresNewTransactionTemplate;
+
+    @jakarta.annotation.PostConstruct
+    void initTransactionTemplate() {
+        this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.requiresNewTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    private TransactionTemplate getTransactionTemplate() {
+        if (requiresNewTransactionTemplate == null) {
+            initTransactionTemplate();
+        }
+        return requiresNewTransactionTemplate;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -995,37 +1014,42 @@ public class MatchServiceImpl implements MatchService {
     }
 
     /**
-     * Executes the actual auto-progression logic. Runs outside the original transaction
-     * so any failures here do not affect the match update.
+     * Executes the actual auto-progression logic. Runs inside a new transaction (REQUIRES_NEW)
+     * isolated from the committed match update, so that progression changes are committed
+     * independently and failures do not affect the match update.
      */
     private void performAutoProgression(UUID matchId, boolean isKnockout, UUID tournamentId) {
+        TransactionTemplate txTemplate = getTransactionTemplate();
+
         if (isKnockout) {
             log.info("Triggering auto-progression for knockout match {}", matchId);
             try {
-                progressionService.processMatchCompletion(matchId);
+                txTemplate.executeWithoutResult(status -> progressionService.processMatchCompletion(matchId));
             } catch (Exception e) {
                 log.error("Failed to auto-progress knockout match {}", matchId, e);
             }
         } else if (tournamentId != null) {
             log.info("Checking if all pool matches are completed for tournament {}", tournamentId);
             try {
-                List<com.athleticaos.backend.entities.TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
-                        .stream()
-                        .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
-                        .toList();
+                txTemplate.executeWithoutResult(status -> {
+                    List<com.athleticaos.backend.entities.TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
+                            .stream()
+                            .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
+                            .toList();
 
-                boolean allPoolStagesCompleted = true;
-                for (com.athleticaos.backend.entities.TournamentStage poolStage : poolStages) {
-                    if (!progressionService.isStageComplete(poolStage.getId())) {
-                        allPoolStagesCompleted = false;
-                        break;
+                    boolean allPoolStagesCompleted = true;
+                    for (com.athleticaos.backend.entities.TournamentStage poolStage : poolStages) {
+                        if (!progressionService.isStageComplete(poolStage.getId())) {
+                            allPoolStagesCompleted = false;
+                            break;
+                        }
                     }
-                }
 
-                if (allPoolStagesCompleted && !poolStages.isEmpty()) {
-                    log.info("All pool stages completed. Seeding knockout bracket for tournament {}", tournamentId);
-                    bracketService.progressPoolsToKnockout(tournamentId);
-                }
+                    if (allPoolStagesCompleted && !poolStages.isEmpty()) {
+                        log.info("All pool stages completed. Seeding knockout bracket for tournament {}", tournamentId);
+                        bracketService.progressPoolsToKnockout(tournamentId);
+                    }
+                });
             } catch (Exception e) {
                 log.error("Failed to auto-progress pool stages for tournament {}", tournamentId, e);
             }

@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @Tag("integration")
+@SuppressWarnings("null")
 class ApiDocsDevIntegrationTest {
 
     @Container
