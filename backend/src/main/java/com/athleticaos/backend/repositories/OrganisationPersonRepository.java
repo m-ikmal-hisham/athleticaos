@@ -70,4 +70,7 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
         @Param("search") String search,
         org.springframework.data.domain.Pageable pageable
     );
+
+    @Query("SELECT CASE WHEN COUNT(op) > 0 THEN true ELSE false END FROM OrganisationPerson op WHERE op.person.id = :personId AND op.organisation.id IN :orgIds")
+    boolean existsByPersonIdAndOrganisationIdIn(@Param("personId") UUID personId, @Param("orgIds") java.util.Collection<UUID> orgIds);
 }

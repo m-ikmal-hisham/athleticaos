@@ -44,12 +44,9 @@ public class PlayerController {
     }
 
     @GetMapping("/{idOrSlug}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PlayerResponse> getPlayerById(@PathVariable String idOrSlug) {
-        if (isValidUUID(idOrSlug)) {
-            return ResponseEntity.ok(playerService.getPlayerById(UUID.fromString(idOrSlug)));
-        } else {
-            return ResponseEntity.ok(playerService.getPlayerBySlug(idOrSlug));
-        }
+        return ResponseEntity.ok(playerService.getPlayerInScope(idOrSlug));
     }
 
     @PostMapping

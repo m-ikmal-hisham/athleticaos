@@ -18,7 +18,7 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
 
     List<PlayerTeam> findByPlayerId(UUID playerId);
 
-    @Query("SELECT pt FROM PlayerTeam pt WHERE pt.player.id = :playerId AND pt.isActive = true AND pt.player.deleted = false")
+    @Query("SELECT pt FROM PlayerTeam pt JOIN FETCH pt.team t LEFT JOIN FETCH t.organisation WHERE pt.player.id = :playerId AND pt.isActive = true AND pt.player.deleted = false")
     List<PlayerTeam> findByPlayerIdAndIsActiveTrue(@Param("playerId") UUID playerId);
 
     @Query("SELECT pt FROM PlayerTeam pt WHERE pt.player.id = :playerId AND pt.team.id = :teamId AND pt.player.deleted = false")
@@ -37,15 +37,18 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
     List<com.athleticaos.backend.entities.Player> findPlayersByOrganisationIds(
             @Param("orgIds") java.util.Set<UUID> orgIds);
 
-    @Query("SELECT DISTINCT pt.player FROM PlayerTeam pt WHERE pt.team.id = :teamId AND pt.isActive = true AND pt.player.deleted = false")
+    @Query("SELECT DISTINCT p FROM PlayerTeam pt JOIN pt.player p JOIN FETCH p.person WHERE pt.team.id = :teamId AND pt.isActive = true AND p.deleted = false")
     List<com.athleticaos.backend.entities.Player> findPlayersByTeamId(@Param("teamId") UUID teamId);
 
     @Query("SELECT COUNT(pt) FROM PlayerTeam pt WHERE pt.team.id = :teamId AND pt.player.deleted = false")
     long countByTeamId(@Param("teamId") UUID teamId);
 
-    @Query("SELECT pt FROM PlayerTeam pt JOIN FETCH pt.team t LEFT JOIN FETCH t.organisation WHERE pt.player.id IN :playerIds AND pt.isActive = true AND pt.player.deleted = false")
+    @Query("SELECT pt FROM PlayerTeam pt JOIN FETCH pt.player p JOIN FETCH pt.team t LEFT JOIN FETCH t.organisation WHERE p.id IN :playerIds AND pt.isActive = true AND p.deleted = false")
     List<PlayerTeam> findByPlayerIdInAndIsActiveTrue(@Param("playerIds") java.util.Collection<UUID> playerIds);
 
     @Query("SELECT pt.team.id, COUNT(pt) FROM PlayerTeam pt WHERE pt.isActive = true AND pt.player.deleted = false GROUP BY pt.team.id")
     List<Object[]> countActivePlayersGroupedByTeam();
+
+    @Query("SELECT CASE WHEN COUNT(pt) > 0 THEN true ELSE false END FROM PlayerTeam pt WHERE pt.player.id = :playerId AND pt.isActive = true AND pt.team.organisation.id IN :orgIds")
+    boolean existsActiveByPlayerIdAndOrganisationIdIn(@Param("playerId") UUID playerId, @Param("orgIds") java.util.Collection<UUID> orgIds);
 }

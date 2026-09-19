@@ -86,6 +86,61 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("null")
+    public PlayerResponse getPlayerInScope(String idOrSlug) {
+        if (idOrSlug == null || idOrSlug.trim().isEmpty()) {
+            throw new EntityNotFoundException("Player not found");
+        }
+        Player player;
+        if (isValidUUID(idOrSlug)) {
+            player = playerRepository.findById(UUID.fromString(idOrSlug))
+                    .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                    .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        } else {
+            player = playerRepository.findBySlug(idOrSlug)
+                    .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
+                    .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        }
+        assertPlayerInScope(player);
+        return mapToPlayerResponse(player);
+    }
+
+    private void assertPlayerInScope(Player player) {
+        java.util.Set<UUID> accessibleOrgIds = userService.getAccessibleOrgIdsForCurrentUser();
+        if (accessibleOrgIds == null) {
+            // SUPER_ADMIN has access to all records
+            return;
+        }
+
+        if (!accessibleOrgIds.isEmpty()) {
+            UUID personId = player.getPerson() != null ? player.getPerson().getId() : null;
+            if (personId != null && organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(personId, accessibleOrgIds)) {
+                return;
+            }
+            if (playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(player.getId(), accessibleOrgIds)) {
+                return;
+            }
+        }
+
+        // The caller is authenticated here: getAccessibleOrgIdsForCurrentUser() already resolved them
+        com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
+        UUID currentUserId = currentUser != null ? currentUser.getId() : null;
+        log.warn("Access denied for player record outside accessible organisation scope: userId={}, playerId={}",
+                currentUserId, player.getId());
+        throw new EntityNotFoundException("Player not found");
+    }
+
+    private boolean isValidUUID(String str) {
+        try {
+            UUID.fromString(str);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PlayerResponse getPlayerBySlug(String slug) {
         log.info("Fetching player by slug: {}", slug);
         Player player = playerRepository.findBySlug(slug)
@@ -113,9 +168,16 @@ public class PlayerServiceImpl implements PlayerService {
         if (organisationId != null || teamId != null) {
             // Handle explicit filtering
             if (teamId != null) {
-                // Filter by specific team (check access first?)
-                // Simplification: Check if team belongs to accessible orgs if not super admin
-                // For now, trusting repository + filter later
+                var teamOpt = teamRepository.findById(teamId);
+                if (teamOpt.isEmpty()) {
+                    return java.util.Collections.emptyList();
+                }
+                var team = teamOpt.get();
+                if (accessibleIds != null) {
+                    if (team.getOrganisation() == null || !accessibleIds.contains(team.getOrganisation().getId())) {
+                        return java.util.Collections.emptyList();
+                    }
+                }
                 players = playerTeamRepository.findPlayersByTeamId(teamId).stream()
                         .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                         .collect(Collectors.toList());
@@ -287,6 +349,8 @@ public class PlayerServiceImpl implements PlayerService {
         Player player = playerRepository.findByIdWithPerson(id)
                 .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+
+        assertPlayerInScope(player);
 
         // Explicitly load Person to avoid LazyInitializationException
         Person person = playerRepository.findPersonByPlayerId(id)
@@ -491,6 +555,8 @@ public class PlayerServiceImpl implements PlayerService {
         Player player = playerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
         
+        assertPlayerInScope(player);
+
         Person person = player.getPerson();
 
         // Check if there are any ACTIVE team assignments

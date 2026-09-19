@@ -89,7 +89,7 @@ public class PublicTournamentController {
             }
 
             // Fetch officials for the tournament
-            List<com.athleticaos.backend.entities.MatchOfficial> allOfficials = matchOfficialRepository.findByMatch_Tournament_Id(tournament.getId());
+            List<com.athleticaos.backend.entities.MatchOfficial> allOfficials = matchOfficialRepository.findByTournamentIdWithDetails(tournament.getId());
             java.util.Map<UUID, List<com.athleticaos.backend.dtos.official.MatchOfficialDTO>> officialsByMatch = allOfficials.stream()
                 .collect(Collectors.groupingBy(
                     mo -> mo.getMatch().getId(),
