@@ -279,4 +279,16 @@ public class PersonControllerSecurityTest {
         verify(personService).getUnlinkedUsersInScope(orgId);
         verify(personService, never()).getUnlinkedUsers(any());
     }
+
+    @Test
+    @WithMockUser(roles = "ORG_ADMIN")
+    void deletePerson_whenOutOfScope_returns404AndNoAuditLog() throws Exception {
+        org.mockito.Mockito.doThrow(new EntityNotFoundException("Person not found"))
+                .when(personService).deletePerson(personId);
+
+        mockMvc.perform(delete("/api/v1/persons/{id}", personId))
+                .andExpect(status().isNotFound());
+
+        org.mockito.Mockito.verifyNoInteractions(auditLogger);
+    }
 }

@@ -32,6 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -103,13 +105,17 @@ class PersonServiceImplTest {
 
         existingPerson = Person.builder()
                 .id(personId)
-                .firstName("Ahmad")
-                .lastName("Ibrahim")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .gender("MALE")
                 .dob(LocalDate.of(1990, 1, 1))
                 .recordVerificationStatus("UNVERIFIED")
-                .email("ahmad.ibrahim@example.invalid")
+                .email("person.synthetic.b@example.test")
                 .build();
+
+        lenient().when(accessScopeService.isOrganisationInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isPersonInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isUserInScope(any())).thenReturn(true);
     }
 
     @Test
@@ -539,7 +545,7 @@ class PersonServiceImplTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(personId.toString());
-        assertThat(response.getEmail()).isEqualTo("ahmad.ibrahim@example.invalid");
+        assertThat(response.getEmail()).isEqualTo("person.synthetic.b@example.test");
     }
 
     @Test
@@ -612,5 +618,96 @@ class PersonServiceImplTest {
         var users = personService.getUnlinkedUsersInScope(organisationId);
 
         assertThat(users).isNotNull();
+    }
+
+    // W1: updatePerson scope tests
+    @Test
+    void updatePerson_whenOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.person.PersonUpdateRequest request = new com.athleticaos.backend.dtos.person.PersonUpdateRequest();
+        request.setFirstName("Updated");
+
+        assertThatThrownBy(() -> personService.updatePerson(personId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(personRepository, never()).save(any());
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+    }
+
+    // W1: deletePerson scope tests
+    @Test
+    void deletePerson_whenOutOfScope_throwsNotFoundWithExactMessageAndNeverDeletes() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.deletePerson(personId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(personRepository, never()).delete(any());
+        verify(organisationPersonRepository, never()).deleteAll(any());
+    }
+
+    // W2: linkToUser scope tests
+    @Test
+    void linkToUser_whenPersonOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        UUID userId = UUID.randomUUID();
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.linkToUser(personId, userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(userRepository, never()).findById(any());
+        verify(personRepository, never()).save(any());
+    }
+
+    @Test
+    void linkToUser_whenUserOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        UUID userId = UUID.randomUUID();
+        com.athleticaos.backend.entities.User user = com.athleticaos.backend.entities.User.builder()
+                .id(userId)
+                .build();
+
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(accessScopeService.isUserInScope(user)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.linkToUser(personId, userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(personRepository, never()).save(any());
+    }
+
+    // W3: createPerson scope tests
+    @Test
+    void createPerson_whenOrganisationOutOfScope_throwsNotFoundWithExactMessageAndNeverChecksDuplicates() {
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.person.CreatePersonRequest request = new com.athleticaos.backend.dtos.person.CreatePersonRequest();
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setGender("MALE");
+        request.setDob(LocalDate.of(1993, 3, 3));
+        request.setEmail("person.synthetic.a@example.test");
+
+        assertThatThrownBy(() -> personService.createPerson(organisationId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Organisation not found");
+
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+        verify(personRepository, never()).saveAndFlush(any());
     }
 }

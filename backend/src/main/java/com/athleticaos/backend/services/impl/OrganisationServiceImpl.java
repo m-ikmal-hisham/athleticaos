@@ -490,6 +490,13 @@ public class OrganisationServiceImpl implements OrganisationService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + organisationId));
 
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found with ID: " + organisationId);
+        }
+
         // Canonicalise gender before any identity validation or entity mutation
         String canonicalGender = com.athleticaos.backend.enums.Gender.from(request.getGender()).name();
 

@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,6 +50,14 @@ class TeamServiceImplTest {
     private TournamentTeamRepository tournamentTeamRepository;
     @Mock
     private AccessScopeService accessScopeService;
+    @Mock
+    private com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
+    @Mock
+    private com.athleticaos.backend.repositories.PersonRepository personRepository;
+    @Mock
+    private com.athleticaos.backend.repositories.StaffRoleRepository staffRoleRepository;
+    @Mock
+    private com.athleticaos.backend.audit.AuditLogger auditLogger;
 
     @InjectMocks
     private TeamServiceImpl teamService;
@@ -73,6 +83,9 @@ class TeamServiceImplTest {
                 .build();
         lenient().when(tournamentTeamRepository.findActiveTournamentsByTeamId(any()))
                 .thenReturn(Collections.emptyList());
+        lenient().when(accessScopeService.isTeamInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isOrganisationInScope(any())).thenReturn(true);
+        lenient().when(accessScopeService.isPersonInScope(any())).thenReturn(true);
     }
 
     // R1: getTeamByIdInScope
@@ -227,5 +240,117 @@ class TeamServiceImplTest {
         assertThatThrownBy(() -> teamService.getAvailablePersonsForStaffInScope(teamId))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Team not found");
+    }
+
+    // W4: createTeam scope tests
+    @Test
+    void createTeam_whenOrganisationOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        when(organisationRepository.findById(org.getId())).thenReturn(Optional.of(org));
+        when(accessScopeService.isOrganisationInScope(org.getId())).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.team.TeamCreateRequest request = new com.athleticaos.backend.dtos.team.TeamCreateRequest();
+        request.setOrganisationId(org.getId());
+        request.setName("New Team");
+
+        assertThatThrownBy(() -> teamService.createTeam(request, null))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Organisation not found");
+
+        verify(teamRepository, never()).save(any());
+        verify(auditLogger, never()).logTeamCreated(any(), any());
+    }
+
+    // W4: deleteTeam scope tests
+    @Test
+    void deleteTeam_whenTeamOutOfScope_throwsNotFoundWithExactMessageAndNeverDeletes() {
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> teamService.deleteTeam(teamId, null))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Team not found");
+
+        verify(teamRepository, never()).delete(any());
+        verify(auditLogger, never()).logTeamDeleted(any(), any());
+    }
+
+    // W5: addTeamStaff scope tests
+    @Test
+    void addTeamStaff_whenTeamOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.team.AddTeamStaffRequest request = new com.athleticaos.backend.dtos.team.AddTeamStaffRequest();
+        request.setPersonId(UUID.randomUUID());
+        request.setStaffRoleId(1);
+
+        assertThatThrownBy(() -> teamService.addTeamStaff(teamId, request, null))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Team not found");
+
+        verify(personRepository, never()).findById(any());
+        verify(teamStaffRepository, never()).save(any());
+    }
+
+    @Test
+    void addTeamStaff_whenPersonOutOfScope_throwsNotFoundWithExactMessageAndNeverSaves() {
+        UUID personId = UUID.randomUUID();
+        Person person = Person.builder().id(personId).firstName("Staff").lastName("One").build();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(true);
+        when(personRepository.findById(personId)).thenReturn(Optional.of(person));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.team.AddTeamStaffRequest request = new com.athleticaos.backend.dtos.team.AddTeamStaffRequest();
+        request.setPersonId(personId);
+        request.setStaffRoleId(1);
+
+        assertThatThrownBy(() -> teamService.addTeamStaff(teamId, request, null))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Person not found");
+
+        verify(staffRoleRepository, never()).findById(any());
+        verify(teamStaffRepository, never()).save(any());
+    }
+
+    // W5: removeTeamStaff scope tests
+    @Test
+    void removeTeamStaff_whenTeamOutOfScope_throwsNotFoundWithExactMessageAndNeverDeletes() {
+        UUID staffAssignmentId = UUID.randomUUID();
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> teamService.removeTeamStaff(teamId, staffAssignmentId, null))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Team not found");
+
+        verify(teamStaffRepository, never()).findById(any());
+        verify(teamStaffRepository, never()).delete(any());
+    }
+
+    @Test
+    void removeTeamStaff_whenStaffNotBelongingToTeam_throwsIllegalArgument() {
+        UUID staffAssignmentId = UUID.randomUUID();
+        UUID otherTeamId = UUID.randomUUID();
+        Team otherTeam = Team.builder().id(otherTeamId).name("Other Team").build();
+        com.athleticaos.backend.entities.TeamStaff teamStaff = com.athleticaos.backend.entities.TeamStaff.builder()
+                .id(staffAssignmentId)
+                .team(otherTeam)
+                .build();
+
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
+        when(accessScopeService.isTeamInScope(team)).thenReturn(true);
+        when(teamStaffRepository.findById(staffAssignmentId)).thenReturn(Optional.of(teamStaff));
+
+        assertThatThrownBy(() -> teamService.removeTeamStaff(teamId, staffAssignmentId, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Staff does not belong to this team");
+
+        verify(teamStaffRepository, never()).delete(any());
     }
 }

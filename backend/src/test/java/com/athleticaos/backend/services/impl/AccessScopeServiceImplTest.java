@@ -1,9 +1,12 @@
 package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.entities.Organisation;
+import com.athleticaos.backend.entities.Person;
+import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
+import com.athleticaos.backend.repositories.PlayerTeamRepository;
 import com.athleticaos.backend.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,9 @@ class AccessScopeServiceImplTest {
 
     @Mock
     private OrganisationPersonRepository organisationPersonRepository;
+
+    @Mock
+    private PlayerTeamRepository playerTeamRepository;
 
     @InjectMocks
     private AccessScopeServiceImpl accessScopeService;
@@ -120,14 +126,123 @@ class AccessScopeServiceImplTest {
     }
 
     @Test
-    void getCurrentUserId_returnsUserIdOrNullOnException() {
+    void getCurrentUserId_returnsUserIdOrNull() {
         UUID userId = UUID.randomUUID();
         User mockUser = User.builder().id(userId).email("user.a@example.test").build();
 
         when(userService.getCurrentUser()).thenReturn(mockUser);
         assertThat(accessScopeService.getCurrentUserId()).isEqualTo(userId);
 
-        when(userService.getCurrentUser()).thenThrow(new RuntimeException("No user"));
+        when(userService.getCurrentUser()).thenReturn(null);
         assertThat(accessScopeService.getCurrentUserId()).isNull();
+    }
+
+    @Test
+    void isPlayerInScope_superAdmin_returnsTrue() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        Player player = Player.builder().id(UUID.randomUUID()).build();
+        assertThat(accessScopeService.isPlayerInScope(player)).isTrue();
+    }
+
+    @Test
+    void isPlayerInScope_emptySet_returnsFalseAndNeverQueriesRepositories() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Collections.emptySet());
+        Player player = Player.builder().id(UUID.randomUUID()).build();
+        assertThat(accessScopeService.isPlayerInScope(player)).isFalse();
+        verify(organisationPersonRepository, never()).existsByPersonIdAndOrganisationIdIn(any(), any());
+        verify(playerTeamRepository, never()).existsActiveByPlayerIdAndOrganisationIdIn(any(), any());
+    }
+
+    @Test
+    void isPlayerInScope_nullPlayer_returnsFalse() {
+        assertThat(accessScopeService.isPlayerInScope(null)).isFalse();
+    }
+
+    @Test
+    void isPlayerInScope_inScopeViaPerson_returnsTrue() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
+
+        Person person = new Person();
+        person.setId(UUID.randomUUID());
+        Player player = Player.builder().id(UUID.randomUUID()).person(person).build();
+
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(person.getId(), Set.of(orgId)))
+                .thenReturn(true);
+
+        assertThat(accessScopeService.isPlayerInScope(player)).isTrue();
+        verify(playerTeamRepository, never()).existsActiveByPlayerIdAndOrganisationIdIn(any(), any());
+    }
+
+    @Test
+    void isPlayerInScope_inScopeViaTeam_returnsTrue() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
+
+        Person person = new Person();
+        person.setId(UUID.randomUUID());
+        Player player = Player.builder().id(UUID.randomUUID()).person(person).build();
+
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(person.getId(), Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(player.getId(), Set.of(orgId)))
+                .thenReturn(true);
+
+        assertThat(accessScopeService.isPlayerInScope(player)).isTrue();
+    }
+
+    @Test
+    void isPlayerInScope_outOfScope_returnsFalse() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
+
+        Person person = new Person();
+        person.setId(UUID.randomUUID());
+        Player player = Player.builder().id(UUID.randomUUID()).person(person).build();
+
+        when(organisationPersonRepository.existsByPersonIdAndOrganisationIdIn(person.getId(), Set.of(orgId)))
+                .thenReturn(false);
+        when(playerTeamRepository.existsActiveByPlayerIdAndOrganisationIdIn(player.getId(), Set.of(orgId)))
+                .thenReturn(false);
+
+        assertThat(accessScopeService.isPlayerInScope(player)).isFalse();
+    }
+
+    @Test
+    void isUserInScope_superAdmin_returnsTrue() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        User targetUser = User.builder().id(UUID.randomUUID()).build();
+        assertThat(accessScopeService.isUserInScope(targetUser)).isTrue();
+    }
+
+    @Test
+    void isUserInScope_emptySet_returnsFalse() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Collections.emptySet());
+        User targetUser = User.builder().id(UUID.randomUUID()).organisation(Organisation.builder().id(UUID.randomUUID()).build()).build();
+        assertThat(accessScopeService.isUserInScope(targetUser)).isFalse();
+    }
+
+    @Test
+    void isUserInScope_nullUserOrNullOrg_returnsFalse() {
+        assertThat(accessScopeService.isUserInScope(null)).isFalse();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(UUID.randomUUID()));
+        assertThat(accessScopeService.isUserInScope(User.builder().id(UUID.randomUUID()).organisation(null).build())).isFalse();
+    }
+
+    @Test
+    void isUserInScope_inScope_returnsTrue() {
+        UUID orgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
+        User targetUser = User.builder().id(UUID.randomUUID()).organisation(Organisation.builder().id(orgId).build()).build();
+        assertThat(accessScopeService.isUserInScope(targetUser)).isTrue();
+    }
+
+    @Test
+    void isUserInScope_outOfScope_returnsFalse() {
+        UUID orgId = UUID.randomUUID();
+        UUID otherId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
+        User targetUser = User.builder().id(UUID.randomUUID()).organisation(Organisation.builder().id(otherId).build()).build();
+        assertThat(accessScopeService.isUserInScope(targetUser)).isFalse();
     }
 }

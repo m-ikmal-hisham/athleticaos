@@ -31,8 +31,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import jakarta.persistence.EntityNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("null")
@@ -70,6 +73,7 @@ class OrganisationServiceImplTest {
                 .id(organisationId)
                 .name("Test Organisation")
                 .build();
+        lenient().when(accessScopeService.isOrganisationInScope(any())).thenReturn(true);
     }
 
     @Test
@@ -142,5 +146,27 @@ class OrganisationServiceImplTest {
         var result = organisationService.getPersonsByOrganisationInScope(organisationId);
 
         assertThat(result).isNotNull();
+    }
+
+    // W3: registerPerson scope test
+    @Test
+    void registerPerson_whenOrganisationOutOfScope_throwsNotFoundWithExactMessageAndNeverChecksDuplicates() {
+        when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        RegisterPersonRequest request = new RegisterPersonRequest();
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setGender("MALE");
+        request.setDob(LocalDate.of(1993, 3, 3));
+        request.setEmail("person.synthetic.a@example.test");
+
+        assertThatThrownBy(() -> organisationService.registerPerson(organisationId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Organisation not found with ID: " + organisationId);
+
+        verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
+        verify(personRepository, never()).saveAndFlush(any());
     }
 }

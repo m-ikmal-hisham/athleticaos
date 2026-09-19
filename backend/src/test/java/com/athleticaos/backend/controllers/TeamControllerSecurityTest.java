@@ -25,9 +25,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -213,5 +217,18 @@ public class TeamControllerSecurityTest {
 
         verify(teamService).getAvailablePersonsForStaffInScope(teamId);
         verify(teamService, never()).getAvailablePersonsForStaff(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "CLUB_ADMIN")
+    void deleteTeam_whenOutOfScope_returns404AndNoAuditLog() throws Exception {
+        UUID teamId = UUID.randomUUID();
+        doThrow(new EntityNotFoundException("Team not found"))
+                .when(teamService).deleteTeam(eq(teamId), any());
+
+        mockMvc.perform(delete("/api/v1/teams/{id}", teamId))
+                .andExpect(status().isNotFound());
+
+        verifyNoInteractions(auditLogger);
     }
 }

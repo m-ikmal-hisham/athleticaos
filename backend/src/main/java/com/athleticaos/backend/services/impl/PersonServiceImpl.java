@@ -230,6 +230,13 @@ public class PersonServiceImpl implements PersonService {
         Organisation org = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found");
+        }
+
         String canonicalGender = Gender.from(request.getGender()).name();
 
         Person person = new Person();
@@ -314,6 +321,13 @@ public class PersonServiceImpl implements PersonService {
     public PersonResponseDTO updatePerson(UUID id, PersonUpdateRequest request) {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+
+        if (!accessScopeService.isPersonInScope(person.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for person record outside accessible organisation scope: userId={}, personId={}",
+                    currentUserId, person.getId());
+            throw new EntityNotFoundException("Person not found");
+        }
 
         String canonicalGender = request.getGender() != null ? Gender.from(request.getGender()).name() : null;
 
@@ -481,6 +495,13 @@ public class PersonServiceImpl implements PersonService {
         Person person = personRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
 
+        if (!accessScopeService.isPersonInScope(person.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for person record outside accessible organisation scope: userId={}, personId={}",
+                    currentUserId, person.getId());
+            throw new EntityNotFoundException("Person not found");
+        }
+
         // Check if assigned to any active/past tournaments
         if (tournamentPlayerRepository.existsByPlayerPersonId(id) ||
             tournamentStaffRepository.existsByPersonId(id) ||
@@ -588,9 +609,23 @@ public class PersonServiceImpl implements PersonService {
         }
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+
+        if (!accessScopeService.isPersonInScope(person.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for person record outside accessible organisation scope: userId={}, personId={}",
+                    currentUserId, person.getId());
+            throw new EntityNotFoundException("Person not found");
+        }
         
         com.athleticaos.backend.entities.User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        if (!accessScopeService.isUserInScope(user)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for user record outside accessible organisation scope: currentUserId={}, targetUserId={}",
+                    currentUserId, user.getId());
+            throw new EntityNotFoundException("User not found");
+        }
 
         if (personRepository.existsByUserId(user.getId())) {
              throw new IllegalArgumentException("This user is already linked to another person record.");

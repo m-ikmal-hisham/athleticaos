@@ -19,6 +19,9 @@ import com.athleticaos.backend.repositories.TeamRepository;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import com.athleticaos.backend.repositories.MatchLineupRepository;
 import com.athleticaos.backend.repositories.MatchEventRepository;
+import com.athleticaos.backend.entities.Organisation;
+import com.athleticaos.backend.repositories.OrganisationRepository;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.repositories.PlayerSuspensionRepository;
 import com.athleticaos.backend.dtos.player.PlayerBatchResponse;
 import com.athleticaos.backend.dtos.player.PlayerRowDTO;
@@ -70,6 +73,8 @@ public class PlayerServiceImpl implements PlayerService {
     private final com.athleticaos.backend.audit.AuditLogger auditLogger;
     private final ObjectProvider<HttpServletRequest> requestProvider;
     private final PersonDuplicateService personDuplicateService;
+    private final AccessScopeService accessScopeService;
+    private final OrganisationRepository organisationRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -226,9 +231,31 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     @Transactional
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "null"})
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
         log.info("Creating player: {}", request.email());
+
+        if (request.organisationId() != null) {
+            Organisation org = organisationRepository.findById(request.organisationId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+            if (!accessScopeService.isOrganisationInScope(org.getId())) {
+                UUID currentUserId = accessScopeService.getCurrentUserId();
+                log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                        currentUserId, org.getId());
+                throw new EntityNotFoundException("Organisation not found");
+            }
+        }
+
+        if (request.teamId() != null) {
+            Team team = teamRepository.findById(request.teamId())
+                    .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+            if (!accessScopeService.isTeamInScope(team)) {
+                UUID currentUserId = accessScopeService.getCurrentUserId();
+                log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                        currentUserId, team.getId());
+                throw new EntityNotFoundException("Team not found");
+            }
+        }
 
         String canonicalGender = Gender.from(request.gender()).name();
 
@@ -760,6 +787,12 @@ public class PlayerServiceImpl implements PlayerService {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
 
         int successCount = 0;
         int failCount = 0;

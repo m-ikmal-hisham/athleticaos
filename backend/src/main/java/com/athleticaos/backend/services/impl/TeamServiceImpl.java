@@ -165,6 +165,13 @@ public class TeamServiceImpl implements TeamService {
         Organisation org = organisationRepository.findById(request.getOrganisationId())
                 .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
 
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found");
+        }
+
         // Generate unique slug
         // Generate unique slug
         String slug = SlugGenerator.generateUniqueSlug(request.getName(), teamRepository::existsBySlug);
@@ -303,8 +310,20 @@ public class TeamServiceImpl implements TeamService {
     public TeamStaffDTO addTeamStaff(UUID teamId, AddTeamStaffRequest request, HttpServletRequest httpRequest) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
         Person person = personRepository.findById(request.getPersonId())
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+        if (!accessScopeService.isPersonInScope(person.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for person record outside accessible organisation scope: userId={}, personId={}",
+                    currentUserId, person.getId());
+            throw new EntityNotFoundException("Person not found");
+        }
         StaffRole role = staffRoleRepository.findById(request.getStaffRoleId())
                 .orElseThrow(() -> new EntityNotFoundException("Staff Role not found"));
 
@@ -339,6 +358,14 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public void removeTeamStaff(UUID teamId, UUID staffAssignmentId, HttpServletRequest httpRequest) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
         TeamStaff teamStaff = teamStaffRepository.findById(staffAssignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Team Staff not found"));
         if (!teamStaff.getTeam().getId().equals(teamId)) {
@@ -411,6 +438,13 @@ public class TeamServiceImpl implements TeamService {
         log.info("Deleting team: {}", id);
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team record outside accessible organisation scope: userId={}, teamId={}",
+                    currentUserId, team.getId());
+            throw new EntityNotFoundException("Team not found");
+        }
 
         teamRepository.delete(team);
         auditLogger.logTeamDeleted(team, httpRequest);
