@@ -7,29 +7,28 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/ci-backend.yml'
+  # Every PR into staging runs these checks (no path filter), so they can be required by branch protection.
   pull_request:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/ci-backend.yml'
+    branches: [staging]
   workflow_dispatch:
 
 concurrency:
   group: ci-backend-${{ github.ref }}
   cancel-in-progress: true
 
-# Frontend lint gate runs in CI via lint:ci ratchet (capped at existing warnings) in deploy-frontend-staging.yml.
+# Frontend lint and build run in ci-frontend.yml (PRs) and gate the frontend staging deploy.
 
 jobs:
   test:
     name: Backend Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -41,14 +40,14 @@ jobs:
 
   integration-test:
     name: Backend Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'

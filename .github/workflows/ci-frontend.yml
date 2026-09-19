@@ -1,0 +1,45 @@
+name: Frontend CI
+
+on:
+  push:
+    branches-ignore:
+      - staging
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/ci-frontend.yml'
+  # Every PR into staging runs this check (no path filter), so it can be required by branch protection.
+  pull_request:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-build:
+    name: Frontend Lint and Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint (warnings ratchet)
+        working-directory: frontend
+        run: npm run lint:ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
