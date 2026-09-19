@@ -29,6 +29,11 @@ public interface PlayerTeamService {
     List<PlayerInTeamDTO> getTeamRoster(UUID teamId, UUID tournamentId);
 
     /**
+     * Get all players in a team (roster) within caller's organisation scope
+     */
+    List<PlayerInTeamDTO> getTeamRosterInScope(UUID teamId, UUID tournamentId);
+
+    /**
      * Get all teams a player is assigned to
      */
     List<UUID> getPlayerTeamIds(UUID playerId);

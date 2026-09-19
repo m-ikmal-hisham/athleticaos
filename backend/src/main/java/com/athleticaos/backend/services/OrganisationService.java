@@ -37,4 +37,6 @@ public interface OrganisationService {
     com.athleticaos.backend.dtos.team.PersonSummaryDTO registerPerson(UUID organisationId, com.athleticaos.backend.dtos.person.RegisterPersonRequest request);
 
     List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getPersonsByOrganisation(UUID organisationId);
+
+    List<com.athleticaos.backend.dtos.team.PersonSummaryDTO> getPersonsByOrganisationInScope(UUID organisationId);
 }

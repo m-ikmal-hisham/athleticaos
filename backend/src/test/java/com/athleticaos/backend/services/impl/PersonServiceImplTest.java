@@ -15,6 +15,7 @@ import com.athleticaos.backend.repositories.TournamentOfficialRepository;
 import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.repositories.TournamentStaffRepository;
 import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
@@ -79,6 +80,8 @@ class PersonServiceImplTest {
     private com.athleticaos.backend.audit.AuditLogger auditLogger;
     @Mock
     private PersonDuplicateService personDuplicateService;
+    @Mock
+    private AccessScopeService accessScopeService;
 
     @InjectMocks
     private PersonServiceImpl personService;
@@ -524,5 +527,90 @@ class PersonServiceImplTest {
         assertThat(response).isNotNull();
         verify(personRepository).saveAndFlush(any(Person.class));
         verify(auditLogger).logPersonPossibleDuplicateOverride(any(Person.class), eq(1), eq(0), any());
+    }
+
+    // R5: getPersonByIdInScope
+    @Test
+    void getPersonByIdInScope_whenInScope_returnsResponse() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(true);
+
+        PersonResponseDTO response = personService.getPersonByIdInScope(personId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(personId.toString());
+        assertThat(response.getEmail()).isEqualTo("ahmad.ibrahim@example.invalid");
+    }
+
+    @Test
+    void getPersonByIdInScope_whenOutOfScope_throws404ExactMessage() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        assertThatThrownBy(() -> personService.getPersonByIdInScope(personId))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Person not found");
+    }
+
+    @Test
+    void getPersonByIdInScope_whenMissing_throws404ExactMessage() {
+        when(personRepository.findById(personId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> personService.getPersonByIdInScope(personId))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessage("Person not found");
+    }
+
+    @Test
+    void getPersonByIdInScope_whenSuperAdmin_returnsResponse() {
+        when(personRepository.findById(personId)).thenReturn(Optional.of(existingPerson));
+        when(accessScopeService.isPersonInScope(personId)).thenReturn(true);
+
+        PersonResponseDTO response = personService.getPersonByIdInScope(personId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(personId.toString());
+    }
+
+    // R6: getUnlinkedUsersInScope
+    @Test
+    void getUnlinkedUsersInScope_whenInScope_returnsUsers() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(true);
+        com.athleticaos.backend.entities.User user = com.athleticaos.backend.entities.User.builder()
+                .id(UUID.randomUUID())
+                .firstName("User")
+                .lastName("A")
+                .email("user.a@example.test")
+                .build();
+        when(userRepository.findByOrganisationId(organisationId)).thenReturn(List.of(user));
+        when(personRepository.findAll()).thenReturn(List.of());
+
+        var users = personService.getUnlinkedUsersInScope(organisationId);
+
+        assertThat(users).hasSize(1);
+        assertThat(users.get(0).getEmail()).isEqualTo("user.a@example.test");
+    }
+
+    @Test
+    void getUnlinkedUsersInScope_whenOutOfScope_returnsEmptyList() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        var users = personService.getUnlinkedUsersInScope(organisationId);
+
+        assertThat(users).isEmpty();
+        verify(userRepository, never()).findByOrganisationId(any());
+    }
+
+    @Test
+    void getUnlinkedUsersInScope_whenSuperAdmin_returnsUsers() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(true);
+        when(userRepository.findByOrganisationId(organisationId)).thenReturn(List.of());
+        when(personRepository.findAll()).thenReturn(List.of());
+
+        var users = personService.getUnlinkedUsersInScope(organisationId);
+
+        assertThat(users).isNotNull();
     }
 }

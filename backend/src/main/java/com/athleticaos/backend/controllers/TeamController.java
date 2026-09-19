@@ -41,14 +41,14 @@ public class TeamController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public ResponseEntity<TeamResponse> getTeamById(@PathVariable UUID id) {
-        return ResponseEntity.ok(teamService.getTeamById(id));
+        return ResponseEntity.ok(teamService.getTeamByIdInScope(id));
     }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/slug/{slug}")
     public ResponseEntity<TeamResponse> getTeamBySlug(@PathVariable String slug) {
         log.info("Fetching team by slug: {}", slug);
-        return ResponseEntity.ok(teamService.getTeamBySlug(slug));
+        return ResponseEntity.ok(teamService.getTeamBySlugInScope(slug));
     }
 
     @PostMapping
@@ -80,7 +80,7 @@ public class TeamController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/players")
     public ResponseEntity<List<PlayerInTeamDTO>> getPlayersByTeam(@PathVariable UUID id, @RequestParam(required = false) UUID tournamentId) {
-        return ResponseEntity.ok(teamService.getPlayersByTeam(id, tournamentId));
+        return ResponseEntity.ok(teamService.getPlayersByTeamInScope(id, tournamentId));
     }
 
     @DeleteMapping("/{id}")
@@ -116,7 +116,7 @@ public class TeamController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/available-staff")
     public ResponseEntity<List<com.athleticaos.backend.dtos.team.PersonSummaryDTO>> getAvailablePersonsForStaff(@PathVariable UUID id) {
-        return ResponseEntity.ok(teamService.getAvailablePersonsForStaff(id));
+        return ResponseEntity.ok(teamService.getAvailablePersonsForStaffInScope(id));
     }
 
     @PostMapping("/{teamId}/players/batch")

@@ -12,6 +12,7 @@ import com.athleticaos.backend.repositories.MatchLineupRepository;
 import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.entities.TournamentPlayer;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.PlayerTeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
         private final MatchLineupRepository matchLineupRepository;
         private final MatchEventRepository matchEventRepository;
         private final TournamentPlayerRepository tournamentPlayerRepository;
+        private final AccessScopeService accessScopeService;
 
         @Override
         @Transactional
@@ -127,6 +129,25 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                                 log.error("Failed to remove player {} from team {}", playerId, teamId, e);
                         }
                 }
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<PlayerInTeamDTO> getTeamRosterInScope(UUID teamId, UUID tournamentId) {
+                if (teamId == null) {
+                        return Collections.emptyList();
+                }
+                Team team = teamRepository.findById(teamId).orElse(null);
+                if (team == null) {
+                        return Collections.emptyList();
+                }
+                if (!accessScopeService.isTeamInScope(team)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for team roster outside accessible organisation scope: userId={}, teamId={}",
+                                        currentUserId, team.getId());
+                        return Collections.emptyList();
+                }
+                return getTeamRoster(teamId, tournamentId);
         }
 
         @Override

@@ -9,6 +9,7 @@ import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.PersonRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,11 +21,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 
+import com.athleticaos.backend.entities.OrganisationPerson;
+import com.athleticaos.backend.entities.Person;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +54,8 @@ class OrganisationServiceImplTest {
     private AuditLogger auditLogger;
     @Mock
     private ObjectProvider<HttpServletRequest> requestProvider;
+    @Mock
+    private AccessScopeService accessScopeService;
 
     @InjectMocks
     private OrganisationServiceImpl organisationService;
@@ -94,5 +102,45 @@ class OrganisationServiceImplTest {
         assertThatThrownBy(() -> organisationService.registerPerson(organisationId, request))
                 .isInstanceOf(DuplicateEmailException.class);
         verify(personRepository).existsByEmailIgnoreCase("case@example.test");
+    }
+
+    @Test
+    void getPersonsByOrganisationInScope_whenInScope_returnsPersons() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(true);
+        Person person = new Person();
+        person.setId(UUID.randomUUID());
+        person.setFirstName("Person");
+        person.setLastName("A");
+        person.setEmail("person.a@example.test");
+        person.setRegistrationNo("AOS-900001");
+        OrganisationPerson op = OrganisationPerson.builder().organisation(organisation).person(person).build();
+        when(organisationPersonRepository.findByOrganisationIdOrHierarchy(organisationId)).thenReturn(List.of(op));
+
+        var result = organisationService.getPersonsByOrganisationInScope(organisationId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getRegistrationNo()).isEqualTo("AOS-900001");
+        assertThat(result.get(0).getEmail()).isEqualTo("person.a@example.test");
+    }
+
+    @Test
+    void getPersonsByOrganisationInScope_whenOutOfScope_returnsEmptyList() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        var result = organisationService.getPersonsByOrganisationInScope(organisationId);
+
+        assertThat(result).isEmpty();
+        verify(organisationPersonRepository, org.mockito.Mockito.never()).findByOrganisationIdOrHierarchy(any());
+    }
+
+    @Test
+    void getPersonsByOrganisationInScope_whenSuperAdmin_returnsPersons() {
+        when(accessScopeService.isOrganisationInScope(organisationId)).thenReturn(true);
+        when(organisationPersonRepository.findByOrganisationIdOrHierarchy(organisationId)).thenReturn(List.of());
+
+        var result = organisationService.getPersonsByOrganisationInScope(organisationId);
+
+        assertThat(result).isNotNull();
     }
 }

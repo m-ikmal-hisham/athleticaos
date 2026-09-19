@@ -72,7 +72,7 @@ public class PersonController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN', 'ROLE_OFFICIAL')")
     public ResponseEntity<PersonResponseDTO> getPerson(@PathVariable UUID id) {
-        return ResponseEntity.ok(personService.getPersonById(id));
+        return ResponseEntity.ok(personService.getPersonByIdInScope(id));
     }
 
     @PutMapping("/{id}")
@@ -100,7 +100,7 @@ public class PersonController {
     @GetMapping("/unlinked-users/{orgId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<List<com.athleticaos.backend.dtos.user.UserResponse>> getUnlinkedUsers(@PathVariable UUID orgId) {
-        return ResponseEntity.ok(personService.getUnlinkedUsers(orgId));
+        return ResponseEntity.ok(personService.getUnlinkedUsersInScope(orgId));
     }
 
     @PostMapping("/{id}/link-user/{userId}")

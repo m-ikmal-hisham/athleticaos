@@ -60,6 +60,41 @@ public class UserControllerSecurityTest {
     }
 
     @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "PLAYER")
+    void playerCannotAccessGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "COACH")
+    void coachCannotAccessGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "TEAM_MANAGER")
+    void teamManagerCannotAccessGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "ORG_ADMIN")
+    void orgAdminCanAccessGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "CLUB_ADMIN")
+    void clubAdminCanAccessGetAllUsers() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void anonymousCannotAccessGetUserById() throws Exception {
         mockMvc.perform(get("/api/v1/users/{id}", java.util.UUID.randomUUID()))
                 .andExpect(status().isForbidden());

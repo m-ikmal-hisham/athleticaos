@@ -14,9 +14,11 @@ public interface PersonService {
     Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search);
     Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search, boolean missingEmail);
     PersonResponseDTO getPersonById(UUID id);
+    PersonResponseDTO getPersonByIdInScope(UUID id);
     PersonResponseDTO createPerson(UUID organisationId, com.athleticaos.backend.dtos.person.CreatePersonRequest request);
     PersonResponseDTO updatePerson(UUID id, PersonUpdateRequest request);
     void deletePerson(UUID id);
     List<com.athleticaos.backend.dtos.user.UserResponse> getUnlinkedUsers(UUID organisationId);
+    List<com.athleticaos.backend.dtos.user.UserResponse> getUnlinkedUsersInScope(UUID organisationId);
     PersonResponseDTO linkToUser(UUID personId, UUID userId);
 }
