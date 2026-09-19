@@ -275,7 +275,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
         @Override
         @Transactional(readOnly = true)
         public List<UUID> getPlayerTeamIds(UUID playerId) {
-                log.info("Fetching teams for player {}", playerId);
+                log.info("Fetching teams for id: {}", playerId);
 
                 List<PlayerTeam> playerTeams = playerTeamRepository.findActiveTeamsByPlayerId(playerId);
 

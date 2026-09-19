@@ -121,21 +121,21 @@ class PersonServiceImplTest {
     @Test
     void createPerson_validInput_succeeds() {
         CreatePersonRequest request = new CreatePersonRequest();
-        request.setFirstName("Siti");
-        request.setLastName("Nur");
+        request.setFirstName("Person");
+        request.setLastName("Synthetic C");
         request.setDob(LocalDate.of(1992, 2, 2));
         request.setGender("FEMALE");
-        request.setEmail("siti.nur@example.invalid");
+        request.setEmail("person.c@example.invalid");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
         UUID newPersonId = UUID.randomUUID();
         Person savedPerson = Person.builder()
                 .id(newPersonId)
-                .firstName("Siti")
-                .lastName("Nur")
+                .firstName("Person")
+                .lastName("Synthetic C")
                 .dob(LocalDate.of(1992, 2, 2))
                 .gender("FEMALE")
-                .email("siti.nur@example.invalid")
+                .email("person.c@example.invalid")
                 .recordVerificationStatus("UNVERIFIED")
                 .build();
 
@@ -477,19 +477,19 @@ class PersonServiceImplTest {
     @Test
     void createPerson_withPossibleDuplicateMatch_noFlag_throwsPossibleDuplicatePersonException() {
         CreatePersonRequest request = new CreatePersonRequest();
-        request.setFirstName("Ali");
-        request.setLastName("Abu");
-        request.setEmail("ali.abu@example.invalid");
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setEmail("person.a@example.invalid");
         request.setGender("MALE");
         request.setDob(LocalDate.of(2000, 1, 1));
         request.setNationality("MALAYSIAN");
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        when(personRepository.existsByEmailIgnoreCase("ali.abu@example.invalid")).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCase("person.a@example.invalid")).thenReturn(false);
 
         PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
-                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
-        when(personDuplicateService.check("Ali", "Abu", LocalDate.of(2000, 1, 1), "MALE", null))
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Person", "Synthetic A")), 0);
+        when(personDuplicateService.check("Person", "Synthetic A", LocalDate.of(2000, 1, 1), "MALE", null))
                 .thenReturn(dupCheck);
 
         assertThatThrownBy(() -> personService.createPerson(organisationId, request))
@@ -501,21 +501,21 @@ class PersonServiceImplTest {
     @Test
     void createPerson_withPossibleDuplicateMatch_confirmFlagTrue_savesPersonAndAudits() {
         CreatePersonRequest request = new CreatePersonRequest();
-        request.setFirstName("Ali");
-        request.setLastName("Abu");
-        request.setEmail("ali.abu@example.invalid");
+        request.setFirstName("Person");
+        request.setLastName("Synthetic A");
+        request.setEmail("person.a@example.invalid");
         request.setGender("MALE");
         request.setDob(LocalDate.of(2000, 1, 1));
         request.setNationality("MALAYSIAN");
         request.setConfirmPossibleDuplicate(true);
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
-        when(personRepository.existsByEmailIgnoreCase("ali.abu@example.invalid")).thenReturn(false);
+        when(personRepository.existsByEmailIgnoreCase("person.a@example.invalid")).thenReturn(false);
         Person savedPerson = Person.builder()
                 .id(personId)
-                .firstName("Ali")
-                .lastName("Abu")
-                .email("ali.abu@example.invalid")
+                .firstName("Person")
+                .lastName("Synthetic A")
+                .email("person.a@example.invalid")
                 .gender("MALE")
                 .dob(LocalDate.of(2000, 1, 1))
                 .nationality("MALAYSIAN")
@@ -524,8 +524,8 @@ class PersonServiceImplTest {
         when(personRepository.findById(personId)).thenReturn(Optional.of(savedPerson));
 
         PossibleDuplicateCheck dupCheck = new PossibleDuplicateCheck(
-                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
-        when(personDuplicateService.check("Ali", "Abu", LocalDate.of(2000, 1, 1), "MALE", null))
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Person", "Synthetic A")), 0);
+        when(personDuplicateService.check("Person", "Synthetic A", LocalDate.of(2000, 1, 1), "MALE", null))
                 .thenReturn(dupCheck);
 
         PersonResponseDTO response = personService.createPerson(organisationId, request);

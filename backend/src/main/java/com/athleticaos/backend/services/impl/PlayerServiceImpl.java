@@ -147,7 +147,7 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional(readOnly = true)
     public PlayerResponse getPlayerBySlug(String slug) {
-        log.info("Fetching player by slug: {}", slug);
+        log.info("Fetching player by slug");
         Player player = playerRepository.findBySlug(slug)
                 .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
@@ -157,7 +157,7 @@ public class PlayerServiceImpl implements PlayerService {
     @Override
     @Transactional(readOnly = true)
     public PlayerResponse getPlayerByEmail(String email) {
-        log.info("Fetching player by email: {}", email);
+        log.info("Fetching player by email");
         Player player = playerRepository.findByPerson_Email(email)
                 .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Player not found"));
@@ -233,7 +233,7 @@ public class PlayerServiceImpl implements PlayerService {
     @Transactional
     @SuppressWarnings({"deprecation", "null"})
     public PlayerResponse createPlayer(PlayerCreateRequest request) {
-        log.info("Creating player: {}", request.email());
+        log.info("Creating player");
 
         if (request.organisationId() != null) {
             Organisation org = organisationRepository.findById(request.organisationId())

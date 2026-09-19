@@ -100,7 +100,7 @@ public class PersonServiceImpl implements PersonService {
         Objects.requireNonNull(pageable);
         boolean hasSearch = search != null && !search.trim().isEmpty();
         String searchTerm = hasSearch ? search.trim() : null;
-        log.info("Fetching hierarchical persons for organisation: {}, search: {}, missingEmail: {}", organisationId, searchTerm, missingEmail);
+        log.info("Fetching hierarchical persons for organisation: {}, search present: {}, missingEmail: {}", organisationId, hasSearch, missingEmail);
 
         Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         Page<Person> personsToMap;

@@ -299,7 +299,7 @@ class PlayerServiceImplTest {
     @Test
     void createPlayer_blankEmail_savedWithNull() {
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 "   ", null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
@@ -354,7 +354,7 @@ class PlayerServiceImplTest {
     @Test
     void createPlayer_duplicateEmailIgnoreCase_throwsDuplicateEmailException() {
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 "case@example.test", null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
@@ -388,8 +388,8 @@ class PlayerServiceImplTest {
     @Test
     void updatePlayer_changingDobIntoMatch_throwsPossibleDuplicatePersonException() {
         existingPerson.setDob(LocalDate.of(2000, 1, 1));
-        existingPerson.setFirstName("Ali");
-        existingPerson.setLastName("Abu");
+        existingPerson.setFirstName("Person");
+        existingPerson.setLastName("Synthetic A");
         existingPerson.setGender("MALE");
         existingPerson.setEmail("existing@example.com");
 
@@ -406,8 +406,8 @@ class PlayerServiceImplTest {
         );
 
         PossibleDuplicateCheck matchCheck = new PossibleDuplicateCheck(
-                List.of(new PossibleDuplicateMatch("AOS-000001", "Ali", "Abu")), 0);
-        when(personDuplicateService.check("Ali", "Abu", newDob, "MALE", personId))
+                List.of(new PossibleDuplicateMatch("AOS-000001", "Person", "Synthetic A")), 0);
+        when(personDuplicateService.check("Person", "Synthetic A", newDob, "MALE", personId))
                 .thenReturn(matchCheck);
 
         assertThatThrownBy(() -> playerService.updatePlayer(playerId, request))
@@ -417,7 +417,7 @@ class PlayerServiceImplTest {
     @Test
     void createPlayer_withoutEmail_throwsEmailRequiredException() {
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null
         );
@@ -698,7 +698,7 @@ class PlayerServiceImplTest {
     void createPlayer_whenTeamOutOfScope_throwsEntityNotFoundException() {
         UUID teamId = UUID.randomUUID();
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 "player.synthetic.a@example.test", null, null, null, null, null, null, null, null,
                 teamId, null, null, null, null, null, null, null
         );
@@ -718,7 +718,7 @@ class PlayerServiceImplTest {
     void createPlayer_whenOrganisationOutOfScope_throwsEntityNotFoundException() {
         UUID orgId = UUID.randomUUID();
         PlayerCreateRequest request = new PlayerCreateRequest(
-                "Ali", "Abu", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
+                "Person", "Synthetic A", "MALE", LocalDate.of(1995, 5, 5), "MALAYSIAN",
                 "player.synthetic.a@example.test", null, null, null, null, null, null, null, null,
                 null, orgId, null, null, null, null, null, null
         );

@@ -309,11 +309,19 @@ class PublicLazyLoadingIntegrationTest {
 
         mockMvc.perform(get("/api/public/players/" + playerASlug))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName", equalTo("Player")));
+                .andExpect(jsonPath("$.firstName", equalTo("Player")))
+                .andExpect(jsonPath("$.bloodGroup").doesNotExist())
+                .andExpect(jsonPath("$.emergencyContactName").doesNotExist())
+                .andExpect(jsonPath("$.emergencyContactNumber").doesNotExist())
+                .andExpect(jsonPath("$.emergencyContactRelationship").doesNotExist());
 
         mockMvc.perform(get("/api/public/players/" + playerAId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName", equalTo("Player")));
+                .andExpect(jsonPath("$.firstName", equalTo("Player")))
+                .andExpect(jsonPath("$.bloodGroup").doesNotExist())
+                .andExpect(jsonPath("$.emergencyContactName").doesNotExist())
+                .andExpect(jsonPath("$.emergencyContactNumber").doesNotExist())
+                .andExpect(jsonPath("$.emergencyContactRelationship").doesNotExist());
 
         mockMvc.perform(get("/api/public/players/non-existent-player-slug"))
                 .andExpect(status().isNotFound());

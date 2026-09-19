@@ -63,12 +63,12 @@ class PlayerBatchHelperImplTest {
     @DisplayName("Batch row saves person with UNVERIFIED status and canonical gender")
     void savePlayerInNewTransaction_savesPersonCorrectly() {
         PlayerRowDTO row = new PlayerRowDTO(
-                "Ali",
-                "Hassan",
+                "Person",
+                "Synthetic B",
                 "male",
                 LocalDate.of(2000, 1, 1),
                 "MALAYSIAN",
-                "ali.hassan@example.com",
+                "person.b@example.com",
                 "Selangor",
                 null
         );
@@ -93,6 +93,6 @@ class PlayerBatchHelperImplTest {
 
         assertThat(savedPerson.getRecordVerificationStatus()).isEqualTo("UNVERIFIED");
         assertThat(savedPerson.getGender()).isEqualTo("MALE");
-        assertThat(savedPerson.getEmail()).isEqualTo("ali.hassan@example.com");
+        assertThat(savedPerson.getEmail()).isEqualTo("person.b@example.com");
     }
 }

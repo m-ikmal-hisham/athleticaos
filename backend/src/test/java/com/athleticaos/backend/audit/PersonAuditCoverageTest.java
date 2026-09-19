@@ -76,8 +76,8 @@ class PersonAuditCoverageTest {
 
         Person person = Person.builder()
                 .id(personId)
-                .firstName("Badrul")
-                .lastName("Hisham")
+                .firstName("Person")
+                .lastName("Synthetic B")
                 .dob(dob)
                 .build();
 
@@ -94,7 +94,7 @@ class PersonAuditCoverageTest {
         assertThat(log.getEntityType()).isEqualTo("PERSON");
         assertThat(log.getEntityId()).isEqualTo(personId);
 
-        assertThat(log.getEntitySummary()).contains("Badrul Hisham");
+        assertThat(log.getEntitySummary()).contains("Person Synthetic B");
         assertThat(log.getEntitySummary()).contains("Eagle Academy");
         assertThat(log.getEntitySummary()).doesNotContain(dob.toString());
     }
