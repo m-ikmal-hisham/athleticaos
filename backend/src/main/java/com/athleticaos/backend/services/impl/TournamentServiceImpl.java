@@ -437,6 +437,19 @@ public class TournamentServiceImpl implements TournamentService {
         return generateCsv(tournamentId, true);
     }
 
+    private String resolveCategoryName(Match match) {
+        if (match == null) {
+            return null;
+        }
+        if (match.getCategory() != null && match.getCategory().getName() != null && !match.getCategory().getName().trim().isEmpty()) {
+            return match.getCategory().getName().trim();
+        }
+        if (match.getStage() != null && match.getStage().getCategory() != null && match.getStage().getCategory().getName() != null && !match.getStage().getCategory().getName().trim().isEmpty()) {
+            return match.getStage().getCategory().getName().trim();
+        }
+        return null;
+    }
+
     @SuppressWarnings("null")
     private byte[] generateCsv(UUID tournamentId, boolean includeResults) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
@@ -444,29 +457,79 @@ public class TournamentServiceImpl implements TournamentService {
 
         List<Match> matches = matchRepository.findByTournamentIdWithTeams(tournamentId);
 
-        StringBuilder csv = new StringBuilder();
-        csv.append("MatchCode,TournamentName,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status");
-        if (includeResults) {
-            csv.append(",HomeScore,AwayScore");
-        }
-        csv.append("\n");
+        List<Match> sortedMatches = new java.util.ArrayList<>(matches);
+        sortedMatches.sort(java.util.Comparator
+                .comparing((Match m) -> resolveCategoryName(m), java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                .thenComparing(Match::getMatchDate, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                .thenComparing(Match::getKickOffTime, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                .thenComparing((Match m) -> {
+                    if (m.getVenue() == null || m.getVenue().trim().isEmpty()) {
+                        return null;
+                    }
+                    return m.getVenue().trim();
+                }, java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                .thenComparing(Match::getMatchNumber, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                .thenComparing(Match::getId, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
 
-        for (Match match : matches) {
-            csv.append(escape(match.getId().toString())).append(","); // Using ID as code for now if code missing
-            csv.append(escape(tournament.getName())).append(",");
-            csv.append(escape(match.getStage() != null ? match.getStage().getName() : "")).append(",");
-            csv.append(escape(match.getHomeTeam() != null ? match.getHomeTeam().getName() : "TBD")).append(",");
-            csv.append(escape(match.getAwayTeam() != null ? match.getAwayTeam().getName() : "TBD")).append(",");
-            csv.append(match.getMatchDate() != null ? match.getMatchDate().toString() : "").append(",");
-            csv.append(match.getKickOffTime() != null ? match.getKickOffTime().toString() : "").append(",");
-            csv.append(escape(match.getVenue() != null ? match.getVenue() : "")).append(",");
-            csv.append(match.getStatus()).append(",");
+        StringBuilder csv = new StringBuilder();
+        if (includeResults) {
+            csv.append("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status,HomeScore,AwayScore\n");
+        } else {
+            csv.append("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status\n");
+        }
+
+        java.util.Map<UUID, Match> matchesById = new java.util.HashMap<>();
+        java.util.Map<Integer, Match> matchesByNumber = new java.util.HashMap<>();
+        java.util.Map<String, Match> matchesByCode = new java.util.HashMap<>();
+        for (Match m : matches) {
+            if (m.getId() != null) matchesById.put(m.getId(), m);
+            if (m.getMatchNumber() != null) matchesByNumber.put(m.getMatchNumber(), m);
+            if (m.getMatchCode() != null) matchesByCode.put(m.getMatchCode().toUpperCase(), m);
+        }
+
+        for (Match match : sortedMatches) {
+            java.util.List<String> row = new java.util.ArrayList<>();
+            String matchIdentifier = "";
+            if (match.getMatchNumber() != null) {
+                matchIdentifier = escape(match.getMatchNumber().toString());
+            } else if (match.getMatchCode() != null) {
+                matchIdentifier = escape(match.getMatchCode());
+            }
+            row.add(matchIdentifier);
+            row.add(escape(tournament.getName()));
+            String resolvedCategory = resolveCategoryName(match);
+            row.add(escape(resolvedCategory != null ? resolvedCategory : ""));
+            row.add(escape(match.getStage() != null ? match.getStage().getName() : ""));
+
+            String homeDisplay = match.getHomeTeam() != null
+                    ? match.getHomeTeam().getName()
+                    : com.athleticaos.backend.utils.VenueUtils.formatFeederPlaceholder(
+                            match, match.getHomeTeamPlaceholder(), "HOME", matchesById, matchesByNumber, matchesByCode);
+            if (homeDisplay == null || homeDisplay.trim().isEmpty()) {
+                homeDisplay = "TBD";
+            }
+            row.add(escape(homeDisplay));
+
+            String awayDisplay = match.getAwayTeam() != null
+                    ? match.getAwayTeam().getName()
+                    : com.athleticaos.backend.utils.VenueUtils.formatFeederPlaceholder(
+                            match, match.getAwayTeamPlaceholder(), "AWAY", matchesById, matchesByNumber, matchesByCode);
+            if (awayDisplay == null || awayDisplay.trim().isEmpty()) {
+                awayDisplay = "TBD";
+            }
+            row.add(escape(awayDisplay));
+
+            row.add(match.getMatchDate() != null ? match.getMatchDate().toString() : "");
+            row.add(match.getKickOffTime() != null ? match.getKickOffTime().toString() : "");
+            row.add(escape(match.getVenue() != null ? match.getVenue() : ""));
+            row.add(match.getStatus() != null ? match.getStatus().toString() : "");
 
             if (includeResults) {
-                csv.append(match.getHomeScore() != null ? match.getHomeScore() : "").append(",");
-                csv.append(match.getAwayScore() != null ? match.getAwayScore() : "");
+                row.add(match.getHomeScore() != null ? match.getHomeScore().toString() : "");
+                row.add(match.getAwayScore() != null ? match.getAwayScore().toString() : "");
             }
-            csv.append("\n");
+
+            csv.append(String.join(",", row)).append("\n");
         }
 
         return csv.toString().getBytes(StandardCharsets.UTF_8);

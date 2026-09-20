@@ -52,4 +52,7 @@ public interface MatchService {
         int applyByesForTournament(UUID tournamentId);
 
         com.athleticaos.backend.dtos.match.OperationsDashboardDTO getOperationsDashboard();
+
+        com.athleticaos.backend.dtos.match.MatchRenumberResponse renumberMatches(
+                        UUID tournamentId, boolean dryRun, jakarta.servlet.http.HttpServletRequest httpRequest);
 }

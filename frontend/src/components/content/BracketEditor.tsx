@@ -11,6 +11,7 @@ import { Trash, PencilSimple, Plus, Info, Trophy, CaretRight, ArrowsClockwise, S
 import { tournamentService } from '@/services/tournamentService';
 import { showToast } from '@/lib/customToast';
 import { buildBracketGroups } from '@/utils/bracketUtils';
+import { hasMultipleVenues, formatFeederPlaceholder } from '@/utils/venue';
 
 interface BracketEditorProps {
     tournamentId: string;
@@ -36,6 +37,10 @@ const MANUAL_BRACKET_TYPES: { type: string; label: string; places: string }[] = 
     { type: 'SHIELD', label: 'Shield', places: '13th – 16th' },
     { type: 'SPOON', label: 'Spoon', places: '17th – 20th' },
     { type: 'FORK', label: 'Fork', places: '21st – 24th' },
+    { type: 'SAUCER', label: 'Saucer', places: '25th – 28th' },
+    { type: 'CHOPSTICK', label: 'Chopstick', places: '29th – 32nd' },
+    { type: 'WOODEN_SPOON', label: 'Wooden Spoon', places: '33rd – 36th' },
+    { type: 'WOODEN_FORK', label: 'Wooden Fork', places: '37th – 40th' },
 ];
 
 const BRACKET_TEAM_COUNTS = [2, 4, 8, 16];
@@ -70,6 +75,9 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         });
         return types;
     }, [categoryStages]);
+
+    // Check if tournament has multiple venues
+    const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
 
     // Shared with BracketView and the public site so all three group a tournament identically.
     const bracketGroups = useMemo(
@@ -351,7 +359,15 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                 </div>
 
                                                 <div className="text-[10px] text-muted-foreground/80 px-3 py-1 bg-black/40 border-b border-white/5 uppercase tracking-wider flex justify-between font-mono">
-                                                    <span>{match.matchNumber ? `M${match.matchNumber}${match.matchCode ? ` • ${match.matchCode}` : ''}` : (match.matchCode || 'MATCH')}</span>
+                                                    {/* Bracket cards are narrow: show the number and venue, and keep the long generated code in the tooltip. */}
+                                                    <span
+                                                        className="truncate"
+                                                        title={[match.matchNumber ? `Match ${match.matchNumber}` : null, match.venue?.trim() || null, match.matchCode || null].filter(Boolean).join(' • ')}
+                                                    >
+                                                        {match.matchNumber
+                                                            ? `M${match.matchNumber}${hasMultiVenues ? ` · ${match.venue?.trim() || 'Venue TBC'}` : ''}`
+                                                            : (match.matchCode || 'MATCH')}
+                                                    </span>
                                                     <span className="truncate max-w-[100px]">
                                                         {match.matchDate ? match.matchDate.substring(5) : ''} {match.kickOffTime?.substring(0, 5)}
                                                     </span>
@@ -361,7 +377,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                     {/* Home Team */}
                                                     <div className="flex justify-between items-center px-2.5 py-1.5 rounded-lg bg-black/20">
                                                         <span className={`text-xs truncate pr-2 font-medium ${!match.homeTeamName ? 'text-muted-foreground italic' : 'text-foreground'}`}>
-                                                            {match.homeTeamName || match.homeTeamPlaceholder || 'EMPTY SPOT'}
+                                                            {match.homeTeamName || formatFeederPlaceholder(match.homeTeamPlaceholder, match.venue, matches, match.homeFromWinnerOfMatchId || match.homeFromLoserOfMatchId) || 'EMPTY SPOT'}
                                                         </span>
                                                         <span className="font-mono font-bold text-xs bg-black/40 px-2 py-0.5 rounded text-white min-w-[24px] text-center">
                                                             {match.homeScore ?? '-'}
@@ -371,7 +387,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                     {/* Away Team */}
                                                     <div className="flex justify-between items-center px-2.5 py-1.5 rounded-lg bg-black/20">
                                                         <span className={`text-xs truncate pr-2 font-medium ${!match.awayTeamName ? 'text-muted-foreground italic' : 'text-foreground'}`}>
-                                                            {match.awayTeamName || match.awayTeamPlaceholder || 'EMPTY SPOT'}
+                                                            {match.awayTeamName || formatFeederPlaceholder(match.awayTeamPlaceholder, match.venue, matches, match.awayFromWinnerOfMatchId || match.awayFromLoserOfMatchId) || 'EMPTY SPOT'}
                                                         </span>
                                                         <span className="font-mono font-bold text-xs bg-black/40 px-2 py-0.5 rounded text-white min-w-[24px] text-center">
                                                             {match.awayScore ?? '-'}

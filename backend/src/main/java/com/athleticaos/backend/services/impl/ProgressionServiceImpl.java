@@ -321,8 +321,9 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .matchCode(String.format("%s-%s-M%d", matchCodePrefix(completedMatch.getTournament(), placementStage.getCategory()),
                         getStageAbbreviation(placementStage.getStageType()),
                         existingMatches.size() + 1))
-                .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(
-                        completedMatch.getTournament().getId()) + 1)
+                .matchNumber(matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
+                        completedMatch.getTournament().getId(),
+                        com.athleticaos.backend.utils.VenueUtils.normalizeVenue(completedMatch.getTournament().getVenue())) + 1)
                 .build();
 
         return matchRepository.save(newMatch);
@@ -397,8 +398,9 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .matchCode(String.format("%s-%s-M%d", matchCodePrefix(completedMatch.getTournament(), nextStage.getCategory()),
                         getStageAbbreviation(nextStage.getStageType()),
                         nextStageMatchIndex + 1))
-                .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(
-                        completedMatch.getTournament().getId()) + 1)
+                .matchNumber(matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
+                        completedMatch.getTournament().getId(),
+                        com.athleticaos.backend.utils.VenueUtils.normalizeVenue(completedMatch.getTournament().getVenue())) + 1)
                 .build();
 
         return matchRepository.save(newMatch);

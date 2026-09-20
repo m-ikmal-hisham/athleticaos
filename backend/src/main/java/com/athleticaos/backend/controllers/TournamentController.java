@@ -115,6 +115,16 @@ public class TournamentController {
                 .body(csvData);
     }
 
+    @PostMapping("/{idOrSlug}/matches/renumber")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<com.athleticaos.backend.dtos.match.MatchRenumberResponse> renumberMatches(
+            @PathVariable String idOrSlug,
+            @RequestBody com.athleticaos.backend.dtos.match.MatchRenumberRequest request,
+            HttpServletRequest httpRequest) {
+        UUID id = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(matchService.renumberMatches(id, request != null && request.isDryRun(), httpRequest));
+    }
+
     // Bracket Management Endpoints
 
     @GetMapping("/{idOrSlug}/bracket")

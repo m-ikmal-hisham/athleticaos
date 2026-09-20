@@ -377,7 +377,7 @@ export default function TournamentDetail() {
                 )}
 
                 {activeTab === 'matches' && tournament && (
-                    <TournamentMatches tournamentId={tournament.id} />
+                    <TournamentMatches tournamentId={tournament.id} tournamentSlug={tournament.slug} />
                 )}
 
                 {activeTab === 'standings' && (

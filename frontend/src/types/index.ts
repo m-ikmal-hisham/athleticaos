@@ -492,6 +492,7 @@ export interface MatchResponse extends Match {
     maxBenchCount?: number;
     matchDuration?: number;
     isOneWayMatch?: boolean;
+    hasMultipleVenues?: boolean;
 }
 
 export interface TournamentStageResponse {
@@ -570,3 +571,27 @@ export interface MatchLineupEntry {
     isStarter?: boolean;
     positionDisplay?: string;
 }
+
+export interface MatchRenumberRequest {
+    dryRun: boolean;
+}
+
+export interface MatchRenumberChange {
+    matchId: string;
+    venue?: string;
+    currentNumber?: number | null;
+    newNumber: number;
+}
+
+export interface VenueBreakdown {
+    venue: string;
+    matchCount: number;
+}
+
+export interface MatchRenumberResponse {
+    matchesTotal: number;
+    matchesChanged: number;
+    changes: MatchRenumberChange[];
+    venueBreakdown: VenueBreakdown[];
+}
+
