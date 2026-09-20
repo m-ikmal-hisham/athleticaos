@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { MatchResponse, TournamentStageResponse } from '../../types';
 import { Trophy, CaretRight } from '@phosphor-icons/react';
 import { buildBracketGroups, getWinningSide } from '@/utils/bracketUtils';
+import { hasMultipleVenues, formatFeederPlaceholder } from '@/utils/venue';
 
 interface BracketViewProps {
     stages: TournamentStageResponse[];
@@ -17,6 +18,7 @@ interface BracketViewProps {
  * published to the public page.
  */
 const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
+    const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
     const bracketGroups = useMemo(
         () => buildBracketGroups(matches, stages.filter(s => s.knockoutStage)),
         [matches, stages],
@@ -71,8 +73,11 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                                                         className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm p-3 relative"
                                                     >
                                                         <div className="flex justify-between items-center mb-2 text-xs text-slate-500 dark:text-slate-400">
-                                                            <span className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px]">
-                                                                {match.matchNumber ? `Match ${match.matchNumber}` : (match.matchCode && match.matchCode.length < 10 ? match.matchCode : 'Match')}
+                                                            <span
+                                                                className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] truncate max-w-[12rem]"
+                                                                title={[match.matchNumber ? `Match ${match.matchNumber}` : null, match.venue?.trim() || null, match.matchCode || null].filter(Boolean).join(' • ')}
+                                                            >
+                                                                {match.matchNumber ? `Match ${match.matchNumber}${hasMultiVenues ? ` · ${match.venue?.trim() || 'Venue TBC'}` : ''}` : (match.matchCode && match.matchCode.length < 10 ? match.matchCode : 'Match')}
                                                             </span>
                                                             {match.resultType && match.resultType !== 'NORMAL' ? (
                                                                 <span className="uppercase text-[10px] font-bold tracking-wider text-amber-600 dark:text-amber-400">
@@ -86,7 +91,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                                                         <div className="space-y-2">
                                                             <div className="flex justify-between items-center">
                                                                 <span className={`font-medium truncate max-w-[160px] ${winningSide === 'home' ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                                    {match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}
+                                                                    {match.homeTeamName || formatFeederPlaceholder(match.homeTeamPlaceholder, match.venue, matches, match.homeFromWinnerOfMatchId || match.homeFromLoserOfMatchId) || 'TBD'}
                                                                 </span>
                                                                 <span className="font-mono text-slate-900 dark:text-slate-200">
                                                                     {isDecided && match.homeScore != null ? match.homeScore : '-'}
@@ -95,7 +100,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
 
                                                             <div className="flex justify-between items-center">
                                                                 <span className={`font-medium truncate max-w-[160px] ${winningSide === 'away' ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                                    {match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}
+                                                                    {match.awayTeamName || formatFeederPlaceholder(match.awayTeamPlaceholder, match.venue, matches, match.awayFromWinnerOfMatchId || match.awayFromLoserOfMatchId) || 'TBD'}
                                                                 </span>
                                                                 <span className="font-mono text-slate-900 dark:text-slate-200">
                                                                     {isDecided && match.awayScore != null ? match.awayScore : '-'}

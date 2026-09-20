@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -351,6 +352,246 @@ class BracketServiceImplTest {
         assertNull(match.getHomeTeamPlaceholder());
         assertNull(match.getAwayTeamPlaceholder());
         org.mockito.Mockito.verify(matchRepository).save(match);
+    }
+
+    @Test
+    @SuppressWarnings("null")
+    void ladderOrderOfAllTenTiers() {
+        List<BracketServiceImpl.LadderRung> ladder = BracketServiceImpl.getPlacementLadder();
+        assertEquals(10, ladder.size());
+
+        // The order IS the placement ranking (rung n covers places 4n+1..4n+4 at the default
+        // bracket size), so it is pinned here as a whole before the per-rung assertions.
+        assertEquals(
+                List.of("Cup", "Plate", "Bowl", "Shield", "Spoon", "Fork",
+                        "Saucer", "Chopstick", "Wooden Spoon", "Wooden Fork"),
+                ladder.stream().map(BracketServiceImpl.LadderRung::getLabel).toList());
+
+        assertEquals("Cup", ladder.get(0).getLabel());
+        assertNull(ladder.get(0).getType());
+        assertEquals("CUP", ladder.get(0).getAbbr());
+
+        assertEquals("Plate", ladder.get(1).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.PLATE, ladder.get(1).getType());
+        assertEquals("PLT", ladder.get(1).getAbbr());
+
+        assertEquals("Bowl", ladder.get(2).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.BOWL, ladder.get(2).getType());
+        assertEquals("BWL", ladder.get(2).getAbbr());
+
+        assertEquals("Shield", ladder.get(3).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.SHIELD, ladder.get(3).getType());
+        assertEquals("SHD", ladder.get(3).getAbbr());
+
+        assertEquals("Spoon", ladder.get(4).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.SPOON, ladder.get(4).getType());
+        assertEquals("SPN", ladder.get(4).getAbbr());
+
+        assertEquals("Fork", ladder.get(5).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.FORK, ladder.get(5).getType());
+        assertEquals("FRK", ladder.get(5).getAbbr());
+
+        assertEquals("Saucer", ladder.get(6).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.SAUCER, ladder.get(6).getType());
+        assertEquals("SAU", ladder.get(6).getAbbr());
+
+        assertEquals("Chopstick", ladder.get(7).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.CHOPSTICK, ladder.get(7).getType());
+        assertEquals("CHP", ladder.get(7).getAbbr());
+
+        assertEquals("Wooden Spoon", ladder.get(8).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.WOODEN_SPOON, ladder.get(8).getType());
+        assertEquals("WSP", ladder.get(8).getAbbr());
+
+        assertEquals("Wooden Fork", ladder.get(9).getLabel());
+        assertEquals(com.athleticaos.backend.enums.TournamentStageType.WOODEN_FORK, ladder.get(9).getType());
+        assertEquals("WFK", ladder.get(9).getAbbr());
+    }
+
+    @Test
+    void abbreviationHelperReturnsCorrectThreeLetterCodesForAllTenTiers() {
+        assertEquals("CUP", BracketServiceImpl.getStageAbbreviation(null));
+        assertEquals("PLT", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.PLATE));
+        assertEquals("BWL", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.BOWL));
+        assertEquals("SHD", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.SHIELD));
+        assertEquals("SAU", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.SAUCER));
+        assertEquals("CHP", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.CHOPSTICK));
+        assertEquals("SPN", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.SPOON));
+        assertEquals("FRK", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.FORK));
+        assertEquals("WSP", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.WOODEN_SPOON));
+        assertEquals("WFK", BracketServiceImpl.getStageAbbreviation(com.athleticaos.backend.enums.TournamentStageType.WOODEN_FORK));
+    }
+
+    @Test
+    @SuppressWarnings("null")
+    void fortyTeamTournamentGeneratesTenPlacementTiers() {
+        com.athleticaos.backend.repositories.TournamentRepository tournamentRepository =
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        com.athleticaos.backend.repositories.TournamentStageRepository stageRepository =
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        com.athleticaos.backend.repositories.MatchRepository matchRepository =
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        com.athleticaos.backend.repositories.TournamentTeamRepository teamRepository =
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentTeamRepository.class);
+
+        BracketServiceImpl service = new BracketServiceImpl(
+                tournamentRepository,
+                stageRepository,
+                matchRepository,
+                teamRepository,
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchEventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchLineupRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchOfficialRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.PlayerSuspensionRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MediaAssetRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class)
+        );
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.Tournament tournament = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId)
+                .name("40-Team Carnival")
+                .hasPlacementStages(true)
+                .build();
+
+        List<com.athleticaos.backend.entities.TournamentTeam> tournamentTeams = new java.util.ArrayList<>();
+        for (int i = 1; i <= 40; i++) {
+            Team team = Team.builder().id(java.util.UUID.randomUUID()).name("Club Team " + i).build();
+            tournamentTeams.add(com.athleticaos.backend.entities.TournamentTeam.builder()
+                    .tournament(tournament)
+                    .team(team)
+                    .build());
+        }
+
+        org.mockito.Mockito.when(tournamentRepository.findById(tournamentId))
+                .thenReturn(java.util.Optional.of(tournament));
+        org.mockito.Mockito.when(teamRepository.findByTournamentId(tournamentId))
+                .thenReturn(tournamentTeams);
+        org.mockito.Mockito.when(stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId))
+                .thenReturn(java.util.Collections.emptyList());
+        org.mockito.Mockito.when(stageRepository.save(org.mockito.Mockito.any(com.athleticaos.backend.entities.TournamentStage.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.when(matchRepository.save(org.mockito.Mockito.any(com.athleticaos.backend.entities.Match.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        service.generatePlacementLadder(tournament, 40, 4, 1, null);
+
+        org.mockito.ArgumentCaptor<com.athleticaos.backend.entities.TournamentStage> stageCaptor =
+                org.mockito.ArgumentCaptor.forClass(com.athleticaos.backend.entities.TournamentStage.class);
+        org.mockito.Mockito.verify(stageRepository, org.mockito.Mockito.atLeast(10)).save(stageCaptor.capture());
+
+        List<com.athleticaos.backend.entities.TournamentStage> savedStages = stageCaptor.getAllValues();
+        List<com.athleticaos.backend.enums.TournamentStageType> distinctTypes = savedStages.stream()
+                .map(com.athleticaos.backend.entities.TournamentStage::getStageType)
+                .distinct()
+                .toList();
+
+        // 10 tiers: Cup (SEMI_FINAL/FINAL/THIRD_PLACE) plus 9 named rungs
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.PLATE));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.BOWL));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.SHIELD));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.SAUCER));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.CHOPSTICK));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.SPOON));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.FORK));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.WOODEN_SPOON));
+        assertTrue(distinctTypes.contains(com.athleticaos.backend.enums.TournamentStageType.WOODEN_FORK));
+
+        // 10 rungs * 3 stages each = 30 stages created
+        assertEquals(30, savedStages.size());
+    }
+
+    @Test
+    void getPoolKnockoutPlaceholders_eightPoolsSixteenSlotsGeneratesNamedPairingsWithoutSelfMatches() {
+        int numberOfPools = 8;
+        int totalSlots = 16;
+        int openingMatches = 8;
+
+        int winnerAMatchIndex = -1;
+        int runnerUpAMatchIndex = -1;
+        int winnerBMatchIndex = -1;
+
+        for (int m = 0; m < openingMatches; m++) {
+            String[] pair = BracketServiceImpl.getPoolKnockoutPlaceholders(numberOfPools, m, totalSlots);
+            assertEquals(2, pair.length);
+            assertTrue(pair[0].startsWith("Winner "));
+            assertTrue(pair[1].startsWith("Runner-up "));
+
+            String homePool = pair[0].substring("Winner ".length());
+            String awayPool = pair[1].substring("Runner-up ".length());
+
+            // No match pairs a pool against itself
+            assertNotEquals(homePool, awayPool, "Match " + m + " pairs pool " + homePool + " against itself");
+
+            if ("Pool A".equals(homePool)) {
+                winnerAMatchIndex = m;
+            }
+            if ("Pool A".equals(awayPool)) {
+                runnerUpAMatchIndex = m;
+            }
+            if ("Pool B".equals(homePool)) {
+                winnerBMatchIndex = m;
+            }
+        }
+
+        // Verify Match 0 has Winner Pool A vs Runner-up Pool B
+        assertArrayEquals(new String[] { "Winner Pool A", "Runner-up Pool B" },
+                BracketServiceImpl.getPoolKnockoutPlaceholders(numberOfPools, 0, totalSlots));
+
+        // In an 8-match opening round:
+        // Top half: matches 0, 1, 2, 3 (indices 0..3)
+        // Bottom half: matches 4, 5, 6, 7 (indices 4..7)
+        assertTrue(winnerAMatchIndex >= 0 && winnerAMatchIndex < 4, "Winner A must be in top half");
+        assertTrue(runnerUpAMatchIndex >= 4 && runnerUpAMatchIndex < 8, "Runner-up A must be in bottom half");
+        assertTrue(winnerBMatchIndex >= 4 && winnerBMatchIndex < 8, "Winner B must be in bottom half");
+
+        // Winner A and Runner-up A on opposite sides of the bracket
+        assertTrue((winnerAMatchIndex < 4 && runnerUpAMatchIndex >= 4)
+                || (winnerAMatchIndex >= 4 && runnerUpAMatchIndex < 4));
+
+        // Winner A and Winner B on opposite sides of the bracket
+        assertTrue((winnerAMatchIndex < 4 && winnerBMatchIndex >= 4)
+                || (winnerAMatchIndex >= 4 && winnerBMatchIndex < 4));
+
+        // Verify all 8 pools appear exactly twice: once as Winner, once as Runner-up
+        java.util.Map<String, Integer> winnerCount = new java.util.HashMap<>();
+        java.util.Map<String, Integer> runnerUpCount = new java.util.HashMap<>();
+        for (int m = 0; m < openingMatches; m++) {
+            String[] pair = BracketServiceImpl.getPoolKnockoutPlaceholders(numberOfPools, m, totalSlots);
+            String homePool = pair[0].substring("Winner ".length());
+            String awayPool = pair[1].substring("Runner-up ".length());
+            winnerCount.put(homePool, winnerCount.getOrDefault(homePool, 0) + 1);
+            runnerUpCount.put(awayPool, runnerUpCount.getOrDefault(awayPool, 0) + 1);
+        }
+        for (char p = 'A'; p <= 'H'; p++) {
+            String pool = "Pool " + p;
+            assertEquals(1, winnerCount.getOrDefault(pool, 0), "Pool " + pool + " should have exactly 1 winner");
+            assertEquals(1, runnerUpCount.getOrDefault(pool, 0), "Pool " + pool + " should have exactly 1 runner-up");
+        }
+
+        // Verify stability across runs
+        for (int m = 0; m < openingMatches; m++) {
+            String[] run1 = BracketServiceImpl.getPoolKnockoutPlaceholders(numberOfPools, m, totalSlots);
+            String[] run2 = BracketServiceImpl.getPoolKnockoutPlaceholders(numberOfPools, m, totalSlots);
+            assertArrayEquals(run1, run2, "Output must be deterministic and stable across runs for match " + m);
+        }
+    }
+
+    @Test
+    void getPoolKnockoutPlaceholders_nonPowerOfTwoSlotCountFallsBackSafely() {
+        // 3 pools with 6 slots (non-power-of-two): falls back to Seed N
+        assertArrayEquals(new String[] { "Seed 1", "Seed 6" },
+                BracketServiceImpl.getPoolKnockoutPlaceholders(3, 0, 6));
+        assertArrayEquals(new String[] { "Seed 2", "Seed 5" },
+                BracketServiceImpl.getPoolKnockoutPlaceholders(3, 1, 6));
+        assertArrayEquals(new String[] { "Seed 3", "Seed 4" },
+                BracketServiceImpl.getPoolKnockoutPlaceholders(3, 2, 6));
+
+        // 5 pools with 10 slots (non-power-of-two): falls back to Seed N
+        assertArrayEquals(new String[] { "Seed 1", "Seed 10" },
+                BracketServiceImpl.getPoolKnockoutPlaceholders(5, 0, 10));
+        assertArrayEquals(new String[] { "Seed 2", "Seed 9" },
+                BracketServiceImpl.getPoolKnockoutPlaceholders(5, 1, 10));
     }
 }
 

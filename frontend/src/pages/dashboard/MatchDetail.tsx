@@ -31,6 +31,7 @@ import { MatchLineupEntry, LineupRole, TournamentFormatConfig } from '@/types';
 import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
 import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
+import { formatMatchVenueLabel } from '@/utils/venue';
 
 const SCORING_RULES: Record<string, number> = {
     'TRY': 5,
@@ -565,10 +566,12 @@ export const MatchDetail = () => {
             });
         }
 
-        const numPrefix = selectedMatch?.matchNumber ? `Match ${selectedMatch.matchNumber}: ` : '';
+        const hasMultiVenues = Boolean(selectedMatch?.hasMultipleVenues);
+        const matchVenueText = formatMatchVenueLabel(selectedMatch?.matchNumber, selectedMatch?.venue, hasMultiVenues);
+        const numPrefix = matchVenueText ? `${matchVenueText}: ` : '';
         const matchLabel = selectedMatch?.homeTeamName && selectedMatch?.awayTeamName
             ? `${numPrefix}${selectedMatch.homeTeamName} vs ${selectedMatch.awayTeamName}`
-            : (selectedMatch?.matchNumber ? `Match ${selectedMatch.matchNumber}` : (selectedMatch?.matchCode || 'Match'));
+            : (matchVenueText || (selectedMatch?.matchCode || 'Match'));
 
         items.push({ label: matchLabel });
         return items;
