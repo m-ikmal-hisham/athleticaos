@@ -46,6 +46,21 @@ export const Matches = () => {
         (m.venue && m.venue.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const displayedMatches = useMemo(() => {
+        if (filters.status === 'COMPLETED') {
+            return [...filteredMatches].sort((a, b) => {
+                const dateA = a.matchDate || '';
+                const dateB = b.matchDate || '';
+                const dateCmp = dateB.localeCompare(dateA);
+                if (dateCmp !== 0) return dateCmp;
+                const timeA = a.kickOffTime || '';
+                const timeB = b.kickOffTime || '';
+                return timeB.localeCompare(timeA);
+            });
+        }
+        return filteredMatches;
+    }, [filteredMatches, filters.status]);
+
     const getStatusVariant = (status: MatchStatus) => {
         switch (status) {
             case 'SCHEDULED': return 'primary';
@@ -286,7 +301,7 @@ export const Matches = () => {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredMatches.map((m) => {
+                        {displayedMatches.map((m) => {
                             const isSelected = selectedIds.has(m.id);
                             return (
                                 <GlassCard

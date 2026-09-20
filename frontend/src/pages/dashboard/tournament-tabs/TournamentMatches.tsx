@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
+import { useEffect, useState, useMemo } from 'react';
+import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle, DownloadSimple, MapPin } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { tournamentService } from '@/services/tournamentService';
+import { exportMatches, exportResults } from '@/api/tournaments.api';
 import { Match, MatchResponse, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
@@ -17,13 +18,21 @@ import { TournamentStageResponse } from '@/types';
 
 interface TournamentMatchesProps {
     tournamentId: string;
+    tournamentSlug?: string;
 }
 
-export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
+interface VenueGroup {
+    venueName: string;
+    matches: MatchResponse[];
+}
+
+export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMatchesProps) {
     const navigate = useNavigate();
     const { matches, loadMatchesByTournament, deleteMatch, loadingList } = useMatchesStore();
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+    const [selectedVenue, setSelectedVenue] = useState<string>('');
+    const [exportingType, setExportingType] = useState<'matches' | 'results' | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [tournamentStages, setTournamentStages] = useState<TournamentStageResponse[]>([]);
 
@@ -48,11 +57,49 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         loadData();
     }, [tournamentId, refreshTrigger]);
 
+    // Reset selected venue when category changes
     useEffect(() => {
-        // Filter matches by category if selected
-        let filtered = matches;
-        if (selectedCategoryId) {
-            filtered = matches.filter(m => m.stage?.categoryId === selectedCategoryId);
+        setSelectedVenue('');
+    }, [selectedCategoryId]);
+
+    // Matches filtered by category
+    const categoryFilteredMatches = useMemo(() => {
+        if (!selectedCategoryId) return matches;
+        return matches.filter(m => m.stage?.categoryId === selectedCategoryId);
+    }, [matches, selectedCategoryId]);
+
+    // Distinct venues across category-filtered matches
+    const categoryVenues = useMemo(() => {
+        const venues = new Set<string>();
+        let hasTbc = false;
+        categoryFilteredMatches.forEach(m => {
+            if (m.venue && m.venue.trim()) {
+                venues.add(m.venue.trim());
+            } else {
+                hasTbc = true;
+            }
+        });
+        const sorted = Array.from(venues).sort((a, b) => a.localeCompare(b));
+        const total = sorted.length + (hasTbc ? 1 : 0);
+        return { sorted, hasTbc, total };
+    }, [categoryFilteredMatches]);
+
+    const venueOptions = useMemo(() => {
+        if (categoryVenues.total < 2) return [];
+        return [
+            { value: '', label: 'All venues' },
+            ...categoryVenues.sorted.map(v => ({ value: v, label: v })),
+            ...(categoryVenues.hasTbc ? [{ value: '__TBC__', label: 'Venue TBC' }] : [])
+        ];
+    }, [categoryVenues]);
+
+    useEffect(() => {
+        // Filter matches by venue if selected
+        let filtered = categoryFilteredMatches;
+        if (selectedVenue === '__TBC__') {
+            filtered = filtered.filter(m => !m.venue || !m.venue.trim());
+        } else if (selectedVenue) {
+            filtered = filtered.filter(m => m.venue?.trim() === selectedVenue);
         }
 
         // Split matches
@@ -68,7 +115,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
         setScheduledMatches(scheduled);
         setUnscheduledMatches(unscheduled);
-    }, [matches, selectedCategoryId]);
+    }, [categoryFilteredMatches, selectedVenue]);
 
     const loadData = async () => {
         try {
@@ -130,6 +177,31 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         }
     };
 
+    const handleExport = async (type: 'matches' | 'results') => {
+        try {
+            setExportingType(type);
+            const response = type === 'matches'
+                ? await exportMatches(tournamentId)
+                : await exportResults(tournamentId);
+
+            const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const slug = tournamentSlug || tournamentId;
+            link.setAttribute('download', `${type}-${slug}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error(`Failed to export ${type}:`, error);
+            showToast.error(`Failed to export ${type}`);
+        } finally {
+            setExportingType(null);
+        }
+    };
+
     const openCreateModal = () => {
         setEditMatch(null);
         setShowCreateModal(true);
@@ -155,8 +227,53 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         }
         matchesByDate[dateKey].push(match);
     });
-    // Sort dates
-    const sortedDates = Object.keys(matchesByDate).sort();
+
+    // Sort dates (always earliest first)
+    const sortedDates = Object.keys(matchesByDate).sort((a, b) => a.localeCompare(b));
+
+    function groupDateMatchesByVenue(dateMatches: MatchResponse[]): { hasMultipleVenues: boolean; groups: VenueGroup[] } {
+        const venues = new Set<string>();
+        let hasTbc = false;
+        dateMatches.forEach(m => {
+            if (m.venue && m.venue.trim()) {
+                venues.add(m.venue.trim());
+            } else {
+                hasTbc = true;
+            }
+        });
+
+        const totalVenues = venues.size + (hasTbc ? 1 : 0);
+
+        const sortMatches = (items: MatchResponse[]) => {
+            return [...items].sort((a, b) => {
+                const tA = a.kickOffTime || '';
+                const tB = b.kickOffTime || '';
+                return tA.localeCompare(tB);
+            });
+        };
+
+        if (totalVenues < 2) {
+            return {
+                hasMultipleVenues: false,
+                groups: [{ venueName: '', matches: sortMatches(dateMatches) }]
+            };
+        }
+
+        const sortedVenueNames = Array.from(venues).sort((a, b) => a.localeCompare(b));
+        const groups: VenueGroup[] = [];
+
+        sortedVenueNames.forEach(vName => {
+            const venueMatches = dateMatches.filter(m => m.venue?.trim() === vName);
+            groups.push({ venueName: vName, matches: sortMatches(venueMatches) });
+        });
+
+        if (hasTbc) {
+            const tbcMatches = dateMatches.filter(m => !m.venue || !m.venue.trim());
+            groups.push({ venueName: 'Venue TBC', matches: sortMatches(tbcMatches) });
+        }
+
+        return { hasMultipleVenues: true, groups };
+    }
 
     // Grouping Logic for Unscheduled Matches (Sidebar)
     const unscheduledByStage: { [key: string]: MatchResponse[] } = {};
@@ -176,7 +293,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <CalendarBlank className="w-6 h-6 text-primary" />
                         Matches ({matches.length})
@@ -192,9 +309,42 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                             className="bg-white dark:bg-slate-800"
                         />
                     </div>
+
+                    {/* Venue Filter */}
+                    {venueOptions.length > 0 && (
+                        <div className="w-64">
+                            <SearchableSelect
+                                options={venueOptions}
+                                value={selectedVenue}
+                                onChange={(val) => setSelectedVenue(val ? String(val) : '')}
+                                placeholder="Filter by Venue"
+                                className="bg-white dark:bg-slate-800"
+                            />
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleExport('matches')}
+                        disabled={exportingType !== null}
+                        className="flex items-center gap-2"
+                    >
+                        <DownloadSimple className="w-4 h-4" />
+                        Export matches (CSV)
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleExport('results')}
+                        disabled={exportingType !== null}
+                        className="flex items-center gap-2"
+                    >
+                        <DownloadSimple className="w-4 h-4" />
+                        Export results (CSV)
+                    </Button>
                     {matches.length > 0 && (
                         <div className="relative">
                             <Button
@@ -279,27 +429,57 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <p className="text-slate-500">No scheduled matches{selectedCategoryId ? ' for this category' : ''}.</p>
                             </div>
                         )}
-                        {sortedDates.map(date => (
-                            <div key={date} className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
-                                        {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                    </h3>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+                        {sortedDates.map(date => {
+                            const dateMatches = matchesByDate[date];
+                            const { hasMultipleVenues, groups } = groupDateMatchesByVenue(dateMatches);
+
+                            return (
+                                <div key={date} className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
+                                            {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </h3>
+                                        <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+                                    </div>
+                                    {hasMultipleVenues ? (
+                                        <div className="space-y-6">
+                                            {groups.map(group => (
+                                                <div key={group.venueName} className="space-y-3">
+                                                    <div className="flex items-center gap-2 px-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                        <MapPin className="w-4 h-4 text-primary" />
+                                                        <span>{group.venueName}</span>
+                                                        <span className="text-xs font-normal text-slate-400">({group.matches.length})</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                                        {group.matches.map(match => (
+                                                            <MatchCard
+                                                                key={match.id}
+                                                                match={match}
+                                                                onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                                                                onEdit={(e) => openEditModal(match, e)}
+                                                                onDelete={(e) => handleDeleteMatch(match.id, e)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                            {groups[0].matches.map(match => (
+                                                <MatchCard
+                                                    key={match.id}
+                                                    match={match}
+                                                    onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                                                    onEdit={(e) => openEditModal(match, e)}
+                                                    onDelete={(e) => handleDeleteMatch(match.id, e)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                    {matchesByDate[date].map(match => (
-                                        <MatchCard
-                                            key={match.id}
-                                            match={match}
-                                            onClick={() => navigate(`/dashboard/matches/${match.id}`)}
-                                            onEdit={(e) => openEditModal(match, e)}
-                                            onDelete={(e) => handleDeleteMatch(match.id, e)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Unscheduled Sidebar (1 col) */}
@@ -432,7 +612,7 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     <Clock className="w-3.5 h-3.5" />
                     {match.kickOffTime}
-                    {match.venue && <span className="text-slate-500 ml-1">• {match.venue}</span>}
+                    <span className="text-slate-500 ml-1">• {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}</span>
                 </div>
                 {/* Match Code + Stage badges */}
                 <div className="flex items-center gap-1.5">

@@ -15,7 +15,9 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m " +
                         "LEFT JOIN FETCH m.homeTeam " +
                         "LEFT JOIN FETCH m.awayTeam " +
-                        "LEFT JOIN FETCH m.stage " +
+                        "LEFT JOIN FETCH m.stage s " +
+                        "LEFT JOIN FETCH s.category " +
+                        "LEFT JOIN FETCH m.category " +
                         "WHERE m.tournament.id = :tournamentId AND m.deleted = false " +
                         "ORDER BY m.matchDate ASC, m.kickOffTime ASC")
         List<Match> findByTournamentIdWithTeams(
