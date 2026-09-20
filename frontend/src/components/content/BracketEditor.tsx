@@ -359,7 +359,15 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                 </div>
 
                                                 <div className="text-[10px] text-muted-foreground/80 px-3 py-1 bg-black/40 border-b border-white/5 uppercase tracking-wider flex justify-between font-mono">
-                                                    <span>{match.matchNumber ? `M${match.matchNumber}${hasMultiVenues ? ` · ${match.venue?.trim() || 'Venue TBC'}` : ''}${match.matchCode ? ` • ${match.matchCode}` : ''}` : (match.matchCode || 'MATCH')}</span>
+                                                    {/* Bracket cards are narrow: show the number and venue, and keep the long generated code in the tooltip. */}
+                                                    <span
+                                                        className="truncate"
+                                                        title={[match.matchNumber ? `Match ${match.matchNumber}` : null, match.venue?.trim() || null, match.matchCode || null].filter(Boolean).join(' • ')}
+                                                    >
+                                                        {match.matchNumber
+                                                            ? `M${match.matchNumber}${hasMultiVenues ? ` · ${match.venue?.trim() || 'Venue TBC'}` : ''}`
+                                                            : (match.matchCode || 'MATCH')}
+                                                    </span>
                                                     <span className="truncate max-w-[100px]">
                                                         {match.matchDate ? match.matchDate.substring(5) : ''} {match.kickOffTime?.substring(0, 5)}
                                                     </span>

@@ -73,7 +73,10 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                                                         className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm p-3 relative"
                                                     >
                                                         <div className="flex justify-between items-center mb-2 text-xs text-slate-500 dark:text-slate-400">
-                                                            <span className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px]">
+                                                            <span
+                                                                className="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] truncate max-w-[12rem]"
+                                                                title={[match.matchNumber ? `Match ${match.matchNumber}` : null, match.venue?.trim() || null, match.matchCode || null].filter(Boolean).join(' • ')}
+                                                            >
                                                                 {match.matchNumber ? `Match ${match.matchNumber}${hasMultiVenues ? ` · ${match.venue?.trim() || 'Venue TBC'}` : ''}` : (match.matchCode && match.matchCode.length < 10 ? match.matchCode : 'Match')}
                                                             </span>
                                                             {match.resultType && match.resultType !== 'NORMAL' ? (

@@ -258,7 +258,9 @@ public class MatchServiceImpl implements MatchService {
                 .awayTeamPlaceholder(request.getAwayTeamPlaceholder())
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
-                .venue(request.getVenue())
+                .venue(VenueUtils.normalizeVenue(request.getVenue()).isEmpty()
+                        ? null
+                        : VenueUtils.normalizeVenue(request.getVenue()))
                 .pitch(request.getPitch())
                 .phase(request.getPhase())
                 .stage(stage)
@@ -292,7 +294,11 @@ public class MatchServiceImpl implements MatchService {
             match.setKickOffTime(request.getKickOffTime());
         }
         if (request.getVenue() != null) {
-            match.setVenue(request.getVenue());
+            // A null venue means "leave unchanged"; an empty one means the organiser cleared it, and
+            // an unassigned venue is stored as NULL so every "Venue TBC" match looks the same in the
+            // database as one that never had a venue.
+            String requestedVenue = request.getVenue().trim();
+            match.setVenue(requestedVenue.isEmpty() ? null : requestedVenue);
         }
         if (request.getPitch() != null) {
             match.setPitch(request.getPitch());

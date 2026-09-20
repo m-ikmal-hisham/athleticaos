@@ -567,13 +567,16 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 </div>
 
                 <div className="space-y-2">
-                    <Label>Venue</Label>
+                    <Label>Venue (Optional)</Label>
                     <Input
                         placeholder="Stadium or Field Name"
                         value={formData.venue}
                         onChange={(e) => handleChange('venue', e.target.value)}
-                        required
                     />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Leave empty to list the match under &ldquo;Venue TBC&rdquo;. Matches with no venue share one
+                        number sequence, separate from each named venue.
+                    </p>
                 </div>
 
                 <div className="space-y-2">
