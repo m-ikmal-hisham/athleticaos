@@ -1,14 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
-import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle, DownloadSimple, MapPin } from '@phosphor-icons/react';
+import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle, DownloadSimple, MapPin, ArrowsClockwise } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { tournamentService } from '@/services/tournamentService';
-import { exportMatches, exportResults } from '@/api/tournaments.api';
+import { exportMatches, exportResults, renumberMatches } from '@/api/tournaments.api';
 import { Match, MatchResponse, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '@/lib/customToast';
 import { formatMatchStatus, formatTeamShortName } from '@/utils/formatters';
 import { getImageUrl } from '@/utils/image';
+import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
@@ -44,6 +45,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editMatch, setEditMatch] = useState<Match | null>(null); // If set, shows Edit Modal
     const [clearScheduleStep, setClearScheduleStep] = useState<'NONE' | 'CONFIRM'>('NONE');
+    const [renumbering, setRenumbering] = useState(false);
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
         title: '',
@@ -52,6 +54,52 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
         variant: 'primary' as 'primary' | 'destructive',
         confirmText: 'Confirm'
     });
+
+    const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
+
+    const handleRenumberMatches = async () => {
+        const identifier = tournamentSlug || tournamentId;
+        if (!identifier) return;
+        setRenumbering(true);
+        try {
+            const previewRes = await renumberMatches(identifier, { dryRun: true });
+            const preview = previewRes.data;
+            if (preview.matchesChanged === 0) {
+                showToast.info('Match numbers are already sequential by venue and schedule.');
+                return;
+            }
+
+            const venueLines = (preview.venueBreakdown || [])
+                .map((v: { venue: string; matchCount: number }) => `• ${v.venue || 'Unassigned venue'}: ${v.matchCount} matches`)
+                .join('\n');
+
+            setConfirmModal({
+                isOpen: true,
+                title: 'Renumber matches by venue and schedule?',
+                message: `This will renumber ${preview.matchesChanged} of ${preview.matchesTotal} matches sequentially per venue. Unscheduled matches will be numbered last.\n\n${venueLines}`,
+                confirmText: 'Renumber Matches',
+                variant: 'primary',
+                onConfirm: async () => {
+                    try {
+                        setRenumbering(true);
+                        const resultRes = await renumberMatches(identifier, { dryRun: false });
+                        showToast.success(`Successfully renumbered ${resultRes.data.matchesChanged} matches.`);
+                        setRefreshTrigger(prev => prev + 1);
+                    } catch (err: unknown) {
+                        const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to renumber matches';
+                        showToast.error(message);
+                    } finally {
+                        setRenumbering(false);
+                    }
+                }
+            });
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to preview renumbering';
+            showToast.error(message);
+        } finally {
+            setRenumbering(false);
+        }
+    };
 
     useEffect(() => {
         loadData();
@@ -346,6 +394,19 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                         Export results (CSV)
                     </Button>
                     {matches.length > 0 && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleRenumberMatches}
+                            disabled={renumbering}
+                            className="flex items-center gap-2"
+                            title="Renumber matches sequentially per venue in schedule order"
+                        >
+                            <ArrowsClockwise className={`w-4 h-4 ${renumbering ? 'animate-spin' : ''}`} />
+                            Renumber matches
+                        </Button>
+                    )}
+                    {matches.length > 0 && (
                         <div className="relative">
                             <Button
                                 variant="danger"
@@ -458,6 +519,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                                 onClick={() => navigate(`/dashboard/matches/${match.id}`)}
                                                                 onEdit={(e) => openEditModal(match, e)}
                                                                 onDelete={(e) => handleDeleteMatch(match.id, e)}
+                                                                hasMultiVenues={hasMultiVenues}
                                                             />
                                                         ))}
                                                     </div>
@@ -473,6 +535,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                     onClick={() => navigate(`/dashboard/matches/${match.id}`)}
                                                     onEdit={(e) => openEditModal(match, e)}
                                                     onDelete={(e) => handleDeleteMatch(match.id, e)}
+                                                    hasMultiVenues={hasMultiVenues}
                                                 />
                                             ))}
                                         </div>
@@ -508,7 +571,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                                                 {match.matchNumber && (
                                                                     <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 shrink-0">
-                                                                        #{match.matchNumber}
+                                                                        {formatMatchVenueLabel(match.matchNumber, match.venue, hasMultiVenues)}
                                                                     </span>
                                                                 )}
                                                                 <span className="truncate max-w-[40%]" title={match.homeTeamName || match.homeTeamPlaceholder}>{match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}</span>
@@ -569,7 +632,7 @@ function TeamLogo({ url, name, className = '' }: { url?: string | null; name?: s
     );
 }
 
-function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse, onClick: () => void, onEdit: (e: any) => void, onDelete: (e: any) => void }) {
+function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match: MatchResponse, onClick: () => void, onEdit: (e: React.MouseEvent) => void, onDelete: (e: React.MouseEvent) => void, hasMultiVenues?: boolean }) {
     return (
         <div
             className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
@@ -618,7 +681,7 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
                 <div className="flex items-center gap-1.5">
                     {match.matchNumber !== undefined && match.matchNumber !== null && (
                         <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded font-bold">
-                            Match {match.matchNumber}
+                            {formatMatchVenueLabel(match.matchNumber, match.venue, hasMultiVenues)}
                         </div>
                     )}
                     {match.matchCode && (

@@ -42,4 +42,6 @@ public class PublicMatchSummaryResponse {
     private Integer stageDisplayOrder;
     private String round;
     private List<MatchOfficialDTO> officials;
+    private Integer matchNumber;
+    private Boolean hasMultipleVenues;
 }

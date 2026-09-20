@@ -387,7 +387,7 @@ public class BracketServiceImpl implements BracketService {
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 truncate(poolName.replace(" ", ""), 10),
                                 i * teams.size() + j))
-                        .matchNumber(nextMatchNumber(tournament))
+                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
                         .build();
 
                 matchRepository.save(match);
@@ -468,7 +468,7 @@ public class BracketServiceImpl implements BracketService {
                         .phase(stageInfo.name)
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 stageInfo.abbreviation, i + 1))
-                        .matchNumber(nextMatchNumber(tournament))
+                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
                         .build();
 
                 match = matchRepository.save(match);
@@ -575,7 +575,7 @@ public class BracketServiceImpl implements BracketService {
      * Cup is expressed with the SEMI_FINAL/FINAL/THIRD_PLACE stage types rather than a "CUP"
      * type, because the enum has no CUP value — the frontend groups those under Cup by default.
      */
-    private static final class LadderRung {
+    static final class LadderRung {
         final String label;
         /** Null for Cup, which uses the generic round types so the frontend groups it under Cup. */
         final TournamentStageType type;
@@ -586,17 +586,41 @@ public class BracketServiceImpl implements BracketService {
             this.type = type;
             this.abbr = abbr;
         }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public TournamentStageType getType() {
+            return type;
+        }
+
+        public String getAbbr() {
+            return abbr;
+        }
     }
 
     // Every non-Cup rung tags all of its stages with the rung's own type so they group together;
     // the stage name is what distinguishes the rounds within a rung.
+    //
+    // The order IS the placement ranking: rung n covers places 4n+1 to 4n+4 at the default bracket
+    // size, so Cup is 1-4, Plate 5-8 and Wooden Fork 37-40. Reordering these rungs re-ranks every
+    // tournament that already uses them, so the order is pinned by a test.
     private static final List<LadderRung> PLACEMENT_LADDER = List.of(
             new LadderRung("Cup", null, "CUP"),
             new LadderRung("Plate", TournamentStageType.PLATE, "PLT"),
             new LadderRung("Bowl", TournamentStageType.BOWL, "BWL"),
             new LadderRung("Shield", TournamentStageType.SHIELD, "SHD"),
             new LadderRung("Spoon", TournamentStageType.SPOON, "SPN"),
-            new LadderRung("Fork", TournamentStageType.FORK, "FRK"));
+            new LadderRung("Fork", TournamentStageType.FORK, "FRK"),
+            new LadderRung("Saucer", TournamentStageType.SAUCER, "SAU"),
+            new LadderRung("Chopstick", TournamentStageType.CHOPSTICK, "CHP"),
+            new LadderRung("Wooden Spoon", TournamentStageType.WOODEN_SPOON, "WSP"),
+            new LadderRung("Wooden Fork", TournamentStageType.WOODEN_FORK, "WFK"));
+
+    static List<LadderRung> getPlacementLadder() {
+        return PLACEMENT_LADDER;
+    }
 
     /** Default teams per placement bracket — four places per rung (Cup 1-4, Plate 5-8, ...). */
     private static final int DEFAULT_PLACEMENT_BRACKET_SIZE = 4;
@@ -620,7 +644,7 @@ public class BracketServiceImpl implements BracketService {
      *
      * @return the next free display order after the ladder
      */
-    private int generatePlacementLadder(Tournament tournament, int qualifyingTeamCount, int bracketSize,
+    int generatePlacementLadder(Tournament tournament, int qualifyingTeamCount, int bracketSize,
             int startDisplayOrder, TournamentCategory category) {
         int size = nextPowerOfTwo(Math.max(bracketSize, 2));
         int rungCount = (int) Math.ceil(qualifyingTeamCount / (double) size);
@@ -775,7 +799,7 @@ public class BracketServiceImpl implements BracketService {
                     .status(MatchStatus.SCHEDULED)
                     .phase(stage.getName())
                     .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20), abbr, i + 1))
-                    .matchNumber(nextMatchNumber(tournament))
+                    .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
                     .homeTeamPlaceholder("TBD")
                     .awayTeamPlaceholder("TBD")
                     .build();
@@ -938,7 +962,7 @@ public class BracketServiceImpl implements BracketService {
                     .phase(truncate(name, 50))
                     .matchCode(String.format("%s-%s%d", matchCodePrefix(tournament, stage.getCategory(), 30), getStageAbbreviation(type),
                             (i + 1)))
-                    .matchNumber(nextMatchNumber(tournament))
+                    .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
                     .build();
             match = matchRepository.save(match);
             stageMatches.add(match);
@@ -947,32 +971,29 @@ public class BracketServiceImpl implements BracketService {
         return stage;
     }
 
-    // Legacy helper for abbreviation
-    private String getStageAbbreviation(TournamentStageType type) {
-        switch (type) {
-            case ROUND_OF_16:
-                return "R16";
-            case QUARTER_FINAL:
-                return "QF";
-            case SEMI_FINAL:
-                return "SF";
-            case FINAL:
-                return "F";
-            case THIRD_PLACE:
-                return "3P";
-            case PLATE:
-                return "PL";
-            case BOWL:
-                return "BW";
-            case SHIELD:
-                return "SH";
-            case FORK:
-                return "FK";
-            case SPOON:
-                return "SP";
-            default:
-                return "M";
+    // Abbreviation helper for stage and tier codes
+    static String getStageAbbreviation(TournamentStageType type) {
+        if (type == null) {
+            return "CUP";
         }
+        return switch (type) {
+            case PLATE -> "PLT";
+            case BOWL -> "BWL";
+            case SHIELD -> "SHD";
+            case SAUCER -> "SAU";
+            case CHOPSTICK -> "CHP";
+            case SPOON -> "SPN";
+            case FORK -> "FRK";
+            case WOODEN_SPOON -> "WSP";
+            case WOODEN_FORK -> "WFK";
+            case ROUND_OF_16 -> "R16";
+            case QUARTER_FINAL -> "QF";
+            case SEMI_FINAL -> "SF";
+            case FINAL -> "F";
+            case THIRD_PLACE -> "3P";
+            case CLASSIFICATION -> "CLS";
+            default -> "M";
+        };
     }
 
     @SuppressWarnings("null")
@@ -1259,7 +1280,7 @@ public class BracketServiceImpl implements BracketService {
                         .phase(truncate(stageInfo.name, 50))
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 stageInfo.abbreviation, i + 1))
-                        .matchNumber(nextMatchNumber(tournament))
+                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
                         .build();
 
                 // Set initial placeholders for first round (Pool qualifiers)
@@ -1701,6 +1722,40 @@ public class BracketServiceImpl implements BracketService {
                 case 3: // QF4 - Meets QF3 in SF2
                     return new String[] { "Winner " + poolC, "Runner-up " + poolD };
             }
+        } else if (poolNames != null && poolNames.size() >= 3 && matchIndex < poolNames.size()
+                && totalSlots == 2 * poolNames.size() && (totalSlots & (totalSlots - 1)) == 0) {
+            // General pairing rule for N >= 3 pools where slots = 2 * N (power of two):
+            // 1. First half of first-round matches (indices 0 .. N/2 - 1) assigns even-indexed pool winners
+            //    against adjacent odd-indexed pool runners-up (offset +1).
+            // 2. Second half (indices N/2 .. N - 1) assigns odd-indexed pool winners against adjacent
+            //    even-indexed pool runners-up (offset +1 mod N).
+            // This guarantees:
+            // - No first-round match pairs teams from the same pool.
+            // - Every pool winner and runner-up appears exactly once.
+            // - Winner and runner-up from the same pool are separated into opposite bracket halves (SF1 vs SF2),
+            //   ensuring they cannot meet until the final.
+            // - Pools adjacent in round-robin play are kept apart across rounds.
+            int n = poolNames.size();
+            int winnerPoolIndex;
+            int offset = 1;
+            // n is always even here: totalSlots == 2n and totalSlots is a power of two, so an odd n
+            // cannot reach this branch. The odd case below is kept only as a safe fallback if that
+            // precondition is ever relaxed.
+            if (n % 2 == 0) {
+                int half = n / 2;
+                if (matchIndex < half) {
+                    winnerPoolIndex = 2 * matchIndex;
+                } else {
+                    winnerPoolIndex = 2 * (matchIndex - half) + 1;
+                }
+            } else {
+                winnerPoolIndex = matchIndex;
+            }
+            int runnerUpPoolIndex = (winnerPoolIndex + offset) % n;
+            return new String[] {
+                "Winner " + poolNames.get(winnerPoolIndex),
+                "Runner-up " + poolNames.get(runnerUpPoolIndex)
+            };
         }
 
         // Standard bracket seeding order for power-of-two draws to keep top seeds apart
@@ -1783,9 +1838,10 @@ public class BracketServiceImpl implements BracketService {
         return slug + "-" + catAbbr;
     }
 
-    /** Returns the next sequential match number for the given tournament. */
-    private int nextMatchNumber(Tournament tournament) {
-        return matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1;
+    /** Returns the next sequential match number for the given tournament and venue. */
+    private int nextMatchNumber(Tournament tournament, String venue) {
+        return matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
+                tournament.getId(), com.athleticaos.backend.utils.VenueUtils.normalizeVenue(venue)) + 1;
     }
 
     @Override
@@ -1862,7 +1918,7 @@ public class BracketServiceImpl implements BracketService {
                         .phase(stageName)
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, category, 20),
                                 type.name().substring(0, Math.min(2, type.name().length())) + stageInfo.abbreviation, i + 1))
-                        .matchNumber(nextMatchNumber(tournament))
+                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
                         .homeTeamPlaceholder("TBD")
                         .awayTeamPlaceholder("TBD")
                         .build();
@@ -1917,6 +1973,11 @@ public class BracketServiceImpl implements BracketService {
     private String formatStageName(com.athleticaos.backend.enums.TournamentStageType bracketType, String phaseName) {
         if (bracketType == com.athleticaos.backend.enums.TournamentStageType.QUARTER_FINAL || bracketType == com.athleticaos.backend.enums.TournamentStageType.SEMI_FINAL || bracketType == com.athleticaos.backend.enums.TournamentStageType.FINAL) {
             return "Cup " + phaseName;
+        }
+        for (LadderRung rung : PLACEMENT_LADDER) {
+            if (rung.type == bracketType) {
+                return rung.label + " " + phaseName;
+            }
         }
         String typeStr = bracketType.name().substring(0, 1).toUpperCase() + bracketType.name().substring(1).toLowerCase().replace("_", " ");
         return typeStr + " " + phaseName;

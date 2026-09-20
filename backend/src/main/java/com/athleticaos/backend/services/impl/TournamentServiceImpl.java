@@ -478,6 +478,15 @@ public class TournamentServiceImpl implements TournamentService {
             csv.append("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status\n");
         }
 
+        java.util.Map<UUID, Match> matchesById = new java.util.HashMap<>();
+        java.util.Map<Integer, Match> matchesByNumber = new java.util.HashMap<>();
+        java.util.Map<String, Match> matchesByCode = new java.util.HashMap<>();
+        for (Match m : matches) {
+            if (m.getId() != null) matchesById.put(m.getId(), m);
+            if (m.getMatchNumber() != null) matchesByNumber.put(m.getMatchNumber(), m);
+            if (m.getMatchCode() != null) matchesByCode.put(m.getMatchCode().toUpperCase(), m);
+        }
+
         for (Match match : sortedMatches) {
             java.util.List<String> row = new java.util.ArrayList<>();
             String matchIdentifier = "";
@@ -491,8 +500,25 @@ public class TournamentServiceImpl implements TournamentService {
             String resolvedCategory = resolveCategoryName(match);
             row.add(escape(resolvedCategory != null ? resolvedCategory : ""));
             row.add(escape(match.getStage() != null ? match.getStage().getName() : ""));
-            row.add(escape(match.getHomeTeam() != null ? match.getHomeTeam().getName() : "TBD"));
-            row.add(escape(match.getAwayTeam() != null ? match.getAwayTeam().getName() : "TBD"));
+
+            String homeDisplay = match.getHomeTeam() != null
+                    ? match.getHomeTeam().getName()
+                    : com.athleticaos.backend.utils.VenueUtils.formatFeederPlaceholder(
+                            match, match.getHomeTeamPlaceholder(), "HOME", matchesById, matchesByNumber, matchesByCode);
+            if (homeDisplay == null || homeDisplay.trim().isEmpty()) {
+                homeDisplay = "TBD";
+            }
+            row.add(escape(homeDisplay));
+
+            String awayDisplay = match.getAwayTeam() != null
+                    ? match.getAwayTeam().getName()
+                    : com.athleticaos.backend.utils.VenueUtils.formatFeederPlaceholder(
+                            match, match.getAwayTeamPlaceholder(), "AWAY", matchesById, matchesByNumber, matchesByCode);
+            if (awayDisplay == null || awayDisplay.trim().isEmpty()) {
+                awayDisplay = "TBD";
+            }
+            row.add(escape(awayDisplay));
+
             row.add(match.getMatchDate() != null ? match.getMatchDate().toString() : "");
             row.add(match.getKickOffTime() != null ? match.getKickOffTime().toString() : "");
             row.add(escape(match.getVenue() != null ? match.getVenue() : ""));

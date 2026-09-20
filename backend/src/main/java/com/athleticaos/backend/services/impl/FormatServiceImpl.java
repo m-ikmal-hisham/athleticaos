@@ -404,7 +404,7 @@ public class FormatServiceImpl implements FormatService {
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 truncate(stage.getName().replace(" ", ""), 10),
                                 matchCounter + 1))
-                        .matchNumber(nextMatchNumber(tournament))
+                        .matchNumber(nextMatchNumber(tournament, null))
                         .build();
                 matchRepository.save(match);
                 matchCounter++;
@@ -442,9 +442,10 @@ public class FormatServiceImpl implements FormatService {
         return text.length() > length ? text.substring(0, length) : text;
     }
 
-    /** Returns the next sequential match number for the given tournament. */
-    private int nextMatchNumber(Tournament tournament) {
-        return matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1;
+    /** Returns the next sequential match number for the given tournament and venue. */
+    private int nextMatchNumber(Tournament tournament, String venue) {
+        return matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
+                tournament.getId(), com.athleticaos.backend.utils.VenueUtils.normalizeVenue(venue)) + 1;
     }
 
     @Override

@@ -133,6 +133,18 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logMatchesRenumbered(UUID tournamentId, int matchesChanged, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("MATCHES_RENUMBERED")
+                                .entityType("TOURNAMENT")
+                                .entityId(tournamentId)
+                                .entitySummary(String.format("Matches renumbered for tournament %s: %d matches changed",
+                                                tournamentId, matchesChanged))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== MATCH ACTIONS ====================
 
         public void logMatchCreated(Match match, HttpServletRequest request) {

@@ -22,3 +22,6 @@ export const updateTournament = (id: string, data: any) => api.put(`/tournaments
 export const getTournamentTeams = (idOrSlug: string) => api.get(`/tournaments/${idOrSlug}/teams`);
 
 export const getTournamentBracket = (idOrSlug: string) => api.get(`/tournaments/${idOrSlug}/bracket`);
+
+export const renumberMatches = (idOrSlug: string, request: { dryRun: boolean }) =>
+    api.post<import('@/types').MatchRenumberResponse>(`/tournaments/${idOrSlug}/matches/renumber`, request);

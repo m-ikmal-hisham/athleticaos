@@ -11,6 +11,7 @@ import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchForma
 import { Team, Match, Tournament } from '@/types';
 import { useMatchesStore } from '@/store/matches.store';
 import { showToast } from '@/lib/customToast';
+import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
 
 interface MatchModalProps {
     isOpen: boolean;
@@ -328,10 +329,12 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         handleChange(side === 'home' ? 'homeTeamPlaceholder' : 'awayTeamPlaceholder', `${pool}${position}`);
     };
 
+    const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
+
     const availableMatchesOptions = matches
         .filter(m => m.id !== initialMatch?.id)
         .map(m => {
-            const numLabel = m.matchNumber ? `Match ${m.matchNumber}` : (m.matchCode || 'Match');
+            const numLabel = formatMatchVenueLabel(m.matchNumber, m.venue, hasMultiVenues) || (m.matchCode || 'Match');
             const homeName = m.homeTeamName || m.homeTeamPlaceholder || 'TBD';
             const awayName = m.awayTeamName || m.awayTeamPlaceholder || 'TBD';
             const stageName = m.stage?.name || 'Unassigned';

@@ -27,6 +27,7 @@ public class PublicTournamentController {
     private final StandingsService standingsService;
     private final com.athleticaos.backend.repositories.TournamentTeamRepository tournamentTeamRepository;
     private final com.athleticaos.backend.repositories.MatchEventRepository matchEventRepository;
+    private final com.athleticaos.backend.repositories.MatchRepository matchRepository;
     private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
     private final com.athleticaos.backend.services.StatisticsService statisticsService;
@@ -423,6 +424,7 @@ public class PublicTournamentController {
                 .stage(stageName)
                 .stageType(m.getStage() != null ? m.getStage().getStageType() : null)
                 .stageDisplayOrder(stageDisplayOrder)
+                .matchNumber(m.getMatchNumber())
                 .build();
     }
 
@@ -454,15 +456,20 @@ public class PublicTournamentController {
         PublicTeamStatsResponse homeStats = statisticsService.calculateTeamMatchStats(matchEvents, m.getHomeTeamName());
         PublicTeamStatsResponse awayStats = statisticsService.calculateTeamMatchStats(matchEvents, m.getAwayTeamName());
 
-        // Fetch tournament to get organiser branding
         UUID tournamentId = m.getTournamentId();
         PublicOrganisationBranding branding = null;
+        boolean multipleVenues = false;
         if (tournamentId != null) {
             TournamentResponse t = tournamentService.getTournamentById(tournamentId);
             branding = getOrganiserBranding(t.getOrganiserOrgId());
+            // One scalar query. Loading and mapping every match of the tournament just to count its
+            // venues would put a 200-row read on the busiest public page.
+            multipleVenues = matchRepository.countDistinctVenuesByTournamentId(tournamentId) > 1;
         }
 
         return PublicMatchDetailResponse.builder()
+                .matchNumber(m.getMatchNumber())
+                .hasMultipleVenues(multipleVenues)
                 .id(m.getId())
                 .code(m.getMatchCode())
                 .homeTeamName(m.getHomeTeamName())
