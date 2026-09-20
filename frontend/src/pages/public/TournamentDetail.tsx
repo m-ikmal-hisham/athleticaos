@@ -20,6 +20,85 @@ import { PublicStats } from './components/PublicStats';
 import { formatTournamentLevel, formatTeamShortName } from '@/utils/formatters';
 import { getImageUrl } from '@/utils/image';
 
+interface PublicVenueGroup {
+    venueName: string;
+    matches: PublicMatchSummary[];
+}
+
+interface DateScheduleGroup {
+    date: string;
+    hasMultipleVenues: boolean;
+    venueGroups: PublicVenueGroup[];
+}
+
+const groupDateMatchesByVenue = (dateMatches: PublicMatchSummary[], isResults: boolean) => {
+    const venues = new Set<string>();
+    let hasTbc = false;
+    dateMatches.forEach(m => {
+        if (m.venue && m.venue.trim()) {
+            venues.add(m.venue.trim());
+        } else {
+            hasTbc = true;
+        }
+    });
+
+    const totalVenues = venues.size + (hasTbc ? 1 : 0);
+
+    const sortMatches = (items: PublicMatchSummary[]) => {
+        return [...items].sort((a, b) => {
+            const tA = a.matchTime || '';
+            const tB = b.matchTime || '';
+            return isResults ? tB.localeCompare(tA) : tA.localeCompare(tB);
+        });
+    };
+
+    if (totalVenues < 2) {
+        return {
+            hasMultipleVenues: false,
+            venueGroups: [{ venueName: '', matches: sortMatches(dateMatches) }]
+        };
+    }
+
+    const sortedVenueNames = Array.from(venues).sort((a, b) => a.localeCompare(b));
+    const venueGroups: PublicVenueGroup[] = [];
+
+    sortedVenueNames.forEach(vName => {
+        const vMatches = dateMatches.filter(m => m.venue?.trim() === vName);
+        venueGroups.push({ venueName: vName, matches: sortMatches(vMatches) });
+    });
+
+    if (hasTbc) {
+        const tbcMatches = dateMatches.filter(m => !m.venue || !m.venue.trim());
+        venueGroups.push({ venueName: 'Venue TBC', matches: sortMatches(tbcMatches) });
+    }
+
+    return { hasMultipleVenues: true, venueGroups };
+};
+
+// Helper: Group matches by date and venue
+const groupMatchesByDate = (matchList: PublicMatchSummary[], isResults: boolean): DateScheduleGroup[] => {
+    const grouped = new Map<string, PublicMatchSummary[]>();
+
+    matchList.forEach(match => {
+        const date = match.matchDate || '';
+        if (!grouped.has(date)) grouped.set(date, []);
+        grouped.get(date)!.push(match);
+    });
+
+    const sortedEntries = Array.from(grouped.entries()).sort((a, b) => {
+        return isResults ? b[0].localeCompare(a[0]) : a[0].localeCompare(b[0]);
+    });
+
+    return sortedEntries.map(([date, dMatches]) => {
+        const { hasMultipleVenues, venueGroups } = groupDateMatchesByVenue(dMatches, isResults);
+        return {
+            date,
+            hasMultipleVenues,
+            venueGroups
+        };
+    });
+};
+
 export default function TournamentDetail() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -29,9 +108,15 @@ export default function TournamentDetail() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'fixtures' | 'results' | 'standings' | 'bracket' | 'stats' | 'teams' | 'players'>('fixtures');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+    const [selectedVenue, setSelectedVenue] = useState<string>('');
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
     const [teamRosters, setTeamRosters] = useState<Record<string, PublicPlayerSummary[]>>({});
     const [teamSearch, setTeamSearch] = useState('');
+
+    // Reset selected venue when category changes
+    useEffect(() => {
+        setSelectedVenue('');
+    }, [selectedCategoryId]);
 
     // Teams belonging to the selected category. Matches, standings and stats are already
     // filtered server-side by category; the Teams and Players tabs read from the tournament
@@ -114,31 +199,56 @@ export default function TournamentDetail() {
         }
     };
 
-    // Helper: Group matches
-    const groupMatchesByDate = (matches: PublicMatchSummary[]) => {
-        const grouped = new Map<string, PublicMatchSummary[]>();
-        
-        // Sort matches by time first
-        const sortedMatches = [...matches].sort((a, b) => {
-            const timeA = a.matchTime || '';
-            const timeB = b.matchTime || '';
-            return timeA.localeCompare(timeB);
+    // Distinct venues across all loaded matches
+    const allTournamentVenues = useMemo(() => {
+        const venues = new Set<string>();
+        let hasTbc = false;
+        matches.forEach(m => {
+            if (m.venue && m.venue.trim()) {
+                venues.add(m.venue.trim());
+            } else {
+                hasTbc = true;
+            }
         });
+        const sorted = Array.from(venues).sort((a, b) => a.localeCompare(b));
+        const total = sorted.length + (hasTbc ? 1 : 0);
+        return { sorted, hasTbc, total };
+    }, [matches]);
 
-        sortedMatches.forEach(match => {
-            const date = match.matchDate;
-            if (!grouped.has(date)) grouped.set(date, []);
-            grouped.get(date)!.push(match);
-        });
-        return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    };
+    const venueOptions = useMemo(() => {
+        if (allTournamentVenues.total < 2) return [];
+        return [
+            { value: '', label: 'All venues' },
+            ...allTournamentVenues.sorted.map(v => ({ value: v, label: v })),
+            ...(allTournamentVenues.hasTbc ? [{ value: '__TBC__', label: 'Venue TBC' }] : [])
+        ];
+    }, [allTournamentVenues]);
 
-    const fixturesMatches = matches.filter(m => ['SCHEDULED', 'LIVE', 'ONGOING'].includes(m.status));
-    const resultsMatches = matches.filter(m => ['COMPLETED', 'FULL_TIME', 'CANCELLED'].includes(m.status));
+    const fixturesMatches = useMemo(() => {
+        const list = matches.filter(m => ['SCHEDULED', 'LIVE', 'ONGOING'].includes(m.status));
+        if (!selectedVenue) return list;
+        if (selectedVenue === '__TBC__') {
+            return list.filter(m => !m.venue || !m.venue.trim());
+        }
+        return list.filter(m => m.venue?.trim() === selectedVenue);
+    }, [matches, selectedVenue]);
+
+    const resultsMatches = useMemo(() => {
+        const list = matches.filter(m => ['COMPLETED', 'FULL_TIME', 'CANCELLED'].includes(m.status));
+        if (!selectedVenue) return list;
+        if (selectedVenue === '__TBC__') {
+            return list.filter(m => !m.venue || !m.venue.trim());
+        }
+        return list.filter(m => m.venue?.trim() === selectedVenue);
+    }, [matches, selectedVenue]);
 
     // Logic for Tabs
-    const displayMatches = activeTab === 'fixtures' ? fixturesMatches : resultsMatches;
-    const groupedMatches = groupMatchesByDate(displayMatches);
+    const isResultsTab = activeTab === 'results';
+    const displayMatches = isResultsTab ? resultsMatches : fixturesMatches;
+    const groupedMatches = useMemo(() => {
+        return groupMatchesByDate(displayMatches, isResultsTab);
+    }, [displayMatches, isResultsTab]);
+
     const hasStandings = standings.length > 0;
     const hasPoolMatches = matches.some(m => m.stage?.toLowerCase().includes('pool') || m.stage?.toLowerCase().includes('group'));
     const showPoolTab = hasStandings || hasPoolMatches;
@@ -147,6 +257,106 @@ export default function TournamentDetail() {
         return stage && !stage.includes('pool') && !stage.includes('group');
     });
 
+
+    const renderPublicMatchCard = (match: PublicMatchSummary) => (
+        <Link
+            key={match.id}
+            to={`/matches/${match.id}`}
+            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden"
+        >
+            {/* Status Indicator */}
+            {['LIVE', 'ONGOING'].includes(match.status) && (
+                <div className="absolute top-0 right-0 px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded-bl-xl shadow-lg animate-pulse">
+                    Live
+                </div>
+            )}
+
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <Clock className="w-3.5 h-3.5" />
+                    {match.matchTime}
+                    <span className={`ml-1 ${match.venue?.trim() ? 'text-slate-500' : 'text-slate-400 italic'}`}>
+                        • {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}
+                    </span>
+                </div>
+                <div className="text-xs text-slate-500 font-medium group-hover:text-blue-500 transition-colors flex items-center gap-1">
+                    Match Center <CaretRight weight="bold" />
+                </div>
+            </div>
+
+            {/* Score Block */}
+            <div className="flex items-center justify-between gap-4">
+                {/* Home */}
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
+                        {match.homeTeamLogoUrl ? (
+                            <img src={getImageUrl(match.homeTeamLogoUrl)} alt={match.homeTeamName} className="w-full h-full object-contain p-0.5" />
+                        ) : (
+                            <span className="text-[10px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
+                        )}
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
+                    </div>
+                </div>
+
+                {/* Score */}
+                <div className="flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 min-w-[3.5rem] py-2 rounded-lg font-mono font-black text-xl text-slate-800 dark:text-white shrink-0">
+                    {(match.homeScore !== undefined && match.awayScore !== undefined) ? (
+                        <div className="flex gap-1">
+                            <span>{match.homeScore}</span>
+                            <span className="text-slate-400 opacity-50">:</span>
+                            <span>{match.awayScore}</span>
+                        </div>
+                    ) : (
+                        <span className="text-slate-400 text-sm">VS</span>
+                    )}
+                    {/* Marks an awarded 28-0 so it does not read as a played result. */}
+                    {match.resultType && match.resultType !== 'NORMAL' && (
+                        <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                            {match.resultType === 'BYE' ? 'Bye' : 'W/O'}
+                        </span>
+                    )}
+                </div>
+
+                {/* Away */}
+                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                    <div className="flex flex-col items-end gap-0.5 min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right">
+                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
+                        {match.awayTeamLogoUrl ? (
+                            <img src={getImageUrl(match.awayTeamLogoUrl)} alt={match.awayTeamName} className="w-full h-full object-contain p-0.5" />
+                        ) : (
+                            <span className="text-[10px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Match Officials */}
+            {match.officials && match.officials.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap gap-2">
+                    {match.officials.map((official, idx) => (
+                        <div key={official.id || idx} className="flex flex-col flex-1 min-w-[100px] bg-slate-50 dark:bg-slate-800/80 rounded py-1.5 px-2 border border-slate-200 dark:border-slate-700/50">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-0.5">
+                                {(official.officialRoleName || official.assignedRole || '').replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate w-full" title={official.officialName}>
+                                {official.officialName}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </Link>
+    );
 
     if (loading && !tournament) return <div className="space-y-6 animate-pulse p-8"><div className="h-64 bg-slate-800/10 rounded-2xl"></div></div>;
     if (!tournament) return <div className="text-center py-20 text-slate-500">Tournament not found</div>;
@@ -465,121 +675,65 @@ export default function TournamentDetail() {
                             </div>
                         ) : (
                             // Matches List (Fixtures or Results)
-                            <div className="space-y-8">
+                            <div className="space-y-6">
+                                {venueOptions.length > 0 && (
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                                            <MapPin className="w-3.5 h-3.5" /> Venue:
+                                        </span>
+                                        {venueOptions.map(option => (
+                                            <button
+                                                key={option.value}
+                                                onClick={() => setSelectedVenue(option.value)}
+                                                className={`
+                                                    px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors
+                                                    ${selectedVenue === option.value
+                                                        ? 'bg-blue-600 text-white shadow-sm'
+                                                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                                    }
+                                                `}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {groupedMatches.length === 0 ? (
                                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
                                         <Trophy className="w-12 h-12 mx-auto text-slate-300 mb-3" />
                                         <p className="text-slate-500 font-medium">No matches found for this view.</p>
                                     </div>
                                 ) : (
-                                    groupedMatches.map(([date, dateMatches]) => (
+                                    groupedMatches.map(({ date, hasMultipleVenues, venueGroups }) => (
                                         <div key={date} className="space-y-4">
                                             <div className="flex items-center gap-4">
                                                 <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
-                                                    {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                    {date ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD'}
                                                 </h3>
                                                 <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {dateMatches.map(match => (
-                                                    <Link
-                                                        key={match.id}
-                                                        to={`/matches/${match.id}`}
-                                                        className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden"
-                                                    >
-                                                        {/* Status Indicator */}
-                                                        {['LIVE', 'ONGOING'].includes(match.status) && (
-                                                            <div className="absolute top-0 right-0 px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded-bl-xl shadow-lg animate-pulse">
-                                                                Live
+                                            {hasMultipleVenues ? (
+                                                <div className="space-y-6">
+                                                    {venueGroups.map(group => (
+                                                        <div key={group.venueName} className="space-y-3">
+                                                            <div className="flex items-center gap-2 px-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                                <MapPin className="w-4 h-4 text-blue-500" />
+                                                                <span>{group.venueName}</span>
+                                                                <span className="text-xs font-normal text-slate-400">({group.matches.length})</span>
                                                             </div>
-                                                        )}
-
-                                                        <div className="flex justify-between items-center mb-4">
-                                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                                <Clock className="w-3.5 h-3.5" />
-                                                                {match.matchTime}
-                                                                {match.venue && <span className="text-slate-500 ml-1">• {match.venue}</span>}
-                                                            </div>
-                                                            <div className="text-xs text-slate-500 font-medium group-hover:text-blue-500 transition-colors flex items-center gap-1">
-                                                                Match Center <CaretRight weight="bold" />
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                {group.matches.map(renderPublicMatchCard)}
                                                             </div>
                                                         </div>
-
-                                                        {/* Score Block */}
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            {/* Home */}
-                                                            <div className="flex-1 flex items-center gap-2 min-w-0">
-                                                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
-                                                                    {match.homeTeamLogoUrl ? (
-                                                                        <img src={getImageUrl(match.homeTeamLogoUrl)} alt={match.homeTeamName} className="w-full h-full object-contain p-0.5" />
-                                                                    ) : (
-                                                                        <span className="text-[10px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex flex-col gap-0.5 min-w-0">
-                                                                    <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                                                                        {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
-                                                                    </span>
-                                                                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Score */}
-                                                            <div className="flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 min-w-[3.5rem] py-2 rounded-lg font-mono font-black text-xl text-slate-800 dark:text-white shrink-0">
-                                                                {(match.homeScore !== undefined && match.awayScore !== undefined) ? (
-                                                                    <div className="flex gap-1">
-                                                                        <span>{match.homeScore}</span>
-                                                                        <span className="text-slate-400 opacity-50">:</span>
-                                                                        <span>{match.awayScore}</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-slate-400 text-sm">VS</span>
-                                                                )}
-                                                                {/* Marks an awarded 28-0 so it does not read as a played result. */}
-                                                                {match.resultType && match.resultType !== 'NORMAL' && (
-                                                                    <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                                                                        {match.resultType === 'BYE' ? 'Bye' : 'W/O'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Away */}
-                                                            <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                                                                <div className="flex flex-col items-end gap-0.5 min-w-0">
-                                                                    <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right">
-                                                                        {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
-                                                                    </span>
-                                                                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
-                                                                </div>
-                                                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
-                                                                    {match.awayTeamLogoUrl ? (
-                                                                        <img src={getImageUrl(match.awayTeamLogoUrl)} alt={match.awayTeamName} className="w-full h-full object-contain p-0.5" />
-                                                                    ) : (
-                                                                        <span className="text-[10px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Match Officials */}
-                                                        {match.officials && match.officials.length > 0 && (
-                                                            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap gap-2">
-                                                                {match.officials.map((official, idx) => (
-                                                                    <div key={official.id || idx} className="flex flex-col flex-1 min-w-[100px] bg-slate-50 dark:bg-slate-800/80 rounded py-1.5 px-2 border border-slate-200 dark:border-slate-700/50">
-                                                                        <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-0.5">
-                                                                            {(official.officialRoleName || official.assignedRole || '').replace(/_/g, ' ')}
-                                                                        </span>
-                                                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate w-full" title={official.officialName}>
-                                                                            {official.officialName}
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </Link>
-                                                ))}
-                                            </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {venueGroups[0]?.matches.map(renderPublicMatchCard)}
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 )}

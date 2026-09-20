@@ -4,6 +4,7 @@ import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
+import com.athleticaos.backend.entities.TournamentCategory;
 import com.athleticaos.backend.entities.TournamentStage;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.enums.TournamentStageType;
@@ -11,6 +12,7 @@ import com.athleticaos.backend.enums.TournamentStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.repositories.TournamentCategoryRepository;
 import com.athleticaos.backend.repositories.TournamentRepository;
 import com.athleticaos.backend.repositories.TournamentStageRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,10 +80,16 @@ class TournamentExportIntegrationTest {
     @Autowired
     private MatchRepository matchRepository;
 
+    @Autowired
+    private TournamentCategoryRepository tournamentCategoryRepository;
+
     private static boolean seeded = false;
     private static UUID tournamentId;
     private static UUID match1Id;
     private static UUID match2Id;
+    private static Organisation sharedOrg;
+    private static Team sharedTeamA;
+    private static Team sharedTeamB;
 
     @BeforeEach
     void setUp() {
@@ -95,6 +103,7 @@ class TournamentExportIntegrationTest {
                 .slug("test-export-org")
                 .orgType("CLUB")
                 .build());
+        sharedOrg = org;
 
         Team teamA = teamRepository.saveAndFlush(Team.builder()
                 .name("Test Club A")
@@ -107,6 +116,7 @@ class TournamentExportIntegrationTest {
                 .division("DIV_1")
                 .state("SELANGOR")
                 .build());
+        sharedTeamA = teamA;
 
         Team teamB = teamRepository.saveAndFlush(Team.builder()
                 .name("Test Club B")
@@ -119,6 +129,7 @@ class TournamentExportIntegrationTest {
                 .division("DIV_1")
                 .state("KUALA_LUMPUR")
                 .build());
+        sharedTeamB = teamB;
 
         Tournament tournament = tournamentRepository.saveAndFlush(Tournament.builder()
                 .name("Test Export Cup")
@@ -190,9 +201,10 @@ class TournamentExportIntegrationTest {
         String[] lines = content.split("\n");
         assertThat(lines).hasSize(3);
 
-        assertThat(lines[0]).isEqualTo("MatchCode,TournamentName,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status");
+        assertThat(lines[0]).isEqualTo("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status");
 
-        assertThat(lines[1]).contains(match1Id.toString());
+        assertThat(lines[1]).startsWith("EXP-001,");
+        assertThat(lines[1]).doesNotContain(match1Id.toString());
         assertThat(lines[1]).contains("Test Export Cup");
         assertThat(lines[1]).contains("Pool Stage");
         assertThat(lines[1]).contains("Test Club A");
@@ -201,8 +213,10 @@ class TournamentExportIntegrationTest {
         assertThat(lines[1]).contains("10:00");
         assertThat(lines[1]).contains("Pitch 1");
         assertThat(lines[1]).contains("SCHEDULED");
+        assertThat(lines[1].split(",", -1)).hasSize(10);
 
-        assertThat(lines[2]).contains(match2Id.toString());
+        assertThat(lines[2]).startsWith("EXP-002,");
+        assertThat(lines[2]).doesNotContain(match2Id.toString());
         assertThat(lines[2]).contains("Test Export Cup");
         assertThat(lines[2]).contains("Pool Stage");
         assertThat(lines[2]).contains("Test Club B");
@@ -211,6 +225,7 @@ class TournamentExportIntegrationTest {
         assertThat(lines[2]).contains("14:30");
         assertThat(lines[2]).contains("Pitch 2");
         assertThat(lines[2]).contains("COMPLETED");
+        assertThat(lines[2].split(",", -1)).hasSize(10);
 
         // Assert scores are not present in lines
         assertThat(lines[0]).doesNotContain("HomeScore");
@@ -230,23 +245,225 @@ class TournamentExportIntegrationTest {
         String[] lines = content.split("\n");
         assertThat(lines).hasSize(3);
 
-        assertThat(lines[0]).isEqualTo("MatchCode,TournamentName,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status,HomeScore,AwayScore");
+        assertThat(lines[0]).isEqualTo("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status,HomeScore,AwayScore");
 
         // Line 1: match1 has null scores
-        assertThat(lines[1]).contains(match1Id.toString());
+        assertThat(lines[1]).startsWith("EXP-001,");
+        assertThat(lines[1]).doesNotContain(match1Id.toString());
         assertThat(lines[1]).contains("Test Export Cup");
         assertThat(lines[1]).contains("Pool Stage");
         assertThat(lines[1]).contains("Test Club A");
         assertThat(lines[1]).contains("Test Club B");
         assertThat(lines[1]).contains("SCHEDULED");
+        assertThat(lines[1].split(",", -1)).hasSize(12);
 
         // Line 2: match2 has scores 24 and 17
-        assertThat(lines[2]).contains(match2Id.toString());
+        assertThat(lines[2]).startsWith("EXP-002,");
+        assertThat(lines[2]).doesNotContain(match2Id.toString());
         assertThat(lines[2]).contains("Test Export Cup");
         assertThat(lines[2]).contains("Pool Stage");
         assertThat(lines[2]).contains("Test Club B");
         assertThat(lines[2]).contains("Test Club A");
         assertThat(lines[2]).contains("COMPLETED");
         assertThat(lines[2]).endsWith("24,17");
+        assertThat(lines[2].split(",", -1)).hasSize(12);
+    }
+
+    @Test
+    @DisplayName("export matches and results with category grouping, match number fallbacks, and exact field count")
+    @WithMockUser(roles = "PLAYER")
+    void export_ShouldGroupByCategoryAndFallbackMatchNumber_AndHaveMatchingFieldCounts() throws Exception {
+        Organisation org = sharedOrg != null ? sharedOrg : organisationRepository.findBySlug("test-export-org").orElseThrow();
+        Team teamA = sharedTeamA != null ? sharedTeamA : teamRepository.findBySlug("test-export-team-a").orElseThrow();
+        Team teamB = sharedTeamB != null ? sharedTeamB : teamRepository.findBySlug("test-export-team-b").orElseThrow();
+
+        Tournament multiCatTournament = tournamentRepository.saveAndFlush(Tournament.builder()
+                .name("Test MultiCat Cup")
+                .slug("test-multicat-cup-" + UUID.randomUUID())
+                .level("REGIONAL")
+                .venue("Complex X")
+                .isPublished(true)
+                .status(TournamentStatus.PUBLISHED)
+                .organiserOrg(org)
+                .startDate(LocalDate.of(2026, 10, 1))
+                .endDate(LocalDate.of(2026, 10, 2))
+                .build());
+
+        TournamentCategory catU16 = tournamentCategoryRepository.saveAndFlush(TournamentCategory.builder()
+                .tournament(multiCatTournament)
+                .name("U16 Boys")
+                .build());
+
+        TournamentCategory catMens = tournamentCategoryRepository.saveAndFlush(TournamentCategory.builder()
+                .tournament(multiCatTournament)
+                .name("Men's Open")
+                .build());
+
+        TournamentStage stage = tournamentStageRepository.saveAndFlush(TournamentStage.builder()
+                .tournament(multiCatTournament)
+                .name("Group Stage")
+                .stageType(TournamentStageType.POOL)
+                .displayOrder(1)
+                .build());
+
+        TournamentStage stageU16 = tournamentStageRepository.saveAndFlush(TournamentStage.builder()
+                .tournament(multiCatTournament)
+                .category(catU16)
+                .name("U16 Group Stage")
+                .stageType(TournamentStageType.POOL)
+                .displayOrder(2)
+                .build());
+
+        // Match 1: Category "U16 Boys", explicit matchNumber 101
+        matchRepository.saveAndFlush(Match.builder()
+                .tournament(multiCatTournament)
+                .stage(stage)
+                .category(catU16)
+                .homeTeam(teamA)
+                .awayTeam(teamB)
+                .matchNumber(101)
+                .matchCode("U16-01")
+                .matchDate(LocalDate.of(2026, 10, 1))
+                .kickOffTime(LocalTime.of(10, 0))
+                .status(MatchStatus.SCHEDULED)
+                .venue("Field 1")
+                .deleted(false)
+                .build());
+
+        // Match 2: Category "Men's Open", null matchNumber, fallback to matchCode "MEN-FB"
+        matchRepository.saveAndFlush(Match.builder()
+                .tournament(multiCatTournament)
+                .stage(stage)
+                .category(catMens)
+                .homeTeam(teamB)
+                .awayTeam(teamA)
+                .matchNumber(null)
+                .matchCode("MEN-FB")
+                .matchDate(LocalDate.of(2026, 10, 1))
+                .kickOffTime(LocalTime.of(11, 0))
+                .status(MatchStatus.SCHEDULED)
+                .venue("Field 2")
+                .deleted(false)
+                .build());
+
+        // Match 3: Category "Men's Open", explicit matchNumber 50, earlier time 09:00
+        matchRepository.saveAndFlush(Match.builder()
+                .tournament(multiCatTournament)
+                .stage(stage)
+                .category(catMens)
+                .homeTeam(teamA)
+                .awayTeam(teamB)
+                .matchNumber(50)
+                .matchCode("MEN-50")
+                .matchDate(LocalDate.of(2026, 10, 1))
+                .kickOffTime(LocalTime.of(9, 0))
+                .status(MatchStatus.SCHEDULED)
+                .venue("Field 2")
+                .deleted(false)
+                .build());
+
+        // Match 4: No category (null) on match or stage -> falls back to empty string
+        matchRepository.saveAndFlush(Match.builder()
+                .tournament(multiCatTournament)
+                .stage(stage)
+                .category(null)
+                .homeTeam(teamB)
+                .awayTeam(teamA)
+                .matchNumber(null)
+                .matchCode(null)
+                .matchDate(LocalDate.of(2026, 10, 1))
+                .kickOffTime(LocalTime.of(12, 0))
+                .status(MatchStatus.SCHEDULED)
+                .venue("Field 3")
+                .deleted(false)
+                .build());
+
+        // Match 5: Manually created match with category null, but stage has catU16.
+        // It must resolve to "U16 Boys" and sort within the U16 Boys group (kickOff 10:30, after 10:00).
+        matchRepository.saveAndFlush(Match.builder()
+                .tournament(multiCatTournament)
+                .stage(stageU16)
+                .category(null)
+                .homeTeam(teamA)
+                .awayTeam(teamB)
+                .matchNumber(102)
+                .matchCode("U16-HAND")
+                .matchDate(LocalDate.of(2026, 10, 1))
+                .kickOffTime(LocalTime.of(10, 30))
+                .status(MatchStatus.SCHEDULED)
+                .venue("Field 1")
+                .deleted(false)
+                .build());
+
+        // Verify Matches Export
+        MvcResult matchesResult = mockMvc.perform(get("/api/v1/tournaments/{idOrSlug}/export/matches", multiCatTournament.getId()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String matchesContent = matchesResult.getResponse().getContentAsString();
+        String[] matchLines = matchesContent.split("\n");
+        assertThat(matchLines).hasSize(6); // Header + 5 matches
+
+        // Header: 10 fields
+        String[] headerCols = matchLines[0].split(",", -1);
+        assertThat(headerCols).hasSize(10);
+        assertThat(matchLines[0]).isEqualTo("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status");
+
+        // Every row has exactly 10 fields (no trailing comma)
+        for (int i = 1; i < matchLines.length; i++) {
+            String[] rowCols = matchLines[i].split(",", -1);
+            assertThat(rowCols).withFailMessage("Line %d expected 10 columns but got %d: %s", i, rowCols.length, matchLines[i]).hasSize(10);
+            assertThat(matchLines[i]).doesNotEndWith(",");
+        }
+
+        // Check category grouping and chronological sorting inside category:
+        // 1st match: Men's Open (09:00, matchNumber 50)
+        String[] row1 = matchLines[1].split(",", -1);
+        assertThat(row1[0]).isEqualTo("50");
+        assertThat(row1[2]).isEqualTo("Men's Open");
+        assertThat(row1[7]).isEqualTo("09:00");
+
+        // 2nd match: Men's Open (11:00, matchNumber null -> fallback to matchCode MEN-FB)
+        String[] row2 = matchLines[2].split(",", -1);
+        assertThat(row2[0]).isEqualTo("MEN-FB");
+        assertThat(row2[2]).isEqualTo("Men's Open");
+        assertThat(row2[7]).isEqualTo("11:00");
+
+        // 3rd match: U16 Boys (10:00, matchNumber 101, direct category)
+        String[] row3 = matchLines[3].split(",", -1);
+        assertThat(row3[0]).isEqualTo("101");
+        assertThat(row3[2]).isEqualTo("U16 Boys");
+        assertThat(row3[7]).isEqualTo("10:00");
+
+        // 4th match: U16 Boys (10:30, matchNumber 102, category null on match but stage carries U16 Boys)
+        String[] row4 = matchLines[4].split(",", -1);
+        assertThat(row4[0]).isEqualTo("102");
+        assertThat(row4[2]).isEqualTo("U16 Boys");
+        assertThat(row4[3]).isEqualTo("U16 Group Stage");
+        assertThat(row4[7]).isEqualTo("10:30");
+
+        // 5th match: Uncategorized (empty category last, matchNumber null and matchCode null -> empty string)
+        String[] row5 = matchLines[5].split(",", -1);
+        assertThat(row5[0]).isEmpty();
+        assertThat(row5[2]).isEmpty();
+
+        // Verify Results Export
+        MvcResult resultsResult = mockMvc.perform(get("/api/v1/tournaments/{idOrSlug}/export/results", multiCatTournament.getId()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String resultsContent = resultsResult.getResponse().getContentAsString();
+        String[] resultLines = resultsContent.split("\n");
+        assertThat(resultLines).hasSize(6);
+
+        // Header: 12 fields
+        assertThat(resultLines[0].split(",", -1)).hasSize(12);
+        assertThat(resultLines[0]).isEqualTo("MatchNumber,TournamentName,Category,Stage,HomeTeam,AwayTeam,Date,Time,Venue,Status,HomeScore,AwayScore");
+
+        // Every row has exactly 12 fields
+        for (int i = 1; i < resultLines.length; i++) {
+            String[] rowCols = resultLines[i].split(",", -1);
+            assertThat(rowCols).withFailMessage("Result line %d expected 12 columns but got %d: %s", i, rowCols.length, resultLines[i]).hasSize(12);
+        }
     }
 }
