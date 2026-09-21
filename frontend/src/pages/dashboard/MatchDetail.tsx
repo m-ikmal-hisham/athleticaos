@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController, Pencil, ArrowUp, ArrowDown } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController, Pencil, ArrowUp, ArrowDown, Star } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { MatchIntegrityConsole } from '@/components/admin/match/MatchIntegrityConsole';
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/GlassCard';
@@ -32,25 +32,15 @@ import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
 import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
 import { formatMatchVenueLabel } from '@/utils/venue';
+import { SCORING_RULES } from '@/constants/scoring';
 
-const SCORING_RULES: Record<string, number> = {
-    'TRY': 5,
-    'PENALTY_TRY': 7,
-    'CONVERSION': 2,
-    'PENALTY': 3,
-    'DROP_GOAL': 3,
-    'YELLOW_CARD': 0,
-    'RED_CARD': 0,
-    'SUBSTITUTION': 0,
-    'INJURY': 0,
-    'SCRUM': 0,
-    'LINEOUT': 0,
-};
 
 // Helper for event icons
 const getEventIcon = (type: string) => {
     switch (type) {
         case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Football className="w-5 h-5" weight="fill" /></div>;
+        case 'SUPER_TRY': return <div className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full"><Star className="w-5 h-5" weight="fill" /></div>;
+        case 'PENALTY_TRY': return <div className="p-1 bg-blue-200 dark:bg-blue-800/40 text-blue-800 dark:text-blue-300 rounded-full"><Football className="w-5 h-5" weight="fill" /></div>;
         case 'CONVERSION': return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" weight="bold" /></div>;
         case 'PENALTY': return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" weight="fill" /></div>;
         case 'DROP_GOAL': return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" weight="duotone" /></div>;

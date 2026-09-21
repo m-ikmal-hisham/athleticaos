@@ -203,6 +203,52 @@ public class StatisticsServiceIntegrationTest {
                 assertThat(players.get(2).totalPoints()).isEqualTo(3);
         }
 
+        @Test
+        public void getPointsForEventType_ShouldScoreSuperTryAndPenaltyTryAtSeven() {
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.TRY)).isEqualTo(5);
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.SUPER_TRY)).isEqualTo(7);
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.PENALTY_TRY)).isEqualTo(7);
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.CONVERSION)).isEqualTo(2);
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.PENALTY)).isEqualTo(3);
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.DROP_GOAL)).isEqualTo(3);
+                assertThat(statisticsService.getPointsForEventType(MatchEventType.YELLOW_CARD)).isZero();
+                assertThat(statisticsService.getPointsForEventType(null)).isZero();
+        }
+
+        @Test
+        public void getTournamentLeaderboard_ShouldCountSuperTryAsSevenPointTry() {
+                Organisation org = Organisation.builder().name("Super Org").slug("super-org").orgType("CLUB").build();
+                entityManager.persist(org);
+
+                Tournament tournament = Tournament.builder().name("Super Tournament").slug("super-tournament")
+                                .organiserOrg(org)
+                                .startDate(LocalDate.now())
+                                .endDate(LocalDate.now().plusDays(7))
+                                .venue("Test Venue")
+                                .level("NATIONAL")
+                                .build();
+                entityManager.persist(tournament);
+
+                Team team = Team.builder().name("Super Team").slug("super-team").organisation(org).category("MEN")
+                                .ageGroup("SENIOR").status("ACTIVE").build();
+                entityManager.persist(team);
+
+                // One normal try (5) and one super try (7) => 12 points, 2 tries.
+                createPlayerWithPoints(tournament, team, "Super", "Scorer", MatchEventType.TRY,
+                                MatchEventType.SUPER_TRY);
+
+                entityManager.flush();
+                entityManager.clear();
+
+                TournamentLeaderboardResponse response = statisticsService.getTournamentLeaderboard(tournament.getId(),
+                                null);
+
+                assertThat(response.topPlayers()).hasSize(1);
+                var playerStats = response.topPlayers().get(0);
+                assertThat(playerStats.totalPoints()).isEqualTo(12);
+                assertThat(playerStats.tries()).isEqualTo(2);
+        }
+
         private Player createPlayerWithPoints(Tournament t, Team team, String fName, String lName,
                         MatchEventType... events) {
                 Person person = Person.builder().firstName(fName).lastName(lName).email(fName + lName + "@test.com")

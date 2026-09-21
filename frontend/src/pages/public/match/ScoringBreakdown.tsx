@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } fro
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, PublicMatchEvent } from '../../../api/public.api';
 import { ChartPieSlice } from '@phosphor-icons/react';
+import { getEventPoints } from '@/constants/scoring';
 
 interface ScoringBreakdownProps {
     match: PublicMatchDetail;
@@ -29,27 +30,21 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
             // For Two Halves, check if min <= halfTime.
             const isFirstPeriod = isOneWay ? true : minutes <= halfTime;
 
-            let points = 0;
+            const points = getEventPoints(event.eventType);
+            const side = isHome ? stats.home : stats.away;
+
             switch (event.eventType.toUpperCase()) {
                 case 'TRY':
-                    points = 5;
-                    if (isHome) stats.home.tries += 5; else stats.away.tries += 5;
+                case 'SUPER_TRY':
+                case 'PENALTY_TRY':
+                    side.tries += points;
                     break;
                 case 'PENALTY':
-                    points = 3;
-                    if (isHome) stats.home.pens += 3; else stats.away.pens += 3;
-                    break;
                 case 'DROP_GOAL':
-                    points = 3;
-                    if (isHome) stats.home.pens += 3; else stats.away.pens += 3;
+                    side.pens += points;
                     break;
                 case 'CONVERSION':
-                    points = 2;
-                    if (isHome) stats.home.cons += 2; else stats.away.cons += 2;
-                    break;
-                case 'PENALTY_TRY':
-                    points = 7;
-                    if (isHome) stats.home.tries += 7; else stats.away.tries += 7;
+                    side.cons += points;
                     break;
             }
 

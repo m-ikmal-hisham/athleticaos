@@ -49,6 +49,8 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
             // Assign weight based on event type
             switch (event.eventType.toUpperCase()) {
                 case 'TRY': momentumValue = 5; break;
+                case 'SUPER_TRY': momentumValue = 7; break;
+                case 'PENALTY_TRY': momentumValue = 7; break;
                 case 'PENALTY': momentumValue = 3; break;
                 case 'CONVERSION': momentumValue = 2; break;
                 case 'YELLOW_CARD': momentumValue = -5; break;

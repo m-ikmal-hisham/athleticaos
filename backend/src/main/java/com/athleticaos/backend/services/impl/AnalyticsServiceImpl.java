@@ -155,7 +155,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         // Count Tries
         List<MatchEvent> events = matchEventRepository.findByMatch_Tournament_Id(tournamentId);
         int totalTries = (int) events.stream()
-                .filter(e -> e.getEventType() == MatchEventType.TRY)
+                .filter(e -> e.getEventType() == MatchEventType.TRY
+                        || e.getEventType() == MatchEventType.SUPER_TRY)
                 .count();
 
         double avgPoints = completedMatches > 0 ? (double) totalPoints / completedMatches : 0.0;
