@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
-import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle } from '@phosphor-icons/react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle, DownloadSimple, MapPin, ArrowsClockwise, CaretDown } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
 import { tournamentService } from '@/services/tournamentService';
+import { exportMatches, exportResults, renumberMatches } from '@/api/tournaments.api';
 import { Match, MatchResponse, TournamentCategory } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '@/lib/customToast';
 import { formatMatchStatus, formatTeamShortName } from '@/utils/formatters';
 import { getImageUrl } from '@/utils/image';
+import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
@@ -17,13 +19,21 @@ import { TournamentStageResponse } from '@/types';
 
 interface TournamentMatchesProps {
     tournamentId: string;
+    tournamentSlug?: string;
 }
 
-export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
+interface VenueGroup {
+    venueName: string;
+    matches: MatchResponse[];
+}
+
+export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMatchesProps) {
     const navigate = useNavigate();
     const { matches, loadMatchesByTournament, deleteMatch, loadingList } = useMatchesStore();
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+    const [selectedVenue, setSelectedVenue] = useState<string>('');
+    const [exportingType, setExportingType] = useState<'matches' | 'results' | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [tournamentStages, setTournamentStages] = useState<TournamentStageResponse[]>([]);
 
@@ -35,6 +45,9 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editMatch, setEditMatch] = useState<Match | null>(null); // If set, shows Edit Modal
     const [clearScheduleStep, setClearScheduleStep] = useState<'NONE' | 'CONFIRM'>('NONE');
+    const [renumbering, setRenumbering] = useState(false);
+    const [actionsOpen, setActionsOpen] = useState(false);
+    const actionsRef = useRef<HTMLDivElement>(null);
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
         title: '',
@@ -44,15 +57,111 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         confirmText: 'Confirm'
     });
 
+    const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
+
+    const handleRenumberMatches = async () => {
+        const identifier = tournamentSlug || tournamentId;
+        if (!identifier) return;
+        setRenumbering(true);
+        try {
+            const previewRes = await renumberMatches(identifier, { dryRun: true });
+            const preview = previewRes.data;
+            if (preview.matchesChanged === 0) {
+                showToast.info('Match numbers are already sequential by venue and schedule.');
+                return;
+            }
+
+            const venueLines = (preview.venueBreakdown || [])
+                .map((v: { venue: string; matchCount: number }) => `• ${v.venue || 'Unassigned venue'}: ${v.matchCount} matches`)
+                .join('\n');
+
+            setConfirmModal({
+                isOpen: true,
+                title: 'Renumber matches by venue and schedule?',
+                message: `This will renumber ${preview.matchesChanged} of ${preview.matchesTotal} matches sequentially per venue. Unscheduled matches will be numbered last.\n\n${venueLines}`,
+                confirmText: 'Renumber Matches',
+                variant: 'primary',
+                onConfirm: async () => {
+                    try {
+                        setRenumbering(true);
+                        const resultRes = await renumberMatches(identifier, { dryRun: false });
+                        showToast.success(`Successfully renumbered ${resultRes.data.matchesChanged} matches.`);
+                        setRefreshTrigger(prev => prev + 1);
+                    } catch (err: unknown) {
+                        const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to renumber matches';
+                        showToast.error(message);
+                    } finally {
+                        setRenumbering(false);
+                    }
+                }
+            });
+        } catch (err: unknown) {
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to preview renumbering';
+            showToast.error(message);
+        } finally {
+            setRenumbering(false);
+        }
+    };
+
     useEffect(() => {
         loadData();
     }, [tournamentId, refreshTrigger]);
 
+    // Reset selected venue when category changes
     useEffect(() => {
-        // Filter matches by category if selected
-        let filtered = matches;
-        if (selectedCategoryId) {
-            filtered = matches.filter(m => m.stage?.categoryId === selectedCategoryId);
+        setSelectedVenue('');
+    }, [selectedCategoryId]);
+
+    // Close the actions menu when clicking outside it, the way SearchableSelect does.
+    useEffect(() => {
+        if (!actionsOpen) return;
+        const handleClickOutside = (event: MouseEvent) => {
+            if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+                setActionsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [actionsOpen]);
+
+    // Matches filtered by category
+    const categoryFilteredMatches = useMemo(() => {
+        if (!selectedCategoryId) return matches;
+        return matches.filter(m => m.stage?.categoryId === selectedCategoryId);
+    }, [matches, selectedCategoryId]);
+
+    // Distinct venues across category-filtered matches
+    const categoryVenues = useMemo(() => {
+        const venues = new Set<string>();
+        let hasTbc = false;
+        categoryFilteredMatches.forEach(m => {
+            if (m.venue && m.venue.trim()) {
+                venues.add(m.venue.trim());
+            } else {
+                hasTbc = true;
+            }
+        });
+        const sorted = Array.from(venues).sort((a, b) => a.localeCompare(b));
+        const total = sorted.length + (hasTbc ? 1 : 0);
+        return { sorted, hasTbc, total };
+    }, [categoryFilteredMatches]);
+
+    const venueOptions = useMemo(() => {
+        if (categoryVenues.total < 2) return [];
+        return [
+            { value: '', label: 'All venues' },
+            ...categoryVenues.sorted.map(v => ({ value: v, label: v })),
+            ...(categoryVenues.hasTbc ? [{ value: '__TBC__', label: 'Venue TBC' }] : [])
+        ];
+    }, [categoryVenues]);
+
+    useEffect(() => {
+        // Filter matches by venue if selected
+        let filtered = categoryFilteredMatches;
+        if (selectedVenue === '__TBC__') {
+            filtered = filtered.filter(m => !m.venue || !m.venue.trim());
+        } else if (selectedVenue) {
+            filtered = filtered.filter(m => m.venue?.trim() === selectedVenue);
         }
 
         // Split matches
@@ -68,7 +177,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
         setScheduledMatches(scheduled);
         setUnscheduledMatches(unscheduled);
-    }, [matches, selectedCategoryId]);
+    }, [categoryFilteredMatches, selectedVenue]);
 
     const loadData = async () => {
         try {
@@ -130,6 +239,31 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         }
     };
 
+    const handleExport = async (type: 'matches' | 'results') => {
+        try {
+            setExportingType(type);
+            const response = type === 'matches'
+                ? await exportMatches(tournamentId)
+                : await exportResults(tournamentId);
+
+            const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const slug = tournamentSlug || tournamentId;
+            link.setAttribute('download', `${type}-${slug}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error(`Failed to export ${type}:`, error);
+            showToast.error(`Failed to export ${type}`);
+        } finally {
+            setExportingType(null);
+        }
+    };
+
     const openCreateModal = () => {
         setEditMatch(null);
         setShowCreateModal(true);
@@ -155,8 +289,53 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
         }
         matchesByDate[dateKey].push(match);
     });
-    // Sort dates
-    const sortedDates = Object.keys(matchesByDate).sort();
+
+    // Sort dates (always earliest first)
+    const sortedDates = Object.keys(matchesByDate).sort((a, b) => a.localeCompare(b));
+
+    function groupDateMatchesByVenue(dateMatches: MatchResponse[]): { hasMultipleVenues: boolean; groups: VenueGroup[] } {
+        const venues = new Set<string>();
+        let hasTbc = false;
+        dateMatches.forEach(m => {
+            if (m.venue && m.venue.trim()) {
+                venues.add(m.venue.trim());
+            } else {
+                hasTbc = true;
+            }
+        });
+
+        const totalVenues = venues.size + (hasTbc ? 1 : 0);
+
+        const sortMatches = (items: MatchResponse[]) => {
+            return [...items].sort((a, b) => {
+                const tA = a.kickOffTime || '';
+                const tB = b.kickOffTime || '';
+                return tA.localeCompare(tB);
+            });
+        };
+
+        if (totalVenues < 2) {
+            return {
+                hasMultipleVenues: false,
+                groups: [{ venueName: '', matches: sortMatches(dateMatches) }]
+            };
+        }
+
+        const sortedVenueNames = Array.from(venues).sort((a, b) => a.localeCompare(b));
+        const groups: VenueGroup[] = [];
+
+        sortedVenueNames.forEach(vName => {
+            const venueMatches = dateMatches.filter(m => m.venue?.trim() === vName);
+            groups.push({ venueName: vName, matches: sortMatches(venueMatches) });
+        });
+
+        if (hasTbc) {
+            const tbcMatches = dateMatches.filter(m => !m.venue || !m.venue.trim());
+            groups.push({ venueName: 'Venue TBC', matches: sortMatches(tbcMatches) });
+        }
+
+        return { hasMultipleVenues: true, groups };
+    }
 
     // Grouping Logic for Unscheduled Matches (Sidebar)
     const unscheduledByStage: { [key: string]: MatchResponse[] } = {};
@@ -174,27 +353,67 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {/* Header: title and actions on one row, filters on their own row below. */}
+            <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <CalendarBlank className="w-6 h-6 text-primary" />
-                        Matches ({matches.length})
-                    </h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <CalendarBlank className="w-6 h-6 text-primary" />
+                    Matches ({matches.length})
+                </h3>
 
-                    {/* Category Filter */}
-                    <div className="w-64">
-                        <SearchableSelect
-                            options={categoryOptions}
-                            value={selectedCategoryId || ''}
-                            onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
-                            placeholder="Filter by Category"
-                            className="bg-white dark:bg-slate-800"
-                        />
+                <div className="flex flex-wrap gap-2">
+                    {/* Exports and renumbering live behind one menu so the row stays readable. */}
+                    <div className="relative" ref={actionsRef}>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setActionsOpen(open => !open)}
+                            disabled={exportingType !== null || renumbering}
+                            className="flex items-center gap-2"
+                        >
+                            <DownloadSimple className="w-4 h-4" />
+                            Actions
+                            <CaretDown className="w-3 h-3" />
+                        </Button>
+
+                        {actionsOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 p-2 z-50 space-y-1">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-xs flex items-center gap-2"
+                                    disabled={exportingType !== null}
+                                    onClick={() => { setActionsOpen(false); handleExport('matches'); }}
+                                >
+                                    <DownloadSimple className="w-4 h-4" />
+                                    Export matches (CSV)
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-xs flex items-center gap-2"
+                                    disabled={exportingType !== null}
+                                    onClick={() => { setActionsOpen(false); handleExport('results'); }}
+                                >
+                                    <DownloadSimple className="w-4 h-4" />
+                                    Export results (CSV)
+                                </Button>
+                                {matches.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-xs flex items-center gap-2"
+                                        disabled={renumbering}
+                                        title="Renumber matches sequentially per venue in schedule order"
+                                        onClick={() => { setActionsOpen(false); handleRenumberMatches(); }}
+                                    >
+                                        <ArrowsClockwise className={`w-4 h-4 ${renumbering ? 'animate-spin' : ''}`} />
+                                        Renumber matches
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
-                </div>
-
-                <div className="flex gap-2">
                     {matches.length > 0 && (
                         <div className="relative">
                             <Button
@@ -248,6 +467,31 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                 </div>
             </div>
 
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="w-full sm:w-64">
+                    <SearchableSelect
+                        options={categoryOptions}
+                        value={selectedCategoryId || ''}
+                        onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
+                        placeholder="Filter by Category"
+                        className="bg-white dark:bg-slate-800"
+                    />
+                </div>
+                {venueOptions.length > 0 && (
+                    <div className="w-full sm:w-64">
+                        <SearchableSelect
+                            options={venueOptions}
+                            value={selectedVenue}
+                            onChange={(val) => setSelectedVenue(val ? String(val) : '')}
+                            placeholder="Filter by Venue"
+                            className="bg-white dark:bg-slate-800"
+                        />
+                    </div>
+                )}
+            </div>
+            </div>
+
             {/* Bracket Editor Section */}
             {!loadingList && (
                 <div className="mb-8 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
@@ -279,27 +523,59 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                 <p className="text-slate-500">No scheduled matches{selectedCategoryId ? ' for this category' : ''}.</p>
                             </div>
                         )}
-                        {sortedDates.map(date => (
-                            <div key={date} className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
-                                        {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                    </h3>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+                        {sortedDates.map(date => {
+                            const dateMatches = matchesByDate[date];
+                            const { hasMultipleVenues, groups } = groupDateMatchesByVenue(dateMatches);
+
+                            return (
+                                <div key={date} className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
+                                            {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </h3>
+                                        <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+                                    </div>
+                                    {hasMultipleVenues ? (
+                                        <div className="space-y-6">
+                                            {groups.map(group => (
+                                                <div key={group.venueName} className="space-y-3">
+                                                    <div className="flex items-center gap-2 px-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                        <MapPin className="w-4 h-4 text-primary" />
+                                                        <span>{group.venueName}</span>
+                                                        <span className="text-xs font-normal text-slate-400">({group.matches.length})</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                                        {group.matches.map(match => (
+                                                            <MatchCard
+                                                                key={match.id}
+                                                                match={match}
+                                                                onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                                                                onEdit={(e) => openEditModal(match, e)}
+                                                                onDelete={(e) => handleDeleteMatch(match.id, e)}
+                                                                hasMultiVenues={hasMultiVenues}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                            {groups[0].matches.map(match => (
+                                                <MatchCard
+                                                    key={match.id}
+                                                    match={match}
+                                                    onClick={() => navigate(`/dashboard/matches/${match.id}`)}
+                                                    onEdit={(e) => openEditModal(match, e)}
+                                                    onDelete={(e) => handleDeleteMatch(match.id, e)}
+                                                    hasMultiVenues={hasMultiVenues}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                    {matchesByDate[date].map(match => (
-                                        <MatchCard
-                                            key={match.id}
-                                            match={match}
-                                            onClick={() => navigate(`/dashboard/matches/${match.id}`)}
-                                            onEdit={(e) => openEditModal(match, e)}
-                                            onDelete={(e) => handleDeleteMatch(match.id, e)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Unscheduled Sidebar (1 col) */}
@@ -328,7 +604,7 @@ export function TournamentMatches({ tournamentId }: TournamentMatchesProps) {
                                                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                                                 {match.matchNumber && (
                                                                     <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 shrink-0">
-                                                                        #{match.matchNumber}
+                                                                        {formatMatchVenueLabel(match.matchNumber, match.venue, hasMultiVenues)}
                                                                     </span>
                                                                 )}
                                                                 <span className="truncate max-w-[40%]" title={match.homeTeamName || match.homeTeamPlaceholder}>{match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}</span>
@@ -389,7 +665,7 @@ function TeamLogo({ url, name, className = '' }: { url?: string | null; name?: s
     );
 }
 
-function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse, onClick: () => void, onEdit: (e: any) => void, onDelete: (e: any) => void }) {
+function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match: MatchResponse, onClick: () => void, onEdit: (e: React.MouseEvent) => void, onDelete: (e: React.MouseEvent) => void, hasMultiVenues?: boolean }) {
     return (
         <div
             className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
@@ -428,26 +704,39 @@ function MatchCard({ match, onClick, onEdit, onDelete }: { match: MatchResponse,
             )}
 
 
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Clock className="w-3.5 h-3.5" />
-                    {match.kickOffTime}
-                    {match.venue && <span className="text-slate-500 ml-1">• {match.venue}</span>}
+            <div className="flex justify-between items-start gap-2 mb-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider min-w-0">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span className="shrink-0">{match.kickOffTime}</span>
+                    <span className="text-slate-500 truncate" title={match.venue?.trim() || 'Venue TBC'}>
+                        • {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}
+                    </span>
                 </div>
-                {/* Match Code + Stage badges */}
-                <div className="flex items-center gap-1.5">
+                {/*
+                  Match number, code and stage. Generated codes are long by construction
+                  (20 characters of the tournament slug plus category and round abbreviations), so the
+                  code and stage truncate with the full value in a tooltip. The number is the primary
+                  identifier and never truncates.
+                */}
+                <div className="flex items-center justify-end gap-1.5 min-w-0">
                     {match.matchNumber !== undefined && match.matchNumber !== null && (
-                        <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded font-bold">
-                            Match {match.matchNumber}
+                        <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded font-bold shrink-0 whitespace-nowrap">
+                            {formatMatchVenueLabel(match.matchNumber, match.venue, hasMultiVenues)}
                         </div>
                     )}
                     {match.matchCode && (
-                        <div className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold">
+                        <div
+                            className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold truncate max-w-[7rem]"
+                            title={match.matchCode}
+                        >
                             {match.matchCode}
                         </div>
                     )}
                     {match.stage?.name && (
-                        <div className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                        <div
+                            className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[7rem]"
+                            title={match.stage.name}
+                        >
                             {match.stage.name}
                         </div>
                     )}

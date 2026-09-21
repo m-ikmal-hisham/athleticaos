@@ -62,11 +62,18 @@ class ApiDocsStagingIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("In staging profile, GET /v3/api-docs does not return 200 and does not return OpenAPI document")
+    @DisplayName("In staging profile, GET /v3/api-docs returns 404 and does not return OpenAPI document")
     void apiDocs_inStaging_notPubliclyAccessible() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
-                .andExpect(status().is(not(200)))
+                .andExpect(status().isNotFound())
                 .andExpect(content().string(not(containsString("\"openapi\""))));
+    }
+
+    @Test
+    @DisplayName("In staging profile, anonymous GET /api/v1/no-such-endpoint returns 403 Forbidden")
+    void unknownAuthenticatedEndpoint_inStaging_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/no-such-endpoint"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -8,11 +8,24 @@ export interface BracketRound<T = any> {
 }
 
 export interface BracketGroup<T = any> {
-    id: string; // 'CUP' | 'PLATE' | 'BOWL' | 'SHIELD' | 'SPOON' | 'FORK' | 'CUSTOM'
+    id: string; // 'CUP' | 'PLATE' | 'BOWL' | 'SHIELD' | 'SPOON' | 'FORK' | 'SAUCER' | 'CHOPSTICK' | 'WOODEN_SPOON' | 'WOODEN_FORK' | 'CUSTOM'
     title: string; // e.g. "Cup Bracket", "Plate Bracket", "Bowl Bracket"
     description?: string;
     rounds: BracketRound<T>[];
 }
+
+export const TIER_ABBREVIATIONS: Record<string, string> = {
+    CUP: 'CUP',
+    PLATE: 'PLT',
+    BOWL: 'BWL',
+    SHIELD: 'SHD',
+    SPOON: 'SPN',
+    FORK: 'FRK',
+    SAUCER: 'SAU',
+    CHOPSTICK: 'CHP',
+    WOODEN_SPOON: 'WSP',
+    WOODEN_FORK: 'WFK',
+};
 
 /**
  * Returns a weight for sorting knockout rounds sequentially:
@@ -48,10 +61,36 @@ export function getRoundWeight(roundName: string, stageType?: string): number {
     return 100; // Fallback
 }
 
-const BRACKET_TYPE_IDS = ['PLATE', 'BOWL', 'SHIELD', 'SPOON', 'FORK', 'CLASSIFICATION'];
+const BRACKET_TYPE_IDS = [
+    'PLATE',
+    'BOWL',
+    'SHIELD',
+    'SPOON',
+    'FORK',
+    'SAUCER',
+    'CHOPSTICK',
+    'WOODEN_SPOON',
+    'WOODEN_FORK',
+    'CLASSIFICATION'
+];
 
-/** Display order of bracket groups, strongest first. */
-const BRACKET_ORDER = ['CUP', 'PLATE', 'BOWL', 'SHIELD', 'SPOON', 'FORK', 'CLASSIFICATION'];
+/**
+ * Display order of bracket groups, strongest first. This mirrors PLACEMENT_LADDER in
+ * BracketServiceImpl and IS the placement ranking, so the two must stay in step.
+ */
+const BRACKET_ORDER = [
+    'CUP',
+    'PLATE',
+    'BOWL',
+    'SHIELD',
+    'SPOON',
+    'FORK',
+    'SAUCER',
+    'CHOPSTICK',
+    'WOODEN_SPOON',
+    'WOODEN_FORK',
+    'CLASSIFICATION'
+];
 
 function compareBracketTypeIds(a: string, b: string): number {
     const idxA = BRACKET_ORDER.indexOf(a);
@@ -93,8 +132,12 @@ export function getBracketTitle(typeId: string): string {
         case 'PLATE': return 'Plate Bracket';
         case 'BOWL': return 'Bowl Bracket';
         case 'SHIELD': return 'Shield Bracket';
+        case 'SAUCER': return 'Saucer Bracket';
+        case 'CHOPSTICK': return 'Chopstick Bracket';
         case 'SPOON': return 'Spoon Bracket';
         case 'FORK': return 'Fork Bracket';
+        case 'WOODEN_SPOON': return 'Wooden Spoon Bracket';
+        case 'WOODEN_FORK': return 'Wooden Fork Bracket';
         case 'CLASSIFICATION': return 'Classification Bracket';
         default: return `${typeId.charAt(0) + typeId.slice(1).toLowerCase()} Bracket`;
     }

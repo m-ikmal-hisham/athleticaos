@@ -79,6 +79,8 @@ export interface PublicMatchSummary {
     stageDisplayOrder?: number;
     round?: string;
     officials?: { id?: string, officialName?: string, assignedRole?: string, officialRoleName?: string }[];
+    matchNumber?: number;
+    hasMultipleVenues?: boolean;
 }
 
 export interface PublicMatchDetail extends PublicMatchSummary {

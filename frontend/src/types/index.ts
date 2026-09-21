@@ -95,14 +95,18 @@ export enum AgeGroup {
     U8 = 'U8',
     U9 = 'U9',
     U10 = 'U10',
+    U11 = 'U11',
     U12 = 'U12',
+    U13 = 'U13',
     U14 = 'U14',
     U15 = 'U15',
     U16 = 'U16',
+    U17 = 'U17',
     U18 = 'U18',
     U19 = 'U19',
     U20 = 'U20',
     U21 = 'U21',
+    U22 = 'U22',
     U23 = 'U23',
     SENIOR = 'SENIOR',
     O35 = 'O35',
@@ -492,6 +496,7 @@ export interface MatchResponse extends Match {
     maxBenchCount?: number;
     matchDuration?: number;
     isOneWayMatch?: boolean;
+    hasMultipleVenues?: boolean;
 }
 
 export interface TournamentStageResponse {
@@ -570,3 +575,27 @@ export interface MatchLineupEntry {
     isStarter?: boolean;
     positionDisplay?: string;
 }
+
+export interface MatchRenumberRequest {
+    dryRun: boolean;
+}
+
+export interface MatchRenumberChange {
+    matchId: string;
+    venue?: string;
+    currentNumber?: number | null;
+    newNumber: number;
+}
+
+export interface VenueBreakdown {
+    venue: string;
+    matchCount: number;
+}
+
+export interface MatchRenumberResponse {
+    matchesTotal: number;
+    matchesChanged: number;
+    changes: MatchRenumberChange[];
+    venueBreakdown: VenueBreakdown[];
+}
+

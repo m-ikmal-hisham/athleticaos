@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown, CaretDown, CaretUp } from '@phosphor-icons/react';
+import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown, CaretDown, CaretUp, Star } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, publicTournamentApi, PublicMatchLineups, PublicLineupEntry } from '../../../api/public.api';
 import { formatEventType } from '@/utils/formatters';
@@ -152,6 +152,22 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                     bg: 'bg-blue-50 dark:bg-blue-900/20',
                     border: 'border-blue-200 dark:border-blue-800',
                     text: 'text-blue-700 dark:text-blue-400',
+                    size: 'large'
+                };
+            case 'SUPER_TRY':
+                return {
+                    icon: <Star className="w-5 h-5" weight="fill" />,
+                    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+                    border: 'border-emerald-200 dark:border-emerald-800',
+                    text: 'text-emerald-700 dark:text-emerald-400',
+                    size: 'large'
+                };
+            case 'PENALTY_TRY':
+                return {
+                    icon: <Football className="w-5 h-5" weight="fill" />,
+                    bg: 'bg-sky-50 dark:bg-sky-900/20',
+                    border: 'border-sky-200 dark:border-sky-800',
+                    text: 'text-sky-700 dark:text-sky-400',
                     size: 'large'
                 };
             case 'CONVERSION':

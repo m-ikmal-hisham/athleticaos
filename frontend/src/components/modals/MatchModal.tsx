@@ -11,6 +11,7 @@ import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchForma
 import { Team, Match, Tournament } from '@/types';
 import { useMatchesStore } from '@/store/matches.store';
 import { showToast } from '@/lib/customToast';
+import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
 
 interface MatchModalProps {
     isOpen: boolean;
@@ -328,10 +329,12 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         handleChange(side === 'home' ? 'homeTeamPlaceholder' : 'awayTeamPlaceholder', `${pool}${position}`);
     };
 
+    const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
+
     const availableMatchesOptions = matches
         .filter(m => m.id !== initialMatch?.id)
         .map(m => {
-            const numLabel = m.matchNumber ? `Match ${m.matchNumber}` : (m.matchCode || 'Match');
+            const numLabel = formatMatchVenueLabel(m.matchNumber, m.venue, hasMultiVenues) || (m.matchCode || 'Match');
             const homeName = m.homeTeamName || m.homeTeamPlaceholder || 'TBD';
             const awayName = m.awayTeamName || m.awayTeamPlaceholder || 'TBD';
             const stageName = m.stage?.name || 'Unassigned';
@@ -564,13 +567,16 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 </div>
 
                 <div className="space-y-2">
-                    <Label>Venue</Label>
+                    <Label>Venue (Optional)</Label>
                     <Input
                         placeholder="Stadium or Field Name"
                         value={formData.venue}
                         onChange={(e) => handleChange('venue', e.target.value)}
-                        required
                     />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Leave empty to list the match under &ldquo;Venue TBC&rdquo;. Matches with no venue share one
+                        number sequence, separate from each named venue.
+                    </p>
                 </div>
 
                 <div className="space-y-2">

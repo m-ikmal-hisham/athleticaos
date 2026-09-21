@@ -12,5 +12,9 @@ public enum TournamentStageType {
     THIRD_PLACE,
     CLASSIFICATION,
     SPOON,
-    FORK
+    FORK,
+    SAUCER,
+    CHOPSTICK,
+    WOODEN_SPOON,
+    WOODEN_FORK
 }

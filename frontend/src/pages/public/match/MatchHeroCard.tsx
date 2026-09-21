@@ -54,10 +54,19 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
     const awaySummary = summaryEvents(match.awayTeamName);
 
     const formatMatchCode = (code?: string) => {
+        if (match.matchNumber) {
+            if (match.hasMultipleVenues && match.venue?.trim()) {
+                return `Match ${match.matchNumber} · ${match.venue.trim()}`;
+            }
+            return `Match ${match.matchNumber}`;
+        }
         if (!code) return null;
         if (code.length < 10) return code;
         const matchNumber = code.match(/-M(\d+)$/);
         if (matchNumber) {
+            if (match.hasMultipleVenues && match.venue?.trim()) {
+                return `Match ${matchNumber[1]} · ${match.venue.trim()}`;
+            }
             return `Match ${matchNumber[1]}`;
         }
         return null;

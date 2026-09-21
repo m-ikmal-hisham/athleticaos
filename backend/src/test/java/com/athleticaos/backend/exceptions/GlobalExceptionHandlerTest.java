@@ -13,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -180,6 +184,26 @@ public class GlobalExceptionHandlerTest {
         org.assertj.core.api.Assertions.assertThat(matchNode.has("id")).isFalse();
     }
 
+    @Test
+    void noResourceFoundException_returns404WithNeutralMessageAndNoPathEchoed() throws Exception {
+        mockMvc.perform(get("/test-errors/resource-not-found"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.message").value(not(containsString("sensitive-resource"))));
+    }
+
+    @Test
+    void noHandlerFoundException_returns404WithNeutralMessageAndNoPathEchoed() throws Exception {
+        mockMvc.perform(get("/test-errors/handler-not-found"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.message").value(not(containsString("sensitive-handler"))));
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -248,6 +272,16 @@ public class GlobalExceptionHandlerTest {
                     new PossibleDuplicateMatch("AOS-000001", "Jane", "Doe")
             );
             throw new PossibleDuplicatePersonException(matches, 2);
+        }
+
+        @GetMapping("/resource-not-found")
+        public String testResourceNotFound() throws Exception {
+            throw new NoResourceFoundException(HttpMethod.GET, "sensitive-resource");
+        }
+
+        @GetMapping("/handler-not-found")
+        public String testNoHandlerFound() throws Exception {
+            throw new NoHandlerFoundException("GET", "/test-errors/sensitive-handler", new HttpHeaders());
         }
     }
 

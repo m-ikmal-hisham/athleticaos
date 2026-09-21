@@ -1,6 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.util.UrlSanitizer;
+import com.athleticaos.backend.utils.VenueUtils;
 
 import com.athleticaos.backend.dtos.match.MatchCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchResponse;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -80,13 +82,6 @@ public class MatchServiceImpl implements MatchService {
     public List<MatchResponse> getAllMatches() {
         return getAllMatches(null, null, null);
     }
-
-    // ... [omitted unchanged methods for brevity in tool call, but must be careful
-    // with offsets if not replacing whole block.
-    // Actually, I should use specific small replace calls for injection and for the
-    // methods to avoid large text matching issues.]
-    // I will replace fields and then separate replace calls for
-    // deleteMatch/deleteMatches.
 
     @Override
     @Transactional(readOnly = true)
@@ -263,12 +258,15 @@ public class MatchServiceImpl implements MatchService {
                 .awayTeamPlaceholder(request.getAwayTeamPlaceholder())
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
-                .venue(request.getVenue())
+                .venue(VenueUtils.normalizeVenue(request.getVenue()).isEmpty()
+                        ? null
+                        : VenueUtils.normalizeVenue(request.getVenue()))
                 .pitch(request.getPitch())
                 .phase(request.getPhase())
                 .stage(stage)
                 .matchCode(request.getMatchCode())
-                .matchNumber(matchRepository.findMaxMatchNumberByTournamentId(tournament.getId()) + 1)
+                .matchNumber(matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
+                        tournament.getId(), com.athleticaos.backend.utils.VenueUtils.normalizeVenue(request.getVenue())) + 1)
                 .status(MatchStatus.SCHEDULED) // Default status
                 .build();
 
@@ -296,7 +294,11 @@ public class MatchServiceImpl implements MatchService {
             match.setKickOffTime(request.getKickOffTime());
         }
         if (request.getVenue() != null) {
-            match.setVenue(request.getVenue());
+            // A null venue means "leave unchanged"; an empty one means the organiser cleared it, and
+            // an unassigned venue is stored as NULL so every "Venue TBC" match looks the same in the
+            // database as one that never had a venue.
+            String requestedVenue = request.getVenue().trim();
+            match.setVenue(requestedVenue.isEmpty() ? null : requestedVenue);
         }
         if (request.getPitch() != null) {
             match.setPitch(request.getPitch());
@@ -389,7 +391,7 @@ public class MatchServiceImpl implements MatchService {
             feeder.setLoserSlot("HOME");
             matchRepository.save(feeder);
             match.setHomeTeam(null);
-            match.setHomeTeamPlaceholder(feederPlaceholder("Loser", feeder));
+            match.setHomeTeamPlaceholder(feederPlaceholder("Lose", feeder));
         }
 
         // Handle Away Feeder Match
@@ -410,7 +412,7 @@ public class MatchServiceImpl implements MatchService {
             feeder.setLoserSlot("AWAY");
             matchRepository.save(feeder);
             match.setAwayTeam(null);
-            match.setAwayTeamPlaceholder(feederPlaceholder("Loser", feeder));
+            match.setAwayTeamPlaceholder(feederPlaceholder("Lose", feeder));
         }
         // ------------------------
 
@@ -506,14 +508,48 @@ public class MatchServiceImpl implements MatchService {
     }
 
     private MatchResponse mapToResponse(Match match) {
-        return mapToResponse(match, null, null, null, null);
+        // Feeder labels are rendered from the feeder's CURRENT number, so a single-match response has
+        // to resolve them too — otherwise a match detail page would disagree with the schedule after
+        // a renumber. Only an unassigned slot can carry a feeder label, so an ordinary match with both
+        // teams known costs no extra query at all.
+        if (match.getHomeTeam() != null && match.getAwayTeam() != null) {
+            return mapToResponse(match, null, null, null, null, null, null, null);
+        }
+
+        java.util.Map<UUID, Match> feedersById = new java.util.HashMap<>();
+        for (String slot : new String[] { "HOME", "AWAY" }) {
+            Match feeder = findFeederForSlot(match, slot);
+            if (feeder != null && feeder.getId() != null) {
+                feedersById.put(feeder.getId(), feeder);
+            }
+        }
+        if (feedersById.isEmpty()) {
+            return mapToResponse(match, null, null, null, null, null, null, null);
+        }
+
+        java.util.Map<Integer, Match> feedersByNumber = new java.util.HashMap<>();
+        java.util.Map<String, Match> feedersByCode = new java.util.HashMap<>();
+        for (Match feeder : feedersById.values()) {
+            if (feeder.getMatchNumber() != null) {
+                feedersByNumber.put(feeder.getMatchNumber(), feeder);
+            }
+            if (feeder.getMatchCode() != null) {
+                feedersByCode.put(feeder.getMatchCode().toUpperCase(), feeder);
+            }
+        }
+        return mapToResponse(match, null, null, null, null, feedersById, feedersByNumber, feedersByCode);
     }
+
+
 
     private MatchResponse mapToResponse(Match match,
             java.util.Map<UUID, UUID> homeWinnerMap,
             java.util.Map<UUID, UUID> homeLoserMap,
             java.util.Map<UUID, UUID> awayWinnerMap,
-            java.util.Map<UUID, UUID> awayLoserMap) {
+            java.util.Map<UUID, UUID> awayLoserMap,
+            java.util.Map<UUID, Match> matchesById,
+            java.util.Map<Integer, Match> matchesByNumber,
+            java.util.Map<String, Match> matchesByCode) {
         MatchResponse.MatchResponseBuilder builder = MatchResponse.builder()
                 .id(match.getId())
                 .tournamentId(match.getTournament() != null ? match.getTournament().getId() : null)
@@ -563,6 +599,13 @@ public class MatchServiceImpl implements MatchService {
             builder.maxBenchCount(10);
         }
 
+        String homePlaceholder = match.getHomeTeamPlaceholder();
+        String awayPlaceholder = match.getAwayTeamPlaceholder();
+        if (matchesById != null || matchesByNumber != null || matchesByCode != null) {
+            homePlaceholder = VenueUtils.formatFeederPlaceholder(match, homePlaceholder, "HOME", matchesById, matchesByNumber, matchesByCode);
+            awayPlaceholder = VenueUtils.formatFeederPlaceholder(match, awayPlaceholder, "AWAY", matchesById, matchesByNumber, matchesByCode);
+        }
+
         if (match.getHomeTeam() != null) {
             builder.homeTeamId(match.getHomeTeam().getId());
             builder.homeTeamName(match.getHomeTeam().getName());
@@ -578,9 +621,9 @@ public class MatchServiceImpl implements MatchService {
                 builder.homeTeamOrgId(match.getHomeTeam().getOrganisation().getId());
             }
         } else {
-            builder.homeTeamName(match.getHomeTeamPlaceholder() != null ? match.getHomeTeamPlaceholder() : "TBD");
+            builder.homeTeamName(homePlaceholder != null ? homePlaceholder : "TBD");
         }
-        builder.homeTeamPlaceholder(match.getHomeTeamPlaceholder());
+        builder.homeTeamPlaceholder(homePlaceholder);
 
         if (match.getAwayTeam() != null) {
             builder.awayTeamId(match.getAwayTeam().getId());
@@ -597,9 +640,9 @@ public class MatchServiceImpl implements MatchService {
                 builder.awayTeamOrgId(match.getAwayTeam().getOrganisation().getId());
             }
         } else {
-            builder.awayTeamName(match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD");
+            builder.awayTeamName(awayPlaceholder != null ? awayPlaceholder : "TBD");
         }
-        builder.awayTeamPlaceholder(match.getAwayTeamPlaceholder());
+        builder.awayTeamPlaceholder(awayPlaceholder);
 
         // Resolve Feeder Match References
         UUID matchId = match.getId();
@@ -658,8 +701,16 @@ public class MatchServiceImpl implements MatchService {
         java.util.Map<UUID, UUID> awayWinnerMap = new java.util.HashMap<>();
         java.util.Map<UUID, UUID> awayLoserMap = new java.util.HashMap<>();
 
+        java.util.Map<UUID, Match> matchesById = new java.util.HashMap<>();
+        java.util.Map<Integer, Match> matchesByNumber = new java.util.HashMap<>();
+        java.util.Map<String, Match> matchesByCode = new java.util.HashMap<>();
+
         for (Match m : matches) {
             if (m.getId() == null) continue;
+            matchesById.put(m.getId(), m);
+            if (m.getMatchNumber() != null) matchesByNumber.put(m.getMatchNumber(), m);
+            if (m.getMatchCode() != null) matchesByCode.put(m.getMatchCode().toUpperCase(), m);
+
             if (m.getNextMatchIdForWinner() != null) {
                 if ("HOME".equalsIgnoreCase(m.getWinnerSlot())) {
                     homeWinnerMap.put(m.getNextMatchIdForWinner(), m.getId());
@@ -677,7 +728,7 @@ public class MatchServiceImpl implements MatchService {
         }
 
         return matches.stream()
-                .map(m -> mapToResponse(m, homeWinnerMap, homeLoserMap, awayWinnerMap, awayLoserMap))
+                .map(m -> mapToResponse(m, homeWinnerMap, homeLoserMap, awayWinnerMap, awayLoserMap, matchesById, matchesByNumber, matchesByCode))
                 .collect(Collectors.toList());
     }
 
@@ -875,11 +926,33 @@ public class MatchServiceImpl implements MatchService {
     /**
      * Label for a slot fed from an earlier match, matching the wording the bracket generator
      * uses ("Winner MATCH-CODE") so a manually rewired slot reads the same as a generated one.
+     *
+     * The stored text carries the feeder's match CODE, never its number: numbers run per venue and
+     * an organiser can renumber a tournament at any time, which would leave stored text pointing at
+     * a different match. VenueUtils.formatFeederPlaceholder renders the current number, and the
+     * feeder's venue when it differs, at display time.
      */
+
     private String feederPlaceholder(String outcome, Match feeder) {
         String code = feeder.getMatchCode() != null ? feeder.getMatchCode() : "match";
         String label = outcome + " " + code;
         return label.length() > 255 ? label.substring(0, 255) : label;
+    }
+
+    /**
+     * Finds the match that feeds one slot of this match, if any. Two indexed lookups on the link
+     * columns, so resolving a single match's labels costs far less than loading its tournament.
+     */
+    private Match findFeederForSlot(Match match, String slot) {
+        if (match.getId() == null) {
+            return null;
+        }
+        List<Match> byWinner = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(match.getId(), slot);
+        if (!byWinner.isEmpty()) {
+            return byWinner.get(0);
+        }
+        List<Match> byLoser = matchRepository.findByNextMatchIdForLoserAndLoserSlot(match.getId(), slot);
+        return byLoser.isEmpty() ? null : byLoser.get(0);
     }
 
     /** Byes and walkovers are decided by an explicit winner rather than by scores. */
@@ -1055,5 +1128,126 @@ public class MatchServiceImpl implements MatchService {
                 log.error("Failed to auto-progress pool stages for tournament {}", tournamentId, e);
             }
         }
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public com.athleticaos.backend.dtos.match.MatchRenumberResponse renumberMatches(
+            UUID tournamentId, boolean dryRun, HttpServletRequest httpRequest) {
+        tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found: " + tournamentId));
+
+        List<Match> matches = matchRepository.findByTournamentId(tournamentId);
+        int totalMatches = matches.size();
+
+        // Index original positions to preserve relative order of unscheduled or tied matches
+        Map<UUID, Integer> originalOrder = new java.util.HashMap<>();
+        for (int i = 0; i < matches.size(); i++) {
+            originalOrder.put(matches.get(i).getId(), i);
+        }
+
+        // Group non-deleted matches by normalised venue key
+        Map<String, List<Match>> groups = matches.stream()
+                .collect(Collectors.groupingBy(
+                        m -> com.athleticaos.backend.utils.VenueUtils.normalizeVenue(m.getVenue()),
+                        java.util.LinkedHashMap::new,
+                        Collectors.toList()));
+
+        List<com.athleticaos.backend.dtos.match.MatchRenumberResponse.MatchRenumberChange> changes = new java.util.ArrayList<>();
+        List<com.athleticaos.backend.dtos.match.MatchRenumberResponse.VenueBreakdown> breakdown = new java.util.ArrayList<>();
+        Map<Match, Integer> targetNumbers = new java.util.IdentityHashMap<>();
+
+        for (Map.Entry<String, List<Match>> entry : groups.entrySet()) {
+            List<Match> groupMatches = entry.getValue();
+
+            // Order within group: scheduled matches first by date, then kick-off time, then current matchNumber tie-break.
+            // Unscheduled matches come last, keeping their current relative order.
+            groupMatches.sort((m1, m2) -> {
+                boolean m1Scheduled = m1.getMatchDate() != null && m1.getKickOffTime() != null;
+                boolean m2Scheduled = m2.getMatchDate() != null && m2.getKickOffTime() != null;
+                if (m1Scheduled && m2Scheduled) {
+                    int c = m1.getMatchDate().compareTo(m2.getMatchDate());
+                    if (c != 0) return c;
+                    c = m1.getKickOffTime().compareTo(m2.getKickOffTime());
+                    if (c != 0) return c;
+                    // Pitch is an intentional secondary ordering: two matches can kick off at the
+                    // same time at one venue on different pitches, and the printed schedule reads
+                    // pitch by pitch. Matches with no pitch sort first.
+                    String p1 = m1.getPitch() != null ? m1.getPitch().trim() : "";
+                    String p2 = m2.getPitch() != null ? m2.getPitch().trim() : "";
+                    c = p1.compareToIgnoreCase(p2);
+                    if (c != 0) return c;
+                    Integer n1 = m1.getMatchNumber();
+                    Integer n2 = m2.getMatchNumber();
+                    if (n1 != null && n2 != null) {
+                        c = n1.compareTo(n2);
+                        if (c != 0) return c;
+                    } else if (n1 != null) {
+                        return -1;
+                    } else if (n2 != null) {
+                        return 1;
+                    }
+                    return Integer.compare(originalOrder.get(m1.getId()), originalOrder.get(m2.getId()));
+                } else if (m1Scheduled) {
+                    return -1;
+                } else if (m2Scheduled) {
+                    return 1;
+                } else {
+                    return Integer.compare(originalOrder.get(m1.getId()), originalOrder.get(m2.getId()));
+                }
+            });
+
+            // Derive a user-facing label for the venue
+            String displayVenue = entry.getKey().isEmpty() ? "Unassigned" : entry.getKey();
+            breakdown.add(new com.athleticaos.backend.dtos.match.MatchRenumberResponse.VenueBreakdown(displayVenue, groupMatches.size()));
+
+            for (int i = 0; i < groupMatches.size(); i++) {
+                Match m = groupMatches.get(i);
+                int targetNumber = i + 1;
+                if (m.getMatchNumber() == null || m.getMatchNumber() != targetNumber) {
+                    changes.add(new com.athleticaos.backend.dtos.match.MatchRenumberResponse.MatchRenumberChange(
+                            m.getId(), m.getVenue(), m.getMatchNumber(), targetNumber));
+                    targetNumbers.put(m, targetNumber);
+                }
+            }
+        }
+
+        if (!dryRun && !changes.isEmpty()) {
+            // Two phases are required due to the unique index uq_matches_tournament_venue_match_number
+            // on (tournament_id, venue, match_number). Because PostgreSQL unique indexes are checked
+            // immediately, in-place permutations or reassignment of numbers within the same venue group
+            // would cause unique constraint violations. In Phase 1, all matches changing numbers are
+            // temporarily moved to numbers above the tournament's maximum existing match number and flushed.
+            // In Phase 2, the final sequential numbers (1..K) are safely applied and flushed.
+            int maxExisting = matches.stream()
+                    .map(Match::getMatchNumber)
+                    .filter(java.util.Objects::nonNull)
+                    .max(Integer::compareTo)
+                    .orElse(0);
+
+            int tempOffset = maxExisting + 1;
+            for (Match m : targetNumbers.keySet()) {
+                m.setMatchNumber(tempOffset++);
+                matchRepository.save(m);
+            }
+            matchRepository.flush();
+
+            for (Map.Entry<Match, Integer> entry : targetNumbers.entrySet()) {
+                Match m = entry.getKey();
+                m.setMatchNumber(entry.getValue());
+                matchRepository.save(m);
+            }
+            matchRepository.flush();
+
+            auditLogger.logMatchesRenumbered(tournamentId, changes.size(), httpRequest);
+        }
+
+        return com.athleticaos.backend.dtos.match.MatchRenumberResponse.builder()
+                .matchesTotal(totalMatches)
+                .matchesChanged(changes.size())
+                .changes(changes)
+                .venueBreakdown(breakdown)
+                .build();
     }
 }
