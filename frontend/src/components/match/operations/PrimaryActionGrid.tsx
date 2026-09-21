@@ -1,7 +1,17 @@
-import { HandPalm, Warning, Cardholder } from '@phosphor-icons/react';
+import { HandPalm, Warning, Cardholder, Star } from '@phosphor-icons/react';
+
+export type PrimaryAction =
+    | 'TRY'
+    | 'SUPER_TRY'
+    | 'CONVERSION'
+    | 'PENALTY'
+    | 'DROP_GOAL'
+    | 'PENALTY_TRY'
+    | 'YELLOW_CARD'
+    | 'RED_CARD';
 
 interface PrimaryActionGridProps {
-    onAction: (action: 'TRY' | 'CONVERSION' | 'PENALTY' | 'DROP_GOAL' | 'PENALTY_TRY' | 'YELLOW_CARD' | 'RED_CARD') => void;
+    onAction: (action: PrimaryAction) => void;
     disabled?: boolean;
 }
 
@@ -12,11 +22,22 @@ export const PrimaryActionGrid = ({ onAction, disabled }: PrimaryActionGridProps
             <button
                 onClick={() => onAction('TRY')}
                 disabled={disabled}
-                className="col-span-2 md:col-span-2 bg-blue-600 active:bg-blue-700 hover:bg-blue-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg transition-transform active:scale-95 touch-manipulation h-32 md:h-full"
+                className="col-span-1 md:col-span-1 bg-blue-600 active:bg-blue-700 hover:bg-blue-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg transition-transform active:scale-95 touch-manipulation h-32 md:h-full"
             >
                 <HandPalm className="w-10 h-10 md:w-12 md:h-12" weight="fill" />
                 <span className="text-2xl font-black uppercase tracking-wider">TRY</span>
                 <span className="text-sm opacity-75 font-mono">+5 PTS</span>
+            </button>
+
+            {/* Super Try - Same priority as a try, worth 7 */}
+            <button
+                onClick={() => onAction('SUPER_TRY')}
+                disabled={disabled}
+                className="col-span-1 md:col-span-1 bg-emerald-600 active:bg-emerald-700 hover:bg-emerald-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg transition-transform active:scale-95 touch-manipulation h-32 md:h-full"
+            >
+                <Star className="w-10 h-10 md:w-12 md:h-12" weight="fill" />
+                <span className="text-xl font-black uppercase tracking-wider text-center leading-tight">Super Try</span>
+                <span className="text-sm opacity-75 font-mono">+7 PTS</span>
             </button>
 
             {/* Conversion */}

@@ -2,6 +2,7 @@ package com.athleticaos.backend.enums;
 
 public enum MatchEventType {
     TRY,
+    SUPER_TRY,
     CONVERSION,
     PENALTY,
     DROP_GOAL,
