@@ -260,7 +260,9 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
                                                                 .joinedDate(pt.getJoinedDate())
                                                                 .isActive(pt.getIsActive())
                                                                 .nationalPlayerStatus(pt.getPlayer().getPerson().getNationalPlayerStatus())
-                                                                .tries(pEvents.getOrDefault(com.athleticaos.backend.enums.MatchEventType.TRY, 0))
+                                                                // A super try is a try worth 7 rather than 5, so it counts in the same tally.
+                                                                .tries(pEvents.getOrDefault(com.athleticaos.backend.enums.MatchEventType.TRY, 0)
+                                                                                + pEvents.getOrDefault(com.athleticaos.backend.enums.MatchEventType.SUPER_TRY, 0))
                                                                 .conversions(pEvents.getOrDefault(com.athleticaos.backend.enums.MatchEventType.CONVERSION, 0))
                                                                 .penalties(pEvents.getOrDefault(com.athleticaos.backend.enums.MatchEventType.PENALTY, 0))
                                                                 .dropGoals(pEvents.getOrDefault(com.athleticaos.backend.enums.MatchEventType.DROP_GOAL, 0))

@@ -52,7 +52,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
                 // Efficiently count events via SQL
                 int totalTries = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
-                                MatchEventType.TRY, categoryId, categoryId == null);
+                                MatchEventType.TRY, categoryId, categoryId == null)
+                                + (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
+                                                MatchEventType.SUPER_TRY, categoryId, categoryId == null);
                 int totalYellowCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
                                 MatchEventType.YELLOW_CARD, categoryId, categoryId == null);
                 int totalRedCards = (int) matchEventRepository.countByTournamentIdAndEventType(tournamentId,
@@ -165,7 +167,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 .orElse(null);
                         }
 
-                        int tries = countEvents(playerEvents, MatchEventType.TRY);
+                        int tries = countTries(playerEvents);
                         int conversions = countEvents(playerEvents, MatchEventType.CONVERSION);
                         int penalties = countEvents(playerEvents, MatchEventType.PENALTY);
                         int dropGoals = countEvents(playerEvents, MatchEventType.DROP_GOAL);
@@ -291,7 +293,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                         .filter(e -> e.getTeam().getId().equals(teamId))
                                         .toList();
 
-                        int triesScored = countEvents(teamEvents, MatchEventType.TRY);
+                        int triesScored = countTries(teamEvents);
                         int conversions = countEvents(teamEvents, MatchEventType.CONVERSION);
                         int penalties = countEvents(teamEvents, MatchEventType.PENALTY);
                         int dropGoals = countEvents(teamEvents, MatchEventType.DROP_GOAL);
@@ -424,7 +426,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 List<MatchEvent> playerEvents = matchEventRepository.findByPlayer_Id(playerId);
 
                 // 3. Aggregate Career Stats (only count events where player is the primary actor)
-                int tries = countEvents(playerEvents, MatchEventType.TRY);
+                int tries = countTries(playerEvents);
                 int conversions = countEvents(playerEvents, MatchEventType.CONVERSION);
                 int penalties = countEvents(playerEvents, MatchEventType.PENALTY);
                 int dropGoals = countEvents(playerEvents, MatchEventType.DROP_GOAL);
@@ -697,7 +699,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 .collect(Collectors.toList());
 
                 // 3. Aggregate Stats
-                int tries = countEvents(playerEvents, MatchEventType.TRY);
+                int tries = countTries(playerEvents);
                 int conversions = countEvents(playerEvents, MatchEventType.CONVERSION);
                 int penalties = countEvents(playerEvents, MatchEventType.PENALTY);
                 int dropGoals = countEvents(playerEvents, MatchEventType.DROP_GOAL);
@@ -1025,7 +1027,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                                 MatchEventType type = (MatchEventType) row[0];
                                 int count = ((Long) row[1]).intValue();
                                 switch (type) {
-                                        case TRY -> tries = count;
+                                        case TRY, SUPER_TRY -> tries += count;
                                         case CONVERSION -> conversions = count;
                                         case PENALTY -> penalties = count;
                                         case DROP_GOAL -> dropGoals = count;
@@ -1073,6 +1075,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                         if (teamName != null && event.getTeam() != null && teamName.equals(event.getTeam().getName())) {
                                 switch (event.getEventType()) {
                                         case TRY:
+                                        case SUPER_TRY:
                                                 tries++;
                                                 break;
                                         case CONVERSION:
@@ -1106,11 +1109,22 @@ public class StatisticsServiceImpl implements StatisticsService {
                 return (int) events.stream().filter(e -> e.getEventType() == type).count();
         }
 
+        /**
+         * A super try is a try worth 7 points rather than 5, so it belongs in the same
+         * tally as a normal try — otherwise it disappears from try counts and
+         * top-scorer tables.
+         */
+        private int countTries(List<MatchEvent> events) {
+                return countEvents(events, MatchEventType.TRY) + countEvents(events, MatchEventType.SUPER_TRY);
+        }
+
         @Override
         public int getPointsForEventType(MatchEventType eventType) { // Changed signature to match Interface (public)
                 if (eventType == null)
                         return 0;
                 if (eventType == MatchEventType.TRY) return 5;
+                if (eventType == MatchEventType.SUPER_TRY) return 7;
+                if (eventType == MatchEventType.PENALTY_TRY) return 7;
                 if (eventType == MatchEventType.CONVERSION) return 2;
                 if (eventType == MatchEventType.PENALTY) return 3;
                 if (eventType == MatchEventType.DROP_GOAL) return 3;

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Warning } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail } from '../../../api/public.api';
+import { getEventPoints } from '@/constants/scoring';
 
 interface DisciplineImpactCardProps {
     match: PublicMatchDetail;
@@ -66,15 +67,7 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
                     const isDuringWindow = mergedWindows.some(w => time >= w.start && time <= w.end);
 
                     if (isDuringWindow) {
-                        let pts = 0;
-                        switch (event.eventType.toUpperCase()) {
-                            case 'TRY': pts = 5; break;
-                            case 'CONVERSION': pts = 2; break;
-                            case 'PENALTY': pts = 3; break;
-                            case 'DROP_GOAL': pts = 3; break;
-                            case 'PENALTY_TRY': pts = 7; break;
-                        }
-                        pointsConceded += pts;
+                        pointsConceded += getEventPoints(event.eventType);
                     }
                 }
             });
