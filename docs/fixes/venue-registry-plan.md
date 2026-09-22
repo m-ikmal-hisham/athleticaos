@@ -1,5 +1,10 @@
 # Venue registry — findings and plan
 
+> **Superseded in part.** An earlier revision of this document claimed 63
+> redundant matches from repeated bracket generation. That was wrong. The
+> tournament manual shows those are distinct age-group fixtures colliding on a
+> match code that omits the age group. See "Correction" below.
+
 Branch: `fix/tournament-venue-registry`
 Investigated: 2026-09-22, against staging tournament
 `2026 Johor Rugby Carnival` (`d4d27354-437f-4f8f-aad5-4791aa31cae8`).
@@ -119,3 +124,76 @@ location. The new table is the list a match may choose from.
 3. Soft-delete the redundant copies, renumber, normalise venue strings.
 4. Ship V163 + the code change.
 5. Only then create the `match_code` unique index.
+
+
+---
+
+# Correction (2026-09-22, after reading the tournament manual)
+
+Source: `TOURNAMENT MANUAL - JRC 2026.pdf`, section 5 (pp. 14-22).
+
+## The "duplicates" are not duplicates
+
+Knockout match codes do not encode age group. `BU-CUPQF-M1` is generated
+identically for U11, U14 and U16. Cross-referencing kick-off times against the
+manual:
+
+| `BU-CUPF-M1` copy | Manual row | Actually is |
+|---|---|---|
+| 27 Sep 15:30 | Venue A #111 | U11 Cup Final |
+| 27 Sep 16:06 | Venue A #113 | U14 Cup Final |
+| 27 Sep 16:24 | Venue A #114 | U16 Cup Final |
+
+The manual schedules **325 matches**; staging holds **326 rows**. The data is
+essentially complete, not tripled. Do not dedupe, and do not add a
+`(tournament_id, match_code)` unique index until the code template includes the
+age group — the index is still the right guard, but the template must be fixed
+first or it will reject valid fixtures.
+
+## Authoritative venues
+
+| Manual label | Stadium | Matches |
+|---|---|---|
+| VENUE A | Stadium Ragbi Johor, Mount Austin | 114 (nos 1-114) |
+| VENUE B - PITCH A | Stadium Olahraga, Mount Austin | 116 (nos 1-116) |
+| VENUE B - PITCH B | Stadium Olahraga, Mount Austin | 95 (nos 1-95) |
+
+Numbering restarts at 1 per venue — exactly what V161's per-venue index
+expects. Current staging numbers run to 343 and do not follow the manual.
+
+## The stadium names are inverted
+
+Matching staging fixtures to manual rows by date, kick-off time and team names
+(218 of 326 resolved unambiguously) gives a consistent picture, confirmed by
+spot-checking unambiguous pool fixtures:
+
+| Current label | Resolves to | Confidence |
+|---|---|---|
+| `Stadium Olahraga` (60) | VENUE A | 60/60 clean |
+| `Stadium Ragbi Johor A` (60) | VENUE B - PITCH A | 60/60 clean |
+| `Stadium Ragbi Johor B` (50) | VENUE B - PITCH B | 49/50 |
+| 7 typo fragments (14) | VENUE A | clean |
+| `Stadium Ragbi Johor` (43) | splits across all three | **needs human decision** |
+
+The pitch suffix is right; the stadium name is wrong on both. E.g. `ARPG BLACK
+vs QRA`, 25 Sep 08:00, is labelled `Stadium Ragbi Johor A` but the manual puts
+it at Venue B - Pitch A (Stadium Olahraga).
+
+108 of 326 could not be resolved automatically — 87 where several venues ran
+concurrently and team names did not disambiguate, 21 with no manual fixture at
+that date and time. These need review with the manual open.
+
+## Manual erratum
+
+Venue B - Pitch A, 25 Sept: the manual prints no. 20 (14:45, MERC vs CYBER
+BLITZ) as a second no. 10. Worth confirming with the organiser.
+
+## Revised order of work
+
+1. Section 0-1 of `tmp/jrc2026_venue_fix.sql` — verify the inversion, back up.
+2. Section 3 — rename the clean labels. Low risk, reversible.
+3. Section 4 — resolve the 43 `Stadium Ragbi Johor` matches by hand.
+4. Section 5 — renumber to the manual's per-venue numbering.
+5. Only then the V163 schema work, seeded with the three real venues.
+6. Separately: fix the match-code template to include age group, then add the
+   `(tournament_id, match_code)` unique index.
