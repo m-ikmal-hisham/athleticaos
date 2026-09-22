@@ -161,7 +161,7 @@ first or it will reject valid fixtures.
 Numbering restarts at 1 per venue — exactly what V161's per-venue index
 expects. Current staging numbers run to 343 and do not follow the manual.
 
-## The stadium names are inverted
+## The stadium names are NOT inverted (resolved 2026-09-22)
 
 Matching staging fixtures to manual rows by date, kick-off time and team names
 (218 of 326 resolved unambiguously) gives a consistent picture, confirmed by
@@ -197,3 +197,77 @@ BLITZ) as a second no. 10. Worth confirming with the organiser.
 5. Only then the V163 schema work, seeded with the three real venues.
 6. Separately: fix the match-code template to include age group, then add the
    `(tournament_id, match_code)` unique index.
+
+
+---
+
+# Stakeholder update (2026-09-22) — venue naming confirmed
+
+The organiser confirms the venues were deliberately reassigned relative to the
+schedule pages of the manual:
+
+| Manual schedule pages say | Actually is |
+|---|---|
+| STADIUM RAGBI JOHOR — VENUE A | **STADIUM OLAHRAGA** |
+| STADIUM OLAHRAGA — VENUE B - PITCH A | **STADIUM RAGBI JOHOR A** |
+| STADIUM OLAHRAGA — VENUE B - PITCH B | **STADIUM RAGBI JOHOR B** |
+
+This is corroborated inside the manual itself. Section 2, p.5 ("Venue
+Kejohanan") lists **A. Stadium Olahraga** and **B. Stadium Ragbi Johor** —
+agreeing with the stakeholder. The section 5 schedule page headers print the
+two stadium names the other way round, so those headers are the error.
+
+**Consequence: the existing staging venue labels are correct.** The earlier
+"inverted naming" reading in this document was wrong.
+
+## Cross-check result
+
+Matching all 326 staging matches to the manual by date, kick-off time, current
+venue label and team names resolved 295 of 326:
+
+| | matches |
+|---|---|
+| Venue already correct | 247 |
+| Venue wrong, fix known | 48 |
+| Unresolved, needs review | 31 |
+
+The 48 are the seven truncated strings (`Stadium`, `Stadium Ola`, …, 14
+matches) plus the 34 labelled `Stadium Ragbi Johor` with no A/B pitch suffix.
+The truncations all belong to STADIUM OLAHRAGA; the unsuffixed label splits
+23 / 10 / 1 across Pitch A, Pitch B and Olahraga.
+
+Of the 31 unresolved: 10 are AMBIGUOUS (several venues ran at that slot and the
+placeholder names did not disambiguate) and 21 are NO_SLOT (the manual has no
+fixture at that date and time, so either the kick-off time in staging is wrong
+or the fixture is not in the manual).
+
+## Category
+
+Four categories exist on the tournament and match the manual: Boys U11, Boys
+U14, Boys U16, Girls U16. Derived for 258 of 326 matches:
+
+| Source | matches |
+|---|---|
+| `TEAM_SUFFIX` — both team names carry the same U11/U14/U16 suffix | 152 |
+| `CODE_GU` — match code is `GU-*`, the single girls category | 55 |
+| `MANUAL` — from the manual via the identified row | 51 |
+| `UNKNOWN` — left alone | 68 |
+
+The 68 unknown are boys knockout matches whose slots hold placeholders rather
+than teams, and which did not map to a manual row.
+
+Note the manual abbreviates team names (`BJRC`, `KDRC`, `L HAWK`) where staging
+uses full names (`BUKIT JELUTONG RC U16`), so roster matching alone is
+unreliable — the match code and team suffix are the dependable signals.
+
+## Deliverables
+
+- `tmp/jrc2026_venue_category_fix.sql` — six sections: backup, reference table,
+  venue diff + update, category diff + update, unresolved list, optional
+  renumber. Every write section ends with a verification SELECT and an
+  uncommented `COMMIT`.
+- `tmp/jrc2026_reference.csv` — the full 326-row derivation for review.
+- `tmp/jrc2026_manual_schedule.csv` — the manual's 325 fixtures.
+
+Nothing in the SQL deletes, re-teams or re-seeds a match: the match flow is
+unchanged. Only venue, category and optionally match_number are written.
