@@ -418,6 +418,8 @@ public class PublicTournamentController {
                 .awayScore(m.getAwayScore())
                 .matchDate(m.getMatchDate())
                 .matchTime(m.getKickOffTime())
+                .venueId(m.getVenueId())
+                .venueName(m.getVenueName())
                 .venue(m.getVenue())
                 .status(m.getStatus())
                 .resultType(m.getResultType())

@@ -5,10 +5,10 @@ import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Info } from '@phosphor-icons/react';
-import { fetchTournaments, getTournamentTeams, getTournamentBracket } from '@/api/tournaments.api';
+import { fetchTournaments, getTournamentTeams, getTournamentBracket, getTournamentVenues } from '@/api/tournaments.api';
 import { createMatch, updateMatch } from '@/api/matches.api';
 import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
-import { Team, Match, Tournament } from '@/types';
+import { Team, Match, Tournament, TournamentVenue } from '@/types';
 import { useMatchesStore } from '@/store/matches.store';
 import { showToast } from '@/lib/customToast';
 import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
@@ -29,6 +29,7 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
     const [loading, setLoading] = useState(false);
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [venues, setVenues] = useState<TournamentVenue[]>([]);
     const [formatTemplates, setFormatTemplates] = useState<MatchFormatTemplate[]>([]);
     const { matches } = useMatchesStore();
 
@@ -46,6 +47,7 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         awayTeamPlaceholder: '',
         matchDate: '',
         kickOffTime: '',
+        venueId: '',
         venue: '',
         stageId: ''
     });
@@ -102,7 +104,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     awayTeamPlaceholder: aPlaceholder,
                     matchDate: initialMatch.matchDate || '',
                     kickOffTime: initialMatch.kickOffTime || '',
-                    venue: initialMatch.venue || '',
+                    venueId: initialMatch.venueId || '',
+                    venue: initialMatch.venueName || initialMatch.venue || '',
                     stageId: initialMatch.stage?.id || ''
                 });
             } else {
@@ -121,6 +124,7 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     awayTeamPlaceholder: '',
                     matchDate: '',
                     kickOffTime: '',
+                    venueId: '',
                     venue: '',
                     stageId: ''
                 });
@@ -142,26 +146,40 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         }
     }, [isOpen, mode, initialMatch, defaultTournamentId, matches]);
 
-    // Fetch teams when tournamentId changes
+    // Fetch teams and venues when tournamentId changes
     useEffect(() => {
-        const loadTeams = async () => {
+        const loadTeamsAndVenues = async () => {
             if (!formData.tournamentId) {
                 setTeams([]);
+                setVenues([]);
                 return;
             }
 
             try {
-                // Try fetching tournament specific teams
-                const res = await getTournamentTeams(formData.tournamentId);
-                setTeams(res.data as any);
+                const [teamsRes, venuesRes] = await Promise.all([
+                    getTournamentTeams(formData.tournamentId),
+                    getTournamentVenues(formData.tournamentId)
+                ]);
+                setTeams(teamsRes.data as any);
+                const loadedVenues = venuesRes.data || [];
+                setVenues(loadedVenues);
+                // A new match defaults to the tournament's first venue, since most matches run
+                // there; the organiser reassigns the knockout and final rounds afterwards. Only
+                // applies when creating and nothing has been chosen yet, so editing an existing
+                // match never has its venue silently rewritten.
+                if (mode === 'create' && loadedVenues.length > 0) {
+                    setFormData(prev => prev.venueId
+                        ? prev
+                        : { ...prev, venueId: loadedVenues[0].id, venue: loadedVenues[0].name });
+                }
             } catch (error) {
-                console.error("Failed to load tournament teams", error);
-                // Fallback? Maybe not needed if requirement is strict.
+                console.error("Failed to load tournament teams or venues", error);
                 setTeams([]);
+                setVenues([]);
             }
         };
-        loadTeams();
-    }, [formData.tournamentId]);
+        loadTeamsAndVenues();
+    }, [formData.tournamentId, mode]);
 
     // Fetch stages when tournamentId changes
     const [stages, setStages] = useState<{id: string, name: string, groupStage?: boolean}[]>([]);
@@ -208,10 +226,12 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
 
         setLoading(true);
 
+        const selectedVenueObj = venues.find(v => v.id === formData.venueId);
         const payload: any = {
             matchDate: formData.matchDate,
             kickOffTime: formData.kickOffTime,
-            venue: formData.venue,
+            venueId: formData.venueId || null,
+            venue: selectedVenueObj ? selectedVenueObj.name : (formData.venue || null),
             stageId: formData.stageId || undefined
         };
 
@@ -567,14 +587,26 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 </div>
 
                 <div className="space-y-2">
-                    <Label>Venue (Optional)</Label>
-                    <Input
-                        placeholder="Stadium or Field Name"
-                        value={formData.venue}
-                        onChange={(e) => handleChange('venue', e.target.value)}
+                    <Label>Venue</Label>
+                    <SearchableSelect
+                        value={formData.venueId}
+                        onChange={(value) => {
+                            const vId = value as string;
+                            const found = venues.find(v => v.id === vId);
+                            setFormData(prev => ({
+                                ...prev,
+                                venueId: vId,
+                                venue: found ? found.name : ''
+                            }));
+                        }}
+                        options={[
+                            { value: '', label: 'Venue TBC (Unassigned)' },
+                            ...venues.map(v => ({ value: v.id, label: v.name }))
+                        ]}
+                        placeholder="Select venue"
                     />
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Leave empty to list the match under &ldquo;Venue TBC&rdquo;. Matches with no venue share one
+                        Leave as &ldquo;Venue TBC&rdquo; if not yet decided. Matches without an assigned venue share one
                         number sequence, separate from each named venue.
                     </p>
                 </div>

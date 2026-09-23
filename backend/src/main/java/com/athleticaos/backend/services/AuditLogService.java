@@ -19,6 +19,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
@@ -34,7 +35,12 @@ public class AuditLogService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(AuditLogEntry entry, String ipAddress, String userAgent) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            log.debug("No authenticated user in SecurityContext; skipping audit log for action: {}", entry != null ? entry.getActionType() : null);
+            return;
+        }
+        String email = auth.getName();
         userRepository.findByEmail(email).ifPresent(user -> save(user, entry, ipAddress, userAgent));
     }
 

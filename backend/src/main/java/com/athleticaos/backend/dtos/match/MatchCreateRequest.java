@@ -31,6 +31,7 @@ public class MatchCreateRequest {
     @NotNull(message = "Kick-off time is required")
     private LocalTime kickOffTime;
 
+    private UUID venueId;
     private String venue;
     private String pitch;
     private String phase;

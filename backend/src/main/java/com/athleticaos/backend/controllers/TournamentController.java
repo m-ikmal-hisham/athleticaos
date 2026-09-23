@@ -36,6 +36,7 @@ public class TournamentController {
     private final com.athleticaos.backend.services.StandingsService standingsService;
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
     private final com.athleticaos.backend.services.MatchService matchService;
+    private final com.athleticaos.backend.services.TournamentVenueService venueService;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -375,6 +376,59 @@ public class TournamentController {
             @PathVariable UUID categoryId,
             @Valid @RequestBody com.athleticaos.backend.dtos.tournament.CreateCategoryRequest request) {
         return ResponseEntity.ok(categoryService.updateCategory(categoryId, request));
+    }
+
+    // Venue Management Endpoints
+
+    @GetMapping("/{idOrSlug}/venues")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get all venues for a tournament")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.TournamentVenueDTO>> getVenues(
+            @PathVariable String idOrSlug) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(venueService.getVenuesByTournament(tournamentId));
+    }
+
+    @GetMapping("/{idOrSlug}/venues/{venueId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get a tournament venue by ID")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentVenueDTO> getVenue(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID venueId) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(venueService.getVenue(tournamentId, venueId));
+    }
+
+    @PostMapping("/{idOrSlug}/venues")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Create a tournament venue")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentVenueDTO> createVenue(
+            @PathVariable String idOrSlug,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.CreateVenueRequest request) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.status(HttpStatus.CREATED).body(venueService.createVenue(tournamentId, request));
+    }
+
+    @PutMapping("/{idOrSlug}/venues/{venueId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Update a tournament venue")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentVenueDTO> updateVenue(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID venueId,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.UpdateVenueRequest request) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(venueService.updateVenue(tournamentId, venueId, request));
+    }
+
+    @DeleteMapping("/{idOrSlug}/venues/{venueId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete a tournament venue")
+    public ResponseEntity<Void> deleteVenue(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID venueId) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        venueService.deleteVenue(tournamentId, venueId);
+        return ResponseEntity.noContent().build();
     }
 
     // Helper method to fetch tournament by UUID or slug

@@ -69,16 +69,8 @@ export const cancelMatch = (matchId: string) => {
     return api.put(`/matches/${matchId}/status`, null, { params: { status: 'CANCELLED' } });
 };
 
-export const createMatch = (data: {
-    tournamentId: string;
-    homeTeamId: string;
-    awayTeamId: string;
-    matchDate: string;
-    kickOffTime: string;
-    venue: string;
-    description?: string;
-    stageId?: string;
-}) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const createMatch = (data: any) => {
     return api.post("/matches", data);
 };
 

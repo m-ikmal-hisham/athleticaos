@@ -7,11 +7,11 @@ import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { ArrowLeft, Info } from '@phosphor-icons/react';
-import { fetchTournaments } from '@/api/tournaments.api';
+import { fetchTournaments, getTournamentVenues } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { createMatch } from '@/api/matches.api';
 import { fetchMatchFormatTemplates, MatchFormatTemplate } from '@/api/matchFormats.api';
-import { Team, Tournament } from '@/types';
+import { Tournament, Team, TournamentVenue } from '@/types';
 
 import { showToast } from '@/lib/customToast';
 
@@ -22,6 +22,7 @@ export const CreateMatch = () => {
 
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [venues, setVenues] = useState<TournamentVenue[]>([]);
     const [formatTemplates, setFormatTemplates] = useState<MatchFormatTemplate[]>([]);
 
     const [formData, setFormData] = useState({
@@ -30,6 +31,7 @@ export const CreateMatch = () => {
         awayTeamId: '',
         matchDate: '',
         kickOffTime: '',
+        venueId: '',
         venue: ''
     });
 
@@ -52,6 +54,29 @@ export const CreateMatch = () => {
         loadData();
     }, []);
 
+    useEffect(() => {
+        if (!formData.tournamentId) {
+            setVenues([]);
+            return;
+        }
+        getTournamentVenues(formData.tournamentId)
+            .then(res => {
+                const loadedVenues = res.data || [];
+                setVenues(loadedVenues);
+                // Default a new match to the tournament's first venue; the organiser reassigns
+                // the knockout and final rounds afterwards. Never overwrites an explicit choice.
+                if (loadedVenues.length > 0) {
+                    setFormData(prev => prev.venueId
+                        ? prev
+                        : { ...prev, venueId: loadedVenues[0].id });
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load tournament venues", err);
+                setVenues([]);
+            });
+    }, [formData.tournamentId]);
+
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
@@ -61,7 +86,13 @@ export const CreateMatch = () => {
         setLoading(true);
 
         try {
-            await createMatch(formData);
+            const selectedVenueObj = venues.find(v => v.id === formData.venueId);
+            const payload = {
+                ...formData,
+                venueId: formData.venueId || null,
+                venue: selectedVenueObj ? selectedVenueObj.name : (formData.venue || null)
+            };
+            await createMatch(payload);
             showToast.success("Match created successfully");
             navigate('/dashboard/matches');
         } catch (error: any) {
@@ -184,11 +215,23 @@ export const CreateMatch = () => {
 
                     <div className="space-y-2">
                         <Label>Venue</Label>
-                        <Input
-                            placeholder="Stadium or Field Name"
-                            value={formData.venue}
-                            onChange={(e) => handleChange('venue', e.target.value)}
-                            required
+                        <SearchableSelect
+                            value={formData.venueId}
+                            onChange={(value) => {
+                                const vId = value as string;
+                                const found = venues.find(v => v.id === vId);
+                                setFormData(prev => ({
+                                    ...prev,
+                                    venueId: vId,
+                                    venue: found ? found.name : ''
+                                }));
+                            }}
+                            options={[
+                                { value: '', label: 'Venue TBC (Unassigned)' },
+                                ...venues.map(v => ({ value: v.id, label: v.name }))
+                            ]}
+                            placeholder={formData.tournamentId ? "Select venue" : "Select tournament first"}
+                            disabled={!formData.tournamentId}
                         />
                     </div>
 
