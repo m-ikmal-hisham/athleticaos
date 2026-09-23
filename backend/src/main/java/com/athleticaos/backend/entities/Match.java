@@ -51,6 +51,10 @@ public class Match {
     @Column
     private String venue;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private TournamentVenue tournamentVenue;
+
     @Column
     private String pitch;
 
@@ -123,4 +127,12 @@ public class Match {
     @Column(nullable = false)
     @Builder.Default
     private boolean deleted = false;
+
+    public UUID getVenueId() {
+        return tournamentVenue != null ? tournamentVenue.getId() : null;
+    }
+
+    public String getVenueName() {
+        return tournamentVenue != null ? tournamentVenue.getName() : venue;
+    }
 }

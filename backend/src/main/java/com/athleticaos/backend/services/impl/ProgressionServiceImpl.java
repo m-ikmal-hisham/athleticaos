@@ -5,6 +5,7 @@ import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.TournamentCategory;
 import com.athleticaos.backend.entities.TournamentStage;
+import com.athleticaos.backend.entities.TournamentVenue;
 import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.enums.TournamentStageType;
@@ -29,6 +30,7 @@ public class ProgressionServiceImpl implements ProgressionService {
     private final MatchRepository matchRepository;
     private final TournamentRepository tournamentRepository;
     private final TournamentStageRepository stageRepository;
+    private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
 
     @Override
     @Transactional
@@ -310,20 +312,29 @@ public class ProgressionServiceImpl implements ProgressionService {
         }
 
         // Create new placement match if needed
+        Tournament tournament = completedMatch.getTournament();
+        TournamentVenue defaultVenue = venueRepository
+                .findFirstByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournament.getId())
+                .orElse(null);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
+
         Match newMatch = Match.builder()
-                .tournament(completedMatch.getTournament())
+                .tournament(tournament)
                 .stage(placementStage)
-                .matchDate(completedMatch.getTournament().getEndDate().minusDays(1))
+                .matchDate(tournament.getEndDate().minusDays(1))
                 .kickOffTime(LocalTime.of(12, 0))
-                .venue(completedMatch.getTournament().getVenue())
+                .tournamentVenue(defaultVenue)
+                .venue(defaultVenueName)
                 .status(MatchStatus.SCHEDULED)
                 .phase(placementStage.getName())
-                .matchCode(String.format("%s-%s-M%d", matchCodePrefix(completedMatch.getTournament(), placementStage.getCategory()),
+                .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, placementStage.getCategory()),
                         getStageAbbreviation(placementStage.getStageType()),
                         existingMatches.size() + 1))
-                .matchNumber(matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
-                        completedMatch.getTournament().getId(),
-                        com.athleticaos.backend.utils.VenueUtils.normalizeVenue(completedMatch.getTournament().getVenue())) + 1)
+                .matchNumber(matchRepository.findMaxMatchNumber(tournament.getId(), defaultVenueId) + 1)
                 .build();
 
         return matchRepository.save(newMatch);
@@ -387,20 +398,29 @@ public class ProgressionServiceImpl implements ProgressionService {
         }
 
         // Create new match in next stage
+        Tournament tournament = completedMatch.getTournament();
+        TournamentVenue defaultVenue = venueRepository
+                .findFirstByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournament.getId())
+                .orElse(null);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
+
         Match newMatch = Match.builder()
-                .tournament(completedMatch.getTournament())
+                .tournament(tournament)
                 .stage(nextStage)
-                .matchDate(completedMatch.getTournament().getStartDate().plusDays(1)) // Next day
+                .matchDate(tournament.getStartDate().plusDays(1)) // Next day
                 .kickOffTime(LocalTime.of(15, 0))
-                .venue(completedMatch.getTournament().getVenue())
+                .tournamentVenue(defaultVenue)
+                .venue(defaultVenueName)
                 .status(MatchStatus.SCHEDULED)
                 .phase(nextStage.getName())
-                .matchCode(String.format("%s-%s-M%d", matchCodePrefix(completedMatch.getTournament(), nextStage.getCategory()),
+                .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, nextStage.getCategory()),
                         getStageAbbreviation(nextStage.getStageType()),
                         nextStageMatchIndex + 1))
-                .matchNumber(matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
-                        completedMatch.getTournament().getId(),
-                        com.athleticaos.backend.utils.VenueUtils.normalizeVenue(completedMatch.getTournament().getVenue())) + 1)
+                .matchNumber(matchRepository.findMaxMatchNumber(tournament.getId(), defaultVenueId) + 1)
                 .build();
 
         return matchRepository.save(newMatch);

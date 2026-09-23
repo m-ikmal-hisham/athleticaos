@@ -32,6 +32,7 @@ public class BracketServiceImpl implements BracketService {
     private final PlayerSuspensionRepository playerSuspensionRepository;
     private final MediaAssetRepository mediaAssetRepository;
     private final EventRepository eventRepository;
+    private final TournamentVenueRepository venueRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -359,6 +360,9 @@ public class BracketServiceImpl implements BracketService {
         // global counter?
         // Let's use a simple counter for this pool.
         int matchCounter = 0;
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
 
         // Generate all possible pairings (each team plays every other team once)
         for (int i = 0; i < teams.size(); i++) {
@@ -381,13 +385,14 @@ public class BracketServiceImpl implements BracketService {
                         .awayTeam(awayTeam)
                         .matchDate(matchDate)
                         .kickOffTime(kickOffTime)
-                        .venue(tournament.getVenue())
+                        .tournamentVenue(defaultVenue)
+                        .venue(defaultVenueName)
                         .status(MatchStatus.SCHEDULED)
                         .phase(truncate(poolName, 50))
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 truncate(poolName.replace(" ", ""), 10),
                                 i * teams.size() + j))
-                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
+                        .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                         .build();
 
                 matchRepository.save(match);
@@ -434,6 +439,12 @@ public class BracketServiceImpl implements BracketService {
         List<Team> currentRoundTeams = buildOpeningRoundSlots(teams, drawSize);
 
         List<Match> previousRoundMatches = new ArrayList<>();
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
 
         for (KnockoutStageInfo stageInfo : stages) {
             TournamentStage stage = TournamentStage.builder()
@@ -463,12 +474,13 @@ public class BracketServiceImpl implements BracketService {
                         .awayTeam(awayTeam)
                         .matchDate(tournament.getStartDate())
                         .kickOffTime(LocalTime.of(14, 0)) // Default afternoon kick-off
-                        .venue(tournament.getVenue())
+                        .tournamentVenue(defaultVenue)
+                        .venue(defaultVenueName)
                         .status(MatchStatus.SCHEDULED)
                         .phase(stageInfo.name)
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 stageInfo.abbreviation, i + 1))
-                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
+                        .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                         .build();
 
                 match = matchRepository.save(match);
@@ -787,6 +799,12 @@ public class BracketServiceImpl implements BracketService {
 
     @SuppressWarnings("null")
     private List<Match> createMatches(Tournament tournament, TournamentStage stage, int count, String abbr) {
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
         List<Match> matches = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             Match match = Match.builder()
@@ -795,11 +813,12 @@ public class BracketServiceImpl implements BracketService {
                     .stage(stage)
                     .matchDate(tournament.getEndDate())
                     .kickOffTime(LocalTime.of(12, 0))
-                    .venue(tournament.getVenue())
+                    .tournamentVenue(defaultVenue)
+                    .venue(defaultVenueName)
                     .status(MatchStatus.SCHEDULED)
                     .phase(stage.getName())
                     .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20), abbr, i + 1))
-                    .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
+                    .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                     .homeTeamPlaceholder("TBD")
                     .awayTeamPlaceholder("TBD")
                     .build();
@@ -949,6 +968,12 @@ public class BracketServiceImpl implements BracketService {
         stage = stageRepository.save(stage);
         stagesMap.put(name, stage);
 
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
         List<Match> stageMatches = new ArrayList<>();
         for (int i = 0; i < matchCount; i++) {
             Match match = Match.builder()
@@ -957,12 +982,13 @@ public class BracketServiceImpl implements BracketService {
                     .stage(stage)
                     .matchDate(tournament.getStartDate())
                     .kickOffTime(LocalTime.of(10, 0))
-                    .venue(tournament.getVenue())
+                    .tournamentVenue(defaultVenue)
+                    .venue(defaultVenueName)
                     .status(MatchStatus.SCHEDULED)
                     .phase(truncate(name, 50))
                     .matchCode(String.format("%s-%s%d", matchCodePrefix(tournament, stage.getCategory(), 30), getStageAbbreviation(type),
                             (i + 1)))
-                    .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
+                    .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                     .build();
             match = matchRepository.save(match);
             stageMatches.add(match);
@@ -1253,6 +1279,13 @@ public class BracketServiceImpl implements BracketService {
         List<Match> previousRoundMatches = new ArrayList<>();
         Map<TournamentStageType, List<Match>> matchesByStageType = new HashMap<>();
 
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
+
         for (KnockoutStageInfo stageInfo : knockoutStages) {
             TournamentStage stage = TournamentStage.builder()
                     .tournament(tournament)
@@ -1275,12 +1308,13 @@ public class BracketServiceImpl implements BracketService {
                         .stage(stage)
                         .matchDate(tournament.getStartDate().plusDays(3)) // Schedule after pool stage
                         .kickOffTime(LocalTime.of(14, 0))
-                        .venue(tournament.getVenue())
+                        .tournamentVenue(defaultVenue)
+                        .venue(defaultVenueName)
                         .status(MatchStatus.SCHEDULED)
                         .phase(truncate(stageInfo.name, 50))
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 stageInfo.abbreviation, i + 1))
-                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
+                        .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                         .build();
 
                 // Set initial placeholders for first round (Pool qualifiers)
@@ -1619,6 +1653,8 @@ public class BracketServiceImpl implements BracketService {
                         : (match.getAwayTeamPlaceholder() != null ? match.getAwayTeamPlaceholder() : "TBD"))
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
+                .venueId(match.getVenueId())
+                .venueName(match.getVenueName())
                 .venue(match.getVenue())
                 .status(match.getStatus().name())
                 .stage(match.getStage() != null ? MatchResponse.StageInfo.builder()
@@ -1838,10 +1874,17 @@ public class BracketServiceImpl implements BracketService {
         return slug + "-" + catAbbr;
     }
 
-    /** Returns the next sequential match number for the given tournament and venue. */
-    private int nextMatchNumber(Tournament tournament, String venue) {
-        return matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
-                tournament.getId(), com.athleticaos.backend.utils.VenueUtils.normalizeVenue(venue)) + 1;
+    private TournamentVenue getDefaultVenue(Tournament tournament) {
+        if (tournament == null || tournament.getId() == null) {
+            return null;
+        }
+        return venueRepository.findFirstByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournament.getId())
+                .orElse(null);
+    }
+
+    /** Returns the next sequential match number for the given tournament and venue ID. */
+    private int nextMatchNumber(Tournament tournament, UUID venueId) {
+        return matchRepository.findMaxMatchNumber(tournament.getId(), venueId) + 1;
     }
 
     @Override
@@ -1885,6 +1928,12 @@ public class BracketServiceImpl implements BracketService {
         String bracketLabel = (request.getName() != null && !request.getName().isBlank())
                 ? request.getName().trim()
                 : null;
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
 
         for (KnockoutStageInfo stageInfo : stages) {
             String stageName = bracketLabel != null
@@ -1913,12 +1962,13 @@ public class BracketServiceImpl implements BracketService {
                         .stage(stage)
                         .matchDate(tournament.getStartDate())
                         .kickOffTime(java.time.LocalTime.of(12, 0))
-                        .venue(tournament.getVenue())
+                        .tournamentVenue(defaultVenue)
+                        .venue(defaultVenueName)
                         .status(MatchStatus.SCHEDULED)
                         .phase(stageName)
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, category, 20),
                                 type.name().substring(0, Math.min(2, type.name().length())) + stageInfo.abbreviation, i + 1))
-                        .matchNumber(nextMatchNumber(tournament, tournament.getVenue()))
+                        .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                         .homeTeamPlaceholder("TBD")
                         .awayTeamPlaceholder("TBD")
                         .build();

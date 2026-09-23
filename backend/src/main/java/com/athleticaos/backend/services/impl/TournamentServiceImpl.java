@@ -50,6 +50,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.repositories.TournamentFormatConfigRepository tournamentFormatConfigRepository;
     private final TournamentStageRepository tournamentStageRepository;
     private final com.athleticaos.backend.services.MatchService matchService;
+    private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -236,6 +237,29 @@ public class TournamentServiceImpl implements TournamentService {
 
             savedTournament.getCategories().addAll(categories);
             savedTournament = tournamentRepository.save(savedTournament);
+        }
+
+        // Initialize tournament venues
+        if (request.getVenues() != null && !request.getVenues().isEmpty()) {
+            int order = 0;
+            for (com.athleticaos.backend.dtos.tournament.CreateVenueRequest vr : request.getVenues()) {
+                if (vr.getName() != null && !vr.getName().trim().isEmpty()) {
+                    com.athleticaos.backend.entities.TournamentVenue v = com.athleticaos.backend.entities.TournamentVenue.builder()
+                            .tournament(savedTournament)
+                            .name(vr.getName().trim())
+                            .shortName(vr.getShortName() != null && !vr.getShortName().trim().isEmpty() ? vr.getShortName().trim() : null)
+                            .displayOrder(vr.getDisplayOrder() != null ? vr.getDisplayOrder() : order++)
+                            .build();
+                    venueRepository.save(v);
+                }
+            }
+        } else if (savedTournament.getVenue() != null && !savedTournament.getVenue().trim().isEmpty()) {
+            com.athleticaos.backend.entities.TournamentVenue defaultVenue = com.athleticaos.backend.entities.TournamentVenue.builder()
+                    .tournament(savedTournament)
+                    .name(savedTournament.getVenue().trim())
+                    .displayOrder(0)
+                    .build();
+            venueRepository.save(defaultVenue);
         }
 
         auditLogger.logTournamentCreated(savedTournament, httpRequest);

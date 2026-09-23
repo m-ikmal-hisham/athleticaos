@@ -152,21 +152,46 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
 
         @org.springframework.data.jpa.repository.Query("SELECT COALESCE(MAX(m.matchNumber), 0) FROM Match m " +
                         "WHERE m.tournament.id = :tournamentId " +
-                        "AND COALESCE(NULLIF(TRIM(m.venue), ''), '') = :venueKey " +
+                        "AND m.tournamentVenue.id = :venueId " +
                         "AND m.deleted = false")
-        int findMaxMatchNumberByTournamentIdAndVenue(
+        int findMaxMatchNumberByTournamentIdAndVenueId(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
-                        @org.springframework.data.repository.query.Param("venueKey") String venueKey);
+                        @org.springframework.data.repository.query.Param("venueId") UUID venueId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT COALESCE(MAX(m.matchNumber), 0) FROM Match m " +
+                        "WHERE m.tournament.id = :tournamentId " +
+                        "AND m.tournamentVenue IS NULL " +
+                        "AND m.deleted = false")
+        int findMaxMatchNumberByTournamentIdAndVenueNull(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+        default int findMaxMatchNumber(UUID tournamentId, UUID venueId) {
+            if (venueId == null) {
+                return findMaxMatchNumberByTournamentIdAndVenueNull(tournamentId);
+            } else {
+                return findMaxMatchNumberByTournamentIdAndVenueId(tournamentId, venueId);
+            }
+        }
+
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.tournamentVenue.id = :venueId AND m.deleted = false")
+        long countByTournamentVenueIdAndDeletedFalse(
+                        @org.springframework.data.repository.query.Param("venueId") UUID venueId);
+
+        @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+        @org.springframework.data.jpa.repository.Query(value = "UPDATE matches SET venue = :venueName WHERE venue_id = :venueId", nativeQuery = true)
+        void updateVenueNameForVenueId(
+                        @org.springframework.data.repository.query.Param("venueId") UUID venueId,
+                        @org.springframework.data.repository.query.Param("venueName") String venueName);
 
         /**
          * Number of distinct assigned venues in a tournament. Blank and null venues are excluded, so
          * this answers "does this tournament run at more than one venue" with a single scalar query
          * instead of loading every match.
          */
-        @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT TRIM(m.venue)) FROM Match m " +
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT m.tournamentVenue.id) FROM Match m " +
                         "WHERE m.tournament.id = :tournamentId " +
                         "AND m.deleted = false " +
-                        "AND m.venue IS NOT NULL AND TRIM(m.venue) <> ''")
+                        "AND m.tournamentVenue IS NOT NULL")
         long countDistinctVenuesByTournamentId(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 }

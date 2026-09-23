@@ -356,8 +356,8 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
                             <Input
-                                label="Venue"
-                                placeholder="Primary Venue"
+                                label="Headline Location / Host City"
+                                placeholder="e.g. Petaling Jaya, Malaysia"
                                 {...register('venue')}
                                 error={errors.venue?.message}
                                 required

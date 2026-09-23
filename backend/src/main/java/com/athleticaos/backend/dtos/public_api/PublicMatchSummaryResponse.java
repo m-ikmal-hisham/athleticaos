@@ -28,6 +28,8 @@ public class PublicMatchSummaryResponse {
     private Integer awayScore;
     private LocalDate matchDate;
     private LocalTime matchTime;
+    private UUID venueId;
+    private String venueName;
     private String venue;
     private String status; // SCHEDULED, LIVE, FULL_TIME, CANCELLED
     /** NORMAL, WALKOVER or BYE. Null means a normally played match. */

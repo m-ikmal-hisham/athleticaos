@@ -41,6 +41,7 @@ public class TournamentCreateRequest {
     private CompetitionType competitionType;
 
     private java.util.List<CreateCategoryRequest> categories;
+    private java.util.List<CreateVenueRequest> venues;
 
     private String logoUrl;
     private String bannerUrl;

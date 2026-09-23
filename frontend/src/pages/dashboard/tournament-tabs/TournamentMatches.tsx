@@ -3,7 +3,7 @@ import { CalendarBlank, Plus, Clock, Trash, PencilSimple, WarningCircle, Downloa
 import { useMatchesStore } from '@/store/matches.store';
 import { tournamentService } from '@/services/tournamentService';
 import { exportMatches, exportResults, renumberMatches } from '@/api/tournaments.api';
-import { Match, MatchResponse, TournamentCategory } from '@/types';
+import { Match, MatchResponse, TournamentCategory, TournamentStageResponse, TournamentVenue } from '@/types';
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '@/lib/customToast';
@@ -15,7 +15,6 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { BracketEditor } from '@/components/content/BracketEditor';
-import { TournamentStageResponse } from '@/types';
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -31,6 +30,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
     const navigate = useNavigate();
     const { matches, loadMatchesByTournament, deleteMatch, loadingList } = useMatchesStore();
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
+    const [tournamentVenues, setTournamentVenues] = useState<TournamentVenue[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [selectedVenue, setSelectedVenue] = useState<string>('');
     const [exportingType, setExportingType] = useState<'matches' | 'results' | null>(null);
@@ -72,7 +72,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
             }
 
             const venueLines = (preview.venueBreakdown || [])
-                .map((v: { venue: string; matchCount: number }) => `• ${v.venue || 'Unassigned venue'}: ${v.matchCount} matches`)
+                .map((v) => `• ${v.venueName || v.venue || 'Venue TBC'}: ${v.matchCount} matches`)
                 .join('\n');
 
             setConfirmModal({
@@ -130,38 +130,54 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
         return matches.filter(m => m.stage?.categoryId === selectedCategoryId);
     }, [matches, selectedCategoryId]);
 
-    // Distinct venues across category-filtered matches
-    const categoryVenues = useMemo(() => {
-        const venues = new Set<string>();
-        let hasTbc = false;
-        categoryFilteredMatches.forEach(m => {
-            if (m.venue && m.venue.trim()) {
-                venues.add(m.venue.trim());
-            } else {
-                hasTbc = true;
-            }
-        });
-        const sorted = Array.from(venues).sort((a, b) => a.localeCompare(b));
-        const total = sorted.length + (hasTbc ? 1 : 0);
-        return { sorted, hasTbc, total };
-    }, [categoryFilteredMatches]);
+    // Fetch tournament venues
+    useEffect(() => {
+        if (!tournamentId) return;
+        tournamentService.getVenues(tournamentId)
+            .then(res => setTournamentVenues(res || []))
+            .catch(err => {
+                console.error("Failed to load tournament venues", err);
+                setTournamentVenues([]);
+            });
+    }, [tournamentId, refreshTrigger]);
 
     const venueOptions = useMemo(() => {
-        if (categoryVenues.total < 2) return [];
+        const registered = tournamentVenues.map(v => ({ value: v.id, label: v.name }));
+        const hasTbc = categoryFilteredMatches.some(m => !m.venueId && (!m.venue || !m.venue.trim()));
+
+        // Also check if any category-filtered match has an unlinked string venue
+        const registeredIds = new Set(tournamentVenues.map(v => v.id));
+        const registeredNames = new Set(tournamentVenues.map(v => v.name.toLowerCase()));
+        const extraStringVenues: { value: string; label: string }[] = [];
+        categoryFilteredMatches.forEach(m => {
+            if (m.venueId && !registeredIds.has(m.venueId)) {
+                // Not in registered list
+            } else if (!m.venueId && m.venue && m.venue.trim() && !registeredNames.has(m.venue.trim().toLowerCase())) {
+                const name = m.venue.trim();
+                if (!extraStringVenues.some(x => x.label.toLowerCase() === name.toLowerCase())) {
+                    extraStringVenues.push({ value: name, label: name });
+                }
+            }
+        });
+
+        const allOptions = [...registered, ...extraStringVenues];
+        const total = allOptions.length + (hasTbc ? 1 : 0);
+        if (total < 2) return [];
+
         return [
             { value: '', label: 'All venues' },
-            ...categoryVenues.sorted.map(v => ({ value: v, label: v })),
-            ...(categoryVenues.hasTbc ? [{ value: '__TBC__', label: 'Venue TBC' }] : [])
+            ...allOptions,
+            ...(hasTbc ? [{ value: '__TBC__', label: 'Venue TBC' }] : [])
         ];
-    }, [categoryVenues]);
+    }, [tournamentVenues, categoryFilteredMatches]);
 
     useEffect(() => {
         // Filter matches by venue if selected
         let filtered = categoryFilteredMatches;
         if (selectedVenue === '__TBC__') {
-            filtered = filtered.filter(m => !m.venue || !m.venue.trim());
+            filtered = filtered.filter(m => !m.venueId && (!m.venue || !m.venue.trim()));
         } else if (selectedVenue) {
-            filtered = filtered.filter(m => m.venue?.trim() === selectedVenue);
+            filtered = filtered.filter(m => m.venueId === selectedVenue || m.venue?.trim() === selectedVenue);
         }
 
         // Split matches
