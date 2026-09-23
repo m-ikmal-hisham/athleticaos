@@ -353,14 +353,15 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
         return { hasMultipleVenues: true, groups };
     }
 
-    // Grouping Logic for Unscheduled Matches (Sidebar)
-    const unscheduledByStage: { [key: string]: MatchResponse[] } = {};
-    unscheduledMatches.forEach(match => {
-        const stageName = match.stage?.name || 'Unassigned';
-        if (!unscheduledByStage[stageName]) unscheduledByStage[stageName] = [];
-        unscheduledByStage[stageName].push(match);
-    });
-    const sortedUnscheduledStages = Object.keys(unscheduledByStage).sort();
+    // Grouping for the Unscheduled panel — disabled with the panel itself; see the note in the
+    // render below. Kept here so restoring the panel is a single uncomment in each place.
+    // const unscheduledByStage: { [key: string]: MatchResponse[] } = {};
+    // unscheduledMatches.forEach(match => {
+    //     const stageName = match.stage?.name || 'Unassigned';
+    //     if (!unscheduledByStage[stageName]) unscheduledByStage[stageName] = [];
+    //     unscheduledByStage[stageName].push(match);
+    // });
+    // const sortedUnscheduledStages = Object.keys(unscheduledByStage).sort();
 
     const categoryOptions = [
         { value: '', label: 'All Categories' },
@@ -531,9 +532,27 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Generate a schedule in the Format tab or create matches manually.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Main Schedule Area (3 cols) */}
-                    <div className="lg:col-span-3 space-y-8">
+                <div className="grid grid-cols-1 gap-8">
+                    {/* Main Schedule Area — full width while the Unscheduled panel is disabled. */}
+                    <div className="space-y-8">
+                        {/* The schedule below only lists matches that have a date and a kick-off
+                            time, so without this banner an undated match would render nowhere at
+                            all. That cannot happen today — the API marks both @NotNull — but if
+                            those constraints are ever relaxed for "date TBC" fixtures, this makes
+                            the gap visible instead of silently hiding matches. */}
+                        {unscheduledMatches.length > 0 && (
+                            <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10 flex items-start gap-3">
+                                <WarningCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-semibold text-amber-900 dark:text-amber-200">
+                                        {unscheduledMatches.length} {unscheduledMatches.length === 1 ? 'match has' : 'matches have'} no date or kick-off time
+                                    </p>
+                                    <p className="text-amber-800/80 dark:text-amber-200/70 mt-0.5">
+                                        They are not shown in the schedule below. Open each from the Matches list and set a date and time.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         {scheduledMatches.length === 0 && (
                             <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                 <p className="text-slate-500">No scheduled matches{selectedCategoryId ? ' for this category' : ''}.</p>
@@ -594,7 +613,19 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                         })}
                     </div>
 
-                    {/* Unscheduled Sidebar (1 col) */}
+                    {/* Unscheduled panel — DISABLED.
+                        It listed matches missing a date or kick-off time, but no such match can
+                        exist: MatchCreateRequest marks matchDate and kickOffTime @NotNull, and the
+                        update path treats null as "leave unchanged", so neither can be cleared.
+                        Across all 13 staging tournaments (844 matches) there were zero. The panel
+                        only ever rendered "All matches scheduled!" while holding a quarter of the
+                        width, so the schedule now spans the full row.
+
+                        The database columns are nullable, so unscheduled matches remain
+                        representable. If a "date TBC" fixture is ever wanted, relax those two
+                        @NotNull constraints and restore this block along with the lg:grid-cols-4
+                        wrapper and lg:col-span-3 on the schedule column above. */}
+                    {/*
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800 sticky top-4">
                             <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -641,6 +672,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                             )}
                         </div>
                     </div>
+                    */}
                 </div>
             )}
 
