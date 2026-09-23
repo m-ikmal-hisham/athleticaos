@@ -425,19 +425,7 @@ public class FormatServiceImpl implements FormatService {
     }
 
     private String categoryAbbr(TournamentCategory category) {
-        if (category == null || category.getName() == null || category.getName().isBlank()) {
-            return "";
-        }
-        String[] words = category.getName().split("[\\s\\-_]+");
-        StringBuilder sb = new StringBuilder();
-        for (String word : words) {
-            String cleaned = word.replaceAll("[^a-zA-Z0-9]", "");
-            if (!cleaned.isEmpty()) {
-                sb.append(Character.toUpperCase(cleaned.charAt(0)));
-            }
-        }
-        String abbr = sb.toString();
-        return abbr.length() > 6 ? abbr.substring(0, 6) : abbr;
+        return com.athleticaos.backend.utils.MatchCodeUtils.categoryAbbr(category);
     }
 
     private String matchCodePrefix(Tournament tournament, TournamentCategory category, int slugLimit) {
