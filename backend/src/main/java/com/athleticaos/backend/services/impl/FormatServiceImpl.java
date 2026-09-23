@@ -33,6 +33,7 @@ public class FormatServiceImpl implements FormatService {
     private final MatchOfficialRepository matchOfficialRepository;
     private final PlayerSuspensionRepository playerSuspensionRepository;
     private final BracketService bracketService;
+    private final TournamentVenueRepository venueRepository;
 
     @Override
     @Transactional
@@ -345,6 +346,15 @@ public class FormatServiceImpl implements FormatService {
         int matchCounter = 0;
         boolean generateTimings = request.getGenerateTimings() == null || request.getGenerateTimings();
 
+        TournamentVenue defaultVenue = venueRepository
+                .findFirstByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournament.getId())
+                .orElse(null);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        // No declared venue means the match is Venue TBC. Never fall back to tournaments.venue:
+        // that is free text, has no tournament_venues row, and would reappear in venue lists
+        // as an unregistered venue — the exact problem the registry removes.
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
+
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
                 TournamentTeam homeTT = (i < teams.size()) ? teams.get(i) : null;
@@ -399,12 +409,14 @@ public class FormatServiceImpl implements FormatService {
                         .stage(stage)
                         .matchDate(matchDate)
                         .kickOffTime(kickOffTime)
+                        .tournamentVenue(defaultVenue)
+                        .venue(defaultVenueName)
                         .status(MatchStatus.SCHEDULED)
                         .phase(stage.getName())
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, stage.getCategory(), 20),
                                 truncate(stage.getName().replace(" ", ""), 10),
                                 matchCounter + 1))
-                        .matchNumber(nextMatchNumber(tournament, null))
+                        .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                         .build();
                 matchRepository.save(match);
                 matchCounter++;
@@ -413,19 +425,7 @@ public class FormatServiceImpl implements FormatService {
     }
 
     private String categoryAbbr(TournamentCategory category) {
-        if (category == null || category.getName() == null || category.getName().isBlank()) {
-            return "";
-        }
-        String[] words = category.getName().split("[\\s\\-_]+");
-        StringBuilder sb = new StringBuilder();
-        for (String word : words) {
-            String cleaned = word.replaceAll("[^a-zA-Z0-9]", "");
-            if (!cleaned.isEmpty()) {
-                sb.append(Character.toUpperCase(cleaned.charAt(0)));
-            }
-        }
-        String abbr = sb.toString();
-        return abbr.length() > 6 ? abbr.substring(0, 6) : abbr;
+        return com.athleticaos.backend.utils.MatchCodeUtils.categoryAbbr(category);
     }
 
     private String matchCodePrefix(Tournament tournament, TournamentCategory category, int slugLimit) {
@@ -442,10 +442,9 @@ public class FormatServiceImpl implements FormatService {
         return text.length() > length ? text.substring(0, length) : text;
     }
 
-    /** Returns the next sequential match number for the given tournament and venue. */
-    private int nextMatchNumber(Tournament tournament, String venue) {
-        return matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
-                tournament.getId(), com.athleticaos.backend.utils.VenueUtils.normalizeVenue(venue)) + 1;
+    /** Returns the next sequential match number for the given tournament and venue ID. */
+    private int nextMatchNumber(Tournament tournament, UUID venueId) {
+        return matchRepository.findMaxMatchNumber(tournament.getId(), venueId) + 1;
     }
 
     @Override

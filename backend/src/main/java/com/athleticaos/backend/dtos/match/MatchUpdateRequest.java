@@ -16,6 +16,15 @@ import java.time.LocalTime;
 public class MatchUpdateRequest {
     private LocalDate matchDate;
     private LocalTime kickOffTime;
+    private java.util.UUID venueId;
+    @Builder.Default
+    private boolean venueIdSet = false;
+
+    public void setVenueId(java.util.UUID venueId) {
+        this.venueId = venueId;
+        this.venueIdSet = true;
+    }
+
     private String venue;
     private String pitch;
     private String phase;

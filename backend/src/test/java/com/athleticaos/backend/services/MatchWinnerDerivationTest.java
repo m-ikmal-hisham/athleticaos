@@ -79,6 +79,8 @@ class MatchWinnerDerivationTest {
     @Mock
     private BracketService bracketService;
     @Mock
+    private com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     private MatchServiceImpl matchService;
@@ -109,6 +111,7 @@ class MatchWinnerDerivationTest {
                 stageRepository,
                 progressionService,
                 bracketService,
+                venueRepository,
                 transactionManager
         );
 

@@ -12,6 +12,7 @@ import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.TournamentFormatConfig;
+import com.athleticaos.backend.entities.TournamentVenue;
 import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchRepository;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @lombok.extern.slf4j.Slf4j
+@SuppressWarnings("null")
 public class MatchServiceImpl implements MatchService {
 
     private final MatchRepository matchRepository;
@@ -59,12 +61,12 @@ public class MatchServiceImpl implements MatchService {
     private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
     private final ProgressionService progressionService;
     private final BracketService bracketService;
+    private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
     private final PlatformTransactionManager transactionManager;
 
     private TransactionTemplate requiresNewTransactionTemplate;
 
     @jakarta.annotation.PostConstruct
-    @SuppressWarnings("null")
     void initTransactionTemplate() {
         this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
         this.requiresNewTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -250,6 +252,27 @@ public class MatchServiceImpl implements MatchService {
         // keeping it simple for now)
         // We could check if matchDate is within tournament start/end dates here.
 
+        // Resolve venue: validate venueId belongs to tournament and is not deleted
+        TournamentVenue resolvedVenue = null;
+        UUID targetVenueId = request.getVenueId();
+        if (targetVenueId != null) {
+            resolvedVenue = venueRepository.findByIdAndTournamentIdAndDeletedFalse(targetVenueId, tournament.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Venue does not belong to this tournament or was not found"));
+        } else if (request.getVenue() != null && !request.getVenue().trim().isEmpty()) {
+            // Legacy callers may still send the venue as a name. Resolve it against the declared
+            // venues, but never create one: a venue the organiser has not declared is a typo, and
+            // accepting it would put free-text venues back into the registry.
+            String vName = request.getVenue().trim();
+            resolvedVenue = venueRepository.findByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournament.getId()).stream()
+                    .filter(v -> v.getName().equalsIgnoreCase(vName))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Unknown venue '" + vName + "'. Declare it on the tournament first, then assign it."));
+        }
+
+        UUID resolvedVenueId = resolvedVenue != null ? resolvedVenue.getId() : null;
+        String resolvedVenueName = resolvedVenue != null ? resolvedVenue.getName() : null;
+
         Match match = Match.builder()
                 .tournament(tournament)
                 .homeTeam(homeTeam)
@@ -258,15 +281,13 @@ public class MatchServiceImpl implements MatchService {
                 .awayTeamPlaceholder(request.getAwayTeamPlaceholder())
                 .matchDate(request.getMatchDate())
                 .kickOffTime(request.getKickOffTime())
-                .venue(VenueUtils.normalizeVenue(request.getVenue()).isEmpty()
-                        ? null
-                        : VenueUtils.normalizeVenue(request.getVenue()))
+                .tournamentVenue(resolvedVenue)
+                .venue(resolvedVenueName)
                 .pitch(request.getPitch())
                 .phase(request.getPhase())
                 .stage(stage)
                 .matchCode(request.getMatchCode())
-                .matchNumber(matchRepository.findMaxMatchNumberByTournamentIdAndVenue(
-                        tournament.getId(), com.athleticaos.backend.utils.VenueUtils.normalizeVenue(request.getVenue())) + 1)
+                .matchNumber(matchRepository.findMaxMatchNumber(tournament.getId(), resolvedVenueId) + 1)
                 .status(MatchStatus.SCHEDULED) // Default status
                 .build();
 
@@ -293,12 +314,33 @@ public class MatchServiceImpl implements MatchService {
         if (request.getKickOffTime() != null) {
             match.setKickOffTime(request.getKickOffTime());
         }
-        if (request.getVenue() != null) {
-            // A null venue means "leave unchanged"; an empty one means the organiser cleared it, and
-            // an unassigned venue is stored as NULL so every "Venue TBC" match looks the same in the
-            // database as one that never had a venue.
+        if (request.isVenueIdSet()) {
+            UUID reqVenueId = request.getVenueId();
+            if (reqVenueId == null || reqVenueId.equals(new UUID(0L, 0L))) {
+                match.setTournamentVenue(null);
+                match.setVenue(null);
+            } else {
+                TournamentVenue venue = venueRepository.findByIdAndTournamentIdAndDeletedFalse(reqVenueId, match.getTournament().getId())
+                        .orElseThrow(() -> new IllegalArgumentException("Venue does not belong to this tournament or was not found"));
+                match.setTournamentVenue(venue);
+                match.setVenue(venue.getName());
+            }
+        } else if (request.getVenue() != null) {
             String requestedVenue = request.getVenue().trim();
-            match.setVenue(requestedVenue.isEmpty() ? null : requestedVenue);
+            if (requestedVenue.isEmpty()) {
+                match.setTournamentVenue(null);
+                match.setVenue(null);
+            } else {
+                // As on create: resolve a legacy venue name against the declared venues, never
+                // create one. An undeclared name is a typo, not a new venue.
+                TournamentVenue venue = venueRepository.findByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(match.getTournament().getId()).stream()
+                        .filter(v -> v.getName().equalsIgnoreCase(requestedVenue))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Unknown venue '" + requestedVenue + "'. Declare it on the tournament first, then assign it."));
+                match.setTournamentVenue(venue);
+                match.setVenue(venue.getName());
+            }
         }
         if (request.getPitch() != null) {
             match.setPitch(request.getPitch());
@@ -558,6 +600,8 @@ public class MatchServiceImpl implements MatchService {
                 .matchDate(match.getMatchDate())
                 .kickOffTime(match.getKickOffTime())
                 .venue(match.getVenue())
+                .venueId(match.getVenueId())
+                .venueName(match.getVenueName())
                 .pitch(match.getPitch())
                 .status(match.getStatus().name())
                 .homeScore(match.getHomeScore())
@@ -1132,7 +1176,6 @@ public class MatchServiceImpl implements MatchService {
 
     @Override
     @Transactional
-    @SuppressWarnings("null")
     public com.athleticaos.backend.dtos.match.MatchRenumberResponse renumberMatches(
             UUID tournamentId, boolean dryRun, HttpServletRequest httpRequest) {
         tournamentRepository.findById(tournamentId)
@@ -1147,18 +1190,21 @@ public class MatchServiceImpl implements MatchService {
             originalOrder.put(matches.get(i).getId(), i);
         }
 
-        // Group non-deleted matches by normalised venue key
-        Map<String, List<Match>> groups = matches.stream()
-                .collect(Collectors.groupingBy(
-                        m -> com.athleticaos.backend.utils.VenueUtils.normalizeVenue(m.getVenue()),
-                        java.util.LinkedHashMap::new,
-                        Collectors.toList()));
+        Map<UUID, String> venueNames = venueRepository.findByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournamentId).stream()
+                .collect(Collectors.toMap(TournamentVenue::getId, TournamentVenue::getName, (a, b) -> a));
+
+        // Group non-deleted matches by venue_id (null represents unassigned / Venue TBC)
+        Map<UUID, List<Match>> groups = new java.util.LinkedHashMap<>();
+        for (Match match : matches) {
+            groups.computeIfAbsent(match.getVenueId(), k -> new java.util.ArrayList<>()).add(match);
+        }
 
         List<com.athleticaos.backend.dtos.match.MatchRenumberResponse.MatchRenumberChange> changes = new java.util.ArrayList<>();
         List<com.athleticaos.backend.dtos.match.MatchRenumberResponse.VenueBreakdown> breakdown = new java.util.ArrayList<>();
         Map<Match, Integer> targetNumbers = new java.util.IdentityHashMap<>();
 
-        for (Map.Entry<String, List<Match>> entry : groups.entrySet()) {
+        for (Map.Entry<UUID, List<Match>> entry : groups.entrySet()) {
+            UUID venueId = entry.getKey();
             List<Match> groupMatches = entry.getValue();
 
             // Order within group: scheduled matches first by date, then kick-off time, then current matchNumber tie-break.
@@ -1199,15 +1245,28 @@ public class MatchServiceImpl implements MatchService {
             });
 
             // Derive a user-facing label for the venue
-            String displayVenue = entry.getKey().isEmpty() ? "Unassigned" : entry.getKey();
-            breakdown.add(new com.athleticaos.backend.dtos.match.MatchRenumberResponse.VenueBreakdown(displayVenue, groupMatches.size()));
+            String displayVenue = venueId != null
+                    ? venueNames.getOrDefault(venueId, groupMatches.isEmpty() ? "Unknown" : (groupMatches.get(0).getVenue() != null ? groupMatches.get(0).getVenue() : "Venue"))
+                    : "Unassigned";
+            breakdown.add(com.athleticaos.backend.dtos.match.MatchRenumberResponse.VenueBreakdown.builder()
+                    .venueId(venueId)
+                    .venueName(displayVenue)
+                    .venue(displayVenue)
+                    .matchCount(groupMatches.size())
+                    .build());
 
             for (int i = 0; i < groupMatches.size(); i++) {
                 Match m = groupMatches.get(i);
                 int targetNumber = i + 1;
                 if (m.getMatchNumber() == null || m.getMatchNumber() != targetNumber) {
-                    changes.add(new com.athleticaos.backend.dtos.match.MatchRenumberResponse.MatchRenumberChange(
-                            m.getId(), m.getVenue(), m.getMatchNumber(), targetNumber));
+                    changes.add(com.athleticaos.backend.dtos.match.MatchRenumberResponse.MatchRenumberChange.builder()
+                            .matchId(m.getId())
+                            .venueId(venueId)
+                            .venueName(displayVenue)
+                            .venue(m.getVenue() != null ? m.getVenue() : displayVenue)
+                            .currentNumber(m.getMatchNumber())
+                            .newNumber(targetNumber)
+                            .build());
                     targetNumbers.put(m, targetNumber);
                 }
             }

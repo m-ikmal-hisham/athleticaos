@@ -24,6 +24,8 @@ public class MatchRenumberResponse {
     @AllArgsConstructor
     public static class MatchRenumberChange {
         private UUID matchId;
+        private UUID venueId;
+        private String venueName;
         private String venue;
         private Integer currentNumber;
         private Integer newNumber;
@@ -34,6 +36,8 @@ public class MatchRenumberResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class VenueBreakdown {
+        private UUID venueId;
+        private String venueName;
         private String venue;
         private int matchCount;
     }

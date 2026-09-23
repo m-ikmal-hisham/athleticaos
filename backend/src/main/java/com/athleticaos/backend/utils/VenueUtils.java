@@ -37,15 +37,15 @@ public final class VenueUtils {
      * If feeder is at the same venue: unchanged, e.g. "Lose 77".
      *
      * @param placeholder the raw placeholder text (e.g. "Lose 77", "Winner M1", "TBD")
-     * @param targetVenue the venue of the match containing the placeholder
+     * @param targetVenueId the venue ID of the match containing the placeholder
      * @param feeder the earlier match that feeds this slot
      * @return the formatted placeholder string
      */
-    public static String formatFeederPlaceholder(String placeholder, String targetVenue, com.athleticaos.backend.entities.Match feeder) {
-        return formatFeederPlaceholder(placeholder, targetVenue, feeder, "Winner");
+    public static String formatFeederPlaceholder(String placeholder, java.util.UUID targetVenueId, com.athleticaos.backend.entities.Match feeder) {
+        return formatFeederPlaceholder(placeholder, targetVenueId, feeder, "Winner");
     }
 
-    public static String formatFeederPlaceholder(String placeholder, String targetVenue,
+    public static String formatFeederPlaceholder(String placeholder, java.util.UUID targetVenueId,
             com.athleticaos.backend.entities.Match feeder, String defaultOutcome) {
         if (feeder == null) {
             return placeholder;
@@ -68,10 +68,52 @@ public final class VenueUtils {
                 : (feeder.getMatchCode() != null ? feeder.getMatchCode() : "");
         String base = identifier.isEmpty() ? prefix : prefix + " " + identifier;
 
-        // Cross-venue check. Venues compare exactly after trimming, the same way normalizeVenue and
-        // the unique index do, so two venues differing only by case stay distinct here as well.
-        String feederVenue = normalizeVenue(feeder.getVenue());
-        boolean isCrossVenue = !feederVenue.isEmpty() && !feederVenue.equals(normalizeVenue(targetVenue));
+        java.util.UUID feederVenueId = feeder.getVenueId();
+        String feederVenueName = feeder.getVenueName() != null && !feeder.getVenueName().trim().isEmpty()
+                ? feeder.getVenueName().trim()
+                : (feeder.getVenue() != null ? feeder.getVenue().trim() : null);
+
+        // Cross-venue check: compare venue IDs.
+        boolean isCrossVenue = feederVenueId != null && !feederVenueId.equals(targetVenueId);
+        return isCrossVenue && feederVenueName != null && !feederVenueName.isEmpty()
+                ? base + " (" + feederVenueName + ")"
+                : base;
+    }
+
+    public static String formatFeederPlaceholder(String placeholder, String targetVenue, com.athleticaos.backend.entities.Match feeder) {
+        return formatFeederPlaceholder(placeholder, targetVenue, feeder, "Winner");
+    }
+
+    public static String formatFeederPlaceholder(String placeholder, String targetVenue,
+            com.athleticaos.backend.entities.Match feeder, String defaultOutcome) {
+        if (feeder == null) {
+            return placeholder;
+        }
+
+        if (feeder.getVenueId() != null && targetVenue != null) {
+            try {
+                java.util.UUID targetVenueId = java.util.UUID.fromString(targetVenue.trim());
+                return formatFeederPlaceholder(placeholder, targetVenueId, feeder, defaultOutcome);
+            } catch (IllegalArgumentException ignored) {
+                // targetVenue is a name string, continue with name comparison
+            }
+        }
+
+        String prefix = defaultOutcome != null ? defaultOutcome : "Winner";
+        if (placeholder != null && !placeholder.trim().isEmpty() && !"TBD".equalsIgnoreCase(placeholder.trim())) {
+            java.util.regex.Matcher m = OUTCOME_PREFIX.matcher(placeholder.trim());
+            if (m.find()) {
+                prefix = m.group(1);
+            }
+        }
+
+        String identifier = feeder.getMatchNumber() != null
+                ? String.valueOf(feeder.getMatchNumber())
+                : (feeder.getMatchCode() != null ? feeder.getMatchCode() : "");
+        String base = identifier.isEmpty() ? prefix : prefix + " " + identifier;
+
+        String feederVenue = feeder.getVenueName() != null ? feeder.getVenueName().trim() : normalizeVenue(feeder.getVenue());
+        boolean isCrossVenue = !feederVenue.isEmpty() && !feederVenue.equalsIgnoreCase(normalizeVenue(targetVenue));
         return isCrossVenue ? base + " (" + feederVenue + ")" : base;
     }
 
@@ -133,6 +175,9 @@ public final class VenueUtils {
         }
 
         if (feeder != null) {
+            if (targetMatch.getVenueId() != null || feeder.getVenueId() != null) {
+                return formatFeederPlaceholder(placeholder, targetMatch.getVenueId(), feeder, linkOutcome);
+            }
             return formatFeederPlaceholder(placeholder, targetMatch.getVenue(), feeder, linkOutcome);
         }
 
