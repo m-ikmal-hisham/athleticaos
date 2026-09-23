@@ -160,9 +160,10 @@ export const EditTournament = () => {
             setNewVenueName('');
             setNewVenueShortName('');
             showToast.success(`Added venue "${res.data.name}"`);
-        } catch (error: any) {
-            console.error('Failed to add venue:', error);
-            showToast.error(error?.response?.data?.message || 'Failed to add venue');
+        } catch (err: unknown) {
+            console.error('Failed to add venue:', err);
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            showToast.error(message || 'Failed to add venue');
         }
     };
 
@@ -182,9 +183,10 @@ export const EditTournament = () => {
             setVenues(prev => prev.map(v => v.id === venueId ? res.data : v));
             setEditingVenueId(null);
             showToast.success(`Updated venue "${res.data.name}"`);
-        } catch (error: any) {
-            console.error('Failed to update venue:', error);
-            showToast.error(error?.response?.data?.message || 'Failed to update venue');
+        } catch (err: unknown) {
+            console.error('Failed to update venue:', err);
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            showToast.error(message || 'Failed to update venue');
         }
     };
 
@@ -198,9 +200,10 @@ export const EditTournament = () => {
             await deleteTournamentVenue(id, venue.id);
             setVenues(prev => prev.filter(v => v.id !== venue.id));
             showToast.success(`Deleted venue "${venue.name}"`);
-        } catch (error: any) {
-            console.error('Failed to delete venue:', error);
-            showToast.error(error?.response?.data?.message || `Cannot delete venue "${venue.name}": matches may be assigned to it.`);
+        } catch (err: unknown) {
+            console.error('Failed to delete venue:', err);
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            showToast.error(message || `Cannot delete venue "${venue.name}": matches may be assigned to it.`);
         }
     };
 

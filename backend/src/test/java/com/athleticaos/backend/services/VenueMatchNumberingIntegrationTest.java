@@ -75,6 +75,9 @@ public class VenueMatchNumberingIntegrationTest {
     private MatchRepository matchRepository;
 
     @Autowired
+    private com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
+
+    @Autowired
     private MatchService matchService;
 
     @Autowired
@@ -96,6 +99,22 @@ public class VenueMatchNumberingIntegrationTest {
                         .orgType("CLUB")
                         .slug("test-venue-org")
                         .build()));
+    }
+
+    /**
+     * Declares venues on a tournament. Matches may only be assigned a venue the organiser has
+     * declared — the service resolves a venue name against this list and rejects anything else —
+     * so tests that create matches through MatchService must declare their venues first.
+     */
+    private void declareVenues(Tournament tournament, String... names) {
+        int order = 0;
+        for (String name : names) {
+            venueRepository.saveAndFlush(com.athleticaos.backend.entities.TournamentVenue.builder()
+                    .tournament(tournament)
+                    .name(name)
+                    .displayOrder(order++)
+                    .build());
+        }
     }
 
     private Tournament createTournament(String name, String slug) {
@@ -130,6 +149,7 @@ public class VenueMatchNumberingIntegrationTest {
     @DisplayName("Numbers restart at 1 per venue and two venues produce two independent sequences")
     void numbersRestartAt1PerVenueAndAreIndependent() {
         Tournament tournament = createTournament("Two Venues Cup", "two-venues-cup");
+        declareVenues(tournament, "Venue A", "Venue B - Pitch A");
 
         MatchResponse m1VenueA = matchService.createMatch(MatchCreateRequest.builder()
                 .tournamentId(tournament.getId())
@@ -178,6 +198,7 @@ public class VenueMatchNumberingIntegrationTest {
     @DisplayName("Two categories at one venue share one continuous sequence")
     void twoCategoriesShareContinuousSequencePerVenue() {
         Tournament tournament = createTournament("Multi Cat Cup", "multi-cat-cup");
+        declareVenues(tournament, "Venue A");
         TournamentCategory cat1 = createCategory(tournament, "Open Men");
         TournamentCategory cat2 = createCategory(tournament, "Open Women");
 
@@ -360,6 +381,7 @@ public class VenueMatchNumberingIntegrationTest {
     @DisplayName("CR-02 CSV exports produce 10 header fields for matches and 12 for results")
     void cr02CsvExportsProduceCorrectHeaderFields() throws Exception {
         Tournament tournament = createTournament("CSV Export Cup", "csv-export-cup");
+        declareVenues(tournament, "Venue 1");
 
         matchService.createMatch(MatchCreateRequest.builder()
                 .tournamentId(tournament.getId())
@@ -393,6 +415,7 @@ public class VenueMatchNumberingIntegrationTest {
     @DisplayName("Part D: Cross-venue feeder matches display feeder venue in placeholders and CSV exports, same-venue remains unchanged")
     void crossVenueFeederLabelsInMatchResponseAndCsvExport() throws Exception {
         Tournament tournament = createTournament("Cross Venue Cup", "cross-venue-cup");
+        declareVenues(tournament, "Venue A", "Venue B - Pitch A", "Venue B");
 
         Match crossVenueTarget = matchRepository.saveAndFlush(Match.builder()
                 .tournament(tournament)
@@ -464,6 +487,7 @@ public class VenueMatchNumberingIntegrationTest {
     @DisplayName("Feeder placeholders store the match code and render the feeder's current number after a renumber")
     void feederPlaceholdersStoreCodeAndRenderCurrentNumber() {
         Tournament tournament = createTournament("Feeder Label Cup", "feeder-label-cup");
+        declareVenues(tournament, "Venue A");
 
         MatchResponse feeder = matchService.createMatch(MatchCreateRequest.builder()
                 .tournamentId(tournament.getId())
@@ -520,6 +544,7 @@ public class VenueMatchNumberingIntegrationTest {
     @DisplayName("A feeder at another venue is named with its venue")
     void feederAtAnotherVenueIsNamedWithItsVenue() {
         Tournament tournament = createTournament("Cross Venue Cup", "cross-venue-cup");
+        declareVenues(tournament, "Venue A", "Venue B - Pitch A", "Venue B");
 
         MatchResponse feeder = matchService.createMatch(MatchCreateRequest.builder()
                 .tournamentId(tournament.getId())
