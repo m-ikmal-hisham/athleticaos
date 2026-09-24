@@ -13,6 +13,7 @@ import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TournamentRepository;
 import com.athleticaos.backend.repositories.TournamentStageRepository;
 import com.athleticaos.backend.services.ProgressionService;
+import com.athleticaos.backend.utils.MatchCodeUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -332,7 +333,7 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .status(MatchStatus.SCHEDULED)
                 .phase(placementStage.getName())
                 .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, placementStage.getCategory()),
-                        getStageAbbreviation(placementStage.getStageType()),
+                        MatchCodeUtils.stageToken(placementStage.getStageType(), placementStage.getName()),
                         existingMatches.size() + 1))
                 .matchNumber(matchRepository.findMaxMatchNumber(tournament.getId(), defaultVenueId) + 1)
                 .build();
@@ -418,7 +419,7 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .status(MatchStatus.SCHEDULED)
                 .phase(nextStage.getName())
                 .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, nextStage.getCategory()),
-                        getStageAbbreviation(nextStage.getStageType()),
+                        MatchCodeUtils.stageToken(nextStage.getStageType(), nextStage.getName()),
                         nextStageMatchIndex + 1))
                 .matchNumber(matchRepository.findMaxMatchNumber(tournament.getId(), defaultVenueId) + 1)
                 .build();
@@ -512,18 +513,8 @@ public class ProgressionServiceImpl implements ProgressionService {
         });
     }
 
-    private String getStageAbbreviation(TournamentStageType stageType) {
-        return switch (stageType) {
-            case QUARTER_FINAL -> "QF";
-            case SEMI_FINAL -> "SF";
-            case FINAL -> "F";
-            case THIRD_PLACE -> "3P";
-            default -> stageType.name().substring(0, 2);
-        };
-    }
-
     private String categoryAbbr(TournamentCategory category) {
-        return com.athleticaos.backend.utils.MatchCodeUtils.categoryAbbr(category);
+        return MatchCodeUtils.categoryAbbr(category);
     }
 
     private String matchCodePrefix(Tournament tournament, TournamentCategory category) {

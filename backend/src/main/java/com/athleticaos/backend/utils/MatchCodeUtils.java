@@ -1,6 +1,9 @@
 package com.athleticaos.backend.utils;
 
 import com.athleticaos.backend.entities.TournamentCategory;
+import com.athleticaos.backend.enums.TournamentStageType;
+
+import java.util.Locale;
 
 /**
  * Helpers for building match codes.
@@ -53,5 +56,72 @@ public final class MatchCodeUtils {
                 ? initials.substring(0, MAX_INITIALS)
                 : initials.toString();
         return abbr + digits;
+    }
+
+    /**
+     * The bracket part of a knockout match code: the placement rung ("PLT", "WSP", ...) or "CUP".
+     *
+     * <p>Must match {@code BracketServiceImpl.PLACEMENT_LADDER}, which a test pins. Every rung gets
+     * its own abbreviation. Taking the first two letters of the stage type, as two generators used
+     * to, made WOODEN_SPOON and WOODEN_FORK both "WO" and gave their semi-finals and finals
+     * identical codes.
+     *
+     * @param type the stage type, may be null
+     * @return the rung abbreviation, or "CUP" for the Cup rounds and anything unrecognised
+     */
+    public static String bracketAbbr(TournamentStageType type) {
+        if (type == null) {
+            return "CUP";
+        }
+        return switch (type) {
+            case PLATE -> "PLT";
+            case BOWL -> "BWL";
+            case SHIELD -> "SHD";
+            case SPOON -> "SPN";
+            case FORK -> "FRK";
+            case SAUCER -> "SAU";
+            case CHOPSTICK -> "CHP";
+            case WOODEN_SPOON -> "WSP";
+            case WOODEN_FORK -> "WFK";
+            case CLASSIFICATION -> "CLS";
+            default -> "CUP";
+        };
+    }
+
+    /**
+     * The round part of a knockout match code: "R16", "QF", "SF", "F" or "PO".
+     *
+     * <p>Cup rounds carry the round in their stage type. Placement rungs tag every round with the
+     * rung's type, so for those the round is read from the stage name ("Plate Semi Finals",
+     * "7th Place Playoff").
+     *
+     * @return the round abbreviation, or "" when it cannot be determined
+     */
+    public static String roundAbbr(TournamentStageType type, String stageName) {
+        if (type != null) {
+            switch (type) {
+                case ROUND_OF_16: return "R16";
+                case QUARTER_FINAL: return "QF";
+                case SEMI_FINAL: return "SF";
+                case FINAL: return "F";
+                case THIRD_PLACE: return "PO";
+                default: break;
+            }
+        }
+        String name = stageName == null ? "" : stageName.toLowerCase(Locale.ROOT);
+        if (name.contains("playoff") || name.contains("play-off")) return "PO";
+        if (name.contains("round of 16")) return "R16";
+        if (name.contains("quarter")) return "QF";
+        if (name.contains("semi")) return "SF";
+        if (name.contains("final")) return "F";
+        return "";
+    }
+
+    /**
+     * Bracket plus round, e.g. "CUPQF", "PLTSF", "WSPF", "WFKPO": the same token the placement
+     * ladder writes, so a match created later by progression reads like one generated up front.
+     */
+    public static String stageToken(TournamentStageType type, String stageName) {
+        return bracketAbbr(type) + roundAbbr(type, stageName);
     }
 }

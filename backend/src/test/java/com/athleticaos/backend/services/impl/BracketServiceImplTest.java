@@ -358,6 +358,16 @@ class BracketServiceImplTest {
     }
 
     @Test
+    void ladderAbbreviationsMatchMatchCodeUtils() {
+        // Progression and the manual bracket build codes through MatchCodeUtils, the ladder through
+        // these literals; they must agree or later-created matches read differently.
+        for (BracketServiceImpl.LadderRung rung : BracketServiceImpl.getPlacementLadder()) {
+            assertEquals(rung.getAbbr(), com.athleticaos.backend.utils.MatchCodeUtils.bracketAbbr(rung.getType()),
+                    "abbreviation for " + rung.getLabel());
+        }
+    }
+
+    @Test
     @SuppressWarnings("null")
     void ladderOrderOfAllTenTiers() {
         List<BracketServiceImpl.LadderRung> ladder = BracketServiceImpl.getPlacementLadder();

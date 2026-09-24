@@ -1955,7 +1955,7 @@ public class BracketServiceImpl implements BracketService {
                         .status(MatchStatus.SCHEDULED)
                         .phase(stageName)
                         .matchCode(String.format("%s-%s-M%d", matchCodePrefix(tournament, category, 20),
-                                type.name().substring(0, Math.min(2, type.name().length())) + stageInfo.abbreviation, i + 1))
+                                com.athleticaos.backend.utils.MatchCodeUtils.bracketAbbr(type) + stageInfo.abbreviation, i + 1))
                         .matchNumber(nextMatchNumber(tournament, defaultVenueId))
                         .homeTeamPlaceholder("TBD")
                         .awayTeamPlaceholder("TBD")
