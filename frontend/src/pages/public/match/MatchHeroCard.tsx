@@ -11,6 +11,7 @@ import { WatchLiveLinks } from '@/components/public/WatchLiveLinks';
 import { getImageUrl } from '@/utils/image';
 import { formatOfficialRole } from '@/utils/rugbyPositions';
 import { formatEnum, formatTeamShortName } from '@/utils/formatters';
+import { matchText } from './typography';
 
 interface MatchHeroCardProps {
     match: PublicMatchDetail;
@@ -22,11 +23,17 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
     const isLive = match.status === 'LIVE' || match.status === 'ONGOING';
     const isCompleted = match.status === 'COMPLETED' || match.status === 'FULL_TIME';
 
+    // Scoresheet-style short names so the list stays readable in half the card width:
+    // "MUHAMMAD SHAMSUL BIN AHMAD" -> "M. SHAMSUL", "Danish Khairul Anuar" -> "Danish Khairul".
     const getPlayerShortName = (name?: string) => {
-        if (!name) return 'Team';
-        const parts = name.trim().split(/\s+/);
-        if (parts.length <= 2) return name;
-        return `${parts[0]} ${parts[parts.length - 1]}`;
+        if (!name?.trim()) return 'Team';
+        let parts = name.trim().split(/\s+/);
+        const patronymic = parts.findIndex((p, i) => i > 0 && /^(bin|binti|bt|b\.?|a\/l|a\/p)$/i.test(p));
+        if (patronymic > 0) parts = parts.slice(0, patronymic);
+        if (parts.length > 1 && /^(muhammad|muhamad|mohammad|mohamad|mohamed|mohd|muhd|md)\.?$/i.test(parts[0])) {
+            parts = ['M.', ...parts.slice(1)];
+        }
+        return parts.slice(0, 2).join(' ');
     };
 
     const summaryEvents = (teamName: string) => (match.events || [])
@@ -35,18 +42,29 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
         ))
         .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
 
+    // One line per score or card: minute, name (the only part that truncates), then points or a
+    // card marker. The event type sits in the tooltip; +5/+2/+3 and the card colour already say it.
     const renderEventSummary = (event: PublicMatchEvent, index: number) => {
         const isCard = event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD';
         const label = formatEnum(event.eventType);
         return (
-            <div key={`${event.eventType}-${event.minute}-${index}`} className="flex items-center justify-between gap-2 text-[11px] md:text-xs">
-                <span className="min-w-0 truncate text-slate-600 dark:text-slate-300">
-                    <span className="font-semibold">{getPlayerShortName(event.playerName)}</span>
-                    <span className="text-slate-400"> · {label}</span>
+            <div
+                key={`${event.eventType}-${event.minute}-${index}`}
+                className={`flex items-center gap-2 ${matchText.body}`}
+                title={`${event.minute ?? 0}' ${event.playerName ?? ''} · ${label}`}
+            >
+                <span className="shrink-0 w-7 text-right tabular-nums font-semibold text-slate-400">{event.minute ?? 0}'</span>
+                <span className="flex-1 min-w-0 truncate font-semibold text-slate-700 dark:text-slate-200">
+                    {getPlayerShortName(event.playerName)}
                 </span>
-                <span className={`shrink-0 font-bold ${isCard ? (event.eventType === 'RED_CARD' ? 'text-red-500' : 'text-yellow-600 dark:text-yellow-400') : 'text-slate-500 dark:text-slate-400'}`}>
-                    {event.minute ?? 0}'{!isCard && event.points ? ` · +${event.points}` : ''}
-                </span>
+                {isCard ? (
+                    <span
+                        aria-label={label}
+                        className={`shrink-0 w-2.5 h-3.5 rounded-sm ${event.eventType === 'RED_CARD' ? 'bg-red-500' : 'bg-yellow-400'}`}
+                    />
+                ) : (
+                    <span className="shrink-0 tabular-nums font-bold text-slate-500 dark:text-slate-400">+{event.points ?? 0}</span>
+                )}
             </div>
         );
     };
@@ -108,19 +126,21 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     <div className="flex items-center gap-2 md:gap-3 min-w-0">
                         <div className="px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md flex items-center gap-1.5 md:gap-2 min-w-0">
                             <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" weight="fill" />
-                            <span className="text-[10px] md:text-xs font-semibold text-slate-700 dark:text-slate-200 tracking-wide uppercase truncate">
+                            <span className={`${matchText.chip} text-slate-700 dark:text-slate-200 truncate`}>
                                 {tournamentName || 'Tournament Match'}
                             </span>
                         </div>
 
                         {/* Match Code / Round Badge */}
                         {(match.stage || match.code) && (
-                            <div className="hidden md:flex px-3 py-1.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            <div className={`hidden md:flex min-w-0 px-3 py-1.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm ${matchText.chip} normal-case tracking-normal font-medium text-slate-500 dark:text-slate-400`}>
+                                <span className="truncate">
                                 {[
                                     formatEnum(match.stage),
                                     formatEnum(match.round),
                                     formatMatchCode(match.code)
                                 ].filter(Boolean).join(' • ')}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -128,7 +148,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     {/* Status Pill */}
                     <div className="flex items-center gap-3 shrink-0">
                         {isLive && (
-                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs md:text-sm font-bold border border-red-500/20 shadow-sm shadow-red-500/10">
+                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-red-500/20 shadow-sm shadow-red-500/10">
                                 <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
@@ -137,12 +157,12 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             </div>
                         )}
                         {isCompleted && (
-                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 text-xs md:text-sm font-bold border border-slate-200 dark:border-white/10">
+                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-slate-200 dark:border-white/10">
                                 FULL TIME
                             </div>
                         )}
                         {!isLive && !isCompleted && (
-                            <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs md:text-sm font-bold border border-blue-500/20">
+                            <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-blue-500/20">
                                 <CalendarBlank className="w-4 h-4" weight="bold" />
                                 SCHEDULED
                             </div>
@@ -178,34 +198,29 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         </div>
 
                         <div className="w-full">
-                            <h2 className="text-base sm:text-xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
+                            <h2 className={`${matchText.teamName} text-slate-900 dark:text-white truncate w-full`} title={match.homeTeamName}>
                                 {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
                             </h2>
                             {match.homeTeamShortName && (
-                                <p className="hidden md:block text-sm text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+                                <p className={`hidden md:block ${matchText.body} text-slate-500 dark:text-slate-400 font-medium mt-1 truncate`}>
                                     {match.homeTeamName}
                                 </p>
                             )}
                         </div>
                         <div className="h-0.5 md:h-1 w-8 md:w-10 bg-blue-500 rounded-full opacity-80" />
-                        {homeSummary.length > 0 && (
-                            <div className="w-full max-w-xs mt-2 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
-                                {homeSummary.map(renderEventSummary)}
-                            </div>
-                        )}
                     </div>
 
                     {/* Score Board */}
                     <div className="relative flex items-center justify-center gap-2 md:gap-6 px-3 py-2 md:px-8 md:py-4 rounded-xl md:rounded-2xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
-                        <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                        <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
                             {match.homeScore ?? 0}
                         </div>
                         <div className="flex flex-col items-center gap-0.5 md:gap-2">
                             <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
-                            <span className="text-slate-400 font-medium text-[10px] md:text-sm">VS</span>
+                            <span className={`${matchText.caption} text-slate-400`}>VS</span>
                             <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
                         </div>
-                        <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                        <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
                             {match.awayScore ?? 0}
                         </div>
                     </div>
@@ -228,34 +243,45 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         </div>
 
                         <div className="w-full">
-                            <h2 className="text-base sm:text-xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
+                            <h2 className={`${matchText.teamName} text-slate-900 dark:text-white truncate w-full`} title={match.awayTeamName}>
                                 {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
                             </h2>
                             {match.awayTeamShortName && (
-                                <p className="hidden md:block text-sm text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+                                <p className={`hidden md:block ${matchText.body} text-slate-500 dark:text-slate-400 font-medium mt-1 truncate`}>
                                     {match.awayTeamName}
                                 </p>
                             )}
                         </div>
                         <div className="h-0.5 md:h-1 w-8 md:w-10 bg-red-500 rounded-full opacity-80" />
-                        {awaySummary.length > 0 && (
-                            <div className="w-full max-w-xs mt-2 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
-                                {awaySummary.map(renderEventSummary)}
-                            </div>
-                        )}
                     </div>
                 </div>
+
+                {/* Scorers and cards: their own row, so a long list never pushes the score out of line */}
+                {(homeSummary.length > 0 || awaySummary.length > 0) && (
+                    <div className="grid grid-cols-2 gap-2 md:gap-8">
+                        <div className="min-w-0 space-y-1 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-2.5 md:p-3 self-start w-full md:max-w-xs justify-self-end">
+                            {homeSummary.length > 0 ? homeSummary.map(renderEventSummary) : <p className={`${matchText.body} text-slate-400`}>—</p>}
+                        </div>
+                        <div className="min-w-0 space-y-1 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-2.5 md:p-3 self-start w-full md:max-w-xs justify-self-start">
+                            {awaySummary.length > 0 ? awaySummary.map(renderEventSummary) : <p className={`${matchText.body} text-slate-400`}>—</p>}
+                        </div>
+                    </div>
+                )}
 
                 {/* Match Officials */}
                 {match.officials && match.officials.length > 0 && (
                     <div className="flex justify-center">
-                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1.5 px-4 py-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
-                            {match.officials.map((official, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{formatOfficialRole(official.officialRoleName)}:</span>
-                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{official.officialName}</span>
-                                </div>
-                            ))}
+                        <div className="max-w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-1.5 px-4 py-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
+                            {match.officials.map((official, idx) => {
+                                // Some officials only carry assignedRole (e.g. REFEREE); without it the chip read ": Name".
+                                const role = formatOfficialRole(official.officialRoleName || official.assignedRole);
+                                return (
+                                    <div key={idx} className="flex items-center gap-2 min-w-0">
+                                        {role && <span className={`${matchText.caption} text-slate-400 shrink-0`}>{role}</span>}
+                                        <span className={`${matchText.body} font-semibold text-slate-700 dark:text-slate-300 truncate`}>{official.officialName}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -269,7 +295,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
                 {/* Meta Details Footer */}
                 <div className="flex items-center justify-between gap-2 pt-3 md:pt-4 border-t border-slate-200/50 dark:border-white/5">
-                    <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-1 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 min-w-0">
+                    <div className={`flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-1 ${matchText.body} font-medium text-slate-500 dark:text-slate-400 min-w-0`}>
                         {/* Stage and match number: in the top row on desktop, here on phones */}
                         {(match.stage || match.code) && (
                             <span className="md:hidden font-semibold text-slate-600 dark:text-slate-300">
@@ -285,9 +311,9 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             <span>{match.matchTime}</span>
                         </div>
                         {match.venue && (
-                            <div className="flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500" />
-                                <span>{match.venue}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                                <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 shrink-0" />
+                                <span className="truncate">{match.venue}</span>
                             </div>
                         )}
                     </div>
