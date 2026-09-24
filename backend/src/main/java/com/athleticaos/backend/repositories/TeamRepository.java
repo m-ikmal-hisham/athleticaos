@@ -20,6 +20,8 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
 
     long countByStatus(String status);
 
+    long countByStatusAndOrganisation_IdIn(String status, java.util.Collection<UUID> orgIds);
+
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Team t LEFT JOIN FETCH t.organisation WHERE t.status IS NULL OR LOWER(t.status) != 'inactive'")
     java.util.List<Team> findAllActiveWithOrganisation();
 }

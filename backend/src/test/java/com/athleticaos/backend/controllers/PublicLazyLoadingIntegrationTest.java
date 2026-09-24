@@ -202,6 +202,7 @@ class PublicLazyLoadingIntegrationTest {
                 .slug("test-tournament")
                 .level("NATIONAL")
                 .venue("National Stadium")
+                .bannerUrl("/uploads/banners/test-banner.png")
                 .isPublished(true)
                 .status(TournamentStatus.PUBLISHED)
                 .organiserOrg(orgA)
@@ -332,11 +333,13 @@ class PublicLazyLoadingIntegrationTest {
     void getPublicTournamentsAndMatches() throws Exception {
         mockMvc.perform(get("/api/public/tournaments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", not(empty())));
+                .andExpect(jsonPath("$", not(empty())))
+                .andExpect(jsonPath("$[0].bannerUrl", endsWith("/uploads/banners/test-banner.png")));
 
         mockMvc.perform(get("/api/public/tournaments/" + tournamentSlug))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", equalTo("Test Tournament")));
+                .andExpect(jsonPath("$.name", equalTo("Test Tournament")))
+                .andExpect(jsonPath("$.bannerUrl", endsWith("/uploads/banners/test-banner.png")));
 
         mockMvc.perform(get("/api/public/tournaments/" + tournamentSlug + "/matches"))
                 .andExpect(status().isOk());
