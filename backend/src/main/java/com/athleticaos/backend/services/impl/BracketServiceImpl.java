@@ -1349,37 +1349,95 @@ public class BracketServiceImpl implements BracketService {
 
     @Transactional
     @SuppressWarnings("null")
-    public void progressPoolsToKnockout(UUID tournamentId) {
+    public PoolSeedingResult progressPoolsToKnockout(UUID tournamentId) {
         log.info("Progressing pool winners to knockout stage for tournament: {}", tournamentId);
 
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
-        // Get all pool stages
-        List<TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
-                .stream()
-                .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
-                .toList();
-
-        if (poolStages.isEmpty()) {
+        PoolSeedingResult result = new PoolSeedingResult();
+        Map<UUID, List<TournamentStage>> poolsByCategory = poolStagesByCategory(tournamentId);
+        if (poolsByCategory.isEmpty()) {
             log.warn("No pool stages found for tournament {}", tournamentId);
-            return;
+            return result;
         }
 
         // Pools and their brackets belong to a category, so each category is ranked and
         // seeded on its own — pooling every category together would rank teams that never
-        // played each other.
-        Map<UUID, List<TournamentStage>> poolsByCategory = new LinkedHashMap<>();
-        for (TournamentStage stage : poolStages) {
-            UUID key = stage.getCategory() != null ? stage.getCategory().getId() : null;
-            poolsByCategory.computeIfAbsent(key, k -> new ArrayList<>()).add(stage);
-        }
-
+        // played each other. A category is only seeded once all of its pool matches are done:
+        // categories finish at different times, and seeding from a half-played pool would
+        // lock provisional teams into the bracket (seeding never overwrites a filled slot).
         for (Map.Entry<UUID, List<TournamentStage>> entry : poolsByCategory.entrySet()) {
-            List<PoolStanding> ranked = rankTeamsAcrossPools(tournament, entry.getKey(), entry.getValue());
-            seedBracketsFromStandings(tournamentId, entry.getKey(), ranked);
+            String label = categoryLabel(entry.getValue());
+            int unfinished = countUnfinishedPoolMatches(entry.getValue());
+            if (unfinished > 0) {
+                result.getSkippedCategories().add(label + " (" + unfinished + " pool match"
+                        + (unfinished == 1 ? "" : "es") + " left)");
+                continue;
+            }
+            seedCategory(tournament, entry.getKey(), entry.getValue());
+            result.getSeededCategories().add(label);
         }
+        log.info("Pool seeding for tournament {}: seeded {}, skipped {}", tournamentId,
+                result.getSeededCategories(), result.getSkippedCategories());
+        return result;
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("null")
+    public boolean seedCategoryIfPoolsComplete(UUID tournamentId, UUID categoryId) {
+        List<TournamentStage> pools = poolStagesByCategory(tournamentId).get(categoryId);
+        if (pools == null || pools.isEmpty() || countUnfinishedPoolMatches(pools) > 0) {
+            return false;
+        }
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+        log.info("All pools complete for category {} of tournament {}; seeding its brackets.", categoryId, tournamentId);
+        seedCategory(tournament, categoryId, pools);
+        return true;
+    }
+
+    private Map<UUID, List<TournamentStage>> poolStagesByCategory(UUID tournamentId) {
+        Map<UUID, List<TournamentStage>> poolsByCategory = new LinkedHashMap<>();
+        for (TournamentStage stage : stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)) {
+            if (Boolean.TRUE.equals(stage.getIsGroupStage())) {
+                UUID key = stage.getCategory() != null ? stage.getCategory().getId() : null;
+                poolsByCategory.computeIfAbsent(key, k -> new ArrayList<>()).add(stage);
+            }
+        }
+        return poolsByCategory;
+    }
+
+    private void seedCategory(Tournament tournament, UUID categoryId, List<TournamentStage> pools) {
+        List<PoolStanding> ranked = rankTeamsAcrossPools(tournament, categoryId, pools);
+        seedBracketsFromStandings(tournament.getId(), categoryId, ranked);
+    }
+
+    /**
+     * Pool matches still to be decided across these pools. Cancelled matches count as decided,
+     * since they will never produce a result; a pool with no matches at all counts as unfinished.
+     */
+    int countUnfinishedPoolMatches(List<TournamentStage> pools) {
+        int unfinished = 0;
+        for (TournamentStage pool : pools) {
+            List<Match> matches = matchRepository.findByStageId(pool.getId());
+            if (matches.isEmpty()) {
+                unfinished++;
+                continue;
+            }
+            unfinished += (int) matches.stream()
+                    .filter(m -> m.getStatus() != MatchStatus.COMPLETED && m.getStatus() != MatchStatus.CANCELLED)
+                    .count();
+        }
+        return unfinished;
+    }
+
+    private static String categoryLabel(List<TournamentStage> pools) {
+        TournamentCategory category = pools.get(0).getCategory();
+        return category != null && category.getName() != null ? category.getName() : "Uncategorised";
     }
 
     /**
