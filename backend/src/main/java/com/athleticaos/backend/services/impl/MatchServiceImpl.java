@@ -1121,12 +1121,14 @@ public class MatchServiceImpl implements MatchService {
                 || match.getNextMatchIdForWinner() != null
                 || match.getNextMatchIdForLoser() != null;
         final UUID tournamentId = match.getTournament() != null ? match.getTournament().getId() : null;
+        final boolean isPoolMatch = Boolean.TRUE.equals(stage.getIsGroupStage()) || !isKnockout;
+        final UUID categoryId = stage.getCategory() != null ? stage.getCategory().getId() : null;
 
         org.springframework.transaction.support.TransactionSynchronizationManager
                 .registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        performAutoProgression(matchId, isKnockout, tournamentId);
+                        performAutoProgression(matchId, isKnockout, isPoolMatch, tournamentId, categoryId);
                     }
                 });
     }
@@ -1136,7 +1138,8 @@ public class MatchServiceImpl implements MatchService {
      * isolated from the committed match update, so that progression changes are committed
      * independently and failures do not affect the match update.
      */
-    private void performAutoProgression(UUID matchId, boolean isKnockout, UUID tournamentId) {
+    private void performAutoProgression(UUID matchId, boolean isKnockout, boolean isPoolMatch,
+            UUID tournamentId, UUID categoryId) {
         TransactionTemplate txTemplate = getTransactionTemplate();
 
         if (isKnockout) {
@@ -1146,30 +1149,17 @@ public class MatchServiceImpl implements MatchService {
             } catch (Exception e) {
                 log.error("Failed to auto-progress knockout match {}", matchId, e);
             }
-        } else if (tournamentId != null) {
-            log.info("Checking if all pool matches are completed for tournament {}", tournamentId);
+        }
+        if (isPoolMatch && tournamentId != null) {
+            // Seed this match's own category as soon as its pools are finished. Waiting for every
+            // pool in the tournament left early-finishing categories unseeded while their
+            // knockouts were already due (JRC 2026: U11 pools end Sat 09:45, knockouts 11:12,
+            // but the last Girls pool match is at 16:30).
+            log.info("Checking whether pools are complete for category {} of tournament {}", categoryId, tournamentId);
             try {
-                txTemplate.executeWithoutResult(status -> {
-                    List<com.athleticaos.backend.entities.TournamentStage> poolStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)
-                            .stream()
-                            .filter(s -> Boolean.TRUE.equals(s.getIsGroupStage()))
-                            .toList();
-
-                    boolean allPoolStagesCompleted = true;
-                    for (com.athleticaos.backend.entities.TournamentStage poolStage : poolStages) {
-                        if (!progressionService.isStageComplete(poolStage.getId())) {
-                            allPoolStagesCompleted = false;
-                            break;
-                        }
-                    }
-
-                    if (allPoolStagesCompleted && !poolStages.isEmpty()) {
-                        log.info("All pool stages completed. Seeding knockout bracket for tournament {}", tournamentId);
-                        bracketService.progressPoolsToKnockout(tournamentId);
-                    }
-                });
+                txTemplate.executeWithoutResult(status -> bracketService.seedCategoryIfPoolsComplete(tournamentId, categoryId));
             } catch (Exception e) {
-                log.error("Failed to auto-progress pool stages for tournament {}", tournamentId, e);
+                log.error("Failed to auto-seed category {} of tournament {}", categoryId, tournamentId, e);
             }
         }
     }

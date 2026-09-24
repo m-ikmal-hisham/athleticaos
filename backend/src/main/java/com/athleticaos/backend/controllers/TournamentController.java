@@ -179,10 +179,10 @@ public class TournamentController {
 
     @PostMapping("/{id}/progress-pools")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN')")
-    @Operation(summary = "Progress pool winners to knockout stage")
-    public ResponseEntity<Void> progressPoolsToKnockout(@PathVariable UUID id) {
-        bracketService.progressPoolsToKnockout(id);
-        return ResponseEntity.ok().build();
+    @Operation(summary = "Seed knockout brackets from pool results, for each category whose pools are complete")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.PoolSeedingResult> progressPoolsToKnockout(
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(bracketService.progressPoolsToKnockout(id));
     }
 
     @PutMapping("/{id}/status")

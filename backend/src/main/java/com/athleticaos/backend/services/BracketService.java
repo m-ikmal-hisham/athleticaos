@@ -25,11 +25,21 @@ public interface BracketService {
     BracketViewResponse generateBracketForTournament(UUID tournamentId, BracketGenerationRequest request);
 
     /**
-     * Progress pool winners and runners-up to knockout stage
-     * 
+     * Seeds knockout brackets from pool results, one category at a time. A category is seeded
+     * only when every one of its pool matches is finished; the others are reported as skipped.
+     *
      * @param tournamentId the tournament ID
+     * @return which categories were seeded and which were skipped
      */
-    void progressPoolsToKnockout(UUID tournamentId);
+    com.athleticaos.backend.dtos.tournament.PoolSeedingResult progressPoolsToKnockout(UUID tournamentId);
+
+    /**
+     * Seeds one category's brackets if all of its pool matches are finished. Used after each pool
+     * result, so a category's knockouts fill as soon as its own pools end.
+     *
+     * @return true if the category was seeded
+     */
+    boolean seedCategoryIfPoolsComplete(UUID tournamentId, UUID categoryId);
 
     /**
      * Generate a manual knockout bracket group, sized and named per the request.
