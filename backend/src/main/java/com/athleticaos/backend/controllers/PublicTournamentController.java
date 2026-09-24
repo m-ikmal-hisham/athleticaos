@@ -302,6 +302,7 @@ public class PublicTournamentController {
                 .organiserBranding(getOrganiserBranding(t.getOrganiserOrgId()))
                 .competitionType(t.getCompetitionType())
                 .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
+                .bannerUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getBannerUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
@@ -367,6 +368,7 @@ public class PublicTournamentController {
                 .categories(categories)
                 .stages(List.of()) // Stages can be populated if TournamentStage is used
                 .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
+                .bannerUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getBannerUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
                 .build();
     }
