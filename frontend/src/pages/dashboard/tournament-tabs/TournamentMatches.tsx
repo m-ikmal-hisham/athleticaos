@@ -15,6 +15,8 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { BracketEditor } from '@/components/content/BracketEditor';
+import { CollapsibleDateGroup, ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
+import { useCollapsibleDates } from '@/hooks/useCollapsibleDates';
 
 interface TournamentMatchesProps {
     tournamentId: string;
@@ -308,6 +310,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
 
     // Sort dates (always earliest first)
     const sortedDates = Object.keys(matchesByDate).sort((a, b) => a.localeCompare(b));
+    const dateGroups = useCollapsibleDates(sortedDates, selectedCategoryId ?? '');
 
     function groupDateMatchesByVenue(dateMatches: MatchResponse[]): { hasMultipleVenues: boolean; groups: VenueGroup[] } {
         const venues = new Set<string>();
@@ -534,7 +537,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
             ) : (
                 <div className="grid grid-cols-1 gap-8">
                     {/* Main Schedule Area — full width while the Unscheduled panel is disabled. */}
-                    <div className="space-y-8">
+                    <div className="space-y-4">
                         {/* The schedule below only lists matches that have a date and a kick-off
                             time, so without this banner an undated match would render nowhere at
                             all. That cannot happen today — the API marks both @NotNull — but if
@@ -558,18 +561,23 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                 <p className="text-slate-500">No scheduled matches{selectedCategoryId ? ' for this category' : ''}.</p>
                             </div>
                         )}
+                        {sortedDates.length > 1 && (
+                            <div className="flex justify-end">
+                                <ExpandAllToggle allOpen={dateGroups.allOpen} onChange={dateGroups.setAll} />
+                            </div>
+                        )}
                         {sortedDates.map(date => {
                             const dateMatches = matchesByDate[date];
                             const { hasMultipleVenues, groups } = groupDateMatchesByVenue(dateMatches);
 
                             return (
-                                <div key={date} className="space-y-4">
-                                    <div className="flex items-center gap-4">
-                                        <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
-                                            {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                        </h3>
-                                        <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
-                                    </div>
+                                <CollapsibleDateGroup
+                                    key={date}
+                                    date={date}
+                                    matchCount={dateMatches.length}
+                                    open={dateGroups.isOpen(date)}
+                                    onToggle={() => dateGroups.toggle(date)}
+                                >
                                     {hasMultipleVenues ? (
                                         <div className="space-y-6">
                                             {groups.map(group => (
@@ -608,7 +616,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                             ))}
                                         </div>
                                     )}
-                                </div>
+                                </CollapsibleDateGroup>
                             );
                         })}
                     </div>

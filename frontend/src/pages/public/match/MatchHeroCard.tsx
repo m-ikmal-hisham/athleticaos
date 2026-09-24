@@ -53,9 +53,10 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
     const homeSummary = summaryEvents(match.homeTeamName);
     const awaySummary = summaryEvents(match.awayTeamName);
 
-    const formatMatchCode = (code?: string) => {
+    // withVenue: the phone footer already lists the venue on its own line, so it passes false.
+    const formatMatchCode = (code?: string, withVenue = true) => {
         if (match.matchNumber) {
-            if (match.hasMultipleVenues && match.venue?.trim()) {
+            if (withVenue && match.hasMultipleVenues && match.venue?.trim()) {
                 return `Match ${match.matchNumber} · ${match.venue.trim()}`;
             }
             return `Match ${match.matchNumber}`;
@@ -64,7 +65,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
         if (code.length < 10) return code;
         const matchNumber = code.match(/-M(\d+)$/);
         if (matchNumber) {
-            if (match.hasMultipleVenues && match.venue?.trim()) {
+            if (withVenue && match.hasMultipleVenues && match.venue?.trim()) {
                 return `Match ${matchNumber[1]} · ${match.venue.trim()}`;
             }
             return `Match ${matchNumber[1]}`;
@@ -80,7 +81,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 backdrop-blur-2xl 
                 border-slate-200/50 dark:border-slate-700/50
                 shadow-2xl shadow-blue-900/10 dark:shadow-black/40
-                p-8 md:py-12 md:px-10
+                p-4 sm:p-6 md:px-8 md:py-6
                 border-t border-l
                 transition-all duration-300
                 border-[color:var(--brand-primary,hsl(var(--border)))]
@@ -100,13 +101,13 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 )}
             </div>
 
-            <div className="relative z-10 space-y-8">
+            <div className="relative z-10 space-y-4 md:space-y-6">
                 {/* Competition Badge & Status Row */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="px-3 py-1.5 rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md flex items-center gap-2">
-                            <Trophy className="w-3.5 h-3.5 text-amber-500" weight="fill" />
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 tracking-wide uppercase">
+                <div className="flex items-center justify-between gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <div className="px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md flex items-center gap-1.5 md:gap-2 min-w-0">
+                            <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" weight="fill" />
+                            <span className="text-[10px] md:text-xs font-semibold text-slate-700 dark:text-slate-200 tracking-wide uppercase truncate">
                                 {tournamentName || 'Tournament Match'}
                             </span>
                         </div>
@@ -124,9 +125,9 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     </div>
 
                     {/* Status Pill */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                         {isLive && (
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-bold border border-red-500/20 shadow-sm shadow-red-500/10">
+                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs md:text-sm font-bold border border-red-500/20 shadow-sm shadow-red-500/10">
                                 <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
@@ -135,12 +136,12 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             </div>
                         )}
                         {isCompleted && (
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 text-sm font-bold border border-slate-200 dark:border-white/10">
+                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 text-xs md:text-sm font-bold border border-slate-200 dark:border-white/10">
                                 FULL TIME
                             </div>
                         )}
                         {!isLive && !isCompleted && (
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-sm font-bold border border-blue-500/20">
+                            <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs md:text-sm font-bold border border-blue-500/20">
                                 <CalendarBlank className="w-4 h-4" weight="bold" />
                                 SCHEDULED
                             </div>
@@ -157,11 +158,11 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 </div>
 
                 {/* Score Section */}
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-12 py-2">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-8">
                     {/* Home Team */}
-                    <div className="flex flex-col items-center md:items-end text-center md:text-right space-y-1 md:space-y-4 group min-w-0">
-                        {/* Mobile Logo */}
-                        <div className="w-12 h-12 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-1">
+                    <div className="flex flex-col items-center md:items-end text-center md:text-right space-y-1.5 md:space-y-2 group min-w-0">
+                        {/* Logo: one element, sized per breakpoint */}
+                        <div className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
                             {match.homeTeamLogoUrl ? (
                                 <img
                                     src={getImageUrl(match.homeTeamLogoUrl)}
@@ -169,64 +170,49 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                                     className="w-full h-full object-contain filter drop-shadow-lg"
                                 />
                             ) : (
-                                <div className="w-full h-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                    <span className="text-sm font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Desktop Logo (Hidden on mobile, visible on md+) */}
-                        <div className="hidden md:flex w-32 h-32 items-center justify-center mb-4 transform group-hover:scale-105 transition-transform duration-300">
-                            {match.homeTeamLogoUrl ? (
-                                <img
-                                    src={getImageUrl(match.homeTeamLogoUrl)}
-                                    alt={match.homeTeamName}
-                                    className="w-full h-full object-contain filter drop-shadow-xl"
-                                />
-                            ) : (
-                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
-                                    <span className="text-4xl font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
+                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-md flex items-center justify-center">
+                                    <span className="text-lg md:text-2xl font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
                                 </div>
                             )}
                         </div>
 
                         <div className="w-full">
-                            <h2 className="text-sm sm:text-lg md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
+                            <h2 className="text-base sm:text-xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
                                 {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
                             </h2>
                             {match.homeTeamShortName && (
-                                <p className="hidden md:block text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                <p className="hidden md:block text-sm text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
                                     {match.homeTeamName}
                                 </p>
                             )}
                         </div>
-                        <div className="h-0.5 md:h-1 w-8 md:w-12 bg-blue-500 rounded-full opacity-80 md:ml-0 mt-1" />
+                        <div className="h-0.5 md:h-1 w-8 md:w-10 bg-blue-500 rounded-full opacity-80" />
                         {homeSummary.length > 0 && (
-                            <div className="w-full max-w-xs mt-3 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
+                            <div className="w-full max-w-xs mt-2 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
                                 {homeSummary.map(renderEventSummary)}
                             </div>
                         )}
                     </div>
 
                     {/* Score Board */}
-                    <div className="relative flex items-center justify-center gap-2 md:gap-10 px-2 py-2 md:px-12 md:py-6 rounded-xl md:rounded-3xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
-                        <div className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                    <div className="relative flex items-center justify-center gap-2 md:gap-6 px-3 py-2 md:px-8 md:py-4 rounded-xl md:rounded-2xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
+                        <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
                             {match.homeScore ?? 0}
                         </div>
                         <div className="flex flex-col items-center gap-0.5 md:gap-2">
-                            <div className="w-px h-6 md:h-12 bg-slate-300 dark:bg-white/10" />
-                            <span className="text-slate-400 font-medium text-[10px] md:text-base">VS</span>
-                            <div className="w-px h-6 md:h-12 bg-slate-300 dark:bg-white/10" />
+                            <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
+                            <span className="text-slate-400 font-medium text-[10px] md:text-sm">VS</span>
+                            <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
                         </div>
-                        <div className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                        <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
                             {match.awayScore ?? 0}
                         </div>
                     </div>
 
                     {/* Away Team */}
-                    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-1 md:space-y-4 group min-w-0">
-                        {/* Mobile Logo */}
-                        <div className="w-12 h-12 md:w-24 md:h-24 flex items-center justify-center md:hidden mb-1">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-1.5 md:space-y-2 group min-w-0">
+                        {/* Logo: one element, sized per breakpoint */}
+                        <div className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
                             {match.awayTeamLogoUrl ? (
                                 <img
                                     src={getImageUrl(match.awayTeamLogoUrl)}
@@ -234,40 +220,25 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                                     className="w-full h-full object-contain filter drop-shadow-lg"
                                 />
                             ) : (
-                                <div className="w-full h-full rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                    <span className="text-sm font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Desktop Logo (Hidden on mobile, visible on md+) */}
-                        <div className="hidden md:flex w-32 h-32 items-center justify-center mb-4 transform group-hover:scale-105 transition-transform duration-300">
-                            {match.awayTeamLogoUrl ? (
-                                <img
-                                    src={getImageUrl(match.awayTeamLogoUrl)}
-                                    alt={match.awayTeamName}
-                                    className="w-full h-full object-contain filter drop-shadow-xl"
-                                />
-                            ) : (
-                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-lg flex items-center justify-center">
-                                    <span className="text-4xl font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
+                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-md flex items-center justify-center">
+                                    <span className="text-lg md:text-2xl font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
                                 </div>
                             )}
                         </div>
 
                         <div className="w-full">
-                            <h2 className="text-sm sm:text-lg md:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
+                            <h2 className="text-base sm:text-xl md:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none truncate w-full">
                                 {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
                             </h2>
                             {match.awayTeamShortName && (
-                                <p className="hidden md:block text-sm md:text-lg text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                <p className="hidden md:block text-sm text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
                                     {match.awayTeamName}
                                 </p>
                             )}
                         </div>
-                        <div className="h-0.5 md:h-1 w-8 md:w-12 bg-red-500 rounded-full opacity-80 md:mr-0 mt-1" />
+                        <div className="h-0.5 md:h-1 w-8 md:w-10 bg-red-500 rounded-full opacity-80" />
                         {awaySummary.length > 0 && (
-                            <div className="w-full max-w-xs mt-3 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
+                            <div className="w-full max-w-xs mt-2 space-y-1.5 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
                                 {awaySummary.map(renderEventSummary)}
                             </div>
                         )}
@@ -276,8 +247,8 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
                 {/* Match Officials */}
                 {match.officials && match.officials.length > 0 && (
-                    <div className="flex justify-center pt-2 md:pt-4">
-                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
+                    <div className="flex justify-center">
+                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1.5 px-4 py-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
                             {match.officials.map((official, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{formatOfficialRole(official.officialRoleName)}:</span>
@@ -289,19 +260,25 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 )}
 
                 {/* Meta Details Footer */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/50 dark:border-white/5">
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-3 text-sm font-medium text-slate-500 dark:text-slate-400">
-                        <div className="flex items-center gap-2">
-                            <CalendarBlank className="w-4 h-4 text-blue-500" />
-                            <span>{new Date(match.matchDate).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                <div className="flex items-center justify-between gap-2 pt-3 md:pt-4 border-t border-slate-200/50 dark:border-white/5">
+                    <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-1 text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 min-w-0">
+                        {/* Stage and match number: in the top row on desktop, here on phones */}
+                        {(match.stage || match.code) && (
+                            <span className="md:hidden font-semibold text-slate-600 dark:text-slate-300">
+                                {[formatEnum(match.stage), formatMatchCode(match.code, false)].filter(Boolean).join(' • ')}
+                            </span>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                            <CalendarBlank className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
+                            <span>{new Date(match.matchDate).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-blue-500" />
+                            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
                             <span>{match.matchTime}</span>
                         </div>
                         {match.venue && (
                             <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-red-500" />
+                                <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500" />
                                 <span>{match.venue}</span>
                             </div>
                         )}
@@ -313,7 +290,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         text={`Follow the match ${match.homeTeamName} vs ${match.awayTeamName} on AthleticaOS!`}
                         url={window.location.href}
                         variant="ghost"
-                        className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                        className="shrink-0 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
                     />
                 </div>
             </div>

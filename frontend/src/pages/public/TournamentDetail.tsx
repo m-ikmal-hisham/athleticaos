@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass } from '@phosphor-icons/react';
+import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
 
 import { TournamentLogo } from '@/components/common/TournamentLogo';
+import { CollapsibleDateGroup, ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
+import { useCollapsibleDates } from '@/hooks/useCollapsibleDates';
 import {
     publicTournamentApi,
     publicProfileApi,
@@ -99,6 +101,15 @@ const groupMatchesByDate = (matchList: PublicMatchSummary[], isResults: boolean)
     });
 };
 
+type TabId = 'fixtures' | 'results' | 'standings' | 'bracket' | 'stats' | 'teams' | 'players';
+
+interface TabDef {
+    id: TabId;
+    label: string;
+    icon: Icon;
+    count: number | null;
+}
+
 export default function TournamentDetail() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -106,7 +117,7 @@ export default function TournamentDetail() {
     const [matches, setMatches] = useState<PublicMatchSummary[]>([]);
     const [standings, setStandings] = useState<PublicStanding[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'fixtures' | 'results' | 'standings' | 'bracket' | 'stats' | 'teams' | 'players'>('fixtures');
+    const [activeTab, setActiveTab] = useState<TabId>('fixtures');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [selectedVenue, setSelectedVenue] = useState<string>('');
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
@@ -249,6 +260,17 @@ export default function TournamentDetail() {
     const groupedMatches = useMemo(() => {
         return groupMatchesByDate(displayMatches, isResultsTab);
     }, [displayMatches, isResultsTab]);
+    const groupedDates = useMemo(() => groupedMatches.map(g => g.date), [groupedMatches]);
+    const dateGroups = useCollapsibleDates(groupedDates, `${activeTab}:${selectedCategoryId ?? ''}:${selectedVenue}`);
+
+    // The phone tab bar scrolls sideways when the tabs don't fit; keep the active one in view.
+    const mobileTabBarRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const bar = mobileTabBarRef.current;
+        const active = bar?.querySelector<HTMLElement>('[aria-current="page"]');
+        if (!bar || !active) return;
+        bar.scrollTo({ left: active.offsetLeft - (bar.clientWidth - active.clientWidth) / 2, behavior: 'smooth' });
+    }, [activeTab]);
 
     const hasStandings = standings.length > 0;
     const hasPoolMatches = matches.some(m => m.stage?.toLowerCase().includes('pool') || m.stage?.toLowerCase().includes('group'));
@@ -258,6 +280,16 @@ export default function TournamentDetail() {
         return stage && !stage.includes('pool') && !stage.includes('group');
     });
 
+
+    const tabs: TabDef[] = [
+        { id: 'fixtures', label: 'Fixtures', icon: Calendar, count: fixturesMatches.length },
+        { id: 'results', label: 'Results', icon: Trophy, count: resultsMatches.length },
+        { id: 'stats', label: 'Stats', icon: Star, count: null },
+        ...(showPoolTab ? [{ id: 'standings' as const, label: 'Standings', icon: Table, count: null }] : []),
+        ...(hasKnockoutMatches ? [{ id: 'bracket' as const, label: 'Bracket', icon: ShareNetwork, count: null }] : []),
+        { id: 'teams', label: 'Teams', icon: Users, count: categoryTeams.length || null },
+        { id: 'players', label: 'Players', icon: UserCircle, count: null },
+    ];
 
     const renderPublicMatchCard = (match: PublicMatchSummary) => (
         <Link
@@ -367,7 +399,7 @@ export default function TournamentDetail() {
     if (!tournament) return <div className="text-center py-20 text-slate-500">Tournament not found</div>;
 
     return (
-        <div className="space-y-8 pb-20">
+        <div className="space-y-5 md:space-y-8 pb-20">
 
             {/* Nav & Context */}
             <Breadcrumbs
@@ -384,8 +416,9 @@ export default function TournamentDetail() {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl -z-10" />
 
                 <GlassCard className="p-0 overflow-hidden border-0 shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl group">
-                    {/* Banners are roughly 3:1, so give them more height on wide screens to avoid cropping the artwork */}
-                    <div className={`relative flex flex-col justify-end ${showHeroImage ? 'min-h-[16rem] md:min-h-[20rem] lg:min-h-[24rem]' : 'min-h-[16rem]'}`}>
+                    {/* Banners are roughly 3:1; the band only needs to be tall enough to show the artwork
+                        behind the title, the content sets the height beyond that. */}
+                    <div className={`relative flex flex-col justify-end ${showHeroImage ? 'min-h-[11rem] md:min-h-[14rem] lg:min-h-[17rem]' : 'min-h-[10rem]'}`}>
                         {/* Cover Image or Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 overflow-hidden">
                             {showHeroImage && (
@@ -408,29 +441,30 @@ export default function TournamentDetail() {
                         </div>
 
                         {/* Content Overlay */}
-                        <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
-                            {/* Logo */}
+                        {/* Stacked and centred on phones, logo beside the text from md up */}
+                        <div className="relative z-10 p-4 md:p-8 flex flex-col md:flex-row items-center gap-3 md:gap-6 text-center md:text-left">
+                            {/* Logo: no tile behind it, a shadow keeps it readable on the banner */}
                             <div className="relative shrink-0">
                                 <TournamentLogo
                                     tournamentId={tournament.id}
                                     logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
-                                    className="w-20 h-20 md:w-32 md:h-32 bg-white dark:bg-slate-950 rounded-2xl shadow-xl p-2 object-contain border-4 border-white dark:border-slate-900"
+                                    className="w-20 h-20 md:w-28 md:h-28 object-contain bg-transparent dark:bg-transparent text-white/70 dark:text-white/70 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]"
                                 />
                             </div>
 
                             {/* Text Info */}
-                            <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1.5 md:mb-2">
                                     <Badge variant="outline" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
                                         {formatTournamentLevel(tournament.level)}
                                     </Badge>
                                     {tournament.live && <Badge variant="destructive" className="animate-pulse">LIVE NOW</Badge>}
                                     {tournament.completed && <Badge variant="secondary">Completed</Badge>}
                                 </div>
-                                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg mb-2 leading-tight">
+                                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-lg mb-1.5 md:mb-2 leading-tight">
                                     {tournament.name}
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-4 text-slate-200 text-sm font-medium drop-shadow-md">
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1 text-slate-200 text-xs md:text-sm font-medium drop-shadow-md">
                                     <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-blue-400" /> {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
                                     <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-red-400" /> {tournament.venue}</span>
                                 </div>
@@ -472,26 +506,45 @@ export default function TournamentDetail() {
                 </div>
             )}
 
+            {/* Phone/tablet tab bar: icon over label, pinned under the site header while scrolling.
+                It sits outside the grid below so sticky has the whole page to travel through. */}
+            <nav
+                ref={mobileTabBarRef}
+                className="lg:hidden sticky top-[4.25rem] z-30 flex overflow-x-auto gap-1 p-1.5 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+                {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={`flex-1 min-w-[4.5rem] flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            <span className="relative">
+                                <tab.icon className="w-5 h-5" weight={isActive ? 'fill' : 'regular'} />
+                                {tab.count !== null && (
+                                    <span className="absolute -top-1.5 left-full -ml-1.5 min-w-[1.1rem] px-1 rounded-full bg-white text-blue-700 text-[9px] font-bold leading-4 text-center">
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </span>
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </nav>
+
             {/* Main Content Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-                {/* Left Nav (Tabs as Sidebar on Desktop, Scroll on Mobile) - spans 1 */}
-                <div className="lg:col-span-1">
-                    {/* Horizontal scroller on mobile only: left on at desktop width, the overflow clipped the
-                        active tab (nudged right by translate-x-1) along with its count badge and shadow. */}
-                    <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 sticky top-24">
-                        {[
-                            { id: 'fixtures', label: 'Fixtures', icon: Calendar, count: fixturesMatches.length },
-                            { id: 'results', label: 'Results', icon: Trophy, count: resultsMatches.length },
-                            { id: 'stats', label: 'Stats', icon: Star, count: null },
-                            ...(showPoolTab ? [{ id: 'standings', label: 'Standings', icon: Table, count: null }] : []),
-                            ...(hasKnockoutMatches ? [{ id: 'bracket', label: 'Bracket', icon: ShareNetwork, count: null }] : []),
-                            { id: 'teams', label: 'Teams', icon: Users, count: categoryTeams.length || null },
-                            { id: 'players', label: 'Players', icon: UserCircle, count: null },
-                        ].map((tab) => (
+                {/* Left Nav: sidebar on desktop only, phones use the tab bar above - spans 1 */}
+                <div className="hidden lg:block lg:col-span-1">
+                    <nav className="flex flex-col gap-2 sticky top-24">
+                        {tabs.map((tab) => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
+                                onClick={() => setActiveTab(tab.id)}
                                 className={`
                                     flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium text-sm whitespace-nowrap
                                     ${activeTab === tab.id
@@ -696,7 +749,7 @@ export default function TournamentDetail() {
                             </div>
                         ) : (
                             // Matches List (Fixtures or Results)
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 {venueOptions.length > 0 && (
                                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
                                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
@@ -720,6 +773,12 @@ export default function TournamentDetail() {
                                     </div>
                                 )}
 
+                                {groupedMatches.length > 1 && (
+                                    <div className="flex justify-end">
+                                        <ExpandAllToggle allOpen={dateGroups.allOpen} onChange={dateGroups.setAll} />
+                                    </div>
+                                )}
+
                                 {groupedMatches.length === 0 ? (
                                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
                                         <Trophy className="w-12 h-12 mx-auto text-slate-300 mb-3" />
@@ -727,13 +786,13 @@ export default function TournamentDetail() {
                                     </div>
                                 ) : (
                                     groupedMatches.map(({ date, hasMultipleVenues, venueGroups }) => (
-                                        <div key={date} className="space-y-4">
-                                            <div className="flex items-center gap-4">
-                                                <h3 className="text-lg font-bold text-slate-800 dark:text-white bg-white/50 dark:bg-slate-900/50 backdrop-blur px-4 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50">
-                                                    {date ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date TBD'}
-                                                </h3>
-                                                <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
-                                            </div>
+                                        <CollapsibleDateGroup
+                                            key={date}
+                                            date={date}
+                                            matchCount={venueGroups.reduce((n, g) => n + g.matches.length, 0)}
+                                            open={dateGroups.isOpen(date)}
+                                            onToggle={() => dateGroups.toggle(date)}
+                                        >
 
                                             {hasMultipleVenues ? (
                                                 <div className="space-y-6">
@@ -755,7 +814,7 @@ export default function TournamentDetail() {
                                                     {venueGroups[0]?.matches.map(renderPublicMatchCard)}
                                                 </div>
                                             )}
-                                        </div>
+                                        </CollapsibleDateGroup>
                                     ))
                                 )}
                             </div>
