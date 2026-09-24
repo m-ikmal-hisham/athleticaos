@@ -36,7 +36,9 @@ public class TournamentUpdateRequest {
     private String logoUrl;
     private String bannerUrl;
     private String backgroundUrl;
+    /** Deprecated single link; used only when livestreamLinks is absent. */
     private String livestreamUrl;
+    private java.util.List<com.athleticaos.backend.entities.LivestreamLink> livestreamLinks;
 
     private List<CreateCategoryRequest> categories;
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { LivestreamLink } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -33,6 +34,7 @@ export interface PublicTournamentSummary {
     logoUrl?: string;
     bannerUrl?: string;
     livestreamUrl?: string;
+    livestreamLinks?: LivestreamLink[];
 }
 
 export interface PublicTournamentDetail extends PublicTournamentSummary {
@@ -97,6 +99,8 @@ export interface PublicMatchDetail extends PublicMatchSummary {
     };
     tournamentId?: string;
     tournamentSlug?: string;
+    /** The match's own stream if it has one, otherwise the tournament's links. */
+    livestreams?: LivestreamLink[];
     matchDuration?: number;
     isOneWayMatch?: boolean;
 }

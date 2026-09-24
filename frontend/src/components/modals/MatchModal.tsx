@@ -49,7 +49,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         kickOffTime: '',
         venueId: '',
         venue: '',
-        stageId: ''
+        stageId: '',
+        livestreamUrl: ''
     });
 
     useEffect(() => {
@@ -106,7 +107,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     kickOffTime: initialMatch.kickOffTime || '',
                     venueId: initialMatch.venueId || '',
                     venue: initialMatch.venueName || initialMatch.venue || '',
-                    stageId: initialMatch.stage?.id || ''
+                    stageId: initialMatch.stage?.id || '',
+                    livestreamUrl: initialMatch.livestreamUrl || ''
                 });
             } else {
                 // Reset form in create mode
@@ -126,7 +128,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     kickOffTime: '',
                     venueId: '',
                     venue: '',
-                    stageId: ''
+                    stageId: '',
+                    livestreamUrl: ''
                 });
             }
 
@@ -232,7 +235,9 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             kickOffTime: formData.kickOffTime,
             venueId: formData.venueId || null,
             venue: selectedVenueObj ? selectedVenueObj.name : (formData.venue || null),
-            stageId: formData.stageId || undefined
+            stageId: formData.stageId || undefined,
+            // Always sent: an empty string clears a link the match had before.
+            livestreamUrl: formData.livestreamUrl.trim()
         };
 
         if (formData.homeSourceType === 'team') {
@@ -610,6 +615,15 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                         number sequence, separate from each named venue.
                     </p>
                 </div>
+
+                <Input
+                    label="Match livestream link (optional)"
+                    type="url"
+                    placeholder="https://youtube.com/live/..."
+                    value={formData.livestreamUrl}
+                    onChange={(e) => handleChange('livestreamUrl', e.target.value)}
+                    helperText="Only for a stream just for this match. Leave empty to show the tournament's livestream links."
+                />
 
                 <div className="space-y-2">
                     <Label>Stage (Optional)</Label>

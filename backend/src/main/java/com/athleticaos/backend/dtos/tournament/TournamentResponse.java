@@ -29,6 +29,8 @@ public class TournamentResponse {
     private String logoUrl;
     private String bannerUrl;
     private String backgroundUrl;
+    /** First of livestreamLinks, kept for older clients. */
     private String livestreamUrl;
+    private java.util.List<com.athleticaos.backend.entities.LivestreamLink> livestreamLinks;
     private String rugbyFormat;
 }

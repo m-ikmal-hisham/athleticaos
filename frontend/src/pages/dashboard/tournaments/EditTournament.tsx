@@ -15,6 +15,8 @@ import { updateTournament, getTournament, getTournamentVenues, createTournamentV
 import { fetchOrganisations } from '@/api/organisations.api';
 import { getActiveSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest, TournamentVenue } from '@/types';
+import { LivestreamLinksEditor } from '@/components/common/LivestreamLinksEditor';
+import { livestreamLinksSchema } from '@/utils/validators';
 import { showToast } from '@/lib/customToast';
 
 const categorySchema = z.object({
@@ -39,7 +41,7 @@ const tournamentSchema = z.object({
     logoUrl: z.string().nullable().optional().or(z.literal('')),
     bannerUrl: z.string().nullable().optional().or(z.literal('')),
     backgroundUrl: z.string().nullable().optional().or(z.literal('')),
-    livestreamUrl: z.string().optional()
+    livestreamLinks: livestreamLinksSchema
 });
 
 type TournamentFormData = z.infer<typeof tournamentSchema>;
@@ -136,7 +138,8 @@ export const EditTournament = () => {
                 logoUrl: tournament.logoUrl,
                 bannerUrl: tournament.bannerUrl,
                 backgroundUrl: tournament.backgroundUrl,
-                livestreamUrl: tournament.livestreamUrl
+                livestreamLinks: tournament.livestreamLinks
+                    ?? (tournament.livestreamUrl ? [{ label: '', url: tournament.livestreamUrl }] : [])
             });
 
         } catch (error) {
@@ -263,7 +266,8 @@ export const EditTournament = () => {
                 logoUrl: data.logoUrl,
                 bannerUrl: data.bannerUrl,
                 backgroundUrl: data.backgroundUrl,
-                livestreamUrl: data.livestreamUrl,
+                // The whole list is sent, so removing every row clears the links.
+                livestreamLinks: (data.livestreamLinks ?? []).filter(link => link.url.trim()),
                 seasonId: isUuid ? data.seasonInput : undefined,
                 seasonName: !isUuid ? data.seasonInput : undefined,
             };
@@ -706,11 +710,16 @@ export const EditTournament = () => {
                                 />
                             </div>
                             <div className="col-span-1 md:col-span-2">
-                                <Input
-                                    label="Livestream URL"
-                                    placeholder="https://youtube.com/..."
-                                    {...register('livestreamUrl')}
-                                    error={errors.livestreamUrl?.message}
+                                <Controller
+                                    name="livestreamLinks"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <LivestreamLinksEditor
+                                            value={field.value ?? []}
+                                            onChange={field.onChange}
+                                            error={errors.livestreamLinks?.message ?? errors.livestreamLinks?.root?.message}
+                                        />
+                                    )}
                                 />
                             </div>
                         </div>

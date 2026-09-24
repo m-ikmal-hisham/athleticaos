@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { PublicMatchDetail, PublicMatchEvent } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
+import { WatchLiveLinks } from '@/components/public/WatchLiveLinks';
 import { getImageUrl } from '@/utils/image';
 import { formatOfficialRole } from '@/utils/rugbyPositions';
 import { formatEnum, formatTeamShortName } from '@/utils/formatters';
@@ -258,6 +259,13 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         </div>
                     </div>
                 )}
+
+                {/* Streams: the match's own link, or the tournament's when it has none */}
+                <WatchLiveLinks
+                    links={match.livestreams}
+                    title={isCompleted ? 'Watch replay' : 'Watch live'}
+                    className="justify-center"
+                />
 
                 {/* Meta Details Footer */}
                 <div className="flex items-center justify-between gap-2 pt-3 md:pt-4 border-t border-slate-200/50 dark:border-white/5">
