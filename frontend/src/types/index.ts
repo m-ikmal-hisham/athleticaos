@@ -307,7 +307,9 @@ export interface Tournament {
     logoUrl?: string;
     bannerUrl?: string;
     backgroundUrl?: string;
+    /** First of livestreamLinks; kept for older readers. */
     livestreamUrl?: string;
+    livestreamLinks?: LivestreamLink[];
     rugbyFormat?: string;
     organiserBranding?: {
         id: string;
@@ -376,7 +378,9 @@ export interface TournamentCreateRequest {
     logoUrl?: string;
     bannerUrl?: string;
     backgroundUrl?: string;
+    /** First of livestreamLinks; kept for older readers. */
     livestreamUrl?: string;
+    livestreamLinks?: LivestreamLink[];
 }
 
 export interface TournamentStatsSummary {
@@ -452,6 +456,12 @@ export enum MatchStatus {
     CANCELLED = 'CANCELLED',
 }
 
+/** One stream a tournament or match points viewers to. */
+export interface LivestreamLink {
+    label?: string | null;
+    url: string;
+}
+
 export interface Match {
     id: string;
     tournamentId: string;
@@ -466,6 +476,8 @@ export interface Match {
     venue?: string; // Changed from location to venue to match backend
     location?: string; // Keep for backward compat if needed
     pitch?: string;
+    /** This match's own stream; overrides the tournament's links on the match page. */
+    livestreamUrl?: string | null;
     matchCode?: string;
     /** Sequential number within the tournament (1, 2, 3, …) for easy identification. */
     matchNumber?: number;
@@ -499,6 +511,7 @@ export interface MatchCreateRequest {
     venueId?: string | null;
     venue?: string;
     pitch?: string;
+    livestreamUrl?: string;
     matchCode?: string;
     matchNumber?: number;
     phase?: string;

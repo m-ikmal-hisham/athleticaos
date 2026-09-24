@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Clock, VideoCamera, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
+import { Calendar, MapPin, Trophy, Clock, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/Badge';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { CollapsibleDateGroup, ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
 import { useCollapsibleDates } from '@/hooks/useCollapsibleDates';
+import { WatchLiveLinks } from '@/components/public/WatchLiveLinks';
 import {
     publicTournamentApi,
     publicProfileApi,
@@ -472,17 +473,11 @@ export default function TournamentDetail() {
                         </div>
                     </div>
 
-                    {/* Livestream Integration (Collapsible or Preview) */}
-                    {tournament.livestreamUrl && (
-                        <div className="p-4 bg-black/5 border-t border-white/10 flex items-center justify-between">
-                            <span className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-                                <VideoCamera className="w-4 h-4 text-red-500" /> Official Stream Available
-                            </span>
-                            <a href={tournament.livestreamUrl} target="_blank" rel="noreferrer" className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-2 transition-transform hover:scale-105">
-                                Watch Live <ShareNetwork />
-                            </a>
-                        </div>
-                    )}
+                    {/* Livestreams: one button per link (per pitch or day); older data has only the single url */}
+                    <WatchLiveLinks
+                        links={tournament.livestreamLinks ?? (tournament.livestreamUrl ? [{ url: tournament.livestreamUrl }] : [])}
+                        className="px-4 py-3 bg-black/5 border-t border-white/10"
+                    />
                 </GlassCard>
             </div>
 

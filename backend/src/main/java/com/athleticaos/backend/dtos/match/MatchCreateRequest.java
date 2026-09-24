@@ -34,6 +34,7 @@ public class MatchCreateRequest {
     private UUID venueId;
     private String venue;
     private String pitch;
+    private String livestreamUrl;
     private String phase;
     private String matchCode;
 

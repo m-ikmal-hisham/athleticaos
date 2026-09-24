@@ -27,6 +27,8 @@ public class MatchUpdateRequest {
 
     private String venue;
     private String pitch;
+    /** null leaves it unchanged; an empty string clears it. */
+    private String livestreamUrl;
     private String phase;
     private String matchCode;
     private MatchStatus status;

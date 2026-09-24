@@ -284,6 +284,7 @@ public class MatchServiceImpl implements MatchService {
                 .tournamentVenue(resolvedVenue)
                 .venue(resolvedVenueName)
                 .pitch(request.getPitch())
+                .livestreamUrl(com.athleticaos.backend.util.LivestreamLinks.normaliseUrl(request.getLivestreamUrl()))
                 .phase(request.getPhase())
                 .stage(stage)
                 .matchCode(request.getMatchCode())
@@ -344,6 +345,9 @@ public class MatchServiceImpl implements MatchService {
         }
         if (request.getPitch() != null) {
             match.setPitch(request.getPitch());
+        }
+        if (request.getLivestreamUrl() != null) {
+            match.setLivestreamUrl(com.athleticaos.backend.util.LivestreamLinks.normaliseUrl(request.getLivestreamUrl()));
         }
         if (request.getPhase() != null) {
             match.setPhase(request.getPhase());
@@ -603,6 +607,7 @@ public class MatchServiceImpl implements MatchService {
                 .venueId(match.getVenueId())
                 .venueName(match.getVenueName())
                 .pitch(match.getPitch())
+                .livestreamUrl(match.getLivestreamUrl())
                 .status(match.getStatus().name())
                 .homeScore(match.getHomeScore())
                 .awayScore(match.getAwayScore())
