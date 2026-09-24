@@ -304,6 +304,7 @@ public class PublicTournamentController {
                 .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
                 .bannerUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getBannerUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
+                .livestreamLinks(t.getLivestreamLinks())
                 .build();
     }
 
@@ -370,6 +371,7 @@ public class PublicTournamentController {
                 .logoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getLogoUrl()))
                 .bannerUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getBannerUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
+                .livestreamLinks(t.getLivestreamLinks())
                 .build();
     }
 
@@ -463,9 +465,16 @@ public class PublicTournamentController {
         UUID tournamentId = m.getTournamentId();
         PublicOrganisationBranding branding = null;
         boolean multipleVenues = false;
+        java.util.List<com.athleticaos.backend.entities.LivestreamLink> livestreams = java.util.List.of();
+        if (m.getLivestreamUrl() != null && !m.getLivestreamUrl().isBlank()) {
+            livestreams = java.util.List.of(new com.athleticaos.backend.entities.LivestreamLink(null, m.getLivestreamUrl()));
+        }
         if (tournamentId != null) {
             TournamentResponse t = tournamentService.getTournamentById(tournamentId);
             branding = getOrganiserBranding(t.getOrganiserOrgId());
+            if (livestreams.isEmpty() && t.getLivestreamLinks() != null) {
+                livestreams = t.getLivestreamLinks();
+            }
             // One scalar query. Loading and mapping every match of the tournament just to count its
             // venues would put a 200-row read on the busiest public page.
             multipleVenues = matchRepository.countDistinctVenuesByTournamentId(tournamentId) > 1;
@@ -513,6 +522,7 @@ public class PublicTournamentController {
                 .homeStats(homeStats)
                 .awayStats(awayStats)
                 .organiserBranding(branding)
+                .livestreams(livestreams)
                 .tournamentId(m.getTournamentId())
                 .tournamentSlug(m.getTournamentSlug())
                 // Populate format fields using tournament match logic

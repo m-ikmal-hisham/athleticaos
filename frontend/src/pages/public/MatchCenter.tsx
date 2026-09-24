@@ -121,7 +121,7 @@ export default function MatchCenter() {
     }
 
     return (
-        <div className="space-y-8 animate-fade-in pb-20">
+        <div className="space-y-4 md:space-y-6 animate-fade-in pb-20">
             {/* Nav Back */}
             <div className="flex items-center justify-between">
                 <Breadcrumbs
@@ -136,41 +136,31 @@ export default function MatchCenter() {
                 />
             </div>
 
-            {/* Match Hero Container — Always Visible */}
-            <div className="space-y-4">
-                <MatchHeroCard
-                    match={match}
-                    lastUpdated={lastUpdated}
-                    tournamentName={tournamentName}
-                />
-
-                {/* Sponsors (Compact) */}
-                <div className="flex justify-center">
-                    <SponsorsSection variant="compact" />
-                </div>
-            </div>
+            {/* Match Hero — Always Visible. The compact sponsor strip that sat under it listed
+                placeholder partners and cost a full row (three on phones); sponsors stay in the footer. */}
+            <MatchHeroCard
+                match={match}
+                lastUpdated={lastUpdated}
+                tournamentName={tournamentName}
+            />
 
             {/* Tab Navigation */}
             <div className="flex justify-center">
-                <div className="inline-flex p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
+                <div className="flex w-full sm:w-auto p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
                     {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
                         <button
                             key={key}
                             id={`tab-${key}`}
                             onClick={() => setActiveTab(key)}
                             className={`
-                                relative px-5 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all duration-300
+                                relative flex-1 sm:flex-none justify-center px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all duration-300
                                 ${activeTab === key
                                     ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-md ring-1 ring-slate-200/50 dark:ring-white/10'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
                             `}
                         >
                             <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-blue-500' : ''}`} weight={activeTab === key ? 'fill' : 'regular'} />
-                            <span className="hidden sm:inline">{label}</span>
-                            {/* Active indicator dot — mobile only (when label is hidden) */}
-                            {activeTab === key && (
-                                <span className="sm:hidden absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500" />
-                            )}
+                            <span>{label}</span>
                         </button>
                     ))}
                 </div>
