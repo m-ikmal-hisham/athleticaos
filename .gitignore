@@ -28,3 +28,6 @@ backend/.env.staging
 # It must contain public build-time values only (no secrets).
 backend/backend_*.txt
 claude_audit.txt
+tmp/
+# Local agent config (contains API keys)
+.codex/
