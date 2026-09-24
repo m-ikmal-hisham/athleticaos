@@ -137,29 +137,8 @@ export const useAuthStore = create<AuthState>()(
             },
 
             getDefaultRoute: () => {
-                const { user } = get();
-                if (!user || !user.roles || user.roles.length === 0) {
-                    return '/dashboard';
-                }
-
-                // Get primary role (first role, stripped of ROLE_ prefix)
-                const primaryRole = user.roles[0].replace('ROLE_', '');
-
-                // Role-based routing
-                switch (primaryRole) {
-                    case 'SUPER_ADMIN':
-                        return '/dashboard/organisations';
-                    case 'ORG_ADMIN':
-                        return '/dashboard/teams';
-                    case 'CLUB_ADMIN':
-                        return '/dashboard/players';
-                    case 'COACH':
-                        return '/dashboard/matches';
-                    case 'PLAYER':
-                        return '/dashboard/profile';
-                    default:
-                        return '/dashboard';
-                }
+                // Every role lands on the dashboard; the stats and activity it shows are scoped server-side
+                return '/dashboard';
             },
         }),
         {

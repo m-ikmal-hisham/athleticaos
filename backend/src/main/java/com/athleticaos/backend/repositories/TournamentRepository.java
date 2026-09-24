@@ -24,4 +24,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, UUID> {
     long countByStatus(com.athleticaos.backend.enums.TournamentStatus status);
 
     long countByStatusAndDeletedFalse(com.athleticaos.backend.enums.TournamentStatus status);
+
+    long countByStatusAndDeletedFalseAndOrganiserOrg_IdIn(com.athleticaos.backend.enums.TournamentStatus status,
+            java.util.Collection<UUID> orgIds);
 }
