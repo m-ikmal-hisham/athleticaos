@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Eye, EyeSlash } from '@phosphor-icons/react';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -25,6 +26,7 @@ export const Login = () => {
     const { login } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
     const [lockoutMessage, setLockoutMessage] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     // Set when login answers PASSWORD_CHANGE_REQUIRED; held in memory only until the change completes
     const [pendingChange, setPendingChange] = useState<{ email: string; currentPassword: string } | null>(null);
 
@@ -151,14 +153,31 @@ export const Login = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <Input
-                                type="password"
-                                placeholder="Password"
-                                error={errors.password?.message}
-                                {...register('password')}
-                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
-                                disabled={!!lockoutMessage}
-                            />
+                            {/* Error is rendered below the wrapper so the toggle stays centred on the input */}
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Password"
+                                    autoComplete="current-password"
+                                    {...register('password')}
+                                    aria-invalid={!!errors.password}
+                                    className={`bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 rounded-lg p-3 pr-11 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-800 focus:border-purple-500 focus:ring-purple-500'}`}
+                                    disabled={!!lockoutMessage}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(v => !v)}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-pressed={showPassword}
+                                    disabled={!!lockoutMessage}
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                            {errors.password?.message && (
+                                <p className="mt-1.5 text-sm text-red-400">{errors.password.message}</p>
+                            )}
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -171,14 +190,25 @@ export const Login = () => {
                             </Link>
                         </div>
 
-                        <Button
-                            type="submit"
-                            className="w-full py-3 bg-[#6366f1] hover:bg-[#5558dd] text-white font-semibold rounded-lg shadow-md shadow-indigo-500/20 transition-all"
-                            isLoading={isLoading}
-                            disabled={!!lockoutMessage}
-                        >
-                            Login
-                        </Button>
+                        <div className="flex gap-3">
+                            {/* Always the public site: going back could return to the protected page that sent us here */}
+                            <Button
+                                type="button"
+                                variant="cancel"
+                                className="w-1/3 py-3 rounded-lg"
+                                onClick={() => navigate('/')}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="flex-1 py-3 bg-[#6366f1] hover:bg-[#5558dd] text-white font-semibold rounded-lg shadow-md shadow-indigo-500/20 transition-all"
+                                isLoading={isLoading}
+                                disabled={!!lockoutMessage}
+                            >
+                                Login
+                            </Button>
+                        </div>
                     </form>
 
                     <div className="mt-8 text-center text-xs text-gray-400 dark:text-gray-600">
