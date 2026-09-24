@@ -92,6 +92,8 @@ public class StandingsServiceImpl implements StandingsService {
         }
 
         log.info("Initialized standings map with {} teams", standingsMap.size());
+        int[] globalRules = { pointsWin, pointsDraw, pointsLoss };
+        Map<UUID, int[]> rulesByCategory = new HashMap<>();
 
         // 2. Get all matches (eager load stage)
         List<Match> matches = matchRepository.findByTournamentIdWithTeams(tournamentId);
@@ -130,11 +132,17 @@ public class StandingsServiceImpl implements StandingsService {
             int hScore = match.getHomeScore() != null ? match.getHomeScore() : 0;
             int aScore = match.getAwayScore() != null ? match.getAwayScore() : 0;
 
+            // Score with the match's own category rules, falling back to the tournament-wide ones.
+            // Seeding (BracketServiceImpl.rankTeamsAcrossPools) reads the category config first,
+            // so reading only the global row here let the table and the bracket disagree.
+            int[] rules = rulesByCategory.computeIfAbsent(categoryOf(match),
+                    categoryId -> categoryRules(tournamentId, categoryId, globalRules));
+
             // Update Home
-            updateStats(homeStats, hScore, aScore, pointsWin, pointsDraw, pointsLoss);
+            updateStats(homeStats, hScore, aScore, rules[0], rules[1], rules[2]);
 
             // Update Away
-            updateStats(awayStats, aScore, hScore, pointsWin, pointsDraw, pointsLoss);
+            updateStats(awayStats, aScore, hScore, rules[0], rules[1], rules[2]);
         }
 
         // 4. Return sorted list
@@ -145,6 +153,26 @@ public class StandingsServiceImpl implements StandingsService {
                         .thenComparing(s -> s.getPointsFor(), Comparator.reverseOrder()) // High Scored
                         .thenComparing(s -> s.getTeamName())) // Alphabetical Fallback
                 .collect(Collectors.toList());
+    }
+
+    private static UUID categoryOf(Match match) {
+        if (match.getStage() != null && match.getStage().getCategory() != null) {
+            return match.getStage().getCategory().getId();
+        }
+        return match.getCategory() != null ? match.getCategory().getId() : null;
+    }
+
+    /** Win/draw/loss points for a category: its own config when it has one, otherwise the global rules. */
+    private int[] categoryRules(UUID tournamentId, UUID categoryId, int[] globalRules) {
+        if (categoryId == null) {
+            return globalRules;
+        }
+        return formatConfigRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId)
+                .map(c -> new int[] {
+                        c.getPointsWin() != null ? c.getPointsWin() : globalRules[0],
+                        c.getPointsDraw() != null ? c.getPointsDraw() : globalRules[1],
+                        c.getPointsLoss() != null ? c.getPointsLoss() : globalRules[2] })
+                .orElse(globalRules);
     }
 
     private void updateStats(StandingsResponse stats, int scoreFor, int scoreAgainst,

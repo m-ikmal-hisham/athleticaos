@@ -477,7 +477,9 @@ export default function TournamentDetail() {
 
                 {/* Left Nav (Tabs as Sidebar on Desktop, Scroll on Mobile) - spans 1 */}
                 <div className="lg:col-span-1">
-                    <nav className="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 sticky top-24">
+                    {/* Horizontal scroller on mobile only: left on at desktop width, the overflow clipped the
+                        active tab (nudged right by translate-x-1) along with its count badge and shadow. */}
+                    <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 sticky top-24">
                         {[
                             { id: 'fixtures', label: 'Fixtures', icon: Calendar, count: fixturesMatches.length },
                             { id: 'results', label: 'Results', icon: Trophy, count: resultsMatches.length },
