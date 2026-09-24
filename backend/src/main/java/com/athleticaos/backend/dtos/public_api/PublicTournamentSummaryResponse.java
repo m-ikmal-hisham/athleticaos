@@ -29,4 +29,5 @@ public class PublicTournamentSummaryResponse {
     private String logoUrl;
     private String bannerUrl;
     private String livestreamUrl;
+    private java.util.List<com.athleticaos.backend.entities.LivestreamLink> livestreamLinks;
 }

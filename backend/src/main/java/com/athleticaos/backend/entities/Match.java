@@ -58,6 +58,10 @@ public class Match {
     @Column
     private String pitch;
 
+    /** This match's own stream; shown instead of the tournament's links when set. */
+    @Column(name = "livestream_url", length = 500)
+    private String livestreamUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

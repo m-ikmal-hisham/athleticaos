@@ -36,6 +36,7 @@ public class MatchResponse {
     private UUID venueId;
     private String venueName;
     private String pitch;
+    private String livestreamUrl;
     private String status;
     private Integer homeScore;
     private Integer awayScore;

@@ -15,6 +15,8 @@ import { createTournament } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { getSeasons } from '@/api/seasons.api';
 import { Organisation, CreateCategoryRequest } from '@/types';
+import { LivestreamLinksEditor } from '@/components/common/LivestreamLinksEditor';
+import { livestreamLinksSchema } from '@/utils/validators';
 import { showToast } from '@/lib/customToast';
 
 const categorySchema = z.object({
@@ -37,7 +39,7 @@ const tournamentSchema = z.object({
     logoUrl: z.string().optional(),
     bannerUrl: z.string().optional(),
     backgroundUrl: z.string().optional(),
-    livestreamUrl: z.string().optional()
+    livestreamLinks: livestreamLinksSchema
 });
 
 type TournamentFormData = z.infer<typeof tournamentSchema>;
@@ -479,11 +481,16 @@ export const CreateTournament = () => {
                                 />
                             </div>
                             <div className="col-span-1 md:col-span-2">
-                                <Input
-                                    label="Livestream URL"
-                                    placeholder="https://youtube.com/..."
-                                    {...register('livestreamUrl')}
-                                    error={errors.livestreamUrl?.message}
+                                <Controller
+                                    name="livestreamLinks"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <LivestreamLinksEditor
+                                            value={field.value ?? []}
+                                            onChange={field.onChange}
+                                            error={errors.livestreamLinks?.message ?? errors.livestreamLinks?.root?.message}
+                                        />
+                                    )}
                                 />
                             </div>
                         </div>

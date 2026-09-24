@@ -22,4 +22,6 @@ public class PublicMatchDetailResponse extends PublicMatchSummaryResponse {
     private PublicOrganisationBranding organiserBranding;
     private Integer matchDuration;
     private Boolean isOneWayMatch;
+    /** What to watch this match on: its own link when set, otherwise the tournament's links. */
+    private java.util.List<com.athleticaos.backend.entities.LivestreamLink> livestreams;
 }

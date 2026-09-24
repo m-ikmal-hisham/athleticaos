@@ -191,7 +191,6 @@ public class TournamentServiceImpl implements TournamentService {
                 .logoUrl(request.getLogoUrl())
                 .bannerUrl(request.getBannerUrl())
                 .backgroundUrl(request.getBackgroundUrl())
-                .livestreamUrl(request.getLivestreamUrl())
                 .isPublished(false)
                 .deleted(false);
 
@@ -218,6 +217,7 @@ public class TournamentServiceImpl implements TournamentService {
         }
 
         Tournament tournament = builder.build();
+        tournament.applyLivestreamLinks(resolveLivestreamLinks(request.getLivestreamLinks(), request.getLivestreamUrl()));
 
         Tournament savedTournament = tournamentRepository.save(tournament);
 
@@ -299,8 +299,10 @@ public class TournamentServiceImpl implements TournamentService {
         if (request.getLogoUrl() != null) {
             tournament.setLogoUrl(request.getLogoUrl());
         }
-        if (request.getLivestreamUrl() != null) {
-            tournament.setLivestreamUrl(request.getLivestreamUrl());
+        // livestreamLinks replaces the whole list (an empty list clears it). Older clients that
+        // only send livestreamUrl still work: it becomes a one-link list.
+        if (request.getLivestreamLinks() != null || request.getLivestreamUrl() != null) {
+            tournament.applyLivestreamLinks(resolveLivestreamLinks(request.getLivestreamLinks(), request.getLivestreamUrl()));
         }
         if (request.getBannerUrl() != null) {
             tournament.setBannerUrl(request.getBannerUrl());
@@ -583,6 +585,16 @@ public class TournamentServiceImpl implements TournamentService {
         }
     }
 
+    /** The links from a create/update request, validated; falls back to the old single url. */
+    private java.util.List<com.athleticaos.backend.entities.LivestreamLink> resolveLivestreamLinks(
+            java.util.List<com.athleticaos.backend.entities.LivestreamLink> links, String singleUrl) {
+        if (links != null) {
+            return com.athleticaos.backend.util.LivestreamLinks.normalise(links);
+        }
+        return com.athleticaos.backend.util.LivestreamLinks.normalise(
+                java.util.List.of(new com.athleticaos.backend.entities.LivestreamLink(null, singleUrl)));
+    }
+
     private TournamentResponse mapToResponse(Tournament tournament) {
         // Map enum to friendly string if needed, or just use name()
         // DRAFT, PUBLISHED, LIVE, COMPLETED
@@ -654,6 +666,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .bannerUrl(UrlSanitizer.sanitize(tournament.getBannerUrl()))
                 .backgroundUrl(UrlSanitizer.sanitize(tournament.getBackgroundUrl()))
                 .livestreamUrl(tournament.getLivestreamUrl())
+                .livestreamLinks(tournament.getLivestreamLinks())
                 .rugbyFormat(
                         tournament.getFormatConfig() != null ? tournament.getFormatConfig().getRugbyFormat() : null)
                 .competitionType(

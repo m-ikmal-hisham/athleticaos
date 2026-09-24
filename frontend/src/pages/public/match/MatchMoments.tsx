@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, publicTournamentApi, PublicMatchLineups, PublicLineupEntry } from '../../../api/public.api';
 import { formatEventType } from '@/utils/formatters';
 import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
+import { matchText } from './typography';
 
 interface MatchMomentsProps {
     match: PublicMatchDetail;
@@ -228,18 +229,53 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 };
         }
     };
-    // ... (lines 80-216 are mostly unchanged styling logic, except we keep them to maintain context if needed, but tool allows skipping if we target cleanly.
-    // I will target the slider section which is around lines 218-235)
+    /**
+     * One player in a moment card: the name on its own line (long names or codes such as
+     * "QA21R6C4" wrap inside the card), then shirt number and position underneath.
+     */
+    const renderPlayer = (
+        name: string | null | undefined,
+        teamName: string,
+        alignEnd: boolean,
+        tone = 'text-slate-700 dark:text-slate-200',
+        icon?: React.ReactNode,
+    ) => {
+        const entry = findPlayerLineupEntry(name, teamName);
+        const hasNumber = entry?.jerseyNumber != null && entry.jerseyNumber > 0;
+        return (
+            <div className={`min-w-0 ${matchText.body} ${alignEnd ? 'text-right' : 'text-left'}`}>
+                <div className={`flex items-start gap-1.5 min-w-0 ${alignEnd ? 'justify-end' : ''} ${tone}`}>
+                    {icon}
+                    <span className="font-semibold min-w-0 [overflow-wrap:anywhere]">{name || 'Unknown'}</span>
+                </div>
+                {entry && (
+                    <div className={`flex flex-wrap items-center gap-1 mt-0.5 ${alignEnd ? 'justify-end' : ''}`}>
+                        <span className={`
+                            inline-flex items-center justify-center px-1.5 rounded text-[10px] font-bold leading-4 border
+                            ${hasNumber
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'}
+                        `}>
+                            #{hasNumber ? entry.jerseyNumber : '—'}
+                        </span>
+                        <span className="text-[10px] md:text-[11px] text-slate-400 dark:text-slate-500 [overflow-wrap:anywhere]">
+                            {entry.positionDisplay || getPositionName(entry.orderIndex, format)}
+                        </span>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
-        <GlassCard className="p-6 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <GlassCard className="p-4 md:p-8">
+            <div className="flex items-center justify-between gap-3 mb-4 md:mb-6">
                 <div>
                     <div 
                         className="flex items-center gap-2 cursor-pointer select-none group" 
                         onClick={() => setIsExpanded(!isExpanded)}
                     >
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">Match Moments</h3>
+                        <h3 className={`${matchText.title} text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors`}>Match Moments</h3>
                         <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
                             {isExpanded ? <CaretUp className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600" /> : <CaretDown className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600" />}
                         </div>
@@ -254,14 +290,14 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 <button
                     onClick={() => setReplayMode(!replayMode)}
                     className={`
-                        px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all
+                        shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-full ${matchText.chip} font-bold transition-all
                         ${replayMode
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                             : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20'
                         }
                     `}
                 >
-                    {replayMode ? 'Exit Replay' : 'Watch Replay'}
+                    {replayMode ? 'Exit replay' : 'Replay moments'}
                 </button>
             </div>
 
@@ -331,13 +367,13 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
 
             {isExpanded && (
                 <div className="relative space-y-0">
-                    <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 pb-5 mb-2 border-b border-slate-200 dark:border-white/5">
-                        <div className="text-right font-bold text-blue-600 dark:text-blue-400 truncate">{match.homeTeamName}</div>
-                        <div className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Min</div>
-                        <div className="text-left font-bold text-red-600 dark:text-red-400 truncate">{match.awayTeamName}</div>
+                    <div className="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 pb-3 md:pb-5 mb-2 border-b border-slate-200 dark:border-white/5">
+                        <div className={`${matchText.body} text-right font-bold text-blue-600 dark:text-blue-400 truncate`} title={match.homeTeamName}>{match.homeTeamName}</div>
+                        <div className={`${matchText.caption} text-center text-slate-400`}>Min</div>
+                        <div className={`${matchText.body} text-left font-bold text-red-600 dark:text-red-400 truncate`} title={match.awayTeamName}>{match.awayTeamName}</div>
                     </div>
                     {/* Vertical Timeline Line */}
-                    <div className="absolute top-14 bottom-4 left-1/2 -translate-x-1/2 w-px bg-slate-200 dark:bg-slate-800 z-0" />
+                    <div className="absolute top-12 md:top-14 bottom-4 left-1/2 -translate-x-1/2 w-px bg-slate-200 dark:bg-slate-800 z-0" />
 
                 {sortedEvents.length === 0 && replayMode && (
                     <div className="py-12 text-center text-slate-400 italic">
@@ -347,7 +383,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
 
                 {sortedEvents.map((event, index) => {
                     const style = getEventStyle(event.eventType);
-                    const isScore = event.points && event.points > 0;
+                    const isScore = (event.points ?? 0) > 0; // a boolean: `0 && …` rendered a stray "0" on scrums and lineouts
                     const isHomeEvent = event.teamName === match.homeTeamName;
 
                     // Parse substitution notes if available
@@ -362,126 +398,53 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                     }
 
                     return (
-                        <div key={index} className="relative z-10 grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 group py-3 first:pt-0 last:pb-0 animate-fade-in-up">
+                        <div key={index} className="relative z-10 grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 group py-2 md:py-3 first:pt-0 last:pb-0 animate-fade-in-up">
                             {/* Time Badge */}
                             <div className="col-start-2 row-start-1 flex flex-col items-center">
                                 <div className={`
-                                    w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shadow-sm border
+                                    w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center font-bold text-xs md:text-sm tabular-nums shadow-sm border
                                     ${style.bg} ${style.border} ${style.text}
                                 `}>
                                     {event.minute}'
                                 </div>
                             </div>
 
-                            {/* Content Card */}
+                            {/* Content Card. The team is the column it sits in (named in the header row),
+                                so the card leads with what happened rather than repeating the team name. */}
                             <div className={`
-                                row-start-1 rounded-xl border p-3 md:p-4 transition-all hover:shadow-md min-w-0
-                                ${isHomeEvent ? 'col-start-1 text-right' : 'col-start-3 text-left'}
+                                row-start-1 rounded-xl border p-2.5 md:p-4 transition-all hover:shadow-md min-w-0 space-y-1.5
+                                ${isHomeEvent ? 'col-start-1' : 'col-start-3'}
                                 ${style.bg} ${style.border}
                                 ${style.size === 'large' ? 'shadow-sm' : ''}
                                 ${style.size === 'muted' ? 'opacity-80 hover:opacity-100' : ''}
                             `}>
-                                <div className={`flex items-start gap-3 ${isHomeEvent ? 'flex-row-reverse' : 'justify-between'}`}>
-                                    <div className="space-y-1 min-w-0">
-                                        <div className={`flex flex-wrap items-center gap-2 ${isHomeEvent ? 'justify-end' : ''}`}>
-                                            <span className={`font-bold ${style.size === 'large' ? 'text-lg' : 'text-base'} text-slate-900 dark:text-white`}>
-                                                {event.teamName}
-                                            </span>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold ${style.text} border-current opacity-70`}>
-                                                {formatEventType(event.eventType)}
-                                            </span>
-                                            {event.eventType === 'RED_CARD' && event.notes?.includes('Automatic red card') && (
-                                                <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold">
-                                                    2nd YC
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {event.eventType === 'SUBSTITUTION' && subInName ? (
-                                            (() => {
-                                                const outEntry = findPlayerLineupEntry(subOutName, event.teamName);
-                                                const inEntry = findPlayerLineupEntry(subInName, event.teamName);
-                                                return (
-                                                    <div className={`flex flex-col gap-1 mt-1 ${isHomeEvent ? 'items-end' : 'items-start'}`}>
-                                                        <div className="flex items-center gap-2 text-sm text-red-500 dark:text-red-400">
-                                                            <ArrowDown className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
-                                                            <span className="font-medium">{subOutName || 'Unknown'}</span>
-                                                            {outEntry && (
-                                                                <div className="flex items-center gap-1.5 text-[11px] font-normal">
-                                                                    <span className={`
-                                                                        inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold
-                                                                        ${outEntry.jerseyNumber != null && outEntry.jerseyNumber > 0
-                                                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                                                                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                                                                        }
-                                                                    `}>
-                                                                        #{outEntry.jerseyNumber != null && outEntry.jerseyNumber > 0 ? outEntry.jerseyNumber : '—'}
-                                                                    </span>
-                                                                    <span className="text-slate-400 dark:text-slate-500">
-                                                                        ({outEntry.positionDisplay || getPositionName(outEntry.orderIndex, format)})
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                                                            <ArrowUp className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
-                                                            <span className="font-medium">{subInName}</span>
-                                                            {inEntry && (
-                                                                <div className="flex items-center gap-1.5 text-[11px] font-normal">
-                                                                    <span className={`
-                                                                        inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold
-                                                                        ${inEntry.jerseyNumber != null && inEntry.jerseyNumber > 0
-                                                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                                                                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                                                                        }
-                                                                    `}>
-                                                                        #{inEntry.jerseyNumber != null && inEntry.jerseyNumber > 0 ? inEntry.jerseyNumber : '—'}
-                                                                    </span>
-                                                                    <span className="text-slate-400 dark:text-slate-500">
-                                                                        ({inEntry.positionDisplay || getPositionName(inEntry.orderIndex, format)})
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()
-                                        ) : (
-                                            event.playerName && (
-                                                <div className={`flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium text-sm ${isHomeEvent ? 'justify-end' : ''}`}>
-                                                    <span>{event.playerName}</span>
-                                                    {(() => {
-                                                        const entry = findPlayerLineupEntry(event.playerName, event.teamName);
-                                                        if (!entry) return null;
-                                                        return (
-                                                            <div className="flex items-center gap-1.5 text-[11px] font-normal">
-                                                                <span className={`
-                                                                    inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold
-                                                                    ${entry.jerseyNumber != null && entry.jerseyNumber > 0
-                                                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                                                                        : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
-                                                                    }
-                                                                `}>
-                                                                    #{entry.jerseyNumber != null && entry.jerseyNumber > 0 ? entry.jerseyNumber : '—'}
-                                                                </span>
-                                                                <span className="text-slate-400 dark:text-slate-500">
-                                                                    ({entry.positionDisplay || getPositionName(entry.orderIndex, format)})
-                                                                </span>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-
-                                    {/* Score Delta */}
+                                <span className="sr-only">{event.teamName}</span>
+                                <div className={`flex items-center gap-1.5 flex-wrap ${isHomeEvent ? 'flex-row-reverse' : ''}`}>
+                                    <span className={`${matchText.caption} px-1.5 py-0.5 rounded-full border ${style.text} border-current opacity-80 whitespace-nowrap`}>
+                                        {formatEventType(event.eventType)}
+                                    </span>
+                                    {event.eventType === 'RED_CARD' && event.notes?.includes('Automatic red card') && (
+                                        <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold whitespace-nowrap">
+                                            2nd YC
+                                        </span>
+                                    )}
                                     {isScore && (
-                                        <div className="flex-shrink-0 flex items-center gap-1 text-xl font-black text-slate-900 dark:text-white">
-                                            <span>+{event.points}</span>
-                                        </div>
+                                        <span className={`${isHomeEvent ? 'mr-auto' : 'ml-auto'} text-sm md:text-base font-black tabular-nums text-slate-900 dark:text-white whitespace-nowrap`}>
+                                            +{event.points}
+                                        </span>
                                     )}
                                 </div>
+
+                                {event.eventType === 'SUBSTITUTION' && subInName ? (
+                                    <div className="space-y-1">
+                                        {renderPlayer(subOutName, event.teamName, isHomeEvent, 'text-red-500 dark:text-red-400',
+                                            <ArrowDown className="w-3.5 h-3.5 mt-0.5 shrink-0" weight="bold" />)}
+                                        {renderPlayer(subInName, event.teamName, isHomeEvent, 'text-green-600 dark:text-green-400',
+                                            <ArrowUp className="w-3.5 h-3.5 mt-0.5 shrink-0" weight="bold" />)}
+                                    </div>
+                                ) : (
+                                    event.playerName && renderPlayer(event.playerName, event.teamName, isHomeEvent)
+                                )}
                             </div>
                         </div>
                     );
