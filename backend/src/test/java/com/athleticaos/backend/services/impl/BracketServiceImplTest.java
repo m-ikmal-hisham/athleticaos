@@ -689,6 +689,7 @@ class BracketServiceImplTest {
     }
 
     @Test
+    @SuppressWarnings("null")
     void seedCategoryIfPoolsComplete_waitsForTheLastPoolMatchAndCountsCancelledAsDone() {
         var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
         var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
