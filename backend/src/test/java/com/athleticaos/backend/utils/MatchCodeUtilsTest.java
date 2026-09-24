@@ -1,6 +1,7 @@
 package com.athleticaos.backend.utils;
 
 import com.athleticaos.backend.entities.TournamentCategory;
+import com.athleticaos.backend.enums.TournamentStageType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -61,5 +62,38 @@ class MatchCodeUtilsTest {
     void categoryWithoutAgeGroup() {
         assertThat(MatchCodeUtils.categoryAbbr(cat("Men's Open"))).isEqualTo("MO");
         assertThat(MatchCodeUtils.categoryAbbr(cat("Women's Open"))).isEqualTo("WO");
+    }
+
+    @Test
+    @DisplayName("Wooden Spoon and Wooden Fork no longer share a bracket abbreviation")
+    void woodenRungsAreDistinct() {
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.WOODEN_SPOON, "Wooden Spoon Semi Finals"))
+                .isEqualTo("WSPSF");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.WOODEN_FORK, "Wooden Fork Semi Finals"))
+                .isEqualTo("WFKSF");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.WOODEN_SPOON, "Wooden Spoon Final"))
+                .isNotEqualTo(MatchCodeUtils.stageToken(TournamentStageType.WOODEN_FORK, "Wooden Fork Final"));
+    }
+
+    @Test
+    @DisplayName("Every stage type maps to its own bracket abbreviation")
+    void bracketAbbreviationsAreUnique() {
+        List<TournamentStageType> rungs = List.of(TournamentStageType.PLATE, TournamentStageType.BOWL,
+                TournamentStageType.SHIELD, TournamentStageType.SPOON, TournamentStageType.FORK,
+                TournamentStageType.SAUCER, TournamentStageType.CHOPSTICK, TournamentStageType.WOODEN_SPOON,
+                TournamentStageType.WOODEN_FORK);
+        assertThat(rungs.stream().map(MatchCodeUtils::bracketAbbr).distinct().count()).isEqualTo(rungs.size());
+        assertThat(rungs.stream().map(MatchCodeUtils::bracketAbbr)).doesNotContain("CUP");
+    }
+
+    @Test
+    @DisplayName("Cup rounds read the round from the type; rungs read it from the stage name")
+    void roundTokens() {
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.QUARTER_FINAL, "Cup Quarter Finals")).isEqualTo("CUPQF");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.ROUND_OF_16, "Cup Round of 16")).isEqualTo("CUPR16");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.THIRD_PLACE, "3rd Place Playoff")).isEqualTo("CUPPO");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.PLATE, "Plate Quarter Finals")).isEqualTo("PLTQF");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.BOWL, "Bowl Final (17th Place)")).isEqualTo("BWLF");
+        assertThat(MatchCodeUtils.stageToken(TournamentStageType.SPOON, "19th Place Playoff")).isEqualTo("SPNPO");
     }
 }

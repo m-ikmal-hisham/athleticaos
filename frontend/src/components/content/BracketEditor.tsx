@@ -136,8 +136,18 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const handleSeedFromPools = async () => {
         setLoading(true);
         try {
-            await tournamentService.progressPoolsToKnockout(tournamentId);
-            showToast.success('Brackets seeded from pool results');
+            const { seededCategories = [], skippedCategories = [] } =
+                (await tournamentService.progressPoolsToKnockout(tournamentId)) ?? {};
+            // Categories are seeded only once all their pool matches are done, so say which ones waited.
+            if (seededCategories.length > 0) {
+                showToast.success(`Seeded from pool results: ${seededCategories.join(', ')}`);
+            }
+            if (skippedCategories.length > 0) {
+                showToast.info(`Not seeded yet, pools still in progress: ${skippedCategories.join('; ')}`);
+            }
+            if (seededCategories.length === 0 && skippedCategories.length === 0) {
+                showToast.info('No pools found to seed from');
+            }
             onRefresh();
         } catch (error: any) {
             showToast.error(error?.response?.data?.message || 'Failed to seed brackets from pool results');

@@ -1,6 +1,12 @@
 import axios from '@/lib/axios';
 import { Tournament, TournamentCreateRequest, Team, Standings, TournamentFormatConfig } from '@/types';
 
+/** Which categories "Seed from Pools" filled, and which it left because pool matches remain. */
+export interface PoolSeedingResult {
+    seededCategories: string[];
+    skippedCategories: string[];
+}
+
 export const tournamentService = {
     async getAll(): Promise<Tournament[]> {
         const response = await axios.get<Tournament[]>('/tournaments');
@@ -135,11 +141,13 @@ export const tournamentService = {
     },
 
     /**
-     * Ranks teams across their pools and fills the bracket's "Seed N" slots. Safe to re-run:
+     * Ranks teams across their pools and fills the bracket's seeding slots, one category at a
+     * time: a category is seeded only once all of its pool matches are finished. Safe to re-run:
      * slots that already hold a team are left untouched, so manual assignments survive.
      */
-    async progressPoolsToKnockout(id: string): Promise<void> {
-        await axios.post(`/tournaments/${id}/progress-pools`);
+    async progressPoolsToKnockout(id: string): Promise<PoolSeedingResult> {
+        const response = await axios.post<PoolSeedingResult>(`/tournaments/${id}/progress-pools`);
+        return response.data;
     },
 
     /**

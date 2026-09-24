@@ -358,6 +358,16 @@ class BracketServiceImplTest {
     }
 
     @Test
+    void ladderAbbreviationsMatchMatchCodeUtils() {
+        // Progression and the manual bracket build codes through MatchCodeUtils, the ladder through
+        // these literals; they must agree or later-created matches read differently.
+        for (BracketServiceImpl.LadderRung rung : BracketServiceImpl.getPlacementLadder()) {
+            assertEquals(rung.getAbbr(), com.athleticaos.backend.utils.MatchCodeUtils.bracketAbbr(rung.getType()),
+                    "abbreviation for " + rung.getLabel());
+        }
+    }
+
+    @Test
     @SuppressWarnings("null")
     void ladderOrderOfAllTenTiers() {
         List<BracketServiceImpl.LadderRung> ladder = BracketServiceImpl.getPlacementLadder();
@@ -596,6 +606,120 @@ class BracketServiceImplTest {
                 BracketServiceImpl.getPoolKnockoutPlaceholders(5, 0, 10));
         assertArrayEquals(new String[] { "Seed 2", "Seed 9" },
                 BracketServiceImpl.getPoolKnockoutPlaceholders(5, 1, 10));
+    }
+
+    private static BracketServiceImpl serviceWith(com.athleticaos.backend.repositories.TournamentRepository tournaments,
+            com.athleticaos.backend.repositories.TournamentStageRepository stages,
+            com.athleticaos.backend.repositories.MatchRepository matches) {
+        return new BracketServiceImpl(
+                tournaments, stages, matches,
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentTeamRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchEventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchLineupRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchOfficialRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.PlayerSuspensionRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MediaAssetRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentVenueRepository.class));
+    }
+
+    private static com.athleticaos.backend.entities.Match poolMatch(com.athleticaos.backend.entities.TournamentStage pool,
+            Team home, Team away, Integer homeScore, Integer awayScore,
+            com.athleticaos.backend.enums.MatchStatus status) {
+        return com.athleticaos.backend.entities.Match.builder()
+                .id(java.util.UUID.randomUUID()).stage(pool).homeTeam(home).awayTeam(away)
+                .homeScore(homeScore).awayScore(awayScore).status(status).build();
+    }
+
+    @Test
+    @SuppressWarnings("null")
+    void progressPoolsToKnockout_seedsOnlyCategoriesWhosePoolsAreFinished() {
+        var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        var matches = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(tournaments, stages, matches);
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.Tournament tournament = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId).name("JRC").build();
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(tournament));
+
+        com.athleticaos.backend.entities.TournamentCategory u11 = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Boys U11").build();
+        com.athleticaos.backend.entities.TournamentCategory u16 = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Boys U16").build();
+        com.athleticaos.backend.entities.TournamentStage poolU11 = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).name("Pool A U11").category(u11).isGroupStage(true).build();
+        com.athleticaos.backend.entities.TournamentStage poolU16 = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).name("Pool A U16").category(u16).isGroupStage(true).build();
+        org.mockito.Mockito.when(stages.findByTournamentIdOrderByDisplayOrderAsc(tournamentId))
+                .thenReturn(List.of(poolU11, poolU16));
+
+        Team a = Team.builder().id(java.util.UUID.randomUUID()).name("A").build();
+        Team b = Team.builder().id(java.util.UUID.randomUUID()).name("B").build();
+        Team c = Team.builder().id(java.util.UUID.randomUUID()).name("C").build();
+        Team d = Team.builder().id(java.util.UUID.randomUUID()).name("D").build();
+        org.mockito.Mockito.when(matches.findByStageId(poolU11.getId())).thenReturn(List.of(
+                poolMatch(poolU11, a, b, 21, 7, com.athleticaos.backend.enums.MatchStatus.COMPLETED)));
+        org.mockito.Mockito.when(matches.findByStageId(poolU16.getId())).thenReturn(List.of(
+                poolMatch(poolU16, c, d, 14, 0, com.athleticaos.backend.enums.MatchStatus.COMPLETED),
+                poolMatch(poolU16, d, c, null, null, com.athleticaos.backend.enums.MatchStatus.SCHEDULED)));
+
+        com.athleticaos.backend.entities.TournamentStage cupU11 = com.athleticaos.backend.entities.TournamentStage.builder()
+                .isKnockoutStage(true).category(u11).build();
+        com.athleticaos.backend.entities.TournamentStage cupU16 = com.athleticaos.backend.entities.TournamentStage.builder()
+                .isKnockoutStage(true).category(u16).build();
+        com.athleticaos.backend.entities.Match finalU11 = com.athleticaos.backend.entities.Match.builder()
+                .id(java.util.UUID.randomUUID()).stage(cupU11)
+                .homeTeamPlaceholder("Pool A U11 1").awayTeamPlaceholder("Pool A U11 2").build();
+        com.athleticaos.backend.entities.Match finalU16 = com.athleticaos.backend.entities.Match.builder()
+                .id(java.util.UUID.randomUUID()).stage(cupU16)
+                .homeTeamPlaceholder("Pool A U16 1").awayTeamPlaceholder("Pool A U16 2").build();
+        org.mockito.Mockito.when(matches.findByTournamentId(tournamentId)).thenReturn(List.of(finalU11, finalU16));
+
+        com.athleticaos.backend.dtos.tournament.PoolSeedingResult result = service.progressPoolsToKnockout(tournamentId);
+
+        assertEquals(List.of("Boys U11"), result.getSeededCategories());
+        assertEquals(List.of("Boys U16 (1 pool match left)"), result.getSkippedCategories());
+        assertEquals(a, finalU11.getHomeTeam());
+        assertEquals(b, finalU11.getAwayTeam());
+        // The half-played category is left alone, so no provisional team gets locked in.
+        assertNull(finalU16.getHomeTeam());
+        assertEquals("Pool A U16 1", finalU16.getHomeTeamPlaceholder());
+    }
+
+    @Test
+    @SuppressWarnings("null")
+    void seedCategoryIfPoolsComplete_waitsForTheLastPoolMatchAndCountsCancelledAsDone() {
+        var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        var matches = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(tournaments, stages, matches);
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.TournamentCategory u14 = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Boys U14").build();
+        com.athleticaos.backend.entities.TournamentStage pool = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).name("Pool A U14").category(u14).isGroupStage(true).build();
+        org.mockito.Mockito.when(stages.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)).thenReturn(List.of(pool));
+
+        Team a = Team.builder().id(java.util.UUID.randomUUID()).name("A").build();
+        Team b = Team.builder().id(java.util.UUID.randomUUID()).name("B").build();
+        org.mockito.Mockito.when(matches.findByStageId(pool.getId())).thenReturn(List.of(
+                poolMatch(pool, a, b, 7, 0, com.athleticaos.backend.enums.MatchStatus.COMPLETED),
+                poolMatch(pool, b, a, null, null, com.athleticaos.backend.enums.MatchStatus.SCHEDULED)));
+
+        assertEquals(false, service.seedCategoryIfPoolsComplete(tournamentId, u14.getId()));
+        org.mockito.Mockito.verify(tournaments, org.mockito.Mockito.never()).findById(tournamentId);
+
+        org.mockito.Mockito.when(matches.findByStageId(pool.getId())).thenReturn(List.of(
+                poolMatch(pool, a, b, 7, 0, com.athleticaos.backend.enums.MatchStatus.COMPLETED),
+                poolMatch(pool, b, a, null, null, com.athleticaos.backend.enums.MatchStatus.CANCELLED)));
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(
+                com.athleticaos.backend.entities.Tournament.builder().id(tournamentId).name("JRC").build()));
+        org.mockito.Mockito.when(matches.findByTournamentId(tournamentId)).thenReturn(List.of());
+
+        assertEquals(true, service.seedCategoryIfPoolsComplete(tournamentId, u14.getId()));
     }
 }
 
