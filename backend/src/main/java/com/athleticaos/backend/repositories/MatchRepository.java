@@ -42,6 +42,22 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.status = :status AND m.deleted = false")
         long countByStatus(@org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 
+        // Same visibility rule as MatchServiceImpl: either team's organisation or the organiser is in scope
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT m) FROM Match m " +
+                        "LEFT JOIN m.homeTeam ht LEFT JOIN m.awayTeam at LEFT JOIN m.tournament t " +
+                        "WHERE m.deleted = false " +
+                        "AND (ht.organisation.id IN :orgIds OR at.organisation.id IN :orgIds OR t.organiserOrg.id IN :orgIds)")
+        long countInOrganisations(
+                        @org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
+
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT m) FROM Match m " +
+                        "LEFT JOIN m.homeTeam ht LEFT JOIN m.awayTeam at LEFT JOIN m.tournament t " +
+                        "WHERE m.deleted = false AND m.status = :status " +
+                        "AND (ht.organisation.id IN :orgIds OR at.organisation.id IN :orgIds OR t.organiserOrg.id IN :orgIds)")
+        long countByStatusInOrganisations(
+                        @org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status,
+                        @org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
+
         @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
                         "LEFT JOIN m.homeTeam ht " +
                         "LEFT JOIN ht.organisation hto " +
