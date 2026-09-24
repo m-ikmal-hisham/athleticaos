@@ -53,6 +53,21 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const [newBracketPlayoff, setNewBracketPlayoff] = useState(true);
     const [newBracketName, setNewBracketName] = useState('');
     const [bracketToDelete, setBracketToDelete] = useState<string | null>(null);
+    // Brackets start collapsed. A tournament can run eight or more of them (Cup, Plate, Bowl,
+    // Shield, Spoon, Fork, Wooden Spoon...), and each expands to a horizontally scrolling row
+    // of rounds, which pushed the match schedule far below the fold. The header carries the
+    // round and match counts so a collapsed bracket still says what is in it.
+    const [expandedBrackets, setExpandedBrackets] = useState<Set<string>>(new Set());
+
+    const toggleBracket = (bracketId: string) => {
+        setExpandedBrackets(prev => {
+            const next = new Set(prev);
+            if (!next.delete(bracketId)) {
+                next.add(bracketId);
+            }
+            return next;
+        });
+    };
 
     // Filter stages by category first if category is selected
     const categoryStages = useMemo(() => {
@@ -185,6 +200,26 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                     <h3 className="text-lg font-bold text-white uppercase tracking-wider">Knockout Brackets</h3>
                 </div>
                 <div className="flex gap-2">
+                    {bracketGroups.length > 0 && (
+                        <Button
+                            size="sm"
+                            variant="tertiary"
+                            onClick={() => setExpandedBrackets(
+                                expandedBrackets.size === bracketGroups.length
+                                    ? new Set()
+                                    : new Set(bracketGroups.map(b => b.id))
+                            )}
+                            title={expandedBrackets.size === bracketGroups.length
+                                ? 'Collapse every bracket'
+                                : 'Expand every bracket'}
+                        >
+                            <CaretRight
+                                className={`w-4 h-4 mr-1 transition-transform duration-200 ${expandedBrackets.size === bracketGroups.length ? 'rotate-90' : ''}`}
+                                aria-hidden="true"
+                            />
+                            {expandedBrackets.size === bracketGroups.length ? 'Collapse all' : 'Expand all'}
+                        </Button>
+                    )}
                     <Button
                         size="sm"
                         variant="tertiary"
@@ -314,22 +349,48 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 </div>
             </Modal>
 
-            {bracketGroups.map((bracket) => (
+            {bracketGroups.map((bracket) => {
+                const isExpanded = expandedBrackets.has(bracket.id);
+                const matchCount = bracket.rounds.reduce((total, round) => total + round.matches.length, 0);
+                return (
                 <GlassCard key={bracket.id} className="border-t-4 border-t-primary transition-all duration-300">
-                    <GlassCardHeader className="py-3.5 px-5 border-b border-white/10 flex flex-row items-center justify-between">
-                        <GlassCardTitle className="text-base font-bold tracking-tight uppercase flex items-center gap-2">
-                            <span>{bracket.title}</span>
-                        </GlassCardTitle>
+                    <GlassCardHeader
+                        className={`py-3.5 px-5 flex flex-row items-center justify-between ${isExpanded ? 'border-b border-white/10' : ''}`}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => toggleBracket(bracket.id)}
+                            aria-expanded={isExpanded}
+                            aria-controls={`bracket-panel-${bracket.id}`}
+                            className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg -m-1 p-1 hover:bg-white/5 transition-colors"
+                        >
+                            <CaretRight
+                                className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                                aria-hidden="true"
+                            />
+                            <GlassCardTitle className="text-base font-bold tracking-tight uppercase truncate">
+                                {bracket.title}
+                            </GlassCardTitle>
+                            <span className="text-xs font-normal normal-case text-muted-foreground shrink-0">
+                                {bracket.rounds.length} {bracket.rounds.length === 1 ? 'round' : 'rounds'}
+                                {' · '}
+                                {matchCount} {matchCount === 1 ? 'match' : 'matches'}
+                            </span>
+                        </button>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setBracketToDelete(bracket.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
                         >
                             <Trash className="w-4 h-4 mr-1" /> Delete Bracket
                         </Button>
                     </GlassCardHeader>
-                    <GlassCardContent className="p-6 overflow-x-auto">
+                    <GlassCardContent
+                        id={`bracket-panel-${bracket.id}`}
+                        hidden={!isExpanded}
+                        className="p-6 overflow-x-auto"
+                    >
                         <div className="flex gap-8 min-w-max pb-2">
                             {bracket.rounds.map((round, roundIdx) => (
                                 <div key={round.id || round.name} className="w-72 shrink-0 flex flex-col">
@@ -408,7 +469,8 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                         </div>
                     </GlassCardContent>
                 </GlassCard>
-            ))}
+                );
+            })}
 
             {bracketGroups.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl text-muted-foreground">

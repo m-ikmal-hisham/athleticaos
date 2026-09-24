@@ -16,13 +16,13 @@ export const normalizeVenue = (venue?: string | null): string => {
 /**
  * Checks whether a tournament has two or more distinct assigned venues in its matches.
  */
-export const hasMultipleVenues = (matches?: { venue?: string | null }[] | null): boolean => {
+export const hasMultipleVenues = (matches?: { venueId?: string | null; venue?: string | null }[] | null): boolean => {
     if (!matches || matches.length === 0) return false;
     const venues = new Set<string>();
     for (const m of matches) {
-        const norm = normalizeVenue(m.venue);
-        if (norm.length > 0) {
-            venues.add(norm);
+        const id = m.venueId || normalizeVenue(m.venue);
+        if (id.length > 0) {
+            venues.add(id);
         }
     }
     return venues.size >= 2;
@@ -59,8 +59,9 @@ export const formatMatchVenueLabel = (
 export const formatFeederPlaceholder = (
     placeholder?: string | null,
     targetVenue?: string | null,
-    matches?: { id?: string; matchNumber?: number | null; matchCode?: string | null; venue?: string | null }[] | null,
-    feederMatchId?: string | null
+    matches?: { id?: string; matchNumber?: number | null; matchCode?: string | null; venueId?: string | null; venueName?: string | null; venue?: string | null }[] | null,
+    feederMatchId?: string | null,
+    targetVenueId?: string | null
 ): string => {
     if (!placeholder && !feederMatchId) return '';
     const raw = (placeholder || '').trim();
@@ -85,10 +86,15 @@ export const formatFeederPlaceholder = (
         return raw;
     }
 
-    const normFeederVenue = normalizeVenue(feederMatch.venue);
-    const normTargetVenue = normalizeVenue(targetVenue);
-    // Venues compare exactly after trimming, the same way the backend and the unique index do.
-    const isCrossVenue = normFeederVenue.length > 0 && normFeederVenue !== normTargetVenue;
+    const feederVenueName = feederMatch.venueName || normalizeVenue(feederMatch.venue);
+    let isCrossVenue = false;
+    if (feederMatch.venueId && targetVenueId) {
+        isCrossVenue = feederMatch.venueId !== targetVenueId;
+    } else {
+        const normFeederVenue = normalizeVenue(feederVenueName);
+        const normTargetVenue = normalizeVenue(targetVenue);
+        isCrossVenue = normFeederVenue.length > 0 && normFeederVenue !== normTargetVenue;
+    }
 
     // Always rebuild from the feeder's CURRENT number. Stored placeholders carry the feeder's match
     // code, which never changes; numbers run per venue and move whenever a tournament is renumbered.
@@ -97,5 +103,5 @@ export const formatFeederPlaceholder = (
     const id = feederMatch.matchNumber != null ? String(feederMatch.matchNumber) : (feederMatch.matchCode || '');
     const base = id ? `${prefix} ${id}` : prefix;
 
-    return isCrossVenue ? `${base} (${normFeederVenue})` : base;
+    return isCrossVenue ? `${base} (${feederVenueName || 'Venue TBC'})` : base;
 };

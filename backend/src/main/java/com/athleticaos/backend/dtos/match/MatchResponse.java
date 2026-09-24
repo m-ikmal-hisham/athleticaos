@@ -33,6 +33,8 @@ public class MatchResponse {
     private LocalDate matchDate;
     private LocalTime kickOffTime;
     private String venue;
+    private UUID venueId;
+    private String venueName;
     private String pitch;
     private String status;
     private Integer homeScore;

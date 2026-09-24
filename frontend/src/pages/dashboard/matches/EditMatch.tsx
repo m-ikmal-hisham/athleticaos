@@ -5,11 +5,12 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { ArrowLeft } from '@phosphor-icons/react';
-import { fetchTournaments } from '@/api/tournaments.api';
+import { fetchTournaments, getTournamentVenues } from '@/api/tournaments.api';
 import { fetchTeams } from '@/api/teams.api';
 import { updateMatch, fetchMatch } from '@/api/matches.api';
-import { Team, Tournament } from '@/types';
+import { Team, Tournament, TournamentVenue } from '@/types';
 import { showToast } from '@/lib/customToast';
 
 export const EditMatch = () => {
@@ -20,6 +21,7 @@ export const EditMatch = () => {
 
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [venues, setVenues] = useState<TournamentVenue[]>([]);
 
     const [formData, setFormData] = useState({
         tournamentId: '',
@@ -27,6 +29,7 @@ export const EditMatch = () => {
         awayTeamId: '',
         matchDate: '',
         kickOffTime: '',
+        venueId: '',
         venue: ''
     });
 
@@ -44,13 +47,23 @@ export const EditMatch = () => {
                 setTeams(teamsRes.data as any);
 
                 const match = matchRes.data;
+                if (match.tournamentId) {
+                    try {
+                        const venuesRes = await getTournamentVenues(match.tournamentId);
+                        setVenues(venuesRes.data || []);
+                    } catch (e) {
+                        console.error("Failed to load venues", e);
+                    }
+                }
+
                 setFormData({
                     tournamentId: match.tournamentId || '',
                     homeTeamId: match.homeTeamId || '',
                     awayTeamId: match.awayTeamId || '',
                     matchDate: match.matchDate?.split('T')[0] || '',
                     kickOffTime: match.kickOffTime || '',
-                    venue: match.venue || ''
+                    venueId: match.venueId || '',
+                    venue: match.venueName || match.venue || ''
                 });
 
             } catch (error) {
@@ -74,13 +87,12 @@ export const EditMatch = () => {
         setLoading(true);
 
         try {
+            const selectedVenueObj = venues.find(v => v.id === formData.venueId);
             await updateMatch(id, {
                 matchDate: formData.matchDate,
                 kickOffTime: formData.kickOffTime,
-                venue: formData.venue,
-                // Include other fields if your backend supports updating them, 
-                // but the modal logic suggested mainly logistics were updated.
-                // If teams/tournament can change, include them here.
+                venueId: formData.venueId || null,
+                venue: selectedVenueObj ? selectedVenueObj.name : (formData.venue || null),
                 tournamentId: formData.tournamentId,
                 homeTeamId: formData.homeTeamId,
                 awayTeamId: formData.awayTeamId,
@@ -174,11 +186,22 @@ export const EditMatch = () => {
 
                     <div className="space-y-2">
                         <Label>Venue</Label>
-                        <Input
-                            placeholder="Stadium or Field Name"
-                            value={formData.venue}
-                            onChange={(e) => handleChange('venue', e.target.value)}
-                            required
+                        <SearchableSelect
+                            value={formData.venueId}
+                            onChange={(value) => {
+                                const vId = value as string;
+                                const found = venues.find(v => v.id === vId);
+                                setFormData(prev => ({
+                                    ...prev,
+                                    venueId: vId,
+                                    venue: found ? found.name : ''
+                                }));
+                            }}
+                            options={[
+                                { value: '', label: 'Venue TBC (Unassigned)' },
+                                ...venues.map(v => ({ value: v.id, label: v.name }))
+                            ]}
+                            placeholder="Select venue"
                         />
                     </div>
 

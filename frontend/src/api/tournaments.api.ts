@@ -25,3 +25,15 @@ export const getTournamentBracket = (idOrSlug: string) => api.get(`/tournaments/
 
 export const renumberMatches = (idOrSlug: string, request: { dryRun: boolean }) =>
     api.post<import('@/types').MatchRenumberResponse>(`/tournaments/${idOrSlug}/matches/renumber`, request);
+
+export const getTournamentVenues = (idOrSlug: string) =>
+    api.get<import('@/types').TournamentVenue[]>(`/tournaments/${idOrSlug}/venues`);
+
+export const createTournamentVenue = (idOrSlug: string, data: import('@/types').CreateVenueRequest) =>
+    api.post<import('@/types').TournamentVenue>(`/tournaments/${idOrSlug}/venues`, data);
+
+export const updateTournamentVenue = (idOrSlug: string, venueId: string, data: import('@/types').UpdateVenueRequest) =>
+    api.put<import('@/types').TournamentVenue>(`/tournaments/${idOrSlug}/venues/${venueId}`, data);
+
+export const deleteTournamentVenue = (idOrSlug: string, venueId: string) =>
+    api.delete(`/tournaments/${idOrSlug}/venues/${venueId}`);

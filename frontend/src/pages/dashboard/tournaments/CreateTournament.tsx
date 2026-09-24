@@ -56,6 +56,9 @@ export const CreateTournament = () => {
         maxYear: undefined
     });
 
+    // State for tournament match venues
+    const [venuesList, setVenuesList] = useState<string[]>(['']);
+
     const {
         register,
         handleSubmit,
@@ -105,15 +108,38 @@ export const CreateTournament = () => {
         setValue('categories', currentCategories.filter((_, i) => i !== index));
     };
 
+    const addVenueInput = () => {
+        setVenuesList(prev => [...prev, '']);
+    };
+
+    const updateVenueInput = (index: number, val: string) => {
+        setVenuesList(prev => {
+            const next = [...prev];
+            next[index] = val;
+            return next;
+        });
+    };
+
+    const removeVenueInput = (index: number) => {
+        if (venuesList.length <= 1) return;
+        setVenuesList(prev => prev.filter((_, i) => i !== index));
+    };
+
     const onSubmit = async (data: TournamentFormData) => {
         setLoading(true);
         try {
             const isUuid = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/.test(data.seasonInput);
 
+            const filteredVenues = venuesList.map(v => v.trim()).filter(Boolean);
+            const venuesPayload = filteredVenues.length > 0
+                ? filteredVenues.map((name, idx) => ({ name, displayOrder: idx }))
+                : [{ name: data.venue.trim(), displayOrder: 0 }];
+
             const payload = {
                 ...data,
                 seasonId: isUuid ? data.seasonInput : undefined,
                 seasonName: !isUuid ? data.seasonInput : undefined,
+                venues: venuesPayload
             };
 
             const response = await createTournament(payload);
@@ -392,12 +418,47 @@ export const CreateTournament = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="col-span-1 md:col-span-2">
                                 <Input
-                                    label="Venue"
-                                    placeholder="Primary Venue"
+                                    label="Headline Location / Host City"
+                                    placeholder="e.g. Petaling Jaya, Malaysia"
                                     {...register('venue')}
                                     error={errors.venue?.message}
                                     required
                                 />
+                            </div>
+
+                            {/* Tournament Match Venues Registry */}
+                            <div className="col-span-1 md:col-span-2 space-y-3 bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-white/10">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="text-sm font-semibold text-foreground block">Tournament Match Venues</label>
+                                        <p className="text-xs text-muted-foreground">Venues where matches are played. Match numbers (1, 2, 3...) are tracked per venue.</p>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={addVenueInput} className="flex items-center gap-1.5 text-xs">
+                                        <Plus size={14} /> Add Venue
+                                    </Button>
+                                </div>
+                                <div className="space-y-2">
+                                    {venuesList.map((v, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <Input
+                                                value={v}
+                                                onChange={(e) => updateVenueInput(idx, e.target.value)}
+                                                placeholder={idx === 0 ? (watch('venue') || 'e.g. Field 1 / Stadium Astaka') : `e.g. Field ${idx + 1}`}
+                                                className="h-9 text-sm flex-1"
+                                            />
+                                            {venuesList.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeVenueInput(idx)}
+                                                    className="text-red-500 hover:text-red-400 p-2 rounded hover:bg-white/5"
+                                                    aria-label="Remove venue"
+                                                >
+                                                    <Trash size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                             <div>
                                 <Input

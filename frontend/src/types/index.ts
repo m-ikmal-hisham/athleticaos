@@ -314,6 +314,32 @@ export interface Tournament {
         name: string;
         logoUrl?: string;
     };
+    venues?: TournamentVenue[];
+}
+
+export interface TournamentVenue {
+    id: string;
+    tournamentId: string;
+    name: string;
+    shortName?: string | null;
+    address?: string | null;
+    displayOrder: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface CreateVenueRequest {
+    name: string;
+    shortName?: string;
+    address?: string;
+    displayOrder?: number;
+}
+
+export interface UpdateVenueRequest {
+    name?: string;
+    shortName?: string;
+    address?: string;
+    displayOrder?: number;
 }
 
 export interface TournamentCategory {
@@ -346,6 +372,7 @@ export interface TournamentCreateRequest {
     endDate: string;
     venue: string;
     categories?: CreateCategoryRequest[];
+    venues?: CreateVenueRequest[];
     logoUrl?: string;
     bannerUrl?: string;
     backgroundUrl?: string;
@@ -434,6 +461,8 @@ export interface Match {
     awayTeam?: { id: string, name: string }; // Optional populated team
     matchDate: string;
     kickOffTime: string; // Added
+    venueId?: string | null;
+    venueName?: string | null;
     venue?: string; // Changed from location to venue to match backend
     location?: string; // Keep for backward compat if needed
     pitch?: string;
@@ -467,6 +496,7 @@ export interface MatchCreateRequest {
     awayTeamId: string;
     matchDate: string;
     kickOffTime: string;
+    venueId?: string | null;
     venue?: string;
     pitch?: string;
     matchCode?: string;
@@ -582,12 +612,16 @@ export interface MatchRenumberRequest {
 
 export interface MatchRenumberChange {
     matchId: string;
+    venueId?: string | null;
+    venueName?: string | null;
     venue?: string;
     currentNumber?: number | null;
     newNumber: number;
 }
 
 export interface VenueBreakdown {
+    venueId?: string | null;
+    venueName?: string | null;
     venue: string;
     matchCount: number;
 }

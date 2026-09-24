@@ -112,6 +112,7 @@ export default function TournamentDetail() {
     const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>({});
     const [teamRosters, setTeamRosters] = useState<Record<string, PublicPlayerSummary[]>>({});
     const [teamSearch, setTeamSearch] = useState('');
+    const [failedHeroImageUrl, setFailedHeroImageUrl] = useState<string | null>(null);
 
     // Reset selected venue when category changes
     useEffect(() => {
@@ -358,6 +359,10 @@ export default function TournamentDetail() {
         </Link>
     );
 
+    // Tournament banner first, then the organiser's cover image; the plain gradient is the fallback
+    const heroImageUrl = tournament?.bannerUrl || tournament?.organiserBranding?.coverImageUrl;
+    const showHeroImage = !!heroImageUrl && heroImageUrl !== failedHeroImageUrl;
+
     if (loading && !tournament) return <div className="space-y-6 animate-pulse p-8"><div className="h-64 bg-slate-800/10 rounded-2xl"></div></div>;
     if (!tournament) return <div className="text-center py-20 text-slate-500">Tournament not found</div>;
 
@@ -379,13 +384,27 @@ export default function TournamentDetail() {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl -z-10" />
 
                 <GlassCard className="p-0 overflow-hidden border-0 shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl group">
-                    <div className="relative min-h-[16rem] flex flex-col justify-end">
+                    {/* Banners are roughly 3:1, so give them more height on wide screens to avoid cropping the artwork */}
+                    <div className={`relative flex flex-col justify-end ${showHeroImage ? 'min-h-[16rem] md:min-h-[20rem] lg:min-h-[24rem]' : 'min-h-[16rem]'}`}>
                         {/* Cover Image or Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 overflow-hidden">
-                            {tournament.organiserBranding?.coverImageUrl && (
-                                <img src={tournament.organiserBranding.coverImageUrl} alt="Cover" className="w-full h-full object-cover opacity-60" />
+                            {showHeroImage && (
+                                <>
+                                    <img
+                                        src={heroImageUrl}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        onError={() => setFailedHeroImageUrl(heroImageUrl)}
+                                    />
+                                    {/* Darken the left, where the logo and title sit, and let the artwork show on the right */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-slate-950/10" />
+                                    {/* On phones the text spans the full width, so tint the whole image as well */}
+                                    <div className="absolute inset-0 bg-slate-950/30 md:hidden" />
+                                </>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                            <div className={showHeroImage
+                                ? 'absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent'
+                                : 'absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent'} />
                         </div>
 
                         {/* Content Overlay */}
@@ -411,7 +430,7 @@ export default function TournamentDetail() {
                                 <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg mb-2 leading-tight">
                                     {tournament.name}
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-4 text-slate-300 text-sm font-medium">
+                                <div className="flex flex-wrap items-center gap-4 text-slate-200 text-sm font-medium drop-shadow-md">
                                     <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-blue-400" /> {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
                                     <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-red-400" /> {tournament.venue}</span>
                                 </div>

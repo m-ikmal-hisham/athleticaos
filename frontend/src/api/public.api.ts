@@ -31,6 +31,7 @@ export interface PublicTournamentSummary {
         coverImageUrl?: string;
     };
     logoUrl?: string;
+    bannerUrl?: string;
     livestreamUrl?: string;
 }
 

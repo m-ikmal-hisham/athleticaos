@@ -132,7 +132,8 @@ class BracketServiceImplTest {
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchOfficialRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.PlayerSuspensionRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MediaAssetRepository.class),
-                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class)
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentVenueRepository.class)
         );
 
         java.util.UUID tournamentId = java.util.UUID.randomUUID();
@@ -259,7 +260,8 @@ class BracketServiceImplTest {
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchOfficialRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.PlayerSuspensionRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MediaAssetRepository.class),
-                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class)
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentVenueRepository.class)
         );
 
         java.util.UUID tournamentId = java.util.UUID.randomUUID();
@@ -316,7 +318,8 @@ class BracketServiceImplTest {
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchOfficialRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.PlayerSuspensionRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MediaAssetRepository.class),
-                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class)
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentVenueRepository.class)
         );
 
         java.util.UUID tournamentId = java.util.UUID.randomUUID();
@@ -444,7 +447,8 @@ class BracketServiceImplTest {
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchOfficialRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.PlayerSuspensionRepository.class),
                 org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MediaAssetRepository.class),
-                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class)
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.EventRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentVenueRepository.class)
         );
 
         java.util.UUID tournamentId = java.util.UUID.randomUUID();

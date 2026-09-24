@@ -10,11 +10,11 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/Input';
 import { ImageUpload } from '@/components/common/ImageUpload';
-import { ArrowLeft, Trash, Plus } from '@phosphor-icons/react';
-import { updateTournament, getTournament } from '@/api/tournaments.api';
+import { ArrowLeft, Trash, Plus, PencilSimple, Check, X, ArrowUp, ArrowDown } from '@phosphor-icons/react';
+import { updateTournament, getTournament, getTournamentVenues, createTournamentVenue, updateTournamentVenue, deleteTournamentVenue } from '@/api/tournaments.api';
 import { fetchOrganisations } from '@/api/organisations.api';
 import { getActiveSeasons } from '@/api/seasons.api';
-import { Organisation, CreateCategoryRequest } from '@/types';
+import { Organisation, CreateCategoryRequest, TournamentVenue } from '@/types';
 import { showToast } from '@/lib/customToast';
 
 const categorySchema = z.object({
@@ -59,6 +59,14 @@ export const EditTournament = () => {
         maxYear: undefined
     });
 
+    // State for venue management
+    const [venues, setVenues] = useState<TournamentVenue[]>([]);
+    const [newVenueName, setNewVenueName] = useState('');
+    const [newVenueShortName, setNewVenueShortName] = useState('');
+    const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
+    const [editingVenueName, setEditingVenueName] = useState('');
+    const [editingVenueShortName, setEditingVenueShortName] = useState('');
+
     const {
         register,
         handleSubmit,
@@ -86,13 +94,15 @@ export const EditTournament = () => {
         if (!id) return;
         setFetching(true);
         try {
-            const [orgsRes, tournamentRes, seasonsRes] = await Promise.all([
+            const [orgsRes, tournamentRes, seasonsRes, venuesRes] = await Promise.all([
                 fetchOrganisations(),
                 getTournament(id),
-                getActiveSeasons()
+                getActiveSeasons(),
+                getTournamentVenues(id)
             ]);
             setOrganisations(orgsRes as any);
             setSeasons(seasonsRes);
+            setVenues(venuesRes.data || []);
 
             const tournament = tournamentRes.data;
 
@@ -135,6 +145,86 @@ export const EditTournament = () => {
             navigate('/dashboard/tournaments');
         } finally {
             setFetching(false);
+        }
+    };
+
+    const handleAddVenue = async () => {
+        if (!id || !newVenueName.trim()) return;
+        try {
+            const res = await createTournamentVenue(id, {
+                name: newVenueName.trim(),
+                shortName: newVenueShortName.trim() || undefined,
+                displayOrder: venues.length
+            });
+            setVenues(prev => [...prev, res.data]);
+            setNewVenueName('');
+            setNewVenueShortName('');
+            showToast.success(`Added venue "${res.data.name}"`);
+        } catch (err: unknown) {
+            console.error('Failed to add venue:', err);
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            showToast.error(message || 'Failed to add venue');
+        }
+    };
+
+    const handleStartEditVenue = (v: TournamentVenue) => {
+        setEditingVenueId(v.id);
+        setEditingVenueName(v.name);
+        setEditingVenueShortName(v.shortName || '');
+    };
+
+    const handleSaveEditVenue = async (venueId: string) => {
+        if (!id || !editingVenueName.trim()) return;
+        try {
+            const res = await updateTournamentVenue(id, venueId, {
+                name: editingVenueName.trim(),
+                shortName: editingVenueShortName.trim() || undefined
+            });
+            setVenues(prev => prev.map(v => v.id === venueId ? res.data : v));
+            setEditingVenueId(null);
+            showToast.success(`Updated venue "${res.data.name}"`);
+        } catch (err: unknown) {
+            console.error('Failed to update venue:', err);
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            showToast.error(message || 'Failed to update venue');
+        }
+    };
+
+    const handleDeleteVenue = async (venue: TournamentVenue) => {
+        if (!id) return;
+        if (venues.length <= 1) {
+            showToast.error("At least one venue is required for the tournament.");
+            return;
+        }
+        try {
+            await deleteTournamentVenue(id, venue.id);
+            setVenues(prev => prev.filter(v => v.id !== venue.id));
+            showToast.success(`Deleted venue "${venue.name}"`);
+        } catch (err: unknown) {
+            console.error('Failed to delete venue:', err);
+            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+            showToast.error(message || `Cannot delete venue "${venue.name}": matches may be assigned to it.`);
+        }
+    };
+
+    const handleMoveVenue = async (index: number, direction: 'up' | 'down') => {
+        if (!id) return;
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= venues.length) return;
+
+        const updated = [...venues];
+        const temp = updated[index];
+        updated[index] = updated[targetIndex];
+        updated[targetIndex] = temp;
+        setVenues(updated);
+
+        try {
+            await Promise.all([
+                updateTournamentVenue(id, updated[index].id, { displayOrder: index }),
+                updateTournamentVenue(id, updated[targetIndex].id, { displayOrder: targetIndex })
+            ]);
+        } catch (error) {
+            console.error('Failed to persist venue reorder:', error);
         }
     };
 
@@ -465,12 +555,137 @@ export const EditTournament = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="col-span-1 md:col-span-2">
                                 <Input
-                                    label="Venue"
-                                    placeholder="Primary Venue"
+                                    label="Headline Location / Host City"
+                                    placeholder="e.g. Petaling Jaya, Malaysia"
                                     {...register('venue')}
                                     error={errors.venue?.message}
                                     required
                                 />
+                            </div>
+
+                            {/* Tournament Venues Registry */}
+                            <div className="col-span-1 md:col-span-2 space-y-4 bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-white/10">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-foreground">Tournament Match Venues</h4>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Registered venues for this tournament. Sequential match numbers (1, 2, 3...) are tracked per venue.
+                                    </p>
+                                </div>
+
+                                {/* Existing venues */}
+                                <div className="space-y-2">
+                                    {venues.map((v, idx) => (
+                                        <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 gap-3">
+                                            {editingVenueId === v.id ? (
+                                                <div className="flex-1 flex items-center gap-2">
+                                                    <Input
+                                                        value={editingVenueName}
+                                                        onChange={(e) => setEditingVenueName(e.target.value)}
+                                                        placeholder="Venue Name"
+                                                        className="h-8 text-sm flex-1"
+                                                    />
+                                                    <Input
+                                                        value={editingVenueShortName}
+                                                        onChange={(e) => setEditingVenueShortName(e.target.value)}
+                                                        placeholder="Abbr (opt)"
+                                                        className="h-8 text-sm w-28"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSaveEditVenue(v.id)}
+                                                        className="text-emerald-500 hover:text-emerald-400 p-1.5 rounded hover:bg-white/5"
+                                                        title="Save"
+                                                    >
+                                                        <Check size={16} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingVenueId(null)}
+                                                        className="text-muted-foreground hover:text-foreground p-1.5 rounded hover:bg-white/5"
+                                                        title="Cancel"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex flex-col">
+                                                            <button
+                                                                type="button"
+                                                                disabled={idx === 0}
+                                                                onClick={() => handleMoveVenue(idx, 'up')}
+                                                                className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                                                                title="Move Up"
+                                                            >
+                                                                <ArrowUp size={12} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={idx === venues.length - 1}
+                                                                onClick={() => handleMoveVenue(idx, 'down')}
+                                                                className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                                                                title="Move Down"
+                                                            >
+                                                                <ArrowDown size={12} />
+                                                            </button>
+                                                        </div>
+                                                        <span className="font-medium text-foreground text-sm">{v.name}</span>
+                                                        {v.shortName && (
+                                                            <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-muted-foreground">
+                                                                {v.shortName}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleStartEditVenue(v)}
+                                                            className="text-muted-foreground hover:text-foreground p-1.5 rounded hover:bg-white/5"
+                                                            title="Edit venue"
+                                                        >
+                                                            <PencilSimple size={15} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteVenue(v)}
+                                                            className="text-red-500 hover:text-red-400 p-1.5 rounded hover:bg-white/5"
+                                                            title="Delete venue"
+                                                        >
+                                                            <Trash size={15} />
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Add Venue Input */}
+                                <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                    <Input
+                                        value={newVenueName}
+                                        onChange={(e) => setNewVenueName(e.target.value)}
+                                        placeholder="New Venue Name (e.g. Field 2 / Stadium B)"
+                                        className="h-9 text-sm flex-1"
+                                    />
+                                    <Input
+                                        value={newVenueShortName}
+                                        onChange={(e) => setNewVenueShortName(e.target.value)}
+                                        placeholder="Short code (optional)"
+                                        className="h-9 text-sm w-36"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleAddVenue}
+                                        className="h-9 flex items-center gap-1 text-xs"
+                                        disabled={!newVenueName.trim()}
+                                    >
+                                        <Plus size={14} /> Add
+                                    </Button>
+                                </div>
                             </div>
                             <div>
                                 <Input

@@ -176,5 +176,24 @@ export const tournamentService = {
         await axios.delete(`/tournaments/${id}/bracket/type/${type}`, {
             params: { categoryId }
         });
+    },
+
+    async getVenues(tournamentId: string): Promise<import('@/types').TournamentVenue[]> {
+        const response = await axios.get<import('@/types').TournamentVenue[]>(`/tournaments/${tournamentId}/venues`);
+        return response.data;
+    },
+
+    async createVenue(tournamentId: string, data: import('@/types').CreateVenueRequest): Promise<import('@/types').TournamentVenue> {
+        const response = await axios.post<import('@/types').TournamentVenue>(`/tournaments/${tournamentId}/venues`, data);
+        return response.data;
+    },
+
+    async updateVenue(tournamentId: string, venueId: string, data: import('@/types').UpdateVenueRequest): Promise<import('@/types').TournamentVenue> {
+        const response = await axios.put<import('@/types').TournamentVenue>(`/tournaments/${tournamentId}/venues/${venueId}`, data);
+        return response.data;
+    },
+
+    async deleteVenue(tournamentId: string, venueId: string): Promise<void> {
+        await axios.delete(`/tournaments/${tournamentId}/venues/${venueId}`);
     }
 };
