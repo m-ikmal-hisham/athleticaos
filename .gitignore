@@ -31,3 +31,8 @@ claude_audit.txt
 tmp/
 # Local agent config (contains API keys)
 .codex/
+# Stakeholder announcements (release notes, posters, PDFs) live outside the repo
+announcements/
+output/
+release-note*.html
+release-note*.pdf
