@@ -119,6 +119,8 @@ export const MatchDetail = () => {
 
     // Event Editing State
     const [editingEvent, setEditingEvent] = useState<{ id: string; minute: number } | null>(null);
+    // A team-only score (recorded before lineups were in) waiting for its player.
+    const [assigningEvent, setAssigningEvent] = useState<{ id: string; teamId: string; teamName: string } | null>(null);
 
     // Detect format from match duration (heuristic)
     const detectFormat = (): RugbyFormat => {
@@ -323,6 +325,21 @@ export const MatchDetail = () => {
         }
     };
 
+    const handleAssignPlayer = async (playerId: string) => {
+        const target = assigningEvent;
+        setAssigningEvent(null);
+        if (!target || !selectedMatch || playerId === 'unknown') return;
+
+        try {
+            await updateMatchEvent(target.id, { playerId });
+            await loadMatchDetail(selectedMatch.id);
+            showToast.success('Player added to the score');
+        } catch (error: any) {
+            console.error('Failed to add player to event:', error);
+            showToast.error(error?.response?.data?.message || 'Could not add the player');
+        }
+    };
+
     const submitEvent = async (action: any) => {
         try {
             // Find player details if available
@@ -433,7 +450,9 @@ export const MatchDetail = () => {
         setConfirmModal({
             isOpen: true,
             title: 'Start Match',
-            message: 'Change status to ONGOING and start timer?',
+            message: hasBothLineups
+                ? 'Change status to ONGOING and start timer?'
+                : 'No lineups yet. Scores will be saved against the team, and you can add the player to each score later from Match Events. Start the match and timer?',
             onConfirm: async () => {
                 await updateMatchStatus(selectedMatch!.id, 'ONGOING');
                 await loadMatchDetail(selectedMatch!.id);
@@ -572,11 +591,16 @@ export const MatchDetail = () => {
 
     // Filters for Logic
     const isMatchLocked = selectedMatch.status === 'CANCELLED' || (selectedMatch.status === 'COMPLETED' && !isAdmin);
+    const hasBothLineups =
+        matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
+        matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0);
 
-    const getPlayersForPicker = () => {
-        if (!draftAction?.teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
+    const getPlayersForPicker = () => getPlayersForTeam(draftAction?.teamId);
 
-        const isHome = draftAction.teamId === selectedMatch.homeTeamId;
+    const getPlayersForTeam = (teamId?: string) => {
+        if (!teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
+
+        const isHome = teamId === selectedMatch.homeTeamId;
         const currentLineup = isHome ? matchLineups.home : matchLineups.away;
 
         // Helper to format
@@ -819,15 +843,11 @@ export const MatchDetail = () => {
                                 onTimerAdjust={handleTimerAdjust}
                                 onTimeUpdate={(newSeconds) => setMatchTimeSeconds(newSeconds)}
                                 isOneWayMatch={!!isOneWayMatch}
-                                canStartMatch={
-                                    matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
-                                    matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)
-                                }
-                                startMatchDisabledReason={
-                                    (!(matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) && matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)))
-                                        ? "Lineups & Subs must be filled with registered players."
-                                        : undefined
-                                }
+                                // Lineups are no longer required to start: without them, scores are
+                                // saved against the team and players are added to each score later.
+                                startMatchNote={hasBothLineups
+                                    ? undefined
+                                    : 'No lineups yet. Scores will be saved against the team; add players to them later.'}
                             />
                         </div>
 
@@ -1010,8 +1030,16 @@ export const MatchDetail = () => {
                                                                                 );
                                                                             })()}
                                                                         </div>
+                                                                    ) : isAdmin && !isMatchLocked && !['SCRUM', 'LINEOUT'].includes(event.eventType) ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setAssigningEvent({ id: event.id, teamId: event.teamId, teamName: event.teamName })}
+                                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md border border-dashed border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 whitespace-nowrap"
+                                                                        >
+                                                                            + Add player
+                                                                        </button>
                                                                     ) : (
-                                                                        <span>-</span>
+                                                                        <span>{['SCRUM', 'LINEOUT'].includes(event.eventType) ? '-' : 'Team'}</span>
                                                                     )
                                                                 )}
                                                             </TableCell>
@@ -1279,6 +1307,18 @@ export const MatchDetail = () => {
                     onCancel={() => { setInteractionState('IDLE'); setDraftAction(null); setSubStep('OUT'); }}
                     isSubstitution={draftAction.type === 'SUBSTITUTION'}
                     subStep={subStep}
+                />
+            )}
+
+            {/* Player Picker: attach a player to a team-only score */}
+            {assigningEvent && (
+                <PlayerPicker
+                    teamName={assigningEvent.teamName || 'Team'}
+                    players={getPlayersForTeam(assigningEvent.teamId)}
+                    onSelect={handleAssignPlayer}
+                    onCancel={() => setAssigningEvent(null)}
+                    title="Who scored this?"
+                    hideTeamOnly
                 />
             )}
 

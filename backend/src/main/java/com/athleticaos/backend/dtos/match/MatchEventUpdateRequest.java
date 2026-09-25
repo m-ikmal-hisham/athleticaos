@@ -18,4 +18,17 @@ public class MatchEventUpdateRequest {
     private Integer minute;
 
     private String notes;
+
+    /**
+     * Attach a player to an event recorded without one (or change it). Only applied when the
+     * field is present in the request; an explicit null takes the player off again.
+     */
+    private java.util.UUID playerId;
+    @Builder.Default
+    private boolean playerIdSet = false;
+
+    public void setPlayerId(java.util.UUID playerId) {
+        this.playerId = playerId;
+        this.playerIdSet = true;
+    }
 }
