@@ -3,6 +3,8 @@ import { StandingsResponse } from '../../types';
 import { CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react';
 import { getImageUrl } from '../../utils/image';
 import { Link } from 'react-router-dom';
+import { useCollapsibleGroups } from '@/hooks/useCollapsibleGroups';
+import { ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
 
 interface StandingsTableProps {
     standings: StandingsResponse[];
@@ -50,7 +52,9 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
         return groups;
     }, [standings, sortConfig]);
 
-    const sortedPoolNames = Object.keys(groupedStandings).sort();
+    const sortedPoolNames = useMemo(() => Object.keys(groupedStandings).sort(), [groupedStandings]);
+    // The first pool starts open; the rest fold away so a long list of pools is quick to scan.
+    const pools = useCollapsibleGroups(sortedPoolNames, sortedPoolNames[0]);
 
     const SortIcon = ({ field }: { field: SortField }) => {
         if (sortConfig.field !== field) return <CaretUpDown className="w-3 h-3 opacity-30" />;
@@ -78,18 +82,36 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
     }
 
     return (
-        <div className="space-y-12">
+        <div className="space-y-4 md:space-y-6">
+            {sortedPoolNames.length > 1 && (
+                <div className="flex justify-end">
+                    <ExpandAllToggle allOpen={pools.allOpen} onChange={pools.setAll} noun="pools" />
+                </div>
+            )}
             {sortedPoolNames.map(poolName => {
                 const poolStandings = groupedStandings[poolName];
                 return (
                     <div key={poolName} className="glass-panel overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl shadow-xl shadow-slate-200/20 dark:shadow-none">
-                        <div className="px-6 py-4 border-b border-slate-200/50 dark:border-white/5 bg-gradient-to-r from-slate-50/80 to-transparent dark:from-white/5 dark:to-transparent">
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                <span className="w-1.5 h-6 bg-blue-500 rounded-full" />
-                                {poolName}
+                        {/* Pool header folds the table away, like the match days on the schedule */}
+                        <button
+                            type="button"
+                            onClick={() => pools.toggle(poolName)}
+                            aria-expanded={pools.isOpen(poolName)}
+                            className={`w-full flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 text-left bg-gradient-to-r from-slate-50/80 to-transparent dark:from-white/5 dark:to-transparent hover:from-blue-50/80 dark:hover:from-blue-900/10 transition-colors ${pools.isOpen(poolName) ? 'border-b border-slate-200/50 dark:border-white/5' : ''}`}
+                        >
+                            <h3 className="flex-1 min-w-0 text-base sm:text-xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                                <span className="w-1.5 h-5 sm:h-6 bg-blue-500 rounded-full shrink-0" />
+                                <span className="truncate">{poolName}</span>
                             </h3>
-                        </div>
-                        <div className="overflow-x-auto">
+                            <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                {poolStandings.length} {poolStandings.length === 1 ? 'team' : 'teams'}
+                            </span>
+                            <CaretDown
+                                weight="bold"
+                                className={`shrink-0 w-4 h-4 text-slate-400 transition-transform duration-200 ${pools.isOpen(poolName) ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+                        <div className="overflow-x-auto" hidden={!pools.isOpen(poolName)}>
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-100/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                                     <tr>

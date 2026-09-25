@@ -12,11 +12,18 @@ interface PlayerPickerProps {
     onCancel: () => void;
     isSubstitution?: boolean;
     subStep?: 'OUT' | 'IN';
+    /** Overrides the heading, e.g. when attaching a player to a score recorded without one. */
+    title?: string;
+    /** Hides the team-only option, for flows where "no player" means nothing (attaching later). */
+    hideTeamOnly?: boolean;
 }
 
-export const PlayerPicker = ({ teamName, players, onSelect, onCancel, isSubstitution, subStep }: PlayerPickerProps) => {
+export const PlayerPicker = ({ teamName, players, onSelect, onCancel, isSubstitution, subStep, title, hideTeamOnly }: PlayerPickerProps) => {
+
+    const hasPlayers = players.starters.length + players.bench.length + players.other.length > 0;
 
     const getTitle = () => {
+        if (title) return title;
         if (!isSubstitution) return 'Select Player';
         return subStep === 'OUT' ? 'Who is coming OFF?' : 'Who is coming ON?';
     };
@@ -67,15 +74,25 @@ export const PlayerPicker = ({ teamName, players, onSelect, onCancel, isSubstitu
                     {renderGrid(players.bench, "Bench")}
                     {renderGrid(players.other, "Squad")}
 
-                    {/* Unknown Player Option */}
-                    <div className="mt-4 pt-4 border-t border-slate-800">
-                        <button
-                            onClick={() => onSelect('unknown')}
-                            className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 border-dashed flex items-center justify-center gap-2 opacity-50 hover:opacity-100 transition-opacity"
-                        >
-                            <span className="font-bold text-slate-400">Unknown Player?</span>
-                        </button>
-                    </div>
+                    {!hasPlayers && (
+                        <p className="text-sm text-slate-400 text-center py-4">
+                            No registered players for this team yet.
+                        </p>
+                    )}
+
+                    {/* Team-only option: the score counts for the team now; the player can be
+                        attached from the Match Events list once the organiser has the details. */}
+                    {!hideTeamOnly && (
+                        <div className="mt-4 pt-4 border-t border-slate-800">
+                            <button
+                                onClick={() => onSelect('unknown')}
+                                className={`w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 border-dashed flex flex-col items-center justify-center gap-0.5 transition-opacity ${hasPlayers ? 'opacity-60 hover:opacity-100' : ''}`}
+                            >
+                                <span className="font-bold text-slate-200">Team only, add player later</span>
+                                <span className="text-xs text-slate-400">Counts for the team now</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

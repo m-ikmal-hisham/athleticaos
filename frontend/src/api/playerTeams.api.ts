@@ -13,8 +13,9 @@ export const removePlayerFromTeam = (playerId: string, teamId: string) =>
 export const removePlayersFromTeam = (playerIds: string[], teamId: string) =>
     api.delete('/player-teams/batch', { params: { playerIds: playerIds.join(','), teamId } });
 
-export const fetchTeamRoster = (teamId: string) =>
-    api.get(`/player-teams/team/${teamId}/roster`);
+/** A team's roster; with a tournamentId, only the players in its squad for that tournament. */
+export const fetchTeamRoster = (teamId: string, tournamentId?: string) =>
+    api.get(`/player-teams/team/${teamId}/roster`, { params: tournamentId ? { tournamentId } : undefined });
 
 export const fetchPlayerTeams = (playerId: string) =>
     api.get(`/player-teams/player/${playerId}/teams`);
