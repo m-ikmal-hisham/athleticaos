@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatCompetitionType, formatTournamentLevel, formatGender, formatTournamentStatus } from '@/utils/formatters';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStructure } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStructure, type Icon } from '@phosphor-icons/react';
 import { tournamentService } from '@/services/tournamentService';
 import { Tournament, TournamentStatus } from '@/types';
 import { Button } from '@/components/Button';
@@ -37,6 +37,14 @@ export default function TournamentDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('overview');
+    // The phone/tablet tab bar scrolls sideways; keep the active tab in view.
+    const tabBarRef = useRef<HTMLElement>(null);
+    useEffect(() => {
+        const bar = tabBarRef.current;
+        const active = bar?.querySelector<HTMLElement>('[aria-current="page"]');
+        if (!bar || !active) return;
+        bar.scrollTo({ left: active.offsetLeft - (bar.clientWidth - active.clientWidth) / 2, behavior: 'smooth' });
+    }, [activeTab]);
     const [standings, setStandings] = useState<StandingsResponse[]>([]);
     const [bracket, setBracket] = useState<BracketViewResponse | null>(null);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -171,10 +179,15 @@ export default function TournamentDetail() {
         );
     }
 
-    const tabs = [
+    const selectTab = (tabId: string) => {
+        setActiveTab(tabId);
+        navigate(`?tab=${tabId}`, { replace: true });
+    };
+
+    const tabs: { id: string; label: string; shortLabel?: string; icon: Icon }[] = [
         { id: 'overview', label: 'Overview', icon: Trophy },
         { id: 'teams', label: 'Teams', icon: Users },
-        { id: 'format', label: 'Format & Stages', icon: Gear },
+        { id: 'format', label: 'Format & Stages', shortLabel: 'Format', icon: Gear },
         { id: 'matches', label: 'Matches', icon: Play },
         { id: 'standings', label: 'Standings', icon: ListNumbers },
         { id: 'bracket', label: 'Bracket', icon: TreeStructure },
@@ -185,14 +198,14 @@ export default function TournamentDetail() {
 
     {/* Header */ }
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
             {/* Header */}
-            <GlassCard className="p-6 relative overflow-hidden">
+            <GlassCard className="p-4 md:p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
-                <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
+                <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-6">
+                    <div className="min-w-0 w-full md:w-auto">
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5 md:mb-2">
                             {tournament.seasonName && (
                                 <Badge variant="outline" className="flex items-center gap-1 bg-white/50 dark:bg-black/50 backdrop-blur-sm border-primary-500/20 text-primary-700 dark:text-primary-300">
                                     <Trophy className="w-3 h-3" />
@@ -203,27 +216,28 @@ export default function TournamentDetail() {
                                 {formatTournamentStatus(tournament.status)}
                             </Badge>
                         </div>
-                        <h1 className="text-4xl font-bold text-foreground mb-4 tracking-tight">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2 md:mb-3 tracking-tight leading-tight [overflow-wrap:anywhere]">
                             {tournament.name}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-6 text-sm text-slate-400">
-                            <div className="flex items-center gap-2">
-                                <CalendarBlank className="w-4 h-4 text-primary-400" />
+                        {/* One wrapping row: on phones the three items used to take a line each with a wide gap */}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-slate-500 dark:text-slate-400">
+                            <div className="flex items-center gap-1.5">
+                                <CalendarBlank className="w-4 h-4 text-primary-400 shrink-0" />
                                 <span>{new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-primary-400" />
-                                <span>{tournament.venue}</span>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <MapPin className="w-4 h-4 text-primary-400 shrink-0" />
+                                <span className="truncate">{tournament.venue}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Gear className="w-4 h-4 text-primary-400" />
+                            <div className="flex items-center gap-1.5">
+                                <Gear className="w-4 h-4 text-primary-400 shrink-0" />
                                 <span>{formatTournamentLevel(tournament.level)} • {formatCompetitionType(tournament.competitionType)}</span>
                             </div>
                         </div>
                     </div>
 
                     {isAdmin && (
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-2 md:gap-3 shrink-0">
                             {tournament.status === TournamentStatus.DRAFT && (
                                 <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
                             )}
@@ -267,29 +281,49 @@ export default function TournamentDetail() {
                 variant={confirmModal.variant}
             />
 
-            {/* Navigation Tabs */}
-            <div className="flex space-x-1 p-1.5 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-xl border border-white/20 dark:border-white/10 w-full overflow-x-auto shadow-sm">
-                <nav className="flex space-x-1 w-full min-w-max" aria-label="Tabs">
+            {/* Navigation Tabs. Below lg: the same blue icon-over-label bar as the public tournament
+                page, pinned to the top of the scrolling <main> and scrolling sideways when the seven tabs
+                do not fit. From lg: one row of equal-width tabs that always fits. */}
+            <nav
+                ref={tabBarRef}
+                aria-label="Tabs"
+                className="lg:hidden sticky top-0 z-20 flex overflow-x-auto gap-1 p-1.5 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+                {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => selectTab(tab.id)}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={`flex-1 min-w-[4.75rem] flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            <Icon className="w-5 h-5" weight={isActive ? 'fill' : 'regular'} />
+                            {tab.shortLabel ?? tab.label}
+                        </button>
+                    );
+                })}
+            </nav>
+            <div className="hidden lg:block p-1.5 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-xl border border-white/20 dark:border-white/10 shadow-sm">
+                <nav className="grid grid-cols-7 gap-1" aria-label="Tabs">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => {
-                                    setActiveTab(tab.id);
-                                    navigate(`?tab=${tab.id}`, { replace: true });
-                                }}
+                                onClick={() => selectTab(tab.id)}
                                 className={`
-                                    flex-1 min-w-[120px] py-2.5 px-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300
+                                    min-w-0 py-2.5 px-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 whitespace-nowrap transition-all duration-300
                                     ${isActive
                                         ? 'bg-blue-500/10 dark:bg-red-500/20 text-blue-700 dark:text-red-400 shadow-sm ring-1 ring-blue-500/20 dark:ring-red-500/20'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-slate-200'
                                     }
                                 `}
                             >
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-red-400' : ''}`} />
-                                {tab.label}
+                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-600 dark:text-red-400' : ''}`} />
+                                <span className="truncate">{tab.label}</span>
                             </button>
                         );
                     })}

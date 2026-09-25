@@ -312,44 +312,30 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                 </GlassCardDescription>
                             </div>
                         </div>
+                        {/* Category picker: pills that wrap onto a second line instead of a sideways
+                            scroller that cut the last category off on phones. */}
                         {categories.length > 0 && (
-                            <div className="flex gap-3 overflow-x-auto pb-2">
-                                {categories.map(cat => (
-                                    <div
-                                        key={cat.id}
-                                        onClick={() => setSelectedCategoryId(cat.id)}
-                                        className={clsx(
-                                            "cursor-pointer group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 min-w-[140px]",
-                                            selectedCategoryId === cat.id
-                                                ? "bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)]"
-                                                : "bg-background/40 border-white/10 hover:border-white/20 hover:bg-white/5"
-                                        )}
-                                    >
-                                        <div className={clsx(
-                                            "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                                            "bg-gradient-to-br from-white/10 to-transparent"
-                                        )} />
-
-                                        <div className="relative z-10 flex flex-col items-start gap-1">
-                                            <span className={clsx(
-                                                "text-sm font-bold tracking-tight",
-                                                selectedCategoryId === cat.id ? "text-primary" : "text-foreground/80"
-                                            )}>
-                                                {cat.name}
-                                            </span>
-                                            <span className={clsx(
-                                                "text-xs",
-                                                selectedCategoryId === cat.id ? "text-primary/70" : "text-muted-foreground"
-                                            )}>
-                                                Category
-                                            </span>
-                                        </div>
-
-                                        {selectedCategoryId === cat.id && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-primary/50" />
-                                        )}
-                                    </div>
-                                ))}
+                            <div className="flex flex-wrap gap-2 md:justify-end" role="tablist" aria-label="Category">
+                                {categories.map(cat => {
+                                    const isSelected = selectedCategoryId === cat.id;
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={isSelected}
+                                            onClick={() => setSelectedCategoryId(cat.id)}
+                                            className={clsx(
+                                                "px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border",
+                                                isSelected
+                                                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                                            )}
+                                        >
+                                            {cat.name}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
