@@ -26,6 +26,8 @@ interface MatchControlsProps {
     // Validation
     canStartMatch?: boolean;
     startMatchDisabledReason?: string;
+    /** Shown under Start Match without blocking it, e.g. "No lineups yet". */
+    startMatchNote?: string;
     isOneWayMatch?: boolean;
 }
 
@@ -47,6 +49,7 @@ export const MatchControls = ({
     onTimeUpdate,
     canStartMatch = true,
     startMatchDisabledReason,
+    startMatchNote,
     isOneWayMatch = false
 }: MatchControlsProps) => {
     if (!isAdmin) return null;
@@ -136,6 +139,11 @@ export const MatchControls = ({
                         {startMatchDisabledReason && (
                             <div className="text-[10px] text-red-500 bg-red-50 dark:bg-red-900/10 p-1.5 rounded border border-red-100 dark:border-red-900/20 flex items-start gap-1">
                                 <span className="font-bold">!</span> {startMatchDisabledReason}
+                            </div>
+                        )}
+                        {!startMatchDisabledReason && startMatchNote && (
+                            <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-1.5 rounded border border-amber-200 dark:border-amber-900/30">
+                                {startMatchNote}
                             </div>
                         )}
                     </div>

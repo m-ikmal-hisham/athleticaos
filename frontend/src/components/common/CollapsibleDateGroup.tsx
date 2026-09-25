@@ -39,14 +39,16 @@ export const CollapsibleDateGroup = ({ date, matchCount, open, onToggle, childre
 interface ExpandAllToggleProps {
     allOpen: boolean;
     onChange: (open: boolean) => void;
+    /** What the groups are called: "days" for a schedule, "pools" for standings. */
+    noun?: string;
 }
 
-export const ExpandAllToggle = ({ allOpen, onChange }: ExpandAllToggleProps) => (
+export const ExpandAllToggle = ({ allOpen, onChange, noun = 'days' }: ExpandAllToggleProps) => (
     <button
         type="button"
         onClick={() => onChange(!allOpen)}
         className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
     >
-        {allOpen ? 'Collapse all days' : 'Expand all days'}
+        {allOpen ? `Collapse all ${noun}` : `Expand all ${noun}`}
     </button>
 );

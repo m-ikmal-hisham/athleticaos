@@ -97,47 +97,9 @@ public class MatchEventServiceImpl implements MatchEventService {
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Team not found with ID: " + request.getTeamId()));
 
-                Player player = null;
-                if (request.getPlayerId() != null) {
-                        player = playerRepository.findById(request.getPlayerId())
-                                        .orElseThrow(
-                                                        () -> new EntityNotFoundException(
-                                                                        "Player not found with ID: " + request
-                                                                                        .getPlayerId()));
-
-                        if (playerTeamRepository == null) {
-                                throw new IllegalStateException(
-                                                "System Error: playerTeamRepository is not injected (null)");
-                        }
-
-                        // Validate player belongs to the team (Global Roster OR Tournament Roster)
-                        boolean isPlayerInTeam = playerTeamRepository.existsByPlayerIdAndTeamId(player.getId(),
-                                        team.getId());
-
-                        if (!isPlayerInTeam) {
-                                // Check tournament roster
-                                if (tournamentPlayerRepository == null) {
-                                        throw new IllegalStateException(
-                                                        "System Error: tournamentPlayerRepository is not injected (null)");
-                                }
-                                if (match.getTournament() == null) {
-                                        throw new IllegalStateException("Data Error: Match Tournament is null");
-                                }
-
-                                boolean isInTournamentRoster = tournamentPlayerRepository
-                                                .findByTournamentIdAndTeamIdAndPlayerId(
-                                                                match.getTournament().getId(), team.getId(),
-                                                                player.getId())
-                                                .isPresent();
-
-                                if (!isInTournamentRoster) {
-                                        throw new IllegalArgumentException(
-                                                        "Selected player " + player.getId()
-                                                                        + " is not assigned to team "
-                                                                        + team.getName());
-                                }
-                        }
-                }
+                Player player = request.getPlayerId() != null
+                                ? resolveTeamPlayer(match, team, request.getPlayerId())
+                                : null;
 
                 // Validate that the team is part of the match
                 boolean isHomeTeam = match.getHomeTeam() != null
@@ -280,6 +242,43 @@ public class MatchEventServiceImpl implements MatchEventService {
                 }
         }
 
+        /**
+         * The player, provided they are on the team's roster or its squad for this tournament.
+         * Shared by recording an event and attaching a player to one afterwards.
+         */
+        private Player resolveTeamPlayer(Match match, Team team, UUID playerId) {
+                Player player = playerRepository.findById(playerId)
+                                .orElseThrow(() -> new EntityNotFoundException("Player not found with ID: " + playerId));
+
+                if (playerTeamRepository == null) {
+                        throw new IllegalStateException("System Error: playerTeamRepository is not injected (null)");
+                }
+
+                // Validate player belongs to the team (Global Roster OR Tournament Roster)
+                if (playerTeamRepository.existsByPlayerIdAndTeamId(player.getId(), team.getId())) {
+                        return player;
+                }
+                if (tournamentPlayerRepository == null) {
+                        throw new IllegalStateException("System Error: tournamentPlayerRepository is not injected (null)");
+                }
+                if (match.getTournament() == null) {
+                        throw new IllegalStateException("Data Error: Match Tournament is null");
+                }
+                boolean isInTournamentRoster = tournamentPlayerRepository
+                                .findByTournamentIdAndTeamIdAndPlayerId(match.getTournament().getId(), team.getId(),
+                                                player.getId())
+                                .isPresent();
+                if (!isInTournamentRoster) {
+                        // A 400 through GlobalExceptionHandler; the message is shown to the scorer as-is.
+                        String name = player.getPerson() != null
+                                        ? (player.getPerson().getFirstName() + " " + player.getPerson().getLastName()).trim()
+                                        : "This player";
+                        throw new IllegalArgumentException(name + " is not in " + team.getName()
+                                        + "'s roster or squad for this tournament. Add them to the squad first, then try again.");
+                }
+                return player;
+        }
+
         @Override
         @Transactional
         @SuppressWarnings("null")
@@ -340,6 +339,13 @@ public class MatchEventServiceImpl implements MatchEventService {
                 }
                 if (request.getNotes() != null) {
                         event.setNotes(request.getNotes());
+                }
+                // A score keyed in against the team only (no lineup yet) gets its player later.
+                // Same permission and grace-period rules as any other edit, checked above.
+                if (request.isPlayerIdSet()) {
+                        event.setPlayer(request.getPlayerId() != null
+                                        ? resolveTeamPlayer(event.getMatch(), event.getTeam(), request.getPlayerId())
+                                        : null);
                 }
 
                 MatchEvent savedEvent = matchEventRepository.saveAndFlush(event);

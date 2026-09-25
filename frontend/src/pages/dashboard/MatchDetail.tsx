@@ -8,6 +8,7 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
 import { updateMatch, updateMatchStatus, updateMatchEvent, recordUnplayedResult } from '@/api/matches.api';
+import { fetchTeamRoster } from '@/api/playerTeams.api';
 import { getMatchOfficials, MatchOfficialDTO } from '@/api/officials.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { Modal } from '@/components/Modal';
@@ -51,6 +52,14 @@ const getEventIcon = (type: string) => {
     }
 };
 
+/** The fields of /player-teams/team/{id}/roster the player picker needs. */
+interface PlayerInTeam {
+    playerId: string;
+    firstName?: string;
+    lastName?: string;
+    jerseyNumber?: number | null;
+}
+
 export const MatchDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -93,6 +102,34 @@ export const MatchDetail = () => {
         }
     }, [selectedMatch?.tournamentId]);
 
+    // Each team's squad for this tournament: who the picker offers when there is no lineup. It is
+    // the same set the backend accepts for an event, so a pick can no longer be rejected for being
+    // on another team of the same club (a school's U14 players under its U16 side, say).
+    const [teamSquads, setTeamSquads] = useState<Record<string, { id: string; name: string; number: number }[]>>({});
+    useEffect(() => {
+        const tournamentId = selectedMatch?.tournamentId;
+        const teamIds = [selectedMatch?.homeTeamId, selectedMatch?.awayTeamId].filter((t): t is string => !!t);
+        if (teamIds.length === 0) return;
+        let active = true;
+        const toPicker = (rows: PlayerInTeam[]) => rows.map(r => ({
+            id: r.playerId,
+            name: `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim(),
+            number: r.jerseyNumber || 0,
+        }));
+        Promise.all(teamIds.map(async teamId => {
+            // Squad for this tournament first; a team with no squad registered falls back to its
+            // club roster, which the backend also accepts.
+            const squad = (await fetchTeamRoster(teamId, tournamentId).catch(() => ({ data: [] }))).data as PlayerInTeam[];
+            const rows = squad.length > 0 || !tournamentId
+                ? squad
+                : (await fetchTeamRoster(teamId).catch(() => ({ data: [] }))).data as PlayerInTeam[];
+            return [teamId, toPicker(rows).sort((a, b) => (a.number || 999) - (b.number || 999))] as const;
+        })).then(entries => {
+            if (active) setTeamSquads(Object.fromEntries(entries));
+        });
+        return () => { active = false; };
+    }, [selectedMatch?.tournamentId, selectedMatch?.homeTeamId, selectedMatch?.awayTeamId]);
+
     // Timer State
     const [isHalfTime, setIsHalfTime] = useState<boolean>(false);
     // Track match time in SECONDS for smoother updates
@@ -119,6 +156,8 @@ export const MatchDetail = () => {
 
     // Event Editing State
     const [editingEvent, setEditingEvent] = useState<{ id: string; minute: number } | null>(null);
+    // A team-only score (recorded before lineups were in) waiting for its player.
+    const [assigningEvent, setAssigningEvent] = useState<{ id: string; teamId: string; teamName: string } | null>(null);
 
     // Detect format from match duration (heuristic)
     const detectFormat = (): RugbyFormat => {
@@ -323,6 +362,21 @@ export const MatchDetail = () => {
         }
     };
 
+    const handleAssignPlayer = async (playerId: string) => {
+        const target = assigningEvent;
+        setAssigningEvent(null);
+        if (!target || !selectedMatch || playerId === 'unknown') return;
+
+        try {
+            await updateMatchEvent(target.id, { playerId });
+            await loadMatchDetail(selectedMatch.id);
+            showToast.success('Player added to the score');
+        } catch (error: any) {
+            console.error('Failed to add player to event:', error);
+            showToast.error(error?.response?.data?.message || 'Could not add the player');
+        }
+    };
+
     const submitEvent = async (action: any) => {
         try {
             // Find player details if available
@@ -433,7 +487,9 @@ export const MatchDetail = () => {
         setConfirmModal({
             isOpen: true,
             title: 'Start Match',
-            message: 'Change status to ONGOING and start timer?',
+            message: hasBothLineups
+                ? 'Change status to ONGOING and start timer?'
+                : 'No lineups yet. Scores will be saved against the team, and you can add the player to each score later from Match Events. Start the match and timer?',
             onConfirm: async () => {
                 await updateMatchStatus(selectedMatch!.id, 'ONGOING');
                 await loadMatchDetail(selectedMatch!.id);
@@ -572,11 +628,16 @@ export const MatchDetail = () => {
 
     // Filters for Logic
     const isMatchLocked = selectedMatch.status === 'CANCELLED' || (selectedMatch.status === 'COMPLETED' && !isAdmin);
+    const hasBothLineups =
+        matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
+        matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0);
 
-    const getPlayersForPicker = () => {
-        if (!draftAction?.teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
+    const getPlayersForPicker = () => getPlayersForTeam(draftAction?.teamId);
 
-        const isHome = draftAction.teamId === selectedMatch.homeTeamId;
+    const getPlayersForTeam = (teamId?: string) => {
+        if (!teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
+
+        const isHome = teamId === selectedMatch.homeTeamId;
         const currentLineup = isHome ? matchLineups.home : matchLineups.away;
 
         // Helper to format
@@ -600,17 +661,8 @@ export const MatchDetail = () => {
             return { starters, bench, other: [] };
         }
 
-        // Fallback: All players in "Other" or classify if we can (but we can't if no lineup)
-        const teamOrgId = isHome ? selectedMatch.homeTeamOrgId : selectedMatch.awayTeamOrgId;
-        const all = players
-            .filter(p => p.organisationId === teamOrgId)
-            .map(p => ({
-                id: p.id,
-                name: `${p.firstName} ${p.lastName}`,
-                number: 0
-            }));
-
-        return { starters: [], bench: [], other: all };
+        // No lineup: the team's squad for this tournament (loaded above).
+        return { starters: [], bench: [], other: teamSquads[teamId] ?? [] };
     };
 
     const renderTeamEventSummary = (teamId: string) => events
@@ -819,15 +871,11 @@ export const MatchDetail = () => {
                                 onTimerAdjust={handleTimerAdjust}
                                 onTimeUpdate={(newSeconds) => setMatchTimeSeconds(newSeconds)}
                                 isOneWayMatch={!!isOneWayMatch}
-                                canStartMatch={
-                                    matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
-                                    matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)
-                                }
-                                startMatchDisabledReason={
-                                    (!(matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) && matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0)))
-                                        ? "Lineups & Subs must be filled with registered players."
-                                        : undefined
-                                }
+                                // Lineups are no longer required to start: without them, scores are
+                                // saved against the team and players are added to each score later.
+                                startMatchNote={hasBothLineups
+                                    ? undefined
+                                    : 'No lineups yet. Scores will be saved against the team; add players to them later.'}
                             />
                         </div>
 
@@ -1010,8 +1058,16 @@ export const MatchDetail = () => {
                                                                                 );
                                                                             })()}
                                                                         </div>
+                                                                    ) : isAdmin && !isMatchLocked && !['SCRUM', 'LINEOUT'].includes(event.eventType) ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setAssigningEvent({ id: event.id, teamId: event.teamId, teamName: event.teamName })}
+                                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md border border-dashed border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 whitespace-nowrap"
+                                                                        >
+                                                                            + Add player
+                                                                        </button>
                                                                     ) : (
-                                                                        <span>-</span>
+                                                                        <span>{['SCRUM', 'LINEOUT'].includes(event.eventType) ? '-' : 'Team'}</span>
                                                                     )
                                                                 )}
                                                             </TableCell>
@@ -1279,6 +1335,18 @@ export const MatchDetail = () => {
                     onCancel={() => { setInteractionState('IDLE'); setDraftAction(null); setSubStep('OUT'); }}
                     isSubstitution={draftAction.type === 'SUBSTITUTION'}
                     subStep={subStep}
+                />
+            )}
+
+            {/* Player Picker: attach a player to a team-only score */}
+            {assigningEvent && (
+                <PlayerPicker
+                    teamName={assigningEvent.teamName || 'Team'}
+                    players={getPlayersForTeam(assigningEvent.teamId)}
+                    onSelect={handleAssignPlayer}
+                    onCancel={() => setAssigningEvent(null)}
+                    title="Who scored this?"
+                    hideTeamOnly
                 />
             )}
 
