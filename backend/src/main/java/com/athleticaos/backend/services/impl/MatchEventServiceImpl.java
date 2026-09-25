@@ -269,8 +269,12 @@ public class MatchEventServiceImpl implements MatchEventService {
                                                 player.getId())
                                 .isPresent();
                 if (!isInTournamentRoster) {
-                        throw new IllegalArgumentException(
-                                        "Selected player " + player.getId() + " is not assigned to team " + team.getName());
+                        // A 400 through GlobalExceptionHandler; the message is shown to the scorer as-is.
+                        String name = player.getPerson() != null
+                                        ? (player.getPerson().getFirstName() + " " + player.getPerson().getLastName()).trim()
+                                        : "This player";
+                        throw new IllegalArgumentException(name + " is not in " + team.getName()
+                                        + "'s roster or squad for this tournament. Add them to the squad first, then try again.");
                 }
                 return player;
         }

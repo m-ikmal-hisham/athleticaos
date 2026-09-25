@@ -8,6 +8,7 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
 import { updateMatch, updateMatchStatus, updateMatchEvent, recordUnplayedResult } from '@/api/matches.api';
+import { fetchTeamRoster } from '@/api/playerTeams.api';
 import { getMatchOfficials, MatchOfficialDTO } from '@/api/officials.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { Modal } from '@/components/Modal';
@@ -51,6 +52,14 @@ const getEventIcon = (type: string) => {
     }
 };
 
+/** The fields of /player-teams/team/{id}/roster the player picker needs. */
+interface PlayerInTeam {
+    playerId: string;
+    firstName?: string;
+    lastName?: string;
+    jerseyNumber?: number | null;
+}
+
 export const MatchDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -92,6 +101,34 @@ export const MatchDetail = () => {
                 .catch(err => console.error("Failed to load format config", err));
         }
     }, [selectedMatch?.tournamentId]);
+
+    // Each team's squad for this tournament: who the picker offers when there is no lineup. It is
+    // the same set the backend accepts for an event, so a pick can no longer be rejected for being
+    // on another team of the same club (a school's U14 players under its U16 side, say).
+    const [teamSquads, setTeamSquads] = useState<Record<string, { id: string; name: string; number: number }[]>>({});
+    useEffect(() => {
+        const tournamentId = selectedMatch?.tournamentId;
+        const teamIds = [selectedMatch?.homeTeamId, selectedMatch?.awayTeamId].filter((t): t is string => !!t);
+        if (teamIds.length === 0) return;
+        let active = true;
+        const toPicker = (rows: PlayerInTeam[]) => rows.map(r => ({
+            id: r.playerId,
+            name: `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim(),
+            number: r.jerseyNumber || 0,
+        }));
+        Promise.all(teamIds.map(async teamId => {
+            // Squad for this tournament first; a team with no squad registered falls back to its
+            // club roster, which the backend also accepts.
+            const squad = (await fetchTeamRoster(teamId, tournamentId).catch(() => ({ data: [] }))).data as PlayerInTeam[];
+            const rows = squad.length > 0 || !tournamentId
+                ? squad
+                : (await fetchTeamRoster(teamId).catch(() => ({ data: [] }))).data as PlayerInTeam[];
+            return [teamId, toPicker(rows).sort((a, b) => (a.number || 999) - (b.number || 999))] as const;
+        })).then(entries => {
+            if (active) setTeamSquads(Object.fromEntries(entries));
+        });
+        return () => { active = false; };
+    }, [selectedMatch?.tournamentId, selectedMatch?.homeTeamId, selectedMatch?.awayTeamId]);
 
     // Timer State
     const [isHalfTime, setIsHalfTime] = useState<boolean>(false);
@@ -624,17 +661,8 @@ export const MatchDetail = () => {
             return { starters, bench, other: [] };
         }
 
-        // Fallback: All players in "Other" or classify if we can (but we can't if no lineup)
-        const teamOrgId = isHome ? selectedMatch.homeTeamOrgId : selectedMatch.awayTeamOrgId;
-        const all = players
-            .filter(p => p.organisationId === teamOrgId)
-            .map(p => ({
-                id: p.id,
-                name: `${p.firstName} ${p.lastName}`,
-                number: 0
-            }));
-
-        return { starters: [], bench: [], other: all };
+        // No lineup: the team's squad for this tournament (loaded above).
+        return { starters: [], bench: [], other: teamSquads[teamId] ?? [] };
     };
 
     const renderTeamEventSummary = (teamId: string) => events

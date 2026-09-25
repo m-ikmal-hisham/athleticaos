@@ -137,7 +137,7 @@ class MatchEventServiceImplTest {
 
         assertThatThrownBy(() -> service.updateEvent(teamOnlyTry.getId(), withPlayer(player.getId()), null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not assigned to team");
+                .hasMessage("Alex Test is not in Home XV's roster or squad for this tournament. Add them to the squad first, then try again.");
         assertThat(teamOnlyTry.getPlayer()).isNull();
         verify(matchEventRepository, never()).saveAndFlush(any());
     }
