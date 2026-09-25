@@ -625,33 +625,37 @@ export const MatchDetail = () => {
             const isCard = event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD';
 
             return (
-                <div key={`${event.id}-${index}`} className="flex items-center justify-between gap-2 text-[11px] md:text-xs">
-                    <span className="min-w-0 truncate text-slate-600 dark:text-slate-300">
-                        <span className="font-semibold">{playerName}</span>
-                        <span className="text-slate-400"> · {label}</span>
-                    </span>
-                    <span className={`shrink-0 font-bold ${isCard ? (event.eventType === 'RED_CARD' ? 'text-red-500' : 'text-yellow-600 dark:text-yellow-400') : 'text-slate-500 dark:text-slate-400'}`}>
-                        {event.minute ?? 0}'{!isCard ? ` · +${SCORING_RULES[event.eventType] || 0}` : ''}
-                    </span>
+                <div key={`${event.id}-${index}`} className="flex items-center gap-2 text-xs md:text-sm" title={`${event.minute ?? 0}' ${event.playerName ?? ''} · ${label}`}>
+                    <span className="shrink-0 w-7 text-right tabular-nums font-semibold text-slate-400">{event.minute ?? 0}'</span>
+                    <span className="flex-1 min-w-0 truncate font-semibold text-slate-700 dark:text-slate-200">{playerName}</span>
+                    {isCard ? (
+                        <span aria-label={label} className={`shrink-0 w-2.5 h-3.5 rounded-sm ${event.eventType === 'RED_CARD' ? 'bg-red-500' : 'bg-yellow-400'}`} />
+                    ) : (
+                        <span className="shrink-0 tabular-nums font-bold text-slate-500 dark:text-slate-400">+{SCORING_RULES[event.eventType] || 0}</span>
+                    )}
                 </div>
             );
         });
 
 
 
+    const homeEventLines = renderTeamEventSummary(selectedMatch.homeTeamId);
+    const awayEventLines = renderTeamEventSummary(selectedMatch.awayTeamId);
+
     return (
         <div className="space-y-6 max-w-[1600px] mx-auto pb-24">
 
             {/* Header & Controls */}
             <div className="flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
-                <div>
+                <div className="min-w-0 w-full">
                     <Breadcrumbs items={breadcrumbs} className="mb-2" />
-                    <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                        {selectedMatch.homeTeamName} <span className="text-muted-foreground text-xl">vs</span> {selectedMatch.awayTeamName}
+                    {/* Full team names wrap as a sentence instead of two stacked columns of oversized words */}
+                    <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground leading-snug [overflow-wrap:anywhere]">
+                        {selectedMatch.homeTeamName} <span className="text-muted-foreground text-base md:text-xl font-medium">vs</span> {selectedMatch.awayTeamName}
                     </h1>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1"><CalendarBlank className="w-4 h-4" /> {new Date(selectedMatch.matchDate).toLocaleDateString()}</div>
-                        <div className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedMatch.venue || 'TBA'}</div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs md:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1"><CalendarBlank className="w-4 h-4 shrink-0" /> {new Date(selectedMatch.matchDate).toLocaleDateString()}</div>
+                        <div className="flex items-center gap-1 min-w-0"><MapPin className="w-4 h-4 shrink-0" /> <span className="truncate">{selectedMatch.venue || 'TBA'}</span></div>
                     </div>
                 </div>
 
@@ -660,11 +664,11 @@ export const MatchDetail = () => {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex space-x-1 p-1 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/10 w-fit">
+            <div className="flex gap-1 p-1 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/10 w-full sm:w-fit">
                 <button
                     onClick={() => setActiveTab('overview')}
                     className={`
-                        px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all
+                        flex-1 sm:flex-none justify-center px-2 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all
                         ${activeTab === 'overview'
                             ? 'bg-white dark:bg-white/10 text-primary-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                             : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
@@ -677,7 +681,7 @@ export const MatchDetail = () => {
                 <button
                     onClick={() => setActiveTab('lineups')}
                     className={`
-                        px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all
+                        flex-1 sm:flex-none justify-center px-2 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all
                         ${activeTab === 'lineups'
                             ? 'bg-white dark:bg-white/10 text-primary-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                             : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
@@ -690,7 +694,7 @@ export const MatchDetail = () => {
                 <button
                     onClick={() => setActiveTab('moments')}
                     className={`
-                        px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all
+                        flex-1 sm:flex-none justify-center px-2 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all
                         ${activeTab === 'moments'
                             ? 'bg-white dark:bg-white/10 text-primary-600 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                             : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
@@ -711,36 +715,34 @@ export const MatchDetail = () => {
 
                         {/* Score Card */}
                         <GlassCard className="p-0 overflow-hidden">
-                            <GlassCardContent className="p-8 flex justify-between items-center relative z-10">
+                            <GlassCardContent className="p-4 md:p-8 relative z-10">
+                              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 md:gap-6">
                                 {/* Background texture or gradient for flair */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 dark:from-blue-500/10 dark:to-purple-500/10 pointer-events-none" />
 
-                                <div className="text-center relative z-10">
+                                <div className="text-center relative z-10 min-w-0">
                                     <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">HOME</h3>
                                     {selectedMatch.homeTeamLogoUrl && (
                                         <img
                                             src={getImageUrl(selectedMatch.homeTeamLogoUrl)}
                                             alt={`${selectedMatch.homeTeamName} logo`}
-                                            className="w-16 h-16 mx-auto mb-2 object-contain"
+                                            className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 object-contain"
                                         />
                                     )}
-                                    <div className="text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 mb-0.5 leading-none">
+                                    <div className="text-lg sm:text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 mb-0.5 leading-tight truncate" title={selectedMatch.homeTeamName}>
                                         {selectedMatch.homeTeamShortName || selectedMatch.homeTeamName}
                                     </div>
                                     {selectedMatch.homeTeamShortName && (
-                                        <div className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-[150px] md:max-w-[200px] truncate mx-auto leading-tight">
+                                        <div className="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 truncate mx-auto leading-tight">
                                             {selectedMatch.homeTeamName || ''}
                                         </div>
                                     )}
-                                    <div className="mt-4 w-48 md:w-64 space-y-1.5 rounded-xl bg-white/50 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
-                                        {renderTeamEventSummary(selectedMatch.homeTeamId)}
-                                    </div>
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-10">
-                                    <div className="text-5xl md:text-7xl font-black font-mono tracking-tighter text-blue-600 dark:text-blue-400 flex items-center gap-4 md:gap-8 drop-shadow-sm">
+                                    <div className="text-4xl md:text-6xl font-black font-mono tracking-tighter text-blue-600 dark:text-blue-400 flex items-center gap-2 md:gap-6 drop-shadow-sm">
                                         <span>{calculatedScores.homeScore}</span>
-                                        <span className="text-slate-300 dark:text-slate-700 text-3xl md:text-5xl font-light">-</span>
+                                        <span className="text-slate-300 dark:text-slate-700 text-2xl md:text-4xl font-light">-</span>
                                         <span className="text-red-600 dark:text-red-400">{calculatedScores.awayScore}</span>
                                     </div>
                                     <div className="mt-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-xs font-medium text-slate-500 dark:text-slate-300 backdrop-blur-sm border border-slate-200 dark:border-white/10">
@@ -763,27 +765,38 @@ export const MatchDetail = () => {
                                     )}
                                 </div>
 
-                                <div className="text-center relative z-10">
+                                <div className="text-center relative z-10 min-w-0">
                                     <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">AWAY</h3>
                                     {selectedMatch.awayTeamLogoUrl && (
                                         <img
                                             src={getImageUrl(selectedMatch.awayTeamLogoUrl)}
                                             alt={`${selectedMatch.awayTeamName} logo`}
-                                            className="w-16 h-16 mx-auto mb-2 object-contain"
+                                            className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 object-contain"
                                         />
                                     )}
-                                    <div className="text-2xl md:text-3xl font-black text-red-600 dark:text-red-400 mb-0.5 leading-none">
+                                    <div className="text-lg sm:text-2xl md:text-3xl font-black text-red-600 dark:text-red-400 mb-0.5 leading-tight truncate" title={selectedMatch.awayTeamName}>
                                         {selectedMatch.awayTeamShortName || selectedMatch.awayTeamName}
                                     </div>
                                     {selectedMatch.awayTeamShortName && (
-                                        <div className="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 max-w-[150px] md:max-w-[200px] truncate mx-auto leading-tight">
+                                        <div className="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 truncate mx-auto leading-tight">
                                             {selectedMatch.awayTeamName}
                                         </div>
                                     )}
-                                    <div className="mt-4 w-48 md:w-64 space-y-1.5 rounded-xl bg-white/50 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-3 text-left">
-                                        {renderTeamEventSummary(selectedMatch.awayTeamId)}
-                                    </div>
                                 </div>
+                              </div>
+
+                              {/* Scorers and cards: their own row under the score, one column per team, so
+                                  fixed-width lists no longer push the away side off the card on phones. */}
+                              {(homeEventLines.length > 0 || awayEventLines.length > 0) && (
+                              <div className="grid grid-cols-2 gap-2 md:gap-6 mt-4">
+                                  <div className="min-w-0 space-y-1.5 rounded-xl bg-white/50 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-2.5 md:p-3 text-left self-start">
+                                      {homeEventLines.length > 0 ? homeEventLines : <p className="text-xs text-slate-400">—</p>}
+                                  </div>
+                                  <div className="min-w-0 space-y-1.5 rounded-xl bg-white/50 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-2.5 md:p-3 text-left self-start">
+                                      {awayEventLines.length > 0 ? awayEventLines : <p className="text-xs text-slate-400">—</p>}
+                                  </div>
+                              </div>
+                              )}
                             </GlassCardContent>
                         </GlassCard>
 

@@ -204,12 +204,14 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2">
+            {/* Title on its own line and actions that wrap: in one row, five buttons pushed the
+                title into two lines and ran past the card on phones. */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2 shrink-0">
                     <Trophy className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-bold text-white uppercase tracking-wider">Knockout Brackets</h3>
+                    <h3 className="text-base md:text-lg font-bold text-white uppercase tracking-wider whitespace-nowrap">Knockout Brackets</h3>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 [&>button]:whitespace-nowrap">
                     {bracketGroups.length > 0 && (
                         <Button
                             size="sm"
@@ -365,7 +367,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 return (
                 <GlassCard key={bracket.id} className="border-t-4 border-t-primary transition-all duration-300">
                     <GlassCardHeader
-                        className={`py-3.5 px-5 flex flex-row items-center justify-between ${isExpanded ? 'border-b border-white/10' : ''}`}
+                        className={`py-3 px-3 md:py-3.5 md:px-5 flex flex-row items-center justify-between gap-2 ${isExpanded ? 'border-b border-white/10' : ''}`}
                     >
                         <button
                             type="button"
@@ -378,13 +380,16 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                 className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                                 aria-hidden="true"
                             />
-                            <GlassCardTitle className="text-base font-bold tracking-tight uppercase truncate">
+                            {/* Title above the count, so the count no longer squeezes the title to "C…" */}
+                            <span className="min-w-0 flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                            <GlassCardTitle className="text-sm md:text-base font-bold tracking-tight uppercase truncate">
                                 {bracket.title}
                             </GlassCardTitle>
-                            <span className="text-xs font-normal normal-case text-muted-foreground shrink-0">
+                            <span className="text-xs font-normal normal-case text-muted-foreground whitespace-nowrap">
                                 {bracket.rounds.length} {bracket.rounds.length === 1 ? 'round' : 'rounds'}
                                 {' · '}
                                 {matchCount} {matchCount === 1 ? 'match' : 'matches'}
+                            </span>
                             </span>
                         </button>
                         <Button
@@ -392,18 +397,19 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             size="sm"
                             onClick={() => setBracketToDelete(bracket.id)}
                             className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
+                            aria-label="Delete bracket"
                         >
-                            <Trash className="w-4 h-4 mr-1" /> Delete Bracket
+                            <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete Bracket</span>
                         </Button>
                     </GlassCardHeader>
                     <GlassCardContent
                         id={`bracket-panel-${bracket.id}`}
                         hidden={!isExpanded}
-                        className="p-6 overflow-x-auto"
+                        className="p-3 md:p-6 overflow-x-auto"
                     >
-                        <div className="flex gap-8 min-w-max pb-2">
+                        <div className="flex gap-4 md:gap-8 min-w-max pb-2">
                             {bracket.rounds.map((round, roundIdx) => (
-                                <div key={round.id || round.name} className="w-72 shrink-0 flex flex-col">
+                                <div key={round.id || round.name} className="w-64 md:w-72 shrink-0 flex flex-col">
                                     <div className="text-xs font-black uppercase tracking-wider text-primary mb-4 text-center pb-2 border-b border-white/10 flex items-center justify-center gap-1.5">
                                         <span>{round.name}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (

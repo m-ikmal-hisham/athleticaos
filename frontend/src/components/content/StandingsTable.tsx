@@ -59,7 +59,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
 
     const SortableHeader = ({ field, label, align = 'center', hiddenOnMobile = false }: { field: SortField, label: string, align?: 'left' | 'center', hiddenOnMobile?: boolean }) => (
         <th
-            className={`px-3 py-3 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/5 transition-colors select-none ${align === 'left' ? 'text-left' : 'text-center'} ${hiddenOnMobile ? 'hidden sm:table-cell' : ''}`}
+            className={`px-1.5 sm:px-3 py-3 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/5 transition-colors select-none ${align === 'left' ? 'text-left' : 'text-center'} ${hiddenOnMobile ? 'hidden sm:table-cell' : ''}`}
             onClick={() => handleSort(field)}
         >
             <div className={`flex items-center gap-1 ${align === 'center' ? 'justify-center' : ''}`}>
@@ -93,12 +93,12 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-100/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                                     <tr>
-                                        <th className="px-4 py-3 text-left w-12">Pos</th>
+                                        <th className="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">Pos</th>
                                         <SortableHeader field="teamName" label="Team" align="left" />
                                         <SortableHeader field="played" label="PLD" />
                                         <SortableHeader field="won" label="W" />
-                                        <SortableHeader field="drawn" label="D" />
-                                        <SortableHeader field="lost" label="L" />
+                                        <SortableHeader field="drawn" label="D" hiddenOnMobile />
+                                        <SortableHeader field="lost" label="L" hiddenOnMobile />
                                         <SortableHeader field="pointsFor" label="PF" hiddenOnMobile />
                                         <SortableHeader field="pointsAgainst" label="PA" hiddenOnMobile />
                                         <SortableHeader field="pointsDiff" label="+/-" />
@@ -108,16 +108,16 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                     {poolStandings.map((team, idx) => (
                                         <tr key={team.teamId} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors group">
-                                            <td className="px-4 py-4 font-mono font-bold text-slate-400 dark:text-slate-500">
+                                            <td className="px-2 sm:px-4 py-2.5 sm:py-4 font-mono font-bold text-slate-400 dark:text-slate-500">
                                                 {idx + 1}
                                             </td>
-                                            <td className="px-3 py-4">
+                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 max-w-0 w-full">
                                                 <Link
                                                     to={`/dashboard/teams/${team.teamId}`}
-                                                    className="flex items-center gap-4 group/link"
+                                                    className="flex items-center gap-2 sm:gap-4 group/link min-w-0"
                                                 >
                                                     {/* Transparent Logo Placeholder */}
-                                                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                                                    <div className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center">
                                                         {team.teamLogoUrl ? (
                                                             <img
                                                                 src={getImageUrl(team.teamLogoUrl)}
@@ -125,37 +125,37 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                                                 className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300"
                                                             />
                                                         ) : (
-                                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
                                                                 <span className="text-sm font-bold text-slate-400">{team.teamName.charAt(0)}</span>
                                                             </div>
                                                         )}
                                                     </div>
 
                                                     {/* Text Logic: Priority Short Name, Small Full Name */}
-                                                    <div className="flex flex-col">
-                                                        <span className="text-lg font-black text-slate-800 dark:text-white leading-none group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400 transition-colors">
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight truncate group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400 transition-colors">
                                                             {team.teamShortName || team.teamName}
                                                         </span>
                                                         {team.teamShortName && (
-                                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[150px] sm:max-w-[200px]">
+                                                            <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                                                                 {team.teamName}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </Link>
                                             </td>
-                                            <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400 font-medium">{team.played}</td>
-                                            <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.won}</td>
-                                            <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.drawn}</td>
-                                            <td className="px-3 py-4 text-center text-slate-600 dark:text-slate-400">{team.lost}</td>
+                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center text-slate-600 dark:text-slate-400 font-medium">{team.played}</td>
+                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center text-slate-600 dark:text-slate-400">{team.won}</td>
+                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.drawn}</td>
+                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.lost}</td>
                                             <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsFor}</td>
                                             <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsAgainst}</td>
-                                            <td className="px-3 py-4 text-center font-medium">
+                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center font-medium">
                                                 <span className={`${team.pointsDiff > 0 ? "text-green-600 dark:text-green-400" : (team.pointsDiff < 0 ? "text-red-500 dark:text-red-400" : "text-slate-500")}`}>
                                                     {team.pointsDiff > 0 ? `+${team.pointsDiff}` : team.pointsDiff}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-4 text-center">
+                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center">
                                                 <span className="inline-block min-w-[2rem] py-1 px-2 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black">
                                                     {team.points}
                                                 </span>
