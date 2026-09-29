@@ -665,7 +665,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .logoUrl(UrlSanitizer.sanitize(tournament.getLogoUrl()))
                 .bannerUrl(UrlSanitizer.sanitize(tournament.getBannerUrl()))
                 .backgroundUrl(UrlSanitizer.sanitize(tournament.getBackgroundUrl()))
-                .livestreamUrl(tournament.getLivestreamUrl())
+                .livestreamUrl(tournament.firstLivestreamUrl())
                 .livestreamLinks(tournament.getLivestreamLinks())
                 .rugbyFormat(
                         tournament.getFormatConfig() != null ? tournament.getFormatConfig().getRugbyFormat() : null)

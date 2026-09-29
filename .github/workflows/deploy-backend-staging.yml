@@ -3,6 +3,14 @@ name: Deploy Backend to Staging
 on:
   push:
     branches: [staging]
+    # Only a release that changes the backend redeploys it. Every deploy stops and restarts the
+    # container (a short API outage), which frontend-only releases used to trigger during live
+    # events. The filter is the same one Backend CI uses. To redeploy the backend without a code
+    # change (e.g. after editing the server's .env.staging), run this workflow by hand:
+    # Actions > Deploy Backend to Staging > Run workflow, on the staging branch.
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend-staging.yml'
   workflow_dispatch:
 
 concurrency:
