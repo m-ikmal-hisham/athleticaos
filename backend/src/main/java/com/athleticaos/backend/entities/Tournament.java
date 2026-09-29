@@ -101,19 +101,22 @@ public class Tournament {
     @Column(name = "background_url")
     private String backgroundUrl;
 
-    /** Mirrors the first entry of livestreamLinks, for readers of the old single-link column. */
-    @Column(name = "livestream_url")
-    private String livestreamUrl;
-
     /** Ordered streams for the event (one per pitch or day, say). JSON so it loads with the row. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "livestream_links")
     private java.util.List<LivestreamLink> livestreamLinks;
 
-    /** Replaces the links and keeps livestream_url equal to the first one. */
+    /** Replaces the links; an empty list clears them. */
     public void applyLivestreamLinks(java.util.List<LivestreamLink> links) {
         this.livestreamLinks = links == null || links.isEmpty() ? null : links;
-        this.livestreamUrl = links == null || links.isEmpty() ? null : links.get(0).getUrl();
+    }
+
+    /**
+     * The first link's url, for API fields that still carry a single livestreamUrl. The old
+     * livestream_url column was dropped in V165; this is its replacement.
+     */
+    public String firstLivestreamUrl() {
+        return livestreamLinks == null || livestreamLinks.isEmpty() ? null : livestreamLinks.get(0).getUrl();
     }
 
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
