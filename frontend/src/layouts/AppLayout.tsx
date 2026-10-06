@@ -427,8 +427,8 @@ export const AppLayout = () => {
                                 isCollapsed ? "justify-center p-1" : "gap-3 p-2"
                             )}
                         >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
-                                <span className="font-bold text-white text-[10px]">
+                            <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
+                                <span className="font-bold text-white text-xs">
                                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                                 </span>
                             </div>
