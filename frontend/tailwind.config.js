@@ -11,6 +11,13 @@ export default {
                 sans: ['Inter', 'sans-serif'],
                 display: ['Inter', 'sans-serif'],
             },
+            opacity: {
+                12: '0.12',
+                24: '0.24',
+                28: '0.28',
+                72: '0.72',
+                92: '0.92',
+            },
             colors: {
                 // Semantic Tokens
                 background: 'var(--bg-base)',
@@ -21,6 +28,13 @@ export default {
                 // Glass & Panels
                 'glass-bg': 'var(--bg-glass)',
                 'glass-border': 'var(--border-glass)',
+
+                // Palette tokens
+                navy: '#0047AB',
+                crimson: '#C1121F',
+                'deep-navy': '#0D1B2A',
+                'navy-tint': '#8CACD9',
+                'crimson-tint': '#D7656D',
 
                 // Brand Colors (AthleticaOS Rugby)
                 primary: {
