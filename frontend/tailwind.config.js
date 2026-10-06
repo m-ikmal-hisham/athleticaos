@@ -12,6 +12,8 @@ export default {
                 display: ['Inter', 'sans-serif'],
             },
             opacity: {
+                4: '0.04',
+                6: '0.06',
                 12: '0.12',
                 24: '0.24',
                 28: '0.28',

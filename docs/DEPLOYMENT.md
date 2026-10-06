@@ -30,3 +30,19 @@ Typical `.env` configuration:
     -   Backend: `mvn clean package` -> Produces JAR -> Built into Docker Image.
     -   Frontend: `npm run build` -> Produces `dist/` -> Served via Nginx or embedded in Spring Boot (if combined, though separation is preferred).
 -   **Infrastructure**: Suitable for deployment on AWS ECS, DigitalOcean App Platform, or similar container services.
+
+## Contact form email
+The public contact form persists all incoming submissions in the PostgreSQL database (`contact_messages` table). When email delivery is enabled, it sends a notification email to the configured recipient via Spring Mail.
+
+In staging and production, email delivery remains disabled by default until SMTP credentials are provided. When ready to enable email delivery in production, set the following environment variables:
+
+### Contact Form Variables
+- `CONTACT_MAIL_ENABLED`: Set to `true` to enable outbound email notifications (defaults to `false`).
+- `CONTACT_RECIPIENT`: Destination inbox for contact enquiries (e.g., `contact@athleticaos.com`).
+- `CONTACT_FROM`: Sender address in the `From` header (defaults to `no-reply@athleticaos.com`).
+
+### Spring Mail (SMTP) Variables
+- `SPRING_MAIL_HOST`: SMTP server host (e.g., `smtp.sendgrid.net`, `email-smtp.us-east-1.amazonaws.com`).
+- `SPRING_MAIL_PORT`: SMTP port (e.g., `587` for STARTTLS or `465` for SSL).
+- `SPRING_MAIL_USERNAME`: SMTP authentication username.
+- `SPRING_MAIL_PASSWORD`: SMTP authentication password or API key.

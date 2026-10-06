@@ -18,5 +18,13 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # Local development only. Catches all email sent by the backend (dev profile); web inbox at http://localhost:8025. Staging and production do not use this file.
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    container_name: athleticaos-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pgdata:
