@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 // Layouts & Guards — always needed, keep eager
 import { AppLayout } from '@/layouts/AppLayout';
@@ -22,7 +22,7 @@ const PlayersList = lazy(() => import('@/pages/public/PlayersList'));
 const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
-const Sponsors = lazy(() => import('@/pages/public/Sponsors'));
+const Partners = lazy(() => import('@/pages/public/Partners'));
 const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
 // Signup removed — registration is closed and route is disabled
 const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
@@ -86,6 +86,7 @@ const SubscriptionManagement = lazyNamed(() => import('@/pages/admin/monetizatio
 
 // ─── Misc ───────────────────────────────────────────────────────────
 const NotFoundPage = lazyNamed(() => import('@/pages/NotFoundPage'), 'NotFoundPage');
+const UnauthorizedPage = lazyNamed(() => import('@/pages/UnauthorizedPage'), 'UnauthorizedPage');
 
 
 
@@ -119,8 +120,12 @@ export const router = createBrowserRouter([
                 element: <HowItWorks />,
             },
             {
+                path: '/partners',
+                element: <Partners />,
+            },
+            {
                 path: '/sponsors',
-                element: <Sponsors />,
+                element: <Navigate to="/partners" replace />,
             },
             {
                 path: '/media/matches/:matchId',
@@ -157,7 +162,7 @@ export const router = createBrowserRouter([
     },
     {
         path: '/unauthorized',
-        element: <div>Unauthorized Placeholder</div>,
+        element: <UnauthorizedPage />,
     },
     {
         path: '/dashboard',

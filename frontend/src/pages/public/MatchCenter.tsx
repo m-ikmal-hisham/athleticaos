@@ -10,7 +10,7 @@ import { MomentumIndicator } from './match/MomentumIndicator';
 import { DisciplineImpactCard } from './match/DisciplineImpactCard';
 import { ScoringBreakdown } from './match/ScoringBreakdown';
 import { MatchLineups } from './match/MatchLineups';
-import { SponsorsSection } from '@/components/public/SponsorsSection';
+import { PartnersSection } from '@/components/public/PartnersSection';
 
 type MatchTab = 'lineups' | 'stats' | 'moments';
 
@@ -200,9 +200,9 @@ export default function MatchCenter() {
                 )}
             </div>
 
-            {/* Footer Sponsors */}
+            {/* Footer Partners */}
             <div className="pt-8 border-t border-slate-200/50 dark:border-white/5">
-                <SponsorsSection />
+                <PartnersSection variant="compact" />
             </div>
         </div>
     );
