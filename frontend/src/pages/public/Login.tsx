@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { Eye, EyeSlash, Info } from '@phosphor-icons/react';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -24,6 +24,7 @@ export const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuthStore();
+    const isSignedOut = new URLSearchParams(location.search).get('signedOut') === '1';
     const [isLoading, setIsLoading] = useState(false);
     const [lockoutMessage, setLockoutMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -137,6 +138,13 @@ export const Login = () => {
                                 <span className="text-sm font-semibold text-red-600 dark:text-red-400">Account Locked</span>
                             </div>
                             <p className="text-sm text-red-600 dark:text-red-400">{lockoutMessage}</p>
+                        </div>
+                    )}
+
+                    {isSignedOut && (
+                        <div className="p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/12 flex items-center gap-2.5 text-sm text-black/72 dark:text-white/72">
+                            <Info className="w-5 h-5 shrink-0" />
+                            <span>You have signed out.</span>
                         </div>
                     )}
 
