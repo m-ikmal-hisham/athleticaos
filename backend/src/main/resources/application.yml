@@ -27,6 +27,25 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
+  mail:
+    properties:
+      mail:
+        smtp:
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+management:
+  health:
+    mail:
+      enabled: false
+
+app:
+  contact:
+    mail-enabled: ${CONTACT_MAIL_ENABLED:false}
+    recipient: ${CONTACT_RECIPIENT:}
+    from: ${CONTACT_FROM:no-reply@athleticaos.com}
+
 
 server:
   port: 8080

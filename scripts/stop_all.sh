@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
+
+# shellcheck source=scripts/lib/dev_env.sh
+source "$SCRIPT_DIR/lib/dev_env.sh"
 
 BACKEND_PORT=8080
 FRONTEND_PORT=5173
@@ -11,8 +15,8 @@ echo "🛑 This will stop:"
 echo "   - All Maven processes (mvn/mvnw)"
 echo "   - Backend server on port ${BACKEND_PORT}"
 echo "   - Frontend server on port ${FRONTEND_PORT}"
-echo "   - All Node/Vite processes"
-echo "   - All Docker services via 'docker compose down'"
+echo "   - This project's Vite processes"
+echo "   - All Docker services (PostgreSQL, Mailpit) via 'docker compose down'"
 echo ""
 read -r -p "Are you sure you want to stop everything? (y/N): " CONFIRM
 
@@ -26,58 +30,42 @@ case "$CONFIRM" in
     ;;
 esac
 
-kill_port() {
-  local PORT=$1
-  echo "🔪 Killing any process on port ${PORT}..."
-  PIDS=$(lsof -ti tcp:${PORT} 2>/dev/null || true)
-  if [ -n "$PIDS" ]; then
-    echo "   Found PIDs: $PIDS"
-    kill -9 $PIDS 2>/dev/null || true
-    echo "   ✓ Killed processes on port ${PORT}"
-  else
-    echo "   ℹ No process found on port ${PORT}"
-  fi
-}
-
-kill_by_pattern() {
-  local PATTERN=$1
-  local DESCRIPTION=$2
-  echo "🔪 Killing ${DESCRIPTION}..."
-  PIDS=$(pgrep -f "$PATTERN" 2>/dev/null || true)
-  if [ -n "$PIDS" ]; then
-    echo "   Found PIDs: $PIDS"
-    kill -9 $PIDS 2>/dev/null || true
-    echo "   ✓ Killed ${DESCRIPTION}"
-  else
-    echo "   ℹ No ${DESCRIPTION} found"
-  fi
-}
-
 echo ""
 echo "🧹 Cleaning up all related processes..."
 
-# Kill Maven processes (including stuck builds)
-kill_by_pattern "mvn.*athleticaos" "Maven processes"
-kill_by_pattern "mvnw.*spring-boot:run" "Maven wrapper processes"
+# Stop Maven processes
+MAVEN_PIDS=$(pgrep -f "mvn.*athleticaos" 2>/dev/null || true)
+stop_pids "Maven processes" "$MAVEN_PIDS"
 
-# Kill Java processes (Spring Boot backend)
-kill_by_pattern "java.*athleticaos.*backend" "Spring Boot backend"
+MAVEN_WRAPPER_PIDS=$(pgrep -f "mvnw.*spring-boot:run" 2>/dev/null || true)
+stop_pids "Maven wrapper processes" "$MAVEN_WRAPPER_PIDS"
 
-# Kill Node/Vite processes (frontend)
-kill_by_pattern "vite.*athleticaos" "Vite frontend"
-kill_by_pattern "node.*vite" "Node Vite processes"
+# Stop Java processes (Spring Boot backend)
+JAVA_PIDS=$(pgrep -f "java.*athleticaos.*backend" 2>/dev/null || true)
+stop_pids "Spring Boot backend" "$JAVA_PIDS"
 
-# Kill processes on specific ports
+# Stop this project's Vite processes only
+VITE_PIDS=$(project_vite_pids)
+stop_pids "Project Vite" "$VITE_PIDS"
+
+# Stop processes on specific ports
 echo ""
 echo "🔌 Cleaning up ports..."
-kill_port "$BACKEND_PORT"
-kill_port "$FRONTEND_PORT"
+for PORT in $BACKEND_PORT $FRONTEND_PORT; do
+  PORT_PIDS=$(lsof -ti tcp:"${PORT}" 2>/dev/null || true)
+  if [ -n "$PORT_PIDS" ]; then
+    stop_pids "Process on port ${PORT}" "$PORT_PIDS"
+  else
+    echo "   ℹ No process found on port ${PORT}"
+  fi
+done
 
 # Stop Docker services
+# Never add -v here — it deletes the local database volume
 echo ""
-echo "🐳 Stopping Docker services..."
+echo "🐳 Stopping Docker services (PostgreSQL, Mailpit)..."
 docker compose down 2>/dev/null || true
 
 echo ""
 echo "✔️ All services stopped and cleaned up!"
-echo "ℹ️  You can now safely run ./start_all.sh"
+echo "You can now run ./scripts/start_all.sh"
