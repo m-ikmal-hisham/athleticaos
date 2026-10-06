@@ -8,6 +8,7 @@ import { TournamentPill } from '@/components/TournamentPill';
 import { ProfilePopup } from '@/components/ProfilePopup';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { PageLoader } from '@/components/PageLoader';
+import { isFeatureEnabled, FeatureKey } from '@/config/features';
 
 interface NavItem {
     label: string;
@@ -15,12 +16,14 @@ interface NavItem {
     icon: React.ReactNode;
     iconFilled: React.ReactNode;
     roles?: string[]; // Optional roles for role-based visibility
+    feature?: FeatureKey;
 }
 
 interface NavSection {
     title?: string;
     items: NavItem[];
     roles?: string[];
+    feature?: FeatureKey;
 }
 
 const navSections: NavSection[] = [
@@ -87,6 +90,7 @@ const navSections: NavSection[] = [
     },
     {
         title: "Federation",
+        feature: 'federation',
         roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
         items: [
             {
@@ -129,7 +133,8 @@ const navSections: NavSection[] = [
                 path: '/dashboard/analytics/teams',
                 icon: <ChartLine className="w-5 h-5" />,
                 iconFilled: <ChartLine className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+                feature: 'analytics'
             }
         ]
     },
@@ -141,7 +146,8 @@ const navSections: NavSection[] = [
                 path: '/dashboard/operations',
                 icon: <Wrench className="w-5 h-5" />,
                 iconFilled: <Wrench className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL'],
+                feature: 'operations'
             },
             {
                 label: 'Officials',
@@ -155,7 +161,8 @@ const navSections: NavSection[] = [
                 path: '/dashboard/monetization/subscriptions',
                 icon: <CurrencyDollar className="w-5 h-5" />,
                 iconFilled: <CurrencyDollar className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
+                feature: 'monetization'
             },
             {
                 label: 'Activity & Logs',
@@ -234,6 +241,25 @@ export const AppLayout = () => {
         // Optional: Force a repaint or re-evaluation if needed, but CSS vars usually update immediately
     }, [primaryColor, secondaryColor, accentColor]);
 
+    const visibleSections = navSections
+        .filter((section) => {
+            if (section.feature && !isFeatureEnabled(section.feature)) return false;
+            if (section.roles && section.roles.length > 0 && !section.roles.some((role) => user?.roles?.includes(role))) {
+                return false;
+            }
+            return true;
+        })
+        .map((section) => ({
+            ...section,
+            items: section.items.filter((item) => {
+                if (item.feature && !isFeatureEnabled(item.feature)) return false;
+                if (item.roles && item.roles.length > 0 && !item.roles.some((role) => user?.roles?.includes(role))) {
+                    return false;
+                }
+                return true;
+            }),
+        }))
+        .filter((section) => section.items.length > 0);
 
     return (
         <div className="min-h-screen flex">
@@ -323,7 +349,7 @@ export const AppLayout = () => {
 
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
-                        {navSections.map((section, sectionIndex) => (
+                        {visibleSections.map((section, sectionIndex) => (
                             <div key={section.title || sectionIndex} className={clsx("mb-6", isCollapsed && "mb-4")}>
                                 {section.title && !isCollapsed && (
                                     <h3 className="px-3 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-2">
@@ -332,11 +358,9 @@ export const AppLayout = () => {
                                 )}
                                 <ul className="space-y-0.5">
                                     {section.items.map((item) => {
-                                        if (item.roles && item.roles.length > 0 && !item.roles.some(role => user?.roles?.includes(role))) {
-                                            return null;
-                                        }
-
-                                        const isActive = location.pathname === item.path;
+                                        const isActive = item.path === '/dashboard'
+                                            ? location.pathname === '/dashboard'
+                                            : (location.pathname === item.path || location.pathname.startsWith(item.path + '/'));
                                         return (
                                             <li key={item.path}>
                                                 <Link
@@ -371,7 +395,7 @@ export const AppLayout = () => {
                                         );
                                     })}
                                 </ul>
-                                {isCollapsed && sectionIndex < navSections.length - 1 && (
+                                {isCollapsed && sectionIndex < visibleSections.length - 1 && (
                                     <div className="mx-2 my-2 border-b border-white/5" />
                                 )}
                             </div>
