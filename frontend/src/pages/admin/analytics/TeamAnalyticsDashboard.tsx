@@ -100,7 +100,7 @@ export const TeamAnalyticsDashboard = () => {
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <TrendUp className="w-5 h-5 text-purple-500" />
+                            <TrendUp className="w-5 h-5 text-navy dark:text-navy-tint" />
                             Scoring Trends
                         </CardTitle>
                     </CardHeader>
@@ -128,7 +128,7 @@ export const TeamAnalyticsDashboard = () => {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <User className="w-5 h-5 text-blue-500" />
+                            <User className="w-5 h-5 text-navy dark:text-navy-tint" />
                             Result Distribution
                         </CardTitle>
                     </CardHeader>

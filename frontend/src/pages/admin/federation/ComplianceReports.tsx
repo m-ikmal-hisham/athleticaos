@@ -26,9 +26,9 @@ export const ComplianceReports = () => {
 
     const getSeverityIcon = (severity: string) => {
         switch (severity) {
-            case 'HIGH': return <Warning className="w-5 h-5 text-red-500" />;
-            case 'MEDIUM': return <WarningCircle className="w-5 h-5 text-orange-500" />;
-            default: return <Info className="w-5 h-5 text-blue-500" />;
+            case 'HIGH': return <Warning className="w-5 h-5 text-crimson dark:text-crimson-tint" />;
+            case 'MEDIUM': return <WarningCircle className="w-5 h-5" />;
+            default: return <Info className="w-5 h-5 text-navy dark:text-navy-tint" />;
         }
     };
 

@@ -180,7 +180,7 @@ export const Login = () => {
                                     disabled={!!lockoutMessage}
                                     className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                                    {showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                             {errors.password?.message && (

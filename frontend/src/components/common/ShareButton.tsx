@@ -145,7 +145,7 @@ export const ShareButton = ({
                         className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
                     >
                         <div className="w-8 h-8 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2]">
-                            <FacebookLogo weight="fill" className="w-5 h-5" />
+                            <FacebookLogo className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-medium">Facebook</span>
                     </button>
@@ -155,7 +155,7 @@ export const ShareButton = ({
                         className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
                     >
                         <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-black dark:text-white">
-                            <XLogo weight="bold" className="w-4 h-4" />
+                            <XLogo className="w-4 h-4" />
                         </div>
                         <span className="text-sm font-medium">X / Twitter</span>
                     </button>
@@ -165,7 +165,7 @@ export const ShareButton = ({
                         className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-green-50 dark:hover:bg-green-900/20 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
                     >
                         <div className="w-8 h-8 rounded-full bg-[#25D366]/10 flex items-center justify-center text-[#25D366]">
-                            <WhatsappLogo weight="fill" className="w-5 h-5" />
+                            <WhatsappLogo className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-medium">WhatsApp</span>
                     </button>
@@ -175,7 +175,7 @@ export const ShareButton = ({
                         className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
                     >
                         <div className="w-8 h-8 rounded-full bg-[#ff0050]/10 flex items-center justify-center text-[#ff0050]">
-                            <TiktokLogo weight="fill" className="w-5 h-5" />
+                            <TiktokLogo className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-medium">TikTok</span>
                     </button>
@@ -185,7 +185,7 @@ export const ShareButton = ({
                         className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
                     >
                         <div className="w-8 h-8 rounded-full bg-[#E1306C]/10 flex items-center justify-center text-[#E1306C]">
-                            <InstagramLogo weight="fill" className="w-5 h-5" />
+                            <InstagramLogo className="w-5 h-5" />
                         </div>
                         <span className="text-sm font-medium">Instagram</span>
                     </button>
@@ -198,7 +198,7 @@ export const ShareButton = ({
                     className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200 transition-colors rounded-lg"
                 >
                     <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300">
-                        {copied ? <Check weight="bold" className="w-5 h-5 text-green-500" /> : <LinkIcon weight="bold" className="w-5 h-5" />}
+                        {copied ? <Check className="w-5 h-5 text-navy dark:text-navy-tint" /> : <LinkIcon className="w-5 h-5" />}
                     </div>
                     <span className="text-sm font-medium">{copied ? 'Copied!' : 'Copy Link'}</span>
                 </button>

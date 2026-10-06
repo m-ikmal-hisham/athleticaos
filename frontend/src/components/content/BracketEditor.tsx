@@ -228,7 +228,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             <CaretRight
                                 className={`w-4 h-4 mr-1 transition-transform duration-200 ${expandedBrackets.size === bracketGroups.length ? 'rotate-90' : ''}`}
                                 aria-hidden="true"
-                            />
+ />
                             {expandedBrackets.size === bracketGroups.length ? 'Collapse all' : 'Expand all'}
                         </Button>
                     )}
@@ -287,7 +287,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                         />
                         {existingBracketTypes.has(newBracketType) && (
                             <p className="text-xs text-amber-400 flex items-start gap-1.5">
-                                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                <Info className="w-4 h-4 shrink-0 mt-0.5" />
                                 A {newBracketType} bracket already exists for this category. Delete it first
                                 before adding another.
                             </p>
@@ -379,7 +379,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             <CaretRight
                                 className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                                 aria-hidden="true"
-                            />
+ />
                             {/* Title above the count, so the count no longer squeezes the title to "C…" */}
                             <span className="min-w-0 flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
                             <GlassCardTitle className="text-sm md:text-base font-bold tracking-tight uppercase truncate">
@@ -413,7 +413,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                     <div className="text-xs font-black uppercase tracking-wider text-primary mb-4 text-center pb-2 border-b border-white/10 flex items-center justify-center gap-1.5">
                                         <span>{round.name}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (
-                                            <CaretRight className="w-3.5 h-3.5 opacity-50" />
+                                            <CaretRight className="w-4 h-4 opacity-50" />
                                         )}
                                     </div>
 
@@ -431,7 +431,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                         title="Edit Match"
                                                         aria-label="Edit Match"
                                                     >
-                                                        <PencilSimple className="w-3.5 h-3.5" />
+                                                        <PencilSimple className="w-4 h-4" />
                                                     </button>
                                                 </div>
 

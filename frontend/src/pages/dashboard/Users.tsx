@@ -90,7 +90,7 @@ export default function Users() {
 
         return (
             <Badge variant={color as any} className="gap-1 pl-1 pr-2">
-                <Icon className="w-3.5 h-3.5" weight="fill" />
+                <Icon className="w-4 h-4" />
                 {formatRoleName(primaryRole)}
             </Badge>
         );

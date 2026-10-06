@@ -37,6 +37,7 @@ export default {
                 'deep-navy': '#0D1B2A',
                 'navy-tint': '#8CACD9',
                 'crimson-tint': '#D7656D',
+                'card-yellow': '#FFC800',
 
                 // Brand Colors (AthleticaOS Rugby)
                 primary: {

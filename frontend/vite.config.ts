@@ -41,7 +41,7 @@ export default defineConfig({
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-charts': ['recharts'],
-          'vendor-icons': ['@phosphor-icons/react', 'lucide-react'],
+          'vendor-icons': ['@phosphor-icons/react'],
           'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
           'vendor-geo': ['country-state-city'],
         }

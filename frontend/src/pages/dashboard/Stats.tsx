@@ -214,42 +214,42 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                 <SummaryCard
                     label="Total Matches"
                     value={summary?.totalMatches ?? 0}
-                    icon={<Pulse className="w-5 h-5 text-blue-400" />}
+                    icon={<Pulse className="w-5 h-5 text-navy dark:text-navy-tint" />}
                 />
             </BentoItem>
             <BentoItem colSpan={1}>
                 <SummaryCard
                     label="Completed"
                     value={summary?.completedMatches ?? 0}
-                    icon={<Flag className="w-5 h-5 text-green-400" />}
+                    icon={<Flag className="w-5 h-5 text-navy dark:text-navy-tint" />}
                 />
             </BentoItem>
             <BentoItem colSpan={1}>
                 <SummaryCard
                     label="Total Tries"
                     value={summary?.totalTries ?? 0}
-                    icon={<Medal className="w-5 h-5 text-yellow-400" />}
+                    icon={<Medal className="w-5 h-5" />}
                 />
             </BentoItem>
             <BentoItem colSpan={1}>
                 <SummaryCard
                     label="Total Points"
                     value={summary?.totalPoints ?? 0}
-                    icon={<Trophy className="w-5 h-5 text-purple-400" />}
+                    icon={<Trophy className="w-5 h-5 text-navy dark:text-navy-tint" />}
                 />
             </BentoItem>
             <BentoItem colSpan={1}>
                 <SummaryCard
                     label="Conversions"
                     value={summary?.totalConversions ?? 0}
-                    icon={<Target className="w-5 h-5 text-green-400" />}
+                    icon={<Target className="w-5 h-5 text-navy dark:text-navy-tint" />}
                 />
             </BentoItem>
             <BentoItem colSpan={1}>
                 <SummaryCard
                     label="Penalties"
                     value={summary?.totalPenalties ?? 0}
-                    icon={<Lightning className="w-5 h-5 text-orange-400" />}
+                    icon={<Lightning className="w-5 h-5" />}
                 />
             </BentoItem>
             <BentoItem colSpan={1}>

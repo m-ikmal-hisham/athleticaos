@@ -474,7 +474,7 @@ export const EditTournament = () => {
                                         </div>
                                     </div>
                                     <button type="button" onClick={() => removeCategory(idx)} className="text-red-500 hover:text-red-400 p-1 rounded hover:bg-white/5" aria-label="Remove category">
-                                        <Trash size={16} />
+                                        <Trash className="w-4 h-4" />
                                     </button>
                                 </div>
                             ))}
@@ -547,7 +547,7 @@ export const EditTournament = () => {
                             </div>
                             <div className="col-span-2 md:col-span-1">
                                 <Button type="button" variant="primary" onClick={addCategory} className="w-full h-9 p-0 flex items-center justify-center">
-                                    <Plus size={16} />
+                                    <Plus className="w-4 h-4" />
                                 </Button>
                             </div>
                         </div>
@@ -600,7 +600,7 @@ export const EditTournament = () => {
                                                         className="text-emerald-500 hover:text-emerald-400 p-1.5 rounded hover:bg-white/5"
                                                         title="Save"
                                                     >
-                                                        <Check size={16} />
+                                                        <Check className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -608,7 +608,7 @@ export const EditTournament = () => {
                                                         className="text-muted-foreground hover:text-foreground p-1.5 rounded hover:bg-white/5"
                                                         title="Cancel"
                                                     >
-                                                        <X size={16} />
+                                                        <X className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             ) : (
@@ -622,7 +622,7 @@ export const EditTournament = () => {
                                                                 className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
                                                                 title="Move Up"
                                                             >
-                                                                <ArrowUp size={12} />
+                                                                <ArrowUp className="w-3 h-3" weight="bold" />
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -631,7 +631,7 @@ export const EditTournament = () => {
                                                                 className="text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
                                                                 title="Move Down"
                                                             >
-                                                                <ArrowDown size={12} />
+                                                                <ArrowDown className="w-3 h-3" weight="bold" />
                                                             </button>
                                                         </div>
                                                         <span className="font-medium text-foreground text-sm">{v.name}</span>
@@ -648,7 +648,7 @@ export const EditTournament = () => {
                                                             className="text-muted-foreground hover:text-foreground p-1.5 rounded hover:bg-white/5"
                                                             title="Edit venue"
                                                         >
-                                                            <PencilSimple size={15} />
+                                                            <PencilSimple className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             type="button"
@@ -656,7 +656,7 @@ export const EditTournament = () => {
                                                             className="text-red-500 hover:text-red-400 p-1.5 rounded hover:bg-white/5"
                                                             title="Delete venue"
                                                         >
-                                                            <Trash size={15} />
+                                                            <Trash className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </>
@@ -687,7 +687,7 @@ export const EditTournament = () => {
                                         className="h-9 flex items-center gap-1 text-xs"
                                         disabled={!newVenueName.trim()}
                                     >
-                                        <Plus size={14} /> Add
+                                        <Plus className="w-4 h-4" /> Add
                                     </Button>
                                 </div>
                             </div>

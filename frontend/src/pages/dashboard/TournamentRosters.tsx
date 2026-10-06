@@ -93,7 +93,7 @@ export default function TournamentRosters({ tournamentId: propTournamentId }: To
         return (
             <Card>
                 <div className="p-8 text-center">
-                    <WarningCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+                    <WarningCircle className="w-12 h-12 mx-auto text-crimson dark:text-crimson-tint mb-4" />
                     <p className="text-red-500">{error}</p>
                 </div>
             </Card>
@@ -104,7 +104,7 @@ export default function TournamentRosters({ tournamentId: propTournamentId }: To
         return (
             <Card>
                 <div className="p-8 text-center">
-                    <Users className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+                    <Users className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-slate-500">No teams registered for this tournament</p>
                 </div>
             </Card>

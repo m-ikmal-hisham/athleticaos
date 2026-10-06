@@ -57,8 +57,8 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
     const pools = useCollapsibleGroups(sortedPoolNames, sortedPoolNames[0]);
 
     const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortConfig.field !== field) return <CaretUpDown className="w-3 h-3 opacity-30" />;
-        return sortConfig.direction === 'asc' ? <CaretUp className="w-3 h-3 text-blue-500" /> : <CaretDown className="w-3 h-3 text-blue-500" />;
+        if (sortConfig.field !== field) return <CaretUpDown className="w-3 h-3 opacity-30" weight="bold" />;
+        return sortConfig.direction === 'asc' ? <CaretUp className="w-3 h-3 text-navy dark:text-navy-tint" weight="bold" /> : <CaretDown className="w-3 h-3 text-navy dark:text-navy-tint" weight="bold" />;
     };
 
     const SortableHeader = ({ field, label, align = 'center', hiddenOnMobile = false }: { field: SortField, label: string, align?: 'left' | 'center', hiddenOnMobile?: boolean }) => (
@@ -107,9 +107,8 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                 {poolStandings.length} {poolStandings.length === 1 ? 'team' : 'teams'}
                             </span>
                             <CaretDown
-                                weight="bold"
-                                className={`shrink-0 w-4 h-4 text-slate-400 transition-transform duration-200 ${pools.isOpen(poolName) ? 'rotate-180' : ''}`}
-                            />
+                                className={`shrink-0 w-4 h-4 text-black/60 dark:text-white/60 transition-transform duration-200 ${pools.isOpen(poolName) ? 'rotate-180' : ''}`}
+ />
                         </button>
                         <div className="overflow-x-auto" hidden={!pools.isOpen(poolName)}>
                             <table className="w-full text-sm">

@@ -26,10 +26,7 @@ export const Root = () => {
     return (
         <ErrorBoundary>
             <HelmetProvider>
-                <IconContext.Provider value={{
-                    weight: "duotone",
-                    className: "text-primary-900 dark:text-secondary-100"
-                }}>
+                <IconContext.Provider value={{ weight: "duotone" }}>
                     <RouterProvider router={router} />
                     <Toaster
                         position="top-right"

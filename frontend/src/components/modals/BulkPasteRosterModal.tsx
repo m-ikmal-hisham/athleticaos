@@ -383,7 +383,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                 <td className="px-3 py-2 text-center whitespace-nowrap">
                                                     {isRowInvalid ? (
                                                         <div className="group relative flex justify-center cursor-pointer">
-                                                            <WarningCircle className="w-5 h-5 text-red-500" />
+                                                            <WarningCircle className="w-5 h-5 text-crimson dark:text-crimson-tint" />
                                                             <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover:block bg-red-950/95 border border-red-500/50 p-2.5 rounded-lg text-[10px] w-64 text-left shadow-xl z-20 space-y-1">
                                                                 {errors[rIdx] && Object.values(errors[rIdx]).map((msg, eIdx) => (
                                                                     <div key={eIdx}>• {msg}</div>
@@ -395,7 +395,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         </div>
                                                     ) : isRowDuplicate ? (
                                                         <div className="group relative flex flex-col items-center justify-center cursor-pointer">
-                                                            <WarningCircle className="w-5 h-5 text-amber-500" />
+                                                            <WarningCircle className="w-5 h-5" />
                                                             <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover:block bg-amber-950/95 border border-amber-500/50 p-2.5 rounded-lg text-[10px] w-64 text-left shadow-xl z-20 space-y-1 text-amber-200">
                                                                 <div className="font-semibold text-amber-300">Possible Duplicate</div>
                                                                 {rowDuplicateWarnings.map((msg, eIdx) => (
@@ -418,7 +418,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         </div>
                                                     ) : (
                                                         <div className="flex justify-center">
-                                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                                            <CheckCircle className="w-5 h-5 text-navy dark:text-navy-tint" />
                                                         </div>
                                                     )}
                                                 </td>
@@ -504,7 +504,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-all focus:outline-none"
                                                         aria-label="Delete row"
                                                     >
-                                                        <Trash className="w-3.5 h-3.5" />
+                                                        <Trash className="w-4 h-4" />
                                                     </button>
                                                 </td>
                                             </tr>

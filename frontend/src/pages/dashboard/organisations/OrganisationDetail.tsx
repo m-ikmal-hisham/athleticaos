@@ -341,7 +341,7 @@ const OrganisationDetail = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <GlassCard className="p-6 md:col-span-2">
                             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <ChartBar className="w-5 h-5 text-primary-500" />
+                                <ChartBar className="w-5 h-5 text-navy dark:text-navy-tint" />
                                 Activity Summary
                             </h3>
                             <div className="h-64 flex items-center justify-center text-muted-foreground bg-white/5 rounded-lg border border-dashed border-white/10">
@@ -390,7 +390,7 @@ const OrganisationDetail = () => {
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <TShirt className="w-5 h-5 text-primary-500" />
+                                <TShirt className="w-5 h-5 text-navy dark:text-navy-tint" />
                                 Assigned Teams ({directTeams.length})
                             </h3>
                             <Button size="sm" onClick={() => navigate('/dashboard/teams/new')}>Add Team</Button>
@@ -424,7 +424,7 @@ const OrganisationDetail = () => {
                         <GlassCard className="p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <TreeStructure className="w-5 h-5 text-primary-500" />
+                                    <TreeStructure className="w-5 h-5 text-navy dark:text-navy-tint" />
                                     Child Organisation Teams ({totalChildOrgTeams})
                                 </h3>
                                 <div className="flex gap-2">
@@ -515,7 +515,7 @@ const OrganisationDetail = () => {
                         <GlassCard className="p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-primary-500" />
+                                    <Users className="w-5 h-5 text-navy dark:text-navy-tint" />
                                     Users & Managers ({users.length})
                                 </h3>
                                 <Button size="sm" onClick={() => navigate('/dashboard/users/new')}>Invite User</Button>
@@ -554,7 +554,7 @@ const OrganisationDetail = () => {
                         <GlassCard className="p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <TShirt className="w-5 h-5 text-primary-500" />
+                                    <TShirt className="w-5 h-5 text-navy dark:text-navy-tint" />
                                     Players ({players.length})
                                 </h3>
                             </div>
@@ -567,7 +567,7 @@ const OrganisationDetail = () => {
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <TreeStructure className="w-5 h-5 text-primary-500" />
+                                <TreeStructure className="w-5 h-5 text-navy dark:text-navy-tint" />
                                 Organisation Chart
                             </h3>
                         </div>
@@ -581,7 +581,7 @@ const OrganisationDetail = () => {
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <TreeStructure className="w-5 h-5 text-primary-500" />
+                                <TreeStructure className="w-5 h-5 text-navy dark:text-navy-tint" />
                                 Sub-Organisations & Hierarchy
                             </h3>
                         </div>

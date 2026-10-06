@@ -7,7 +7,7 @@ export const UnauthorizedPage = () => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
             <div className="text-center">
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-crimson/10 border border-crimson/20 mb-6">
-                    <ShieldWarning className="w-10 h-10 text-crimson dark:text-crimson-tint" />
+                    <ShieldWarning className="w-8 h-8 text-crimson dark:text-crimson-tint" />
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-4">
                     Access denied

@@ -149,7 +149,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
         switch (type) {
             case 'TRY':
                 return {
-                    icon: <Football className="w-5 h-5" weight="fill" />,
+                    icon: <Football className="w-5 h-5" />,
                     bg: 'bg-blue-50 dark:bg-blue-900/20',
                     border: 'border-blue-200 dark:border-blue-800',
                     text: 'text-blue-700 dark:text-blue-400',
@@ -157,7 +157,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 };
             case 'SUPER_TRY':
                 return {
-                    icon: <Star className="w-5 h-5" weight="fill" />,
+                    icon: <Star className="w-5 h-5" />,
                     bg: 'bg-emerald-50 dark:bg-emerald-900/20',
                     border: 'border-emerald-200 dark:border-emerald-800',
                     text: 'text-emerald-700 dark:text-emerald-400',
@@ -165,7 +165,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 };
             case 'PENALTY_TRY':
                 return {
-                    icon: <Football className="w-5 h-5" weight="fill" />,
+                    icon: <Football className="w-5 h-5" />,
                     bg: 'bg-sky-50 dark:bg-sky-900/20',
                     border: 'border-sky-200 dark:border-sky-800',
                     text: 'text-sky-700 dark:text-sky-400',
@@ -173,7 +173,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 };
             case 'CONVERSION':
                 return {
-                    icon: <Target className="w-4 h-4" weight="bold" />,
+                    icon: <Target className="w-4 h-4" />,
                     bg: 'bg-green-50 dark:bg-green-900/20',
                     border: 'border-green-200 dark:border-green-800',
                     text: 'text-green-700 dark:text-green-400',
@@ -181,7 +181,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 };
             case 'PENALTY':
                 return {
-                    icon: <Lightning className="w-4 h-4" weight="fill" />,
+                    icon: <Lightning className="w-4 h-4" />,
                     bg: 'bg-purple-50 dark:bg-purple-900/20',
                     border: 'border-purple-200 dark:border-purple-800',
                     text: 'text-purple-700 dark:text-purple-400',
@@ -189,7 +189,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 };
             case 'DROP_GOAL':
                 return {
-                    icon: <Target className="w-4 h-4" weight="duotone" />,
+                    icon: <Target className="w-4 h-4" />,
                     bg: 'bg-indigo-50 dark:bg-indigo-900/20',
                     border: 'border-indigo-200 dark:border-indigo-800',
                     text: 'text-indigo-700 dark:text-indigo-400',
@@ -277,7 +277,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                     >
                         <h3 className={`${matchText.title} text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors`}>Match Moments</h3>
                         <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
-                            {isExpanded ? <CaretUp className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600" /> : <CaretDown className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600" />}
+                            {isExpanded ? <CaretUp className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint" /> : <CaretDown className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint" />}
                         </div>
                     </div>
                     {replayMode && (
@@ -326,7 +326,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                             title={isPlaying ? 'Pause Replay' : 'Play Replay'}
                             className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition"
                         >
-                            {isPlaying ? <Pause className="w-5 h-5" weight="fill" /> : <Play className="w-5 h-5" weight="fill" />}
+                            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                         </button>
 
                         <button
@@ -338,7 +338,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                             title="Restart Replay"
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-300 transition"
                         >
-                            <Rewind weight="fill" />
+                            <Rewind className="w-5 h-5" />
                         </button>
 
                         <div className="flex-1">
@@ -438,9 +438,9 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                 {event.eventType === 'SUBSTITUTION' && subInName ? (
                                     <div className="space-y-1">
                                         {renderPlayer(subOutName, event.teamName, isHomeEvent, 'text-red-500 dark:text-red-400',
-                                            <ArrowDown className="w-3.5 h-3.5 mt-0.5 shrink-0" weight="bold" />)}
+                                            <ArrowDown className="w-4 h-4 mt-0.5 shrink-0" />)}
                                         {renderPlayer(subInName, event.teamName, isHomeEvent, 'text-green-600 dark:text-green-400',
-                                            <ArrowUp className="w-3.5 h-3.5 mt-0.5 shrink-0" weight="bold" />)}
+                                            <ArrowUp className="w-4 h-4 mt-0.5 shrink-0" />)}
                                     </div>
                                 ) : (
                                     event.playerName && renderPlayer(event.playerName, event.teamName, isHomeEvent)

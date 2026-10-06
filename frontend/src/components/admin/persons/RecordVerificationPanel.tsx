@@ -111,14 +111,14 @@ export const RecordVerificationPanel: React.FC<RecordVerificationPanelProps> = (
         if (status === 'VERIFIED') {
             return (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <CheckCircle size={14} weight="bold" />
+                    <CheckCircle className="w-4 h-4" />
                     <span>VERIFIED</span>
                 </div>
             );
         }
         return (
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
-                <Shield size={14} weight="bold" />
+                <Shield className="w-4 h-4" />
                 <span>UNVERIFIED</span>
             </div>
         );
@@ -128,7 +128,7 @@ export const RecordVerificationPanel: React.FC<RecordVerificationPanelProps> = (
         <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-border p-4 space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <ShieldCheck size={20} className="text-primary-500" />
+                    <ShieldCheck className="w-5 h-5 text-navy dark:text-navy-tint" />
                     <span className="text-sm font-semibold text-foreground">Record Verification Attestation</span>
                 </div>
                 {renderBadge()}
@@ -168,7 +168,7 @@ export const RecordVerificationPanel: React.FC<RecordVerificationPanelProps> = (
                             onClick={() => setIsRevokeModalOpen(true)}
                             className="text-xs text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/10"
                         >
-                            <ArrowCounterClockwise size={14} className="mr-1.5" />
+                            <ArrowCounterClockwise className="w-4 h-4 mr-1.5" />
                             Revoke Verification
                         </Button>
                     ) : (
@@ -180,7 +180,7 @@ export const RecordVerificationPanel: React.FC<RecordVerificationPanelProps> = (
                             onClick={() => setIsVerifyModalOpen(true)}
                             className="text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10"
                         >
-                            <ShieldCheck size={14} className="mr-1.5" />
+                            <ShieldCheck className="w-4 h-4 mr-1.5" />
                             Verify Record
                         </Button>
                     )}

@@ -19,17 +19,17 @@ export default function HowItWorks() {
             {/* Steps */}
             <div className="grid md:grid-cols-3 gap-8">
                 <StepCard
-                    icon={<Trophy className="w-8 h-8 text-amber-500" weight="fill" />}
+                    icon={<Trophy className="w-8 h-8" />}
                     title="1. Browse Tournaments"
                     description="Explore active and upcoming tournaments across Malaysia. Find your team's schedule and standings."
                 />
                 <StepCard
-                    icon={<MonitorPlay className="w-8 h-8 text-red-500" weight="fill" />}
+                    icon={<MonitorPlay className="w-8 h-8 text-crimson dark:text-crimson-tint" />}
                     title="2. Follow Live Matches"
                     description="Watch the action unfold with our live match center. Real-time scores, commentary, and statistics."
                 />
                 <StepCard
-                    icon={<ShareNetwork className="w-8 h-8 text-blue-500" weight="fill" />}
+                    icon={<ShareNetwork className="w-8 h-8 text-navy dark:text-navy-tint" />}
                     title="3. Share the Excitement"
                     description="Share match results and highlights with friends and family instantly on social media."
                 />
@@ -85,7 +85,7 @@ function FAQItem({ question, answer }: { question: string, answer: string }) {
                 className="w-full flex items-center justify-between p-6 text-left"
             >
                 <span className="font-bold text-slate-900 dark:text-white">{question}</span>
-                {isOpen ? <CaretUp className="w-4 h-4 text-slate-500" /> : <CaretDown className="w-4 h-4 text-slate-500" />}
+                {isOpen ? <CaretUp className="w-4 h-4 text-black/60 dark:text-white/60" /> : <CaretDown className="w-4 h-4 text-black/60 dark:text-white/60" />}
             </button>
             <div
                 className={`px-6 text-slate-600 dark:text-slate-400 leading-relaxed transition-all duration-300 ${isOpen ? 'pb-6 max-h-40 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}

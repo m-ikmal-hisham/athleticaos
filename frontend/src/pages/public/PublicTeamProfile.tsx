@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicTeamDetailResponse } from '../../api/public.api';
-import { ArrowLeft, Users, Trophy, Shield, Hash, TrendingUp, Target, Zap } from 'lucide-react';
+import { ArrowLeft, Users, Trophy, Shield, Hash, TrendUp, Target, Lightning } from '@phosphor-icons/react';
 import { RosterList } from '../../components/RosterList';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 
@@ -106,7 +106,7 @@ export function PublicTeamProfile() {
                                             />
                                         ) : null}
                                         <div className={`w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-xl ${team.logoUrl ? 'hidden' : ''}`}>
-                                            <Shield className="w-10 h-10 text-slate-400" />
+                                            <Shield className="w-12 h-12 text-black/40 dark:text-white/40" />
                                         </div>
                                     </div>
                                 </div>
@@ -140,7 +140,7 @@ export function PublicTeamProfile() {
                     <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50 mb-8">
                         <h2 className="text-lg font-bold mb-6 flex flex-wrap items-center justify-between gap-2 text-slate-900 dark:text-white">
                             <span className="flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-blue-500" /> Team Statistics
+                                <TrendUp className="w-5 h-5" /> Team Statistics
                             </span>
                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
                                 {team?.tournaments?.find(t => t.id === selectedTournamentId)?.name || 'Global'}
@@ -155,11 +155,11 @@ export function PublicTeamProfile() {
                             <TeamStatCard label="Conversions" value={stats.conversions} icon={<span className="text-sm">🎯</span>} />
                             <TeamStatCard label="Penalties" value={stats.penalties} icon={<span className="text-sm">👟</span>} />
                             <TeamStatCard label="Drop Goals" value={stats.dropGoals} icon={<span className="text-sm">🥅</span>} />
-                            <TeamStatCard label="Points For" value={stats.pointsFor} icon={<Target className="w-4 h-4 text-green-500" />} />
-                            <TeamStatCard label="Points Against" value={stats.pointsAgainst} icon={<Zap className="w-4 h-4 text-orange-500" />} />
+                            <TeamStatCard label="Points For" value={stats.pointsFor} icon={<Target className="w-4 h-4" />} />
+                            <TeamStatCard label="Points Against" value={stats.pointsAgainst} icon={<Lightning className="w-4 h-4" />} />
                             <TeamStatCard label="Pts Diff" value={stats.pointsDifference} highlight={stats.pointsDifference > 0} color={stats.pointsDifference < 0 ? 'red' : undefined} />
-                            <TeamStatCard label="Yellow Cards" value={stats.yellowCards} icon={<div className="w-3 h-4 bg-yellow-400 rounded-[2px]" />} color="yellow" />
-                            <TeamStatCard label="Red Cards" value={stats.redCards} icon={<div className="w-3 h-4 bg-red-500 rounded-[2px]" />} color="red" />
+                            <TeamStatCard label="Yellow Cards" value={stats.yellowCards} icon={<div className="w-3 h-4 bg-card-yellow rounded-[2px]" />} color="yellow" />
+                            <TeamStatCard label="Red Cards" value={stats.redCards} icon={<div className="w-3 h-4 bg-crimson rounded-[2px]" />} color="red" />
                         </div>
                     </div>
                 )}
@@ -172,7 +172,7 @@ export function PublicTeamProfile() {
                         <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50 min-w-0">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                                 <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                                    <Users className="w-5 h-5 text-primary" /> Active Roster
+                                    <Users className="w-5 h-5" /> Active Roster
                                 </h2>
                                 <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full text-sm font-medium">
                                     {team.players?.length || 0} Players
@@ -194,6 +194,7 @@ export function PublicTeamProfile() {
                                     />
                                     {playerSearch && (
                                         <button 
+                                            aria-label="Clear player search"
                                             onClick={() => setPlayerSearch('')}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                         >
@@ -268,7 +269,7 @@ export function PublicTeamProfile() {
                                                         {player.position && <span>{player.position}</span>}
                                                         {player.jerseyNumber && (
                                                             <span className="inline-flex items-center gap-0.5 text-xs text-slate-400">
-                                                                <Hash className="w-3 h-3" />{player.jerseyNumber}
+                                                                <Hash className="w-3 h-3" weight="bold" />{player.jerseyNumber}
                                                             </span>
                                                         )}
                                                     </div>
@@ -301,7 +302,7 @@ export function PublicTeamProfile() {
                     <div className="space-y-6">
                         <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700/50">
                             <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
-                                <Trophy className="w-5 h-5 text-yellow-500" /> Team Info
+                                <Trophy className="w-5 h-5" /> Team Info
                             </h2>
                             <div className="space-y-4">
                                 <div>

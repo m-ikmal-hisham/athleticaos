@@ -117,7 +117,7 @@ export const MatchControls = ({
                     onClick={isTimerRunning ? onTimerPause : onTimerStart}
                     className={`w-full justify-center mb-2 ${isTimerRunning ? "animate-pulse border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10" : "bg-green-600 hover:bg-green-700 text-white"}`}
                 >
-                    {isTimerRunning ? <Pause className="w-4 h-4 mr-2" weight="fill" /> : <Play className="w-4 h-4 mr-2" weight="fill" />}
+                    {isTimerRunning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
                     {isTimerRunning ? "Pause Timer" : "Resume Timer"}
                 </Button>
             )}

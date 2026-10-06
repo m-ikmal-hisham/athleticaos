@@ -73,7 +73,7 @@ export default function TournamentsList() {
             <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
                     <input
                         type="text"
                         placeholder="Search tournaments..."
@@ -112,7 +112,7 @@ export default function TournamentsList() {
                 </div>
             ) : filteredTournaments.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-                    <Trophy className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+                    <Trophy className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-lg font-medium text-slate-900 dark:text-white mb-2">
                         No tournaments found
                     </p>

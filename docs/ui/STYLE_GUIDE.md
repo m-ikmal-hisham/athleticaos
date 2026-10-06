@@ -32,7 +32,7 @@ If code and this guide disagree, the guide wins and the code is a migration item
 - [ ] No text smaller than 12px
 - [ ] No placeholder people ("John Doe"), companies, or numbers
 - [ ] No "Loading..." strings; use `Skeleton` or `Spinner`
-- [ ] Icons from Phosphor only, `regular` weight by default, `fill` only for active state
+- [ ] Icons from Phosphor only, `duotone` by default (set once in IconContext); `fill` only for active/selected state and small solid status marks; `bold` only below 16px
 
 ---
 
@@ -228,6 +228,7 @@ Every admin page uses `PageHeader`. Max one primary button per page header.
 |---|---|---|
 | Button | `Button` variants: `primary` (solid brand), `secondary` (surface + border), `ghost`, `danger`. Sizes `sm` 36px, `md` 44px, `lg` 48px | gradients, `.btn-primary` CSS class, raw `<button>` with styles |
 | Icon-only button | `IconButton` (44px hit area, required `aria-label`) | bare `<button><Icon/></button>` |
+| Icon | Phosphor duotone, sizes 16/20/24 (32/48 empty states), colour = `currentColor` | other icon libraries, non-standard sizes, hardcoded icon colours |
 | Card | `Card` (solid `surface-card`, `border-subtle`, `radius-lg`) | `GlassCard`, `glass-card` (retire) |
 | Table | `Table` with sticky header, `tabular-nums` numeric columns, row → card on mobile | raw `<table>`, `glass-table` |
 | Modal / sheet | `Modal` (centered ≥640, bottom sheet <640) | hand-rolled `fixed inset-0` overlays |

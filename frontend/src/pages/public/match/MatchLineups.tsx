@@ -68,7 +68,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
     if (!lineups || (lineups.homeLineup.length === 0 && lineups.awayLineup.length === 0)) {
         return (
             <GlassCard className="p-8 text-center">
-                <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <Users className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Lineups Not Available</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Team sheets have not been submitted for this match yet.</p>
             </GlassCard>
@@ -107,7 +107,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         </span>
                         {player.captain && (
                             <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">
-                                <Shield className="w-2.5 h-2.5" weight="fill" />
+                                <Shield className="w-3 h-3" weight="fill" />
                                 C
                             </span>
                         )}
@@ -126,7 +126,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         ? 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10'
                         : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'}
                 `}>
-                    <TShirt className="w-3 h-3" weight={hasJersey ? 'fill' : 'regular'} />
+                    <TShirt className="w-3 h-3" weight={hasJersey ? 'fill' : 'bold'} />
                     {hasJersey ? player.jerseyNumber : '—'}
                 </div>
             </div>

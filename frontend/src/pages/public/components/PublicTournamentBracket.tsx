@@ -59,7 +59,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                     <div className="text-center font-black uppercase text-xs tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200/50 dark:border-blue-900/50 py-2 rounded-xl mb-6 shadow-sm flex items-center justify-center gap-2">
                                         <span>{formatEnum(round.name)}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (
-                                            <CaretRight className="w-3.5 h-3.5 opacity-60" />
+                                            <CaretRight className="w-4 h-4 opacity-60" />
                                         )}
                                     </div>
 

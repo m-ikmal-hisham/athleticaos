@@ -132,7 +132,7 @@ const PeopleDirectory: React.FC = () => {
                     <p className="text-muted text-lg">Manage all human records and system connections in one place.</p>
                 </div>
                 <Button onClick={() => setIsCreateModalOpen(true)} className="w-full md:w-auto h-11 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/20">
-                    <UserCircle size={20} className="mr-2" weight="bold" />
+                    <UserCircle className="w-5 h-5 mr-2" />
                     Register Person
                 </Button>
             </header>
@@ -146,7 +146,7 @@ const PeopleDirectory: React.FC = () => {
                     <CardContent className="p-6 flex flex-col h-full justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600 dark:bg-indigo-900/30">
-                                <UsersThree size={24} weight="duotone" />
+                                <UsersThree className="w-6 h-6" />
                             </div>
                             <TrendBadge value={stats.total.trend} />
                         </div>
@@ -164,7 +164,7 @@ const PeopleDirectory: React.FC = () => {
                     <CardContent className="p-6 flex flex-col h-full justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <div className="p-2 bg-blue-100 rounded-lg text-blue-600 dark:bg-blue-900/30">
-                                <UserCircle size={24} weight="duotone" />
+                                <UserCircle className="w-6 h-6" />
                             </div>
                             <TrendBadge value={stats.players.trend} />
                         </div>
@@ -182,7 +182,7 @@ const PeopleDirectory: React.FC = () => {
                     <CardContent className="p-6 flex flex-col h-full justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600 dark:bg-emerald-900/30">
-                                <IdentificationCard size={24} weight="duotone" />
+                                <IdentificationCard className="w-6 h-6" />
                             </div>
                             <TrendBadge value={stats.staff.trend} />
                         </div>
@@ -200,7 +200,7 @@ const PeopleDirectory: React.FC = () => {
                     <CardContent className="p-6 flex flex-col h-full justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <div className="p-2 bg-amber-100 rounded-lg text-amber-600 dark:bg-amber-900/30">
-                                <Gavel size={24} weight="duotone" />
+                                <Gavel className="w-6 h-6" />
                             </div>
                             <TrendBadge value={stats.officials.trend} />
                         </div>
@@ -301,7 +301,7 @@ const PeopleDirectory: React.FC = () => {
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-center py-16 text-muted-foreground">
                                         <div className="flex flex-col items-center gap-2">
-                                            <UsersThree size={48} weight="duotone" className="opacity-20" />
+                                            <UsersThree className="w-12 h-12 opacity-20" />
                                             <p className="text-lg">No records matching this category.</p>
                                         </div>
                                     </TableCell>
@@ -405,7 +405,7 @@ const PeopleDirectory: React.FC = () => {
                                         <TableCell>
                                             {p.userId ? (
                                                 <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium text-sm">
-                                                    <CheckCircle size={18} weight="fill" />
+                                                    <CheckCircle className="w-4 h-4" />
                                                     <span>Linked</span>
                                                 </div>
                                             ) : (
@@ -418,7 +418,7 @@ const PeopleDirectory: React.FC = () => {
                                                         setIsConnectModalOpen(true);
                                                     }}
                                                 >
-                                                    <LinkIcon size={14} />
+                                                    <LinkIcon className="w-4 h-4" />
                                                     <span className="text-xs">Connect</span>
                                                 </Button>
                                             )}
@@ -426,10 +426,10 @@ const PeopleDirectory: React.FC = () => {
                                         <TableCell className="pr-6 text-right">
                                             <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(p)}>
-                                                    <PencilSimple size={16} />
+                                                    <PencilSimple className="w-4 h-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(p.id, `${p.firstName} ${p.lastName}`)}>
-                                                    <Trash size={16} />
+                                                    <Trash className="w-4 h-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>

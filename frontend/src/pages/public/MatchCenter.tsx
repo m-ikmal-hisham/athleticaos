@@ -110,7 +110,7 @@ export default function MatchCenter() {
     if (!match) {
         return (
             <div className="text-center py-24">
-                <Clock className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                <Clock className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Match Not Found</h2>
                 <p className="text-slate-500 mb-8">The match you are looking for does not exist or has been removed.</p>
                 <Link to="/tournaments" className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
@@ -159,7 +159,7 @@ export default function MatchCenter() {
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
                             `}
                         >
-                            <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-blue-500' : ''}`} weight={activeTab === key ? 'fill' : 'regular'} />
+                            <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-navy dark:text-navy-tint' : ''}`} weight={activeTab === key ? 'fill' : 'duotone'} />
                             <span>{label}</span>
                         </button>
                     ))}

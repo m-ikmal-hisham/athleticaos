@@ -182,7 +182,7 @@ export function RosterManagement({ tournamentId, teamId, organisationLevel, isMo
                                                 )}
                                                 {player.playerNumber && duplicateNumbers.has(player.playerNumber) && (
                                                     <Tooltip content="Another player in this squad has the same number" position="right">
-                                                        <WarningCircle className="w-4 h-4 text-red-500" />
+                                                        <WarningCircle className="w-4 h-4 text-crimson dark:text-crimson-tint" />
                                                     </Tooltip>
                                                 )}
                                             </button>
