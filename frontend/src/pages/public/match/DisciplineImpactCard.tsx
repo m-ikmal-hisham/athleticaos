@@ -119,7 +119,7 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
     return (
         <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <Warning className="w-5 h-5 text-orange-500" />
+                <Warning className="w-5 h-5" />
                 Discipline Impact
             </h3>
 

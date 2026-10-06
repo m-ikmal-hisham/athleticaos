@@ -138,7 +138,7 @@ export default function Contact() {
             <div className="max-w-2xl mx-auto">
                 <div className="p-8 sm:p-12 text-center rounded-2xl bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 space-y-6">
                     <div className="w-16 h-16 bg-navy/10 dark:bg-navy-tint/20 text-navy dark:text-navy-tint rounded-full flex items-center justify-center mx-auto">
-                        <CheckCircle className="w-8 h-8" weight="regular" />
+                        <CheckCircle className="w-8 h-8" />
                     </div>
                     <h2 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">Message sent</h2>
                     <p className="text-black/72 dark:text-white/72 max-w-md mx-auto">
@@ -321,7 +321,7 @@ export default function Contact() {
                             <CaretDown
                                 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none text-black/60 dark:text-white/60"
                                 aria-hidden="true"
-                            />
+ />
                         </div>
                         {errors.subject && (
                             <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">

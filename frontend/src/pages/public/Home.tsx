@@ -83,7 +83,7 @@ export default function Home() {
                     </div>
                 ) : tournaments.length === 0 ? (
                     <div className="text-center py-12 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-                        <Trophy className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+                        <Trophy className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-4" />
                         <p className="text-slate-600 dark:text-slate-400">
                             No active tournaments at the moment
                         </p>

@@ -129,12 +129,11 @@ export const SearchableSelect = ({
                     <span className={clsx(isPlaceholder ? "text-muted/60" : "text-foreground font-medium")}>{displayLabel}</span>
                 </div>
                 <CaretDown
-                    weight="bold"
                     className={clsx(
                         "w-4 h-4 text-muted transition-transform duration-200",
                         isOpen && "rotate-180"
                     )}
-                />
+ />
             </div>
 
             {error && (
@@ -175,7 +174,7 @@ export const SearchableSelect = ({
                                 >
                                     <span>{option.label}</span>
                                     {option.value === value && (
-                                        <Check weight="bold" className="w-4 h-4 text-blue-500 animate-scale-in" />
+                                        <Check className="w-4 h-4 text-navy dark:text-navy-tint animate-scale-in" />
                                     )}
                                 </button>
                             ))

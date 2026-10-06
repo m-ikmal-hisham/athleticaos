@@ -28,9 +28,8 @@ export const CollapsibleDateGroup = ({ date, matchCount, open, onToggle, childre
                 {matchCount} {matchCount === 1 ? 'match' : 'matches'}
             </span>
             <CaretDown
-                weight="bold"
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-            />
+                className={`w-4 h-4 text-black/60 dark:text-white/60 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+ />
         </button>
         {open && children}
     </section>

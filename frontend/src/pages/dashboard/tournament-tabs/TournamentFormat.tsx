@@ -301,7 +301,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                <Gear className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <Gear className="w-5 h-5 text-navy dark:text-navy-tint" />
                             </div>
                             <div>
                                 <GlassCardTitle>Format Configuration</GlassCardTitle>
@@ -633,7 +633,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                 <label htmlFor="useExistingGroups" className="text-xs cursor-pointer select-none flex items-center gap-1.5">
                                     Preserve manual pool assignments
                                     <Tooltip content="If checked, the match generator will respect the current team positions in pools. If unchecked, teams may be reshuffled." position="top">
-                                        <Question className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors cursor-help" />
+                                        <Question className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors cursor-help" />
                                     </Tooltip>
                                 </label>
                             </div>

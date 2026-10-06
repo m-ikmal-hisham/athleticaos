@@ -416,7 +416,7 @@ export default function Organisations() {
                             </div>
 
                             <div className="flex items-center gap-1.5 pt-4 border-t border-white/5 text-xs text-muted-foreground">
-                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                <MapPin className="w-4 h-4 shrink-0" />
                                 <span className="truncate">
                                     {org.state || (org.stateCode ? MALAYSIA_STATES.find(s => s.code === org.stateCode)?.name : '-')}
                                 </span>

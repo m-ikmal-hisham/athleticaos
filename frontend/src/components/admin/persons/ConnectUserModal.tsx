@@ -89,12 +89,12 @@ export const ConnectUserModal: React.FC<ConnectUserModalProps> = ({ isOpen, onCl
                                 <div key={u.id} className="group flex items-center justify-between p-3 border rounded-xl hover:bg-accent/50 hover:border-accent transition-all">
                                     <div className="flex gap-3 items-center">
                                         <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                            <UserCircle size={24} />
+                                            <UserCircle className="w-6 h-6" />
                                         </div>
                                         <div>
                                             <div className="text-sm font-semibold">{u.firstName} {u.lastName}</div>
                                             <div className="text-[10px] text-muted flex items-center gap-1">
-                                                <Envelope size={12} weight="duotone" />
+                                                <Envelope className="w-3 h-3" weight="bold" />
                                                 {u.email}
                                             </div>
                                         </div>

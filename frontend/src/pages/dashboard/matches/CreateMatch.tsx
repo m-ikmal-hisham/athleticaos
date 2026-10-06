@@ -150,7 +150,7 @@ export const CreateMatch = () => {
                         {/* Dynamic Format Placeholder Display */}
                         {selectedFormatConfig && (
                             <div className="mt-2 p-3 bg-blue-50/10 border border-blue-500/20 rounded-md flex items-start gap-3 text-sm text-blue-200 animate-in fade-in slide-in-from-top-1">
-                                <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                <Info className="w-5 h-5 text-navy dark:text-navy-tint shrink-0 mt-0.5" />
                                 <div>
                                     <div className="font-semibold text-blue-400 mb-0.5">
                                         Match Format: {selectedFormatConfig.label}

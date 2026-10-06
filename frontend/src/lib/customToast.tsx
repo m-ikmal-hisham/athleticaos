@@ -28,10 +28,10 @@ const CustomToast = ({
             <div className="flex-1 w-0 p-4 pl-5">
                 <div className="flex items-start">
                     <div className="flex-shrink-0 pt-0.5">
-                        {type === 'success' && <CheckCircle className="h-6 w-6 text-green-500" weight="fill" />}
-                        {type === 'error' && <WarningCircle className="h-6 w-6 text-red-500" weight="fill" />}
-                        {type === 'loading' && <Spinner className="h-6 w-6 text-blue-500 animate-spin" />}
-                        {type === 'info' && <Info className="h-6 w-6 text-slate-500" weight="fill" />}
+                        {type === 'success' && <CheckCircle className="h-6 w-6 text-navy dark:text-navy-tint" />}
+                        {type === 'error' && <WarningCircle className="h-6 w-6 text-crimson dark:text-crimson-tint" />}
+                        {type === 'loading' && <Spinner className="h-6 w-6 text-navy dark:text-navy-tint animate-spin" />}
+                        {type === 'info' && <Info className="h-6 w-6 text-black/60 dark:text-white/60" />}
                     </div>
                     <div className="ml-3 flex-1">
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">

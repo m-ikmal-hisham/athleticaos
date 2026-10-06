@@ -272,7 +272,7 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                                     </div>
                                 </div>
                                 <button type="button" onClick={() => removeCategory(idx)} className="text-red-500 hover:text-red-400" aria-label="Remove category">
-                                    <Trash size={16} />
+                                    <Trash className="w-4 h-4" />
                                 </button>
                             </div>
                         ))}
@@ -345,7 +345,7 @@ export const TournamentModal = ({ isOpen, onClose, onSuccess, tournament }: Tour
                         </div>
                         <div className="col-span-1">
                             <Button type="button" variant="primary" onClick={addCategory} className="w-full h-9 p-0 flex items-center justify-center">
-                                <Plus size={16} />
+                                <Plus className="w-4 h-4" />
                             </Button>
                         </div>
                     </div>

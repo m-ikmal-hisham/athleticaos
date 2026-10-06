@@ -215,7 +215,7 @@ export default function Tournaments() {
                                 {t.logoUrl ? (
                                     <img src={getImageUrl(t.logoUrl)} alt={t.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <Trophy className="w-8 h-8 text-primary-400" weight="duotone" />
+                                    <Trophy className="w-8 h-8 text-navy dark:text-navy-tint" />
                                 )}
                             </div>
 
@@ -228,11 +228,11 @@ export default function Tournaments() {
 
                                 <div className="mt-auto space-y-3 pt-4 border-t border-white/5">
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <Calendar className="w-4 h-4 text-primary-500" />
+                                        <Calendar className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span>{new Date(t.startDate).toLocaleDateString()} - {new Date(t.endDate).toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <MapPin className="w-4 h-4 text-primary-500" />
+                                        <MapPin className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span className="truncate">{t.venue || 'Venue TBD'}</span>
                                     </div>
                                 </div>

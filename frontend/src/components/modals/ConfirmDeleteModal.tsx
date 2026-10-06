@@ -30,7 +30,7 @@ export default function ConfirmDeleteModal({
             <div className="space-y-4">
                 <div className="flex items-start gap-4 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
                     <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                        <Warning className="w-6 h-6 text-red-500" />
+                        <Warning className="w-6 h-6 text-crimson dark:text-crimson-tint" />
                     </div>
                     <div>
                         <h3 className="text-lg font-medium text-red-500 mb-1">Warning</h3>

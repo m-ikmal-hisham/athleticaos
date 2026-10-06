@@ -337,6 +337,7 @@ export const AppLayout = () => {
                     {/* Toggle Button */}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
+                        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                         className={clsx(
                             "hidden lg:flex w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-md items-center justify-center text-xs border border-slate-200 dark:border-slate-700 z-50 text-slate-500 hover:text-blue-600 transition-all duration-300 mb-2",
                             isCollapsed
@@ -344,7 +345,7 @@ export const AppLayout = () => {
                                 : "absolute top-8 right-5" // Floating when expanded
                         )}
                     >
-                        {isCollapsed ? <CaretRight weight="bold" /> : <CaretLeft weight="bold" />}
+                        {isCollapsed ? <CaretRight className="w-4 h-4" /> : <CaretLeft className="w-4 h-4" />}
                     </button>
 
                     {/* Navigation */}
@@ -442,7 +443,7 @@ export const AppLayout = () => {
                                             Is Active
                                         </p>
                                     </div>
-                                    <CaretDown className="w-3 h-3 text-muted-foreground" />
+                                    <CaretDown className="w-3 h-3 text-muted-foreground" weight="bold" />
                                 </>
                             )}
                         </button>

@@ -273,7 +273,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                     {hasAnyRole && (
                         <div className="pt-2 border-t border-border/50">
                             <label className="text-sm font-medium mb-1.5 block text-foreground flex items-center gap-1.5">
-                                <Buildings size={14} weight="bold" className="text-primary-500" />
+                                <Buildings className="w-4 h-4 text-navy dark:text-navy-tint" />
                                 Assign to Organisation <span className="text-red-500">*</span>
                             </label>
 
@@ -302,7 +302,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                                         <div className="absolute z-50 mt-1 w-full max-h-48 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
                                             <div className="p-2 border-b border-border sticky top-0 bg-background">
                                                 <div className="relative">
-                                                    <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                                                    <MagnifyingGlass className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
                                                     <input
                                                         type="text"
                                                         placeholder="Search organisations..."
@@ -336,7 +336,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                                                                 <img src={org.logoUrl} alt="" className="w-5 h-5 rounded-full object-contain bg-white border border-border p-0.5 flex-shrink-0" />
                                                             ) : (
                                                                 <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                                                                    <Buildings size={10} className="text-slate-500" />
+                                                                    <Buildings className="w-3 h-3 text-black/60 dark:text-white/60" weight="bold" />
                                                                 </div>
                                                             )}
                                                             <span className="truncate">{org.name}</span>
@@ -353,7 +353,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                             ) : (
                                 /* Non-Super Admin: read-only display of their own org */
                                 <div className="flex items-center h-10 w-full rounded-lg border border-border bg-black/5 dark:bg-white/5 px-3 py-2 text-sm">
-                                    <Buildings size={14} className="text-muted mr-2 flex-shrink-0" />
+                                    <Buildings className="w-4 h-4 text-muted mr-2 flex-shrink-0" />
                                     <span className="font-medium text-foreground truncate">{user?.organisationName || 'Your Organisation'}</span>
                                     <span className="ml-auto text-[10px] uppercase tracking-wider text-muted font-bold">Auto-assigned</span>
                                 </div>

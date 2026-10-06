@@ -307,14 +307,14 @@ export default function TournamentDetail() {
 
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Clock className="w-3.5 h-3.5" />
+                    <Clock className="w-4 h-4" />
                     {match.matchTime}
                     <span className={`ml-1 ${match.venue?.trim() ? 'text-slate-500' : 'text-slate-400 italic'}`}>
                         • {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}
                     </span>
                 </div>
                 <div className="text-xs text-slate-500 font-medium group-hover:text-blue-500 transition-colors flex items-center gap-1">
-                    Match Center <CaretRight weight="bold" />
+                    Match Center <CaretRight className="w-4 h-4" />
                 </div>
             </div>
 
@@ -466,8 +466,8 @@ export default function TournamentDetail() {
                                     {tournament.name}
                                 </h1>
                                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1 text-slate-200 text-xs md:text-sm font-medium drop-shadow-md">
-                                    <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-blue-400" /> {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
-                                    <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-red-400" /> {tournament.venue}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-navy dark:text-navy-tint" /> {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
+                                    <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-crimson dark:text-crimson-tint" /> {tournament.venue}</span>
                                 </div>
                             </div>
                         </div>
@@ -517,7 +517,7 @@ export default function TournamentDetail() {
                             className={`flex-1 min-w-[4.5rem] flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
                         >
                             <span className="relative">
-                                <tab.icon className="w-5 h-5" weight={isActive ? 'fill' : 'regular'} />
+                                <tab.icon className="w-5 h-5" weight={isActive ? 'fill' : 'duotone'} />
                                 {tab.count !== null && (
                                     <span className="absolute -top-1.5 left-full -ml-1.5 min-w-[1.1rem] px-1 rounded-full bg-white text-blue-700 text-[9px] font-bold leading-4 text-center">
                                         {tab.count}
@@ -548,7 +548,7 @@ export default function TournamentDetail() {
                                     }
                                 `}
                             >
-                                <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`} weight={activeTab === tab.id ? 'fill' : 'regular'} />
+                                <tab.icon className="w-5 h-5" weight={activeTab === tab.id ? 'fill' : 'duotone'} />
                                 <span className="flex-1 text-left">{tab.label}</span>
                                 {tab.count !== null && (
                                     <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
@@ -580,13 +580,13 @@ export default function TournamentDetail() {
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                     <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                        <Users className="w-5 h-5 text-blue-500" weight="fill" />
+                                        <Users className="w-5 h-5 text-navy dark:text-navy-tint" />
                                         Participating Teams
                                         <span className="ml-2 text-sm font-normal text-slate-400">{categoryTeams.length} teams</span>
                                     </h2>
                                     {categoryTeams.length > 5 && (
                                         <div className="relative w-full sm:w-64">
-                                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60" />
                                             <input
                                                 type="text"
                                                 placeholder="Search teams..."
@@ -622,13 +622,13 @@ export default function TournamentDetail() {
                                                         <div className="text-xs text-slate-400 truncate">{team.shortName}</div>
                                                     )}
                                                 </div>
-                                                <CaretRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                                                <CaretRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint transition-colors" />
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-                                        <Users className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                                        <Users className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
                                         <p className="text-slate-500 font-medium">No teams registered yet.</p>
                                     </div>
                                 )}
@@ -637,7 +637,7 @@ export default function TournamentDetail() {
                             /* Players Tab Content - Expandable Team Accordions */
                             <div className="space-y-4">
                                 <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                    <UserCircle className="w-5 h-5 text-emerald-500" weight="fill" />
+                                    <UserCircle className="w-5 h-5 text-navy dark:text-navy-tint" />
                                     Tournament Players
                                 </h2>
                                 {categoryTeams.length > 0 ? (
@@ -682,7 +682,7 @@ export default function TournamentDetail() {
                                                             {team.shortName && <span className="text-xs text-slate-400">{team.shortName}</span>}
                                                         </div>
                                                         {roster && <span className="text-xs text-slate-400 mr-1">{roster.length} players</span>}
-                                                        <CaretDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        <CaretDown className={`w-4 h-4 text-black/60 dark:text-white/60 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                                                     </button>
 
                                                     {/* Expanded Roster */}
@@ -726,7 +726,7 @@ export default function TournamentDetail() {
                                                                     onClick={() => navigate(`/teams/${team.slug || team.id}?tournamentId=${tournament?.id}`)}
                                                                     className="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1 transition-colors"
                                                                 >
-                                                                    View full team profile <CaretRight className="w-3 h-3" />
+                                                                    View full team profile <CaretRight className="w-3 h-3" weight="bold" />
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -737,7 +737,7 @@ export default function TournamentDetail() {
                                     </div>
                                 ) : (
                                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-                                        <UserCircle className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                                        <UserCircle className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
                                         <p className="text-slate-500 font-medium">No players registered yet.</p>
                                     </div>
                                 )}
@@ -748,7 +748,7 @@ export default function TournamentDetail() {
                                 {venueOptions.length > 0 && (
                                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
                                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
-                                            <MapPin className="w-3.5 h-3.5" /> Venue:
+                                            <MapPin className="w-4 h-4" /> Venue:
                                         </span>
                                         {venueOptions.map(option => (
                                             <button
@@ -776,7 +776,7 @@ export default function TournamentDetail() {
 
                                 {groupedMatches.length === 0 ? (
                                     <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-                                        <Trophy className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                                        <Trophy className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
                                         <p className="text-slate-500 font-medium">No matches found for this view.</p>
                                     </div>
                                 ) : (
@@ -794,7 +794,7 @@ export default function TournamentDetail() {
                                                     {venueGroups.map(group => (
                                                         <div key={group.venueName} className="space-y-3">
                                                             <div className="flex items-center gap-2 px-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                                                <MapPin className="w-4 h-4 text-blue-500" />
+                                                                <MapPin className="w-4 h-4 text-navy dark:text-navy-tint" />
                                                                 <span>{group.venueName}</span>
                                                                 <span className="text-xs font-normal text-slate-400">({group.matches.length})</span>
                                                             </div>

@@ -76,12 +76,12 @@ export const FeaturedTournamentCard = ({ tournament, loading }: FeaturedTourname
 
                 <div className="mt-auto pt-6 flex items-center gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                        <CalendarCheck className="w-4 h-4 text-primary-500" />
+                        <CalendarCheck className="w-4 h-4 text-navy dark:text-navy-tint" />
                         <span>{new Date(tournament.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                     </div>
                     {tournament.venue && (
                         <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-primary-500" />
+                            <MapPin className="w-4 h-4 text-navy dark:text-navy-tint" />
                             <span className="truncate max-w-[120px]">{tournament.venue}</span>
                         </div>
                     )}

@@ -479,7 +479,7 @@ function TeamItem({
                     className="p-1 text-muted-foreground hover:text-primary transition-colors"
                 >
                     {isSelected ? (
-                        <CheckSquare className="w-5 h-5 text-blue-600" weight="fill" />
+                        <CheckSquare className="w-5 h-5 text-navy dark:text-navy-tint" weight="fill" />
                     ) : (
                         <Square className="w-5 h-5" />
                     )}

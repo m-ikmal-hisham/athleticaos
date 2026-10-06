@@ -330,7 +330,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
 
                         <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                             <div className="relative">
-                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60" />
                                 <input
                                     type="text"
                                     placeholder="Search teams..."

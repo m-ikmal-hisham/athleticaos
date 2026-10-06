@@ -44,8 +44,8 @@ export const TrendBadge: React.FC<TrendBadgeProps> = ({
         )}>
             {showIcon && (
                 <>
-                    {isNeutral && <Minus size={10} weight="bold" />}
-                    {isIncreasing ? <TrendUp size={10} weight="bold" /> : !isNeutral && <TrendDown size={10} weight="bold" />}
+                    {isNeutral && <Minus className="w-3 h-3" weight="bold" />}
+                    {isIncreasing ? <TrendUp className="w-3 h-3" weight="bold" /> : !isNeutral && <TrendDown className="w-3 h-3" weight="bold" />}
                 </>
             )}
             <span>{formattedValue}%</span>

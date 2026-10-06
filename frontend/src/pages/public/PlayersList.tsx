@@ -104,7 +104,7 @@ export default function PlayersList() {
             <div className="flex flex-col md:flex-row gap-4">
                 {/* Search Input */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
                     <input
                         type="text"
                         placeholder="Search players by name, team, or position..."
@@ -165,7 +165,7 @@ export default function PlayersList() {
                 </div>
             ) : filteredPlayers.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-                    <User className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+                    <User className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-lg font-medium text-slate-900 dark:text-white mb-2">
                         No players found
                     </p>
@@ -224,7 +224,7 @@ export default function PlayersList() {
                                         </h3>
                                         {player.currentTeamName ? (
                                             <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium mt-1 truncate">
-                                                <Shield className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                                <Shield className="w-4 h-4 text-navy dark:text-navy-tint shrink-0" />
                                                 <span className="truncate">{player.currentTeamName}</span>
                                             </div>
                                         ) : player.organisationName ? (
@@ -243,7 +243,7 @@ export default function PlayersList() {
                                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                     {player.tournamentCount > 0 ? (
                                         <div className="flex items-center gap-1">
-                                            <Trophy className="w-3.5 h-3.5 text-yellow-500" />
+                                            <Trophy className="w-4 h-4" />
                                             <span>{player.tournamentCount} {player.tournamentCount === 1 ? 'Tournament' : 'Tournaments'}</span>
                                         </div>
                                     ) : (
@@ -251,7 +251,7 @@ export default function PlayersList() {
                                     )}
                                     {player.state && (
                                         <div className="flex items-center gap-1">
-                                            <MapPin className="w-3 h-3" />
+                                            <MapPin className="w-3 h-3" weight="bold" />
                                             <span>{player.state}</span>
                                         </div>
                                     )}

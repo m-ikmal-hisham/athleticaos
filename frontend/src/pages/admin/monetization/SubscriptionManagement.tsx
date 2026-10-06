@@ -76,15 +76,15 @@ export const SubscriptionManagement = () => {
                                 <ul className="space-y-3">
                                     {/* Mock features based on json/string for now */}
                                     <li className="flex items-center gap-2">
-                                        <div className="bg-green-500/20 p-1 rounded-full"><Check className="w-3 h-3 text-green-500" /></div>
+                                        <div className="bg-green-500/20 p-1 rounded-full"><Check className="w-3 h-3 text-navy dark:text-navy-tint" weight="bold" /></div>
                                         <span className="text-sm">Advanced Stats</span>
                                     </li>
                                     <li className="flex items-center gap-2">
-                                        <div className="bg-green-500/20 p-1 rounded-full"><Check className="w-3 h-3 text-green-500" /></div>
+                                        <div className="bg-green-500/20 p-1 rounded-full"><Check className="w-3 h-3 text-navy dark:text-navy-tint" weight="bold" /></div>
                                         <span className="text-sm">Real-time Updates</span>
                                     </li>
                                     <li className="flex items-center gap-2">
-                                        <div className="bg-green-500/20 p-1 rounded-full"><Check className="w-3 h-3 text-green-500" /></div>
+                                        <div className="bg-green-500/20 p-1 rounded-full"><Check className="w-3 h-3 text-navy dark:text-navy-tint" weight="bold" /></div>
                                         <span className="text-sm">Priority Support</span>
                                     </li>
                                 </ul>

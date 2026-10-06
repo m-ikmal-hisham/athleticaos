@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
-import { ArrowLeft, User, MapPin, Activity, Shield, Calendar, Hash, Trophy, Zap, Target, Clock } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Pulse, Shield, Calendar, Hash, Trophy, Lightning, Target, Clock } from '@phosphor-icons/react';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 
 export function PublicPlayerProfile() {
@@ -106,8 +106,8 @@ export function PublicPlayerProfile() {
                                         {player.profilePictureUrl ? (
                                             <img src={player.profilePictureUrl} alt={player.firstName} className="w-full h-full object-cover rounded-full" />
                                         ) : (
-                                            <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center text-slate-400">
-                                                <User className="w-10 h-10" />
+                                            <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center">
+                                                <User className="w-12 h-12 text-black/40 dark:text-white/40" />
                                             </div>
                                         )}
                                     </div>
@@ -157,7 +157,7 @@ export function PublicPlayerProfile() {
                 {player.tournaments && player.tournaments.length > 0 && (
                     <div className="mb-8 bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white shrink-0">
-                            <Trophy className="w-4 h-4 text-yellow-500" />
+                            <Trophy className="w-4 h-4" />
                             <span>Filter by Tournament:</span>
                         </div>
                         <CompetitionFilterBar
@@ -210,7 +210,7 @@ export function PublicPlayerProfile() {
                     {/* Bio & Details */}
                     <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700/50">
                         <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                            <Activity className="w-5 h-5 text-emerald-500" /> Player Details
+                            <Pulse className="w-5 h-5" /> Player Details
                         </h2>
                         <div className="space-y-4">
                             {player.position && (
@@ -248,14 +248,14 @@ export function PublicPlayerProfile() {
                     {player.currentTeamName && (
                         <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700/50">
                             <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                                <Shield className="w-5 h-5 text-blue-500" /> Team
+                                <Shield className="w-5 h-5" /> Team
                             </h2>
                             <div 
                                 onClick={() => player.currentTeamId ? navigate(`/teams/${player.currentTeamId}${selectedTournamentId ? `?tournamentId=${selectedTournamentId}` : ''}`) : null}
                                 className={`flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 ${player.currentTeamId ? 'hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md cursor-pointer transition-all group' : ''}`}
                             >
                                 <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">
-                                    <Shield className="w-7 h-7 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                    <Shield className="w-8 h-8 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint transition-colors" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
@@ -282,7 +282,7 @@ export function PublicPlayerProfile() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                             <h2 className="text-xl font-bold flex flex-wrap items-center gap-2 text-slate-900 dark:text-white">
                                 <span className="flex items-center gap-2">
-                                    <Trophy className="w-5 h-5 text-yellow-500" />
+                                    <Trophy className="w-5 h-5" />
                                     {selectedTournamentId ? 'Tournament Performance' : 'Career Statistics'}
                                 </span>
                                 {selectedTournamentId && (
@@ -296,7 +296,7 @@ export function PublicPlayerProfile() {
                                     onClick={() => handleTournamentSelect(null)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                                 >
-                                    <Trophy className="w-3 h-3" />
+                                    <Trophy className="w-4 h-4" />
                                     View All-Time Career
                                 </button>
                             )}
@@ -304,15 +304,15 @@ export function PublicPlayerProfile() {
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
-                            <StatCard label="Matches" value={stats.matchesPlayed} icon={<Activity className="w-4 h-4 text-blue-500" />} />
-                            <StatCard label="Total Minutes" value={stats.totalMinutesPlayed || 0} icon={<Clock className="w-4 h-4 text-indigo-500" />} />
+                            <StatCard label="Matches" value={stats.matchesPlayed} icon={<Pulse className="w-4 h-4" />} />
+                            <StatCard label="Total Minutes" value={stats.totalMinutesPlayed || 0} icon={<Clock className="w-4 h-4" />} />
                             <StatCard label="Tries" value={stats.tries} icon={<span className="text-base">🏉</span>} highlight />
-                            <StatCard label="Conversions" value={stats.conversions} icon={<Target className="w-4 h-4 text-green-500" />} />
-                            <StatCard label="Penalties" value={stats.penalties} icon={<Zap className="w-4 h-4 text-orange-500" />} />
-                            <StatCard label="Total Points" value={stats.totalPoints} icon={<Trophy className="w-4 h-4 text-yellow-500" />} highlight />
-                            <StatCard label="Drop Goals" value={stats.dropGoals} icon={<Target className="w-4 h-4 text-purple-500" />} />
-                            <StatCard label="Yellow Cards" value={stats.yellowCards} color="yellow" icon={<div className="w-3 h-4 bg-yellow-400 rounded-[2px]" />} />
-                            <StatCard label="Red Cards" value={stats.redCards} color="red" icon={<div className="w-3 h-4 bg-red-500 rounded-[2px]" />} />
+                            <StatCard label="Conversions" value={stats.conversions} icon={<Target className="w-4 h-4" />} />
+                            <StatCard label="Penalties" value={stats.penalties} icon={<Lightning className="w-4 h-4" />} />
+                            <StatCard label="Total Points" value={stats.totalPoints} icon={<Trophy className="w-4 h-4" />} highlight />
+                            <StatCard label="Drop Goals" value={stats.dropGoals} icon={<Target className="w-4 h-4" />} />
+                            <StatCard label="Yellow Cards" value={stats.yellowCards} color="yellow" icon={<div className="w-3 h-4 bg-card-yellow rounded-[2px]" />} />
+                            <StatCard label="Red Cards" value={stats.redCards} color="red" icon={<div className="w-3 h-4 bg-crimson rounded-[2px]" />} />
                         </div>
 
                         {/* Recent Matches */}
@@ -373,7 +373,7 @@ export function PublicPlayerProfile() {
                 {/* Empty State when selected tournament has no match appearances */}
                 {selectedTournamentId && !hasStats && (
                     <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-8 text-center shadow-sm border border-slate-200 dark:border-slate-700/50">
-                        <Trophy className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                        <Trophy className="w-12 h-12 mx-auto text-black/40 dark:text-white/40 mb-3" />
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No Matches Recorded</h3>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
                             No match appearances or scoring statistics recorded in this tournament yet.

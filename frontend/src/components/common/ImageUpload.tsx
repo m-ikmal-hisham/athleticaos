@@ -119,7 +119,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                         ) : (
                             <>
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 mb-3">
-                                    <ImageIcon className="h-6 w-6 text-slate-500 dark:text-slate-400" />
+                                    <ImageIcon className="h-6 w-6 text-black/60 dark:text-white/60" />
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">

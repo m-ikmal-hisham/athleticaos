@@ -212,7 +212,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
-                                <Users className="w-5 h-5" weight="fill" />
+                                <Users className="w-5 h-5" />
                             </div>
                             {globalStats && <TrendBadge value={globalStats.playerTrend} />}
                         </div>
@@ -231,7 +231,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
-                                <Trophy className="w-5 h-5" weight="fill" />
+                                <Trophy className="w-5 h-5" />
                             </div>
                         </div>
                         <div>
@@ -255,7 +255,7 @@ export const DashboardHome = () => {
                         <div className="p-6 pb-2 flex items-center justify-between">
                             <div>
                                 <h3 className="font-semibold text-foreground flex items-center gap-2">
-                                    <ChartLineUp className="w-4 h-4 text-primary-500" weight="fill" />
+                                    <ChartLineUp className="w-4 h-4 text-navy dark:text-navy-tint" />
                                     Match Activity
                                 </h3>
                                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -327,7 +327,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/10 text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
-                                <Calendar className="w-5 h-5" weight="fill" />
+                                <Calendar className="w-5 h-5" />
                             </div>
                             {activeTournamentId && tournamentSummary && (
                                 <div className="flex flex-col items-end gap-1">
@@ -363,7 +363,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
-                                <UsersThree className="w-5 h-5" weight="fill" />
+                                <UsersThree className="w-5 h-5" />
                             </div>
                             {tournamentSummary && (
                                 <div className="flex gap-1 text-[10px] font-bold uppercase tracking-wider">
@@ -391,7 +391,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
-                                <Buildings className="w-5 h-5" weight="fill" />
+                                <Buildings className="w-5 h-5" />
                             </div>
                             {globalStats && <TrendBadge value={globalStats.organisationTrend} />}
                         </div>

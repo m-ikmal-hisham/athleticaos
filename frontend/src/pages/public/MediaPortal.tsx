@@ -71,7 +71,7 @@ export const MediaPortal = () => {
                                 )}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <Button variant="secondary" size="sm">
-                                        <DownloadSimple className="mr-2" />
+                                        <DownloadSimple className="w-4 h-4 mr-2" />
                                         Download
                                     </Button>
                                 </div>
@@ -80,7 +80,7 @@ export const MediaPortal = () => {
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            {asset.type === 'PHOTO' ? <Image className="w-4 h-4 text-blue-400" /> : <VideoCamera className="w-4 h-4 text-red-400" />}
+                                            {asset.type === 'PHOTO' ? <Image className="w-4 h-4 text-navy dark:text-navy-tint" /> : <VideoCamera className="w-4 h-4 text-crimson dark:text-crimson-tint" />}
                                             <span className="text-xs font-medium text-muted">{asset.type}</span>
                                         </div>
                                         <p className="text-sm font-medium">{asset.description || 'Untitled Asset'}</p>

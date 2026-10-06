@@ -156,21 +156,21 @@ export const SeasonDetail = () => {
                             <div>
                                 <p className="text-sm text-muted-foreground mb-1">Start Date</p>
                                 <div className="flex items-center gap-2">
-                                    <CalendarBlank className="w-4 h-4 text-primary-500" />
+                                    <CalendarBlank className="w-4 h-4 text-navy dark:text-navy-tint" />
                                     <span>{season.startDate ? formatDate(season.startDate) : 'TBD'}</span>
                                 </div>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground mb-1">End Date</p>
                                 <div className="flex items-center gap-2">
-                                    <CalendarBlank className="w-4 h-4 text-primary-500" />
+                                    <CalendarBlank className="w-4 h-4 text-navy dark:text-navy-tint" />
                                     <span>{season.endDate ? formatDate(season.endDate) : 'TBD'}</span>
                                 </div>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground mb-1">Tournaments</p>
                                 <div className="flex items-center gap-2">
-                                    <Trophy className="w-4 h-4 text-primary-500" />
+                                    <Trophy className="w-4 h-4 text-navy dark:text-navy-tint" />
                                     <span>{tournaments.length}</span>
                                 </div>
                             </div>
@@ -188,7 +188,7 @@ export const SeasonDetail = () => {
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <Trophy className="w-5 h-5 text-primary-500" />
+                                <Trophy className="w-5 h-5 text-navy dark:text-navy-tint" />
                                 Tournaments
                             </h3>
                             <Button size="sm" variant="ghost" onClick={() => navigate('/dashboard/tournaments/new')}>

@@ -94,7 +94,7 @@ export const OfficialHistoryModal: React.FC<OfficialHistoryModalProps> = ({ isOp
                                             <TableCell>
                                                 <div className="flex flex-col text-sm">
                                                     <span className="flex items-center gap-1 font-medium">
-                                                        <CalendarBlank className="w-3.5 h-3.5" />
+                                                        <CalendarBlank className="w-4 h-4" />
                                                         {match?.matchDate ? new Date(match.matchDate).toLocaleDateString() : '-'}
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">
@@ -105,7 +105,7 @@ export const OfficialHistoryModal: React.FC<OfficialHistoryModalProps> = ({ isOp
                                             <TableCell>
                                                 <div className="font-medium">{matchDisplay}</div>
                                                 <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                                    <MapPin className="w-3 h-3" />
+                                                    <MapPin className="w-3 h-3" weight="bold" />
                                                     {match?.venue || 'TBA'}
                                                 </div>
                                             </TableCell>

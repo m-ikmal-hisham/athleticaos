@@ -208,7 +208,7 @@ export default function TournamentDetail() {
                         <div className="flex flex-wrap items-center gap-2 mb-1.5 md:mb-2">
                             {tournament.seasonName && (
                                 <Badge variant="outline" className="flex items-center gap-1 bg-white/50 dark:bg-black/50 backdrop-blur-sm border-primary-500/20 text-primary-700 dark:text-primary-300">
-                                    <Trophy className="w-3 h-3" />
+                                    <Trophy className="w-3 h-3" weight="bold" />
                                     {tournament.seasonName}
                                 </Badge>
                             )}
@@ -222,15 +222,15 @@ export default function TournamentDetail() {
                         {/* One wrapping row: on phones the three items used to take a line each with a wide gap */}
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-slate-500 dark:text-slate-400">
                             <div className="flex items-center gap-1.5">
-                                <CalendarBlank className="w-4 h-4 text-primary-400 shrink-0" />
+                                <CalendarBlank className="w-4 h-4 text-navy dark:text-navy-tint shrink-0" />
                                 <span>{new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
                             </div>
                             <div className="flex items-center gap-1.5 min-w-0">
-                                <MapPin className="w-4 h-4 text-primary-400 shrink-0" />
+                                <MapPin className="w-4 h-4 text-navy dark:text-navy-tint shrink-0" />
                                 <span className="truncate">{tournament.venue}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <Gear className="w-4 h-4 text-primary-400 shrink-0" />
+                                <Gear className="w-4 h-4 text-navy dark:text-navy-tint shrink-0" />
                                 <span>{formatTournamentLevel(tournament.level)} • {formatCompetitionType(tournament.competitionType)}</span>
                             </div>
                         </div>
@@ -243,7 +243,7 @@ export default function TournamentDetail() {
                             )}
                             {tournament.status === TournamentStatus.UPCOMING && (
                                 <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
-                                    <Play className="w-4 h-4" weight="fill" />
+                                    <Play className="w-4 h-4" />
                                     Start Tournament
                                 </Button>
                             )}
@@ -299,7 +299,7 @@ export default function TournamentDetail() {
                             aria-current={isActive ? 'page' : undefined}
                             className={`flex-1 min-w-[4.75rem] flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
                         >
-                            <Icon className="w-5 h-5" weight={isActive ? 'fill' : 'regular'} />
+                            <Icon className="w-5 h-5" weight={isActive ? 'fill' : 'duotone'} />
                             {tab.shortLabel ?? tab.label}
                         </button>
                     );
@@ -322,7 +322,7 @@ export default function TournamentDetail() {
                                     }
                                 `}
                             >
-                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-600 dark:text-red-400' : ''}`} />
+                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-navy dark:text-navy-tint' : ''}`} />
                                 <span className="truncate">{tab.label}</span>
                             </button>
                         );
@@ -339,7 +339,7 @@ export default function TournamentDetail() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <GlassCard className="p-6 flex flex-col items-center justify-center text-center">
                                     <div className="w-12 h-12 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center mb-4">
-                                        <Trophy className="w-6 h-6" weight="fill" />
+                                        <Trophy className="w-6 h-6" />
                                     </div>
                                     <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Competition Level</h3>
                                     <p className="text-2xl font-bold text-foreground">{tournament.level}</p>
@@ -349,7 +349,7 @@ export default function TournamentDetail() {
                                 <GlassCard className="p-6">
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Categories</h3>
-                                        <Users className="w-5 h-5 text-primary-400" />
+                                        <Users className="w-5 h-5 text-navy dark:text-navy-tint" />
                                     </div>
 
                                     {tournament.categories && tournament.categories.length > 0 ? (
@@ -375,7 +375,7 @@ export default function TournamentDetail() {
                             {/* Additional Stats or Info could go here */}
                             <GlassCard className="p-6">
                                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                                    <ListNumbers className="w-5 h-5 text-primary-400" />
+                                    <ListNumbers className="w-5 h-5 text-navy dark:text-navy-tint" />
                                     Tournament Stats
                                 </h3>
                                 <div className="grid grid-cols-3 gap-4">

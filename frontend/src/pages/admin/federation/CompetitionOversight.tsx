@@ -44,7 +44,7 @@ export const CompetitionOversight = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Matches Pending</CardTitle>
-                        <CheckCircle className="w-5 h-5 text-blue-500" />
+                        <CheckCircle className="w-5 h-5 text-navy dark:text-navy-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">
@@ -55,7 +55,7 @@ export const CompetitionOversight = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Blocking Issues</CardTitle>
-                        <Warning className="w-5 h-5 text-red-500" />
+                        <Warning className="w-5 h-5 text-crimson dark:text-crimson-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-red-500">

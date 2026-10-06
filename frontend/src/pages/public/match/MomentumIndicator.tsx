@@ -117,7 +117,7 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
         <GlassCard className="p-4 md:p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
-                    <TrendUp className="w-4 h-4 text-blue-500" />
+                    <TrendUp className="w-4 h-4 text-navy dark:text-navy-tint" />
                     Match Momentum
                 </h3>
                 {/* ... Legend ... */}

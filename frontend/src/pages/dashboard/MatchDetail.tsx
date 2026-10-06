@@ -39,12 +39,12 @@ import { SCORING_RULES } from '@/constants/scoring';
 // Helper for event icons
 const getEventIcon = (type: string) => {
     switch (type) {
-        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Football className="w-5 h-5" weight="fill" /></div>;
-        case 'SUPER_TRY': return <div className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full"><Star className="w-5 h-5" weight="fill" /></div>;
-        case 'PENALTY_TRY': return <div className="p-1 bg-blue-200 dark:bg-blue-800/40 text-blue-800 dark:text-blue-300 rounded-full"><Football className="w-5 h-5" weight="fill" /></div>;
-        case 'CONVERSION': return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" weight="bold" /></div>;
-        case 'PENALTY': return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" weight="fill" /></div>;
-        case 'DROP_GOAL': return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" weight="duotone" /></div>;
+        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Football className="w-5 h-5" /></div>;
+        case 'SUPER_TRY': return <div className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full"><Star className="w-5 h-5" /></div>;
+        case 'PENALTY_TRY': return <div className="p-1 bg-blue-200 dark:bg-blue-800/40 text-blue-800 dark:text-blue-300 rounded-full"><Football className="w-5 h-5" /></div>;
+        case 'CONVERSION': return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" /></div>;
+        case 'PENALTY': return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" /></div>;
+        case 'DROP_GOAL': return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" /></div>;
         case 'YELLOW_CARD': return <div className="w-4 h-5 bg-yellow-400 border border-yellow-500 rounded-sm shadow-sm" />;
         case 'RED_CARD': return <div className="w-4 h-5 bg-red-600 border border-red-700 rounded-sm shadow-sm" />;
         case 'SUBSTITUTION': return <div className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full"><ArrowsLeftRight className="w-4 h-4" /></div>;
@@ -884,7 +884,7 @@ export const MatchDetail = () => {
                             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="flex items-center justify-between px-1">
                                     <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                        <GameController className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                        <GameController className="w-5 h-5 text-navy dark:text-navy-tint" />
                                         Live Action Recording
                                     </h3>
                                     {/* Undo Button embedded in header */}
@@ -895,7 +895,7 @@ export const MatchDetail = () => {
                                             className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-full transition-all shadow-sm hover:shadow"
                                             aria-label="Undo Last Action"
                                         >
-                                            <ArrowCounterClockwise className="w-3.5 h-3.5" />
+                                            <ArrowCounterClockwise className="w-4 h-4" />
                                             <span>Undo Last</span>
                                         </button>
                                     )}
@@ -991,7 +991,7 @@ export const MatchDetail = () => {
                                                                         return (
                                                                             <div className="flex flex-col gap-1 text-xs">
                                                                                 <div className="flex items-center gap-1.5 text-red-500 dark:text-red-400">
-                                                                                    <ArrowDown className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
+                                                                                    <ArrowDown className="w-4 h-4 flex-shrink-0" />
                                                                                     <span className="font-medium">{subOutName || 'Unknown'}</span>
                                                                                     {outEntry && (
                                                                                         <div className="flex items-center gap-1 text-[10px] font-normal">
@@ -1011,7 +1011,7 @@ export const MatchDetail = () => {
                                                                                     )}
                                                                                 </div>
                                                                                 <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                                                                                    <ArrowUp className="w-3.5 h-3.5 flex-shrink-0" weight="bold" />
+                                                                                    <ArrowUp className="w-4 h-4 flex-shrink-0" />
                                                                                     <span className="font-medium">{subInName}</span>
                                                                                     {inEntry && (
                                                                                         <div className="flex items-center gap-1 text-[10px] font-normal">

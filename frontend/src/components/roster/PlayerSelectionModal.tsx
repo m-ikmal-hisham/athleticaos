@@ -111,7 +111,7 @@ export function PlayerSelectionModal({
                 {/* Search */}
                 <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
                     <div className="relative">
-                        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60" />
                         <input
                             type="text"
                             placeholder="Search players by name or number..."
@@ -186,7 +186,7 @@ export function PlayerSelectionModal({
                                         ? 'bg-blue-600 border-blue-600 text-white'
                                         : 'border-slate-300 dark:border-slate-600'
                                         }`}>
-                                        {selectedPlayerIds.has(player.playerId) && <UserPlus className="w-3 h-3" />}
+                                        {selectedPlayerIds.has(player.playerId) && <UserPlus className="w-3 h-3" weight="bold" />}
                                     </div>
                                 </div>
                             </div>
