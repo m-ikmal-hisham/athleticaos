@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Input } from './Input';
+import { Select } from './Select';
 import { MALAYSIA_STATES, getDistrictsForState, getSarawakDistricts, detectStateFromPostcode, SARAWAK_GEO_DATA } from '@/constants/malaysia-geo';
 
 export interface AddressData {
@@ -110,8 +111,7 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
         onChange(updates);
     };
 
-    const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const cCode = e.target.value;
+    const handleCountryChange = (cCode: string) => {
         const selectedCountry = countries.find(c => c.isoCode === cCode);
 
         onChange({
@@ -126,9 +126,7 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
         setSarawakDivision('');
     };
 
-    const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const sCode = e.target.value;
-        
+    const handleStateChange = (sCode: string) => {
         let stateName = '';
         if (data.countryCode === 'MY') {
             const selectedState = MALAYSIA_STATES.find(s => s.code === sCode);
@@ -149,8 +147,8 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
         });
     };
 
-    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-        onChange({ ...data, city: e.target.value });
+    const handleCityChange = (val: string) => {
+        onChange({ ...data, city: val });
     };
 
     const renderCityOrDistrictSelect = () => {
@@ -161,47 +159,45 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
                     {/* Robust check for Sarawak */}
                     {isSarawak && (
                         <div className="mb-2">
-                            <select
+                            <Select
                                 value={sarawakDivision}
-                                onChange={(e) => {
-                                    const div = e.target.value;
+                                onChange={(val) => {
+                                    const div = String(val);
                                     setSarawakDivision(div);
                                     const districts = getSarawakDistricts(div);
                                     setMyDistricts(districts);
                                     onChange({ ...data, city: '' });
                                 }}
                                 disabled={disabled}
-                                className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-xs mb-1"
                                 aria-label="Division"
-                            >
-                                <option value="">Select Division (Sarawak)</option>
-                                {getDistrictsForState('MY-13').map(d => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </select>
+                                placeholder="Select Division (Sarawak)"
+                                options={[
+                                    { value: '', label: 'Select Division (Sarawak)' },
+                                    ...getDistrictsForState('MY-13').map(d => ({ value: d, label: d }))
+                                ]}
+                            />
                         </div>
                     )}
 
                     {(myDistricts.length > 0) ? (
-                        <select
+                        <Select
                             value={data.city || ''}
-                            onChange={handleCityChange}
+                            onChange={(val) => handleCityChange(String(val))}
                             disabled={disabled || (isSarawak && !sarawakDivision)}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                             aria-label="City"
-                        >
-                            <option value="">Select...</option>
-                            {(isSarawak && sarawakDivision
-                                ? getSarawakDistricts(sarawakDivision)
-                                : (isSarawak ? [] : myDistricts)
-                            ).map(d => (
-                                <option key={d} value={d}>{d}</option>
-                            ))}
-                        </select>
+                            placeholder="Select..."
+                            options={[
+                                { value: '', label: 'Select...' },
+                                ...(isSarawak && sarawakDivision
+                                    ? getSarawakDistricts(sarawakDivision)
+                                    : (isSarawak ? [] : myDistricts)
+                                ).map(d => ({ value: d, label: d }))
+                            ]}
+                        />
                     ) : (
                         <Input
                             value={data.city || ''}
-                            onChange={handleCityChange}
+                            onChange={(e) => handleCityChange(e.target.value)}
                             placeholder="City Name"
                             disabled={disabled}
                         />
@@ -212,24 +208,23 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
             // Global Cities
             if (globalCities.length > 0) {
                 return (
-                    <select
+                    <Select
                         value={data.city || ''}
-                        onChange={handleCityChange}
+                        onChange={(val) => handleCityChange(String(val))}
                         disabled={disabled}
-                        className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                         aria-label="City"
-                    >
-                        <option value="">Select city</option>
-                        {globalCities.map(c => (
-                            <option key={c.name} value={c.name}>{c.name}</option>
-                        ))}
-                    </select>
+                        placeholder="Select city"
+                        options={[
+                            { value: '', label: 'Select city' },
+                            ...globalCities.map(c => ({ value: c.name, label: c.name }))
+                        ]}
+                    />
                 );
             } else {
                 return (
                     <Input
                         value={data.city || ''}
-                        onChange={handleCityChange}
+                        onChange={(e) => handleCityChange(e.target.value)}
                         placeholder="City Name"
                         disabled={disabled}
                     />
@@ -241,19 +236,18 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
     return (
         <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-                {showLabels && <label className="block text-sm font-medium text-muted-foreground mb-1">Country</label>}
-                <select
+                <Select
+                    label={showLabels ? "Country" : undefined}
                     value={data.countryCode || 'MY'}
-                    onChange={handleCountryChange}
+                    onChange={(val) => handleCountryChange(String(val))}
                     disabled={disabled}
-                    className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     aria-label="Country"
-                >
-                    <option value="">Select Country</option>
-                    {countries.map(c => (
-                        <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
-                    ))}
-                </select>
+                    placeholder="Select Country"
+                    options={[
+                        { value: '', label: 'Select Country' },
+                        ...countries.map(c => ({ value: c.isoCode, label: c.name }))
+                    ]}
+                />
             </div>
 
             <div className="col-span-2">
@@ -287,41 +281,43 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
             </div>
 
             <div>
-                {showLabels && <label className="block text-sm font-medium text-muted-foreground mb-1">State / Province</label>}
                 {data.countryCode === 'MY' ? (
-                    <select
+                    <Select
+                        label={showLabels ? "State / Province" : undefined}
                         value={data.stateCode || ''}
-                        onChange={handleStateChange}
+                        onChange={(val) => handleStateChange(String(val))}
                         disabled={disabled}
-                        className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                         aria-label="State"
-                    >
-                        <option value="">Select State</option>
-                        {MALAYSIA_STATES.map(s => (
-                            <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
-                        ))}
-                    </select>
+                        placeholder="Select State"
+                        options={[
+                            { value: '', label: 'Select State' },
+                            ...MALAYSIA_STATES.map(s => ({ value: s.code, label: `${s.name} (${s.code})` }))
+                        ]}
+                    />
                 ) : (
                     globalStates.length > 0 ? (
-                        <select
+                        <Select
+                            label={showLabels ? "State / Province" : undefined}
                             value={data.stateCode || ''}
-                            onChange={handleStateChange}
+                            onChange={(val) => handleStateChange(String(val))}
                             disabled={disabled}
-                            className="w-full px-4 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                             aria-label="State"
-                        >
-                            <option value="">Select State</option>
-                            {globalStates.map(s => (
-                                <option key={s.isoCode} value={s.isoCode}>{s.name} ({s.isoCode})</option>
-                            ))}
-                        </select>
-                    ) : (
-                        <Input
-                            value={data.state || ''}
-                            onChange={(e) => onChange({ ...data, state: e.target.value, stateCode: '' })}
-                            placeholder="State/Province Name"
-                            disabled={disabled}
+                            placeholder="Select State"
+                            options={[
+                                { value: '', label: 'Select State' },
+                                ...globalStates.map(s => ({ value: s.isoCode, label: `${s.name} (${s.isoCode})` }))
+                            ]}
                         />
+                    ) : (
+                        <>
+                            {showLabels && <label className="block text-sm font-medium text-muted-foreground mb-1">State / Province</label>}
+                            <Input
+                                value={data.state || ''}
+                                onChange={(e) => onChange({ ...data, state: e.target.value, stateCode: '' })}
+                                placeholder="State/Province Name"
+                                disabled={disabled}
+                            />
+                        </>
                     )
                 )}
             </div>

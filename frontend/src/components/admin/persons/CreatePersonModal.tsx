@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { Select } from '@/components/Select';
 import { showToast } from '@/lib/customToast';
 import { createPerson } from '@/api/persons.api';
 import { fetchOrganisations, Organisation } from '@/api/organisations.api';
@@ -206,18 +207,19 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                         />
                     </div>
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Gender</label>
-                        <select
+                        <Select
+                            label="Gender"
                             required
                             aria-label="Gender"
                             value={formData.gender}
-                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="" disabled>Select gender</option>
-                            <option value="MALE">Male</option>
-                            <option value="FEMALE">Female</option>
-                        </select>
+                            onChange={(val) => setFormData({ ...formData, gender: String(val) })}
+                            placeholder="Select gender"
+                            options={[
+                                { value: '', label: 'Select gender', disabled: true },
+                                { value: 'MALE', label: 'Male' },
+                                { value: 'FEMALE', label: 'Female' },
+                            ]}
+                        />
                     </div>
                 </div>
 

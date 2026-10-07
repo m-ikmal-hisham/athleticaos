@@ -252,7 +252,8 @@ export default function TournamentDetail() {
                             )}
                             <Button
                                 variant="danger"
-                                className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border-red-500/20"
+                                disabled={tournament.status === TournamentStatus.ONGOING}
+                                disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
                                 onClick={() => setIsDeleteModalOpen(true)}
                             >
                                 Delete

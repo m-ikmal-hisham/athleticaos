@@ -239,6 +239,7 @@ Every admin page uses `PageHeader`. Max one primary button per page header.
 | Loading | `Skeleton` matching final layout; `Spinner` only inside buttons | "Loading..." text |
 | Error | `ErrorState` (what failed + Retry) | `console.error` only, silent blank |
 | Form field | `Field` = `Label` + `Input`/`Select`/`Textarea` + hint + error, error text in `--danger` | label/input pairs styled per page |
+| Dropdown | `Select` (searchable when > 7 options, bottom sheet on phones) | native `<select>`, per-page custom menus |
 
 ### 6.1 Page or pop-up (CRUD rule)
 
