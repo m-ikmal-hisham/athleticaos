@@ -191,10 +191,10 @@ export const DashboardHome = () => {
             <div className="flex flex-col gap-1 mb-8">
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 pb-1">
+                        <h1 className="text-4xl font-bold tracking-tight text-black dark:text-white pb-1">
                             {activeTournamentId ? "Tournament Overview" : "Dashboard"}
                         </h1>
-                        <p className="text-slate-600 dark:text-slate-300 text-lg mt-1">
+                        <p className="text-black/72 dark:text-white/72 text-lg mt-1">
                             {activeTournamentId
                                 ? "Real-time insights for the selected competition."
                                 : "Welcome back, " + (user?.firstName || 'User') + "."}
@@ -207,11 +207,11 @@ export const DashboardHome = () => {
                 {/* 1. Global KPI: Active Players */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-blue-500"
+                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-navy"
                         onClick={() => navigate('/dashboard/players')}
                     >
                         <div className="flex justify-between items-start">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/10 text-navy dark:text-navy-tint group-hover:bg-deep-navy dark:hover:bg-[#1F5BB3] group-hover:text-white transition-colors duration-300">
                                 <Users className="w-5 h-5" />
                             </div>
                             {globalStats && <TrendBadge value={globalStats.playerTrend} />}

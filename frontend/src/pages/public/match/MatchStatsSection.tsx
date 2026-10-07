@@ -28,7 +28,7 @@ export const MatchStatsSection = ({ match }: MatchStatsSectionProps) => {
                 <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex relative">
                     {/* Home Bar */}
                     <div
-                        className="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-1000 ease-out w-[var(--bar-width)]"
+                        className="h-full bg-navy dark:bg-navy transition-all duration-1000 ease-out w-[var(--bar-width)]"
                         ref={(el) => {
                             if (el) el.style.setProperty('--bar-width', `${homePercent}%`);
                         }}
@@ -69,7 +69,7 @@ export const MatchStatsSection = ({ match }: MatchStatsSectionProps) => {
             <div className="mt-6 flex justify-center">
                 <button
                     onClick={() => setExpanded(!expanded)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-all"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-navy dark:hover:text-navy-tint bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-all"
                 >
                     {expanded ? (
                         <>

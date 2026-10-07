@@ -229,11 +229,11 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         className={`
                             flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
                             ${activeTeam === 'home'
-                                ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                                ? 'bg-white dark:bg-white/10 text-navy dark:text-navy-tint shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}
                         `}
                     >
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${activeTeam === 'home' ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${activeTeam === 'home' ? 'bg-navy' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         {match.homeTeamShortName || match.homeTeamName}
                     </button>
                     <button
@@ -257,7 +257,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                 <div className={`${activeTeam !== 'home' ? 'hidden lg:block' : ''}`}>
                     <GlassCard className="p-5 md:p-6">
                         <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-200/50 dark:border-white/10">
-                            <div className="w-1.5 h-8 rounded-full bg-blue-500" />
+                            <div className="w-1.5 h-8 rounded-full bg-navy" />
                             <div>
                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                                     {match.homeTeamName}
@@ -268,7 +268,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             </div>
                         </div>
                         {homeLineup.length > 0 ? (
-                            renderTeamLineup(homeLineup, 'bg-blue-500')
+                            renderTeamLineup(homeLineup, 'bg-navy')
                         ) : (
                             <p className="text-sm text-slate-400 text-center py-8">Lineup not submitted</p>
                         )}

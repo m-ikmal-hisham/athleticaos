@@ -238,7 +238,7 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                                 </GlassCardTitle>
                                 <button
                                     onClick={() => handleSelectAll(null)}
-                                    className="text-xs text-blue-600 hover:underline"
+                                    className="text-xs text-navy dark:text-navy-tint hover:underline"
                                 >
                                     {unassignedTeams.every(t => selectedIds.has(t.id)) ? 'Deselect All' : 'Select All'}
                                 </button>
@@ -329,7 +329,7 @@ export function GroupingEditor({ teams, stages, categoryId, onAssign, readonly =
                                         {!isEditing && (
                                             <button
                                                 onClick={() => handleSelectAll(stage.name)}
-                                                className="text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider"
+                                                className="text-[10px] font-medium text-navy dark:text-navy-tint hover:text-navy dark:hover:text-navy-tint transition-colors uppercase tracking-wider"
                                             >
                                                 {poolTeams.every(t => selectedIds.has(t.id)) && poolTeams.length > 0 ? 'Deselect' : 'Select'}
                                             </button>
@@ -471,7 +471,7 @@ function TeamItem({
             "p-3 rounded-lg border bg-background shadow-sm flex items-center gap-3 select-none transition-all",
             isOverlay && "cursor-grabbing shadow-xl scale-105 ring-2 ring-primary",
             !isOverlay && "hover:border-primary/50",
-            isSelected && "ring-2 ring-blue-500 border-blue-500"
+            isSelected && "ring-2 ring-navy border-navy"
         )}>
             {!disabled && !isOverlay && onToggleSelection && (
                 <button

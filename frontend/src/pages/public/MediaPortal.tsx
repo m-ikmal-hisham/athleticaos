@@ -37,12 +37,12 @@ export const MediaPortal = () => {
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-600">
+                    <h1 className="text-3xl font-bold text-black dark:text-white">
                         Media Portal
                     </h1>
-                    <p className="text-muted mt-2">Secure access for authorized media partners</p>
+                    <p className="text-black/72 dark:text-white/72 mt-2">Secure access for authorized media partners</p>
                 </div>
-                <div className="text-sm bg-primary-500/10 text-primary-400 px-3 py-1 rounded-full border border-primary-500/20">
+                <div className="text-sm bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint px-3 py-1 rounded-full border border-navy/20 dark:border-navy-tint/30">
                     Partner Access
                 </div>
             </div>

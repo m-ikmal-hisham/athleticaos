@@ -12,11 +12,11 @@ export const PageHeader = ({ title, description, action, className }: PageHeader
     return (
         <div className={clsx('flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8', className)}>
             <div>
-                <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-display font-bold text-black dark:text-white tracking-tight">
                     {title}
                 </h1>
                 {description && (
-                    <p className="mt-1 text-muted text-sm md:text-base">
+                    <p className="mt-1 text-black/72 dark:text-white/72 text-sm md:text-base">
                         {description}
                     </p>
                 )}

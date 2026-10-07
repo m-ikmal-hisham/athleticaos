@@ -45,7 +45,7 @@ export function CompetitionFilterBar({
                     'w-full min-w-0 rounded-lg border px-3 py-2 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2',
                     variant === 'admin'
                         ? 'bg-background border-glass-border text-foreground focus:ring-primary-500/30 focus:border-primary-500'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-blue-500/30 focus:border-blue-500'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-blue-500/30 focus:border-navy'
                 )}
             >
                 <option value="">{allLabel}</option>

@@ -39,9 +39,9 @@ import { SCORING_RULES } from '@/constants/scoring';
 // Helper for event icons
 const getEventIcon = (type: string) => {
     switch (type) {
-        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Football className="w-5 h-5" /></div>;
+        case 'TRY': return <div className="p-1 bg-blue-100 dark:bg-blue-900/30 text-navy dark:text-navy-tint rounded-full"><Football className="w-5 h-5" /></div>;
         case 'SUPER_TRY': return <div className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full"><Star className="w-5 h-5" /></div>;
-        case 'PENALTY_TRY': return <div className="p-1 bg-blue-200 dark:bg-blue-800/40 text-blue-800 dark:text-blue-300 rounded-full"><Football className="w-5 h-5" /></div>;
+        case 'PENALTY_TRY': return <div className="p-1 bg-blue-200 dark:bg-blue-800/40 text-navy dark:text-navy-tint rounded-full"><Football className="w-5 h-5" /></div>;
         case 'CONVERSION': return <div className="p-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full"><Target className="w-4 h-4" /></div>;
         case 'PENALTY': return <div className="p-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full"><Lightning className="w-4 h-4" /></div>;
         case 'DROP_GOAL': return <div className="p-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Target className="w-4 h-4" /></div>;
@@ -781,7 +781,7 @@ export const MatchDetail = () => {
                                             className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-2 object-contain"
                                         />
                                     )}
-                                    <div className="text-lg sm:text-2xl md:text-3xl font-black text-blue-600 dark:text-blue-400 mb-0.5 leading-tight truncate" title={selectedMatch.homeTeamName}>
+                                    <div className="text-lg sm:text-2xl md:text-3xl font-black text-navy dark:text-navy-tint mb-0.5 leading-tight truncate" title={selectedMatch.homeTeamName}>
                                         {selectedMatch.homeTeamShortName || selectedMatch.homeTeamName}
                                     </div>
                                     {selectedMatch.homeTeamShortName && (
@@ -792,7 +792,7 @@ export const MatchDetail = () => {
                                 </div>
 
                                 <div className="flex flex-col items-center relative z-10">
-                                    <div className="text-4xl md:text-6xl font-black font-mono tracking-tighter text-blue-600 dark:text-blue-400 flex items-center gap-2 md:gap-6 drop-shadow-sm">
+                                    <div className="text-4xl md:text-6xl font-black font-mono tracking-tighter text-navy dark:text-navy-tint flex items-center gap-2 md:gap-6 drop-shadow-sm">
                                         <span>{calculatedScores.homeScore}</span>
                                         <span className="text-slate-300 dark:text-slate-700 text-2xl md:text-4xl font-light">-</span>
                                         <span className="text-red-600 dark:text-red-400">{calculatedScores.awayScore}</span>
@@ -1062,7 +1062,7 @@ export const MatchDetail = () => {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => setAssigningEvent({ id: event.id, teamId: event.teamId, teamName: event.teamName })}
-                                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md border border-dashed border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 whitespace-nowrap"
+                                                                            className="inline-flex items-center gap-1 text-xs font-semibold text-navy dark:text-navy-tint px-2 py-1 rounded-md border border-dashed border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 whitespace-nowrap"
                                                                         >
                                                                             + Add player
                                                                         </button>
@@ -1077,7 +1077,7 @@ export const MatchDetail = () => {
                                                                         <button
                                                                             title="Edit Minute"
                                                                             onClick={() => setEditingEvent({ id: event.id, minute: event.minute || 0 })}
-                                                                            className="text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                                            className="text-slate-400 hover:text-navy dark:hover:text-navy-tint dark:text-slate-500 transition-colors p-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5"
                                                                         >
                                                                             <Pencil className="w-4 h-4" />
                                                                         </button>
@@ -1143,21 +1143,23 @@ export const MatchDetail = () => {
                                 <GlassCardTitle className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400">Momentum</GlassCardTitle>
                             </GlassCardHeader>
                             <GlassCardContent>
-                                <div className="relative h-[300px] border-l-2 border-slate-200 dark:border-slate-700 ml-3 space-y-6 py-2">
-                                    {/* Simple vertical timeline of scoring events */}
-                                    {events.filter(e => SCORING_RULES[e.eventType] > 0).length === 0 && (
-                                        <div className="text-sm text-slate-400 dark:text-slate-500 italic pl-6 pt-12">No scoring events yet.</div>
-                                    )}
-                                    {events.filter(e => SCORING_RULES[e.eventType] > 0).map(e => (
-                                        <div key={e.id} className="relative pl-6 group">
-                                            <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-white dark:border-slate-900 ${e.teamId === selectedMatch.homeTeamId ? 'bg-blue-500 shadow-blue-500/50' : 'bg-red-500 shadow-red-500/50'} shadow-lg transition-transform group-hover:scale-125`} />
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono mb-0.5 uppercase tracking-wider">{e.minute} MIN</span>
-                                                <span className="text-base font-bold text-slate-800 dark:text-white leading-none">{e.eventType}</span>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">{e.teamName}</span>
+                                <div className="max-h-[300px] overflow-y-auto pl-3 pr-2 py-2">
+                                    <div className="relative border-l-2 border-slate-200 dark:border-slate-700 space-y-6">
+                                        {/* Simple vertical timeline of scoring events */}
+                                        {events.filter(e => SCORING_RULES[e.eventType] > 0).length === 0 && (
+                                            <div className="text-sm text-slate-400 dark:text-slate-500 italic pl-6 pt-6">No scoring events yet.</div>
+                                        )}
+                                        {[...events].filter(e => SCORING_RULES[e.eventType] > 0).reverse().map(e => (
+                                            <div key={e.id} className="relative pl-6 group">
+                                                <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-4 border-white dark:border-slate-900 ${e.teamId === selectedMatch.homeTeamId ? 'bg-navy' : 'bg-crimson'} shadow transition-transform group-hover:scale-125`} />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono mb-0.5 uppercase tracking-wider">{e.minute} MIN</span>
+                                                    <span className="text-base font-bold text-slate-800 dark:text-white leading-none">{e.eventType}</span>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">{e.teamName}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
                             </GlassCardContent>
                         </GlassCard>
@@ -1186,12 +1188,12 @@ export const MatchDetail = () => {
                                 className={`
                                     px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-all
                                     ${lineupViewTeam === 'home'
-                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        ? 'bg-white dark:bg-slate-700 text-navy dark:text-navy-tint shadow-sm'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                     }
                                 `}
                             >
-                                <span className={`w-2 h-2 rounded-full ${lineupViewTeam === 'home' ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                <span className={`w-2 h-2 rounded-full ${lineupViewTeam === 'home' ? 'bg-navy' : 'bg-slate-300 dark:bg-slate-600'}`} />
                                 {selectedMatch.homeTeamName}
                                 <span className="text-[10px] uppercase tracking-wider opacity-60 ml-1">HOME</span>
                             </button>
@@ -1302,7 +1304,7 @@ export const MatchDetail = () => {
 
                         <button
                             onClick={() => handleTeamSelect(selectedMatch.homeTeamId, selectedMatch.homeTeamName || '')}
-                            className="w-full bg-blue-600 hover:bg-blue-500 text-white p-6 rounded-2xl text-xl font-black uppercase tracking-wider shadow-lg flex justify-between items-center group transition-all hover:scale-[1.02]"
+                            className="w-full bg-navy hover:bg-deep-navy dark:hover:bg-[#1F5BB3] text-white p-6 rounded-2xl text-xl font-black uppercase tracking-wider shadow-lg flex justify-between items-center group transition-all hover:scale-[1.02]"
                         >
                             <span>{selectedMatch.homeTeamName}</span>
                             <span className="text-sm bg-black/20 px-2 py-1 rounded group-hover:bg-black/30">HOME</span>

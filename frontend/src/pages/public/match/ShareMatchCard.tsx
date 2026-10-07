@@ -71,7 +71,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                                 <span className="text-slate-300 dark:text-slate-600 text-xl">-</span>
                                 <span>{match.awayScore ?? 0}</span>
                             </div>
-                            <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                            <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-navy dark:text-navy-tint uppercase tracking-wide">
                                 {formatMatchStatus(match.status) || 'Full Time'}
                             </div>
                         </div>
@@ -118,7 +118,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                 />
                 <button
                     onClick={handleCopy}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-blue-500 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-navy dark:hover:text-navy-tint transition-colors"
                 >
                     {copied ? <Check className="w-4 h-4 text-navy dark:text-navy-tint" /> : <Copy className="w-4 h-4" />}
                 </button>

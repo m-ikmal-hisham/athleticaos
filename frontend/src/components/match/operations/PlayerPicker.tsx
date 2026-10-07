@@ -42,7 +42,7 @@ export const PlayerPicker = ({ teamName, players, onSelect, onCancel, isSubstitu
                                 aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-all border
                                 ${isSubstitution && subStep === 'OUT' ? 'bg-red-900/20 border-red-800 hover:bg-red-900/40 text-red-100' : ''}
                                 ${isSubstitution && subStep === 'IN' ? 'bg-green-900/20 border-green-800 hover:bg-green-900/40 text-green-100' : ''}
-                                ${!isSubstitution ? 'bg-slate-800 hover:bg-slate-700 active:bg-blue-600 border-slate-700 text-white' : ''}
+                                ${!isSubstitution ? 'bg-slate-800 hover:bg-slate-700 active:bg-navy border-slate-700 text-white' : ''}
                             `}
                         >
                             <span className="text-2xl font-black">{player.number}</span>

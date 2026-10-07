@@ -17,14 +17,14 @@ export const ThemeToggle = ({ orientation = 'horizontal' }: ThemeToggleProps) =>
     ];
 
     return (
-        <div className={`flex items-center gap-1 p-1 rounded-xl bg-black/5 dark:bg-white/5 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}>
+        <div className={`flex items-center gap-1 p-1 rounded-xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}>
             {options.map((option) => (
                 <button
                     key={option.value}
                     onClick={() => setTheme(option.value)}
-                    className={`p-2 rounded-lg transition-all duration-200 ${theme === option.value
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
+                    className={`p-2 rounded-lg transition-all duration-150 ${theme === option.value
+                        ? 'bg-white dark:bg-deep-navy text-black/90 dark:text-white/92 shadow-sm'
+                        : 'text-black/60 dark:text-white/60 hover:text-black/90 dark:hover:text-white/92 hover:bg-black/4 dark:hover:bg-white/6'
                         }`}
                     title={option.label}
                 >

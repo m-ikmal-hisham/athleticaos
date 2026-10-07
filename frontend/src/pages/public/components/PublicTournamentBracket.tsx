@@ -32,7 +32,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                     {/* Bracket Header */}
                     <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/60 dark:border-slate-800">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+                            <div className="w-9 h-9 rounded-xl bg-blue-600/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint flex items-center justify-center font-bold text-sm">
                                 <Trophy className="w-5 h-5" />
                             </div>
                             <div>
@@ -56,7 +56,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                             {bracket.rounds.map((round, roundIdx) => (
                                 <div key={round.id} className="flex flex-col min-w-[280px] max-w-[320px]">
                                     {/* Round Header */}
-                                    <div className="text-center font-black uppercase text-xs tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200/50 dark:border-blue-900/50 py-2 rounded-xl mb-6 shadow-sm flex items-center justify-center gap-2">
+                                    <div className="text-center font-black uppercase text-xs tracking-wider text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-950/50 border border-blue-200/50 dark:border-blue-900/50 py-2 rounded-xl mb-6 shadow-sm flex items-center justify-center gap-2">
                                         <span>{formatEnum(round.name)}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (
                                             <CaretRight className="w-4 h-4 opacity-60" />

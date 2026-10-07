@@ -100,7 +100,7 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                             className={`w-full flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 text-left bg-gradient-to-r from-slate-50/80 to-transparent dark:from-white/5 dark:to-transparent hover:from-blue-50/80 dark:hover:from-blue-900/10 transition-colors ${pools.isOpen(poolName) ? 'border-b border-slate-200/50 dark:border-white/5' : ''}`}
                         >
                             <h3 className="flex-1 min-w-0 text-base sm:text-xl font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                                <span className="w-1.5 h-5 sm:h-6 bg-blue-500 rounded-full shrink-0" />
+                                <span className="w-1.5 h-5 sm:h-6 bg-navy rounded-full shrink-0" />
                                 <span className="truncate">{poolName}</span>
                             </h3>
                             <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
@@ -156,7 +156,7 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
 
                                                     {/* Text Logic: Priority Short Name, Small Full Name */}
                                                     <div className="flex flex-col min-w-0">
-                                                        <span className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight truncate group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400 transition-colors">
+                                                        <span className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight truncate group-hover/link:text-navy dark:group-hover/link:text-navy-tint transition-colors">
                                                             {team.teamShortName || team.teamName}
                                                         </span>
                                                         {team.teamShortName && (

@@ -667,7 +667,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                                 <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || match.awayTeamPlaceholder}>{match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}</span>
                                                             </div>
                                                         </div>
-                                                        <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div className="mt-2 text-xs text-navy dark:text-navy-tint font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <Clock className="w-3 h-3" weight="bold" />
                                                             Schedule Now
                                                         </div>
@@ -724,7 +724,7 @@ function TeamLogo({ url, name, className = '' }: { url?: string | null; name?: s
 function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match: MatchResponse, onClick: () => void, onEdit: (e: React.MouseEvent) => void, onDelete: (e: React.MouseEvent) => void, hasMultiVenues?: boolean }) {
     return (
         <div
-            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
+            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-navy dark:hover:border-navy rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
             onClick={onClick}
         >
             {/* Admin Controls */}
@@ -782,7 +782,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                     )}
                     {match.matchCode && (
                         <div
-                            className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold truncate max-w-[7rem]"
+                            className="text-[10px] font-mono text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold truncate max-w-[7rem]"
                             title={match.matchCode}
                         >
                             {match.matchCode}
@@ -805,7 +805,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                 <div className="flex-1 flex items-center gap-2 min-w-0">
                     <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder} />
                     <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate" title={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder}>
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate" title={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder}>
                             {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
@@ -828,7 +828,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                 {/* Away */}
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <div className="flex flex-col items-end gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right" title={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder}>
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate text-right" title={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder}>
                             {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>

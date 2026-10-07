@@ -79,10 +79,10 @@ export const DisciplineTrends = () => {
         <div className="space-y-6 p-6">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-600">
+                    <h1 className="text-2xl font-bold text-black dark:text-white">
                         Discipline Trends
                     </h1>
-                    <p className="text-muted text-sm mt-1">
+                    <p className="text-black/72 dark:text-white/72 text-sm mt-1">
                         Monitor card infractions and team conduct across tournaments.
                     </p>
                 </div>

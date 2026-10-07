@@ -117,7 +117,7 @@ export function PlayerSelectionModal({
                             placeholder="Search players by name or number..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-navy"
                         />
                     </div>
 
@@ -127,7 +127,7 @@ export function PlayerSelectionModal({
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={selectedPlayerIds.size === filteredPlayers.length ? handleDeselectAll : handleSelectAll}
-                                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                    className="text-sm text-navy dark:text-navy-tint hover:underline font-medium"
                                 >
                                     {selectedPlayerIds.size === filteredPlayers.length ? 'Deselect All' : 'Select All'}
                                 </button>
@@ -183,7 +183,7 @@ export function PlayerSelectionModal({
                                         />
                                     )}
                                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedPlayerIds.has(player.playerId)
-                                        ? 'bg-blue-600 border-blue-600 text-white'
+                                        ? 'bg-navy border-navy text-white'
                                         : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                         {selectedPlayerIds.has(player.playerId) && <UserPlus className="w-3 h-3" weight="bold" />}

@@ -99,7 +99,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 bg-white/70 dark:bg-slate-900/60 
                 backdrop-blur-2xl 
                 border-slate-200/50 dark:border-slate-700/50
-                shadow-2xl shadow-blue-900/10 dark:shadow-black/40
+                shadow-2xl dark:shadow-black/40
                 p-4 sm:p-6 md:px-8 md:py-6
                 border-t border-l
                 transition-all duration-300
@@ -148,11 +148,8 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     {/* Status Pill */}
                     <div className="flex items-center gap-3 shrink-0">
                         {isLive && (
-                            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-red-500/20 shadow-sm shadow-red-500/10">
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                </span>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-crimson text-white text-xs font-bold uppercase tracking-wider whitespace-nowrap shadow-sm">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                 LIVE
                             </div>
                         )}
@@ -162,7 +159,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             </div>
                         )}
                         {!isLive && !isCompleted && (
-                            <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-blue-500/20">
+                            <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-blue-500/20">
                                 <CalendarBlank className="w-4 h-4" />
                                 SCHEDULED
                             </div>
@@ -207,7 +204,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                                 </p>
                             )}
                         </div>
-                        <div className="h-0.5 md:h-1 w-8 md:w-10 bg-blue-500 rounded-full opacity-80" />
+                        <div className="h-0.5 md:h-1 w-8 md:w-10 bg-navy rounded-full opacity-80" />
                     </div>
 
                     {/* Score Board */}
@@ -324,7 +321,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         text={`Follow the match ${match.homeTeamName} vs ${match.awayTeamName} on AthleticaOS!`}
                         url={window.location.href}
                         variant="ghost"
-                        className="shrink-0 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                        className="shrink-0 text-slate-500 hover:text-navy dark:hover:text-navy-tint dark:text-slate-400"
                     />
                 </div>
             </div>
