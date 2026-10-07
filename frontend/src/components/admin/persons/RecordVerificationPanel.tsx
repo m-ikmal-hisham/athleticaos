@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, Shield, CheckCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
+import { Select } from '@/components/Select';
 import { showToast } from '@/lib/customToast';
 import { useAuthStore } from '@/store/auth.store';
 import { formatDate } from '@/utils/date';
@@ -204,21 +205,18 @@ export const RecordVerificationPanel: React.FC<RecordVerificationPanelProps> = (
                         </div>
                     )}
 
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground block">
-                            Verification Method *
-                        </label>
-                        <select
+                    <div>
+                        <Select
+                            label="Verification Method"
+                            required
+                            aria-label="Verification Method"
                             value={method}
-                            onChange={(e) => setMethod(e.target.value as RecordVerificationMethod)}
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                            {RECORD_VERIFICATION_METHODS.map((m) => (
-                                <option key={m.value} value={m.value}>
-                                    {m.label}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setMethod(val as RecordVerificationMethod)}
+                            options={RECORD_VERIFICATION_METHODS.map((m) => ({
+                                value: m.value,
+                                label: m.label,
+                            }))}
+                        />
                     </div>
 
                     <div className="flex items-start gap-2 pt-2">

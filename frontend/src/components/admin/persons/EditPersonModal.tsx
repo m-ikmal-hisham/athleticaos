@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { Select } from '@/components/Select';
 import { showToast } from '@/lib/customToast';
 import { updatePerson, PersonResponseDTO, RecordVerificationSummary, isPlaceholderEmail } from '@/api/persons.api';
 import { RecordVerificationPanel } from './RecordVerificationPanel';
@@ -179,18 +180,19 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                         />
                     </div>
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Gender</label>
-                        <select
+                        <Select
+                            label="Gender"
                             required
                             aria-label="Gender"
                             value={formData.gender}
-                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <option value="" disabled>Select gender</option>
-                            <option value="MALE">Male</option>
-                            <option value="FEMALE">Female</option>
-                        </select>
+                            onChange={(val) => setFormData({ ...formData, gender: String(val) })}
+                            placeholder="Select gender"
+                            options={[
+                                { value: '', label: 'Select gender', disabled: true },
+                                { value: 'MALE', label: 'Male' },
+                                { value: 'FEMALE', label: 'Female' },
+                            ]}
+                        />
                         {loadedGender.current && loadedGender.current !== 'MALE' && loadedGender.current !== 'FEMALE' && !formData.gender && (
                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                                 Gender on file is not MALE or FEMALE — please select one.
@@ -270,17 +272,17 @@ export const EditPersonModal: React.FC<EditPersonModalProps> = ({ isOpen, onClos
                 </div>
 
                 <div>
-                    <label className="text-sm font-medium mb-1 block">National Player Status</label>
-                    <select
-                        title="National Player Status"
+                    <Select
+                        label="National Player Status"
+                        aria-label="National Player Status"
                         value={formData.nationalPlayerStatus}
-                        onChange={(e) => setFormData({ ...formData, nationalPlayerStatus: e.target.value })}
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <option value="NONE">None</option>
-                        <option value="ACTIVE">Active National Player</option>
-                        <option value="FORMER">Former National Player</option>
-                    </select>
+                        onChange={(val) => setFormData({ ...formData, nationalPlayerStatus: String(val) })}
+                        options={[
+                            { value: 'NONE', label: 'None' },
+                            { value: 'ACTIVE', label: 'Active National Player' },
+                            { value: 'FORMER', label: 'Former National Player' },
+                        ]}
+                    />
                 </div>
 
                 {willResetVerification && (

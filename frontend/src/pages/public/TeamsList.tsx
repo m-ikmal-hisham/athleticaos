@@ -4,6 +4,7 @@ import { Shield, Users, Trophy, MapPin, MagnifyingGlass, X } from '@phosphor-ico
 import { publicProfileApi, PublicTeamDirectoryItem } from '../../api/public.api';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
+import { Select } from '@/components/Select';
 
 const CATEGORY_OPTIONS = [
     { id: 'all', label: 'All Categories' },
@@ -117,17 +118,16 @@ export default function TeamsList() {
 
                 {/* State Dropdown */}
                 {availableStates.length > 0 && (
-                    <div className="relative">
-                        <select
+                    <div className="relative w-full md:w-44">
+                        <Select
                             value={selectedState}
-                            onChange={(e) => setSelectedState(e.target.value)}
-                            className="w-full md:w-44 px-3 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white text-sm cursor-pointer"
-                        >
-                            <option value="all">All States</option>
-                            {availableStates.map(st => (
-                                <option key={st} value={st}>{st}</option>
-                            ))}
-                        </select>
+                            onChange={(val) => setSelectedState(String(val))}
+                            aria-label="Filter by state"
+                            options={[
+                                { value: 'all', label: 'All States' },
+                                ...availableStates.map(st => ({ value: st, label: st }))
+                            ]}
+                        />
                     </div>
                 )}
             </div>

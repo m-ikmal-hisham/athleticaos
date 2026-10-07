@@ -5,6 +5,7 @@ import { tournamentService } from '@/services/tournamentService';
 import { Button } from '@/components/Button';
 import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent, GlassCardDescription } from '@/components/GlassCard';
 import { Input } from '@/components/Input';
+import { Select } from '@/components/Select';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { TournamentFormatConfig, TournamentCategory, Team, TournamentStageResponse, BracketViewResponse } from '@/types';
 import { GroupingEditor } from '@/components/content/GroupingEditor';
@@ -404,20 +405,18 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
 
                                 {config.includePlacementStages && (
                                     <div className="pt-3 space-y-2">
-                                        <label htmlFor="placementBracketSize" className="text-sm font-medium">
-                                            Teams per bracket
-                                        </label>
-                                        <select
+                                        <Select
                                             id="placementBracketSize"
-                                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                            label="Teams per bracket"
                                             value={config.placementBracketSize ?? 4}
-                                            onChange={(e) => setConfig({ ...config, placementBracketSize: parseInt(e.target.value) })}
-                                        >
-                                            <option value={4}>4 teams — Semi Finals → Final</option>
-                                            <option value={8}>8 teams — Quarter Finals → Semi Finals → Final</option>
-                                            <option value={16}>16 teams — Round of 16 → Quarter Finals → Semi Finals → Final</option>
-                                            <option value={32}>32 teams — Round of 32 → Round of 16 → Quarter Finals → Semi Finals → Final</option>
-                                        </select>
+                                            onChange={(val) => setConfig({ ...config, placementBracketSize: parseInt(String(val)) })}
+                                            options={[
+                                                { value: 4, label: '4 teams — Semi Finals → Final' },
+                                                { value: 8, label: '8 teams — Quarter Finals → Semi Finals → Final' },
+                                                { value: 16, label: '16 teams — Round of 16 → Quarter Finals → Semi Finals → Final' },
+                                                { value: 32, label: '32 teams — Round of 32 → Round of 16 → Quarter Finals → Semi Finals → Final' },
+                                            ]}
+                                        />
                                         <p className="text-xs text-muted-foreground">
                                             {(() => {
                                                 const size = config.placementBracketSize ?? 4;

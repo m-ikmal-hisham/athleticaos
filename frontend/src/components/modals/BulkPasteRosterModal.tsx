@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Modal } from '../Modal';
 import { Button } from '../Button';
+import { Select } from '../Select';
 import { Trash, Plus, CheckCircle, WarningCircle, Clipboard } from '@phosphor-icons/react';
 import { createBatchPlayers } from '@/api/players.api';
 import { showToast } from '@/lib/customToast';
@@ -40,14 +41,14 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
     isOpen,
     onClose,
     teamId,
-    onSuccess
+    onSuccess,
 }) => {
     const [rows, setRows] = useState<PlayerRow[]>([]);
     const [errors, setErrors] = useState<{ [key: number]: RowError }>({});
     const [serverErrors, setServerErrors] = useState<{ [key: number]: string[] }>({});
     const [duplicateWarnings, setDuplicateWarnings] = useState<{ [key: number]: string[] }>({});
     const [loading, setLoading] = useState(false);
-    const cellRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | null }>({});
+    const cellRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -446,18 +447,22 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                 })}
 
                                                 {/* Gender Select */}
-                                                <td className="px-1 py-1">
-                                                    <select
-                                                        ref={el => { cellRefs.current[`${rIdx}-2`] = el; }}
-                                                        value={row.gender}
-                                                        onChange={e => handleCellChange(rIdx, 'gender', e.target.value)}
-                                                        onKeyDown={e => handleKeyDown(e, rIdx, 2)}
-                                                        className={`w-full px-2 py-1.5 bg-black text-xs text-foreground focus:outline-none focus:bg-white/5 border rounded transition-all ${errors[rIdx]?.gender ? 'border-red-500/50 focus:border-red-500' : 'border-transparent focus:border-white/20'}`}
-                                                    >
-                                                        <option value="">Select</option>
-                                                        <option value="MALE">MALE</option>
-                                                        <option value="FEMALE">FEMALE</option>
-                                                    </select>
+                                                <td className="px-1 py-1 min-w-[110px]">
+                                                    <div ref={el => { cellRefs.current[`${rIdx}-2`] = el; }}>
+                                                        <Select
+                                                            value={row.gender}
+                                                            onChange={(val) => handleCellChange(rIdx, 'gender', String(val))}
+                                                            aria-label="Gender"
+                                                            placeholder="Select"
+                                                            error={errors[rIdx]?.gender}
+                                                            triggerClassName="h-8 min-h-[32px] text-xs py-1"
+                                                            options={[
+                                                                { value: '', label: 'Select' },
+                                                                { value: 'MALE', label: 'MALE' },
+                                                                { value: 'FEMALE', label: 'FEMALE' },
+                                                            ]}
+                                                        />
+                                                    </div>
                                                 </td>
 
                                                 {/* DOB Input */}

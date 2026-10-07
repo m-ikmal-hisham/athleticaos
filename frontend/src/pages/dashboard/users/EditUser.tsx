@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { Select } from '@/components/Select';
 import { usersApi, UserUpdateRequest } from '@/api/users.api';
 import { useOrganisationsStore } from '@/store/organisations.store';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
@@ -206,35 +207,30 @@ export const EditUser = () => {
                     />
 
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-muted-foreground">Role</label>
-                        <select
-                            className="w-full h-10 px-3 rounded-xl border border-white/10 bg-black/5 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+                        <Select
+                            label="Role"
                             value={formData.role}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                            onChange={(val) => setFormData({ ...formData, role: String(val) })}
                             required
                             aria-label="Select Role"
-                        >
-                            {getAvailableRoles().map(role => (
-                                <option key={role} value={role} className="bg-background">{role}</option>
-                            ))}
-                        </select>
+                            options={getAvailableRoles().map(role => ({ value: role, label: role }))}
+                        />
                     </div>
 
                     {isSuperAdmin && (
                         <div>
-                            <label className="block text-sm font-medium mb-2 text-muted-foreground">Organisation</label>
-                            <select
-                                className="w-full h-10 px-3 rounded-xl border border-white/10 bg-black/5 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+                            <Select
+                                label="Organisation"
                                 value={formData.organisationId}
-                                onChange={(e) => setFormData({ ...formData, organisationId: e.target.value })}
+                                onChange={(val) => setFormData({ ...formData, organisationId: String(val) })}
                                 required
                                 aria-label="Select Organisation"
-                            >
-                                <option value="" className="bg-background">Select Organisation</option>
-                                {organisations.map(org => (
-                                    <option key={org.id} value={org.id} className="bg-background">{org.name}</option>
-                                ))}
-                            </select>
+                                placeholder="Select Organisation"
+                                options={[
+                                    { value: '', label: 'Select Organisation' },
+                                    ...organisations.map(org => ({ value: org.id, label: org.name }))
+                                ]}
+                            />
                         </div>
                     )}
 

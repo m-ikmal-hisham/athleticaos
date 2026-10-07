@@ -16,6 +16,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         if (!isOpen) return;
 
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.defaultPrevented) return;
             if (event.key === 'Escape') {
                 onClose();
             }

@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { getImageUrl } from '@/utils/image';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { Select } from '@/components/Select';
 
 interface TournamentTeamsProps {
     tournamentId: string;
@@ -178,20 +179,19 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                     {/* Bulk Actions */}
                     {selectedRegisteredTeamIds.size > 0 && (
                         <div className="flex items-center gap-2 mr-2">
-                            <select
-                                onChange={(e) => handleBulkAssignCategory(e.target.value)}
-                                className="text-xs border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-md py-1.5 focus:ring-navy"
+                            <Select
                                 value=""
+                                onChange={(val) => {
+                                    if (val) handleBulkAssignCategory(String(val));
+                                }}
+                                placeholder="Move to Category..."
                                 aria-label="Bulk assign category"
-                                title="Move selected teams to category"
-                            >
-                                <option value="" disabled>Move to Category...</option>
-                                {categories.map(cat => (
-                                    <option key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </option>
-                                ))}
-                            </select>
+                                className="w-48"
+                                options={categories.map(cat => ({
+                                    value: cat.id,
+                                    label: cat.name,
+                                }))}
+                            />
                             <Button
                                 variant="danger"
                                 size="sm"
