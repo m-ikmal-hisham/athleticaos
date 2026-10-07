@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Users, Trophy, MapPin, MagnifyingGlass } from '@phosphor-icons/react';
+import { Shield, Users, Trophy, MapPin, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { publicProfileApi, PublicTeamDirectoryItem } from '../../api/public.api';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
@@ -106,10 +106,11 @@ export default function TeamsList() {
                     />
                     {searchQuery && (
                         <button
+                            aria-label="Clear search"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
-                            ✕
+                            <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
@@ -198,7 +199,7 @@ export default function TeamsList() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                                 {team.category && (
-                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
                                                         {team.category}
                                                     </span>
                                                 )}
@@ -208,7 +209,7 @@ export default function TeamsList() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
                                                 {team.name}
                                             </h3>
                                             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">

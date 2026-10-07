@@ -204,7 +204,7 @@ export default function Tournaments() {
                                 {t.logoUrl && <img src={getImageUrl(t.logoUrl)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />}
                                 <div className="absolute top-2 right-2">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
-                                        <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-blue-500'}`} />
+                                        <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-navy'}`} />
                                         {formatTournamentStatus(t.status)}
                                     </div>
                                 </div>

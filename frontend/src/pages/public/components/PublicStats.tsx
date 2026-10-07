@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { publicTournamentApi, PublicTournamentStats, PublicPlayerStatEntry } from '../../../api/public.api';
-import { CircleNotch, Trophy, Medal, Warning, Shield, Target, Lightning, MagnifyingGlass, CaretDown, CaretUp } from '@phosphor-icons/react';
+import { CircleNotch, Trophy, Medal, Warning, Shield, Target, Lightning, MagnifyingGlass, CaretDown, CaretUp, Football } from '@phosphor-icons/react';
 
 interface PublicStatsProps {
     tournamentId: string;
@@ -77,7 +77,7 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
             {hasMore && (
                 <button
                     onClick={() => setExpanded(!expanded)}
-                    className="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-blue-500 dark:text-cyan-400 hover:text-blue-600 dark:hover:text-cyan-300 transition-colors py-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/5"
+                    className="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-navy dark:text-navy-tint dark:text-cyan-400 hover:text-navy dark:hover:text-navy-tint dark:hover:text-cyan-300 transition-colors py-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/5"
                 >
                     {expanded ? (
                         <>
@@ -301,7 +301,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                     <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600" />
                     <div className="p-6 h-full">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
-                            <span className="text-2xl">🏉</span>
+                            <Football className="w-6 h-6" />
                             Top Try Scorers
                         </h3>
 

@@ -14,7 +14,7 @@ export const MatchHeaderCompact = ({ match, isOnline, matchTime }: MatchHeaderCo
             {/* Home Team */}
             <div className="flex flex-col items-center w-1/4">
                 <span className="text-xl font-bold truncate max-w-full">{match.homeTeamName}</span>
-                <span className="text-3xl font-black text-blue-400">{match.homeScore}</span>
+                <span className="text-3xl font-black text-navy dark:text-navy-tint">{match.homeScore}</span>
             </div>
 
             {/* Clock & Status */}

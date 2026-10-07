@@ -116,7 +116,7 @@ export const Signup = () => {
                                 placeholder="First Name"
                                 error={errors.firstName?.message}
                                 {...register('firstName')}
-                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
                                 disabled={true}
                             />
 
@@ -124,7 +124,7 @@ export const Signup = () => {
                                 placeholder="Last Name"
                                 error={errors.lastName?.message}
                                 {...register('lastName')}
-                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
                                 disabled={true}
                             />
                         </div>
@@ -134,7 +134,7 @@ export const Signup = () => {
                             placeholder="Email"
                             error={errors.email?.message}
                             {...register('email')}
-                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
                             disabled={true}
                         />
 
@@ -143,7 +143,7 @@ export const Signup = () => {
                             placeholder="Password"
                             error={errors.password?.message}
                             {...register('password')}
-                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
                             disabled={true}
                         />
 
@@ -152,7 +152,7 @@ export const Signup = () => {
                             placeholder="Confirm Password"
                             error={errors.confirmPassword?.message}
                             {...register('confirmPassword')}
-                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
                             disabled={true}
                         />
 
@@ -171,7 +171,7 @@ export const Signup = () => {
 
                     <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                        <Link to="/login" className="text-navy dark:text-navy-tint font-semibold hover:underline">
                             Sign in
                         </Link>
                     </div>
@@ -187,13 +187,13 @@ export const Signup = () => {
                 />
 
                 <div className="relative z-20 max-w-lg text-right">
-                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
+                    <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
                         Join the<br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
+                        <span className="text-navy dark:text-navy-tint">
                             Revolution
                         </span>
                     </h2>
-                    <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-md ml-auto">
+                    <p className="mt-6 text-lg text-black/72 dark:text-white/72 leading-relaxed max-w-md ml-auto">
                         Create your profile, manage teams, and compete at the highest level.
                         Your journey starts here.
                     </p>

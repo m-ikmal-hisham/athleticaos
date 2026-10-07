@@ -189,7 +189,7 @@ export default function Players() {
                             onClick={() => handleCardClick(p)}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 text-lg font-bold border border-primary-500/20 overflow-hidden">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint text-lg font-bold border border-navy/20 dark:border-navy-tint/30 overflow-hidden">
                                     {p.photoUrl ? (
                                         <img
                                             src={getImageUrl(p.photoUrl)}

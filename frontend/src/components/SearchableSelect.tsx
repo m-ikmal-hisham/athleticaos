@@ -119,9 +119,9 @@ export const SearchableSelect = ({
                     "relative w-full rounded-xl border bg-background text-foreground transition-all duration-200 py-2.5 px-3 min-h-[44px] cursor-pointer outline-none flex items-center justify-between",
                     error
                         ? "border-red-500 focus-within:ring-2 focus-within:ring-red-500/20"
-                        : "border-border hover:border-blue-500/50 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20",
+                        : "border-border hover:border-blue-500/50 focus-within:border-navy focus-within:ring-2 focus-within:ring-blue-500/20",
                     disabled && "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-white/5",
-                    isOpen && "ring-2 ring-blue-500/20 border-blue-500"
+                    isOpen && "ring-2 ring-blue-500/20 border-navy"
                 )}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
             >
@@ -168,7 +168,7 @@ export const SearchableSelect = ({
                                     className={clsx(
                                         "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between group",
                                         option.value === value
-                                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
+                                            ? "bg-blue-50 dark:bg-blue-900/20 text-navy dark:text-navy-tint font-medium"
                                             : "text-foreground hover:bg-slate-50 dark:hover:bg-white/5"
                                     )}
                                 >
@@ -204,7 +204,7 @@ export const SearchableSelect = ({
                                 <button
                                     type="button"
                                     onClick={handleCreate}
-                                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium transition-colors flex items-center gap-2"
+                                    className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-navy dark:text-navy-tint hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium transition-colors flex items-center gap-2"
                                 >
                                     <span className="truncate">Create "{searchQuery}"</span>
                                 </button>

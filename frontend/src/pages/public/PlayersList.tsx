@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Shield, Trophy, MapPin, MagnifyingGlass } from '@phosphor-icons/react';
+import { User, Shield, Trophy, MapPin, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { publicProfileApi, PublicPlayerDirectoryItem } from '../../api/public.api';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
@@ -114,10 +114,11 @@ export default function PlayersList() {
                     />
                     {searchQuery && (
                         <button
+                            aria-label="Clear search"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
-                            ✕
+                            <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
@@ -203,7 +204,7 @@ export default function PlayersList() {
                                                 </div>
                                             </div>
                                             {player.jerseyNumber && (
-                                                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-black flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-800">
+                                                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-navy text-white text-[11px] font-black flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-800">
                                                     {player.jerseyNumber}
                                                 </div>
                                             )}
@@ -211,7 +212,7 @@ export default function PlayersList() {
 
                                         {/* Position Badge */}
                                         {player.position && (
-                                            <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                                            <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
                                                 {player.position}
                                             </span>
                                         )}
@@ -219,7 +220,7 @@ export default function PlayersList() {
 
                                     {/* Name & Team */}
                                     <div>
-                                        <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                        <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
                                             {player.firstName} {player.lastName}
                                         </h3>
                                         {player.currentTeamName ? (

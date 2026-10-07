@@ -89,7 +89,7 @@ export const CompetitionOversight = () => {
                                         <TableCell>{t.completedMatches} / {t.totalMatches}</TableCell>
                                         <TableCell>
                                             <div className="w-full bg-secondary rounded-full h-2.5 dark:bg-gray-700 max-w-[100px]">
-                                                <div className="bg-blue-600 h-2.5 rounded-full" {...{ style: progressStyle }}></div>
+                                                <div className="bg-navy h-2.5 rounded-full" {...{ style: progressStyle }}></div>
                                             </div>
                                             <span className="text-xs text-muted-foreground mt-1 block">{Math.round(t.completionRate)}%</span>
                                         </TableCell>

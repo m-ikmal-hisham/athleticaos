@@ -296,7 +296,7 @@ export default function TournamentDetail() {
         <Link
             key={match.id}
             to={`/matches/${match.id}`}
-            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden"
+            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-navy dark:hover:border-navy-tint rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden"
         >
             {/* Status Indicator */}
             {['LIVE', 'ONGOING'].includes(match.status) && (
@@ -313,7 +313,7 @@ export default function TournamentDetail() {
                         • {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}
                     </span>
                 </div>
-                <div className="text-xs text-slate-500 font-medium group-hover:text-blue-500 transition-colors flex items-center gap-1">
+                <div className="text-xs text-slate-500 font-medium group-hover:text-navy dark:group-hover:text-navy-tint transition-colors flex items-center gap-1">
                     Match Center <CaretRight className="w-4 h-4" />
                 </div>
             </div>
@@ -330,7 +330,7 @@ export default function TournamentDetail() {
                         )}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
                             {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
@@ -359,7 +359,7 @@ export default function TournamentDetail() {
                 {/* Away */}
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <div className="flex flex-col items-end gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right">
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate text-right">
                             {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
@@ -459,7 +459,12 @@ export default function TournamentDetail() {
                                     <Badge variant="outline" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
                                         {formatTournamentLevel(tournament.level)}
                                     </Badge>
-                                    {tournament.live && <Badge variant="destructive" className="animate-pulse">LIVE NOW</Badge>}
+                                    {tournament.live && (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-crimson text-white border border-crimson shadow-sm">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                            LIVE NOW
+                                        </span>
+                                    )}
                                     {tournament.completed && <Badge variant="secondary">Completed</Badge>}
                                 </div>
                                 <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-lg mb-1.5 md:mb-2 leading-tight">
@@ -491,7 +496,7 @@ export default function TournamentDetail() {
                             className={`
                                 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors
                                 ${selectedCategoryId === category.id
-                                    ? 'bg-blue-600 text-white shadow-md'
+                                    ? 'bg-navy text-white shadow-sm'
                                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}
                             `}
                         >
@@ -505,7 +510,7 @@ export default function TournamentDetail() {
                 It sits outside the grid below so sticky has the whole page to travel through. */}
             <nav
                 ref={mobileTabBarRef}
-                className="lg:hidden sticky top-[4.25rem] z-30 flex overflow-x-auto gap-1 p-1.5 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="lg:hidden sticky top-[4.25rem] z-30 flex overflow-x-auto gap-1 p-1.5 rounded-2xl bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
@@ -514,12 +519,12 @@ export default function TournamentDetail() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             aria-current={isActive ? 'page' : undefined}
-                            className={`flex-1 min-w-[4.5rem] flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}
+                            className={`flex-1 min-w-[4.5rem] flex flex-col items-center gap-1 px-2 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap transition-colors ${isActive ? 'bg-navy text-white' : 'text-black/72 dark:text-white/72 hover:bg-black/4 dark:hover:bg-white/6'}`}
                         >
                             <span className="relative">
                                 <tab.icon className="w-5 h-5" weight={isActive ? 'fill' : 'duotone'} />
                                 {tab.count !== null && (
-                                    <span className="absolute -top-1.5 left-full -ml-1.5 min-w-[1.1rem] px-1 rounded-full bg-white text-blue-700 text-[9px] font-bold leading-4 text-center">
+                                    <span className={`absolute -top-1.5 left-full -ml-1.5 min-w-[1.1rem] px-1 rounded-full text-[9px] font-bold leading-4 text-center ${isActive ? 'bg-white/20 text-white' : 'bg-black/8 dark:bg-white/10 text-black/70 dark:text-white/70'}`}>
                                         {tab.count}
                                     </span>
                                 )}
@@ -543,7 +548,7 @@ export default function TournamentDetail() {
                                 className={`
                                     flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all font-medium text-sm whitespace-nowrap
                                     ${activeTab === tab.id
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 translate-x-1'
+                                        ? 'bg-navy text-white shadow-sm translate-x-1'
                                         : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                     }
                                 `}
@@ -592,7 +597,7 @@ export default function TournamentDetail() {
                                                 placeholder="Search teams..."
                                                 value={teamSearch}
                                                 onChange={(e) => setTeamSearch(e.target.value)}
-                                                className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                className="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy transition-all"
                                             />
                                         </div>
                                     )}
@@ -605,7 +610,7 @@ export default function TournamentDetail() {
                                             <div
                                                 key={team.id}
                                                 onClick={() => navigate(`/teams/${team.slug || team.id}?tournamentId=${tournament?.id}`)}
-                                                className="group flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer"
+                                                className="group flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-navy dark:hover:border-navy-tint hover:shadow-lg transition-all cursor-pointer"
                                             >
                                                 <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
                                                     {team.logoUrl ? (
@@ -615,7 +620,7 @@ export default function TournamentDetail() {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                    <div className="font-bold text-slate-900 dark:text-white truncate group-hover:text-navy dark:group-hover:text-navy-tint transition-colors">
                                                         {team.name}
                                                     </div>
                                                     {team.shortName && (
@@ -690,7 +695,7 @@ export default function TournamentDetail() {
                                                         <div className="border-t border-slate-200 dark:border-slate-800">
                                                             {!roster ? (
                                                                 <div className="p-6 flex justify-center">
-                                                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                                                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-navy"></div>
                                                                 </div>
                                                             ) : roster.length === 0 ? (
                                                                 <div className="p-6 text-center text-sm text-slate-400">No squad registered for this tournament yet.</div>
@@ -706,13 +711,13 @@ export default function TournamentDetail() {
                                                                                 {player.firstName.charAt(0)}{player.lastName.charAt(0)}
                                                                             </div>
                                                                             <div className="flex-1 min-w-0">
-                                                                                <div className="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                                                <div className="text-sm font-semibold text-slate-800 dark:text-white truncate group-hover:text-navy dark:group-hover:text-navy-tint transition-colors">
                                                                                     {player.firstName} {player.lastName}
                                                                                 </div>
                                                                                 <div className="flex items-center gap-2 text-xs text-slate-400">
                                                                                     {player.position && <span>{player.position}</span>}
                                                                                     {player.jerseyNumber != null && (
-                                                                                        <span className="text-blue-500 font-medium">#{player.jerseyNumber}</span>
+                                                                                        <span className="text-navy dark:text-navy-tint font-medium">#{player.jerseyNumber}</span>
                                                                                     )}
                                                                                 </div>
                                                                             </div>
@@ -724,7 +729,7 @@ export default function TournamentDetail() {
                                                             <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-2.5">
                                                                 <button
                                                                     onClick={() => navigate(`/teams/${team.slug || team.id}?tournamentId=${tournament?.id}`)}
-                                                                    className="text-xs text-blue-500 hover:text-blue-600 font-medium flex items-center gap-1 transition-colors"
+                                                                    className="text-xs text-navy dark:text-navy-tint hover:underline font-medium flex items-center gap-1 transition-colors"
                                                                 >
                                                                     View full team profile <CaretRight className="w-3 h-3" weight="bold" />
                                                                 </button>
@@ -757,7 +762,7 @@ export default function TournamentDetail() {
                                                 className={`
                                                     px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors
                                                     ${selectedVenue === option.value
-                                                        ? 'bg-blue-600 text-white shadow-sm'
+                                                        ? 'bg-navy text-white shadow-sm'
                                                         : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                                     }
                                                 `}

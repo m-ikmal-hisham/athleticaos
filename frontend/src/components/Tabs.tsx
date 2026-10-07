@@ -29,7 +29,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className }: TabsListProps) {
     return (
-        <div className={clsx("inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground", className)}>
+        <div className={clsx("inline-flex h-10 items-center justify-center rounded-lg bg-black/4 dark:bg-white/6 p-1 text-black/72 dark:text-white/72 border border-black/10 dark:border-white/12", className)}>
             {children}
         </div>
     );
@@ -50,8 +50,10 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
     return (
         <button
             className={clsx(
-                "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                isActive ? "bg-background text-foreground shadow-sm bg-white dark:bg-gray-800" : "hover:bg-gray-100 dark:hover:bg-gray-800/50",
+                "inline-flex items-center justify-center whitespace-nowrap rounded-[8px] px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                isActive
+                    ? "bg-white dark:bg-deep-navy text-navy dark:text-navy-tint shadow-sm font-semibold"
+                    : "text-black/72 dark:text-white/72 hover:text-black dark:hover:text-white hover:bg-black/4 dark:hover:bg-white/6",
                 className
             )}
             onClick={() => context.onValueChange(value)}
@@ -74,7 +76,7 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
     if (context.value !== value) return null;
 
     return (
-        <div className={clsx("mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)}>
+        <div className={clsx("mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint focus-visible:ring-offset-2", className)}>
             {children}
         </div>
     );

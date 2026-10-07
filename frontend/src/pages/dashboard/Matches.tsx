@@ -334,7 +334,7 @@ export const Matches = () => {
                                     )}
 
                                     {/* Status Indicator Bar */}
-                                    <div className={`h-1 w-full ${m.status === 'ONGOING' ? 'bg-blue-500 animate-pulse' :
+                                    <div className={`h-1 w-full ${m.status === 'ONGOING' ? 'bg-navy animate-pulse' :
                                         m.status === 'COMPLETED' ? 'bg-green-500' :
                                             m.status === 'CANCELLED' ? 'bg-red-500' : 'bg-primary-500/50'
                                         }`} />

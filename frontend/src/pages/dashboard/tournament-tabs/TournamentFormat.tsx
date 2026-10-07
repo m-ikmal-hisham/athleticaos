@@ -328,7 +328,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                             className={clsx(
                                                 "px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border",
                                                 isSelected
-                                                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                                    ? "bg-navy text-white border-navy shadow-md"
                                                     : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                                             )}
                                         >

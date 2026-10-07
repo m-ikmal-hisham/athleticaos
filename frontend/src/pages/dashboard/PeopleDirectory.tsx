@@ -158,12 +158,12 @@ const PeopleDirectory: React.FC = () => {
                 </Card>
 
                 <Card 
-                    className={`cursor-pointer transition-all hover:shadow-md h-full ${filter === 'PLAYERS' ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/50' : 'hover:bg-accent/50'}`}
+                    className={`cursor-pointer transition-all hover:shadow-md h-full ${filter === 'PLAYERS' ? 'ring-2 ring-navy border-navy bg-blue-50/50' : 'hover:bg-accent/50'}`}
                     onClick={() => setFilter('PLAYERS')}
                 >
                     <CardContent className="p-6 flex flex-col h-full justify-between">
                         <div className="flex items-center justify-between mb-2">
-                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600 dark:bg-blue-900/30">
+                            <div className="p-2 bg-blue-100 rounded-lg text-navy dark:text-navy-tint dark:bg-blue-900/30">
                                 <UserCircle className="w-6 h-6" />
                             </div>
                             <TrendBadge value={stats.players.trend} />
@@ -368,7 +368,7 @@ const PeopleDirectory: React.FC = () => {
                                         <TableCell>
                                             <div className="flex gap-1.5 flex-wrap">
                                                 {p.isPlayer && (
-                                                    <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-bold bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400">
+                                                    <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-bold bg-blue-50 text-navy dark:text-navy-tint border-blue-200 dark:bg-blue-900/20 dark:text-navy-tint">
                                                         Player
                                                     </Badge>
                                                 )}
@@ -383,7 +383,7 @@ const PeopleDirectory: React.FC = () => {
                                                     </Badge>
                                                 )}
                                                 {p.isWorldRugbyCertified && (
-                                                    <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-bold bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 flex items-center gap-1">
+                                                    <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-bold bg-blue-50 text-navy dark:text-navy-tint border-blue-200 dark:bg-blue-900/20 dark:text-navy-tint flex items-center gap-1">
                                                         <img 
                                                             src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/World_Rugby_logo.svg/1200px-World_Rugby_logo.svg.png" 
                                                             alt="WR" 
@@ -412,7 +412,7 @@ const PeopleDirectory: React.FC = () => {
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 
-                                                    className="h-8 gap-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:text-blue-400 dark:hover:bg-blue-900/20 px-2"
+                                                    className="h-8 gap-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:text-navy-tint dark:hover:bg-blue-900/20 px-2"
                                                     onClick={() => {
                                                         setSelectedPerson(p);
                                                         setIsConnectModalOpen(true);

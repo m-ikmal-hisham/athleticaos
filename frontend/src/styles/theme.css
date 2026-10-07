@@ -1,4 +1,19 @@
-:root {
+:root, [data-theme="light"] {
+  /* Design Tokens §8 */
+  --brand: 0 71 171;              /* #0047AB */
+  --brand-hover: 13 27 42;        /* #0D1B2A */
+  --brand-text: 0 71 171;
+  --accent: 193 18 31;            /* #C1121F */
+  --accent-text: 193 18 31;
+  --surface-page: rgb(255 255 255);
+  --surface-card: rgb(255 255 255);
+  --surface-sunken: rgb(0 0 0 / 0.04);
+  --line-subtle: rgb(0 0 0 / 0.10);
+  --line-strong: rgb(0 0 0 / 0.24);
+  --content-primary: rgb(0 0 0 / 0.90);
+  --content-secondary: rgb(0 0 0 / 0.72);
+  --content-tertiary: rgb(0 0 0 / 0.60);
+
   --athos-blue: #0053F0;
   --athos-red: #D0021B;
 
@@ -33,8 +48,12 @@
   --athos-transition-fast: 150ms ease-out;
 
   /* Legacy aliases for compatibility */
-  --text-primary: var(--text-color);
-  --text-secondary: var(--text-muted);
+  --text-primary: var(--content-primary);
+  --text-secondary: var(--content-secondary);
+  --text-color: var(--content-primary);
+  --text-muted: var(--content-secondary);
+  --bg-base: var(--surface-page);
+  --card-bg: var(--surface-card);
   --primary: var(--brand-primary, var(--athos-blue));
   --primary-glow: rgba(0, 83, 240, 0.35);
   --blur-level: var(--glass-blur);
@@ -49,22 +68,29 @@
   --brand-secondary: #D32F2F;
   --brand-accent: #FFFFFF;
 
-}
-
-[data-theme="light"] {
   --glass-bg: rgba(255, 255, 255, 0.65);
-  --text-color: var(--athos-text-light);
-  --text-muted: var(--athos-text-muted-light);
-  --bg-base: var(--athos-bg-light);
-  --card-bg: var(--athos-card-light);
 }
 
 [data-theme="dark"] {
+  --brand: 0 71 171;              /* #0047AB */
+  --brand-hover: 31 91 179;       /* #1F5BB3 */
+  --brand-text: 140 172 217;      /* #8CACD9 navy tint */
+  --accent: 193 18 31;            /* #C1121F */
+  --accent-text: 215 101 109;     /* #D7656D crimson tint */
+  --surface-page: rgb(0 0 0);
+  --surface-card: rgb(13 27 42);  /* #0D1B2A */
+  --surface-sunken: rgb(255 255 255 / 0.06);
+  --line-subtle: rgb(255 255 255 / 0.12);
+  --line-strong: rgb(255 255 255 / 0.28);
+  --content-primary: rgb(255 255 255 / 0.92);
+  --content-secondary: rgb(255 255 255 / 0.72);
+  --content-tertiary: rgb(255 255 255 / 0.60);
+
   --glass-bg: rgba(2, 6, 23, 0.70);
-  --text-color: var(--athos-text-dark);
-  --text-muted: var(--athos-text-muted-dark);
-  --bg-base: var(--athos-bg-dark);
-  --card-bg: var(--athos-card-dark);
+  --text-color: var(--content-primary);
+  --text-muted: var(--content-secondary);
+  --bg-base: var(--surface-page);
+  --card-bg: var(--surface-card);
 
   --highlight-color: #ef4444;
   --highlight-glow: rgba(239, 68, 68, 0.2);

@@ -244,7 +244,7 @@ export const CreatePersonModal: React.FC<CreatePersonModalProps> = ({ isOpen, on
                                     type="checkbox"
                                     checked={formData.isPlayer}
                                     onChange={(e) => setFormData({ ...formData, isPlayer: e.target.checked })}
-                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    className="w-4 h-4 rounded border-gray-300 text-navy dark:text-navy-tint focus:ring-navy cursor-pointer"
                                 />
                                 <span className="text-sm font-medium group-hover:text-foreground text-muted">Register as Player</span>
                             </label>

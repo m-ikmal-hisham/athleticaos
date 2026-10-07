@@ -7,7 +7,7 @@ export default function HowItWorks() {
         <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
             {/* Header */}
             <div className="text-center space-y-6">
-                <span className="text-blue-600 dark:text-blue-400 font-bold tracking-wider uppercase text-sm">AthleticaOS Guide</span>
+                <span className="text-navy dark:text-navy-tint font-bold tracking-wider uppercase text-sm">AthleticaOS Guide</span>
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
                     Experience Rugby Like Never Before
                 </h1>

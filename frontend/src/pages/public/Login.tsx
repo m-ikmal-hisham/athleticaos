@@ -8,7 +8,6 @@ import { Eye, EyeSlash, Info } from '@phosphor-icons/react';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuthStore } from '@/store/auth.store';
-import { SocialButtons } from '@/components/SocialButtons';
 import { ForcedPasswordChange } from '@/components/auth/ForcedPasswordChange';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
@@ -74,7 +73,6 @@ export const Login = () => {
 
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
-    const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
 
     // ─── Forced password change (temporary / admin-set password) ──────
     if (pendingChange) {
@@ -93,9 +91,9 @@ export const Login = () => {
 
     // ─── Login Form (shown after access gate is passed) ───────────────
     return (
-        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
+        <div className="min-h-screen w-full flex bg-surface-page">
             {/* Left Side - Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-surface-page relative z-10">
                 <div className="w-full max-w-sm space-y-8">
                     {/* Header Section - Side by Side Centered */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -105,44 +103,30 @@ export const Login = () => {
                             className="h-20 w-auto object-contain shrink-0"
                         />
                         <div className="flex flex-col items-start text-left">
-                            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
-                                Login
+                            <h2 className="text-3xl font-bold tracking-tight text-black dark:text-white leading-none">
+                                Sign in
                             </h2>
-                            <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                                Or sign in with email
+                            <p className="mt-1.5 text-sm text-black/72 dark:text-white/72 font-medium">
+                                For organisers, officials and team managers.
                             </p>
-                        </div>
-                    </div>
-
-                    {/* Social Login Section */}
-                    <div className="mt-6">
-                        <SocialButtons />
-                    </div>
-
-                    <div className="relative my-8">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">Or continue with</span>
                         </div>
                     </div>
 
                     {/* Lockout Warning */}
                     {lockoutMessage && (
-                        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 text-center">
+                        <div className="p-4 rounded-lg bg-crimson/10 border border-crimson/20 text-center">
                             <div className="flex items-center justify-center gap-2 mb-1">
-                                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 text-crimson" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
-                                <span className="text-sm font-semibold text-red-600 dark:text-red-400">Account Locked</span>
+                                <span className="text-sm font-semibold text-crimson dark:text-crimson-tint">Account Locked</span>
                             </div>
-                            <p className="text-sm text-red-600 dark:text-red-400">{lockoutMessage}</p>
+                            <p className="text-sm text-crimson dark:text-crimson-tint">{lockoutMessage}</p>
                         </div>
                     )}
 
                     {isSignedOut && (
-                        <div className="p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/12 flex items-center gap-2.5 text-sm text-black/72 dark:text-white/72">
+                        <div className="p-3 rounded-lg bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 flex items-center gap-2.5 text-sm text-black/72 dark:text-white/72">
                             <Info className="w-5 h-5 shrink-0" />
                             <span>You have signed out.</span>
                         </div>
@@ -155,7 +139,7 @@ export const Login = () => {
                                 placeholder="Email"
                                 error={errors.email?.message}
                                 {...register('email')}
-                                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-purple-500 focus:ring-purple-500 rounded-lg p-3"
+                                className="bg-black/4 dark:bg-white/6 border-black/24 dark:border-white/28 text-black/90 dark:text-white/92 placeholder:text-black/60 dark:placeholder:text-white/60 focus:bg-white dark:focus:bg-deep-navy focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint rounded-[10px] min-h-[44px] text-base sm:text-sm p-3"
                                 disabled={!!lockoutMessage}
                             />
                         </div>
@@ -169,7 +153,7 @@ export const Login = () => {
                                     autoComplete="current-password"
                                     {...register('password')}
                                     aria-invalid={!!errors.password}
-                                    className={`bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 rounded-lg p-3 pr-11 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-200 dark:border-gray-800 focus:border-purple-500 focus:ring-purple-500'}`}
+                                    className={`bg-black/4 dark:bg-white/6 text-black/90 dark:text-white/92 placeholder:text-black/60 dark:placeholder:text-white/60 focus:bg-white dark:focus:bg-deep-navy rounded-[10px] min-h-[44px] text-base sm:text-sm p-3 pr-11 ${errors.password ? 'border-crimson dark:border-crimson-tint focus-visible:ring-crimson' : 'border-black/24 dark:border-white/28 focus-visible:ring-navy dark:focus-visible:ring-navy-tint'}`}
                                     disabled={!!lockoutMessage}
                                 />
                                 <button
@@ -178,77 +162,74 @@ export const Login = () => {
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     aria-pressed={showPassword}
                                     disabled={!!lockoutMessage}
-                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/92 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {showPassword ? <EyeSlash className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                             {errors.password?.message && (
-                                <p className="mt-1.5 text-sm text-red-400">{errors.password.message}</p>
+                                <p className="mt-1.5 text-xs text-crimson dark:text-crimson-tint">{errors.password.message}</p>
                             )}
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
-                                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 dark:border-gray-700 text-purple-600 focus:ring-purple-500 bg-white dark:bg-gray-900" />
+                            <label className="flex items-center gap-2 text-sm text-black/72 dark:text-white/72 cursor-pointer select-none">
+                                <input type="checkbox" className="w-4 h-4 rounded border-black/24 dark:border-white/28 accent-navy bg-white dark:bg-deep-navy cursor-pointer" />
                                 Keep me logged in
                             </label>
-                            <Link to="/forgot-password" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
+                            <Link to="/forgot-password" className="text-sm font-medium text-navy dark:text-navy-tint hover:underline">
                                 Forgot password?
                             </Link>
                         </div>
 
                         <div className="flex gap-3">
-                            {/* Always the public site: going back could return to the protected page that sent us here */}
                             <Button
                                 type="button"
-                                variant="cancel"
-                                className="w-1/3 py-3 rounded-lg"
+                                variant="secondary"
+                                className="w-1/3 py-3"
                                 onClick={() => navigate('/')}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                className="flex-1 py-3 bg-[#6366f1] hover:bg-[#5558dd] text-white font-semibold rounded-lg shadow-md shadow-indigo-500/20 transition-all"
+                                variant="primary"
+                                className="flex-1 py-3"
                                 isLoading={isLoading}
                                 disabled={!!lockoutMessage}
                             >
-                                Login
+                                Sign in
                             </Button>
                         </div>
                     </form>
 
-                    <div className="mt-8 text-center text-xs text-gray-400 dark:text-gray-600">
-                        Authorized personnel only
+                    <div className="mt-8 text-center text-xs text-black/60 dark:text-white/60">
+                        Need an account for your organisation?{' '}
+                        <Link to="/contact?subject=ORGANISATION_REGISTRATION" className="text-navy dark:text-navy-tint hover:underline font-medium">
+                            Register your interest
+                        </Link>
                     </div>
                 </div>
             </div>
 
-            {/* Right Side - Abstract Art */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12">
+            {/* Right Side - Solid Deep Navy in dark, subtle graphic */}
+            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-deep-navy overflow-hidden items-center justify-center p-12">
                 <img
-                    src={bgSrc}
+                    src="/athleticaos-bg-light-new.png"
                     alt="AthleticaOS Background"
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover opacity-100 dark:opacity-[0.08]"
                 />
 
-
                 <div className="relative z-20 max-w-lg text-right">
-                    <h2 className="text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-[1.1]">
-                        Changing the way<br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-blue-600">
-                            the world plays
+                    <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
+                        Run your competitions<br />
+                        <span className="text-navy dark:text-navy-tint">
+                            in one place
                         </span>
                     </h2>
-                    <p className="mt-6 text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-md ml-auto">
-                        Experience the future of rugby management with AthleticaOS.
-                        Streamlined, powerful, and built for champions.
+                    <p className="mt-6 text-lg text-black/72 dark:text-white/72 leading-relaxed max-w-md ml-auto">
+                        Fixtures, scoring, rosters and results for Malaysian rugby.
                     </p>
-
-                    {/* Decorative subtle grid or dots */}
-                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern dark:bg-dot-pattern-white">
-                    </div>
                 </div>
             </div>
         </div>

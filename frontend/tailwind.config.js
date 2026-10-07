@@ -21,11 +21,41 @@ export default {
                 92: '0.92',
             },
             colors: {
-                // Semantic Tokens
-                background: 'var(--bg-base)',
-                foreground: 'var(--text-color)', // Fixed: matches theme.css --text-color
-                muted: 'var(--text-muted)',      // Fixed: matches theme.css --text-muted
-                border: 'var(--border-glass)',
+                // Semantic Tokens (§8)
+                brand: {
+                    DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+                    hover: 'rgb(var(--brand-hover) / <alpha-value>)',
+                    text: 'rgb(var(--brand-text) / <alpha-value>)',
+                },
+                accent: {
+                    DEFAULT: 'var(--surface-sunken)',
+                    hover: 'var(--surface-sunken)',
+                    text: 'rgb(var(--accent-text) / <alpha-value>)',
+                    foreground: 'var(--content-primary)',
+                },
+                'accent-foreground': 'var(--content-primary)',
+                surface: {
+                    page: 'var(--surface-page)',
+                    card: 'var(--surface-card)',
+                    sunken: 'var(--surface-sunken)',
+                },
+                content: {
+                    primary: 'var(--content-primary)',
+                    secondary: 'var(--content-secondary)',
+                    tertiary: 'var(--content-tertiary)',
+                },
+                line: {
+                    subtle: 'var(--line-subtle)',
+                    strong: 'var(--line-strong)',
+                },
+
+                // Shadcn / Compatibility tokens
+                input: 'var(--line-strong)',
+                background: 'var(--surface-page)',
+                foreground: 'var(--content-primary)',
+                muted: 'var(--content-secondary)',
+                'muted-foreground': 'var(--content-secondary)',
+                border: 'var(--line-subtle)',
 
                 // Glass & Panels
                 'glass-bg': 'var(--bg-glass)',
@@ -39,34 +69,34 @@ export default {
                 'crimson-tint': '#D7656D',
                 'card-yellow': '#FFC800',
 
-                // Brand Colors (AthleticaOS Rugby)
+                // Brand Colors (AthleticaOS Rugby) - Remapped to palette
                 primary: {
-                    50: '#eff6ff',
-                    100: '#dbeafe',
-                    200: '#bfdbfe',
-                    300: '#93c5fd',
-                    400: '#60a5fa',
-                    500: '#3b82f6', // Primary Blue
-                    600: '#2563eb',
-                    700: '#1d4ed8',
-                    800: '#1e40af',
-                    900: '#1e3a8a',
-                    950: '#172554',
+                    50: '#EEF3FB',
+                    100: '#D9E4F5',
+                    200: '#B3C8EA',
+                    300: '#8CACD9',
+                    400: '#4F7FC6',
+                    500: '#0047AB',
+                    600: '#0047AB',
+                    700: '#003A8C',
+                    800: '#0D1B2A',
+                    900: '#0D1B2A',
+                    950: '#0D1B2A',
                 },
                 secondary: {
                     DEFAULT: 'var(--brand-secondary)',
                     foreground: 'var(--brand-accent)',
-                    50: '#fef2f2',
-                    100: '#fee2e2',
-                    200: '#fecaca',
-                    300: '#fca5a5',
-                    400: '#f87171',
-                    500: '#D32F2F', // Red
-                    600: '#dc2626',
-                    700: '#b91c1c',
-                    800: '#991b1b',
-                    900: '#7f1d1d',
-                    950: '#450a0a',
+                    50: '#FCEDEE',
+                    100: '#F7D4D6',
+                    200: '#EFA9AE',
+                    300: '#E37E85',
+                    400: '#D7656D',
+                    500: '#C1121F',
+                    600: '#C1121F',
+                    700: '#9E0F19',
+                    800: '#7A0C14',
+                    900: '#56080E',
+                    950: '#3A050A',
                 },
             },
             backgroundImage: {

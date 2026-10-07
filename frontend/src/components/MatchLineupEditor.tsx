@@ -469,7 +469,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
             <div className="flex items-center gap-4 text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800/50 p-2 rounded-md border border-slate-200 dark:border-slate-700/50">
                 <span className="font-semibold uppercase tracking-wider text-[10px]">Actions:</span>
                 <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-blue-600"><ArrowRight className="w-3 h-3" weight="bold" /></div>
+                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-navy dark:text-navy-tint"><ArrowRight className="w-3 h-3" weight="bold" /></div>
                     <span>To Starters</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -505,7 +505,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                 <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Squad</h3>
                                 <button
                                     onClick={() => handleSelectAll(LineupRole.NOT_SELECTED)}
-                                    className="text-xs text-blue-600 hover:underline"
+                                    className="text-xs text-navy dark:text-navy-tint hover:underline"
                                 >
                                     {items[LineupRole.NOT_SELECTED].every(i => selectedIds.has(i.playerId)) ? 'Deselect All' : 'Select All'}
                                 </button>
@@ -517,7 +517,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                     placeholder="Search squad..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full pl-9 pr-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-navy outline-none"
                                 />
                             </div>
                         </div>
@@ -534,7 +534,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
 
                     {/* Starters */}
                     <GlassCard className="p-4 border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
-                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-blue-600 dark:text-blue-400">Starters</h3>
+                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-navy dark:text-navy-tint">Starters</h3>
                         <SortableContext
                             id={LineupRole.STARTER}
                             items={items[LineupRole.STARTER].map(i => i.playerId)}
@@ -640,14 +640,14 @@ function SortableItem({
                 flex items-center gap-2 p-2 rounded-lg border bg-card hover:border-primary/50 transition-colors group
                 ${isStarter ? 'border-l-4 border-l-blue-500' : ''}
                 ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}
-                ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                ${isSelected ? 'ring-2 ring-navy border-navy' : ''}
             `}
         >
             {!isLocked && (
                 <div className="flex items-center gap-1">
                     <button
                         onClick={(e) => { e.stopPropagation(); onToggleSelection?.(); }}
-                        className="p-1 text-slate-400 hover:text-blue-500"
+                        className="p-1 text-slate-400 hover:text-navy dark:hover:text-navy-tint"
                     >
                         {isSelected ? (
                             <CheckSquare className="w-5 h-5 text-navy dark:text-navy-tint" weight="fill" />
@@ -667,7 +667,7 @@ function SortableItem({
                         type="number"
                         value={item.jerseyNumber || ''}
                         onChange={handleNumberChange}
-                        className="w-full h-full text-center bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded-full appearance-none p-0"
+                        className="w-full h-full text-center bg-transparent border-none focus:ring-2 focus:ring-navy rounded-full appearance-none p-0"
                         onKeyDown={(e) => e.stopPropagation()} // Prevent drag trigger on input
                         onPointerDown={(e) => e.stopPropagation()} // Prevent drag trigger
                         placeholder="#"
@@ -687,7 +687,7 @@ function SortableItem({
                     )}
                 </div>
                 {isStarter && positionName ? (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold truncate">
+                    <p className="text-xs text-navy dark:text-navy-tint font-semibold truncate">
                         {positionName}
                     </p>
                 ) : (
@@ -708,7 +708,7 @@ function SortableItem({
                         <>
                             <button
                                 onClick={() => onMove(id, LineupRole.STARTER)}
-                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-blue-600 tooltip"
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-navy dark:text-navy-tint tooltip"
                                 title="Add to Starters"
                             >
                                 <ArrowRight className="w-4 h-4" />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { publicProfileApi, PublicTeamDetailResponse } from '../../api/public.api';
-import { ArrowLeft, Users, Trophy, Shield, Hash, TrendUp, Target, Lightning } from '@phosphor-icons/react';
+import { ArrowLeft, Users, Trophy, Shield, Hash, TrendUp, Target, Lightning, Football, Boot, Crosshair, X } from '@phosphor-icons/react';
 import { RosterList } from '../../components/RosterList';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 
@@ -114,7 +114,7 @@ export function PublicTeamProfile() {
                                 <div className="flex-1 text-center md:text-left">
                                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
                                         {team.category && (
-                                            <span className="px-3 py-1 bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold uppercase tracking-wider">{team.category}</span>
+                                            <span className="px-3 py-1 bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint rounded-full text-xs font-bold uppercase tracking-wider">{team.category}</span>
                                         )}
                                         {team.ageGroup && (
                                             <span className="px-3 py-1 bg-violet-500/10 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 rounded-full text-xs font-bold uppercase tracking-wider">{team.ageGroup}</span>
@@ -151,10 +151,10 @@ export function PublicTeamProfile() {
                             <TeamStatCard label="Wins" value={stats.wins} highlight />
                             <TeamStatCard label="Draws" value={stats.draws} />
                             <TeamStatCard label="Losses" value={stats.losses} color="red" />
-                            <TeamStatCard label="Tries" value={stats.triesScored} icon={<span className="text-sm">🏉</span>} />
-                            <TeamStatCard label="Conversions" value={stats.conversions} icon={<span className="text-sm">🎯</span>} />
-                            <TeamStatCard label="Penalties" value={stats.penalties} icon={<span className="text-sm">👟</span>} />
-                            <TeamStatCard label="Drop Goals" value={stats.dropGoals} icon={<span className="text-sm">🥅</span>} />
+                            <TeamStatCard label="Tries" value={stats.triesScored} icon={<Football className="w-5 h-5" />} />
+                            <TeamStatCard label="Conversions" value={stats.conversions} icon={<Target className="w-5 h-5" />} />
+                            <TeamStatCard label="Penalties" value={stats.penalties} icon={<Boot className="w-5 h-5" />} />
+                            <TeamStatCard label="Drop Goals" value={stats.dropGoals} icon={<Crosshair className="w-5 h-5" />} />
                             <TeamStatCard label="Points For" value={stats.pointsFor} icon={<Target className="w-4 h-4" />} />
                             <TeamStatCard label="Points Against" value={stats.pointsAgainst} icon={<Lightning className="w-4 h-4" />} />
                             <TeamStatCard label="Pts Diff" value={stats.pointsDifference} highlight={stats.pointsDifference > 0} color={stats.pointsDifference < 0 ? 'red' : undefined} />
@@ -190,7 +190,7 @@ export function PublicTeamProfile() {
                                         placeholder="Search players by name, position, or jersey..."
                                         value={playerSearch}
                                         onChange={(e) => setPlayerSearch(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-navy transition-all"
                                     />
                                     {playerSearch && (
                                         <button 
@@ -198,7 +198,7 @@ export function PublicTeamProfile() {
                                             onClick={() => setPlayerSearch('')}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                         >
-                                            ✕
+                                            <X className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>
@@ -211,7 +211,7 @@ export function PublicTeamProfile() {
                                         onClick={() => setRosterView('cards')}
                                         className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
                                             rosterView === 'cards'
-                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                ? 'border-navy text-navy dark:text-navy-tint'
                                                 : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                         }`}
                                     >
@@ -221,7 +221,7 @@ export function PublicTeamProfile() {
                                         onClick={() => setRosterView('stats')}
                                         className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
                                             rosterView === 'stats'
-                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                                ? 'border-navy text-navy dark:text-navy-tint'
                                                 : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                         }`}
                                     >
@@ -342,7 +342,7 @@ function TeamStatCard({ label, value, icon, highlight, color }: { label: string;
             <div className={`text-xl font-black ${
                 color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
                 color === 'red' ? 'text-red-600 dark:text-red-400' :
-                highlight ? 'text-blue-700 dark:text-blue-300' :
+                highlight ? 'text-navy dark:text-navy-tint' :
                 'text-slate-900 dark:text-white'
             }`}>{value}</div>
             <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">{label}</div>

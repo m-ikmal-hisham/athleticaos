@@ -172,7 +172,7 @@ export default function Users() {
                             onClick={() => navigate(`/dashboard/users/${user.id}/edit`)}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary-500/20 to-blue-600/20 text-primary-200 font-bold border border-white/10">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint font-bold border border-navy/20 dark:border-navy-tint/30">
                                     {user.firstName[0]}{user.lastName[0]}
                                 </div>
                                 <div className="flex gap-1">

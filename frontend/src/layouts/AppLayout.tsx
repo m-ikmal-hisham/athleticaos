@@ -339,7 +339,7 @@ export const AppLayout = () => {
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                         className={clsx(
-                            "hidden lg:flex w-6 h-6 bg-white dark:bg-slate-800 rounded-full shadow-md items-center justify-center text-xs border border-slate-200 dark:border-slate-700 z-50 text-slate-500 hover:text-blue-600 transition-all duration-300 mb-2",
+                            "hidden lg:flex w-6 h-6 bg-white dark:bg-deep-navy rounded-full shadow-sm items-center justify-center text-xs border border-black/10 dark:border-white/12 z-50 text-black/72 dark:text-white/72 hover:text-black dark:hover:text-white hover:bg-black/4 dark:hover:bg-white/6 transition-all duration-150 mb-2",
                             isCollapsed
                                 ? "relative mx-auto" // In flow when collapsed
                                 : "absolute top-8 right-5" // Floating when expanded
@@ -353,7 +353,7 @@ export const AppLayout = () => {
                         {visibleSections.map((section, sectionIndex) => (
                             <div key={section.title || sectionIndex} className={clsx("mb-6", isCollapsed && "mb-4")}>
                                 {section.title && !isCollapsed && (
-                                    <h3 className="px-3 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-2">
+                                    <h3 className="px-3 text-xs font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider mb-2">
                                         {section.title}
                                     </h3>
                                 )}
@@ -368,26 +368,26 @@ export const AppLayout = () => {
                                                     to={item.path}
                                                     onClick={() => setSidebarOpen(false)}
                                                     className={clsx(
-                                                        'flex items-center gap-3 rounded-lg transition-all duration-200 group relative',
+                                                        'flex items-center gap-3 rounded-lg transition-all duration-150 group relative',
                                                         isCollapsed ? 'justify-center py-3 px-2' : 'px-3 py-1.5 mx-0',
                                                         isActive
-                                                            ? 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 font-medium'
-                                                            : 'text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
+                                                            ? 'bg-navy text-white font-medium'
+                                                            : 'text-sm font-medium text-black/72 dark:text-white/72 hover:bg-black/4 dark:hover:bg-white/6 hover:text-black dark:hover:text-white'
                                                     )}
                                                 >
-                                                    <span className={clsx("shrink-0", isActive ? "text-white" : "text-slate-400 dark:text-slate-500 group-hover:text-foreground")}>
+                                                    <span className={clsx("shrink-0", isActive ? "text-white" : "text-current")}>
                                                         {isActive ? item.iconFilled : item.icon}
                                                     </span>
 
                                                     {!isCollapsed && (
-                                                        <span className="text-sm tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300">
+                                                        <span className="text-sm tracking-tight whitespace-nowrap overflow-hidden transition-all duration-150">
                                                             {item.label}
                                                         </span>
                                                     )}
 
                                                     {/* Tooltip for collapsed state */}
                                                     {isCollapsed && (
-                                                        <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                                        <div className="absolute left-full ml-4 px-2 py-1 bg-deep-navy text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-white/12">
                                                             {item.label}
                                                         </div>
                                                     )}
@@ -397,16 +397,16 @@ export const AppLayout = () => {
                                     })}
                                 </ul>
                                 {isCollapsed && sectionIndex < visibleSections.length - 1 && (
-                                    <div className="mx-2 my-2 border-b border-white/5" />
+                                    <div className="mx-2 my-2 border-b border-black/10 dark:border-white/12" />
                                 )}
                             </div>
                         ))}
                     </nav>
 
                     {/* Bottom Section: Theme + Notifications + Profile */}
-                    <div className={clsx("m-3 mt-0 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 transition-all duration-300", isCollapsed ? "p-2" : "p-3")}>
+                    <div className={clsx("m-3 mt-0 bg-black/4 dark:bg-white/6 rounded-2xl border border-black/10 dark:border-white/12 transition-all duration-150", isCollapsed ? "p-2" : "p-3")}>
                         {!isCollapsed && (
-                            <div className="text-[10px] text-muted-foreground px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
+                            <div className="text-[10px] text-black/60 dark:text-white/60 px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
                                 <span>System</span>
                                 <div className="flex gap-2">
                                     <ThemeToggle />
@@ -424,7 +424,7 @@ export const AppLayout = () => {
                         <button
                             onClick={() => setShowProfilePopup(true)}
                             className={clsx(
-                                "w-full flex items-center rounded-xl hover:bg-white/40 dark:hover:bg-black/40 transition-all duration-150 border border-transparent hover:border-black/5 dark:hover:border-white/10",
+                                "w-full flex items-center rounded-xl hover:bg-black/4 dark:hover:bg-white/6 transition-all duration-150 border border-transparent hover:border-black/10 dark:hover:border-white/12",
                                 isCollapsed ? "justify-center p-1" : "gap-3 p-2"
                             )}
                         >
@@ -436,19 +436,19 @@ export const AppLayout = () => {
                             {!isCollapsed && (
                                 <>
                                     <div className="flex-1 text-left overflow-hidden">
-                                        <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                                        <p className="text-xs font-semibold text-black/90 dark:text-white/92 truncate leading-tight">
                                             {user?.firstName} {user?.lastName}
                                         </p>
-                                        <p className="text-[10px] text-muted-foreground truncate">
+                                        <p className="text-[10px] text-black/60 dark:text-white/60 truncate">
                                             Is Active
                                         </p>
                                     </div>
-                                    <CaretDown className="w-3 h-3 text-muted-foreground" weight="bold" />
+                                    <CaretDown className="w-3 h-3 text-black/60 dark:text-white/60" weight="bold" />
                                 </>
                             )}
                         </button>
                         {!isCollapsed && (
-                            <p className="mt-2 text-[9px] text-muted-foreground/30 font-mono text-center">
+                            <p className="mt-2 text-[10px] text-black/60 dark:text-white/60 font-mono text-center">
                                 v{import.meta.env.VITE_GIT_SHA || 'dev'}
                             </p>
                         )}

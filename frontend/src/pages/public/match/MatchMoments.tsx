@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown, CaretDown, CaretUp, Star } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
+import { Button } from '@/components/Button';
 import { PublicMatchDetail, publicTournamentApi, PublicMatchLineups, PublicLineupEntry } from '../../../api/public.api';
 import { formatEventType } from '@/utils/formatters';
 import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
@@ -152,7 +153,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                     icon: <Football className="w-5 h-5" />,
                     bg: 'bg-blue-50 dark:bg-blue-900/20',
                     border: 'border-blue-200 dark:border-blue-800',
-                    text: 'text-blue-700 dark:text-blue-400',
+                    text: 'text-navy dark:text-navy-tint',
                     size: 'large'
                 };
             case 'SUPER_TRY':
@@ -275,30 +276,26 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                         className="flex items-center gap-2 cursor-pointer select-none group" 
                         onClick={() => setIsExpanded(!isExpanded)}
                     >
-                        <h3 className={`${matchText.title} text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors`}>Match Moments</h3>
-                        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
+                        <h3 className={`${matchText.title} text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors`}>Match Moments</h3>
+                        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors">
                             {isExpanded ? <CaretUp className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint" /> : <CaretDown className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint" />}
                         </div>
                     </div>
                     {replayMode && (
-                        <div className="text-xs font-bold text-blue-500 uppercase tracking-widest mt-1 animate-pulse">
+                        <div className="text-xs font-bold text-navy dark:text-navy-tint uppercase tracking-widest mt-1 animate-pulse">
                             Replay Mode • {currentMinute}'
                         </div>
                     )}
                 </div>
 
-                <button
+                <Button
+                    size="sm"
+                    variant={replayMode ? 'primary' : 'secondary'}
                     onClick={() => setReplayMode(!replayMode)}
-                    className={`
-                        shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-full ${matchText.chip} font-bold transition-all
-                        ${replayMode
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                            : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20'
-                        }
-                    `}
+                    className="shrink-0 rounded-full font-bold"
                 >
                     {replayMode ? 'Exit replay' : 'Replay moments'}
-                </button>
+                </Button>
             </div>
 
             {/* Replay Controls - Only visible in Replay Mode */}
@@ -324,7 +321,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                             onClick={() => setIsPlaying(!isPlaying)}
                             aria-label={isPlaying ? 'Pause Replay' : 'Play Replay'}
                             title={isPlaying ? 'Pause Replay' : 'Play Replay'}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition"
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-navy text-white hover:bg-deep-navy dark:hover:bg-[#1F5BB3] transition"
                         >
                             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                         </button>
@@ -352,7 +349,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                 }}
                                 aria-label="Replay Timeline"
                                 title="Replay Timeline"
-                                className="w-full accent-blue-600 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                className="w-full accent-navy h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                             />
                             <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
                                 <span>Kick Off</span>
@@ -368,7 +365,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
             {isExpanded && (
                 <div className="relative space-y-0">
                     <div className="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 pb-3 md:pb-5 mb-2 border-b border-slate-200 dark:border-white/5">
-                        <div className={`${matchText.body} text-right font-bold text-blue-600 dark:text-blue-400 truncate`} title={match.homeTeamName}>{match.homeTeamName}</div>
+                        <div className={`${matchText.body} text-right font-bold text-navy dark:text-navy-tint truncate`} title={match.homeTeamName}>{match.homeTeamName}</div>
                         <div className={`${matchText.caption} text-center text-slate-400`}>Min</div>
                         <div className={`${matchText.body} text-left font-bold text-red-600 dark:text-red-400 truncate`} title={match.awayTeamName}>{match.awayTeamName}</div>
                     </div>

@@ -424,7 +424,7 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                 <GlassCard className="h-full flex flex-col p-0 overflow-hidden">
                     <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                            <div className="p-2 bg-blue-500/10 rounded-lg text-navy dark:text-navy-tint">
                                 <Users className="w-5 h-5" />
                             </div>
                             <h3 className="font-bold text-lg text-foreground">Top Teams</h3>
@@ -467,7 +467,7 @@ function StatsContent({ summary, loading, playerStats, disciplineStats, teamStat
                                             <td className="px-6 py-3.5 text-right text-foreground/80 font-medium">
                                                 {team.wins}
                                             </td>
-                                            <td className="px-6 py-3.5 text-right text-blue-500 font-bold text-base">
+                                            <td className="px-6 py-3.5 text-right text-navy dark:text-navy-tint font-bold text-base">
                                                 {team.tablePoints}
                                             </td>
                                         </tr>

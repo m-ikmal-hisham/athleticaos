@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getMatchOfficials, assignOfficial, removeOfficial, getAllOfficials, getOfficialRoles, MatchOfficialDTO, OfficialRegistryDTO, OfficialRoleDTO } from '@/api/officials.api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { Trash, Plus, UserCircle, X } from '@phosphor-icons/react';
+import { Trash, Plus, UserCircle, X, Check } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { showToast } from '@/lib/customToast';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -109,7 +109,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
     // Define role display priority/colors
     const getRoleBadgeColor = (roleName: string) => {
         const lower = roleName.toLowerCase().replace(/_/g, ' ');
-        if (lower.includes('referee') && !lower.includes('assistant')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+        if (lower.includes('referee') && !lower.includes('assistant')) return 'bg-blue-100 text-navy dark:text-navy-tint dark:bg-blue-900/30 dark:text-navy-tint';
         if (lower.includes('assistant') || lower.includes('ar')) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
         if (lower.includes('tmo') || lower.includes('video')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
         if (lower.includes('4th') || lower.includes('fourth') || lower.includes('number')) return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
@@ -156,7 +156,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                     {isAdding && (
                         <div className="mb-5 p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200/50 dark:border-blue-800/30">
                             <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-semibold text-sm text-blue-900 dark:text-blue-200">Assign New Official</h4>
+                                <h4 className="font-semibold text-sm text-navy dark:text-navy-tint">Assign New Official</h4>
                                 <button
                                     onClick={() => setIsAdding(false)}
                                     className="p-1 hover:bg-blue-200/50 dark:hover:bg-blue-800/30 rounded transition-colors"
@@ -220,7 +220,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                             {isAdmin && !isLocked && !isAdding && (
                                 <button
                                     onClick={() => setIsAdding(true)}
-                                    className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                    className="mt-2 text-xs text-navy dark:text-navy-tint hover:underline"
                                 >
                                     + Assign an official
                                 </button>
@@ -255,7 +255,13 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                                                         variant={assignment.isConfirmed ? 'default' : 'secondary'}
                                                         className="text-[10px] h-4 px-1"
                                                     >
-                                                        {assignment.isConfirmed ? '✓ Confirmed' : 'Pending'}
+                                                        {assignment.isConfirmed ? (
+                                                            <span className="inline-flex items-center gap-1">
+                                                                <Check className="w-2.5 h-2.5" /> Confirmed
+                                                            </span>
+                                                        ) : (
+                                                            'Pending'
+                                                        )}
                                                     </Badge>
                                                 </div>
                                             </div>

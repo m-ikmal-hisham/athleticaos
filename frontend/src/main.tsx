@@ -33,10 +33,11 @@ export const Root = () => {
                         toastOptions={{
                             duration: 4000,
                             style: {
-                                background: 'var(--glass-bg)',
-                                color: 'var(--text-color)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                backdropFilter: 'blur(24px)',
+                                background: 'var(--surface-card)',
+                                color: 'var(--content-primary)',
+                                border: '1px solid var(--line-subtle)',
+                                borderRadius: '10px',
+                                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
                             },
                         }}
                     />

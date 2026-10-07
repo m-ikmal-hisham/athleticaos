@@ -287,7 +287,7 @@ export default function TournamentDetail() {
             <nav
                 ref={tabBarRef}
                 aria-label="Tabs"
-                className="lg:hidden sticky top-0 z-20 flex overflow-x-auto gap-1 p-1.5 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/25 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="lg:hidden sticky top-0 z-20 flex overflow-x-auto gap-1 p-1.5 rounded-2xl bg-navy shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -317,7 +317,7 @@ export default function TournamentDetail() {
                                 className={`
                                     min-w-0 py-2.5 px-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 whitespace-nowrap transition-all duration-300
                                     ${isActive
-                                        ? 'bg-blue-500/10 dark:bg-red-500/20 text-blue-700 dark:text-red-400 shadow-sm ring-1 ring-blue-500/20 dark:ring-red-500/20'
+                                        ? 'bg-blue-500/10 dark:bg-red-500/20 text-navy dark:text-navy-tint dark:text-red-400 shadow-sm ring-1 ring-blue-500/20 dark:ring-red-500/20'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-slate-200'
                                     }
                                 `}
