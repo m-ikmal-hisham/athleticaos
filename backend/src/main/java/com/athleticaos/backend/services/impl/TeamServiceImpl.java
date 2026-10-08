@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ public class TeamServiceImpl implements TeamService {
     private final OrganisationPersonRepository organisationPersonRepository;
     private final TournamentTeamRepository tournamentTeamRepository;
     private final AccessScopeService accessScopeService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<TeamResponse> getAllTeams(UUID organisationId) {
@@ -115,6 +117,225 @@ public class TeamServiceImpl implements TeamService {
         return teams.stream()
                 .map(t -> mapToResponse(t, tournamentsByTeamId.getOrDefault(t.getId(), List.of())))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.athleticaos.backend.dtos.common.PageResponse<TeamResponse> getTeamsPage(
+            int page,
+            Integer size,
+            String search,
+            UUID organisationId,
+            String category,
+            String ageGroup,
+            String state,
+            String sort) {
+        TeamScopeResolution scope = resolveTeamScope(organisationId);
+        int safeSize = clampPageSize(size);
+        int safePage = Math.max(0, page);
+
+        if (scope.isDisjoint()) {
+            return new com.athleticaos.backend.dtos.common.PageResponse<>(
+                    List.of(), safePage, safeSize, 0L, 0, false);
+        }
+
+        org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(safePage, safeSize);
+        org.springframework.data.jpa.domain.Specification<Team> spec = com.athleticaos.backend.repositories.spec.AdminDirectorySpecifications.adminTeams(
+                search,
+                category,
+                ageGroup,
+                state,
+                scope.targetOrgIds(),
+                scope.restrictToOrgIds(),
+                scope.isDisjoint());
+
+        org.springframework.data.domain.Page<Team> teamPage = teamRepository.findAll(spec, pageRequest);
+        return com.athleticaos.backend.dtos.common.PageResponse.of(teamPage, this::mapTeamsForPage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse getTeamFilters() {
+        TeamScopeResolution scope = resolveTeamScope(null);
+        if (scope.isDisjoint()) {
+            return new com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse(
+                    List.of(), List.of(), List.of(), List.of());
+        }
+
+        jakarta.persistence.criteria.CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // 1. Organisations: [{id, name}]
+        jakarta.persistence.criteria.CriteriaQuery<Object[]> orgCq = cb.createQuery(Object[].class);
+        jakarta.persistence.criteria.Root<Team> orgRoot = orgCq.from(Team.class);
+        jakarta.persistence.criteria.Join<Team, Organisation> orgJoin = orgRoot.join("organisation", jakarta.persistence.criteria.JoinType.INNER);
+        orgCq.multiselect(orgJoin.get("id"), orgJoin.get("name")).distinct(true);
+        if (scope.restrictToOrgIds()) {
+            orgCq.where(orgJoin.get("id").in(scope.targetOrgIds()));
+        }
+        List<Object[]> orgRows = entityManager.createQuery(orgCq).getResultList();
+        java.util.Map<String, com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse.OrganisationOption> orgMap = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Object[] r : orgRows) {
+            if (r != null && r.length >= 2 && r[0] != null && r[1] != null) {
+                UUID id = (UUID) r[0];
+                String name = r[1].toString().trim();
+                if (!name.isEmpty() && !orgMap.containsKey(name)) {
+                    orgMap.put(name, new com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse.OrganisationOption(id, name));
+                }
+            }
+        }
+        List<com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse.OrganisationOption> organisations = new ArrayList<>(orgMap.values());
+
+        // 2. Categories
+        List<String> rawCategories = queryDistinctField(cb, "category", scope);
+        List<String> categories = cleanOptions(rawCategories);
+
+        // 3. Age groups
+        List<String> rawAgeGroups = queryDistinctField(cb, "ageGroup", scope);
+        List<String> ageGroups = cleanOptions(rawAgeGroups);
+
+        // 4. States
+        List<String> rawStates = queryDistinctField(cb, "state", scope);
+        List<String> states = cleanOptions(rawStates);
+
+        return new com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse(
+                organisations, categories, ageGroups, states);
+    }
+
+    private List<String> queryDistinctField(jakarta.persistence.criteria.CriteriaBuilder cb, String fieldName, TeamScopeResolution scope) {
+        jakarta.persistence.criteria.CriteriaQuery<String> cq = cb.createQuery(String.class);
+        jakarta.persistence.criteria.Root<Team> root = cq.from(Team.class);
+        cq.select(root.get(fieldName)).distinct(true);
+
+        List<jakarta.persistence.criteria.Predicate> preds = new ArrayList<>();
+        preds.add(cb.isNotNull(root.get(fieldName)));
+        if (scope.restrictToOrgIds()) {
+            preds.add(root.get("organisation").get("id").in(scope.targetOrgIds()));
+        }
+        cq.where(preds.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    private List<String> cleanOptions(List<String> raw) {
+        if (raw == null) return List.of();
+        java.util.TreeSet<String> set = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (String s : raw) {
+            if (s != null && !s.isBlank()) {
+                set.add(s.trim());
+            }
+        }
+        return new ArrayList<>(set);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getTeamCategoryCounts(
+            String search,
+            UUID organisationId,
+            String ageGroup,
+            String state) {
+        TeamScopeResolution scope = resolveTeamScope(organisationId);
+        Map<String, Long> counts = new java.util.LinkedHashMap<>();
+        counts.put("ALL", 0L);
+
+        if (scope.isDisjoint()) {
+            return counts;
+        }
+
+        jakarta.persistence.criteria.CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        jakarta.persistence.criteria.CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        jakarta.persistence.criteria.Root<Team> root = cq.from(Team.class);
+
+        org.springframework.data.jpa.domain.Specification<Team> spec = com.athleticaos.backend.repositories.spec.AdminDirectorySpecifications.adminTeams(
+                search,
+                null,
+                ageGroup,
+                state,
+                scope.targetOrgIds(),
+                scope.restrictToOrgIds(),
+                scope.isDisjoint());
+
+        jakarta.persistence.criteria.Predicate predicate = spec.toPredicate(root, cq, cb);
+        jakarta.persistence.criteria.Expression<String> categoryExpr = root.get("category");
+        cq.multiselect(categoryExpr, cb.count(root));
+        if (predicate != null) {
+            cq.where(predicate);
+        }
+        cq.groupBy(categoryExpr);
+
+        List<Object[]> rows = entityManager.createQuery(cq).getResultList();
+        long total = 0L;
+        for (Object[] row : rows) {
+            if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                String cat = row[0].toString().trim();
+                long c = ((Number) row[1]).longValue();
+                counts.put(cat, c);
+                counts.put(cat.toUpperCase(), c);
+                total += c;
+            }
+        }
+        counts.put("ALL", total);
+        return counts;
+    }
+
+    private record TeamScopeResolution(
+            Set<UUID> targetOrgIds,
+            boolean restrictToOrgIds,
+            boolean isDisjoint) {}
+
+    private TeamScopeResolution resolveTeamScope(UUID organisationId) {
+        Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+
+        if (organisationId != null) {
+            Set<UUID> targetIds = resolveOrganisationHierarchy(organisationId);
+            if (accessibleIds != null) {
+                targetIds.retainAll(accessibleIds);
+            }
+            if (targetIds.isEmpty()) {
+                return new TeamScopeResolution(null, true, true);
+            }
+            return new TeamScopeResolution(targetIds, true, false);
+        } else {
+            if (accessibleIds != null) {
+                if (accessibleIds.isEmpty()) {
+                    return new TeamScopeResolution(null, true, true);
+                }
+                return new TeamScopeResolution(accessibleIds, true, false);
+            } else {
+                return new TeamScopeResolution(null, false, false);
+            }
+        }
+    }
+
+    private List<TeamResponse> mapTeamsForPage(List<Team> teams) {
+        if (teams.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> teamIds = teams.stream().map(Team::getId).collect(Collectors.toList());
+        List<Object[]> activeTournamentsRows = tournamentTeamRepository.findActiveTournamentsForTeamIds(teamIds);
+        Map<UUID, List<TeamResponse.TournamentSummary>> tournamentsByTeamId = new HashMap<>();
+        for (Object[] row : activeTournamentsRows) {
+            UUID teamId = (UUID) row[0];
+            com.athleticaos.backend.entities.Tournament t = (com.athleticaos.backend.entities.Tournament) row[1];
+            if (teamId != null && t != null) {
+                tournamentsByTeamId
+                        .computeIfAbsent(teamId, k -> new ArrayList<>())
+                        .add(TeamResponse.TournamentSummary.builder()
+                                .id(t.getId())
+                                .name(t.getName())
+                                .build());
+            }
+        }
+
+        return teams.stream()
+                .map(t -> mapToResponse(t, tournamentsByTeamId.getOrDefault(t.getId(), List.of())))
+                .collect(Collectors.toList());
+    }
+
+    private static int clampPageSize(Integer size) {
+        if (size == null) {
+            return 24;
+        }
+        return Math.max(1, Math.min(100, size));
     }
 
     @Override

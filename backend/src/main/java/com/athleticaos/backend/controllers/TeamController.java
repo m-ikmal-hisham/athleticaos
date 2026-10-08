@@ -33,9 +33,39 @@ public class TeamController {
     private final com.athleticaos.backend.audit.AuditLogger auditLogger;
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping
+    @GetMapping(params = "!page")
     public ResponseEntity<List<TeamResponse>> getAllTeams(@RequestParam(required = false) UUID organisationId) {
         return ResponseEntity.ok(teamService.getAllTeams(organisationId));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping(params = "page")
+    public ResponseEntity<com.athleticaos.backend.dtos.common.PageResponse<TeamResponse>> getTeamsPage(
+            @RequestParam int page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String ageGroup,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(teamService.getTeamsPage(page, size, search, organisationId, category, ageGroup, state, sort));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/filters")
+    public ResponseEntity<com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse> getTeamFilters() {
+        return ResponseEntity.ok(teamService.getTeamFilters());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/category-counts")
+    public ResponseEntity<java.util.Map<String, Long>> getTeamCategoryCounts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) String ageGroup,
+            @RequestParam(required = false) String state) {
+        return ResponseEntity.ok(teamService.getTeamCategoryCounts(search, organisationId, ageGroup, state));
     }
 
     @PreAuthorize("isAuthenticated()")

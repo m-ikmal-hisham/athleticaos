@@ -143,14 +143,18 @@ export const useMatchesStore = create<MatchState>((set, get) => ({
     addEvent: async (matchId, event) => {
         try {
             await createMatchEvent(matchId, event);
-            // Refresh events
-            const eventsRes = await fetchMatchEvents(matchId);
-            set({ events: eventsRes.data });
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Failed to add event", error);
             set({ error: "Failed to add event" });
             throw error; // Re-throw to let component handle it
+        }
+        // The event is saved at this point, so a failed refresh must not report the save as failed.
+        try {
+            const eventsRes = await fetchMatchEvents(matchId);
+            set({ events: eventsRes.data });
+        } catch (error) {
+            console.error("Event saved, but refreshing the event list failed", error);
         }
     },
 
