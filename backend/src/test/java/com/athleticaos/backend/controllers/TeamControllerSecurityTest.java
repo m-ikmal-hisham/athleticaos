@@ -231,4 +231,28 @@ public class TeamControllerSecurityTest {
 
         verifyNoInteractions(auditLogger);
     }
+
+    @Test
+    void anonymousCannotAccessGetTeamOptions() throws Exception {
+        mockMvc.perform(get("/api/v1/teams/options"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PLAYER")
+    void getTeamOptions_authenticated_returns200() throws Exception {
+        com.athleticaos.backend.dtos.team.TeamOptionDTO opt = com.athleticaos.backend.dtos.team.TeamOptionDTO.builder()
+                .id(UUID.randomUUID())
+                .name("Alpha Team")
+                .organisationId(UUID.randomUUID())
+                .category("MENS")
+                .build();
+        when(teamService.getTeamOptions(any())).thenReturn(List.of(opt));
+
+        mockMvc.perform(get("/api/v1/teams/options"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Alpha Team"));
+
+        verify(teamService).getTeamOptions(any());
+    }
 }

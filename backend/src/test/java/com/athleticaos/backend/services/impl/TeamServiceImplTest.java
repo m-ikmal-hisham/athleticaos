@@ -58,6 +58,8 @@ class TeamServiceImplTest {
     private com.athleticaos.backend.repositories.StaffRoleRepository staffRoleRepository;
     @Mock
     private com.athleticaos.backend.audit.AuditLogger auditLogger;
+    @Mock
+    private com.athleticaos.backend.services.UserService userService;
 
     @InjectMocks
     private TeamServiceImpl teamService;
@@ -352,5 +354,79 @@ class TeamServiceImplTest {
                 .hasMessage("Staff does not belong to this team");
 
         verify(teamStaffRepository, never()).delete(any());
+    }
+
+    @Test
+    void getAllTeams_whenTeamInMultipleTournaments_returnsTournamentsInSummary() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        when(teamRepository.findAllWithOrganisation()).thenReturn(List.of(team));
+        when(playerTeamService.getTeamRoster(teamId, null)).thenReturn(Collections.emptyList());
+
+        com.athleticaos.backend.entities.Tournament tourn1 = com.athleticaos.backend.entities.Tournament.builder()
+                .id(UUID.randomUUID()).name("Tournament 1").build();
+        com.athleticaos.backend.entities.Tournament tourn2 = com.athleticaos.backend.entities.Tournament.builder()
+                .id(UUID.randomUUID()).name("Tournament 2").build();
+
+        when(tournamentTeamRepository.findActiveTournamentsForTeamIds(List.of(teamId)))
+                .thenReturn(List.of(
+                        new Object[]{teamId, tourn1},
+                        new Object[]{teamId, tourn2}
+                ));
+
+        List<TeamResponse> result = teamService.getAllTeams(null);
+
+        assertThat(result).hasSize(1);
+        TeamResponse response = result.get(0);
+        assertThat(response.getId()).isEqualTo(teamId);
+        assertThat(response.getTournaments()).hasSize(2);
+        assertThat(response.getTournaments()).extracting(TeamResponse.TournamentSummary::getName)
+                .containsExactly("Tournament 1", "Tournament 2");
+    }
+
+    @Test
+    void getTeamOptions_whenSuperAdmin_seesAllSorted() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        Team teamB = Team.builder().id(UUID.randomUUID()).name("Bravo Team").organisation(org).category("MENS").build();
+        Team teamA = Team.builder().id(UUID.randomUUID()).name("Alpha Team").organisation(org).category("WOMENS").build();
+        when(teamRepository.findAllWithOrganisation()).thenReturn(List.of(teamB, teamA));
+
+        var options = teamService.getTeamOptions(null);
+
+        assertThat(options).hasSize(2);
+        assertThat(options.get(0).getName()).isEqualTo("Alpha Team");
+        assertThat(options.get(1).getName()).isEqualTo("Bravo Team");
+        verify(teamRepository).findAllWithOrganisation();
+    }
+
+    @Test
+    void getTeamOptions_whenOrgAdmin_seesOnlyOwnHierarchy() {
+        UUID userOrgId = org.getId();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(userOrgId));
+        when(teamRepository.findByOrganisation_IdInWithOrganisation(java.util.Set.of(userOrgId))).thenReturn(List.of(team));
+
+        var options = teamService.getTeamOptions(null);
+
+        assertThat(options).hasSize(1);
+        assertThat(options.get(0).getId()).isEqualTo(teamId);
+        assertThat(options.get(0).getName()).isEqualTo("Team Alpha");
+        verify(teamRepository).findByOrganisation_IdInWithOrganisation(java.util.Set.of(userOrgId));
+    }
+
+    @Test
+    void getTeamOptions_withOrganisationId_resolvesHierarchy() {
+        UUID parentOrgId = UUID.randomUUID();
+        UUID childOrgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        when(organisationRepository.findByParentOrgId(parentOrgId)).thenReturn(List.of(
+                Organisation.builder().id(childOrgId).build()
+        ));
+        when(organisationRepository.findByParentOrgId(childOrgId)).thenReturn(Collections.emptyList());
+        when(teamRepository.findByOrganisation_IdInWithOrganisation(java.util.Set.of(parentOrgId, childOrgId)))
+                .thenReturn(List.of(team));
+
+        var options = teamService.getTeamOptions(parentOrgId);
+
+        assertThat(options).hasSize(1);
+        assertThat(options.get(0).getId()).isEqualTo(teamId);
     }
 }

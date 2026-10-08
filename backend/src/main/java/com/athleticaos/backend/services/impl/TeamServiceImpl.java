@@ -35,6 +35,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,6 +63,7 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamResponse> getAllTeams(UUID organisationId) {
         java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
         java.util.Set<UUID> targetIds = new java.util.HashSet<>();
+        List<Team> teams;
 
         if (organisationId != null) {
             // If filtering by specific org, ensure we fetch its hierarchy
@@ -69,29 +73,95 @@ public class TeamServiceImpl implements TeamService {
             if (accessibleIds != null) {
                 targetIds.retainAll(accessibleIds);
             }
+
+            if (targetIds.isEmpty()) {
+                return java.util.Collections.emptyList();
+            }
+            teams = teamRepository.findByOrganisation_IdInWithOrganisation(targetIds);
         } else {
             // No filter, use user's full scope
             if (accessibleIds != null) {
                 targetIds.addAll(accessibleIds);
+                if (targetIds.isEmpty()) {
+                    return java.util.Collections.emptyList();
+                }
+                teams = teamRepository.findByOrganisation_IdInWithOrganisation(targetIds);
             } else {
                 // Super Admin with no filter -> All teams
-                return teamRepository.findAll().stream()
-                        .map(this::mapToResponse)
-                        .collect(Collectors.toList());
+                teams = teamRepository.findAllWithOrganisation();
             }
         }
 
-        if (targetIds.isEmpty() && organisationId != null) {
-            return java.util.Collections.emptyList();
-        } else if (targetIds.isEmpty() && accessibleIds != null && !accessibleIds.isEmpty()) {
-            // Should not happen if logic above is correct, but safe fallback
+        if (teams.isEmpty()) {
             return java.util.Collections.emptyList();
         }
 
-        List<Team> teams = teamRepository.findByOrganisation_IdIn(targetIds);
+        List<UUID> teamIds = teams.stream().map(Team::getId).collect(Collectors.toList());
+        List<Object[]> activeTournamentsRows = tournamentTeamRepository.findActiveTournamentsForTeamIds(teamIds);
+        Map<UUID, List<TeamResponse.TournamentSummary>> tournamentsByTeamId = new HashMap<>();
+        for (Object[] row : activeTournamentsRows) {
+            UUID teamId = (UUID) row[0];
+            com.athleticaos.backend.entities.Tournament t = (com.athleticaos.backend.entities.Tournament) row[1];
+            if (teamId != null && t != null) {
+                tournamentsByTeamId
+                        .computeIfAbsent(teamId, k -> new ArrayList<>())
+                        .add(TeamResponse.TournamentSummary.builder()
+                                .id(t.getId())
+                                .name(t.getName())
+                                .build());
+            }
+        }
 
         return teams.stream()
-                .map(this::mapToResponse)
+                .map(t -> mapToResponse(t, tournamentsByTeamId.getOrDefault(t.getId(), List.of())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.athleticaos.backend.dtos.team.TeamOptionDTO> getTeamOptions(UUID organisationId) {
+        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+        java.util.Set<UUID> targetIds = new java.util.HashSet<>();
+        List<Team> teams;
+
+        if (organisationId != null) {
+            // If filtering by specific org, ensure we fetch its hierarchy
+            targetIds = resolveOrganisationHierarchy(organisationId);
+
+            // Security check: Ensure requested org is within user's accessible scope
+            if (accessibleIds != null) {
+                targetIds.retainAll(accessibleIds);
+            }
+
+            if (targetIds.isEmpty()) {
+                return java.util.Collections.emptyList();
+            }
+            teams = teamRepository.findByOrganisation_IdInWithOrganisation(targetIds);
+        } else {
+            // No filter, use user's full scope
+            if (accessibleIds != null) {
+                targetIds.addAll(accessibleIds);
+                if (targetIds.isEmpty()) {
+                    return java.util.Collections.emptyList();
+                }
+                teams = teamRepository.findByOrganisation_IdInWithOrganisation(targetIds);
+            } else {
+                // Super Admin with no filter -> All teams
+                teams = teamRepository.findAllWithOrganisation();
+            }
+        }
+
+        return teams.stream()
+                .map(t -> com.athleticaos.backend.dtos.team.TeamOptionDTO.builder()
+                        .id(t.getId())
+                        .name(t.getName())
+                        .shortName(t.getShortName())
+                        .organisationId(t.getOrganisation() != null ? t.getOrganisation().getId() : null)
+                        .category(t.getCategory())
+                        .build())
+                .sorted(java.util.Comparator.comparing(
+                        com.athleticaos.backend.dtos.team.TeamOptionDTO::getName,
+                        java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .collect(Collectors.toList());
     }
 
@@ -252,18 +322,22 @@ public class TeamServiceImpl implements TeamService {
                         .build())
                 .collect(Collectors.toList());
 
+        return mapToResponse(team, tournamentsList);
+    }
+
+    private TeamResponse mapToResponse(Team team, List<TeamResponse.TournamentSummary> tournamentsList) {
         return TeamResponse.builder()
                 .id(team.getId())
-                .organisationId(team.getOrganisation().getId())
-                .organisationName(team.getOrganisation().getName())
+                .organisationId(team.getOrganisation() != null ? team.getOrganisation().getId() : null)
+                .organisationName(team.getOrganisation() != null ? team.getOrganisation().getName() : null)
                 .slug(team.getSlug())
                 .name(team.getName())
                 .shortName(team.getShortName())
                 .category(team.getCategory())
                 .ageGroup(team.getAgeGroup())
                 .division(team.getDivision())
-                .level(team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
-                .organisationLevel(team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
+                .level(team.getOrganisation() != null && team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
+                .organisationLevel(team.getOrganisation() != null && team.getOrganisation().getOrgLevel() != null ? team.getOrganisation().getOrgLevel().name() : null)
                 .state(team.getState())
                 .status(team.getStatus())
                 .logoUrl(UrlSanitizer.sanitize(team.getLogoUrl() != null ? team.getLogoUrl() : (team.getOrganisation() != null ? team.getOrganisation().getLogoUrl() : null)))

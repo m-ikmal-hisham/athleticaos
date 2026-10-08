@@ -39,6 +39,13 @@ public class TeamController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/options")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.team.TeamOptionDTO>> getTeamOptions(
+            @RequestParam(required = false) UUID organisationId) {
+        return ResponseEntity.ok(teamService.getTeamOptions(organisationId));
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public ResponseEntity<TeamResponse> getTeamById(@PathVariable UUID id) {
         return ResponseEntity.ok(teamService.getTeamByIdInScope(id));

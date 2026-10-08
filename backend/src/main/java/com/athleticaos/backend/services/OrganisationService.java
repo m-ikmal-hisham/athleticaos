@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface OrganisationService {
     List<OrganisationResponse> getAllOrganisations();
 
+    List<com.athleticaos.backend.dtos.org.OrganisationOptionDTO> getOrganisationOptions();
+
     OrganisationResponse getOrganisationById(UUID id);
 
     OrganisationResponse createOrganisation(OrganisationCreateRequest request);

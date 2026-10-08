@@ -7,7 +7,7 @@ import { Input } from '@/components/Input';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { UploadSimple, ArrowLeft } from '@phosphor-icons/react';
-import { fetchOrganisations, updateOrganisation, getOrganisationById, Organisation, OrganisationLevel } from '@/api/organisations.api';
+import { fetchOrganisationOptions, updateOrganisation, getOrganisationById, OrganisationLevel, OrganisationOption } from '@/api/organisations.api';
 import { uploadFile } from '@/api/upload.api';
 import { getImageUrl } from '@/utils/image';
 import { showToast } from '@/lib/customToast';
@@ -19,7 +19,7 @@ export const EditOrganisation = () => {
     const [saving, setSaving] = useState(false);
 
     // Data Loading State
-    const [availableOrganisations, setAvailableOrganisations] = useState<Organisation[]>([]);
+    const [availableOrganisations, setAvailableOrganisations] = useState<OrganisationOption[]>([]);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -53,7 +53,7 @@ export const EditOrganisation = () => {
                 setLoading(true);
                 const [orgRes, allOrgsRes] = await Promise.all([
                     getOrganisationById(id),
-                    fetchOrganisations()
+                    fetchOrganisationOptions()
                 ]);
 
                 setAvailableOrganisations(allOrgsRes);
@@ -291,7 +291,7 @@ export const EditOrganisation = () => {
                                         .sort((a, b) => a.name.localeCompare(b.name))
                                         .map(org => ({
                                             value: org.id,
-                                            label: `${org.name} (${org.orgLevel})${org.state ? ` - ${org.state}` : ''} `
+                                            label: `${org.name}${org.orgType ? ` (${org.orgType})` : ''}`
                                         }))
                                 ]}
                                 placeholder="Select parent organisation"

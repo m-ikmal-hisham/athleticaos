@@ -1,6 +1,17 @@
 import api from "./axios";
 
+export interface TeamOption {
+    id: string;
+    name: string;
+    shortName?: string | null;
+    organisationId: string;
+    category: string;
+}
+
 export const fetchTeams = (params?: { organisationId?: string }) => api.get("/teams", { params });
+
+export const fetchTeamOptions = (organisationId?: string) =>
+    api.get<TeamOption[]>("/teams/options", { params: organisationId ? { organisationId } : undefined }).then(res => res.data);
 
 export const fetchTeamsByOrganisation = (organisationId: string) => api.get("/teams", { params: { organisationId } });
 
