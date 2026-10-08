@@ -16,6 +16,24 @@ public interface TeamService {
      */
     List<TeamResponse> getAllTeams(UUID organisationId);
 
+    com.athleticaos.backend.dtos.common.PageResponse<TeamResponse> getTeamsPage(
+            int page,
+            Integer size,
+            String search,
+            UUID organisationId,
+            String category,
+            String ageGroup,
+            String state,
+            String sort);
+
+    com.athleticaos.backend.dtos.team.AdminTeamFiltersResponse getTeamFilters();
+
+    java.util.Map<String, Long> getTeamCategoryCounts(
+            String search,
+            UUID organisationId,
+            String ageGroup,
+            String state);
+
     List<com.athleticaos.backend.dtos.team.TeamOptionDTO> getTeamOptions(UUID organisationId);
 
     TeamResponse getTeamById(UUID id);

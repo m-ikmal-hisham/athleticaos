@@ -35,3 +35,25 @@ export const fetchPlayerStats = (playerId: string, tournamentId?: string) =>
 export const deletePlayer = (id: string) =>
     api.delete(`/players/${id}`);
 
+export interface GetAdminPlayersPageParams {
+    page?: number;
+    size?: number;
+    search?: string;
+    status?: string;
+    organisationId?: string;
+    teamId?: string;
+    sort?: 'recent' | 'name' | string;
+}
+
+export interface PlayerStatusCountsParams {
+    search?: string;
+    organisationId?: string;
+    teamId?: string;
+}
+
+export const fetchPlayersPage = (params: GetAdminPlayersPageParams = {}): Promise<import("../types").PageResponse<import("../types").Player>> =>
+    api.get("/players", { params }).then(res => res.data);
+
+export const fetchPlayerStatusCounts = (params?: PlayerStatusCountsParams): Promise<Record<string, number>> =>
+    api.get("/players/status-counts", { params }).then(res => res.data);
+
