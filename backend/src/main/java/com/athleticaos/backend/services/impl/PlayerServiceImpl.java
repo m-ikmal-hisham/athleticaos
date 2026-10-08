@@ -207,20 +207,20 @@ public class PlayerServiceImpl implements PlayerService {
                 }
 
                 players = playerTeamRepository
-                        .findPlayersByOrganisationIds(targetIds).stream()
+                        .findPlayersWithPersonByOrganisationIds(targetIds).stream()
                         .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                         .collect(Collectors.toList());
             }
 
         } else if (accessibleIds == null) {
             // SUPER_ADMIN sees all
-            players = playerRepository.findAllByDeletedFalseOrderByCreatedAtDesc();
+            players = playerRepository.findAllWithPersonByDeletedFalseOrderByCreatedAtDesc();
         } else if (accessibleIds.isEmpty()) {
             // No organisation assigned or empty hierarchy
             players = java.util.Collections.emptyList();
         } else {
             // Filter by accessible organisations via team assignments
-            players = playerTeamRepository.findPlayersByOrganisationIds(accessibleIds).stream()
+            players = playerTeamRepository.findPlayersWithPersonByOrganisationIds(accessibleIds).stream()
                     .filter(p -> !Boolean.TRUE.equals(p.getDeleted()))
                     .collect(Collectors.toList());
         }
