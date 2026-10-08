@@ -46,3 +46,37 @@ export const fetchTeamStats = (teamId: string, tournamentId?: string) => api.get
 export const fetchTeamMatches = (teamId: string) => api.get(`/matches`, { params: { teamId } });
 
 export const fetchTeamPlayers = (teamId: string, tournamentId?: string) => api.get(`/teams/${teamId}/players`, { params: { tournamentId } });
+
+export interface AdminTeamFiltersResponse {
+    organisations: Array<{ id: string; name: string }>;
+    categories: string[];
+    ageGroups: string[];
+    states: string[];
+}
+
+export interface GetAdminTeamsPageParams {
+    page?: number;
+    size?: number;
+    search?: string;
+    organisationId?: string;
+    category?: string;
+    ageGroup?: string;
+    state?: string;
+    sort?: 'name' | string;
+}
+
+export interface TeamCategoryCountsParams {
+    search?: string;
+    organisationId?: string;
+    ageGroup?: string;
+    state?: string;
+}
+
+export const fetchTeamsPage = (params: GetAdminTeamsPageParams = {}): Promise<import("../types").PageResponse<import("../types").Team>> =>
+    api.get("/teams", { params }).then(res => res.data);
+
+export const fetchTeamFilters = (): Promise<AdminTeamFiltersResponse> =>
+    api.get<AdminTeamFiltersResponse>("/teams/filters").then(res => res.data);
+
+export const fetchTeamCategoryCounts = (params?: TeamCategoryCountsParams): Promise<Record<string, number>> =>
+    api.get<Record<string, number>>("/teams/category-counts", { params }).then(res => res.data);

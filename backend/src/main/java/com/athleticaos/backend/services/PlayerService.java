@@ -10,6 +10,20 @@ import java.util.UUID;
 public interface PlayerService {
     List<PlayerResponse> getAllPlayers(UUID organisationId, UUID teamId);
 
+    com.athleticaos.backend.dtos.common.PageResponse<PlayerResponse> getPlayersPage(
+            int page,
+            Integer size,
+            String search,
+            String status,
+            UUID organisationId,
+            UUID teamId,
+            String sort);
+
+    java.util.Map<String, Long> getPlayerStatusCounts(
+            String search,
+            UUID organisationId,
+            UUID teamId);
+
     PlayerResponse getPlayerById(UUID id);
 
     PlayerResponse getPlayerInScope(String idOrSlug);
