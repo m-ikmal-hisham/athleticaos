@@ -16,4 +16,10 @@ public interface OrganisationRepository extends JpaRepository<Organisation, UUID
             UUID parentId);
 
     java.util.Optional<Organisation> findBySlug(String slug);
+
+    @org.springframework.data.jpa.repository.Query("SELECT o FROM Organisation o LEFT JOIN FETCH o.parentOrg")
+    java.util.List<Organisation> findAllWithParentOrg();
+
+    @org.springframework.data.jpa.repository.Query("SELECT o FROM Organisation o LEFT JOIN FETCH o.parentOrg WHERE o.id IN :ids")
+    java.util.List<Organisation> findAllByIdInWithParentOrg(@org.springframework.data.repository.query.Param("ids") java.util.Collection<UUID> ids);
 }

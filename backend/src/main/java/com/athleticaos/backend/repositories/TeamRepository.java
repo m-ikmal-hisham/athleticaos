@@ -24,4 +24,10 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
 
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Team t LEFT JOIN FETCH t.organisation WHERE t.status IS NULL OR LOWER(t.status) != 'inactive'")
     java.util.List<Team> findAllActiveWithOrganisation();
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM Team t JOIN FETCH t.organisation")
+    java.util.List<Team> findAllWithOrganisation();
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM Team t JOIN FETCH t.organisation WHERE t.organisation.id IN :orgIds")
+    java.util.List<Team> findByOrganisation_IdInWithOrganisation(@org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
 }

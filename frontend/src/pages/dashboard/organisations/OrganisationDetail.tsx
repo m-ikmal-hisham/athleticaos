@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { formatOrgType } from '@/utils/formatters';
-import { getOrganisationById, Organisation, getChildren, fetchOrganisations } from '../../../api/organisations.api';
+import { getOrganisationById, Organisation, getChildren, fetchOrganisationOptions, OrganisationOption } from '../../../api/organisations.api';
 import { fetchTeamsByOrganisation } from '../../../api/teams.api';
 import { fetchPlayersByOrganisation } from '../../../api/players.api';
 import { usersApi } from '../../../api/users.api';
@@ -25,7 +25,7 @@ interface ChildOrgTeamGroup {
 }
 
 interface OrgTreeNode {
-    org: Organisation;
+    org: OrganisationOption;
     children: OrgTreeNode[];
     teams: any[];
 }
@@ -69,11 +69,7 @@ const OrgTreeNodeView = ({ node }: { node: OrgTreeNode }) => {
 
                 {/* Org Logo / Icon */}
                 <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    {node.org.logoUrl ? (
-                        <img src={getImageUrl(node.org.logoUrl)} alt={node.org.name} className="w-full h-full object-cover" />
-                    ) : (
-                        <Buildings className="w-4 h-4 text-muted-foreground" />
-                    )}
+                    <Buildings className="w-4 h-4 text-muted-foreground" />
                 </div>
 
                 {/* Name and Level */}
@@ -87,7 +83,7 @@ const OrgTreeNodeView = ({ node }: { node: OrgTreeNode }) => {
                             {node.org.name}
                         </button>
                         <Badge variant="outline" className="text-[10px] px-1.5 h-4 shrink-0">
-                            {formatOrgType(node.org.type)}
+                            {formatOrgType(node.org.orgType)}
                         </Badge>
                     </div>
                 </div>
@@ -152,7 +148,7 @@ const OrganisationDetail = () => {
     const [players, setPlayers] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [childOrgs, setChildOrgs] = useState<Organisation[]>([]);
-    const [allOrganisations, setAllOrganisations] = useState<Organisation[]>([]);
+    const [allOrganisations, setAllOrganisations] = useState<OrganisationOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedChildOrgs, setExpandedChildOrgs] = useState<Set<string>>(new Set());
 
@@ -182,7 +178,7 @@ const OrganisationDetail = () => {
                 fetchPlayersByOrganisation(orgId).catch(() => ({ data: [] })),
                 usersApi.getAllUsers({ organisationId: orgId }).catch(() => ({ data: [] })),
                 getChildren(orgId).catch(() => []),
-                fetchOrganisations().catch(() => [])
+                fetchOrganisationOptions().catch(() => [])
             ]);
             setTeams(teamsRes.data || []);
             setPlayers(playersRes.data || []);

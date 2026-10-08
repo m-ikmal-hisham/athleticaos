@@ -16,6 +16,8 @@ public interface TeamService {
      */
     List<TeamResponse> getAllTeams(UUID organisationId);
 
+    List<com.athleticaos.backend.dtos.team.TeamOptionDTO> getTeamOptions(UUID organisationId);
+
     TeamResponse getTeamById(UUID id);
 
     TeamResponse getTeamBySlug(String slug);

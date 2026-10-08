@@ -60,7 +60,16 @@ export interface OrganisationUpdateRequest {
     coverImageUrl?: string;
 }
 
+export interface OrganisationOption {
+    id: string;
+    name: string;
+    orgType: string;
+    parentOrgId?: string | null;
+}
+
 export const fetchOrganisations = () => api.get<Organisation[]>("/organisations").then(res => res.data);
+
+export const fetchOrganisationOptions = () => api.get<OrganisationOption[]>("/organisations/options").then(res => res.data);
 
 export const getOrganisationById = (id: string) => api.get<Organisation>(`/organisations/${id}`).then(res => res.data);
 

@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
 import { ArrowLeft } from '@phosphor-icons/react';
-import { SearchableSelect } from '@/components/SearchableSelect';
+import { Select, SearchableSelect } from '@/components/Select';
 import { createPlayer } from '@/api/players.api';
-import { fetchTeams } from '@/api/teams.api';
-import { fetchOrganisations, Organisation } from '@/api/organisations.api';
+import { fetchTeamOptions, TeamOption } from '@/api/teams.api';
+import { fetchOrganisationOptions, OrganisationOption } from '@/api/organisations.api';
+import { retryOnce } from '@/utils/retry';
 import { Gender, DominantSide } from '@/types';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { ImageUpload } from '@/components/common/ImageUpload';
@@ -15,13 +16,6 @@ import { showToast } from '@/lib/customToast';
 import { calculateAge } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
-
-interface Team {
-    id: string;
-    name: string;
-    organisationId?: string;
-    organisationName?: string;
-}
 
 export const CreatePlayer = () => {
     const navigate = useNavigate();
@@ -60,33 +54,50 @@ export const CreatePlayer = () => {
     const [dominantHand, setDominantHand] = useState<DominantSide>(DominantSide.RIGHT);
     const [dominantLeg, setDominantLeg] = useState<DominantSide>(DominantSide.RIGHT);
 
-    // Team Assignment
-    const [organisations, setOrganisations] = useState<Organisation[]>([]);
-    const [teams, setTeams] = useState<Team[]>([]);
+    // Team Assignment & Options
+    const [organisations, setOrganisations] = useState<OrganisationOption[]>([]);
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
+    const [orgsError, setOrgsError] = useState<string | null>(null);
+
+    const [teams, setTeams] = useState<TeamOption[]>([]);
+    const [loadingTeams, setLoadingTeams] = useState(false);
+    const [teamsError, setTeamsError] = useState<string | null>(null);
+
     const [selectedOrganisationId, setSelectedOrganisationId] = useState("");
     const [selectedTeamId, setSelectedTeamId] = useState("");
     const [showTeamAssignment, setShowTeamAssignment] = useState(true); // Default open for Create
 
-    useEffect(() => {
-        // Load reference data
-        Promise.all([
-            fetchOrganisations(),
-            fetchTeams()
-        ]).then(([orgsRes, teamsRes]: [any, any]) => {
-            const orgsData = Array.isArray(orgsRes) ? orgsRes : (orgsRes.data || []);
-            const teamsData = Array.isArray(teamsRes) ? teamsRes : (teamsRes.data || []);
-            setOrganisations(orgsData);
-            setTeams(teamsData);
-        }).catch(err => {
-            console.error("Failed to load reference data:", err);
-            showToast.error("Failed to load organisations and teams");
-        });
+    const loadTeams = useCallback(async (orgId?: string) => {
+        try {
+            setLoadingTeams(true);
+            setTeamsError(null);
+            const data = await retryOnce(() => fetchTeamOptions(orgId || undefined));
+            setTeams(data);
+        } catch (error) {
+            console.error("Failed to load teams", error);
+            setTeamsError("Failed to load teams.");
+        } finally {
+            setLoadingTeams(false);
+        }
     }, []);
 
-    // Filter teams based on selected organisation
-    const filteredTeams = selectedOrganisationId
-        ? teams.filter(t => t.organisationId === selectedOrganisationId)
-        : teams;
+    const loadOrganisations = useCallback(async () => {
+        try {
+            setLoadingOrgs(true);
+            setOrgsError(null);
+            const data = await retryOnce(() => fetchOrganisationOptions());
+            setOrganisations(data);
+        } catch (error) {
+            console.error("Failed to load organisations", error);
+            setOrgsError("Failed to load organisations.");
+        } finally {
+            setLoadingOrgs(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadOrganisations();
+    }, [loadOrganisations]);
 
     const submitPlayer = async (confirmPossibleDuplicate = false) => {
         if (!email.trim()) {
@@ -400,36 +411,66 @@ export const CreatePlayer = () => {
                             <div className="mt-4 space-y-4 p-6 bg-white/5 rounded-2xl border border-white/10">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-muted-foreground">Filter by Organisation</label>
-                                    <SearchableSelect
+                                    <Select
                                         value={selectedOrganisationId}
                                         onChange={(value) => {
-                                            setSelectedOrganisationId(value as string);
+                                            const orgId = value as string;
+                                            setSelectedOrganisationId(orgId);
                                             setSelectedTeamId("");
+                                            loadTeams(orgId);
                                         }}
                                         options={[
                                             { value: '', label: 'All Organisations' },
                                             ...organisations.map(org => ({ value: org.id, label: org.name }))
                                         ]}
-                                        placeholder="Select organisation"
+                                        placeholder={loadingOrgs ? "Loading organisations..." : "Select organisation"}
+                                        searchable={true}
                                     />
+                                    {orgsError && (
+                                        <div className="flex items-center gap-2 text-xs text-accent-text mt-1">
+                                            <span>{orgsError}</span>
+                                            <button
+                                                type="button"
+                                                onClick={loadOrganisations}
+                                                className="underline font-medium hover:opacity-80"
+                                            >
+                                                Retry
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-muted-foreground">Select Team</label>
-                                    <SearchableSelect
+                                    <Select
                                         value={selectedTeamId}
                                         onChange={(value) => setSelectedTeamId(value as string)}
                                         options={[
                                             { value: '', label: 'Choose a team...' },
-                                            ...filteredTeams.map(team => ({
+                                            ...teams.map(team => ({
                                                 value: team.id,
-                                                label: `${team.name}${team.organisationName ? ` (${team.organisationName})` : ''}`
+                                                label: team.name
                                             }))
                                         ]}
-                                        placeholder="Select team"
-                                        disabled={teams.length === 0}
+                                        placeholder={loadingTeams ? "Loading teams..." : "Select team"}
+                                        disabled={teams.length === 0 && !loadingTeams}
+                                        searchable={true}
                                     />
-                                    {teams.length === 0 && <p className="text-xs text-muted-foreground">No teams found. Create a team first.</p>}
+                                    {teamsError && (
+                                        <div className="flex items-center gap-2 text-xs text-accent-text mt-1">
+                                            <span>{teamsError}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => loadTeams(selectedOrganisationId)}
+                                                className="underline font-medium hover:opacity-80"
+                                            >
+                                                Retry
+                                            </button>
+                                        </div>
+                                    )}
+                                    {!teamsError && teams.length === 0 && !loadingTeams && (
+                                        <p className="text-xs text-muted-foreground">No teams found. Create a team first.</p>
+                                    )}
                                 </div>
                                 <p className="text-xs text-muted-foreground italic">
                                     Team assignment will be saved when you click "Save Player".
