@@ -86,7 +86,7 @@ const Officials: React.FC = () => {
                                                             alt="WR" 
                                                             className="h-3 w-3 object-contain"
                                                         />
-                                                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-tight">Certified</span>
+                                                        <span className="text-[10px] font-bold text-navy dark:text-navy-tint uppercase tracking-tight">Certified</span>
                                                     </div>
                                                 )}
                                             </div>

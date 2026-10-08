@@ -54,7 +54,7 @@ export const TournamentLogo = ({ logoUrl, className }: TournamentLogoProps) => {
             "text-slate-400 dark:text-slate-500",
             className
         )}>
-            <Trophy weight="duotone" className="w-[50%] h-[50%]" />
+            <Trophy className="w-[50%] h-[50%]" />
         </div>
     );
 };

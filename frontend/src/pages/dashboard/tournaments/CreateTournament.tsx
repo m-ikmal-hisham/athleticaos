@@ -330,7 +330,7 @@ export const CreateTournament = () => {
                                         </div>
                                     </div>
                                     <button type="button" onClick={() => removeCategory(idx)} className="text-red-500 hover:text-red-400 p-1 rounded hover:bg-white/5" aria-label="Remove category">
-                                        <Trash size={16} />
+                                        <Trash className="w-4 h-4" />
                                     </button>
                                 </div>
                             ))}
@@ -408,7 +408,7 @@ export const CreateTournament = () => {
                             </div>
                             <div className="col-span-2 md:col-span-1">
                                 <Button type="button" variant="primary" onClick={addCategory} className="w-full h-9 p-0 flex items-center justify-center">
-                                    <Plus size={16} />
+                                    <Plus className="w-4 h-4" />
                                 </Button>
                             </div>
                         </div>
@@ -436,7 +436,7 @@ export const CreateTournament = () => {
                                         <p className="text-xs text-muted-foreground">Venues where matches are played. Match numbers (1, 2, 3...) are tracked per venue.</p>
                                     </div>
                                     <Button type="button" variant="outline" size="sm" onClick={addVenueInput} className="flex items-center gap-1.5 text-xs">
-                                        <Plus size={14} /> Add Venue
+                                        <Plus className="w-4 h-4" /> Add Venue
                                     </Button>
                                 </div>
                                 <div className="space-y-2">
@@ -455,7 +455,7 @@ export const CreateTournament = () => {
                                                     className="text-red-500 hover:text-red-400 p-2 rounded hover:bg-white/5"
                                                     aria-label="Remove venue"
                                                 >
-                                                    <Trash size={16} />
+                                                    <Trash className="w-4 h-4" />
                                                 </button>
                                             )}
                                         </div>

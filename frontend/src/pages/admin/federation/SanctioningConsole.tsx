@@ -93,9 +93,9 @@ export const SanctioningConsole = () => {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'APPROVED': return <Badge variant="success" className="flex items-center gap-1"><Check weight="bold" /> Approved</Badge>;
-            case 'REJECTED': return <Badge variant="destructive" className="flex items-center gap-1"><X weight="bold" /> Rejected</Badge>;
-            case 'PENDING': return <Badge variant="warning" className="flex items-center gap-1"><Clock weight="bold" /> Pending</Badge>;
+            case 'APPROVED': return <Badge variant="success" className="flex items-center gap-1"><Check className="w-3 h-3" weight="bold" /> Approved</Badge>;
+            case 'REJECTED': return <Badge variant="destructive" className="flex items-center gap-1"><X className="w-3 h-3" weight="bold" /> Rejected</Badge>;
+            case 'PENDING': return <Badge variant="warning" className="flex items-center gap-1"><Clock className="w-3 h-3" weight="bold" /> Pending</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     };

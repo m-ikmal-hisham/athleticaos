@@ -23,7 +23,7 @@ export const AuthGuard = ({ children, requiredRoles }: AuthGuardProps) => {
                     </div>
                 )}
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-white"></div>
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-navy border-t-white"></div>
                     <p className="text-lg font-medium text-white animate-pulse">Initializing Application...</p>
                     {isDev && (
                         <div className="text-xs text-gray-500 mt-4 font-mono">

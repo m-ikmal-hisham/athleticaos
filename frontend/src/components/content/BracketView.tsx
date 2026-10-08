@@ -27,7 +27,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
     if (bracketGroups.length === 0) {
         return (
             <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                <Trophy className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                <Trophy className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
                 <p className="text-slate-500 font-medium">No bracket stages found.</p>
                 <p className="text-sm text-slate-400 mt-1">Ensure stages are marked as "Knockout" in Format settings.</p>
             </div>
@@ -42,7 +42,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                     className="bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 md:p-5"
                 >
                     <div className="flex items-center gap-2 mb-5 pb-3 border-b border-slate-200 dark:border-slate-800">
-                        <Trophy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <Trophy className="w-5 h-5 text-navy dark:text-navy-tint" />
                         <h3 className="text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">
                             {bracket.title}
                         </h3>
@@ -57,7 +57,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                                     <div className="text-center font-bold text-slate-900 dark:text-white uppercase tracking-wider text-xs border-b pb-2 border-slate-200 dark:border-slate-800 flex items-center justify-center gap-1.5">
                                         <span>{round.name}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (
-                                            <CaretRight className="w-3.5 h-3.5 opacity-50 hidden md:block" />
+                                            <CaretRight className="w-4 h-4 opacity-50 hidden md:block" />
                                         )}
                                     </div>
 
@@ -118,7 +118,7 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
 
                                                         {isFinal && match.status === 'COMPLETED' && (
                                                             <div className="absolute -top-3 -right-3 bg-yellow-400 text-yellow-900 p-1 rounded-full shadow-md z-10">
-                                                                <Trophy className="w-4 h-4" weight="fill" />
+                                                                <Trophy className="w-4 h-4" />
                                                             </div>
                                                         )}
                                                     </div>

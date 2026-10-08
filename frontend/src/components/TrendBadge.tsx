@@ -6,7 +6,7 @@ interface TrendBadgeProps {
     value: number;
     className?: string;
     showIcon?: boolean;
-    inverse?: boolean; // If true, decreasing is good (green), increasing is bad (red)
+    inverse?: boolean; // If true, decreasing is good, increasing is bad
 }
 
 export const TrendBadge: React.FC<TrendBadgeProps> = ({ 
@@ -17,19 +17,18 @@ export const TrendBadge: React.FC<TrendBadgeProps> = ({
 }) => {
     const isNeutral = value === 0;
     const isIncreasing = value > 0;
+    const isPositive = (isIncreasing && !inverse) || (!isIncreasing && !isNeutral && inverse);
     
-    // Determine color based on trend and inverse flag
+    // Positive = navy, negative = crimson, neutral = secondary/sunken
     const getColors = () => {
-        if (isNeutral) return 'text-slate-500 bg-slate-500/10 dark:text-slate-400 dark:bg-slate-400/10';
+        if (isNeutral) {
+            return 'text-black/60 dark:text-white/60 bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12';
+        }
         
-        if (isIncreasing) {
-            return inverse 
-                ? 'text-red-500 bg-red-500/10 dark:text-red-400 dark:bg-red-400/10' 
-                : 'text-emerald-500 bg-emerald-500/10 dark:text-emerald-400 dark:bg-emerald-400/10';
+        if (isPositive) {
+            return 'text-navy dark:text-navy-tint bg-navy/8 dark:bg-navy-tint/12 border border-navy/20 dark:border-navy-tint/30';
         } else {
-            return inverse 
-                ? 'text-emerald-500 bg-emerald-500/10 dark:text-emerald-400 dark:bg-emerald-400/10' 
-                : 'text-red-500 bg-red-500/10 dark:text-red-400 dark:bg-red-400/10';
+            return 'text-crimson dark:text-crimson-tint bg-crimson/8 dark:bg-crimson-tint/12 border border-crimson/20 dark:border-crimson-tint/30';
         }
     };
 
@@ -38,14 +37,14 @@ export const TrendBadge: React.FC<TrendBadgeProps> = ({
 
     return (
         <div className={clsx(
-            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-tight",
+            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold tracking-tight",
             getColors(),
             className
         )}>
             {showIcon && (
                 <>
-                    {isNeutral && <Minus size={10} weight="bold" />}
-                    {isIncreasing ? <TrendUp size={10} weight="bold" /> : !isNeutral && <TrendDown size={10} weight="bold" />}
+                    {isNeutral && <Minus className="w-3 h-3" />}
+                    {isIncreasing ? <TrendUp className="w-3 h-3" /> : !isNeutral && <TrendDown className="w-3 h-3" />}
                 </>
             )}
             <span>{formattedValue}%</span>

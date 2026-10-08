@@ -18,7 +18,7 @@ export const UsersSummaryCards = ({ totalUsers, activeUsers, pendingInvites = 0,
                     <h3 className="text-2xl font-bold mt-1 text-foreground">{totalUsers}</h3>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-primary-500/20 text-primary-400 flex items-center justify-center">
-                    <Users className="w-6 h-6" weight="duotone" />
+                    <Users className="w-6 h-6" />
                 </div>
             </GlassCard>
 
@@ -29,7 +29,7 @@ export const UsersSummaryCards = ({ totalUsers, activeUsers, pendingInvites = 0,
                     <h3 className="text-2xl font-bold mt-1 text-foreground">{activeUsers}</h3>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center">
-                    <UserCheck className="w-6 h-6" weight="duotone" />
+                    <UserCheck className="w-6 h-6" />
                 </div>
             </GlassCard>
 
@@ -40,7 +40,7 @@ export const UsersSummaryCards = ({ totalUsers, activeUsers, pendingInvites = 0,
                     <h3 className="text-2xl font-bold mt-1 text-foreground">{pendingInvites}</h3>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
-                    <UserPlus className="w-6 h-6" weight="duotone" />
+                    <UserPlus className="w-6 h-6" />
                 </div>
             </GlassCard>
 
@@ -51,7 +51,7 @@ export const UsersSummaryCards = ({ totalUsers, activeUsers, pendingInvites = 0,
                     <h3 className="text-2xl font-bold mt-1 text-foreground">{adminRolesCount}</h3>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                    <ShieldCheck className="w-6 h-6" weight="duotone" />
+                    <ShieldCheck className="w-6 h-6" />
                 </div>
             </GlassCard>
         </div>

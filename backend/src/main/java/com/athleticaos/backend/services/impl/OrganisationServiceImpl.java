@@ -63,15 +63,42 @@ public class OrganisationServiceImpl implements OrganisationService {
 
         List<Organisation> orgs;
         if (accessibleIds == null) {
-            orgs = organisationRepository.findAll();
+            orgs = organisationRepository.findAllWithParentOrg();
         } else if (accessibleIds.isEmpty()) {
             orgs = java.util.Collections.emptyList();
         } else {
-            orgs = organisationRepository.findAllById(accessibleIds);
+            orgs = organisationRepository.findAllByIdInWithParentOrg(accessibleIds);
         }
 
         return orgs.stream()
                 .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.athleticaos.backend.dtos.org.OrganisationOptionDTO> getOrganisationOptions() {
+        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+
+        List<Organisation> orgs;
+        if (accessibleIds == null) {
+            orgs = organisationRepository.findAllWithParentOrg();
+        } else if (accessibleIds.isEmpty()) {
+            orgs = java.util.Collections.emptyList();
+        } else {
+            orgs = organisationRepository.findAllByIdInWithParentOrg(accessibleIds);
+        }
+
+        return orgs.stream()
+                .map(o -> com.athleticaos.backend.dtos.org.OrganisationOptionDTO.builder()
+                        .id(o.getId())
+                        .name(o.getName())
+                        .orgType(o.getOrgType())
+                        .parentOrgId(o.getParentOrg() != null ? o.getParentOrg().getId() : null)
+                        .build())
+                .sorted(java.util.Comparator.comparing(
+                        com.athleticaos.backend.dtos.org.OrganisationOptionDTO::getName,
+                        java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .collect(Collectors.toList());
     }
 

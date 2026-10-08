@@ -380,3 +380,28 @@ export const publicProfileApi = {
         return response.data;
     }
 };
+
+export type ContactSubjectValue =
+    | 'GENERAL'
+    | 'PARTNERSHIP'
+    | 'ORGANISATION_REGISTRATION'
+    | 'MEDIA'
+    | 'TOURNAMENT_SUPPORT';
+
+export interface ContactPayload {
+    name: string;
+    email: string;
+    organisation?: string;
+    subject: ContactSubjectValue;
+    message: string;
+    website?: string;
+}
+
+export interface ContactResponse {
+    status: string;
+}
+
+export const submitContact = async (payload: ContactPayload) => {
+    return publicApi.post<ContactResponse>('/contact', payload);
+};
+

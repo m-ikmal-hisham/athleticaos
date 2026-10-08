@@ -104,7 +104,7 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
     return (
         <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                <ChartPieSlice className="w-5 h-5 text-purple-500" />
+                <ChartPieSlice className="w-5 h-5 text-navy dark:text-navy-tint" />
                 Scoring Breakdown
             </h3>
 

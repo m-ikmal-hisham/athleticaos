@@ -203,7 +203,7 @@ export const Matches = () => {
                                 onClick={toggleSelectionMode}
                                 title="Toggle Selection Mode"
                             >
-                                <CheckSquare className={clsx("w-5 h-5", isSelectionMode && "text-primary-400")} />
+                                <CheckSquare className={clsx("w-5 h-5", isSelectionMode && "text-navy dark:text-navy-tint")} />
                             </Button>
                         )}
                         {isAdmin && (
@@ -328,13 +328,13 @@ export const Matches = () => {
                                                 )}
                                                 onClick={(e) => toggleSelection(m.id, e)}
                                             >
-                                                {isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" weight="fill" />}
+                                                {isSelected && <CheckSquare className="w-4 h-4 text-white" weight="fill" />}
                                             </div>
                                         </div>
                                     )}
 
                                     {/* Status Indicator Bar */}
-                                    <div className={`h-1 w-full ${m.status === 'ONGOING' ? 'bg-blue-500 animate-pulse' :
+                                    <div className={`h-1 w-full ${m.status === 'ONGOING' ? 'bg-navy animate-pulse' :
                                         m.status === 'COMPLETED' ? 'bg-green-500' :
                                             m.status === 'CANCELLED' ? 'bg-red-500' : 'bg-primary-500/50'
                                         }`} />
@@ -343,10 +343,10 @@ export const Matches = () => {
                                         {/* Header: Date & Status */}
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                                                <Calendar className="w-3.5 h-3.5" />
+                                                <Calendar className="w-4 h-4" />
                                                 <span>{new Date(m.matchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                                 <span className="w-1 h-1 rounded-full bg-white/20" />
-                                                <Clock className="w-3.5 h-3.5" />
+                                                <Clock className="w-4 h-4" />
                                                 <span>{m.kickOffTime}</span>
                                             </div>
                                             <Badge variant={getStatusVariant(m.status) as any} className="text-[10px] px-1.5 h-5 uppercase tracking-wider">
@@ -380,7 +380,7 @@ export const Matches = () => {
                                         {/* Footer: Venue & Action */}
                                         <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto">
                                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate max-w-[70%]">
-                                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                                <MapPin className="w-4 h-4 shrink-0" />
                                                 <span className="truncate">{m.venue || 'Venue TBA'}</span>
                                             </div>
 
@@ -392,7 +392,7 @@ export const Matches = () => {
                                                         className="h-7 px-2.5 text-xs bg-primary-500/10 hover:bg-primary-500 hover:text-white text-primary-500 border-0"
                                                         onClick={(e) => handleStartMatch(m.id, e)}
                                                     >
-                                                        <Play className="w-3 h-3 mr-1.5 fill-current" weight="fill" />
+                                                        <Play className="w-3 h-3 mr-1.5" weight="bold" />
                                                         Start
                                                     </Button>
                                                 )}

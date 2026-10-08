@@ -469,23 +469,23 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
             <div className="flex items-center gap-4 text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800/50 p-2 rounded-md border border-slate-200 dark:border-slate-700/50">
                 <span className="font-semibold uppercase tracking-wider text-[10px]">Actions:</span>
                 <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-blue-600"><ArrowRight className="w-3 h-3" /></div>
+                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-navy dark:text-navy-tint"><ArrowRight className="w-3 h-3" weight="bold" /></div>
                     <span>To Starters</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-500"><ArrowRight className="w-3 h-3 rotate-45" /></div>
+                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-500"><ArrowRight className="w-3 h-3 rotate-45" weight="bold" /></div>
                     <span>To Bench</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-green-600"><ArrowLeft className="w-3 h-3" /></div>
+                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-green-600"><ArrowLeft className="w-3 h-3" weight="bold" /></div>
                     <span>Promote</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-red-500"><X className="w-3 h-3" /></div>
+                    <div className="p-0.5 bg-slate-200 dark:bg-slate-700 rounded text-red-500"><X className="w-3 h-3" weight="bold" /></div>
                     <span>Remove</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <CheckSquare className="w-3.5 h-3.5 text-blue-600" weight="fill" />
+                    <CheckSquare className="w-4 h-4 text-navy dark:text-navy-tint" weight="fill" />
                     <span>Select Multiple</span>
                 </div>
             </div>
@@ -505,19 +505,19 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                                 <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Squad</h3>
                                 <button
                                     onClick={() => handleSelectAll(LineupRole.NOT_SELECTED)}
-                                    className="text-xs text-blue-600 hover:underline"
+                                    className="text-xs text-navy dark:text-navy-tint hover:underline"
                                 >
                                     {items[LineupRole.NOT_SELECTED].every(i => selectedIds.has(i.playerId)) ? 'Deselect All' : 'Select All'}
                                 </button>
                             </div>
                             <div className="relative">
-                                <UserIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <UserIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60" />
                                 <input
                                     type="text"
                                     placeholder="Search squad..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full pl-9 pr-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-navy outline-none"
                                 />
                             </div>
                         </div>
@@ -534,7 +534,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
 
                     {/* Starters */}
                     <GlassCard className="p-4 border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10">
-                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-blue-600 dark:text-blue-400">Starters</h3>
+                        <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-navy dark:text-navy-tint">Starters</h3>
                         <SortableContext
                             id={LineupRole.STARTER}
                             items={items[LineupRole.STARTER].map(i => i.playerId)}
@@ -565,7 +565,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                     {activeId ? (
                         <div className="bg-background p-3 rounded-lg shadow-xl border flex items-center gap-3">
                             <DotsSixVertical className="w-4 h-4 text-muted-foreground" />
-                            <UserIcon className="w-8 h-8 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500" />
+                            <UserIcon className="w-8 h-8 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-black/60 dark:text-white/60" />
                             <span className="font-medium">Dragging...</span>
                         </div>
                     ) : null}
@@ -640,17 +640,17 @@ function SortableItem({
                 flex items-center gap-2 p-2 rounded-lg border bg-card hover:border-primary/50 transition-colors group
                 ${isStarter ? 'border-l-4 border-l-blue-500' : ''}
                 ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}
-                ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+                ${isSelected ? 'ring-2 ring-navy border-navy' : ''}
             `}
         >
             {!isLocked && (
                 <div className="flex items-center gap-1">
                     <button
                         onClick={(e) => { e.stopPropagation(); onToggleSelection?.(); }}
-                        className="p-1 text-slate-400 hover:text-blue-500"
+                        className="p-1 text-slate-400 hover:text-navy dark:hover:text-navy-tint"
                     >
                         {isSelected ? (
-                            <CheckSquare className="w-5 h-5 text-blue-600" weight="fill" />
+                            <CheckSquare className="w-5 h-5 text-navy dark:text-navy-tint" weight="fill" />
                         ) : (
                             <Square className="w-5 h-5" />
                         )}
@@ -667,7 +667,7 @@ function SortableItem({
                         type="number"
                         value={item.jerseyNumber || ''}
                         onChange={handleNumberChange}
-                        className="w-full h-full text-center bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded-full appearance-none p-0"
+                        className="w-full h-full text-center bg-transparent border-none focus:ring-2 focus:ring-navy rounded-full appearance-none p-0"
                         onKeyDown={(e) => e.stopPropagation()} // Prevent drag trigger on input
                         onPointerDown={(e) => e.stopPropagation()} // Prevent drag trigger
                         placeholder="#"
@@ -687,7 +687,7 @@ function SortableItem({
                     )}
                 </div>
                 {isStarter && positionName ? (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold truncate">
+                    <p className="text-xs text-navy dark:text-navy-tint font-semibold truncate">
                         {positionName}
                     </p>
                 ) : (
@@ -708,7 +708,7 @@ function SortableItem({
                         <>
                             <button
                                 onClick={() => onMove(id, LineupRole.STARTER)}
-                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-blue-600 tooltip"
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-navy dark:text-navy-tint tooltip"
                                 title="Add to Starters"
                             >
                                 <ArrowRight className="w-4 h-4" />

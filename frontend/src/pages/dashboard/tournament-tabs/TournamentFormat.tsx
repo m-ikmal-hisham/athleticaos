@@ -5,6 +5,7 @@ import { tournamentService } from '@/services/tournamentService';
 import { Button } from '@/components/Button';
 import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent, GlassCardDescription } from '@/components/GlassCard';
 import { Input } from '@/components/Input';
+import { Select } from '@/components/Select';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { TournamentFormatConfig, TournamentCategory, Team, TournamentStageResponse, BracketViewResponse } from '@/types';
 import { GroupingEditor } from '@/components/content/GroupingEditor';
@@ -301,7 +302,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                <Gear className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <Gear className="w-5 h-5 text-navy dark:text-navy-tint" />
                             </div>
                             <div>
                                 <GlassCardTitle>Format Configuration</GlassCardTitle>
@@ -328,7 +329,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                             className={clsx(
                                                 "px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors border",
                                                 isSelected
-                                                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                                                    ? "bg-navy text-white border-navy shadow-md"
                                                     : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                                             )}
                                         >
@@ -404,20 +405,18 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
 
                                 {config.includePlacementStages && (
                                     <div className="pt-3 space-y-2">
-                                        <label htmlFor="placementBracketSize" className="text-sm font-medium">
-                                            Teams per bracket
-                                        </label>
-                                        <select
+                                        <Select
                                             id="placementBracketSize"
-                                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                            label="Teams per bracket"
                                             value={config.placementBracketSize ?? 4}
-                                            onChange={(e) => setConfig({ ...config, placementBracketSize: parseInt(e.target.value) })}
-                                        >
-                                            <option value={4}>4 teams — Semi Finals → Final</option>
-                                            <option value={8}>8 teams — Quarter Finals → Semi Finals → Final</option>
-                                            <option value={16}>16 teams — Round of 16 → Quarter Finals → Semi Finals → Final</option>
-                                            <option value={32}>32 teams — Round of 32 → Round of 16 → Quarter Finals → Semi Finals → Final</option>
-                                        </select>
+                                            onChange={(val) => setConfig({ ...config, placementBracketSize: parseInt(String(val)) })}
+                                            options={[
+                                                { value: 4, label: '4 teams — Semi Finals → Final' },
+                                                { value: 8, label: '8 teams — Quarter Finals → Semi Finals → Final' },
+                                                { value: 16, label: '16 teams — Round of 16 → Quarter Finals → Semi Finals → Final' },
+                                                { value: 32, label: '32 teams — Round of 32 → Round of 16 → Quarter Finals → Semi Finals → Final' },
+                                            ]}
+                                        />
                                         <p className="text-xs text-muted-foreground">
                                             {(() => {
                                                 const size = config.placementBracketSize ?? 4;
@@ -633,7 +632,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                 <label htmlFor="useExistingGroups" className="text-xs cursor-pointer select-none flex items-center gap-1.5">
                                     Preserve manual pool assignments
                                     <Tooltip content="If checked, the match generator will respect the current team positions in pools. If unchecked, teams may be reshuffled." position="top">
-                                        <Question className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors cursor-help" />
+                                        <Question className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors cursor-help" />
                                     </Tooltip>
                                 </label>
                             </div>

@@ -11,8 +11,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
             <div
                 ref={ref}
                 className={clsx(
-                    'glass-card',
-                    hover && 'hover:bg-white/5 transition-colors cursor-pointer',
+                    'bg-surface-card border border-line-subtle rounded-[14px] p-6 text-content-primary',
+                    hover && 'hover:bg-black/4 dark:hover:bg-white/6 transition-colors cursor-pointer',
                     className
                 )}
                 {...props}
@@ -35,7 +35,7 @@ CardHeader.displayName = 'CardHeader';
 
 export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
     ({ className, ...props }, ref) => (
-        <h3 ref={ref} className={clsx('text-xl font-semibold text-foreground', className)} {...props} />
+        <h3 ref={ref} className={clsx('text-xl font-semibold text-content-primary', className)} {...props} />
     )
 );
 
@@ -43,7 +43,7 @@ CardTitle.displayName = 'CardTitle';
 
 export const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
     ({ className, ...props }, ref) => (
-        <p ref={ref} className={clsx('text-sm text-muted-foreground mt-1', className)} {...props} />
+        <p ref={ref} className={clsx('text-sm text-black/72 dark:text-white/72 mt-1', className)} {...props} />
     )
 );
 
@@ -59,7 +59,7 @@ CardContent.displayName = 'CardContent';
 
 export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     ({ className, ...props }, ref) => (
-        <div ref={ref} className={clsx('mt-4 pt-4 border-t border-glass-border', className)} {...props} />
+        <div ref={ref} className={clsx('mt-4 pt-4 border-t border-line-subtle', className)} {...props} />
     )
 );
 

@@ -204,7 +204,7 @@ export default function Tournaments() {
                                 {t.logoUrl && <img src={getImageUrl(t.logoUrl)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />}
                                 <div className="absolute top-2 right-2">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
-                                        <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-blue-500'}`} />
+                                        <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-navy'}`} />
                                         {formatTournamentStatus(t.status)}
                                     </div>
                                 </div>
@@ -215,7 +215,7 @@ export default function Tournaments() {
                                 {t.logoUrl ? (
                                     <img src={getImageUrl(t.logoUrl)} alt={t.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <Trophy className="w-8 h-8 text-primary-400" weight="duotone" />
+                                    <Trophy className="w-8 h-8 text-navy dark:text-navy-tint" />
                                 )}
                             </div>
 
@@ -228,11 +228,11 @@ export default function Tournaments() {
 
                                 <div className="mt-auto space-y-3 pt-4 border-t border-white/5">
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <Calendar className="w-4 h-4 text-primary-500" />
+                                        <Calendar className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span>{new Date(t.startDate).toLocaleDateString()} - {new Date(t.endDate).toLocaleDateString()}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <MapPin className="w-4 h-4 text-primary-500" />
+                                        <MapPin className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span className="truncate">{t.venue || 'Venue TBD'}</span>
                                     </div>
                                 </div>

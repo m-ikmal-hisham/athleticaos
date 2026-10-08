@@ -45,7 +45,7 @@ export function SuspensionWidget({ tournamentId }: SuspensionWidgetProps) {
         <GlassCard>
             <div className="card-header-row">
                 <div className="flex items-center gap-2">
-                    <ShieldWarning className="w-5 h-5 text-red-600" />
+                    <ShieldWarning className="w-5 h-5 text-crimson dark:text-crimson-tint" />
                     <h3 className="text-lg font-semibold">Suspensions</h3>
                 </div>
                 <span className="text-sm text-slate-500">{suspensions.length} total</span>
@@ -53,7 +53,7 @@ export function SuspensionWidget({ tournamentId }: SuspensionWidgetProps) {
 
             {suspensions.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
-                    <Warning className="w-12 h-12 mx-auto text-slate-400 mb-2" />
+                    <Warning className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-2" />
                     <p>No suspensions recorded</p>
                 </div>
             ) : (

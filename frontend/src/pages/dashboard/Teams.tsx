@@ -254,7 +254,7 @@ export default function Teams() {
                                         <>
                                             <button
                                                 onClick={(e) => handleEdit(e, t.id)}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center text-black/60 dark:text-white/60 hover:bg-navy/10 hover:text-navy dark:hover:bg-navy-tint/15 dark:hover:text-navy-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint transition-colors"
                                                 aria-label="Edit team"
                                             >
                                                 <PencilSimple className="w-4 h-4" />
@@ -262,7 +262,7 @@ export default function Teams() {
                                             {canDeleteTeam(t) && (
                                                 <button
                                                     onClick={(e) => handleDeleteClick(e, t)}
-                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-black/60 dark:text-white/60 hover:bg-crimson/10 hover:text-crimson dark:hover:bg-crimson-tint/15 dark:hover:text-crimson-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-crimson dark:focus-visible:ring-crimson-tint transition-colors"
                                                     aria-label="Delete team"
                                                 >
                                                     <Trash className="w-4 h-4" />

@@ -74,7 +74,7 @@ export const SeasonSummaryReport = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Matches</CardTitle>
-                        <ChartLineUp className="w-4 h-4 text-blue-500" />
+                        <ChartLineUp className="w-4 h-4 text-navy dark:text-navy-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{summary.totalMatches}</div>
@@ -85,7 +85,7 @@ export const SeasonSummaryReport = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Tries</CardTitle>
-                        <Flag className="w-4 h-4 text-green-500" />
+                        <Flag className="w-4 h-4 text-navy dark:text-navy-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{summary.totalTries}</div>
@@ -96,7 +96,7 @@ export const SeasonSummaryReport = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Avg Points</CardTitle>
-                        <ChartLineUp className="w-4 h-4 text-orange-500" />
+                        <ChartLineUp className="w-4 h-4" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{summary.avgPointsPerMatch}</div>
@@ -106,7 +106,7 @@ export const SeasonSummaryReport = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Highest Scoring</CardTitle>
-                        <Trophy className="w-4 h-4 text-yellow-500" />
+                        <Trophy className="w-4 h-4" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold truncate">{summary.highestScoringTeam}</div>

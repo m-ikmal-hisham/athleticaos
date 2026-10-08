@@ -1,14 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { PageHeader } from '@/components/PageHeader';
-import { ArrowLeft } from '@phosphor-icons/react';
-import { SearchableSelect } from '@/components/SearchableSelect';
+import { ArrowLeft, WarningCircle } from '@phosphor-icons/react';
+import { Select, SearchableSelect } from '@/components/Select';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { fetchPlayerById, updatePlayer } from '@/api/players.api';
 import { assignPlayerToTeam } from '@/api/playerTeams.api';
-import { fetchTeams } from '@/api/teams.api';
-import { fetchOrganisations, Organisation } from '@/api/organisations.api';
+import { fetchTeamOptions, TeamOption } from '@/api/teams.api';
+import { fetchOrganisationOptions, OrganisationOption } from '@/api/organisations.api';
+import { retryOnce } from '@/utils/retry';
 import { Gender, DominantSide } from '@/types';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { ImageUpload } from '@/components/common/ImageUpload';
@@ -19,17 +21,11 @@ import { RecordVerificationPanel } from '@/components/admin/persons/RecordVerifi
 import { RecordVerificationSummary, isPlaceholderEmail } from '@/api/persons.api';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
-interface Team {
-    id: string;
-    name: string;
-    organisationId?: string;
-    organisationName?: string;
-}
-
 export const EditPlayer = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true);
+    const [loadingPlayer, setLoadingPlayer] = useState(true);
+    const [playerError, setPlayerError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [registrationNo, setRegistrationNo] = useState<string | null>(null);
     const [duplicateData, setDuplicateData] = useState<{
@@ -74,84 +70,106 @@ export const EditPlayer = () => {
     const [dominantHand, setDominantHand] = useState<DominantSide>(DominantSide.RIGHT);
     const [dominantLeg, setDominantLeg] = useState<DominantSide>(DominantSide.RIGHT);
 
-    // Team Assignment
-    const [organisations, setOrganisations] = useState<Organisation[]>([]);
-    const [teams, setTeams] = useState<Team[]>([]);
+    // Team Assignment & Options
+    const [organisations, setOrganisations] = useState<OrganisationOption[]>([]);
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
+    const [orgsError, setOrgsError] = useState<string | null>(null);
+
+    const [teams, setTeams] = useState<TeamOption[]>([]);
+    const [loadingTeams, setLoadingTeams] = useState(false);
+    const [teamsError, setTeamsError] = useState<string | null>(null);
+
     const [selectedOrganisationId, setSelectedOrganisationId] = useState("");
     const [selectedTeamId, setSelectedTeamId] = useState("");
     const [showTeamAssignment, setShowTeamAssignment] = useState(false);
     const [jerseyNumber, setJerseyNumber] = useState("");
     const [position, setPosition] = useState("");
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (!id) return;
-            try {
-                setLoading(true);
-                const [playerRes, orgsRes, teamsRes]: [any, any, any] = await Promise.all([
-                    fetchPlayerById(id),
-                    fetchOrganisations(),
-                    fetchTeams()
-                ]);
+    const loadTeams = useCallback(async (orgId?: string) => {
+        try {
+            setLoadingTeams(true);
+            setTeamsError(null);
+            const data = await retryOnce(() => fetchTeamOptions(orgId || undefined));
+            setTeams(data);
+        } catch (error) {
+            console.error("Failed to load teams", error);
+            setTeamsError("Failed to load teams.");
+        } finally {
+            setLoadingTeams(false);
+        }
+    }, []);
 
-                const player = playerRes.data;
-                const orgsData = Array.isArray(orgsRes) ? orgsRes : (orgsRes.data || []);
-                const teamsData = Array.isArray(teamsRes) ? teamsRes : (teamsRes.data || []);
+    const loadOrganisations = useCallback(async () => {
+        try {
+            setLoadingOrgs(true);
+            setOrgsError(null);
+            const data = await retryOnce(() => fetchOrganisationOptions());
+            setOrganisations(data);
+        } catch (error) {
+            console.error("Failed to load organisations", error);
+            setOrgsError("Failed to load organisations.");
+        } finally {
+            setLoadingOrgs(false);
+        }
+    }, []);
 
-                setOrganisations(orgsData);
-                setTeams(teamsData);
+    const loadPlayer = useCallback(async () => {
+        if (!id) return;
+        try {
+            setLoadingPlayer(true);
+            setPlayerError(null);
+            const playerRes = await retryOnce(() => fetchPlayerById(id));
+            const player = playerRes.data;
 
-                // Populate Form
-                setRegistrationNo(player.registrationNo || null);
-                setFirstName(player.firstName || "");
-                setLastName(player.lastName || "");
-                setEmail(player.email || "");
-                setEmailError("");
-                setPhotoUrl(player.photoUrl || "");
-                const rawGender = (player.gender || "").trim().toUpperCase();
-                const initialGender = (rawGender === Gender.MALE || rawGender === Gender.FEMALE) ? (rawGender as Gender) : "";
-                setGender(initialGender);
-                setDob(player.dob || "");
-                loadedFirstName.current = player.firstName || "";
-                loadedLastName.current = player.lastName || "";
-                loadedDob.current = player.dob || "";
-                loadedGender.current = rawGender;
-                setNationality(player.nationality || "");
-                setPhone(player.phone || "");
-                setPersonId(player.personId || "");
-                setRecordVerification(player.recordVerification || null);
+            // Populate Form
+            setRegistrationNo(player.registrationNo || null);
+            setFirstName(player.firstName || "");
+            setLastName(player.lastName || "");
+            setEmail(player.email || "");
+            setEmailError("");
+            setPhotoUrl(player.photoUrl || "");
+            const rawGender = (player.gender || "").trim().toUpperCase();
+            const initialGender = (rawGender === Gender.MALE || rawGender === Gender.FEMALE) ? (rawGender as Gender) : "";
+            setGender(initialGender);
+            setDob(player.dob || "");
+            loadedFirstName.current = player.firstName || "";
+            loadedLastName.current = player.lastName || "";
+            loadedDob.current = player.dob || "";
+            loadedGender.current = rawGender;
+            setNationality(player.nationality || "");
+            setPhone(player.phone || "");
+            setPersonId(player.personId || "");
+            setRecordVerification(player.recordVerification || null);
 
-                setAddressLine1(player.addressLine1 || player.address || "");
-                setAddressLine2(player.addressLine2 || "");
-                setCity(player.city || "");
-                setPostcode(player.postcode || "");
-                setState(player.state || "");
-                setCountry(player.country || "");
-                // Can ideally populate stateCode/countryCode if API returns it, otherwise default or infer
+            setAddressLine1(player.addressLine1 || player.address || "");
+            setAddressLine2(player.addressLine2 || "");
+            setCity(player.city || "");
+            setPostcode(player.postcode || "");
+            setState(player.state || "");
+            setCountry(player.country || "");
 
-                setStatus(player.status || "ACTIVE");
-                setHeightCm(player.heightCm?.toString() || "");
-                setWeightKg(player.weightKg?.toString() || "");
-                setDominantHand(player.dominantHand || DominantSide.RIGHT);
-                setDominantLeg(player.dominantLeg || DominantSide.RIGHT);
+            setStatus(player.status || "ACTIVE");
+            setHeightCm(player.heightCm?.toString() || "");
+            setWeightKg(player.weightKg?.toString() || "");
+            setDominantHand(player.dominantHand || DominantSide.RIGHT);
+            setDominantLeg(player.dominantLeg || DominantSide.RIGHT);
 
-                if (player.organisationId) setSelectedOrganisationId(player.organisationId);
-
-            } catch (error) {
-                console.error("Failed to load player data", error);
-                showToast.error("Failed to load player details");
-                navigate('/dashboard/players');
-            } finally {
-                setLoading(false);
+            if (player.organisationId) {
+                setSelectedOrganisationId(player.organisationId);
+                loadTeams(player.organisationId);
             }
-        };
-        loadData();
-    }, [id, navigate]);
+        } catch (error) {
+            console.error("Failed to load player data", error);
+            setPlayerError("Couldn't load this player.");
+        } finally {
+            setLoadingPlayer(false);
+        }
+    }, [id, loadTeams]);
 
-    // Filter teams based on selected organisation
-    const filteredTeams = selectedOrganisationId
-        ? teams.filter(t => t.organisationId === selectedOrganisationId)
-        : teams;
+    useEffect(() => {
+        loadPlayer();
+        loadOrganisations();
+    }, [loadPlayer, loadOrganisations]);
 
     const isVerified = recordVerification?.status === 'VERIFIED';
     const nameChanged = (firstName.trim() !== loadedFirstName.current) || (lastName.trim() !== loadedLastName.current);
@@ -257,10 +275,50 @@ export const EditPlayer = () => {
         }
     };
 
-    if (loading) {
+    if (loadingPlayer) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            <div className="space-y-6 max-w-4xl mx-auto p-8 animate-pulse">
+                <div className="flex items-center gap-4 mb-6">
+                    <LoadingSkeleton className="w-10 h-10 rounded-lg" />
+                    <div className="space-y-2 flex-1">
+                        <LoadingSkeleton className="w-48 h-6" />
+                        <LoadingSkeleton className="w-64 h-4" />
+                    </div>
+                </div>
+                <GlassCard className="p-8 space-y-6">
+                    <div className="flex justify-center mb-6">
+                        <LoadingSkeleton className="w-32 h-32 rounded-full" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <LoadingSkeleton className="h-10" />
+                        <LoadingSkeleton className="h-10" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <LoadingSkeleton className="h-10" />
+                        <LoadingSkeleton className="h-10" />
+                    </div>
+                    <LoadingSkeleton className="h-24" />
+                </GlassCard>
+            </div>
+        );
+    }
+
+    if (playerError) {
+        return (
+            <div className="max-w-md mx-auto my-16 p-8 text-center bg-white dark:bg-deep-navy rounded-2xl border border-black/10 dark:border-white/10 space-y-4">
+                <div className="w-12 h-12 mx-auto rounded-full bg-accent/10 flex items-center justify-center text-accent-text">
+                    <WarningCircle className="w-6 h-6" />
+                </div>
+                <h2 className="text-lg font-semibold text-foreground">Couldn't load this player.</h2>
+                <p className="text-sm text-muted-foreground">An error occurred while fetching player details.</p>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                    <Button type="button" variant="secondary" onClick={() => navigate('/dashboard/players')}>
+                        Back to players
+                    </Button>
+                    <Button type="button" variant="primary" onClick={loadPlayer}>
+                        Try again
+                    </Button>
+                </div>
             </div>
         );
     }
@@ -522,36 +580,66 @@ export const EditPlayer = () => {
                             <div className="mt-4 space-y-4 p-6 bg-white/5 rounded-2xl border border-white/10">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-muted-foreground">Filter by Organisation</label>
-                                    <SearchableSelect
+                                    <Select
                                         value={selectedOrganisationId}
                                         onChange={(value) => {
-                                            setSelectedOrganisationId(value as string);
+                                            const orgId = value as string;
+                                            setSelectedOrganisationId(orgId);
                                             setSelectedTeamId(""); // Reset team when org changes
+                                            loadTeams(orgId);
                                         }}
                                         options={[
                                             { value: '', label: 'All Organisations' },
                                             ...organisations.map(org => ({ value: org.id, label: org.name }))
                                         ]}
-                                        placeholder="Select organisation"
+                                        placeholder={loadingOrgs ? "Loading organisations..." : "Select organisation"}
+                                        searchable={true}
                                     />
+                                    {orgsError && (
+                                        <div className="flex items-center gap-2 text-xs text-accent-text mt-1">
+                                            <span>{orgsError}</span>
+                                            <button
+                                                type="button"
+                                                onClick={loadOrganisations}
+                                                className="underline font-medium hover:opacity-80"
+                                            >
+                                                Retry
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-muted-foreground">Select Team</label>
-                                    <SearchableSelect
+                                    <Select
                                         value={selectedTeamId}
                                         onChange={(value) => setSelectedTeamId(value as string)}
                                         options={[
                                             { value: '', label: 'Choose a team...' },
-                                            ...filteredTeams.map(team => ({
+                                            ...teams.map(team => ({
                                                 value: team.id,
-                                                label: `${team.name}${team.organisationName ? ` (${team.organisationName})` : ''}`
+                                                label: team.name
                                             }))
                                         ]}
-                                        placeholder="Select team"
-                                        disabled={teams.length === 0}
+                                        placeholder={loadingTeams ? "Loading teams..." : "Select team"}
+                                        disabled={teams.length === 0 && !loadingTeams}
+                                        searchable={true}
                                     />
-                                    {teams.length === 0 && <p className="text-xs text-muted-foreground">No teams found.</p>}
+                                    {teamsError && (
+                                        <div className="flex items-center gap-2 text-xs text-accent-text mt-1">
+                                            <span>{teamsError}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => loadTeams(selectedOrganisationId)}
+                                                className="underline font-medium hover:opacity-80"
+                                            >
+                                                Retry
+                                            </button>
+                                        </div>
+                                    )}
+                                    {!teamsError && teams.length === 0 && !loadingTeams && (
+                                        <p className="text-xs text-muted-foreground">No teams found.</p>
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">

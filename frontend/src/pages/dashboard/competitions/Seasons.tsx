@@ -193,7 +193,7 @@ export const Seasons = () => {
                             <div className="p-6 pt-0 flex-1 flex flex-col -mt-8">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="w-16 h-16 rounded-xl bg-glass-bg border border-white/10 shadow-lg flex items-center justify-center overflow-hidden z-10 text-primary-400">
-                                        <Trophy className="w-8 h-8" weight="duotone" />
+                                        <Trophy className="w-8 h-8" />
                                     </div>
 
                                     {/* Action Buttons */}
@@ -229,11 +229,11 @@ export const Seasons = () => {
 
                                 <div className="mt-auto space-y-3 pt-4 border-t border-white/5">
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <CalendarBlank className="w-4 h-4 text-primary-500" />
+                                        <CalendarBlank className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span>{season.startDate} - {season.endDate}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <Buildings className="w-4 h-4 text-primary-500" />
+                                        <Buildings className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span className="truncate">{season.organiser?.name || 'Unknown Organiser'}</span>
                                     </div>
                                 </div>

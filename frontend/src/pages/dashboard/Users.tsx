@@ -90,7 +90,7 @@ export default function Users() {
 
         return (
             <Badge variant={color as any} className="gap-1 pl-1 pr-2">
-                <Icon className="w-3.5 h-3.5" weight="fill" />
+                <Icon className="w-4 h-4" />
                 {formatRoleName(primaryRole)}
             </Badge>
         );
@@ -172,7 +172,7 @@ export default function Users() {
                             onClick={() => navigate(`/dashboard/users/${user.id}/edit`)}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-primary-500/20 to-blue-600/20 text-primary-200 font-bold border border-white/10">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint font-bold border border-navy/20 dark:border-navy-tint/30">
                                     {user.firstName[0]}{user.lastName[0]}
                                 </div>
                                 <div className="flex gap-1">
@@ -186,7 +186,7 @@ export default function Users() {
                                         <>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/users/${user.id}/edit`); }}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                                                className="w-8 h-8 rounded-full flex items-center justify-center text-black/60 dark:text-white/60 hover:bg-navy/10 hover:text-navy dark:hover:bg-navy-tint/15 dark:hover:text-navy-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint transition-colors"
                                                 aria-label="Edit user"
                                             >
                                                 <PencilSimple className="w-4 h-4" />
@@ -194,7 +194,7 @@ export default function Users() {
                                             {currentUser?.id !== user.id && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setConfirmDelete({ isOpen: true, userId: user.id }); }}
-                                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors"
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-black/60 dark:text-white/60 hover:bg-crimson/10 hover:text-crimson dark:hover:bg-crimson-tint/15 dark:hover:text-crimson-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-crimson dark:focus-visible:ring-crimson-tint transition-colors"
                                                     aria-label="Delete user"
                                                 >
                                                     <Trash className="w-4 h-4" />

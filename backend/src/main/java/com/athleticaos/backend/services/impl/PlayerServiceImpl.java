@@ -38,6 +38,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -224,8 +225,19 @@ public class PlayerServiceImpl implements PlayerService {
                     .collect(Collectors.toList());
         }
 
+        if (players.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        List<UUID> playerIds = players.stream().map(Player::getId).collect(Collectors.toList());
+        List<com.athleticaos.backend.entities.PlayerTeam> allMemberships = playerTeamRepository
+                .findByPlayerIdInAndIsActiveTrue(playerIds);
+        Map<UUID, List<com.athleticaos.backend.entities.PlayerTeam>> membershipsByPlayerId = allMemberships.stream()
+                .filter(pt -> pt.getPlayer() != null && pt.getPlayer().getId() != null)
+                .collect(Collectors.groupingBy(pt -> pt.getPlayer().getId()));
+
         return players.stream()
-                .map(this::mapToPlayerResponse)
+                .map(p -> mapToPlayerResponse(p, membershipsByPlayerId.getOrDefault(p.getId(), List.of())))
                 .collect(Collectors.toList());
     }
 
@@ -706,8 +718,14 @@ public class PlayerServiceImpl implements PlayerService {
         log.info("Assigned player {} to team {}", player.getId(), team.getId());
     }
 
-    @SuppressWarnings("deprecation")
     private PlayerResponse mapToPlayerResponse(Player player) {
+        List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
+                .findByPlayerIdAndIsActiveTrue(player.getId());
+        return mapToPlayerResponse(player, playerTeams);
+    }
+
+    @SuppressWarnings("deprecation")
+    private PlayerResponse mapToPlayerResponse(Player player, List<com.athleticaos.backend.entities.PlayerTeam> playerTeams) {
         Person person = player.getPerson();
 
         // Get organisation from current team assignment
@@ -715,21 +733,21 @@ public class PlayerServiceImpl implements PlayerService {
         String organisationName = null;
         java.util.List<String> teamNames = new java.util.ArrayList<>();
 
-        List<com.athleticaos.backend.entities.PlayerTeam> playerTeams = playerTeamRepository
-                .findByPlayerIdAndIsActiveTrue(player.getId());
+        List<com.athleticaos.backend.entities.PlayerTeam> sortedPlayerTeams = new java.util.ArrayList<>(playerTeams);
         // Sort by most recent assignment first so current team drives org display
-        playerTeams.sort((a, b) -> {
+        sortedPlayerTeams.sort((a, b) -> {
             var d1 = a.getJoinedDate() != null ? a.getJoinedDate() : (a.getCreatedAt() != null ? a.getCreatedAt().toLocalDate() : java.time.LocalDate.MIN);
             var d2 = b.getJoinedDate() != null ? b.getJoinedDate() : (b.getCreatedAt() != null ? b.getCreatedAt().toLocalDate() : java.time.LocalDate.MIN);
             return d2.compareTo(d1);
         });
-        if (!playerTeams.isEmpty()) {
-            var playerTeam = playerTeams.get(0);
+        if (!sortedPlayerTeams.isEmpty()) {
+            var playerTeam = sortedPlayerTeams.get(0);
             if (playerTeam.getTeam() != null && playerTeam.getTeam().getOrganisation() != null) {
                 organisationId = playerTeam.getTeam().getOrganisation().getId();
                 organisationName = playerTeam.getTeam().getOrganisation().getName();
             }
-            teamNames = playerTeams.stream()
+            teamNames = sortedPlayerTeams.stream()
+                    .filter(pt -> pt.getTeam() != null)
                     .map(pt -> pt.getTeam().getName())
                     .collect(java.util.stream.Collectors.toList());
         }

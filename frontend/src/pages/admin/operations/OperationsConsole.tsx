@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
+import { Warning, Check } from '@phosphor-icons/react';
 import api from '@/api/axios';
 
 interface OperationsDashboardDTO {
@@ -85,7 +86,7 @@ const OperationsConsole: React.FC = () => {
             {data?.attentionRequired && data.attentionRequired.length > 0 && (
                 <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-6">
                     <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
-                        ⚠️ Immediate Action Required
+                        <Warning className="w-5 h-5 text-crimson dark:text-crimson-tint" /> Immediate Action Required
                     </h3>
                     <div className="space-y-3">
                         {data.attentionRequired.map((item) => (
@@ -110,7 +111,7 @@ const OperationsConsole: React.FC = () => {
             {(!data?.attentionRequired || data.attentionRequired.length === 0) && (
                 <div className="bg-emerald-900/10 border border-emerald-500/10 rounded-xl p-8 text-center">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 mb-3">
-                        ✓
+                        <Check className="w-6 h-6" />
                     </div>
                     <h3 className="text-lg font-medium text-emerald-400">All Systems Operational</h3>
                     <p className="text-slate-400 mt-1">No pending alerts or validation errors found.</p>

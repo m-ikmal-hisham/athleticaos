@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Users, Trophy, MapPin, MagnifyingGlass } from '@phosphor-icons/react';
+import { Shield, Users, Trophy, MapPin, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { publicProfileApi, PublicTeamDirectoryItem } from '../../api/public.api';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
+import { Select } from '@/components/Select';
 
 const CATEGORY_OPTIONS = [
     { id: 'all', label: 'All Categories' },
@@ -96,7 +97,7 @@ export default function TeamsList() {
             <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
                     <input
                         type="text"
                         placeholder="Search teams by name, short name, club, or state..."
@@ -106,27 +107,27 @@ export default function TeamsList() {
                     />
                     {searchQuery && (
                         <button
+                            aria-label="Clear search"
                             onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
-                            ✕
+                            <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
 
                 {/* State Dropdown */}
                 {availableStates.length > 0 && (
-                    <div className="relative">
-                        <select
+                    <div className="relative w-full md:w-44">
+                        <Select
                             value={selectedState}
-                            onChange={(e) => setSelectedState(e.target.value)}
-                            className="w-full md:w-44 px-3 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white text-sm cursor-pointer"
-                        >
-                            <option value="all">All States</option>
-                            {availableStates.map(st => (
-                                <option key={st} value={st}>{st}</option>
-                            ))}
-                        </select>
+                            onChange={(val) => setSelectedState(String(val))}
+                            aria-label="Filter by state"
+                            options={[
+                                { value: 'all', label: 'All States' },
+                                ...availableStates.map(st => ({ value: st, label: st }))
+                            ]}
+                        />
                     </div>
                 )}
             </div>
@@ -157,7 +158,7 @@ export default function TeamsList() {
                 </div>
             ) : filteredTeams.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-                    <Shield className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+                    <Shield className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-lg font-medium text-slate-900 dark:text-white mb-2">
                         No teams found
                     </p>
@@ -198,7 +199,7 @@ export default function TeamsList() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                                 {team.category && (
-                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
                                                         {team.category}
                                                     </span>
                                                 )}
@@ -208,7 +209,7 @@ export default function TeamsList() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
                                                 {team.name}
                                             </h3>
                                             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
@@ -225,7 +226,7 @@ export default function TeamsList() {
                                                     key={t.id}
                                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 truncate max-w-[200px]"
                                                 >
-                                                    <Trophy className="w-3 h-3 text-yellow-500 shrink-0" />
+                                                    <Trophy className="w-3 h-3 shrink-0" weight="bold" />
                                                     <span className="truncate">{t.name}</span>
                                                 </span>
                                             ))}
@@ -241,12 +242,12 @@ export default function TeamsList() {
                                 {/* Card Footer */}
                                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                     <div className="flex items-center gap-1.5">
-                                        <Users className="w-4 h-4 text-blue-500" />
+                                        <Users className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span>{team.playerCount} Players</span>
                                     </div>
                                     {team.state && (
                                         <div className="flex items-center gap-1">
-                                            <MapPin className="w-3.5 h-3.5" />
+                                            <MapPin className="w-4 h-4" />
                                             <span>{team.state}</span>
                                         </div>
                                     )}

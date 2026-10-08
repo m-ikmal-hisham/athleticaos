@@ -60,7 +60,7 @@ export const LivestreamLinksEditor = ({ value, onChange, error }: LivestreamLink
                     <button
                         type="button"
                         onClick={() => onChange([...links, { label: '', url: '' }])}
-                        className="shrink-0 inline-flex items-center gap-1 text-sm font-medium text-blue-500 hover:text-blue-600"
+                        className="shrink-0 inline-flex items-center gap-1 text-sm font-medium text-navy dark:text-navy-tint hover:text-navy dark:hover:text-navy-tint"
                     >
                         <Plus className="w-4 h-4" /> Add link
                     </button>

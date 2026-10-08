@@ -393,7 +393,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                         >
                             <DownloadSimple className="w-4 h-4" />
                             Actions
-                            <CaretDown className="w-3 h-3" />
+                            <CaretDown className="w-3 h-3" weight="bold" />
                         </Button>
 
                         {actionsOpen && (
@@ -530,7 +530,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                 <div className="text-center py-12 text-slate-500 animate-pulse">Loading matches...</div>
             ) : matches.length === 0 ? (
                 <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                    <CalendarBlank className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <CalendarBlank className="w-12 h-12 text-black/60 dark:text-white/60 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white">No matches scheduled</h3>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Generate a schedule in the Format tab or create matches manually.</p>
                 </div>
@@ -545,7 +545,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                             the gap visible instead of silently hiding matches. */}
                         {unscheduledMatches.length > 0 && (
                             <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10 flex items-start gap-3">
-                                <WarningCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                <WarningCircle className="w-5 h-5 shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-semibold text-amber-900 dark:text-amber-200">
                                         {unscheduledMatches.length} {unscheduledMatches.length === 1 ? 'match has' : 'matches have'} no date or kick-off time
@@ -637,7 +637,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800 sticky top-4">
                             <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <WarningCircle className="w-4 h-4 text-amber-500" />
+                                <WarningCircle className="w-4 h-4" />
                                 Unscheduled ({unscheduledMatches.length})
                             </h4>
 
@@ -667,8 +667,8 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                                 <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || match.awayTeamPlaceholder}>{match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}</span>
                                                             </div>
                                                         </div>
-                                                        <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Clock className="w-3 h-3" />
+                                                        <div className="mt-2 text-xs text-navy dark:text-navy-tint font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Clock className="w-3 h-3" weight="bold" />
                                                             Schedule Now
                                                         </div>
                                                     </div>
@@ -724,7 +724,7 @@ function TeamLogo({ url, name, className = '' }: { url?: string | null; name?: s
 function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match: MatchResponse, onClick: () => void, onEdit: (e: React.MouseEvent) => void, onDelete: (e: React.MouseEvent) => void, hasMultiVenues?: boolean }) {
     return (
         <div
-            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
+            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-navy dark:hover:border-navy rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
             onClick={onClick}
         >
             {/* Admin Controls */}
@@ -734,14 +734,14 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                     className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
                     title="Edit Match"
                 >
-                    <PencilSimple className="w-3.5 h-3.5" />
+                    <PencilSimple className="w-4 h-4" />
                 </button>
                 <button
                     onClick={onDelete}
                     className="p-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded text-red-500 dark:text-red-400"
                     title="Delete Match"
                 >
-                    <Trash className="w-3.5 h-3.5" />
+                    <Trash className="w-4 h-4" />
                 </button>
             </div>
 
@@ -762,7 +762,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
 
             <div className="flex justify-between items-start gap-2 mb-4">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider min-w-0">
-                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <Clock className="w-4 h-4 shrink-0" />
                     <span className="shrink-0">{match.kickOffTime}</span>
                     <span className="text-slate-500 truncate" title={match.venue?.trim() || 'Venue TBC'}>
                         • {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}
@@ -782,7 +782,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                     )}
                     {match.matchCode && (
                         <div
-                            className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold truncate max-w-[7rem]"
+                            className="text-[10px] font-mono text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-bold truncate max-w-[7rem]"
                             title={match.matchCode}
                         >
                             {match.matchCode}
@@ -805,7 +805,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                 <div className="flex-1 flex items-center gap-2 min-w-0">
                     <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder} />
                     <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate" title={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder}>
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate" title={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder}>
                             {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
@@ -828,7 +828,7 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                 {/* Away */}
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <div className="flex flex-col items-end gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-right" title={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder}>
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate text-right" title={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder}>
                             {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder)}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>

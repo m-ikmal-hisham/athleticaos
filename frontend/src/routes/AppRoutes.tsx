@@ -1,11 +1,12 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 // Layouts & Guards — always needed, keep eager
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import PublicLayout from '@/layouts/PublicLayout';
 import { AuthGuard } from '@/routes/AuthGuard';
+import { isFeatureEnabled, FeatureKey } from '@/config/features';
 
 // Helper for named exports: lazy(() => import(...).then(m => ({ default: m.X })))
 const lazyNamed = <T extends Record<string, any>, K extends keyof T>(
@@ -22,9 +23,10 @@ const PlayersList = lazy(() => import('@/pages/public/PlayersList'));
 const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
-const Sponsors = lazy(() => import('@/pages/public/Sponsors'));
+const Partners = lazy(() => import('@/pages/public/Partners'));
 const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
-// Signup removed — registration is closed and route is disabled
+// Signup — behind the 'signup' feature flag
+const Signup = lazyNamed(() => import('@/pages/public/Signup'), 'Signup');
 const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
 const PublicPlayerProfile = lazyNamed(() => import('@/pages/public/PublicPlayerProfile'), 'PublicPlayerProfile');
 const MediaPortal = lazyNamed(() => import('@/pages/public/MediaPortal'), 'MediaPortal');
@@ -86,6 +88,20 @@ const SubscriptionManagement = lazyNamed(() => import('@/pages/admin/monetizatio
 
 // ─── Misc ───────────────────────────────────────────────────────────
 const NotFoundPage = lazyNamed(() => import('@/pages/NotFoundPage'), 'NotFoundPage');
+const UnauthorizedPage = lazyNamed(() => import('@/pages/UnauthorizedPage'), 'UnauthorizedPage');
+
+interface FeatureRouteProps {
+    feature: FeatureKey;
+    children: React.ReactNode;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+const FeatureRoute = ({ feature, children }: FeatureRouteProps) => {
+    if (!isFeatureEnabled(feature)) {
+        return <NotFoundPage />;
+    }
+    return <>{children}</>;
+};
 
 
 
@@ -119,8 +135,12 @@ export const router = createBrowserRouter([
                 element: <HowItWorks />,
             },
             {
+                path: '/partners',
+                element: <Partners />,
+            },
+            {
                 path: '/sponsors',
-                element: <Sponsors />,
+                element: <Navigate to="/partners" replace />,
             },
             {
                 path: '/media/matches/:matchId',
@@ -152,12 +172,20 @@ export const router = createBrowserRouter([
                 path: '/login',
                 element: <Login />,
             },
-            // /signup route removed — registration closed
+            // /signup route — behind the 'signup' feature flag
+            {
+                path: '/signup',
+                element: (
+                    <FeatureRoute feature="signup">
+                        <Signup />
+                    </FeatureRoute>
+                ),
+            },
         ],
     },
     {
         path: '/unauthorized',
-        element: <div>Unauthorized Placeholder</div>,
+        element: <UnauthorizedPage />,
     },
     {
         path: '/dashboard',
@@ -382,92 +410,114 @@ export const router = createBrowserRouter([
             {
                 path: 'operations',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
-                        <OperationsConsole />
-                    </AuthGuard>
+                    <FeatureRoute feature="operations">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                            <OperationsConsole />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
 
             {
                 path: 'federation/dashboard',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <FederationDashboard />
-                    </AuthGuard>
+                    <FeatureRoute feature="federation">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <FederationDashboard />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'federation/sanctioning',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <SanctioningConsole />
-                    </AuthGuard>
+                    <FeatureRoute feature="federation">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <SanctioningConsole />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'federation/oversight',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <CompetitionOversight />
-                    </AuthGuard>
+                    <FeatureRoute feature="federation">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <CompetitionOversight />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'federation/compliance',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <ComplianceReports />
-                    </AuthGuard>
+                    <FeatureRoute feature="federation">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <ComplianceReports />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'federation/discipline',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <DisciplineTrends />
-                    </AuthGuard>
+                    <FeatureRoute feature="federation">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <DisciplineTrends />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             // Analytics
             {
                 path: 'analytics/teams',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <TeamAnalyticsDashboard />
-                    </AuthGuard>
+                    <FeatureRoute feature="analytics">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <TeamAnalyticsDashboard />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'analytics/impact',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <DisciplineImpactAnalysis />
-                    </AuthGuard>
+                    <FeatureRoute feature="analytics">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <DisciplineImpactAnalysis />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'analytics/season',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <SeasonSummaryReport />
-                    </AuthGuard>
+                    <FeatureRoute feature="analytics">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <SeasonSummaryReport />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             // Monetization
             {
                 path: 'monetization/sponsors',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <SponsorPackages />
-                    </AuthGuard>
+                    <FeatureRoute feature="monetization">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <SponsorPackages />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
             {
                 path: 'monetization/subscriptions',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
-                        <SubscriptionManagement />
-                    </AuthGuard>
+                    <FeatureRoute feature="monetization">
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']}>
+                            <SubscriptionManagement />
+                        </AuthGuard>
+                    </FeatureRoute>
                 ),
             },
         ],

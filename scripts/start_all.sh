@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
+
+# shellcheck source=scripts/lib/dev_env.sh
+source "$SCRIPT_DIR/lib/dev_env.sh"
+
+require_docker
+resolve_java21
+echo "Using Java: $(java -version 2>&1 | head -n 1)"
+ensure_log_dirs
 
 BACKEND_PORT=8080
 FRONTEND_PORT=5173
@@ -14,7 +23,7 @@ FRONTEND_DIR="frontend"
 FRONTEND_START_CMD="npm run dev"
 
 echo "🚀 This will start:"
-echo "   - Docker services via 'docker compose up -d'"
+echo "   - Docker services (PostgreSQL, Mailpit) via 'docker compose up -d'"
 echo "   - Backend (Spring Boot) on port ${BACKEND_PORT}"
 echo "   - Frontend (Vite) on port ${FRONTEND_PORT}"
 echo ""
@@ -35,19 +44,27 @@ echo ""
 echo "🧹 Pre-flight cleanup: checking for stuck processes..."
 
 cleanup_stuck_processes() {
-  # Check for Maven processes
-  MAVEN_PIDS=$(pgrep -f "mvn.*athleticaos" 2>/dev/null || true)
-  if [ -n "$MAVEN_PIDS" ]; then
-    echo "⚠️  Found stuck Maven processes (PIDs: $MAVEN_PIDS). Cleaning up..."
-    kill -9 $MAVEN_PIDS 2>/dev/null || true
+  local maven_pids
+  maven_pids=$(pgrep -f "mvn.*athleticaos" 2>/dev/null || true)
+  if [ -n "$maven_pids" ]; then
+    echo "⚠️  Found stuck Maven processes. Cleaning up..."
+    stop_pids "Maven processes" "$maven_pids"
   fi
 
-  # Check for processes on ports
-  for PORT in $BACKEND_PORT $FRONTEND_PORT; do
-    PORT_PIDS=$(lsof -ti tcp:${PORT} 2>/dev/null || true)
-    if [ -n "$PORT_PIDS" ]; then
-      echo "⚠️  Found process on port ${PORT} (PIDs: $PORT_PIDS). Cleaning up..."
-      kill -9 $PORT_PIDS 2>/dev/null || true
+  local vite_pids
+  vite_pids=$(project_vite_pids)
+  if [ -n "$vite_pids" ]; then
+    echo "⚠️  Found existing project Vite processes. Cleaning up..."
+    stop_pids "Project Vite" "$vite_pids"
+  fi
+
+  local port
+  for port in $BACKEND_PORT $FRONTEND_PORT; do
+    local port_pids
+    port_pids=$(lsof -ti tcp:"${port}" 2>/dev/null || true)
+    if [ -n "$port_pids" ]; then
+      echo "⚠️  Found process on port ${port}. Cleaning up..."
+      stop_pids "Process on port ${port}" "$port_pids"
     fi
   done
 }
@@ -70,6 +87,7 @@ wait_for_docker_health() {
     return 0
   fi
 
+  local i
   for ((i=1; i<=ATTEMPTS; i++)); do
     local UNHEALTHY
     UNHEALTHY=$(echo "$IDS" | xargs -I {} docker inspect --format '{{ if .State.Health }}{{ .State.Health.Status }}{{ else }}none{{ end }}' {} 2>/dev/null \
@@ -88,7 +106,7 @@ wait_for_docker_health() {
 }
 
 echo ""
-echo "🐳 Starting Docker services..."
+echo "🐳 Starting Docker services (PostgreSQL, Mailpit)..."
 docker compose up -d
 
 wait_for_docker_health
@@ -110,9 +128,16 @@ echo "⚡ Starting frontend (logs -> frontend.log)..."
 )
 
 echo ""
+echo "⏳ Waiting for services to become ready..."
+wait_for_url "http://localhost:${BACKEND_PORT}/actuator/health" 180 "Backend"
+wait_for_url "http://localhost:${FRONTEND_PORT}" 60 "Frontend"
+
+echo ""
 echo "🔥 Stack Ready!"
-echo "➡ Backend:  http://localhost:${BACKEND_PORT}"
-echo "➡ Frontend: http://localhost:${FRONTEND_PORT}"
+echo "   Database  localhost:5432"
+echo "   Backend   http://localhost:${BACKEND_PORT}"
+echo "   Frontend  http://localhost:${FRONTEND_PORT}"
+echo "   Mailpit   http://localhost:8025   (dev only: catches all outgoing email; nothing is really sent)"
 echo ""
 echo "📋 Logs:"
 echo "   Backend:  tail -f logs/backendLogs/backend.log"

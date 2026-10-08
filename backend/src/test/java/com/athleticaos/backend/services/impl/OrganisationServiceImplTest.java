@@ -169,4 +169,36 @@ class OrganisationServiceImplTest {
         verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
         verify(personRepository, never()).saveAndFlush(any());
     }
+
+    @Test
+    void getOrganisationOptions_whenSuperAdmin_seesAll() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        Organisation org1 = Organisation.builder().id(UUID.randomUUID()).name("Beta Club").orgType("CLUB").build();
+        Organisation org2 = Organisation.builder().id(UUID.randomUUID()).name("Alpha Club").orgType("CLUB").build();
+        when(organisationRepository.findAllWithParentOrg()).thenReturn(List.of(org1, org2));
+
+        var options = organisationService.getOrganisationOptions();
+
+        assertThat(options).hasSize(2);
+        // Verify sorted by name
+        assertThat(options.get(0).getName()).isEqualTo("Alpha Club");
+        assertThat(options.get(1).getName()).isEqualTo("Beta Club");
+        verify(organisationRepository).findAllWithParentOrg();
+    }
+
+    @Test
+    void getOrganisationOptions_whenOrgAdmin_seesOnlyOwnHierarchy() {
+        UUID accessibleOrgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(accessibleOrgId));
+        Organisation org = Organisation.builder().id(accessibleOrgId).name("My Org").orgType("STATE").build();
+        when(organisationRepository.findAllByIdInWithParentOrg(java.util.Set.of(accessibleOrgId)))
+                .thenReturn(List.of(org));
+
+        var options = organisationService.getOrganisationOptions();
+
+        assertThat(options).hasSize(1);
+        assertThat(options.get(0).getId()).isEqualTo(accessibleOrgId);
+        assertThat(options.get(0).getName()).isEqualTo("My Org");
+        verify(organisationRepository).findAllByIdInWithParentOrg(java.util.Set.of(accessibleOrgId));
+    }
 }

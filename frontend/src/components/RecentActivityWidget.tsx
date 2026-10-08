@@ -53,7 +53,7 @@ export const RecentActivityWidget = memo(({
             <GlassCard className="h-full">
                 <GlassCardHeader className="pb-2">
                     <GlassCardTitle className="text-lg font-medium flex items-center gap-2">
-                        <Pulse className="w-5 h-5 text-primary-500" />
+                        <Pulse className="w-5 h-5 text-navy dark:text-navy-tint" />
                         {title}
                     </GlassCardTitle>
                 </GlassCardHeader>
@@ -70,7 +70,7 @@ export const RecentActivityWidget = memo(({
         <GlassCard variant="subtle" className="h-full flex flex-col">
             <GlassCardHeader className="pb-2 flex-none">
                 <GlassCardTitle className="text-lg font-medium flex items-center gap-2">
-                    <Pulse className="w-5 h-5 text-primary-500" />
+                    <Pulse className="w-5 h-5 text-navy dark:text-navy-tint" />
                     {title}
                 </GlassCardTitle>
             </GlassCardHeader>
@@ -93,7 +93,7 @@ export const RecentActivityWidget = memo(({
                                             {log.actionType.replace(/_/g, ' ')}
                                         </p>
                                         <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
+                                            <Clock className="w-3 h-3" weight="bold" />
                                             {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
                                         </span>
                                     </div>
@@ -121,11 +121,11 @@ export const RecentActivityWidget = memo(({
                         >
                             {isExpanded ? (
                                 <>
-                                    <CaretUp className="w-3 h-3 mr-1" /> Show Less
+                                    <CaretUp className="w-3 h-3 mr-1" weight="bold" /> Show Less
                                 </>
                             ) : (
                                 <>
-                                    <CaretDown className="w-3 h-3 mr-1" /> View All ({logs.length - INITIAL_DISPLAY_COUNT} more)
+                                    <CaretDown className="w-3 h-3 mr-1" weight="bold" /> View All ({logs.length - INITIAL_DISPLAY_COUNT} more)
                                 </>
                             )}
                         </Button>

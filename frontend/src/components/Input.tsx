@@ -14,9 +14,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         return (
             <div className="w-full">
                 {label && (
-                    <label htmlFor={inputId} className="block text-sm font-medium text-muted-foreground mb-1.5">
+                    <label htmlFor={inputId} className="block text-sm font-medium text-black/72 dark:text-white/72 mb-1.5">
                         {label}
-                        {props.required && <span className="text-red-400 ml-1">*</span>}
+                        {props.required && <span className="text-crimson dark:text-crimson-tint ml-1">*</span>}
                     </label>
                 )}
                 <input
@@ -25,18 +25,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                     className={clsx(
                         'input-base',
                         error
-                            ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
-                            : 'focus:border-primary-500 focus:ring-primary-500/20',
+                            ? 'border-crimson dark:border-crimson-tint focus:border-crimson focus:ring-crimson/20'
+                            : '',
                         'disabled:opacity-50 disabled:cursor-not-allowed',
                         className
                     )}
                     {...props}
                 />
                 {error && (
-                    <p className="mt-1.5 text-sm text-red-400">{error}</p>
+                    <p className="mt-1.5 text-xs text-crimson dark:text-crimson-tint">{error}</p>
                 )}
                 {helperText && !error && (
-                    <p className="mt-1.5 text-sm text-slate-400">{helperText}</p>
+                    <p className="mt-1.5 text-xs text-black/60 dark:text-white/60">{helperText}</p>
                 )}
             </div>
         );

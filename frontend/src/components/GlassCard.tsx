@@ -1,6 +1,4 @@
-
 import { HTMLAttributes, forwardRef } from 'react';
-
 import { twMerge } from 'tailwind-merge';
 
 interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
@@ -9,41 +7,17 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Strict Glassmorphism Card Component
- * Enforces:
- * - Backdrop blur (16px)
- * - Backdrop saturate (180%)
- * - Semi-transparent background
- * - Soft border
- * - Apple-style shadow
+ * Card Component (formerly GlassCard, now solid per STYLE_GUIDE)
+ * Uses surface-card, line-subtle border, radius-lg (14px). No backdrop blur.
  */
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
-    ({ className, hover = false, variant = 'default', children, ...props }, ref) => {
+    ({ className, hover = false, variant: _variant = 'default', children, ...props }, ref) => {
         return (
             <div
                 ref={ref}
                 className={twMerge(
-                    // Base Glass Styles - using locked variables
-                    'glass-card-effect relative overflow-hidden rounded-[18px] border transition-all duration-300',
-                    'shadow-[var(--glass-shadow-md)]',
-
-                    // Variants - using theme variables
-                    variant === 'default' && [
-                        'bg-[var(--glass-bg)]',
-                        'border-white/20 dark:border-white/10'
-                    ],
-                    variant === 'subtle' && [
-                        'bg-white/50 dark:bg-slate-900/50',
-                        'border-white/10 dark:border-white/5'
-                    ],
-                    variant === 'high-contrast' && [
-                        'bg-white/75 dark:bg-slate-900/75',
-                        'border-white/30 dark:border-white/20'
-                    ],
-
-                    // Simplified hover effects
-                    hover && 'hover:shadow-lg hover:-translate-y-[2px] hover:border-blue-500/50 hover:ring-1 hover:ring-blue-500/20 dark:hover:border-blue-400/50 dark:hover:ring-blue-400/20 cursor-pointer',
-
+                    'bg-surface-card border border-line-subtle rounded-[14px] text-content-primary transition-colors',
+                    hover && 'hover:bg-black/4 dark:hover:bg-white/6 cursor-pointer',
                     className
                 )}
                 {...props}
@@ -58,7 +32,7 @@ GlassCard.displayName = 'GlassCard';
 
 export const GlassCardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     ({ className, ...props }, ref) => (
-        <div ref={ref} className={twMerge('flex flex-col space-y-2 p-8', className)} {...props} />
+        <div ref={ref} className={twMerge('flex flex-col space-y-2 p-6', className)} {...props} />
     )
 );
 
@@ -66,7 +40,7 @@ GlassCardHeader.displayName = 'GlassCardHeader';
 
 export const GlassCardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
     ({ className, ...props }, ref) => (
-        <h3 ref={ref} className={twMerge('text-lg font-semibold leading-none tracking-tight text-foreground', className)} {...props} />
+        <h3 ref={ref} className={twMerge('text-lg font-semibold leading-none tracking-tight text-content-primary', className)} {...props} />
     )
 );
 
@@ -74,7 +48,7 @@ GlassCardTitle.displayName = 'GlassCardTitle';
 
 export const GlassCardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
     ({ className, ...props }, ref) => (
-        <p ref={ref} className={twMerge('text-sm text-muted-foreground', className)} {...props} />
+        <p ref={ref} className={twMerge('text-sm text-black/72 dark:text-white/72', className)} {...props} />
     )
 );
 
@@ -82,7 +56,7 @@ GlassCardDescription.displayName = 'GlassCardDescription';
 
 export const GlassCardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     ({ className, ...props }, ref) => (
-        <div ref={ref} className={twMerge('p-8 pt-0', className)} {...props} />
+        <div ref={ref} className={twMerge('p-6 pt-0', className)} {...props} />
     )
 );
 
@@ -90,7 +64,7 @@ GlassCardContent.displayName = 'GlassCardContent';
 
 export const GlassCardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     ({ className, ...props }, ref) => (
-        <div ref={ref} className={twMerge('flex items-center p-8 pt-0', className)} {...props} />
+        <div ref={ref} className={twMerge('flex items-center p-6 pt-0', className)} {...props} />
     )
 );
 

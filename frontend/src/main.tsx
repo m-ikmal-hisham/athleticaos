@@ -26,20 +26,18 @@ export const Root = () => {
     return (
         <ErrorBoundary>
             <HelmetProvider>
-                <IconContext.Provider value={{
-                    weight: "duotone",
-                    className: "text-primary-900 dark:text-secondary-100"
-                }}>
+                <IconContext.Provider value={{ weight: "duotone" }}>
                     <RouterProvider router={router} />
                     <Toaster
                         position="top-right"
                         toastOptions={{
                             duration: 4000,
                             style: {
-                                background: 'var(--glass-bg)',
-                                color: 'var(--text-color)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                backdropFilter: 'blur(24px)',
+                                background: 'var(--surface-card)',
+                                color: 'var(--content-primary)',
+                                border: '1px solid var(--line-subtle)',
+                                borderRadius: '10px',
+                                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
                             },
                         }}
                     />

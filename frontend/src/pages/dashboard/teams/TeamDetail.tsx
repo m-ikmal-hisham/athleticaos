@@ -465,7 +465,7 @@ export default function TeamDetail() {
                                                 }}
                                                 className="py-1 px-3 text-xs gap-1"
                                             >
-                                                <Trash className="w-3.5 h-3.5" />
+                                                <Trash className="w-4 h-4" />
                                                 Remove Selected ({selectedPlayerIds.length})
                                             </Button>
                                         )}

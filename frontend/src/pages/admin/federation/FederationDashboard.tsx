@@ -13,9 +13,9 @@ const OrgNode = ({ node }: { node: OrganisationTreeNode }) => {
             <div className="flex flex-col items-center p-3 border rounded-lg bg-card shadow-sm min-w-[140px] z-10 relative">
                 <div className="mb-2">
                     {node.orgLevel === 'COUNTRY' && <Buildings className="w-6 h-6 text-primary" />}
-                    {node.orgLevel === 'STATE' && <MapPin className="w-6 h-6 text-blue-500" />}
-                    {node.orgLevel === 'CLUB' && <UsersThree className="w-6 h-6 text-green-500" />}
-                    {node.orgLevel === 'DISTRICT' && <MapPin className="w-6 h-6 text-purple-500" />}
+                    {node.orgLevel === 'STATE' && <MapPin className="w-6 h-6 text-navy dark:text-navy-tint" />}
+                    {node.orgLevel === 'CLUB' && <UsersThree className="w-6 h-6 text-navy dark:text-navy-tint" />}
+                    {node.orgLevel === 'DISTRICT' && <MapPin className="w-6 h-6 text-navy dark:text-navy-tint" />}
                 </div>
                 <span className="font-semibold text-sm text-center">{node.name}</span>
                 <Badge variant="outline" className="mt-1 text-[10px] px-1 py-0 h-4">{node.orgLevel}</Badge>

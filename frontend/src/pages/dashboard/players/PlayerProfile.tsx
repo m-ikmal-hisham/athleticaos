@@ -202,7 +202,7 @@ export const PlayerProfile = () => {
                                 className="w-24 h-24 rounded-full object-cover border-2 border-primary-500/20 mb-4"
                             />
                         ) : (
-                            <div className="w-24 h-24 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center text-3xl font-bold border border-primary-500/20 mb-4">
+                            <div className="w-24 h-24 rounded-full bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint flex items-center justify-center text-3xl font-bold border border-navy/20 dark:border-navy-tint/30 mb-4">
                                 {getInitials(player.firstName, player.lastName)}
                             </div>
                         )}
@@ -323,7 +323,7 @@ export const PlayerProfile = () => {
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <GlassCard className="p-6 flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                            <div className="w-12 h-12 rounded-full bg-blue-500/10 text-navy dark:text-navy-tint flex items-center justify-center">
                                                 <Target className="w-6 h-6" />
                                             </div>
                                             <div>

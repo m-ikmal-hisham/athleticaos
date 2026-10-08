@@ -24,7 +24,7 @@ export const PrimaryActionGrid = ({ onAction, disabled }: PrimaryActionGridProps
                 disabled={disabled}
                 className="col-span-1 md:col-span-1 bg-blue-600 active:bg-blue-700 hover:bg-blue-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg transition-transform active:scale-95 touch-manipulation h-32 md:h-full"
             >
-                <HandPalm className="w-10 h-10 md:w-12 md:h-12" weight="fill" />
+                <HandPalm className="w-8 h-8 md:w-12 md:h-12" />
                 <span className="text-2xl font-black uppercase tracking-wider">TRY</span>
                 <span className="text-sm opacity-75 font-mono">+5 PTS</span>
             </button>
@@ -35,7 +35,7 @@ export const PrimaryActionGrid = ({ onAction, disabled }: PrimaryActionGridProps
                 disabled={disabled}
                 className="col-span-1 md:col-span-1 bg-emerald-600 active:bg-emerald-700 hover:bg-emerald-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg transition-transform active:scale-95 touch-manipulation h-32 md:h-full"
             >
-                <Star className="w-10 h-10 md:w-12 md:h-12" weight="fill" />
+                <Star className="w-8 h-8 md:w-12 md:h-12" />
                 <span className="text-xl font-black uppercase tracking-wider text-center leading-tight">Super Try</span>
                 <span className="text-sm opacity-75 font-mono">+7 PTS</span>
             </button>
@@ -56,7 +56,7 @@ export const PrimaryActionGrid = ({ onAction, disabled }: PrimaryActionGridProps
                 disabled={disabled}
                 className="col-span-1 bg-purple-600 active:bg-purple-700 hover:bg-purple-500 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg transition-transform active:scale-95 touch-manipulation h-32 md:h-full"
             >
-                <Warning className="w-8 h-8" weight="bold" />
+                <Warning className="w-8 h-8" />
                 <span className="text-lg font-bold uppercase tracking-wider text-center leading-tight">Penalty</span>
                 <span className="text-sm opacity-75 font-mono">+3 PTS</span>
             </button>

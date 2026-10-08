@@ -17,7 +17,7 @@ interface AuthState {
     changePassword: (data: { email: string; currentPassword: string; newPassword: string }) => Promise<void>;
     setAuth: (user: User) => void;
     setUser: (user: User) => void;
-    logout: () => void;
+    logout: () => Promise<void>;
     checkTokenValidity: () => Promise<void>;
     hasRole: (role: string) => boolean;
     hasAnyRole: (roles: string[]) => boolean;
@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthState>()(
                     console.error("Logout failed on server", e);
                 }
                 set({ user: null, token: null, isAuthenticated: false, primaryRole: null, isInitialized: true });
-                window.location.href = '/login';
+                window.location.replace('/login?signedOut=1');
             },
 
             checkTokenValidity: async () => {
