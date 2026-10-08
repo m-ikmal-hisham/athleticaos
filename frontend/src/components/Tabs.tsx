@@ -10,13 +10,20 @@ interface TabsProps {
     defaultValue: string;
     children: React.ReactNode;
     className?: string;
+    /** Called when the user switches tab (e.g. to load that tab's data on first open). */
+    onValueChange?: (value: string) => void;
 }
 
-export function Tabs({ defaultValue, children, className }: TabsProps) {
+export function Tabs({ defaultValue, children, className, onValueChange }: TabsProps) {
     const [value, setValue] = React.useState(defaultValue);
 
+    const handleValueChange = React.useCallback((next: string) => {
+        setValue(next);
+        onValueChange?.(next);
+    }, [onValueChange]);
+
     return (
-        <TabsContext.Provider value={{ value, onValueChange: setValue }}>
+        <TabsContext.Provider value={{ value, onValueChange: handleValueChange }}>
             <div className={clsx("w-full", className)}>{children}</div>
         </TabsContext.Provider>
     );

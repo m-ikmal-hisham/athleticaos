@@ -695,6 +695,50 @@ class PlayerServiceImplTest {
     }
 
     @Test
+    void getAllPlayers_asSuperAdmin_loadsPersonsAndMembershipsInBulk() {
+        com.athleticaos.backend.entities.Organisation oldOrg = com.athleticaos.backend.entities.Organisation.builder()
+                .id(UUID.randomUUID()).name("Old Club").build();
+        com.athleticaos.backend.entities.Organisation newOrg = com.athleticaos.backend.entities.Organisation.builder()
+                .id(UUID.randomUUID()).name("New Club").build();
+        com.athleticaos.backend.entities.PlayerTeam older = com.athleticaos.backend.entities.PlayerTeam.builder()
+                .player(existingPlayer)
+                .team(com.athleticaos.backend.entities.Team.builder().id(UUID.randomUUID()).name("Old XV").organisation(oldOrg).build())
+                .joinedDate(LocalDate.of(2024, 1, 1))
+                .build();
+        com.athleticaos.backend.entities.PlayerTeam newer = com.athleticaos.backend.entities.PlayerTeam.builder()
+                .player(existingPlayer)
+                .team(com.athleticaos.backend.entities.Team.builder().id(UUID.randomUUID()).name("New XV").organisation(newOrg).build())
+                .joinedDate(LocalDate.of(2026, 1, 1))
+                .build();
+
+        when(playerRepository.findAllWithPersonByDeletedFalseOrderByCreatedAtDesc()).thenReturn(List.of(existingPlayer));
+        when(playerTeamRepository.findByPlayerIdInAndIsActiveTrue(List.of(playerId))).thenReturn(List.of(older, newer));
+
+        List<PlayerResponse> result = playerService.getAllPlayers(null, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).firstName()).isEqualTo("John");
+        assertThat(result.get(0).organisationName()).isEqualTo("New Club");
+        assertThat(result.get(0).teamNames()).containsExactly("New XV", "Old XV");
+        verify(playerRepository, never()).findAllByDeletedFalseOrderByCreatedAtDesc();
+        verify(playerTeamRepository, never()).findByPlayerIdAndIsActiveTrue(any());
+    }
+
+    @Test
+    void getAllPlayers_scopedUser_usesPersonFetchingOrganisationQuery() {
+        UUID myOrgId = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(java.util.Set.of(myOrgId));
+        when(playerTeamRepository.findPlayersWithPersonByOrganisationIds(java.util.Set.of(myOrgId)))
+                .thenReturn(List.of(existingPlayer));
+        when(playerTeamRepository.findByPlayerIdInAndIsActiveTrue(List.of(playerId))).thenReturn(List.of());
+
+        List<PlayerResponse> result = playerService.getAllPlayers(null, null);
+
+        assertThat(result).extracting(PlayerResponse::id).containsExactly(playerId);
+        verify(playerTeamRepository, never()).findPlayersByOrganisationIds(any());
+    }
+
+    @Test
     void createPlayer_whenTeamOutOfScope_throwsEntityNotFoundException() {
         UUID teamId = UUID.randomUUID();
         PlayerCreateRequest request = new PlayerCreateRequest(
