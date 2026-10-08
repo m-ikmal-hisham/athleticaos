@@ -65,6 +65,12 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .cacheControl(cache -> cache.disable())
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter(
+                                new org.springframework.security.web.util.matcher.NegatedRequestMatcher(
+                                        new org.springframework.security.web.util.matcher.AntPathRequestMatcher("/api/public/**", "GET")),
+                                new org.springframework.security.web.header.writers.CacheControlHeadersWriter())))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

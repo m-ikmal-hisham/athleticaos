@@ -30,6 +30,10 @@ public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, 
     @org.springframework.data.jpa.repository.Query("SELECT tt.team.id, tt.tournament FROM TournamentTeam tt WHERE tt.isActive = true AND tt.deleted = false AND tt.tournament.deleted = false")
     java.util.List<Object[]> findActiveTournamentsGroupedByTeam();
 
+    /** Same as findActiveTournamentsGroupedByTeam, restricted to the given teams (one page of the directory). */
+    @org.springframework.data.jpa.repository.Query("SELECT tt.team.id, tt.tournament FROM TournamentTeam tt WHERE tt.team.id IN :teamIds AND tt.isActive = true AND tt.deleted = false AND tt.tournament.deleted = false")
+    java.util.List<Object[]> findActiveTournamentsGroupedByTeamIds(@org.springframework.data.repository.query.Param("teamIds") java.util.Collection<UUID> teamIds);
+
     @org.springframework.data.jpa.repository.Query("SELECT tt.team.id, tt.tournament FROM TournamentTeam tt WHERE tt.team.id IN :teamIds AND tt.isActive = true AND tt.deleted = false")
     java.util.List<Object[]> findActiveTournamentsForTeamIds(@org.springframework.data.repository.query.Param("teamIds") java.util.Collection<UUID> teamIds);
 }

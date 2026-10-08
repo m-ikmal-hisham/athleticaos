@@ -204,6 +204,44 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").value(not(containsString("sensitive-handler"))));
     }
 
+    @Test
+    void methodNotSupported_returns405WithAllowHeader() throws Exception {
+        mockMvc.perform(post("/test-errors/param"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405))
+                .andExpect(jsonPath("$.error").value("Method Not Allowed"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Allow", containsString("GET")));
+    }
+
+    @Test
+    void methodArgumentTypeMismatch_returns400WithParameterName() throws Exception {
+        mockMvc.perform(get("/test-errors/type-mismatch").param("teamId", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Invalid value for parameter 'teamId'"));
+    }
+
+    @Test
+    void mediaTypeNotSupported_returns415() throws Exception {
+        mockMvc.perform(post("/test-errors/bulk")
+                        .contentType(MediaType.APPLICATION_XML)
+                        .content("<xml></xml>"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.status").value(415));
+    }
+
+    @Test
+    void clientAbort_returnsVoidAndProducesNoResponse() throws Exception {
+        mockMvc.perform(get("/test-errors/client-abort"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void wrappedClientAbort_returnsVoidAndProducesNoResponse() throws Exception {
+        mockMvc.perform(get("/test-errors/wrapped-abort"))
+                .andExpect(status().isOk());
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -282,6 +320,22 @@ public class GlobalExceptionHandlerTest {
         @GetMapping("/handler-not-found")
         public String testNoHandlerFound() throws Exception {
             throw new NoHandlerFoundException("GET", "/test-errors/sensitive-handler", new HttpHeaders());
+        }
+
+        @GetMapping("/type-mismatch")
+        public String testTypeMismatch(@RequestParam("teamId") java.util.UUID teamId) {
+            return teamId.toString();
+        }
+
+        @GetMapping("/client-abort")
+        public String testClientAbort() throws Exception {
+            throw new org.apache.catalina.connector.ClientAbortException("Broken pipe");
+        }
+
+        @GetMapping("/wrapped-abort")
+        public String testWrappedAbort() {
+            throw new RuntimeException("Write failed",
+                    new org.apache.catalina.connector.ClientAbortException("Broken pipe"));
         }
     }
 

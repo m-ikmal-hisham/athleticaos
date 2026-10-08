@@ -8,7 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface TeamRepository extends JpaRepository<Team, UUID> {
+public interface TeamRepository extends JpaRepository<Team, UUID>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<Team> {
 
     Optional<Team> findBySlug(String slug);
 
@@ -30,4 +31,12 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
 
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Team t JOIN FETCH t.organisation WHERE t.organisation.id IN :orgIds")
     java.util.List<Team> findByOrganisation_IdInWithOrganisation(@org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
+
+    /** Raw states of active teams (same rule as findAllActiveWithOrganisation), for the public filter dropdown. */
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t.state FROM Team t WHERE (t.status IS NULL OR LOWER(t.status) <> 'inactive') AND t.state IS NOT NULL")
+    java.util.List<String> findDistinctStatesOfActiveTeams();
+
+    /** Raw categories of active teams, for the public filter dropdown. */
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t.category FROM Team t WHERE (t.status IS NULL OR LOWER(t.status) <> 'inactive') AND t.category IS NOT NULL")
+    java.util.List<String> findDistinctCategoriesOfActiveTeams();
 }
