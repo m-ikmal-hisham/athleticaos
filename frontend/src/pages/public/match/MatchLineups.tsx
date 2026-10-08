@@ -68,7 +68,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
     if (!lineups || (lineups.homeLineup.length === 0 && lineups.awayLineup.length === 0)) {
         return (
             <GlassCard className="p-8 text-center">
-                <Users className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <Users className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Lineups Not Available</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Team sheets have not been submitted for this match yet.</p>
             </GlassCard>
@@ -107,7 +107,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         </span>
                         {player.captain && (
                             <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">
-                                <Shield className="w-2.5 h-2.5" weight="fill" />
+                                <Shield className="w-3 h-3" weight="fill" />
                                 C
                             </span>
                         )}
@@ -126,7 +126,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         ? 'bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10'
                         : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'}
                 `}>
-                    <TShirt className="w-3 h-3" weight={hasJersey ? 'fill' : 'regular'} />
+                    <TShirt className="w-3 h-3" weight={hasJersey ? 'fill' : 'bold'} />
                     {hasJersey ? player.jerseyNumber : '—'}
                 </div>
             </div>
@@ -229,11 +229,11 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         className={`
                             flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
                             ${activeTeam === 'home'
-                                ? 'bg-white dark:bg-white/10 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                                ? 'bg-white dark:bg-white/10 text-navy dark:text-navy-tint shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}
                         `}
                     >
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${activeTeam === 'home' ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${activeTeam === 'home' ? 'bg-navy' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         {match.homeTeamShortName || match.homeTeamName}
                     </button>
                     <button
@@ -257,7 +257,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                 <div className={`${activeTeam !== 'home' ? 'hidden lg:block' : ''}`}>
                     <GlassCard className="p-5 md:p-6">
                         <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-200/50 dark:border-white/10">
-                            <div className="w-1.5 h-8 rounded-full bg-blue-500" />
+                            <div className="w-1.5 h-8 rounded-full bg-navy" />
                             <div>
                                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                                     {match.homeTeamName}
@@ -268,7 +268,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             </div>
                         </div>
                         {homeLineup.length > 0 ? (
-                            renderTeamLineup(homeLineup, 'bg-blue-500')
+                            renderTeamLineup(homeLineup, 'bg-navy')
                         ) : (
                             <p className="text-sm text-slate-400 text-center py-8">Lineup not submitted</p>
                         )}

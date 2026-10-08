@@ -1,130 +1,382 @@
-import { useState } from 'react';
-import { SearchableSelect } from '@/components/SearchableSelect';
-import { Envelope, PaperPlaneTilt, Chats } from '@phosphor-icons/react';
-import { GlassCard } from '@/components/GlassCard';
-import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import axios from 'axios';
+import { CheckCircle } from '@phosphor-icons/react';
+import { CONTACT_EMAIL, CONTACT_EMAIL_LIVE } from '@/config/site';
+import { submitContact, type ContactSubjectValue } from '@/api/public.api';
+import { Select } from '@/components/Select';
+
+const SUBJECT_OPTIONS: { value: ContactSubjectValue; label: string }[] = [
+    { value: 'GENERAL', label: 'General enquiry' },
+    { value: 'PARTNERSHIP', label: 'Partnership' },
+    { value: 'ORGANISATION_REGISTRATION', label: 'Register my organisation' },
+    { value: 'MEDIA', label: 'Media & press' },
+    { value: 'TOURNAMENT_SUPPORT', label: 'Tournament organiser support' },
+];
+
+const VALID_SUBJECT_VALUES = SUBJECT_OPTIONS.map((opt) => opt.value);
+
+const contactSchema = z.object({
+    name: z
+        .string()
+        .min(2, 'Full name must be at least 2 characters')
+        .max(120, 'Full name must not exceed 120 characters'),
+    email: z
+        .string()
+        .min(1, 'Email is required')
+        .email('Please enter a valid email address')
+        .max(254, 'Email must not exceed 254 characters'),
+    organisation: z
+        .string()
+        .max(160, 'Organisation must not exceed 160 characters')
+        .optional()
+        .or(z.literal('')),
+    subject: z.enum([
+        'GENERAL',
+        'PARTNERSHIP',
+        'ORGANISATION_REGISTRATION',
+        'MEDIA',
+        'TOURNAMENT_SUPPORT',
+    ], {
+        errorMap: () => ({ message: 'Please select a subject' }),
+    }),
+    message: z
+        .string()
+        .min(10, 'Message must be at least 10 characters')
+        .max(4000, 'Message must not exceed 4000 characters'),
+    website: z.string().optional(),
+});
+
+type ContactFormData = z.infer<typeof contactSchema>;
 
 export default function Contact() {
+    const [searchParams] = useSearchParams();
     const [submitted, setSubmitted] = useState(false);
-    const [subject, setSubject] = useState('General Inquiry');
+    const [serverError, setServerError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitted(true);
-        // Phase 1: Just show success state, no API call yet
+    const resolveSubjectFromQuery = (): ContactSubjectValue => {
+        const querySubject = searchParams.get('subject')?.toUpperCase();
+        if (querySubject && VALID_SUBJECT_VALUES.includes(querySubject as ContactSubjectValue)) {
+            return querySubject as ContactSubjectValue;
+        }
+        return 'GENERAL';
+    };
+
+    const {
+        register,
+        control,
+        handleSubmit,
+        watch,
+        setValue,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<ContactFormData>({
+        resolver: zodResolver(contactSchema),
+        defaultValues: {
+            name: '',
+            email: '',
+            organisation: '',
+            subject: resolveSubjectFromQuery(),
+            message: '',
+            website: '',
+        },
+    });
+
+    useEffect(() => {
+        const paramSubject = searchParams.get('subject')?.toUpperCase();
+        if (paramSubject && VALID_SUBJECT_VALUES.includes(paramSubject as ContactSubjectValue)) {
+            setValue('subject', paramSubject as ContactSubjectValue);
+        }
+    }, [searchParams, setValue]);
+
+    const messageValue = watch('message') || '';
+
+    const onSubmit = async (data: ContactFormData) => {
+        setServerError(null);
+        try {
+            const response = await submitContact({
+                name: data.name,
+                email: data.email,
+                organisation: data.organisation?.trim() || undefined,
+                subject: data.subject,
+                message: data.message,
+                website: data.website?.trim() || undefined,
+            });
+
+            if (response.status === 202) {
+                setSubmitted(true);
+            } else {
+                const fallback = CONTACT_EMAIL_LIVE
+                    ? `Message not sent. Please try again later or email us at ${CONTACT_EMAIL}.`
+                    : 'Message not sent. Please try again later.';
+                setServerError(fallback);
+            }
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                if (err.response?.status === 429) {
+                    const message =
+                        err.response.data?.message || 'Too many messages. Please try again later.';
+                    setServerError(message);
+                } else {
+                    const fallback = CONTACT_EMAIL_LIVE
+                        ? `Message not sent. Please try again later or email us at ${CONTACT_EMAIL}.`
+                        : 'Message not sent. Please try again later.';
+                    setServerError(fallback);
+                }
+            } else {
+                const fallback = CONTACT_EMAIL_LIVE
+                    ? `Message not sent. Please try again later or email us at ${CONTACT_EMAIL}.`
+                    : 'Message not sent. Please try again later.';
+                setServerError(fallback);
+            }
+        }
     };
 
     if (submitted) {
         return (
-            <div className="max-w-2xl mx-auto py-12 px-4">
-                <GlassCard className="p-12 text-center space-y-6">
-                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto">
-                        <PaperPlaneTilt className="w-8 h-8" weight="fill" />
+            <div className="max-w-2xl mx-auto">
+                <div className="p-8 sm:p-12 text-center rounded-2xl bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 space-y-6">
+                    <div className="w-16 h-16 bg-navy/10 dark:bg-navy-tint/20 text-navy dark:text-navy-tint rounded-full flex items-center justify-center mx-auto">
+                        <CheckCircle className="w-8 h-8" />
                     </div>
-                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Message Sent!</h2>
-                    <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
-                        Thanks for reaching out. Our team will get back to you as soon as possible.
+                    <h2 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">Message sent</h2>
+                    <p className="text-black/72 dark:text-white/72 max-w-md mx-auto">
+                        Thanks for reaching out. We have received your message and will reply by email.
                     </p>
-                    <Button onClick={() => setSubmitted(false)} variant="outline">
-                        Send Another Message
-                    </Button>
-                </GlassCard>
+                    <div className="pt-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                reset();
+                                setSubmitted(false);
+                                setServerError(null);
+                            }}
+                            className="inline-flex items-center justify-center px-5 py-2.5 min-h-[44px] text-sm font-medium rounded-xl border border-black/10 dark:border-white/12 bg-white dark:bg-deep-navy text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                        >
+                            Send another message
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto py-12 px-4 space-y-12">
-            <div className="text-center space-y-4">
-                <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Get in Touch
+        <div className="max-w-2xl mx-auto space-y-6">
+            <div className="space-y-2">
+                <h1 className="text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
+                    Contact us
                 </h1>
-                <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                    Have questions about the tournament? Want to become a sponsor? We'd love to hear from you.
+                <p className="text-base sm:text-lg text-black/72 dark:text-white/72">
+                    Questions, partnership enquiries, or registering your organisation's interest. We reply by email.
                 </p>
+                {CONTACT_EMAIL_LIVE && (
+                    <p className="text-sm text-black/72 dark:text-white/72">
+                        Or email us at{' '}
+                        <a
+                            href={`mailto:${CONTACT_EMAIL}`}
+                            className="text-navy dark:text-navy-tint hover:underline transition-colors"
+                        >
+                            {CONTACT_EMAIL}
+                        </a>
+                    </p>
+                )}
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-                {/* Contact Info */}
-                <div className="md:col-span-1 space-y-6">
-                    <GlassCard className="p-6 space-y-4 h-full">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Contact Info</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-4">
-                                <Envelope className="w-6 h-6 text-blue-500 mt-1" />
-                                <div>
-                                    <p className="font-medium text-slate-900 dark:text-white">Email Us</p>
-                                    <a href="mailto:support@athleticaos.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-blue-500">
-                                        support@athleticaos.com
-                                    </a>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-4">
-                                <Chats className="w-6 h-6 text-blue-500 mt-1" />
-                                <div>
-                                    <p className="font-medium text-slate-900 dark:text-white">Social</p>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                                        @AthleticaOS on all platforms
-                                    </p>
-                                </div>
-                            </div>
+            {/* Contact form card */}
+            <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+                    {/* Honeypot field - visually hidden, tabIndex -1, autocomplete off, aria-hidden */}
+                    <div
+                        className="absolute -left-[9999px] opacity-0 h-0 w-0 pointer-events-none"
+                        aria-hidden="true"
+                    >
+                        <label htmlFor="website">Website</label>
+                        <input
+                            id="website"
+                            type="text"
+                            tabIndex={-1}
+                            autoComplete="off"
+                            aria-hidden="true"
+                            {...register('website')}
+                        />
+                    </div>
+
+                    {serverError && (
+                        <div
+                            role="alert"
+                            className="p-4 rounded-xl border border-crimson/30 bg-crimson/10 text-crimson dark:text-crimson-tint text-sm font-medium"
+                        >
+                            {serverError}
                         </div>
-                    </GlassCard>
-                </div>
+                    )}
 
-                {/* Contact Form */}
-                <div className="md:col-span-2">
-                    <GlassCard className="p-8">
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">First Name</label>
-                                    <Input placeholder="John" required className="bg-white/50 dark:bg-black/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Last Name</label>
-                                    <Input placeholder="Doe" required className="bg-white/50 dark:bg-black/20" />
-                                </div>
-                            </div>
+                    {/* Full name */}
+                    <div>
+                        <label
+                            htmlFor="name"
+                            className="block text-sm font-medium text-black dark:text-white mb-1.5"
+                        >
+                            Full name
+                        </label>
+                        <input
+                            id="name"
+                            type="text"
+                            aria-invalid={!!errors.name}
+                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
+                                errors.name
+                                    ? 'border-crimson dark:border-crimson-tint'
+                                    : 'border-black/24 dark:border-white/28'
+                            }`}
+                            {...register('name')}
+                        />
+                        {errors.name && (
+                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">
+                                {errors.name.message}
+                            </p>
+                        )}
+                    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
-                                <Input type="email" placeholder="john@example.com" required className="bg-white/50 dark:bg-black/20" />
-                            </div>
+                    {/* Email */}
+                    <div>
+                        <label
+                            htmlFor="email"
+                            className="block text-sm font-medium text-black dark:text-white mb-1.5"
+                        >
+                            Email
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            aria-invalid={!!errors.email}
+                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
+                                errors.email
+                                    ? 'border-crimson dark:border-crimson-tint'
+                                    : 'border-black/24 dark:border-white/28'
+                            }`}
+                            {...register('email')}
+                        />
+                        {errors.email && (
+                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">
+                                {errors.email.message}
+                            </p>
+                        )}
+                    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Subject</label>
-                                <SearchableSelect
+                    {/* Organisation (optional) */}
+                    <div>
+                        <label
+                            htmlFor="organisation"
+                            className="block text-sm font-medium text-black dark:text-white mb-1.5"
+                        >
+                            Organisation{' '}
+                            <span className="text-xs text-black/60 dark:text-white/60 font-normal">
+                                (optional)
+                            </span>
+                        </label>
+                        <input
+                            id="organisation"
+                            type="text"
+                            aria-invalid={!!errors.organisation}
+                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
+                                errors.organisation
+                                    ? 'border-crimson dark:border-crimson-tint'
+                                    : 'border-black/24 dark:border-white/28'
+                            }`}
+                            {...register('organisation')}
+                        />
+                        {errors.organisation && (
+                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">
+                                {errors.organisation.message}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Subject */}
+                    <div>
+                        <Controller
+                            name="subject"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    id="subject"
                                     label="Subject"
-                                    placeholder="Select a subject"
-                                    value={subject}
-                                    onChange={(val) => setSubject(val as string)}
-                                    options={[
-                                        { value: 'General Inquiry', label: 'General Inquiry' },
-                                        { value: 'Media & Press', label: 'Media & Press' },
-                                        { value: 'Sponsorship', label: 'Sponsorship' },
-                                        { value: 'Tournament Organiser Support', label: 'Tournament Organiser Support' }
-                                    ]}
+                                    options={SUBJECT_OPTIONS}
+                                    value={field.value}
+                                    onChange={(val) => field.onChange(val)}
+                                    error={errors.subject?.message}
                                 />
-                            </div>
+                            )}
+                        />
+                    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Message</label>
-                                <textarea
-                                    rows={5}
-                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
-                                    placeholder="How can we help you?"
-                                    required
+                    {/* Message */}
+                    <div>
+                        <label
+                            htmlFor="message"
+                            className="block text-sm font-medium text-black dark:text-white mb-1.5"
+                        >
+                            Message
+                        </label>
+                        <textarea
+                            id="message"
+                            rows={6}
+                            aria-invalid={!!errors.message}
+                            className={`w-full px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors resize-y ${
+                                errors.message
+                                    ? 'border-crimson dark:border-crimson-tint'
+                                    : 'border-black/24 dark:border-white/28'
+                            }`}
+                            {...register('message')}
+                        />
+                        <div className="flex items-center justify-between mt-1.5">
+                            {errors.message ? (
+                                <p className="text-xs text-crimson dark:text-crimson-tint">
+                                    {errors.message.message}
+                                </p>
+                            ) : (
+                                <span />
+                            )}
+                            <span className="text-xs text-black/60 dark:text-white/60 tabular-nums">
+                                {messageValue.length} / 4000
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Submit button */}
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] text-base font-semibold rounded-xl bg-navy hover:bg-deep-navy dark:hover:bg-navy/80 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {isSubmitting && (
+                            <svg
+                                className="animate-spin h-5 w-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
                                 />
-                            </div>
-
-                            <Button type="submit" className="w-full py-3 text-lg font-semibold">
-                                Send Message
-                            </Button>
-                        </form>
-                    </GlassCard>
-                </div>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                            </svg>
+                        )}
+                        <span>{isSubmitting ? 'Sending...' : 'Send message'}</span>
+                    </button>
+                </form>
             </div>
         </div>
     );

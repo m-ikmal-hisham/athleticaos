@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Modal } from '../Modal';
 import { Button } from '../Button';
+import { Select } from '../Select';
 import { Trash, Plus, CheckCircle, WarningCircle, Clipboard } from '@phosphor-icons/react';
 import { createBatchPlayers } from '@/api/players.api';
 import { showToast } from '@/lib/customToast';
@@ -40,14 +41,14 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
     isOpen,
     onClose,
     teamId,
-    onSuccess
+    onSuccess,
 }) => {
     const [rows, setRows] = useState<PlayerRow[]>([]);
     const [errors, setErrors] = useState<{ [key: number]: RowError }>({});
     const [serverErrors, setServerErrors] = useState<{ [key: number]: string[] }>({});
     const [duplicateWarnings, setDuplicateWarnings] = useState<{ [key: number]: string[] }>({});
     const [loading, setLoading] = useState(false);
-    const cellRefs = useRef<{ [key: string]: HTMLInputElement | HTMLSelectElement | null }>({});
+    const cellRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
     // Reset state when modal opens/closes
     useEffect(() => {
@@ -383,7 +384,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                 <td className="px-3 py-2 text-center whitespace-nowrap">
                                                     {isRowInvalid ? (
                                                         <div className="group relative flex justify-center cursor-pointer">
-                                                            <WarningCircle className="w-5 h-5 text-red-500" />
+                                                            <WarningCircle className="w-5 h-5 text-crimson dark:text-crimson-tint" />
                                                             <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover:block bg-red-950/95 border border-red-500/50 p-2.5 rounded-lg text-[10px] w-64 text-left shadow-xl z-20 space-y-1">
                                                                 {errors[rIdx] && Object.values(errors[rIdx]).map((msg, eIdx) => (
                                                                     <div key={eIdx}>• {msg}</div>
@@ -395,7 +396,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         </div>
                                                     ) : isRowDuplicate ? (
                                                         <div className="group relative flex flex-col items-center justify-center cursor-pointer">
-                                                            <WarningCircle className="w-5 h-5 text-amber-500" />
+                                                            <WarningCircle className="w-5 h-5" />
                                                             <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover:block bg-amber-950/95 border border-amber-500/50 p-2.5 rounded-lg text-[10px] w-64 text-left shadow-xl z-20 space-y-1 text-amber-200">
                                                                 <div className="font-semibold text-amber-300">Possible Duplicate</div>
                                                                 {rowDuplicateWarnings.map((msg, eIdx) => (
@@ -418,7 +419,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         </div>
                                                     ) : (
                                                         <div className="flex justify-center">
-                                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                                            <CheckCircle className="w-5 h-5 text-navy dark:text-navy-tint" />
                                                         </div>
                                                     )}
                                                 </td>
@@ -446,18 +447,22 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                 })}
 
                                                 {/* Gender Select */}
-                                                <td className="px-1 py-1">
-                                                    <select
-                                                        ref={el => { cellRefs.current[`${rIdx}-2`] = el; }}
-                                                        value={row.gender}
-                                                        onChange={e => handleCellChange(rIdx, 'gender', e.target.value)}
-                                                        onKeyDown={e => handleKeyDown(e, rIdx, 2)}
-                                                        className={`w-full px-2 py-1.5 bg-black text-xs text-foreground focus:outline-none focus:bg-white/5 border rounded transition-all ${errors[rIdx]?.gender ? 'border-red-500/50 focus:border-red-500' : 'border-transparent focus:border-white/20'}`}
-                                                    >
-                                                        <option value="">Select</option>
-                                                        <option value="MALE">MALE</option>
-                                                        <option value="FEMALE">FEMALE</option>
-                                                    </select>
+                                                <td className="px-1 py-1 min-w-[110px]">
+                                                    <div ref={el => { cellRefs.current[`${rIdx}-2`] = el; }}>
+                                                        <Select
+                                                            value={row.gender}
+                                                            onChange={(val) => handleCellChange(rIdx, 'gender', String(val))}
+                                                            aria-label="Gender"
+                                                            placeholder="Select"
+                                                            error={errors[rIdx]?.gender}
+                                                            triggerClassName="h-8 min-h-[32px] text-xs py-1"
+                                                            options={[
+                                                                { value: '', label: 'Select' },
+                                                                { value: 'MALE', label: 'MALE' },
+                                                                { value: 'FEMALE', label: 'FEMALE' },
+                                                            ]}
+                                                        />
+                                                    </div>
                                                 </td>
 
                                                 {/* DOB Input */}
@@ -504,7 +509,7 @@ export const BulkPasteRosterModal: React.FC<BulkPasteRosterModalProps> = ({
                                                         className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-all focus:outline-none"
                                                         aria-label="Delete row"
                                                     >
-                                                        <Trash className="w-3.5 h-3.5" />
+                                                        <Trash className="w-4 h-4" />
                                                     </button>
                                                 </td>
                                             </tr>

@@ -9,7 +9,7 @@ interface ConfirmModalProps {
     message: string;
     confirmText?: string;
     cancelText?: string;
-    variant?: 'primary' | 'destructive'; // Added variant support
+    variant?: 'primary' | 'destructive' | 'danger';
 }
 
 export const ConfirmModal = ({
@@ -28,6 +28,8 @@ export const ConfirmModal = ({
         onClose();
     };
 
+    const isDanger = variant === 'destructive' || variant === 'danger';
+
     return (
         <Modal
             isOpen={isOpen}
@@ -36,19 +38,19 @@ export const ConfirmModal = ({
             size="sm"
         >
             <div className="space-y-6">
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-black/72 dark:text-white/72 leading-relaxed">
                     {message}
                 </p>
 
                 <div className="flex gap-3 justify-end pt-2">
                     <Button
-                        variant="cancel"
+                        variant="secondary"
                         onClick={onClose}
                     >
                         {cancelText}
                     </Button>
                     <Button
-                        variant={variant === 'destructive' ? 'danger' : 'primary'}
+                        variant={isDanger ? 'danger' : 'primary'}
                         onClick={handleConfirm}
                     >
                         {confirmText}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash, MagnifyingGlass, Users } from '@phosphor-icons/react';
+import { Plus, Trash, MagnifyingGlass, Users, Check } from '@phosphor-icons/react';
 import { teamService } from '@/services/teamService';
 import { tournamentService } from '@/services/tournamentService';
 import { Team, TournamentCategory } from '@/types';
@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
 import { getImageUrl } from '@/utils/image';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { Select } from '@/components/Select';
 
 interface TournamentTeamsProps {
     tournamentId: string;
@@ -178,20 +179,19 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                     {/* Bulk Actions */}
                     {selectedRegisteredTeamIds.size > 0 && (
                         <div className="flex items-center gap-2 mr-2">
-                            <select
-                                onChange={(e) => handleBulkAssignCategory(e.target.value)}
-                                className="text-xs border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-md py-1.5 focus:ring-blue-500"
+                            <Select
                                 value=""
+                                onChange={(val) => {
+                                    if (val) handleBulkAssignCategory(String(val));
+                                }}
+                                placeholder="Move to Category..."
                                 aria-label="Bulk assign category"
-                                title="Move selected teams to category"
-                            >
-                                <option value="" disabled>Move to Category...</option>
-                                {categories.map(cat => (
-                                    <option key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </option>
-                                ))}
-                            </select>
+                                className="w-48"
+                                options={categories.map(cat => ({
+                                    value: cat.id,
+                                    label: cat.name,
+                                }))}
+                            />
                             <Button
                                 variant="danger"
                                 size="sm"
@@ -243,7 +243,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                         type="checkbox"
                         checked={filteredTeams.length > 0 && selectedRegisteredTeamIds.size === filteredTeams.length}
                         onChange={handleSelectAllRegisteredTeams}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-slate-300 text-navy dark:text-navy-tint focus:ring-navy"
                         aria-label="Select all teams"
                     />
                     <span className="text-sm text-slate-600 dark:text-slate-400">
@@ -260,7 +260,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                     </div>
                 ) : (
                     filteredTeams.map(team => (
-                        <GlassCard key={team.id} className={`p-4 flex justify-between items-center group cursor-pointer transition-colors ${selectedRegisteredTeamIds.has(team.id) ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : ''
+                        <GlassCard key={team.id} className={`p-4 flex justify-between items-center group cursor-pointer transition-colors ${selectedRegisteredTeamIds.has(team.id) ? 'border-navy ring-1 ring-navy bg-blue-50/50 dark:bg-blue-900/10' : ''
                             }`}
                             onClick={(e) => {
                                 // Prevent toggle if clicking delete button
@@ -273,7 +273,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                     type="checkbox"
                                     checked={selectedRegisteredTeamIds.has(team.id)}
                                     onChange={() => handleToggleRegisteredTeamSelection(team.id)}
-                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    className="rounded border-slate-300 text-navy dark:text-navy-tint focus:ring-navy"
                                     onClick={(e) => e.stopPropagation()}
                                     aria-label={`Select team ${team.name}`}
                                 />
@@ -292,7 +292,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                     <p className="text-sm text-slate-500 dark:text-slate-400">{team.organisationName}</p>
                                     {/* Show category name if displaying All */}
                                     {!selectedCategoryId && team.category && team.category !== 'Unassigned' && (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 mt-1">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-navy dark:text-navy-tint dark:bg-blue-900/30 dark:text-navy-tint mt-1">
                                             {team.category}
                                         </span>
                                     )}
@@ -330,13 +330,13 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
 
                         <div className="p-4 border-b border-slate-200 dark:border-slate-800">
                             <div className="relative">
-                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/60 dark:text-white/60" />
                                 <input
                                     type="text"
                                     placeholder="Search teams..."
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-md focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-md focus:ring-2 focus:ring-navy"
                                 />
                             </div>
                         </div>
@@ -350,7 +350,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                         className={`
                                             p-3 rounded-md border cursor-pointer transition-colors flex justify-between items-center
                                             ${selectedTeamIds.has(team.id)
-                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                ? 'border-navy bg-blue-50 dark:bg-blue-900/20'
                                                 : 'border-slate-200 dark:border-slate-700 hover:border-blue-400'
                                             }
                                         `}
@@ -360,8 +360,8 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                             <p className="text-xs text-slate-500 dark:text-slate-400">{team.organisationName}</p>
                                         </div>
                                         {selectedTeamIds.has(team.id) && (
-                                            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                                <span className="text-white text-xs">✓</span>
+                                            <div className="w-4 h-4 bg-navy rounded-full flex items-center justify-center">
+                                                <Check className="w-2.5 h-2.5 text-white" />
                                             </div>
                                         )}
                                     </div>

@@ -25,7 +25,7 @@ export const SocialButtons = () => {
                     type="button"
                     className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-gray-900/10 text-gray-400 border border-transparent rounded-lg text-sm font-medium cursor-not-allowed opacity-75 transition-all shadow-sm"
                 >
-                    <AppleLogo weight="fill" className="w-5 h-5 opacity-60" />
+                    <AppleLogo className="w-5 h-5 opacity-60" />
                     Sign in with Apple <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-500 font-normal ml-auto">Coming Soon</span>
                 </button>
             </div>

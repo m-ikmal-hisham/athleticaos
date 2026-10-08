@@ -19,7 +19,7 @@ export const WatchLiveLinks = ({ links, title = 'Watch live', className = '' }: 
     return (
         <div className={`flex flex-wrap items-center gap-2 ${className}`}>
             <span className="flex items-center gap-1.5 text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 mr-1">
-                <VideoCamera className="w-4 h-4 text-red-500" weight="fill" /> {title}
+                <VideoCamera className="w-4 h-4 text-crimson dark:text-crimson-tint" /> {title}
             </span>
             {usable.map((link, index) => (
                 <a
@@ -30,7 +30,7 @@ export const WatchLiveLinks = ({ links, title = 'Watch live', className = '' }: 
                     className="inline-flex items-center gap-1.5 text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-full font-bold uppercase tracking-wider transition-transform hover:scale-105"
                 >
                     {link.label?.trim() || (usable.length > 1 ? `Stream ${index + 1}` : 'Watch')}
-                    <ArrowSquareOut className="w-3.5 h-3.5" weight="bold" />
+                    <ArrowSquareOut className="w-4 h-4" />
                 </a>
             ))}
         </div>

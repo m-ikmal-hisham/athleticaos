@@ -93,7 +93,7 @@ export default function TournamentRosters({ tournamentId: propTournamentId }: To
         return (
             <Card>
                 <div className="p-8 text-center">
-                    <WarningCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+                    <WarningCircle className="w-12 h-12 mx-auto text-crimson dark:text-crimson-tint mb-4" />
                     <p className="text-red-500">{error}</p>
                 </div>
             </Card>
@@ -104,7 +104,7 @@ export default function TournamentRosters({ tournamentId: propTournamentId }: To
         return (
             <Card>
                 <div className="p-8 text-center">
-                    <Users className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+                    <Users className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-slate-500">No teams registered for this tournament</p>
                 </div>
             </Card>
@@ -170,13 +170,13 @@ export default function TournamentRosters({ tournamentId: propTournamentId }: To
                                 key={team.id}
                                 onClick={() => setSelectedTeam(team)}
                                 className={`px-4 py-2 font-medium text-sm transition-colors relative whitespace-nowrap ${selectedTeam?.id === team.id
-                                    ? 'text-blue-600 dark:text-blue-400'
+                                    ? 'text-navy dark:text-navy-tint'
                                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                             >
                                 {team.name}
                                 {selectedTeam?.id === team.id && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
                                 )}
                             </button>
                         ))}

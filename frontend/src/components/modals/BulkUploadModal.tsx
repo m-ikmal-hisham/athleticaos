@@ -134,11 +134,11 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                     <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                         <div className="flex justify-between items-center mb-5 border-b pb-4">
                             <h3 className="text-xl font-semibold leading-6 text-gray-900 flex items-center gap-2">
-                                <UploadSimple size={24} className="text-primary-600" />
+                                <UploadSimple className="w-6 h-6 text-navy dark:text-navy-tint" />
                                 {title}
                             </h3>
                             <button onClick={handleClose} className="text-gray-400 hover:text-gray-500" aria-label="Close modal">
-                                <X size={24} />
+                                <X className="w-6 h-6" />
                             </button>
                         </div>
                         
@@ -155,7 +155,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                                     onDrop={handleDrop}
                                 >
                                     <div className="text-center">
-                                        <TableIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
+                                        <TableIcon className="mx-auto h-12 w-12 text-black/60 dark:text-white/60" aria-hidden="true" />
                                         <div className="mt-4 flex text-sm leading-6 text-gray-600 justify-center">
                                             <label className="relative cursor-pointer rounded-md bg-white font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500">
                                                 <span>Upload a CSV file</span>
@@ -182,7 +182,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                                 <div className="rounded-md bg-red-50 p-4">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
-                                            <WarningCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                                            <WarningCircle className="h-5 w-5 text-crimson dark:text-crimson-tint" aria-hidden="true" />
                                         </div>
                                         <div className="ml-3">
                                             <h3 className="text-sm font-medium text-red-800">There were errors with your submission</h3>
@@ -210,7 +210,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                             {parsedData.length > 0 && errors.length === 0 && (
                                 <div className="mt-4">
                                     <h4 className="flex items-center gap-2 text-md font-medium text-green-700 mb-3">
-                                        <CheckCircle size={20} />
+                                        <CheckCircle className="w-5 h-5" />
                                         Parsed {parsedData.length} records successfully. Preview:
                                     </h4>
                                     <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg max-h-96">

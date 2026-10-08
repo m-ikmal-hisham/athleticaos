@@ -44,11 +44,11 @@ export const MatchIntegrityConsole = ({ events }: MatchIntegrityConsoleProps) =>
                             <div className="flex items-center gap-2">
                                 {validation.status === 'WARNING' ? (
                                     <div className="flex items-center gap-1 text-amber-600 text-xs font-bold">
-                                        <Warning weight="fill" />
+                                        <Warning className="w-4 h-4" />
                                         <span>{validation.msg}</span>
                                     </div>
                                 ) : (
-                                    <CheckCircle className="text-green-500 opacity-20 group-hover:opacity-100 transition-opacity" />
+                                    <CheckCircle className="w-4 h-4 text-navy dark:text-navy-tint opacity-20 group-hover:opacity-100 transition-opacity" />
                                 )}
                             </div>
                         </div>

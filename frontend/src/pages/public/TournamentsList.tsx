@@ -73,7 +73,7 @@ export default function TournamentsList() {
             <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
                     <input
                         type="text"
                         placeholder="Search tournaments..."
@@ -112,7 +112,7 @@ export default function TournamentsList() {
                 </div>
             ) : filteredTournaments.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-                    <Trophy className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+                    <Trophy className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-lg font-medium text-slate-900 dark:text-white mb-2">
                         No tournaments found
                     </p>
@@ -133,8 +133,8 @@ export default function TournamentsList() {
                                     {/* Status Badge */}
                                     <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
                                         {tournament.live && (
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
-                                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-crimson text-white text-xs font-bold uppercase tracking-wider shadow-sm">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                                 LIVE
                                             </div>
                                         )}
@@ -153,7 +153,7 @@ export default function TournamentsList() {
                                     {/* Tournament Info & Logo */}
                                     <div className="flex gap-4">
                                         <div className="flex-1">
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors line-clamp-2">
                                                 {tournament.name}
                                             </h3>
                                             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">

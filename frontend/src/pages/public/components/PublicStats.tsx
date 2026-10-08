@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { publicTournamentApi, PublicTournamentStats, PublicPlayerStatEntry } from '../../../api/public.api';
-import { Loader2, Trophy, Medal, AlertTriangle, Shield, Target, Zap, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { CircleNotch, Trophy, Medal, Warning, Shield, Target, Lightning, MagnifyingGlass, CaretDown, CaretUp, Football } from '@phosphor-icons/react';
 
 interface PublicStatsProps {
     tournamentId: string;
@@ -54,7 +54,7 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
         <div className="flex flex-col gap-2">
             {/* Search input */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-skin-muted pointer-events-none" />
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-skin-muted pointer-events-none" />
                 <input
                     type="text"
                     value={search}
@@ -77,16 +77,16 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
             {hasMore && (
                 <button
                     onClick={() => setExpanded(!expanded)}
-                    className="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-blue-500 dark:text-cyan-400 hover:text-blue-600 dark:hover:text-cyan-300 transition-colors py-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/5"
+                    className="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-navy dark:text-navy-tint dark:text-cyan-400 hover:text-navy dark:hover:text-navy-tint dark:hover:text-cyan-300 transition-colors py-2 rounded-xl hover:bg-white/20 dark:hover:bg-white/5"
                 >
                     {expanded ? (
                         <>
-                            <ChevronUp className="w-3.5 h-3.5" />
+                            <CaretUp className="w-3 h-3" weight="bold" />
                             Show Less
                         </>
                     ) : (
                         <>
-                            <ChevronDown className="w-3.5 h-3.5" />
+                            <CaretDown className="w-3 h-3" weight="bold" />
                             Show All ({filtered.length})
                         </>
                     )}
@@ -137,7 +137,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
     if (loading) {
         return (
             <div className="flex justify-center items-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-skin-base" />
+                <CircleNotch className="w-8 h-8 animate-spin text-skin-base" />
             </div>
         );
     }
@@ -176,22 +176,22 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
             {/* Tournament Global Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
-                    <Medal className="w-6 h-6 text-yellow-500 mb-2" />
+                    <Medal className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalTries ?? 0}</div>
                     <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Tries</div>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
-                    <Trophy className="w-6 h-6 text-purple-500 mb-2" />
+                    <Trophy className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalPoints ?? 0}</div>
                     <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Points</div>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
-                    <Target className="w-6 h-6 text-green-500 mb-2" />
+                    <Target className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalConversions ?? 0}</div>
                     <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Conversions</div>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
-                    <Zap className="w-6 h-6 text-orange-500 mb-2" />
+                    <Lightning className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalPenalties ?? 0}</div>
                     <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Penalties</div>
                 </div>
@@ -202,7 +202,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-green-400 to-emerald-500 dark:from-blue-500 dark:to-cyan-500" />
                 <div className="p-6">
                     <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
-                        <Medal className="w-5 h-5 text-blue-500 dark:text-cyan-400" />
+                        <Medal className="w-5 h-5" />
                         Top Point Scorers
                     </h3>
 
@@ -242,7 +242,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                     <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-500 to-red-700" />
                     <div className="p-6 h-full">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                            <Warning className="w-5 h-5 text-crimson dark:text-crimson-tint" />
                             Discipline
                         </h3>
 
@@ -301,7 +301,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                     <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-green-600" />
                     <div className="p-6 h-full">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
-                            <span className="text-2xl">🏉</span>
+                            <Football className="w-6 h-6" />
                             Top Try Scorers
                         </h3>
 

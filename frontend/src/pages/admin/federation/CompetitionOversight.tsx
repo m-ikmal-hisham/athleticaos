@@ -44,7 +44,7 @@ export const CompetitionOversight = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Matches Pending</CardTitle>
-                        <CheckCircle className="w-5 h-5 text-blue-500" />
+                        <CheckCircle className="w-5 h-5 text-navy dark:text-navy-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">
@@ -55,7 +55,7 @@ export const CompetitionOversight = () => {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Blocking Issues</CardTitle>
-                        <Warning className="w-5 h-5 text-red-500" />
+                        <Warning className="w-5 h-5 text-crimson dark:text-crimson-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-red-500">
@@ -89,7 +89,7 @@ export const CompetitionOversight = () => {
                                         <TableCell>{t.completedMatches} / {t.totalMatches}</TableCell>
                                         <TableCell>
                                             <div className="w-full bg-secondary rounded-full h-2.5 dark:bg-gray-700 max-w-[100px]">
-                                                <div className="bg-blue-600 h-2.5 rounded-full" {...{ style: progressStyle }}></div>
+                                                <div className="bg-navy h-2.5 rounded-full" {...{ style: progressStyle }}></div>
                                             </div>
                                             <span className="text-xs text-muted-foreground mt-1 block">{Math.round(t.completionRate)}%</span>
                                         </TableCell>

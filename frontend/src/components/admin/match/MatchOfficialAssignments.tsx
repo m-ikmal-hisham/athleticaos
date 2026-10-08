@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getMatchOfficials, assignOfficial, removeOfficial, getAllOfficials, getOfficialRoles, MatchOfficialDTO, OfficialRegistryDTO, OfficialRoleDTO } from '@/api/officials.api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { Trash, Plus, UserCircle, X } from '@phosphor-icons/react';
+import { Trash, Plus, UserCircle, X, Check } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { showToast } from '@/lib/customToast';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -109,7 +109,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
     // Define role display priority/colors
     const getRoleBadgeColor = (roleName: string) => {
         const lower = roleName.toLowerCase().replace(/_/g, ' ');
-        if (lower.includes('referee') && !lower.includes('assistant')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+        if (lower.includes('referee') && !lower.includes('assistant')) return 'bg-blue-100 text-navy dark:text-navy-tint dark:bg-blue-900/30 dark:text-navy-tint';
         if (lower.includes('assistant') || lower.includes('ar')) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
         if (lower.includes('tmo') || lower.includes('video')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
         if (lower.includes('4th') || lower.includes('fourth') || lower.includes('number')) return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
@@ -135,7 +135,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2 text-base">
-                            <UserCircle className="w-5 h-5 text-blue-500" />
+                            <UserCircle className="w-5 h-5 text-navy dark:text-navy-tint" />
                             Match Officials
                             {assignments.length > 0 && (
                                 <Badge variant="secondary" className="ml-1 text-xs">
@@ -145,7 +145,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                         </CardTitle>
                         {isAdmin && !isLocked && !isAdding && (
                             <Button size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-4 h-4" />
                                 Assign
                             </Button>
                         )}
@@ -156,13 +156,13 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                     {isAdding && (
                         <div className="mb-5 p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-200/50 dark:border-blue-800/30">
                             <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-semibold text-sm text-blue-900 dark:text-blue-200">Assign New Official</h4>
+                                <h4 className="font-semibold text-sm text-navy dark:text-navy-tint">Assign New Official</h4>
                                 <button
                                     onClick={() => setIsAdding(false)}
                                     className="p-1 hover:bg-blue-200/50 dark:hover:bg-blue-800/30 rounded transition-colors"
                                     title="Close"
                                 >
-                                    <X className="w-4 h-4 text-blue-500" />
+                                    <X className="w-4 h-4 text-navy dark:text-navy-tint" />
                                 </button>
                             </div>
 
@@ -201,7 +201,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                                         disabled={!newAssignment.officialId}
                                         className="flex-1"
                                     >
-                                        <Plus className="w-3.5 h-3.5 mr-1.5" />
+                                        <Plus className="w-4 h-4 mr-1.5" />
                                         Assign Official
                                     </Button>
                                     <Button variant="ghost" size="sm" onClick={() => setIsAdding(false)}>
@@ -215,12 +215,12 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                     {/* Official Roster */}
                     {assignments.length === 0 ? (
                         <div className="text-center py-8 px-4">
-                            <UserCircle className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                            <UserCircle className="w-8 h-8 text-black/60 dark:text-white/60 mx-auto mb-3" />
                             <p className="text-sm text-slate-500 dark:text-slate-400">No officials assigned yet.</p>
                             {isAdmin && !isLocked && !isAdding && (
                                 <button
                                     onClick={() => setIsAdding(true)}
-                                    className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                    className="mt-2 text-xs text-navy dark:text-navy-tint hover:underline"
                                 >
                                     + Assign an official
                                 </button>
@@ -241,7 +241,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
                                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center shrink-0">
-                                                <UserCircle className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                                                <UserCircle className="w-5 h-5 text-black/60 dark:text-white/60" />
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
@@ -255,7 +255,13 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                                                         variant={assignment.isConfirmed ? 'default' : 'secondary'}
                                                         className="text-[10px] h-4 px-1"
                                                     >
-                                                        {assignment.isConfirmed ? '✓ Confirmed' : 'Pending'}
+                                                        {assignment.isConfirmed ? (
+                                                            <span className="inline-flex items-center gap-1">
+                                                                <Check className="w-2.5 h-2.5" /> Confirmed
+                                                            </span>
+                                                        ) : (
+                                                            'Pending'
+                                                        )}
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -267,7 +273,7 @@ export const MatchOfficialAssignments: React.FC<MatchOfficialAssignmentsProps> =
                                                 className="h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-0 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                                                 onClick={() => handleRemove(assignment.id)}
                                             >
-                                                <Trash className="w-3.5 h-3.5" />
+                                                <Trash className="w-4 h-4" />
                                             </Button>
                                         )}
                                     </div>

@@ -191,10 +191,10 @@ export const DashboardHome = () => {
             <div className="flex flex-col gap-1 mb-8">
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 pb-1">
+                        <h1 className="text-4xl font-bold tracking-tight text-black dark:text-white pb-1">
                             {activeTournamentId ? "Tournament Overview" : "Dashboard"}
                         </h1>
-                        <p className="text-slate-600 dark:text-slate-300 text-lg mt-1">
+                        <p className="text-black/72 dark:text-white/72 text-lg mt-1">
                             {activeTournamentId
                                 ? "Real-time insights for the selected competition."
                                 : "Welcome back, " + (user?.firstName || 'User') + "."}
@@ -207,12 +207,12 @@ export const DashboardHome = () => {
                 {/* 1. Global KPI: Active Players */}
                 <BentoItem colSpan={1} rowSpan={1}>
                     <GlassCard
-                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-blue-500"
+                        className="h-full flex flex-col justify-between p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:-translate-y-1 hover:shadow-glass-lg hover:border-navy"
                         onClick={() => navigate('/dashboard/players')}
                     >
                         <div className="flex justify-between items-start">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
-                                <Users className="w-5 h-5" weight="fill" />
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/10 text-navy dark:text-navy-tint group-hover:bg-deep-navy dark:hover:bg-[#1F5BB3] group-hover:text-white transition-colors duration-300">
+                                <Users className="w-5 h-5" />
                             </div>
                             {globalStats && <TrendBadge value={globalStats.playerTrend} />}
                         </div>
@@ -231,7 +231,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
-                                <Trophy className="w-5 h-5" weight="fill" />
+                                <Trophy className="w-5 h-5" />
                             </div>
                         </div>
                         <div>
@@ -255,7 +255,7 @@ export const DashboardHome = () => {
                         <div className="p-6 pb-2 flex items-center justify-between">
                             <div>
                                 <h3 className="font-semibold text-foreground flex items-center gap-2">
-                                    <ChartLineUp className="w-4 h-4 text-primary-500" weight="fill" />
+                                    <ChartLineUp className="w-4 h-4 text-navy dark:text-navy-tint" />
                                     Match Activity
                                 </h3>
                                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -327,7 +327,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/10 text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
-                                <Calendar className="w-5 h-5" weight="fill" />
+                                <Calendar className="w-5 h-5" />
                             </div>
                             {activeTournamentId && tournamentSummary && (
                                 <div className="flex flex-col items-end gap-1">
@@ -363,7 +363,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-500/10 text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
-                                <UsersThree className="w-5 h-5" weight="fill" />
+                                <UsersThree className="w-5 h-5" />
                             </div>
                             {tournamentSummary && (
                                 <div className="flex gap-1 text-[10px] font-bold uppercase tracking-wider">
@@ -391,7 +391,7 @@ export const DashboardHome = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
-                                <Buildings className="w-5 h-5" weight="fill" />
+                                <Buildings className="w-5 h-5" />
                             </div>
                             {globalStats && <TrendBadge value={globalStats.organisationTrend} />}
                         </div>

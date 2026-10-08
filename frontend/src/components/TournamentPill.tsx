@@ -95,7 +95,7 @@ export const TournamentPill = () => {
                 "w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-blue-500/20">
-                    <Trophy className="w-5 h-5 text-blue-500 animate-pulse" />
+                    <Trophy className="w-5 h-5 text-navy dark:text-navy-tint animate-pulse" />
                 </div>
                 <div className="flex-1">
                     <span className="text-xs text-muted-foreground">Loading tournaments...</span>
@@ -114,7 +114,7 @@ export const TournamentPill = () => {
                 "w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-gray-500/20">
-                    <Trophy className="w-5 h-5 text-gray-500" />
+                    <Trophy className="w-5 h-5 text-black/60 dark:text-white/60" />
                 </div>
                 <div className="flex-1">
                     <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
@@ -158,8 +158,9 @@ export const TournamentPill = () => {
                             !hasMultipleTournaments && "opacity-30 cursor-not-allowed"
                         )}
                         title="Previous tournament"
+                        aria-label="Previous tournament"
                     >
-                        <SkipBack className="w-5 h-5 fill-current" weight="fill" />
+                        <SkipBack className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -220,7 +221,7 @@ export const TournamentPill = () => {
                             title="Watch Live Stream"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <VideoCamera className="w-4 h-4 md:w-5 md:h-5" weight="fill" />
+                            <VideoCamera className="w-4 h-4 md:w-5 md:h-5" />
                         </a>
                     )}
 
@@ -245,8 +246,9 @@ export const TournamentPill = () => {
                             !hasMultipleTournaments && "opacity-30 cursor-not-allowed"
                         )}
                         title="Next tournament"
+                        aria-label="Next tournament"
                     >
-                        <SkipForward className="w-5 h-5 fill-current" weight="fill" />
+                        <SkipForward className="w-5 h-5" />
                     </button>
 
                     {/* Mobile Next Button (Replaces the hidden group above on mobile) */}
@@ -258,8 +260,9 @@ export const TournamentPill = () => {
                             !hasMultipleTournaments && "opacity-30 cursor-not-allowed"
                         )}
                         title="Next tournament"
+                        aria-label="Next tournament"
                     >
-                        <SkipForward className="w-5 h-5 fill-current" weight="fill" />
+                        <SkipForward className="w-5 h-5" />
                     </button>
                 </div>
             </div>

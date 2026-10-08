@@ -113,4 +113,27 @@ public class OrganisationControllerSecurityTest {
         verify(organisationService).getPersonsByOrganisationInScope(orgId);
         verify(organisationService, never()).getPersonsByOrganisation(any());
     }
+
+    @Test
+    void anonymousCannotAccessGetOrganisationOptions() throws Exception {
+        mockMvc.perform(get("/api/v1/organisations/options"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "PLAYER")
+    void getOrganisationOptions_authenticated_returns200() throws Exception {
+        com.athleticaos.backend.dtos.org.OrganisationOptionDTO opt = com.athleticaos.backend.dtos.org.OrganisationOptionDTO.builder()
+                .id(UUID.randomUUID())
+                .name("Alpha Club")
+                .orgType("CLUB")
+                .build();
+        when(organisationService.getOrganisationOptions()).thenReturn(List.of(opt));
+
+        mockMvc.perform(get("/api/v1/organisations/options"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Alpha Club"));
+
+        verify(organisationService).getOrganisationOptions();
+    }
 }

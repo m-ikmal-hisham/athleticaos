@@ -7,6 +7,7 @@ import { Trash, Plus, UserCircleGear, X } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { showToast } from '@/lib/customToast';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { Select } from '@/components/Select';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Badge } from '@/components/Badge';
 import { Input } from '@/components/Input';
@@ -317,19 +318,19 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="text-xs text-muted-foreground mb-1 block">Gender</label>
-                                        <select 
+                                        <Select 
                                             required 
-                                            title="Gender"
+                                            label="Gender"
                                             aria-label="Gender"
                                             value={newPerson.gender} 
-                                            onChange={e => setNewPerson({...newPerson, gender: e.target.value})}
-                                            className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            <option value="">Select</option>
-                                            <option value="MALE">Male</option>
-                                            <option value="FEMALE">Female</option>
-                                        </select>
+                                            onChange={(val) => setNewPerson({...newPerson, gender: String(val)})}
+                                            placeholder="Select"
+                                            options={[
+                                                { value: '', label: 'Select' },
+                                                { value: 'MALE', label: 'Male' },
+                                                { value: 'FEMALE', label: 'Female' },
+                                            ]}
+                                        />
                                     </div>
                                     <div>
                                         <label className="text-xs text-muted-foreground mb-1 block">DOB</label>
@@ -354,17 +355,17 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-muted-foreground mb-1 block">National Player Status</label>
-                                    <select 
-                                        title="National Player Status"
+                                    <Select 
+                                        label="National Player Status"
+                                        aria-label="National Player Status"
                                         value={newPerson.nationalPlayerStatus} 
-                                        onChange={e => setNewPerson({...newPerson, nationalPlayerStatus: e.target.value})}
-                                        className="flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <option value="NONE">None</option>
-                                        <option value="ACTIVE">Active National Player</option>
-                                        <option value="FORMER">Former National Player</option>
-                                    </select>
+                                        onChange={(val) => setNewPerson({...newPerson, nationalPlayerStatus: String(val) })}
+                                        options={[
+                                            { value: 'NONE', label: 'None' },
+                                            { value: 'ACTIVE', label: 'Active National Player' },
+                                            { value: 'FORMER', label: 'Former National Player' },
+                                        ]}
+                                    />
                                 </div>
                                 <Button type="submit" className="w-full mt-2" size="sm">
                                     Register & Select
@@ -400,7 +401,7 @@ export const TeamStaffPanel: React.FC<TeamStaffPanelProps> = ({ teamId, organisa
                                                         alt="WR" 
                                                         className="h-3 w-3 object-contain"
                                                     />
-                                                    <span className="text-[10px] font-bold text-blue-700 uppercase tracking-tight">Certified</span>
+                                                    <span className="text-[10px] font-bold text-navy dark:text-navy-tint uppercase tracking-tight">Certified</span>
                                                 </div>
                                             )}
                                             <span className="text-xs text-muted-foreground">

@@ -82,7 +82,7 @@ export const DisciplineImpactAnalysis = () => {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Info className="w-5 h-5 text-blue-500" />
+                        <Info className="w-5 h-5 text-navy dark:text-navy-tint" />
                         Impact Correlation
                     </CardTitle>
                 </CardHeader>

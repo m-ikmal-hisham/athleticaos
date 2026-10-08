@@ -37,12 +37,12 @@ export const MediaPortal = () => {
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-600">
+                    <h1 className="text-3xl font-bold text-black dark:text-white">
                         Media Portal
                     </h1>
-                    <p className="text-muted mt-2">Secure access for authorized media partners</p>
+                    <p className="text-black/72 dark:text-white/72 mt-2">Secure access for authorized media partners</p>
                 </div>
-                <div className="text-sm bg-primary-500/10 text-primary-400 px-3 py-1 rounded-full border border-primary-500/20">
+                <div className="text-sm bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint px-3 py-1 rounded-full border border-navy/20 dark:border-navy-tint/30">
                     Partner Access
                 </div>
             </div>
@@ -71,7 +71,7 @@ export const MediaPortal = () => {
                                 )}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <Button variant="secondary" size="sm">
-                                        <DownloadSimple className="mr-2" />
+                                        <DownloadSimple className="w-4 h-4 mr-2" />
                                         Download
                                     </Button>
                                 </div>
@@ -80,7 +80,7 @@ export const MediaPortal = () => {
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            {asset.type === 'PHOTO' ? <Image className="w-4 h-4 text-blue-400" /> : <VideoCamera className="w-4 h-4 text-red-400" />}
+                                            {asset.type === 'PHOTO' ? <Image className="w-4 h-4 text-navy dark:text-navy-tint" /> : <VideoCamera className="w-4 h-4 text-crimson dark:text-crimson-tint" />}
                                             <span className="text-xs font-medium text-muted">{asset.type}</span>
                                         </div>
                                         <p className="text-sm font-medium">{asset.description || 'Untitled Asset'}</p>

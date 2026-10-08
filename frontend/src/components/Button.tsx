@@ -1,37 +1,57 @@
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { ButtonHTMLAttributes, forwardRef, useId } from 'react';
 import { clsx } from 'clsx';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+    /**
+     * Allowed variants per STYLE_GUIDE §6:
+     * - primary: solid brand Navy
+     * - secondary: surface + border
+     * - ghost: transparent + hover
+     * - danger: solid Crimson
+     *
+     * @deprecated 'outline' -> use 'secondary'
+     * @deprecated 'cancel' -> use 'ghost' with crimson text or 'secondary'
+     * @deprecated 'tertiary' -> use 'secondary'
+     */
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'cancel' | 'tertiary';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
+    disabledReason?: string;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
+    ({ className, variant = 'primary', size = 'md', isLoading, disabledReason, children, disabled, ...props }, ref) => {
+        const generatedId = useId();
+        const reasonId = props.id ? `${props.id}-disabled-reason` : `btn-reason-${generatedId}`;
+        const hasDisabledReason = Boolean(disabled && disabledReason);
+
         return (
             <button
                 ref={ref}
                 className={clsx(
-                    'btn inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-300',
-                    variant === 'primary' && 'bg-gradient-to-r from-blue-600 to-red-600 dark:from-red-600 dark:to-blue-600 text-white shadow-lg shadow-blue-500/20 dark:shadow-red-500/20 hover:shadow-xl hover:shadow-blue-500/30 dark:hover:shadow-red-500/30',
-                    variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-                    variant === 'outline' && 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-                    variant === 'ghost' && 'hover:bg-accent hover:text-accent-foreground',
-                    // Note: `destructive` is not a defined colour token, so the previous
-                    // bg-destructive/text-destructive-foreground classes compiled to nothing and
-                    // left every danger button unstyled — next to the red-outlined `cancel`
-                    // variant, that made Cancel read as the more dangerous action.
-                    variant === 'danger' && 'bg-red-600 text-white shadow-lg shadow-red-500/20 hover:bg-red-700 hover:shadow-xl hover:shadow-red-500/30',
-                    variant === 'cancel' && 'text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl',
-                    variant === 'tertiary' && 'backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-slate-100 shadow-sm',
+                    'inline-flex items-center justify-center gap-2 rounded-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint focus-visible:ring-offset-2',
+                    // Primary variant
+                    !disabled && variant === 'primary' && 'bg-navy text-white hover:bg-deep-navy dark:hover:bg-[#1F5BB3]',
+                    // Secondary and deprecated aliases (outline, tertiary, cancel)
+                    !disabled && (variant === 'secondary' || variant === 'outline' || variant === 'tertiary' || variant === 'cancel') &&
+                        'bg-white dark:bg-deep-navy border border-black/24 dark:border-white/28 text-black/90 dark:text-white/92 hover:bg-black/4 dark:hover:bg-white/6',
+                    // Ghost variant
+                    !disabled && variant === 'ghost' && 'bg-transparent text-black/90 dark:text-white/92 hover:bg-black/4 dark:hover:bg-white/6',
+                    // Danger variant
+                    !disabled && variant === 'danger' && 'bg-crimson text-white hover:bg-[#9E0F19]',
+                    // Explicit disabled style for all variants per STYLE_GUIDE
+                    disabled && 'bg-black/6 dark:bg-white/8 text-black/40 dark:text-white/40 border border-transparent shadow-none cursor-not-allowed',
+                    // Loading style (when not disabled)
+                    isLoading && !disabled && 'cursor-wait opacity-80',
+                    // Sizes: sm 36px (h-9), md 44px (h-11), lg 48px (h-12)
                     size === 'sm' && 'h-9 px-3 text-xs',
-                    size === 'md' && 'h-10 px-4 py-2',
-                    size === 'lg' && 'h-11 px-8',
-                    (disabled || isLoading) && 'opacity-50 cursor-not-allowed',
+                    size === 'md' && 'h-11 px-4 text-sm',
+                    size === 'lg' && 'h-12 px-6 text-base',
                     className
                 )}
                 disabled={disabled || isLoading}
+                title={hasDisabledReason ? disabledReason : props.title}
+                aria-describedby={hasDisabledReason ? [props['aria-describedby'], reasonId].filter(Boolean).join(' ') : props['aria-describedby']}
                 {...props}
             >
                 {isLoading && (
@@ -41,6 +61,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     </svg>
                 )}
                 {children}
+                {hasDisabledReason && (
+                    <span id={reasonId} className="sr-only">
+                        {disabledReason}
+                    </span>
+                )}
             </button>
         );
     }

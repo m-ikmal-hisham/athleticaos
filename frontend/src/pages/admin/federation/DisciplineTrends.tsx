@@ -79,10 +79,10 @@ export const DisciplineTrends = () => {
         <div className="space-y-6 p-6">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-600">
+                    <h1 className="text-2xl font-bold text-black dark:text-white">
                         Discipline Trends
                     </h1>
-                    <p className="text-muted text-sm mt-1">
+                    <p className="text-black/72 dark:text-white/72 text-sm mt-1">
                         Monitor card infractions and team conduct across tournaments.
                     </p>
                 </div>
@@ -107,7 +107,7 @@ export const DisciplineTrends = () => {
                 <Card className="bg-glass-panel border-glass-border">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted">Total Red Cards</CardTitle>
-                        <Cards className="w-4 h-4 text-red-500" weight="fill" />
+                        <Cards className="w-4 h-4 text-crimson dark:text-crimson-tint" weight="fill" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-foreground">{totalRed}</div>
@@ -117,7 +117,7 @@ export const DisciplineTrends = () => {
                 <Card className="bg-glass-panel border-glass-border">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted">Total Yellow Cards</CardTitle>
-                        <Cards className="w-4 h-4 text-yellow-500" weight="fill" />
+                        <Cards className="w-4 h-4 text-card-yellow" weight="fill" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-foreground">{totalYellow}</div>
@@ -127,7 +127,7 @@ export const DisciplineTrends = () => {
                 <Card className="bg-glass-panel border-glass-border">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted">Most Penalized</CardTitle>
-                        <ShieldWarning className="w-4 h-4 text-orange-500" />
+                        <ShieldWarning className="w-4 h-4" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold text-foreground truncate">{mostPenalized?.teamName || "N/A"}</div>
@@ -137,7 +137,7 @@ export const DisciplineTrends = () => {
                 <Card className="bg-glass-panel border-glass-border">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium text-muted">Fair Play Award</CardTitle>
-                        <Trophy className="w-4 h-4 text-green-500" />
+                        <Trophy className="w-4 h-4 text-navy dark:text-navy-tint" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold text-foreground truncate">{mostDisciplined?.teamName || "N/A"}</div>

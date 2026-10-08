@@ -7,6 +7,7 @@ import com.athleticaos.backend.dtos.auth.RegisterRequest;
 import com.athleticaos.backend.dtos.user.UserRolesResponse;
 import com.athleticaos.backend.services.AuthService;
 import com.athleticaos.backend.services.UserService;
+import com.athleticaos.backend.utils.ClientIpUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +50,7 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request,
                                    jakarta.servlet.http.HttpServletRequest httpRequest) {
-        String clientIp = getClientIp(httpRequest);
+        String clientIp = ClientIpUtils.getClientIp(httpRequest);
 
         // Check if IP is locked out due to too many failed attempts
         if (loginAttemptService.isBlocked(clientIp)) {
@@ -107,7 +108,7 @@ public class AuthenticationController {
     @SuppressWarnings("null")
     public ResponseEntity<?> changePassword(@RequestBody @Valid ChangePasswordRequest request,
                                             jakarta.servlet.http.HttpServletRequest httpRequest) {
-        String clientIp = getClientIp(httpRequest);
+        String clientIp = ClientIpUtils.getClientIp(httpRequest);
         if (loginAttemptService.isBlocked(clientIp)) {
             long remainingMinutes = loginAttemptService.getRemainingLockoutMinutes(clientIp);
             return ResponseEntity.status(423)
@@ -129,13 +130,6 @@ public class AuthenticationController {
             return ResponseEntity.status(401)
                     .body(java.util.Map.of("message", "Invalid email or password"));
         }
-    }
-
-    /**
-     * Extract client IP, respecting X-Forwarded-For header for reverse proxies.
-     */
-    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
-        return request.getRemoteAddr();
     }
 
     @PostMapping("/logout")

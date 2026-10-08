@@ -39,6 +39,12 @@ public class OrganisationController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/options")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.org.OrganisationOptionDTO>> getOrganisationOptions() {
+        return ResponseEntity.ok(organisationService.getOrganisationOptions());
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public ResponseEntity<OrganisationResponse> getOrganisationById(@PathVariable UUID id) {
         return ResponseEntity.ok(organisationService.getOrganisationById(id));

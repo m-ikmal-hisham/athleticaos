@@ -76,17 +76,17 @@ export const FeaturedTournamentCard = ({ tournament, loading }: FeaturedTourname
 
                 <div className="mt-auto pt-6 flex items-center gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                        <CalendarCheck className="w-4 h-4 text-primary-500" />
+                        <CalendarCheck className="w-4 h-4 text-navy dark:text-navy-tint" />
                         <span>{new Date(tournament.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                     </div>
                     {tournament.venue && (
                         <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-primary-500" />
+                            <MapPin className="w-4 h-4 text-navy dark:text-navy-tint" />
                             <span className="truncate max-w-[120px]">{tournament.venue}</span>
                         </div>
                     )}
 
-                    <Button size="sm" className="ml-auto rounded-full bg-gradient-to-r from-blue-600 to-[#D32F2F] dark:from-[#D32F2F] dark:to-blue-600 text-white border-none shadow-md hover:shadow-lg hover:shadow-blue-500/20 dark:hover:shadow-red-500/20 transition-all">
+                    <Button size="sm" variant="primary" className="ml-auto">
                         Manage
                     </Button>
                 </div>
