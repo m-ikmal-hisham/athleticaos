@@ -323,7 +323,6 @@ export interface PublicPlayerDirectoryItem {
     lastName: string;
     slug?: string;
     position?: string;
-    position2?: string;
     jerseyNumber?: number;
     currentTeamName?: string;
     currentTeamId?: string;
@@ -332,6 +331,46 @@ export interface PublicPlayerDirectoryItem {
     state?: string;
     gender?: string;
     tournamentCount: number;
+}
+
+export interface PublicPageResponse<T> {
+    items: T[];
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+}
+
+export interface PublicPlayerFilters {
+    states: string[];
+    positions: string[];
+}
+
+export interface PublicTeamFilters {
+    states: string[];
+    categories: string[];
+}
+
+export interface GetPublicPlayersPageParams {
+    page?: number;
+    size?: number;
+    search?: string;
+    state?: string;
+    position?: string;
+    teamId?: string;
+    tournamentId?: string;
+    sort?: 'name' | 'recent' | string;
+}
+
+export interface GetPublicTeamsPageParams {
+    page?: number;
+    size?: number;
+    search?: string;
+    category?: string;
+    state?: string;
+    tournamentId?: string;
+    sort?: string;
 }
 
 export const publicProfileApi = {
@@ -344,6 +383,10 @@ export const publicProfileApi = {
         const response = await publicApi.get('/teams', { params });
         return response.data;
     },
+    getTeamsPage: async (params?: GetPublicTeamsPageParams): Promise<PublicPageResponse<PublicTeamDirectoryItem>> => {
+        const response = await publicApi.get('/teams', { params });
+        return response.data;
+    },
     getPlayers: async (params?: {
         search?: string;
         tournamentId?: string;
@@ -353,6 +396,18 @@ export const publicProfileApi = {
         limit?: number;
     }): Promise<PublicPlayerDirectoryItem[]> => {
         const response = await publicApi.get('/players', { params });
+        return response.data;
+    },
+    getPlayersPage: async (params?: GetPublicPlayersPageParams): Promise<PublicPageResponse<PublicPlayerDirectoryItem>> => {
+        const response = await publicApi.get('/players', { params });
+        return response.data;
+    },
+    getPlayerFilters: async (): Promise<PublicPlayerFilters> => {
+        const response = await publicApi.get('/players/filters');
+        return response.data;
+    },
+    getTeamFilters: async (): Promise<PublicTeamFilters> => {
+        const response = await publicApi.get('/teams/filters');
         return response.data;
     },
     getTeam: async (idOrSlug: string, tournamentId?: string): Promise<PublicTeamDetailResponse> => {

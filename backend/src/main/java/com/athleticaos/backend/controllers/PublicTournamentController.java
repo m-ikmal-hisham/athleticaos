@@ -1,5 +1,6 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.config.PublicHttpCache;
 import com.athleticaos.backend.dtos.match.MatchResponse;
 import com.athleticaos.backend.dtos.public_api.*;
 import com.athleticaos.backend.dtos.standing.StandingsResponse;
@@ -48,7 +49,7 @@ public class PublicTournamentController {
                 .map(this::mapToPublicSummary)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(response);
+        return PublicHttpCache.ok(response);
     }
 
     @GetMapping("/tournaments/{idOrSlug}")
@@ -135,7 +136,7 @@ public class PublicTournamentController {
                     })
                     .collect(Collectors.toList());
 
-            return ResponseEntity.ok(response);
+            return PublicHttpCache.ok(response);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
@@ -247,7 +248,7 @@ public class PublicTournamentController {
                         .filter(s -> categoryId.equals(s.getCategoryId()))
                         .collect(Collectors.toList());
             }
-            return ResponseEntity.ok(standings);
+            return PublicHttpCache.ok(standings);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }

@@ -57,6 +57,14 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
     @Query("SELECT pt.team.id, COUNT(pt) FROM PlayerTeam pt WHERE pt.isActive = true AND pt.player.deleted = false GROUP BY pt.team.id")
     List<Object[]> countActivePlayersGroupedByTeam();
 
+    /** Same as countActivePlayersGroupedByTeam, restricted to the given teams (one page of the directory). */
+    @Query("SELECT pt.team.id, COUNT(pt) FROM PlayerTeam pt WHERE pt.team.id IN :teamIds AND pt.isActive = true AND pt.player.deleted = false GROUP BY pt.team.id")
+    List<Object[]> countActivePlayersGroupedByTeamIds(@Param("teamIds") java.util.Collection<UUID> teamIds);
+
+    /** Raw positions of active memberships of non-deleted players, for the public filter dropdown. */
+    @Query("SELECT DISTINCT pt.position FROM PlayerTeam pt WHERE pt.isActive = true AND pt.player.deleted = false AND pt.position IS NOT NULL")
+    List<String> findDistinctActivePositions();
+
     @Query("SELECT CASE WHEN COUNT(pt) > 0 THEN true ELSE false END FROM PlayerTeam pt WHERE pt.player.id = :playerId AND pt.isActive = true AND pt.team.organisation.id IN :orgIds")
     boolean existsActiveByPlayerIdAndOrganisationIdIn(@Param("playerId") UUID playerId, @Param("orgIds") java.util.Collection<UUID> orgIds);
 }
