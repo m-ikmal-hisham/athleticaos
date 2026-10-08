@@ -10,6 +10,19 @@ import { IconContext } from '@phosphor-icons/react';
 import { HelmetProvider } from 'react-helmet-async';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: 2,
+            retryDelay: (attemptIndex) => (attemptIndex === 0 ? 1000 : 3000),
+            staleTime: 30 * 1000,
+            refetchOnWindowFocus: false,
+        },
+    },
+});
+
 export const Root = () => {
     const { theme, getEffectiveTheme } = useUIStore();
 
@@ -25,24 +38,26 @@ export const Root = () => {
 
     return (
         <ErrorBoundary>
-            <HelmetProvider>
-                <IconContext.Provider value={{ weight: "duotone" }}>
-                    <RouterProvider router={router} />
-                    <Toaster
-                        position="top-right"
-                        toastOptions={{
-                            duration: 4000,
-                            style: {
-                                background: 'var(--surface-card)',
-                                color: 'var(--content-primary)',
-                                border: '1px solid var(--line-subtle)',
-                                borderRadius: '10px',
-                                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-                            },
-                        }}
-                    />
-                </IconContext.Provider>
-            </HelmetProvider>
+            <QueryClientProvider client={queryClient}>
+                <HelmetProvider>
+                    <IconContext.Provider value={{ weight: "duotone" }}>
+                        <RouterProvider router={router} />
+                        <Toaster
+                            position="top-right"
+                            toastOptions={{
+                                duration: 4000,
+                                style: {
+                                    background: 'var(--surface-card)',
+                                    color: 'var(--content-primary)',
+                                    border: '1px solid var(--line-subtle)',
+                                    borderRadius: '10px',
+                                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+                                },
+                            }}
+                        />
+                    </IconContext.Provider>
+                </HelmetProvider>
+            </QueryClientProvider>
         </ErrorBoundary>
     );
 };

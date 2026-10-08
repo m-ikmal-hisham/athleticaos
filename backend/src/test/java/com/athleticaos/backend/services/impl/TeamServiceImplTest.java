@@ -274,7 +274,7 @@ class TeamServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Team not found");
 
-        verify(teamRepository, never()).delete(any());
+        verify(teamRepository, never()).delete(any(Team.class));
         verify(auditLogger, never()).logTeamDeleted(any(), any());
     }
 

@@ -52,6 +52,10 @@ app:
 server:
   port: 8080
   forward-headers-strategy: framework
+  compression:
+    enabled: true
+    mime-types: application/json,text/plain,text/css,application/javascript
+    min-response-size: 2KB
 
 springdoc:
   api-docs:
