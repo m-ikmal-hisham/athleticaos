@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { formatOrgType } from '@/utils/formatters';
 import { getOrganisationById, Organisation, getChildren, fetchOrganisationOptions, OrganisationOption } from '../../../api/organisations.api';
 import { fetchTeamsByOrganisation } from '../../../api/teams.api';
@@ -14,6 +14,7 @@ import { Button } from '../../../components/Button';
 import { getImageUrl } from '../../../utils/image';
 import { MALAYSIA_STATES } from '../../../constants/malaysia-geo';
 import { RosterList } from '../../../components/RosterList';
+import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { useNavigate, useParams } from 'react-router-dom';
 
 interface ChildOrgTeamGroup {
@@ -140,6 +141,28 @@ const OrgTreeNodeView = ({ node }: { node: OrgTreeNode }) => {
     );
 };
 
+type TabKey = 'teams' | 'children' | 'personnel';
+type TabLoad = 'loading' | 'loaded' | 'error';
+const LAZY_TABS: TabKey[] = ['teams', 'children', 'personnel'];
+const PLAYER_PREVIEW_COUNT = 50;
+
+const TabLoadState = ({ state, onRetry, children }: { state?: TabLoad; onRetry: () => void; children: ReactNode }) => {
+    if (state === 'loaded') return <>{children}</>;
+    if (state === 'error') {
+        return (
+            <GlassCard className="p-8 text-center space-y-4">
+                <p className="text-sm text-black/72 dark:text-white/72">Couldn't load this section.</p>
+                <Button variant="secondary" size="sm" onClick={onRetry}>Try again</Button>
+            </GlassCard>
+        );
+    }
+    return (
+        <GlassCard className="p-6" aria-busy="true">
+            <LoadingSkeleton count={5} height="h-10" />
+        </GlassCard>
+    );
+};
+
 const OrganisationDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -152,10 +175,31 @@ const OrganisationDetail = () => {
     const [loading, setLoading] = useState(true);
     const [expandedChildOrgs, setExpandedChildOrgs] = useState<Set<string>>(new Set());
 
+    const [tabState, setTabState] = useState<Partial<Record<TabKey, TabLoad>>>({});
+    const tabStateRef = useRef<Partial<Record<TabKey, TabLoad>>>({});
+    const teamsRequest = useRef<Promise<unknown> | null>(null);
+    const currentOrgId = useRef<string | undefined>(id);
+    const [showAllPlayers, setShowAllPlayers] = useState(false);
+
+    const setTabLoad = (tab: TabKey, load: TabLoad) => {
+        tabStateRef.current = { ...tabStateRef.current, [tab]: load };
+        setTabState(tabStateRef.current);
+    };
+
     useEffect(() => {
         if (id) {
+            // Fresh state per organisation; tab data loads when its tab is first opened
+            currentOrgId.current = id;
+            tabStateRef.current = {};
+            setTabState({});
+            teamsRequest.current = null;
+            setTeams([]);
+            setPlayers([]);
+            setUsers([]);
+            setChildOrgs([]);
+            setAllOrganisations([]);
+            setShowAllPlayers(false);
             loadOrganisation(id);
-            loadRelatedData(id);
         }
     }, [id]);
 
@@ -171,24 +215,53 @@ const OrganisationDetail = () => {
         }
     };
 
-    const loadRelatedData = async (orgId: string) => {
-        try {
-            const [teamsRes, playersRes, usersRes, childOrgsRes, allOrgsRes] = await Promise.all([
-                fetchTeamsByOrganisation(orgId).catch(() => ({ data: [] })),
-                fetchPlayersByOrganisation(orgId).catch(() => ({ data: [] })),
-                usersApi.getAllUsers({ organisationId: orgId }).catch(() => ({ data: [] })),
-                getChildren(orgId).catch(() => []),
-                fetchOrganisationOptions().catch(() => [])
-            ]);
-            setTeams(teamsRes.data || []);
-            setPlayers(playersRes.data || []);
-            setUsers(usersRes.data || []);
-            setChildOrgs(childOrgsRes || []);
-            setAllOrganisations(allOrgsRes || []);
-        } catch (error) {
-            console.error("Failed to load related data", error);
+    // Teams are needed by both the Teams and Sub-Organisations tabs: fetch once
+    const loadTeamsOnce = (orgId: string) => {
+        if (!teamsRequest.current) {
+            teamsRequest.current = fetchTeamsByOrganisation(orgId)
+                .then(res => {
+                    if (currentOrgId.current === orgId) setTeams(res.data || []);
+                })
+                .catch(error => {
+                    teamsRequest.current = null;
+                    throw error;
+                });
         }
+        return teamsRequest.current;
     };
+
+    const loadTab = useCallback(async (tabValue: string, force = false) => {
+        const orgId = id;
+        if (!orgId || !LAZY_TABS.includes(tabValue as TabKey)) return;
+        const tab = tabValue as TabKey;
+        const current = tabStateRef.current[tab];
+        if (!force && (current === 'loading' || current === 'loaded')) return;
+
+        setTabLoad(tab, 'loading');
+        const stillCurrent = () => currentOrgId.current === orgId;
+        try {
+            if (tab === 'teams') {
+                await Promise.all([
+                    loadTeamsOnce(orgId),
+                    getChildren(orgId).then(children => { if (stillCurrent()) setChildOrgs(children || []); }),
+                ]);
+            } else if (tab === 'children') {
+                await Promise.all([
+                    fetchOrganisationOptions().then(options => { if (stillCurrent()) setAllOrganisations(options || []); }),
+                    loadTeamsOnce(orgId),
+                ]);
+            } else {
+                await Promise.all([
+                    usersApi.getAllUsers({ organisationId: orgId }).then(res => { if (stillCurrent()) setUsers(res.data || []); }),
+                    fetchPlayersByOrganisation(orgId).then(res => { if (stillCurrent()) setPlayers(res.data || []); }),
+                ]);
+            }
+            if (stillCurrent()) setTabLoad(tab, 'loaded');
+        } catch (error) {
+            console.error(`Failed to load ${tab} for organisation`, error);
+            if (stillCurrent()) setTabLoad(tab, 'error');
+        }
+    }, [id]);
 
     // Separate teams into direct teams and child org teams
     const { directTeams, childOrgTeamGroups, totalChildOrgTeams } = useMemo(() => {
@@ -324,7 +397,7 @@ const OrganisationDetail = () => {
                 </div>
             </div>
 
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs defaultValue="overview" className="space-y-6" onValueChange={(tab) => loadTab(tab)}>
                 <TabsList className="bg-white/5 border border-white/10">
                     <TabsTrigger value="overview" className="data-[state=active]:bg-primary-500">Overview</TabsTrigger>
                     <TabsTrigger value="teams" className="data-[state=active]:bg-primary-500">Teams</TabsTrigger>
@@ -356,6 +429,7 @@ const OrganisationDetail = () => {
                 </TabsContent>
 
                 <TabsContent value="teams" className="space-y-6">
+                    <TabLoadState state={tabState.teams} onRetry={() => loadTab('teams', true)}>
                     {/* Summary Stats */}
                     {(childOrgTeamGroups.length > 0 || directTeams.length > 0) && (
                         <div className="flex flex-wrap gap-3">
@@ -503,9 +577,11 @@ const OrganisationDetail = () => {
                             </div>
                         </GlassCard>
                     )}
+                    </TabLoadState>
                 </TabsContent>
 
                 <TabsContent value="personnel">
+                    <TabLoadState state={tabState.personnel} onRetry={() => loadTab('personnel', true)}>
                     <div className="space-y-6">
                         {/* Users */}
                         <GlassCard className="p-6">
@@ -554,9 +630,20 @@ const OrganisationDetail = () => {
                                     Players ({players.length})
                                 </h3>
                             </div>
-                            <RosterList players={players} onPlayerClick={(pid) => navigate(`/dashboard/players/${pid}/edit`)} />
+                            <RosterList
+                                players={showAllPlayers ? players : players.slice(0, PLAYER_PREVIEW_COUNT)}
+                                onPlayerClick={(pid) => navigate(`/dashboard/players/${pid}/edit`)}
+                            />
+                            {!showAllPlayers && players.length > PLAYER_PREVIEW_COUNT && (
+                                <div className="mt-4 flex justify-center">
+                                    <Button variant="secondary" size="sm" onClick={() => setShowAllPlayers(true)}>
+                                        Show all ({players.length.toLocaleString()})
+                                    </Button>
+                                </div>
+                            )}
                         </GlassCard>
                     </div>
+                    </TabLoadState>
                 </TabsContent>
 
                 <TabsContent value="chart">
@@ -574,6 +661,7 @@ const OrganisationDetail = () => {
                 </TabsContent>
 
                 <TabsContent value="children" className="space-y-6">
+                    <TabLoadState state={tabState.children} onRetry={() => loadTab('children', true)}>
                     <GlassCard className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -594,6 +682,7 @@ const OrganisationDetail = () => {
                             </div>
                         )}
                     </GlassCard>
+                    </TabLoadState>
                 </TabsContent>
             </Tabs>
         </div>

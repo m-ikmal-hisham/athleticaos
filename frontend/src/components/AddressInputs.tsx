@@ -1,7 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from './Input';
 import { Select } from './Select';
 import { MALAYSIA_STATES, getDistrictsForState, getSarawakDistricts, detectStateFromPostcode, SARAWAK_GEO_DATA } from '@/constants/malaysia-geo';
+import countries from '@/data/geo/countries.json';
+
+// Small generated data (npm run geo:build) instead of the full country-state-city
+// database: the country list is bundled, each country's states are fetched once on demand.
+interface GeoOption { isoCode: string; name: string }
+
+const statesCache = new Map<string, Promise<GeoOption[]>>();
+const loadStates = (countryCode: string): Promise<GeoOption[]> => {
+    let pending = statesCache.get(countryCode);
+    if (!pending) {
+        pending = fetch(`/geo/states/${countryCode}.json`)
+            .then(res => (res.ok ? res.json() : []))
+            .catch(() => {
+                statesCache.delete(countryCode);
+                return [];
+            });
+        statesCache.set(countryCode, pending);
+    }
+    return pending;
+};
 
 export interface AddressData {
     addressLine1?: string;
@@ -25,21 +45,7 @@ interface AddressInputsProps {
 }
 
 export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, showLabels = true }: AddressInputsProps) => {
-    // Dynamic import of country-state-city database
-    const [csc, setCsc] = useState<any>(null);
-    useEffect(() => {
-        import('country-state-city').then(module => {
-            setCsc(module);
-        });
-    }, []);
-
-    // Global location states
-    const countries = useMemo<any[]>(() => {
-        return csc ? csc.Country.getAllCountries() : [];
-    }, [csc]);
-
-    const [globalStates, setGlobalStates] = useState<any[]>([]);
-    const [globalCities, setGlobalCities] = useState<any[]>([]);
+    const [globalStates, setGlobalStates] = useState<GeoOption[]>([]);
 
     // Malaysia specific states
     const [myDistricts, setMyDistricts] = useState<string[]>([]);
@@ -60,20 +66,21 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
         }
     }, [data.countryCode, data.stateCode, data.state, data.city, sarawakDivision]);
 
-    // Effect to handle dynamic loading of states/cities when country/state changes
+    // Load the selected country's states. An explicit 'MY' uses MALAYSIA_STATES instead;
+    // records without a country code keep the previous behaviour (Malaysian list from the data file).
     useEffect(() => {
-        if (csc) {
-            setGlobalStates(csc.State.getStatesOfCountry(data.countryCode || 'MY'));
+        if (data.countryCode === 'MY') {
+            setGlobalStates([]);
+            return;
         }
-    }, [csc, data.countryCode]);
-
-    useEffect(() => {
-        if (csc && data.countryCode && data.stateCode && data.countryCode !== 'MY') {
-            setGlobalCities(csc.City.getCitiesOfState(data.countryCode, data.stateCode));
-        } else {
-            setGlobalCities([]);
-        }
-    }, [csc, data.countryCode, data.stateCode]);
+        let cancelled = false;
+        loadStates(data.countryCode || 'MY').then(states => {
+            if (!cancelled) setGlobalStates(states);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [data.countryCode]);
 
     // Initialize MY districts/divisions based on current state
     useEffect(() => {
@@ -205,31 +212,15 @@ export const AddressInputs = ({ data, onChange, errors = {}, disabled = false, s
                 </>
             );
         } else {
-            // Global Cities
-            if (globalCities.length > 0) {
-                return (
-                    <Select
-                        value={data.city || ''}
-                        onChange={(val) => handleCityChange(String(val))}
-                        disabled={disabled}
-                        aria-label="City"
-                        placeholder="Select city"
-                        options={[
-                            { value: '', label: 'Select city' },
-                            ...globalCities.map(c => ({ value: c.name, label: c.name }))
-                        ]}
-                    />
-                );
-            } else {
-                return (
-                    <Input
-                        value={data.city || ''}
-                        onChange={(e) => handleCityChange(e.target.value)}
-                        placeholder="City Name"
-                        disabled={disabled}
-                    />
-                );
-            }
+            // Outside Malaysia the city is free text
+            return (
+                <Input
+                    value={data.city || ''}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    placeholder="City Name"
+                    disabled={disabled}
+                />
+            );
         }
     };
 

@@ -40,6 +40,11 @@ public interface PlayerTeamRepository extends JpaRepository<PlayerTeam, UUID> {
     @Query("SELECT COUNT(DISTINCT pt.player) FROM PlayerTeam pt WHERE pt.team.organisation.id IN :orgIds AND pt.isActive = true AND pt.player.deleted = false")
     long countPlayersByOrganisationIds(@Param("orgIds") java.util.Set<UUID> orgIds);
 
+    /** Same as findPlayersByOrganisationIds, but loads each player's person in the same query. */
+    @Query("SELECT DISTINCT p FROM PlayerTeam pt JOIN pt.player p JOIN FETCH p.person WHERE pt.team.organisation.id IN :orgIds AND pt.isActive = true AND p.deleted = false ORDER BY p.createdAt DESC")
+    List<com.athleticaos.backend.entities.Player> findPlayersWithPersonByOrganisationIds(
+            @Param("orgIds") java.util.Collection<UUID> orgIds);
+
     @Query("SELECT DISTINCT p FROM PlayerTeam pt JOIN pt.player p JOIN FETCH p.person WHERE pt.team.id = :teamId AND pt.isActive = true AND p.deleted = false")
     List<com.athleticaos.backend.entities.Player> findPlayersByTeamId(@Param("teamId") UUID teamId);
 
