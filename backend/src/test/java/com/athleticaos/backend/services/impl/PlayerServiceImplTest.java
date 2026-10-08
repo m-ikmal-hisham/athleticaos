@@ -666,7 +666,7 @@ class PlayerServiceImplTest {
                 .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
                 .hasMessage("Player not found");
 
-        verify(playerRepository, never()).delete(any());
+        verify(playerRepository, never()).delete(any(Player.class));
         verify(playerRepository, never()).save(any());
         verify(playerTeamRepository, never()).deleteAll(any());
         verify(personRepository, never()).delete(any());

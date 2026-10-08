@@ -12,16 +12,22 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterErrors;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import java.util.Set;
 
 @RestControllerAdvice
 @lombok.extern.slf4j.Slf4j
@@ -185,12 +191,70 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, "Resource not found", request);
     }
 
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        Set<HttpMethod> supported = ex.getSupportedHttpMethods();
+        HttpHeaders headers = new HttpHeaders();
+        if (supported != null && !supported.isEmpty()) {
+            headers.setAllow(supported);
+        }
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.METHOD_NOT_ALLOWED.value(),
+                HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase(),
+                ex.getMessage(),
+                null,
+                null,
+                request != null ? request.getRequestURI() : null,
+                LocalDateTime.now());
+        return new ResponseEntity<>(error, headers, HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+        String message = String.format("Invalid value for parameter '%s'", ex.getName());
+        return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(
+            HttpMediaTypeNotSupportedException ex,
+            HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(org.apache.catalina.connector.ClientAbortException.class)
+    public void handleClientAbort(Exception ex, HttpServletRequest request) {
+        String method = request != null ? request.getMethod() : "UNKNOWN";
+        String path = request != null ? request.getRequestURI() : "UNKNOWN";
+        log.debug("Client aborted request [{} {}]", method, path, ex);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest request) {
+        if (isClientAbort(ex)) {
+            String method = request != null ? request.getMethod() : "UNKNOWN";
+            String path = request != null ? request.getRequestURI() : "UNKNOWN";
+            log.debug("Client aborted request [{} {}]", method, path, ex);
+            return null;
+        }
         String correlationId = UUID.randomUUID().toString().substring(0, 8);
         log.error("Unexpected error occurred [correlationId={}]: ", correlationId, ex);
         String message = "An unexpected error occurred. Please contact support with reference ID: " + correlationId;
         return buildResponseDetailed(HttpStatus.INTERNAL_SERVER_ERROR, message, correlationId, request);
+    }
+
+    private boolean isClientAbort(Throwable t) {
+        while (t != null) {
+            if (t instanceof org.apache.catalina.connector.ClientAbortException) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     private String extractSqlState(DataIntegrityViolationException ex) {
