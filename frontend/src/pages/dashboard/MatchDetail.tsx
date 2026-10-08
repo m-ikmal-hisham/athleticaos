@@ -66,14 +66,12 @@ export const MatchDetail = () => {
     const {
         selectedMatch,
         events,
-        players,
         loadingDetail,
         error,
         loadMatchDetail,
         addEvent,
         removeEvent,
-        cancelMatch,
-        loadPlayers
+        cancelMatch
     } = useMatchesStore();
     const { user } = useAuthStore();
 
@@ -195,7 +193,6 @@ export const MatchDetail = () => {
     useEffect(() => {
         if (id) {
             loadMatchDetail(id);
-            loadPlayers();
             loadOfficials(id);
         }
     }, [id]);
@@ -377,19 +374,31 @@ export const MatchDetail = () => {
         }
     };
 
+    const resolveLineupPlayerName = (playerId?: string | null): string => {
+        if (!playerId || playerId === 'unknown') return 'Unknown';
+        const inLineup = [...matchLineups.home, ...matchLineups.away].find(p => p.playerId === playerId);
+        if (inLineup?.playerName) return inLineup.playerName;
+
+        for (const squad of Object.values(teamSquads)) {
+            const inSquad = squad?.find(p => p.id === playerId);
+            if (inSquad?.name) return inSquad.name;
+        }
+
+        return 'Unknown';
+    };
+
     const submitEvent = async (action: any) => {
         try {
-            // Find player details if available
-            const selectedPlayer = players.find(p => p.id === action.playerId);
+            // Find player details if available from match lineups
+            const outPlayerName = resolveLineupPlayerName(action.playerId);
 
             // Construct custom notes for Subs
             let eventNotes = action.notes || '';
             let secondaryPlayerName = null;
 
             if (action.type === 'SUBSTITUTION' && action.sub_in_playerId) {
-                const inPlayer = players.find(p => p.id === action.sub_in_playerId);
-                secondaryPlayerName = inPlayer ? `${inPlayer.firstName} ${inPlayer.lastName}` : 'Unknown';
-                eventNotes = `OUT: ${selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : 'Unknown'} | IN: ${secondaryPlayerName}`;
+                secondaryPlayerName = resolveLineupPlayerName(action.sub_in_playerId);
+                eventNotes = `OUT: ${outPlayerName} | IN: ${secondaryPlayerName}`;
             }
 
             // Capture current red card count before adding event (for 2nd yellow detection)
@@ -397,20 +406,33 @@ export const MatchDetail = () => {
                 ? events.filter(e => e.eventType === 'RED_CARD' && e.playerId === action.playerId).length
                 : 0;
 
-            await addEvent(selectedMatch!.id, {
-                matchId: selectedMatch!.id,
-                teamId: action.teamId,
-                teamName: action.teamName,
-                playerId: action.playerId === 'unknown' ? null : action.playerId,
-                playerName: selectedPlayer ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}` : null,
-                eventType: action.type,
-                minute: displayMinute, // Use the live timer minute
-                notes: eventNotes,
-                relatedPlayerId: action.type === 'SUBSTITUTION' ? action.sub_in_playerId : null
-            });
+            try {
+                await addEvent(selectedMatch!.id, {
+                    matchId: selectedMatch!.id,
+                    teamId: action.teamId,
+                    teamName: action.teamName,
+                    playerId: action.playerId === 'unknown' ? null : action.playerId,
+                    playerName: outPlayerName !== 'Unknown' ? outPlayerName : null,
+                    eventType: action.type,
+                    minute: displayMinute, // Use the live timer minute
+                    notes: eventNotes,
+                    relatedPlayerId: action.type === 'SUBSTITUTION' ? action.sub_in_playerId : null
+                });
+            } catch (error) {
+                console.error('Failed to add event', error);
+                const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                showToast.error(message || 'Failed to add event');
+                return;
+            }
+
+            // The event is saved from here on. Follow-up steps report their own problems instead
+            // of "Failed to add event", which made scorers re-enter events that were already saved.
 
             // --- Handle Automatic Lineup Adjustment for Substitution ---
-            if (action.type === 'SUBSTITUTION' && action.sub_in_playerId && action.teamId) {
+            // The backend refuses lineup changes once a match is completed, so a substitution
+            // added afterwards (a correction) is recorded as an event only.
+            if (action.type === 'SUBSTITUTION' && action.sub_in_playerId && action.teamId
+                && selectedMatch!.status !== 'COMPLETED') {
                 const isHome = action.teamId === selectedMatch!.homeTeamId;
                 const currentLineup = isHome ? matchLineups.home : matchLineups.away;
 
@@ -427,12 +449,16 @@ export const MatchDetail = () => {
                     return entry;
                 });
 
-                // Optimistically update or just wait for fetch? 
-                // Let's send update to backend
-                await matchLineupService.updateLineup(selectedMatch!.id, action.teamId, updatedLineup);
-
-                // Refresh lineups to reflect changes in UI (e.g. picker)
-                await fetchLineups();
+                try {
+                    await matchLineupService.updateLineup(selectedMatch!.id, action.teamId, updatedLineup);
+                    // Refresh lineups to reflect changes in UI (e.g. picker)
+                    await fetchLineups();
+                } catch (error) {
+                    console.error('Substitution saved, but the lineup update failed', error);
+                    showToast.error('Substitution recorded, but the lineup could not be updated. Update it in Lineups.');
+                    await loadMatchDetail(selectedMatch!.id);
+                    return;
+                }
             }
 
             await loadMatchDetail(selectedMatch!.id);
@@ -445,9 +471,7 @@ export const MatchDetail = () => {
                 ).length;
 
                 if (redCardCountAfter > redCardCountBefore) {
-                    const playerName = selectedPlayer
-                        ? `${selectedPlayer.firstName} ${selectedPlayer.lastName}`
-                        : 'Player';
+                    const playerName = outPlayerName !== 'Unknown' ? outPlayerName : 'Player';
                     showToast.success(`2nd Yellow Card \u2192 Automatic Red Card for ${playerName}!`);
                     return;
                 }
@@ -455,8 +479,8 @@ export const MatchDetail = () => {
 
             showToast.success(`${action.type} recorded!`);
         } catch (error) {
-            console.error('Failed to add event', error);
-            showToast.error('Failed to add event');
+            console.error('Event saved, but a follow-up step failed', error);
+            showToast.error('Event recorded, but the screen could not refresh. Reload the page to see it.');
         }
     };
 

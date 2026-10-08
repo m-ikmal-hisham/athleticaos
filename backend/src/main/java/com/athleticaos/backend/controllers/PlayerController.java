@@ -28,11 +28,31 @@ public class PlayerController {
     private final PlayerRepository playerRepository;
     private final AuditLogger auditLogger;
 
-    @GetMapping
+    @GetMapping(params = "!page")
     public ResponseEntity<List<PlayerResponse>> getAllPlayers(
             @RequestParam(required = false) UUID organisationId,
             @RequestParam(required = false) UUID teamId) {
         return ResponseEntity.ok(playerService.getAllPlayers(organisationId, teamId));
+    }
+
+    @GetMapping(params = "page")
+    public ResponseEntity<com.athleticaos.backend.dtos.common.PageResponse<PlayerResponse>> getPlayersPage(
+            @RequestParam int page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) UUID teamId,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(playerService.getPlayersPage(page, size, search, status, organisationId, teamId, sort));
+    }
+
+    @GetMapping("/status-counts")
+    public ResponseEntity<java.util.Map<String, Long>> getPlayerStatusCounts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) UUID teamId) {
+        return ResponseEntity.ok(playerService.getPlayerStatusCounts(search, organisationId, teamId));
     }
 
     @GetMapping("/me")

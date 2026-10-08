@@ -76,6 +76,7 @@ public class PlayerServiceImpl implements PlayerService {
     private final PersonDuplicateService personDuplicateService;
     private final AccessScopeService accessScopeService;
     private final OrganisationRepository organisationRepository;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -239,6 +240,154 @@ public class PlayerServiceImpl implements PlayerService {
         return players.stream()
                 .map(p -> mapToPlayerResponse(p, membershipsByPlayerId.getOrDefault(p.getId(), List.of())))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.athleticaos.backend.dtos.common.PageResponse<PlayerResponse> getPlayersPage(
+            int page,
+            Integer size,
+            String search,
+            String status,
+            UUID organisationId,
+            UUID teamId,
+            String sort) {
+        PlayerScopeResolution scope = resolvePlayerScope(organisationId, teamId);
+        int safeSize = clampPageSize(size);
+        int safePage = Math.max(0, page);
+
+        if (scope.isDisjoint()) {
+            return new com.athleticaos.backend.dtos.common.PageResponse<>(
+                    List.of(), safePage, safeSize, 0L, 0, false);
+        }
+
+        org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(safePage, safeSize);
+        org.springframework.data.jpa.domain.Specification<Player> spec = com.athleticaos.backend.repositories.spec.AdminDirectorySpecifications.adminPlayers(
+                search,
+                status,
+                scope.teamId(),
+                scope.targetOrgIds(),
+                scope.restrictToOrgIds(),
+                scope.isDisjoint(),
+                com.athleticaos.backend.repositories.spec.AdminDirectorySpecifications.PlayerSort.from(sort));
+
+        org.springframework.data.domain.Page<Player> playerPage = playerRepository.findAll(spec, pageRequest);
+        return com.athleticaos.backend.dtos.common.PageResponse.of(playerPage, this::mapPlayersForPage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getPlayerStatusCounts(
+            String search,
+            UUID organisationId,
+            UUID teamId) {
+        PlayerScopeResolution scope = resolvePlayerScope(organisationId, teamId);
+        Map<String, Long> counts = new java.util.LinkedHashMap<>();
+        counts.put("ACTIVE", 0L);
+        counts.put("INACTIVE", 0L);
+        counts.put("ALL", 0L);
+
+        if (scope.isDisjoint()) {
+            return counts;
+        }
+
+        jakarta.persistence.criteria.CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        jakarta.persistence.criteria.CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        jakarta.persistence.criteria.Root<Player> root = cq.from(Player.class);
+
+        org.springframework.data.jpa.domain.Specification<Player> spec = com.athleticaos.backend.repositories.spec.AdminDirectorySpecifications.adminPlayers(
+                search,
+                null,
+                scope.teamId(),
+                scope.targetOrgIds(),
+                scope.restrictToOrgIds(),
+                scope.isDisjoint(),
+                com.athleticaos.backend.repositories.spec.AdminDirectorySpecifications.PlayerSort.RECENT);
+
+        jakarta.persistence.criteria.Predicate predicate = spec.toPredicate(root, cq, cb);
+        jakarta.persistence.criteria.Expression<String> statusUpper = cb.upper(root.get("status"));
+        cq.multiselect(statusUpper, cb.count(root));
+        if (predicate != null) {
+            cq.where(predicate);
+        }
+        cq.groupBy(statusUpper);
+
+        List<Object[]> rows = entityManager.createQuery(cq).getResultList();
+        long total = 0L;
+        for (Object[] row : rows) {
+            if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                String st = row[0].toString().toUpperCase(java.util.Locale.ROOT);
+                long c = ((Number) row[1]).longValue();
+                counts.put(st, c);
+                total += c;
+            }
+        }
+        counts.put("ALL", total);
+        return counts;
+    }
+
+    private record PlayerScopeResolution(
+            UUID teamId,
+            Set<UUID> targetOrgIds,
+            boolean restrictToOrgIds,
+            boolean isDisjoint) {}
+
+    private PlayerScopeResolution resolvePlayerScope(UUID organisationId, UUID teamId) {
+        Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+
+        if (organisationId != null || teamId != null) {
+            if (teamId != null) {
+                var teamOpt = teamRepository.findById(teamId);
+                if (teamOpt.isEmpty()) {
+                    return new PlayerScopeResolution(null, null, false, true);
+                }
+                var team = teamOpt.get();
+                if (accessibleIds != null) {
+                    if (team.getOrganisation() == null || !accessibleIds.contains(team.getOrganisation().getId())) {
+                        return new PlayerScopeResolution(null, null, false, true);
+                    }
+                }
+                return new PlayerScopeResolution(teamId, null, false, false);
+            } else {
+                Set<UUID> targetIds = new java.util.HashSet<>(organisationService.getAllDescendantIds(organisationId));
+                if (accessibleIds != null) {
+                    targetIds.retainAll(accessibleIds);
+                }
+                if (targetIds.isEmpty()) {
+                    return new PlayerScopeResolution(null, null, true, true);
+                }
+                return new PlayerScopeResolution(null, targetIds, true, false);
+            }
+        } else if (accessibleIds == null) {
+            return new PlayerScopeResolution(null, null, false, false);
+        } else if (accessibleIds.isEmpty()) {
+            return new PlayerScopeResolution(null, null, true, true);
+        } else {
+            return new PlayerScopeResolution(null, accessibleIds, true, false);
+        }
+    }
+
+    private List<PlayerResponse> mapPlayersForPage(List<Player> players) {
+        if (players.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> playerIds = players.stream().map(Player::getId).collect(Collectors.toList());
+        List<com.athleticaos.backend.entities.PlayerTeam> allMemberships = playerTeamRepository
+                .findByPlayerIdInAndIsActiveTrue(playerIds);
+        Map<UUID, List<com.athleticaos.backend.entities.PlayerTeam>> membershipsByPlayerId = allMemberships.stream()
+                .filter(pt -> pt.getPlayer() != null && pt.getPlayer().getId() != null)
+                .collect(Collectors.groupingBy(pt -> pt.getPlayer().getId()));
+
+        return players.stream()
+                .map(p -> mapToPlayerResponse(p, membershipsByPlayerId.getOrDefault(p.getId(), List.of())))
+                .collect(Collectors.toList());
+    }
+
+    private static int clampPageSize(Integer size) {
+        if (size == null) {
+            return 24;
+        }
+        return Math.max(1, Math.min(100, size));
     }
 
     @Override
