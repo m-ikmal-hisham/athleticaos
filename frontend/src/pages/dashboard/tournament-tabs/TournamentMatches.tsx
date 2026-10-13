@@ -7,7 +7,7 @@ import { Match, MatchResponse, TournamentCategory, TournamentStageResponse, Tour
 import { Button } from '@/components/Button';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '@/lib/customToast';
-import { formatMatchStatus, formatTeamShortName } from '@/utils/formatters';
+import { formatMatchStatus, formatTeamShortName, formatPoolPositionPlaceholder } from '@/utils/formatters';
 import { getImageUrl } from '@/utils/image';
 import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
 
@@ -15,6 +15,7 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { MatchModal } from '@/components/modals/MatchModal';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { BracketEditor } from '@/components/content/BracketEditor';
+import { TournamentReadinessCard } from '@/components/content/TournamentReadinessCard';
 import { CollapsibleDateGroup, ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
 import { useCollapsibleDates } from '@/hooks/useCollapsibleDates';
 
@@ -287,8 +288,8 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
         setShowCreateModal(true);
     };
 
-    const openEditModal = (match: MatchResponse, e: React.MouseEvent) => {
-        e.stopPropagation();
+    const openEditModal = (match: MatchResponse, e?: React.MouseEvent) => {
+        e?.stopPropagation();
         setEditMatch(match);
         setShowCreateModal(true);
     };
@@ -512,6 +513,22 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
             </div>
             </div>
 
+            {/* Setup Check (Readiness) */}
+            <div className="mb-6">
+                <TournamentReadinessCard
+                    tournamentId={tournamentId}
+                    onEditMatch={(matchId) => {
+                        const targetMatch = matches.find(m => m.id === matchId);
+                        if (targetMatch) {
+                            openEditModal(targetMatch);
+                        }
+                    }}
+                    onAssignCategory={() => {
+                        setRefreshTrigger(prev => prev + 1);
+                    }}
+                />
+            </div>
+
             {/* Bracket Editor Section */}
             {!loadingList && (
                 <div className="mb-8 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
@@ -519,9 +536,10 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                         tournamentId={tournamentId}
                         stages={tournamentStages}
                         matches={matches}
-                        onMatchEdit={(match) => openEditModal(match, { stopPropagation: () => {} } as any)}
+                        onMatchEdit={(match) => openEditModal(match)}
                         onRefresh={() => setRefreshTrigger(prev => prev + 1)}
                         selectedCategoryId={selectedCategoryId}
+                        categories={categories}
                     />
                 </div>
             )}
@@ -662,9 +680,9 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                                         {formatMatchVenueLabel(match.matchNumber, match.venue, hasMultiVenues)}
                                                                     </span>
                                                                 )}
-                                                                <span className="truncate max-w-[40%]" title={match.homeTeamName || match.homeTeamPlaceholder}>{match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}</span>
+                                                                <span className="truncate max-w-[40%]" title={match.homeTeamName || formatPoolPositionPlaceholder(match.homeTeamPlaceholder)}>{match.homeTeamName || formatPoolPositionPlaceholder(match.homeTeamPlaceholder) || 'TBD'}</span>
                                                                 <span className="text-xs text-slate-400">vs</span>
-                                                                <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || match.awayTeamPlaceholder}>{match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}</span>
+                                                                <span className="truncate max-w-[40%] text-right" title={match.awayTeamName || formatPoolPositionPlaceholder(match.awayTeamPlaceholder)}>{match.awayTeamName || formatPoolPositionPlaceholder(match.awayTeamPlaceholder) || 'TBD'}</span>
                                                             </div>
                                                         </div>
                                                         <div className="mt-2 text-xs text-navy dark:text-navy-tint font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -803,10 +821,10 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
             <div className="flex items-center justify-between gap-4">
                 {/* Home */}
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder} />
+                    <TeamLogo url={match.homeTeamLogoUrl} name={match.homeTeamName || formatPoolPositionPlaceholder(match.homeTeamPlaceholder)} />
                     <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate" title={match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder}>
-                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || match.homeTeamName || match.homeTeamPlaceholder)}
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate" title={match.homeTeamName || formatPoolPositionPlaceholder(match.homeTeamPlaceholder)}>
+                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName || formatPoolPositionPlaceholder(match.homeTeamPlaceholder))}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
                     </div>
@@ -828,12 +846,12 @@ function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match
                 {/* Away */}
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <div className="flex flex-col items-end gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate text-right" title={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder}>
-                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder)}
+                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate text-right" title={match.awayTeamName || formatPoolPositionPlaceholder(match.awayTeamPlaceholder)}>
+                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName || formatPoolPositionPlaceholder(match.awayTeamPlaceholder))}
                         </span>
                         <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
                     </div>
-                    <TeamLogo url={match.awayTeamLogoUrl} name={match.awayTeamName || match.awayTeamName || match.awayTeamPlaceholder} />
+                    <TeamLogo url={match.awayTeamLogoUrl} name={match.awayTeamName || formatPoolPositionPlaceholder(match.awayTeamPlaceholder)} />
                 </div>
             </div>
         </div>

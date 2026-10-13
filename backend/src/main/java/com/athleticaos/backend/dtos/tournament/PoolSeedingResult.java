@@ -26,4 +26,23 @@ public class PoolSeedingResult {
     /** Categories left alone because pool matches are still to be played, e.g. "Boys U16 (3 pool matches left)". */
     @Builder.Default
     private List<String> skippedCategories = new ArrayList<>();
+
+    /** Number of knockout match slots filled with teams during this seeding run. */
+    private int filledSlots;
+
+    /** Knockout slots in the seeded categories that still have no team, hold a non-blank placeholder, and are not fed by another match. */
+    @Builder.Default
+    private List<UnresolvedSlot> unresolvedSlots = new ArrayList<>();
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UnresolvedSlot {
+        private java.util.UUID matchId;
+        private Integer matchNumber;
+        private String stageName;
+        private String side; // "HOME" or "AWAY"
+        private String label;
+    }
 }

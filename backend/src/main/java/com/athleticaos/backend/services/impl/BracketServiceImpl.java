@@ -726,7 +726,7 @@ public class BracketServiceImpl implements BracketService {
         }
     }
 
-    private String ordinal(int n) {
+    public static String ordinal(int n) {
         if (n % 100 >= 11 && n % 100 <= 13) {
             return n + "th";
         }
@@ -1368,6 +1368,8 @@ public class BracketServiceImpl implements BracketService {
         // played each other. A category is only seeded once all of its pool matches are done:
         // categories finish at different times, and seeding from a half-played pool would
         // lock provisional teams into the bracket (seeding never overwrites a filled slot).
+        int totalFilled = 0;
+        List<PoolSeedingResult.UnresolvedSlot> allUnresolved = new ArrayList<>();
         for (Map.Entry<UUID, List<TournamentStage>> entry : poolsByCategory.entrySet()) {
             String label = categoryLabel(entry.getValue());
             int unfinished = countUnfinishedPoolMatches(entry.getValue());
@@ -1376,11 +1378,15 @@ public class BracketServiceImpl implements BracketService {
                         + (unfinished == 1 ? "" : "es") + " left)");
                 continue;
             }
-            seedCategory(tournament, entry.getKey(), entry.getValue());
+            totalFilled += seedCategory(tournament, entry.getKey(), entry.getValue());
             result.getSeededCategories().add(label);
+            allUnresolved.addAll(findUnresolvedSlots(tournamentId, entry.getKey()));
         }
-        log.info("Pool seeding for tournament {}: seeded {}, skipped {}", tournamentId,
-                result.getSeededCategories(), result.getSkippedCategories());
+        result.setFilledSlots(totalFilled);
+        result.setUnresolvedSlots(allUnresolved);
+        log.info("Pool seeding for tournament {}: seeded {}, skipped {}, filledSlots {}, unresolvedSlots {}",
+                tournamentId, result.getSeededCategories(), result.getSkippedCategories(),
+                result.getFilledSlots(), result.getUnresolvedSlots().size());
         return result;
     }
 
@@ -1396,7 +1402,10 @@ public class BracketServiceImpl implements BracketService {
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
         log.info("All pools complete for category {} of tournament {}; seeding its brackets.", categoryId, tournamentId);
-        seedCategory(tournament, categoryId, pools);
+        int filled = seedCategory(tournament, categoryId, pools);
+        List<PoolSeedingResult.UnresolvedSlot> unresolved = findUnresolvedSlots(tournamentId, categoryId);
+        log.info("All pools complete for category {} of tournament {}; seeded {} slot(s). Unresolved slots: {}",
+                categoryId, tournamentId, filled, unresolved);
         return true;
     }
 
@@ -1411,9 +1420,9 @@ public class BracketServiceImpl implements BracketService {
         return poolsByCategory;
     }
 
-    private void seedCategory(Tournament tournament, UUID categoryId, List<TournamentStage> pools) {
+    private int seedCategory(Tournament tournament, UUID categoryId, List<TournamentStage> pools) {
         List<PoolStanding> ranked = rankTeamsAcrossPools(tournament, categoryId, pools);
-        seedBracketsFromStandings(tournament.getId(), categoryId, ranked);
+        return seedBracketsFromStandings(tournament.getId(), categoryId, ranked);
     }
 
     /**
@@ -1485,7 +1494,7 @@ public class BracketServiceImpl implements BracketService {
      * Normalizes a placeholder string for lookup by trimming, collapsing consecutive whitespace,
      * and converting to lower case.
      */
-    static String normalizePlaceholder(String label) {
+    public static String normalizePlaceholder(String label) {
         if (label == null) {
             return null;
         }
@@ -1493,16 +1502,128 @@ public class BracketServiceImpl implements BracketService {
     }
 
     /**
+     * Generates all recognized placeholder labels for a given pool name and position,
+     * including "<pool> <ordinal>", "<ordinal> <pool>", "<pool> #<n>", and winner/runner-up forms.
+     */
+    public static List<String> generatePoolPositionLabels(String poolName, int position) {
+        if (poolName == null || poolName.isBlank() || position <= 0) {
+            return Collections.emptyList();
+        }
+        String pool = poolName.trim();
+        String ord = ordinal(position);
+        List<String> labels = new ArrayList<>();
+
+        // e.g. "Pool A1" and "Pool A 1"
+        labels.add(pool + position);
+        labels.add(pool + " " + position);
+
+        // "<pool> <ordinal>" (Group A 1st / 2nd / 3rd / 4th …)
+        labels.add(pool + " " + ord);
+
+        // "<ordinal> <pool>" (1st Group A)
+        labels.add(ord + " " + pool);
+
+        // "<pool> #<n>"
+        labels.add(pool + " #" + position);
+        labels.add(pool + "#" + position);
+
+        // "Winner <pool>" / "Winner of <pool>" for position 1
+        if (position == 1) {
+            labels.add("Winner " + pool);
+            labels.add("Winner of " + pool);
+        }
+
+        // "Runner-up <pool>" / "Runner up <pool>" / "Runner-up of <pool>" / "Runner up of <pool>" for position 2
+        if (position == 2) {
+            labels.add("Runner-up " + pool);
+            labels.add("Runner up " + pool);
+            labels.add("Runner-up of " + pool);
+            labels.add("Runner up of " + pool);
+        }
+
+        return labels;
+    }
+
+    /**
+     * True when a slot label only means "nobody chosen yet": blank, or the "TBD" the manual bracket
+     * builder writes (also TBC / TBA / Empty). Such a slot is unset, not a label that failed to seed.
+     */
+    public static boolean isUnsetPlaceholder(String placeholder) {
+        String norm = normalizePlaceholder(placeholder);
+        return norm == null || norm.isEmpty() || norm.equals("tbd") || norm.equals("tbc") || norm.equals("tba")
+                || norm.equals("empty") || norm.equals("empty spot") || norm.equals("-");
+    }
+
+    public static boolean isSlotFedByFeeder(List<Match> allMatches, UUID targetMatchId, String slot) {
+        if (allMatches == null || targetMatchId == null || slot == null) {
+            return false;
+        }
+        for (Match m : allMatches) {
+            if (m.isDeleted()) continue;
+            if (targetMatchId.equals(m.getNextMatchIdForWinner()) && slot.equalsIgnoreCase(m.getWinnerSlot())) {
+                return true;
+            }
+            if (targetMatchId.equals(m.getNextMatchIdForLoser()) && slot.equalsIgnoreCase(m.getLoserSlot())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    List<PoolSeedingResult.UnresolvedSlot> findUnresolvedSlots(UUID tournamentId, UUID categoryId) {
+        List<Match> allMatches = matchRepository.findByTournamentId(tournamentId);
+        List<Match> knockoutMatches = allMatches.stream()
+                .filter(m -> !m.isDeleted() && m.getStage() != null && Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()))
+                .filter(m -> {
+                    TournamentCategory stageCategory = m.getStage().getCategory();
+                    return categoryId == null
+                            ? stageCategory == null
+                            : stageCategory != null && categoryId.equals(stageCategory.getId());
+                })
+                .toList();
+
+        List<PoolSeedingResult.UnresolvedSlot> unresolved = new ArrayList<>();
+        for (Match match : knockoutMatches) {
+            String stageName = match.getStage() != null ? match.getStage().getName() : null;
+            if (match.getHomeTeam() == null && !isUnsetPlaceholder(match.getHomeTeamPlaceholder())) {
+                if (!isSlotFedByFeeder(allMatches, match.getId(), "HOME")) {
+                    unresolved.add(PoolSeedingResult.UnresolvedSlot.builder()
+                            .matchId(match.getId())
+                            .matchNumber(match.getMatchNumber())
+                            .stageName(stageName)
+                            .side("HOME")
+                            .label(match.getHomeTeamPlaceholder())
+                            .build());
+                }
+            }
+            if (match.getAwayTeam() == null && !isUnsetPlaceholder(match.getAwayTeamPlaceholder())) {
+                if (!isSlotFedByFeeder(allMatches, match.getId(), "AWAY")) {
+                    unresolved.add(PoolSeedingResult.UnresolvedSlot.builder()
+                            .matchId(match.getId())
+                            .matchNumber(match.getMatchNumber())
+                            .stageName(stageName)
+                            .side("AWAY")
+                            .label(match.getAwayTeamPlaceholder())
+                            .build());
+                }
+            }
+        }
+        return unresolved;
+    }
+
+    /**
      * Fills the "Seed N" placeholders left by {@link #generatePlacementLadder} with the team that
      * finished Nth overall, across every bracket in the ladder rather than only the opening stage.
      * Also resolves specific pool placements such as "Winner Pool A", "Runner-up Pool B", "Pool A1",
-     * and "Round Robin 1".
+     * "Group A 1st", and "Round Robin 1".
      *
      * Slots that already hold a team are left alone, so a manual assignment is never overwritten.
+     *
+     * @return the number of match slots filled with teams during this seeding
      */
-    void seedBracketsFromStandings(UUID tournamentId, UUID categoryId, List<PoolStanding> ranked) {
+    int seedBracketsFromStandings(UUID tournamentId, UUID categoryId, List<PoolStanding> ranked) {
         if (ranked.isEmpty()) {
-            return;
+            return 0;
         }
 
         Map<String, Team> teamBySeedLabel = new HashMap<>();
@@ -1511,27 +1632,17 @@ public class BracketServiceImpl implements BracketService {
             teamBySeedLabel.put("seed" + (i + 1), ranked.get(i).team);
         }
 
-        // Also resolve slots written as a pool position, e.g. "Pool A1" or "Winner Pool A"
-        // for the winner of Pool A, "Runner-up Pool B" for position 2, etc.
-        // Compare labels after trimming and collapsing internal whitespace, case-insensitively,
-        // so "Round Robin 1", "round robin1", and "Round Robin1" all resolve.
+        // Also resolve slots written as a pool position, e.g. "Pool A1", "Group A 1st", "Winner Pool A"
         for (PoolStanding standing : ranked) {
             if (standing.poolName == null || standing.poolPosition <= 0) {
                 continue;
             }
-            String poolName = standing.poolName.trim();
-            // e.g. "Pool A1" and "Pool A 1", "Round Robin1" and "Round Robin 1"
-            teamBySeedLabel.put(normalizePlaceholder(poolName + standing.poolPosition), standing.team);
-            teamBySeedLabel.put(normalizePlaceholder(poolName + " " + standing.poolPosition), standing.team);
-
-            // Winner <poolName> -> position 1
-            if (standing.poolPosition == 1) {
-                teamBySeedLabel.put(normalizePlaceholder("Winner " + poolName), standing.team);
-            }
-            // Runner-up <poolName> -> position 2 (also supporting "Runner up <poolName>")
-            if (standing.poolPosition == 2) {
-                teamBySeedLabel.put(normalizePlaceholder("Runner-up " + poolName), standing.team);
-                teamBySeedLabel.put(normalizePlaceholder("Runner up " + poolName), standing.team);
+            List<String> labels = generatePoolPositionLabels(standing.poolName, standing.poolPosition);
+            for (String label : labels) {
+                String normalized = normalizePlaceholder(label);
+                if (normalized != null) {
+                    teamBySeedLabel.put(normalized, standing.team);
+                }
             }
         }
 
@@ -1546,6 +1657,7 @@ public class BracketServiceImpl implements BracketService {
                 .toList();
 
         int seededMatches = 0;
+        int filledSlots = 0;
         for (Match match : knockoutMatches) {
             boolean changed = false;
 
@@ -1558,6 +1670,7 @@ public class BracketServiceImpl implements BracketService {
                 match.setHomeTeam(home);
                 match.setHomeTeamPlaceholder(null);
                 changed = true;
+                filledSlots++;
             }
 
             String normalizedAwayPlaceholder = normalizePlaceholder(match.getAwayTeamPlaceholder());
@@ -1566,6 +1679,7 @@ public class BracketServiceImpl implements BracketService {
                 match.setAwayTeam(away);
                 match.setAwayTeamPlaceholder(null);
                 changed = true;
+                filledSlots++;
             }
 
             if (changed) {
@@ -1574,8 +1688,8 @@ public class BracketServiceImpl implements BracketService {
             }
         }
 
-        log.info("Seeded {} ranked team(s) into {} knockout match(es) for category {}.",
-                ranked.size(), seededMatches, categoryId);
+        log.info("Seeded {} ranked team(s) into {} knockout match(es) ({} slots) for category {}.",
+                ranked.size(), seededMatches, filledSlots, categoryId);
 
         if (seededMatches == 0 && !knockoutMatches.isEmpty()) {
             List<String> unresolved = new ArrayList<>();
@@ -1590,6 +1704,8 @@ public class BracketServiceImpl implements BracketService {
             log.warn("No knockout matches were seeded for category {} in tournament {}, but {} knockout match(es) exist with unresolved placeholders: {}",
                     categoryId, tournamentId, knockoutMatches.size(), unresolved);
         }
+
+        return filledSlots;
     }
 
     /**
@@ -1940,15 +2056,42 @@ public class BracketServiceImpl implements BracketService {
             com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest request) {
         com.athleticaos.backend.enums.TournamentStageType type = request.getType();
         UUID categoryId = request.getCategoryId();
-        // Pad to a power of two so every round is well-formed; surplus slots act as byes.
-        int teamCount = nextPowerOfTwo(Math.max(request.getTeamCount(), 2));
 
         Tournament tournament = tournamentRepository.findById(tournamentId).orElseThrow();
 
+        boolean tournamentHasCategories = tournament.getCategories() != null && !tournament.getCategories().isEmpty();
+        TournamentCategory category = null;
+        UUID selectedCategoryId = categoryId;
+        if (tournamentHasCategories) {
+            if (selectedCategoryId == null) {
+                if (tournament.getCategories().size() == 1) {
+                    category = tournament.getCategories().get(0);
+                    selectedCategoryId = category.getId();
+                } else {
+                    throw new IllegalArgumentException("Choose a category for this bracket.");
+                }
+            } else {
+                final UUID catIdToFind = selectedCategoryId;
+                category = tournament.getCategories().stream()
+                        .filter(c -> c.getId().equals(catIdToFind))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Category does not belong to tournament"));
+            }
+        } else {
+            if (selectedCategoryId != null) {
+                final UUID catIdToFind = selectedCategoryId;
+                category = tournament.getCategories().stream()
+                        .filter(c -> c.getId().equals(catIdToFind))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Category does not belong to tournament"));
+            }
+        }
+        final UUID finalCategoryId = selectedCategoryId;
+
         // Idempotency guard: prevent duplicate bracket creation (defect #4 root cause)
         boolean bracketExists;
-        if (categoryId != null) {
-            bracketExists = stageRepository.existsByTournamentIdAndStageTypeAndCategoryId(tournamentId, type, categoryId);
+        if (finalCategoryId != null) {
+            bracketExists = stageRepository.existsByTournamentIdAndStageTypeAndCategoryId(tournamentId, type, finalCategoryId);
         } else {
             bracketExists = stageRepository.existsByTournamentIdAndStageTypeAndCategoryIsNull(tournamentId, type);
         }
@@ -1959,13 +2102,89 @@ public class BracketServiceImpl implements BracketService {
                     ". Delete the existing bracket first before creating a new one.");
         }
 
-        TournamentCategory category = null;
-        if (categoryId != null) {
-            category = tournament.getCategories().stream()
-                    .filter(c -> c.getId().equals(categoryId))
+        if (type == com.athleticaos.backend.enums.TournamentStageType.THIRD_PLACE) {
+            String stageName = (request.getName() != null && !request.getName().isBlank())
+                    ? request.getName().trim()
+                    : "3rd Place Playoff";
+            TournamentVenue defaultVenue = getDefaultVenue(tournament);
+            UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+            String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
+
+            TournamentStage stage = TournamentStage.builder()
+                    .tournament(tournament)
+                    .category(category)
+                    .name(stageName)
+                    .stageType(type)
+                    .displayOrder(100)
+                    .isGroupStage(false)
+                    .isKnockoutStage(true)
+                    .build();
+            stage = stageRepository.save(stage);
+
+            Match match = Match.builder()
+                    .tournament(tournament)
+                    .category(category)
+                    .stage(stage)
+                    .matchDate(tournament.getStartDate())
+                    .kickOffTime(java.time.LocalTime.of(12, 0))
+                    .tournamentVenue(defaultVenue)
+                    .venue(defaultVenueName)
+                    .status(MatchStatus.SCHEDULED)
+                    .phase(stageName)
+                    .matchCode(String.format("%s-%s-M1", matchCodePrefix(tournament, category, 20),
+                            com.athleticaos.backend.utils.MatchCodeUtils.bracketAbbr(type) + "PO"))
+                    .matchNumber(nextMatchNumber(tournament, defaultVenueId))
+                    .homeTeamPlaceholder(null)
+                    .awayTeamPlaceholder(null)
+                    .build();
+            match = matchRepository.save(match);
+
+            final TournamentCategory finalCat = category;
+            List<Match> semiFinalMatches = matchRepository.findByTournamentId(tournamentId).stream()
+                    .filter(m -> !m.isDeleted())
+                    .filter(m -> m.getStage() != null && m.getStage().getStageType() == com.athleticaos.backend.enums.TournamentStageType.SEMI_FINAL)
+                    .filter(m -> {
+                        TournamentCategory stageCat = m.getStage().getCategory();
+                        return finalCat == null ? stageCat == null : (stageCat != null && finalCat.getId().equals(stageCat.getId()));
+                    })
+                    .sorted(java.util.Comparator.comparing(Match::getMatchNumber,
+                            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                    .toList();
+
+            // Schedule it on the final's day, one slot earlier, instead of the tournament's first day.
+            final Match playoffMatch = match;
+            matchRepository.findByTournamentId(tournamentId).stream()
+                    .filter(m -> !m.isDeleted() && m.getStage() != null
+                            && m.getStage().getStageType() == com.athleticaos.backend.enums.TournamentStageType.FINAL)
+                    .filter(m -> {
+                        TournamentCategory stageCat = m.getStage().getCategory();
+                        return finalCat == null ? stageCat == null : (stageCat != null && finalCat.getId().equals(stageCat.getId()));
+                    })
+                    .filter(m -> m.getMatchDate() != null)
                     .findFirst()
-                    .orElse(null);
+                    .ifPresent(finalMatch -> {
+                        playoffMatch.setMatchDate(finalMatch.getMatchDate());
+                        if (finalMatch.getKickOffTime() != null) {
+                            java.time.LocalTime earlier = finalMatch.getKickOffTime().minusMinutes(30);
+                            // minusMinutes wraps past midnight; keep the final's time in that case
+                            playoffMatch.setKickOffTime(earlier.isBefore(finalMatch.getKickOffTime()) ? earlier : finalMatch.getKickOffTime());
+                        }
+                        matchRepository.save(playoffMatch);
+                    });
+
+            // Link the semi-final losers only when they do not feed another match yet. An organiser may
+            // already have routed them by hand (e.g. a 3rd/4th match created inside the Final stage);
+            // re-pointing them silently would leave that match with a stale "Loser ..." label.
+            boolean losersUnrouted = semiFinalMatches.stream().allMatch(m -> m.getNextMatchIdForLoser() == null);
+            if (semiFinalMatches.size() == 2 && losersUnrouted) {
+                linkLosers(semiFinalMatches, List.of(match));
+            }
+
+            return getBracketForTournament(tournamentId);
         }
+
+        // Pad to a power of two so every round is well-formed; surplus slots act as byes.
+        int teamCount = nextPowerOfTwo(Math.max(request.getTeamCount(), 2));
 
         List<KnockoutStageInfo> stages = determineKnockoutStages(teamCount);
         int displayOrder = 100;
@@ -2102,18 +2321,22 @@ public class BracketServiceImpl implements BracketService {
 
     @SuppressWarnings("null")
     private void clearIncomingMatchReferencesToSlot(UUID deletedMatchId) {
-        List<Match> winnerFeeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(deletedMatchId, null);
-        for(Match m : winnerFeeders) {
-            m.setNextMatchIdForWinner(null);
-            m.setWinnerSlot(null);
+        // Feeders record which side they feed (HOME/AWAY), so both sides are looked up. Looking up a
+        // null slot matched nothing and left links pointing at the deleted match.
+        for (String slot : List.of("HOME", "AWAY")) {
+            List<Match> winnerFeeders = matchRepository.findByNextMatchIdForWinnerAndWinnerSlot(deletedMatchId, slot);
+            for (Match m : winnerFeeders) {
+                m.setNextMatchIdForWinner(null);
+                m.setWinnerSlot(null);
+            }
+            matchRepository.saveAll(winnerFeeders);
+
+            List<Match> loserFeeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(deletedMatchId, slot);
+            for (Match m : loserFeeders) {
+                m.setNextMatchIdForLoser(null);
+                m.setLoserSlot(null);
+            }
+            matchRepository.saveAll(loserFeeders);
         }
-        matchRepository.saveAll(winnerFeeders);
-        
-        List<Match> loserFeeders = matchRepository.findByNextMatchIdForLoserAndLoserSlot(deletedMatchId, null);
-        for(Match m : loserFeeders) {
-            m.setNextMatchIdForLoser(null);
-            m.setLoserSlot(null);
-        }
-        matchRepository.saveAll(loserFeeders);
     }
 }

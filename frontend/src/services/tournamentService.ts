@@ -1,10 +1,35 @@
 import axios from '@/lib/axios';
 import { Tournament, TournamentCreateRequest, Team, Standings, TournamentFormatConfig } from '@/types';
 
+export interface UnresolvedSlot {
+    matchId: string;
+    matchNumber: number;
+    stageName: string;
+    side: 'HOME' | 'AWAY';
+    label: string;
+}
+
 /** Which categories "Seed from Pools" filled, and which it left because pool matches remain. */
 export interface PoolSeedingResult {
     seededCategories: string[];
     skippedCategories: string[];
+    filledSlots?: number;
+    unresolvedSlots?: UnresolvedSlot[];
+}
+
+export interface TournamentReadinessIssue {
+    severity: 'ERROR' | 'WARNING';
+    code: string;
+    message: string;
+    matchId?: string;
+    matchNumber?: number;
+    stageId?: string;
+    stageName?: string;
+}
+
+export interface TournamentReadinessResponse {
+    ok: boolean;
+    issues: TournamentReadinessIssue[];
 }
 
 export const tournamentService = {
@@ -122,8 +147,13 @@ export const tournamentService = {
         });
     },
 
-    async updateStage(id: string, stageId: string, data: { name: string }): Promise<void> {
+    async updateStage(id: string, stageId: string, data: { name?: string; categoryId?: string | null }): Promise<void> {
         await axios.put(`/tournaments/${id}/stages/${stageId}`, data);
+    },
+
+    async getReadiness(id: string): Promise<TournamentReadinessResponse> {
+        const response = await axios.get<TournamentReadinessResponse>(`/tournaments/${id}/readiness`);
+        return response.data;
     },
 
     // Refactoring generateSchedule to include categoryId if needed

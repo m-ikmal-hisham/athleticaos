@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { PublicMatchSummary } from '../../../api/public.api';
 import { Trophy, CaretRight } from '@phosphor-icons/react';
-import { formatEnum } from '@/utils/formatters';
+import { formatEnum, formatPoolPositionPlaceholder } from '@/utils/formatters';
 import { groupMatchesIntoBrackets } from '@/utils/bracketUtils';
 import { getImageUrl } from '@/utils/image';
 
@@ -106,7 +106,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                                     )}
                                                                 </div>
                                                                 <span className={`text-xs truncate ${isHomeWinner ? 'text-slate-900 dark:text-white font-extrabold' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                    {match.homeTeamName || 'TBD'}
+                                                                    {match.homeTeamName ? formatPoolPositionPlaceholder(match.homeTeamName) : 'TBD'}
                                                                 </span>
                                                             </div>
                                                             <span className={`font-mono text-xs px-2 py-0.5 rounded-md ${isHomeWinner ? 'bg-emerald-500 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold'}`}>
@@ -125,7 +125,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                                     )}
                                                                 </div>
                                                                 <span className={`text-xs truncate ${isAwayWinner ? 'text-slate-900 dark:text-white font-extrabold' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                    {match.awayTeamName || 'TBD'}
+                                                                    {match.awayTeamName ? formatPoolPositionPlaceholder(match.awayTeamName) : 'TBD'}
                                                                 </span>
                                                             </div>
                                                             <span className={`font-mono text-xs px-2 py-0.5 rounded-md ${isAwayWinner ? 'bg-emerald-500 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold'}`}>

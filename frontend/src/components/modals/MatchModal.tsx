@@ -22,8 +22,85 @@ interface MatchModalProps {
     defaultTournamentId?: string;
 }
 
-/** True for labels like "Pool A1" — a pool name followed by a finishing position. */
-const isPoolPositionLabel = (label: string) => /^pool\s.*\d+$/i.test((label || '').trim());
+/**
+ * Recognises any label "<existing pool stage name><n>" or "<pool> <n>/<ordinal>",
+ * using loaded pool stage names or general fallback patterns.
+ */
+function parsePoolPosition(label: string, poolNames: string[] = []): { pool: string; position: number } | null {
+    if (!label) return null;
+    const trimmed = label.trim();
+    if (!trimmed) return null;
+
+    // Sort pools by length descending so longer matching names take precedence
+    const sortedPools = [...poolNames].sort((a, b) => b.length - a.length);
+
+    for (const pool of sortedPools) {
+        if (!pool) continue;
+        const escPool = pool.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        // Pattern 1: "<pool><n>" or "<pool> <n>"
+        const r1 = new RegExp(`^${escPool}\\s*(\\d+)$`, 'i');
+        const m1 = trimmed.match(r1);
+        if (m1) return { pool, position: parseInt(m1[1], 10) };
+
+        // Pattern 2: "<pool> <n>(st|nd|rd|th)"
+        const r2 = new RegExp(`^${escPool}\\s*(\\d+)(?:st|nd|rd|th)$`, 'i');
+        const m2 = trimmed.match(r2);
+        if (m2) return { pool, position: parseInt(m2[1], 10) };
+
+        // Pattern 3: "<n>(st|nd|rd|th) <pool>"
+        const r3 = new RegExp(`^(\\d+)(?:st|nd|rd|th)\\s+${escPool}$`, 'i');
+        const m3 = trimmed.match(r3);
+        if (m3) return { pool, position: parseInt(m3[1], 10) };
+
+        // Pattern 4: "<pool> #<n>"
+        const r4 = new RegExp(`^${escPool}\\s*#(\\d+)$`, 'i');
+        const m4 = trimmed.match(r4);
+        if (m4) return { pool, position: parseInt(m4[1], 10) };
+
+        // Pattern 5: Winner / Runner-up
+        if (new RegExp(`^(?:winner(?:\\s+of)?)\\s+${escPool}$`, 'i').test(trimmed)) {
+            return { pool, position: 1 };
+        }
+        if (new RegExp(`^(?:runner[- ]?up(?:\\s+of)?)\\s+${escPool}$`, 'i').test(trimmed)) {
+            return { pool, position: 2 };
+        }
+    }
+
+    // Generic fallback for common pool/group names when poolNames isn't loaded yet
+    const generic = trimmed.match(/^(pool\s+[a-z0-9]+|group\s+[a-z0-9]+|round robin\s*\d*)\s*#?(\d+)(?:st|nd|rd|th)?$/i);
+    if (generic) {
+        return { pool: generic[1].trim(), position: parseInt(generic[2], 10) };
+    }
+
+    return null;
+}
+
+function isPoolPositionLabel(label: string, poolNames: string[] = []): boolean {
+    return parsePoolPosition(label, poolNames) !== null;
+}
+
+function detectPoolInText(text: string, poolNames: string[] = []): { pool: string; position: number } | null {
+    if (!text || text.trim().length === 0) return null;
+    const parsed = parsePoolPosition(text, poolNames);
+    if (parsed) return parsed;
+
+    const trimmed = text.trim();
+    for (const pool of poolNames) {
+        if (!pool) continue;
+        if (trimmed.toLowerCase().includes(pool.toLowerCase())) {
+            const digitMatch = trimmed.match(/(\d+)/);
+            if (digitMatch) {
+                return { pool, position: parseInt(digitMatch[1], 10) };
+            }
+            if (/first\b/i.test(trimmed)) return { pool, position: 1 };
+            if (/second\b/i.test(trimmed)) return { pool, position: 2 };
+            if (/third\b/i.test(trimmed)) return { pool, position: 3 };
+            if (/fourth\b/i.test(trimmed)) return { pool, position: 4 };
+        }
+    }
+    return null;
+}
 
 export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initialMatch, defaultTournamentId }: MatchModalProps) => {
     const [loading, setLoading] = useState(false);
@@ -201,13 +278,27 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                     groupStage: s.stage.groupStage,
                 })) || [];
                 setStages(bracketStages);
+
+                const loadedPoolNames = bracketStages.filter((s: any) => s.groupStage).map((s: any) => s.name);
+                if (initialMatch && mode === 'edit') {
+                    if (initialMatch.homeTeamPlaceholder && !initialMatch.homeTeamId && !initialMatch.homeFromWinnerOfMatchId && !initialMatch.homeFromLoserOfMatchId) {
+                        if (isPoolPositionLabel(initialMatch.homeTeamPlaceholder, loadedPoolNames)) {
+                            setFormData(prev => ({ ...prev, homeSourceType: 'poolPosition' }));
+                        }
+                    }
+                    if (initialMatch.awayTeamPlaceholder && !initialMatch.awayTeamId && !initialMatch.awayFromWinnerOfMatchId && !initialMatch.awayFromLoserOfMatchId) {
+                        if (isPoolPositionLabel(initialMatch.awayTeamPlaceholder, loadedPoolNames)) {
+                            setFormData(prev => ({ ...prev, awaySourceType: 'poolPosition' }));
+                        }
+                    }
+                }
             } catch (error) {
                 console.error("Failed to load tournament bracket stages", error);
                 setStages([]);
             }
         };
         loadStages();
-    }, [formData.tournamentId]);
+    }, [formData.tournamentId, initialMatch, mode]);
 
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -331,11 +422,14 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
         }
     };
 
-    /** Splits a stored label such as "Pool A1" back into the pool and position it came from. */
+    const poolStageNames = useMemo(
+        () => stages.filter(s => s.groupStage).map(s => s.name),
+        [stages]
+    );
+
+    /** Splits a stored label such as "Pool A1" or "Group A 1st" back into the pool and position it came from. */
     const splitPoolLabel = (label: string): { pool: string; position: number } | null => {
-        const match = (label || '').match(/^(.*?)\s*(\d+)$/);
-        if (!match) return null;
-        return { pool: match[1].trim(), position: parseInt(match[2], 10) };
+        return parsePoolPosition(label, poolStageNames);
     };
 
     /** Keeps a stored pool visible even if the stage list has not loaded or no longer has it. */
@@ -477,6 +571,31 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                     onChange={(e) => handleChange('homeTeamPlaceholder', e.target.value)}
                                     placeholder="e.g. Seed 1"
                                 />
+                                {(() => {
+                                    const detected = detectPoolInText(formData.homeTeamPlaceholder, poolStageNames);
+                                    if (!detected) return null;
+                                    return (
+                                        <div className="mt-2 p-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-sunken)] flex flex-col items-start gap-2 text-xs">
+                                            <span className="text-[var(--text-secondary)]">
+                                                Looks like a group position ({detected.pool} {ordinal(detected.position)}). Use Pool Position so this slot fills automatically.
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        homeSourceType: 'poolPosition',
+                                                        homeTeamPlaceholder: `${detected.pool}${detected.position}`
+                                                    }));
+                                                }}
+                                            >
+                                                Use Pool Position
+                                            </Button>
+                                        </div>
+                                    );
+                                })()}
                                 <p className="text-xs text-muted-foreground">
                                     Label shown until a team is known. "Seed N" slots are filled by
                                     Seed from Pools.
@@ -561,6 +680,31 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                     onChange={(e) => handleChange('awayTeamPlaceholder', e.target.value)}
                                     placeholder="e.g. Seed 8"
                                 />
+                                {(() => {
+                                    const detected = detectPoolInText(formData.awayTeamPlaceholder, poolStageNames);
+                                    if (!detected) return null;
+                                    return (
+                                        <div className="mt-2 p-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-sunken)] flex flex-col items-start gap-2 text-xs">
+                                            <span className="text-[var(--text-secondary)]">
+                                                Looks like a group position ({detected.pool} {ordinal(detected.position)}). Use Pool Position so this slot fills automatically.
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        awaySourceType: 'poolPosition',
+                                                        awayTeamPlaceholder: `${detected.pool}${detected.position}`
+                                                    }));
+                                                }}
+                                            >
+                                                Use Pool Position
+                                            </Button>
+                                        </div>
+                                    );
+                                })()}
                                 <p className="text-xs text-muted-foreground">
                                     Label shown until a team is known. "Seed N" slots are filled by
                                     Seed from Pools.
