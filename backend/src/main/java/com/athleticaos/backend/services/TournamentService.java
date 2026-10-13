@@ -74,4 +74,6 @@ public interface TournamentService {
                         jakarta.servlet.http.HttpServletRequest httpRequest);
 
         void updateStage(UUID tournamentId, UUID stageId, String name);
+
+        void updateStage(UUID tournamentId, UUID stageId, String name, boolean updateCategory, UUID categoryId);
 }

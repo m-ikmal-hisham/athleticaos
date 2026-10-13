@@ -721,5 +721,239 @@ class BracketServiceImplTest {
 
         assertEquals(true, service.seedCategoryIfPoolsComplete(tournamentId, u14.getId()));
     }
+
+    @Test
+    void generatePoolPositionLabels_generatesAllRequiredForms() {
+        // Pool A
+        List<String> poolALabels = BracketServiceImpl.generatePoolPositionLabels("Pool A", 1);
+        org.assertj.core.api.Assertions.assertThat(poolALabels)
+                .contains("Pool A1", "Pool A 1", "Pool A 1st", "1st Pool A", "Pool A #1", "Pool A#1", "Winner Pool A", "Winner of Pool A");
+
+        // Group A
+        List<String> groupALabels = BracketServiceImpl.generatePoolPositionLabels("Group A", 2);
+        org.assertj.core.api.Assertions.assertThat(groupALabels)
+                .contains("Group A2", "Group A 2", "Group A 2nd", "2nd Group A", "Group A #2", "Group A#2",
+                        "Runner-up Group A", "Runner up Group A", "Runner-up of Group A", "Runner up of Group A");
+
+        // Round Robin 1
+        List<String> rrLabels = BracketServiceImpl.generatePoolPositionLabels("Round Robin 1", 3);
+        org.assertj.core.api.Assertions.assertThat(rrLabels)
+                .contains("Round Robin 13", "Round Robin 1 3", "Round Robin 1 3rd", "3rd Round Robin 1", "Round Robin 1 #3", "Round Robin 1#3");
+    }
+
+    @Test
+    void seedBracketsFromStandings_resolvesOrdinalsAndHashLabels() {
+        var matchRepository = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class),
+                matchRepository
+        );
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        Team t1 = Team.builder().id(java.util.UUID.randomUUID()).name("Team 1").build();
+        Team t2 = Team.builder().id(java.util.UUID.randomUUID()).name("Team 2").build();
+        Team t3 = Team.builder().id(java.util.UUID.randomUUID()).name("Team 3").build();
+
+        BracketServiceImpl.PoolStanding s1 = new BracketServiceImpl.PoolStanding(t1);
+        s1.poolName = "Group A";
+        s1.poolPosition = 1;
+
+        BracketServiceImpl.PoolStanding s2 = new BracketServiceImpl.PoolStanding(t2);
+        s2.poolName = "Group B";
+        s2.poolPosition = 2;
+
+        BracketServiceImpl.PoolStanding s3 = new BracketServiceImpl.PoolStanding(t3);
+        s3.poolName = "Pool C";
+        s3.poolPosition = 3;
+
+        com.athleticaos.backend.entities.TournamentStage koStage = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).name("Quarter Final").isKnockoutStage(true).build();
+
+        com.athleticaos.backend.entities.Match m1 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(koStage)
+                .homeTeamPlaceholder("Group A 1st").awayTeamPlaceholder("Group B 2nd").build();
+        com.athleticaos.backend.entities.Match m2 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(koStage)
+                .homeTeamPlaceholder("1st Group A").awayTeamPlaceholder("Group B #2").build();
+        com.athleticaos.backend.entities.Match m3 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(koStage)
+                .homeTeamPlaceholder("Pool C 3rd").awayTeamPlaceholder("Winner of Group A").build();
+
+        org.mockito.Mockito.when(matchRepository.findByTournamentId(tournamentId))
+                .thenReturn(List.of(m1, m2, m3));
+
+        int filled = service.seedBracketsFromStandings(tournamentId, null, List.of(s1, s2, s3));
+
+        assertEquals(6, filled);
+        assertEquals(t1, m1.getHomeTeam());
+        assertEquals(t2, m1.getAwayTeam());
+        assertEquals(t1, m2.getHomeTeam());
+        assertEquals(t2, m2.getAwayTeam());
+        assertEquals(t3, m3.getHomeTeam());
+        assertEquals(t1, m3.getAwayTeam());
+    }
+
+    @Test
+    void generateManualKnockoutBracket_categoryRules() {
+        var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        var matches = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(tournaments, stages, matches);
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.TournamentCategory cat1 = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Men's Open").build();
+        com.athleticaos.backend.entities.TournamentCategory cat2 = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Women's Open").build();
+
+        com.athleticaos.backend.entities.Tournament tMulti = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId).name("Multi Cat").categories(List.of(cat1, cat2)).build();
+        com.athleticaos.backend.entities.Tournament tSingle = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId).name("Single Cat").categories(List.of(cat1)).build();
+
+        // 1. Multi categories and categoryId is null -> throws IllegalArgumentException("Choose a category for this bracket.")
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(tMulti));
+        com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest reqNullCat = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
+        reqNullCat.setType(com.athleticaos.backend.enums.TournamentStageType.PLATE);
+        reqNullCat.setTeamCount(4);
+
+        var ex = assertThrows(IllegalArgumentException.class, () -> service.generateManualKnockoutBracket(tournamentId, reqNullCat));
+        assertEquals("Choose a category for this bracket.", ex.getMessage());
+
+        // 2. CategoryId given but not in tournament -> throws IllegalArgumentException
+        com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest reqInvalidCat = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
+        reqInvalidCat.setType(com.athleticaos.backend.enums.TournamentStageType.PLATE);
+        reqInvalidCat.setTeamCount(4);
+        reqInvalidCat.setCategoryId(java.util.UUID.randomUUID());
+
+        assertThrows(IllegalArgumentException.class, () -> service.generateManualKnockoutBracket(tournamentId, reqInvalidCat));
+
+        // 3. Exactly one category and categoryId is null -> uses that single category
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(tSingle));
+        org.mockito.Mockito.when(stages.existsByTournamentIdAndStageTypeAndCategoryId(tournamentId, com.athleticaos.backend.enums.TournamentStageType.PLATE, cat1.getId()))
+                .thenReturn(false);
+        org.mockito.Mockito.when(stages.save(org.mockito.ArgumentMatchers.any(com.athleticaos.backend.entities.TournamentStage.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.when(matches.save(org.mockito.ArgumentMatchers.any(com.athleticaos.backend.entities.Match.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.when(stages.findByTournamentIdOrderByDisplayOrderAsc(tournamentId))
+                .thenReturn(List.of());
+
+        service.generateManualKnockoutBracket(tournamentId, reqNullCat);
+        org.mockito.Mockito.verify(stages, org.mockito.Mockito.atLeastOnce())
+                .save(org.mockito.ArgumentMatchers.argThat(s -> cat1.equals(s.getCategory())));
+    }
+
+    @Test
+    void generateManualKnockoutBracket_thirdPlacePlayoff() {
+        var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        var matches = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(tournaments, stages, matches);
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.TournamentCategory cat = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Cup").build();
+        com.athleticaos.backend.entities.Tournament t = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId).name("Tourney").categories(List.of(cat)).build();
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(t));
+
+        com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest req = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
+        req.setType(com.athleticaos.backend.enums.TournamentStageType.THIRD_PLACE);
+        req.setTeamCount(2);
+
+        // When 2 semi-finals exist
+        com.athleticaos.backend.entities.TournamentStage sfStage = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).stageType(com.athleticaos.backend.enums.TournamentStageType.SEMI_FINAL).category(cat).build();
+        com.athleticaos.backend.entities.Match sf1 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(sfStage).matchCode("SF1").build();
+        com.athleticaos.backend.entities.Match sf2 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(sfStage).matchCode("SF2").build();
+
+        org.mockito.Mockito.when(matches.findByTournamentId(tournamentId)).thenReturn(List.of(sf1, sf2));
+        org.mockito.Mockito.when(stages.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.when(matches.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.generateManualKnockoutBracket(tournamentId, req);
+
+        assertEquals("HOME", sf1.getLoserSlot());
+        assertEquals("AWAY", sf2.getLoserSlot());
+    }
+
+    @Test
+    void generateManualKnockoutBracket_thirdPlacePlayoff_keepsExistingLoserLinks() {
+        var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        var matches = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(tournaments, stages, matches);
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.TournamentCategory cat = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Cup").build();
+        com.athleticaos.backend.entities.Tournament t = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId).name("Tourney").categories(List.of(cat)).build();
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(t));
+
+        com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest req = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
+        req.setType(com.athleticaos.backend.enums.TournamentStageType.THIRD_PLACE);
+        req.setTeamCount(2);
+
+        // The semi-final losers already feed a hand-made 3rd/4th match
+        java.util.UUID handMadeMatchId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.TournamentStage sfStage = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).stageType(com.athleticaos.backend.enums.TournamentStageType.SEMI_FINAL).category(cat).build();
+        com.athleticaos.backend.entities.Match sf1 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(sfStage).matchCode("SF1")
+                .nextMatchIdForLoser(handMadeMatchId).loserSlot("AWAY").build();
+        com.athleticaos.backend.entities.Match sf2 = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(sfStage).matchCode("SF2")
+                .nextMatchIdForLoser(handMadeMatchId).loserSlot("HOME").build();
+
+        org.mockito.Mockito.when(matches.findByTournamentId(tournamentId)).thenReturn(List.of(sf1, sf2));
+        org.mockito.Mockito.when(stages.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> inv.getArgument(0));
+        org.mockito.Mockito.when(matches.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.generateManualKnockoutBracket(tournamentId, req);
+
+        assertEquals(handMadeMatchId, sf1.getNextMatchIdForLoser());
+        assertEquals("AWAY", sf1.getLoserSlot());
+        assertEquals(handMadeMatchId, sf2.getNextMatchIdForLoser());
+        assertEquals("HOME", sf2.getLoserSlot());
+    }
+
+    @Test
+    void progressPoolsToKnockout_populatesFilledAndUnresolvedSlots() {
+        var tournaments = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class);
+        var stages = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class);
+        var matches = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(tournaments, stages, matches);
+
+        java.util.UUID tournamentId = java.util.UUID.randomUUID();
+        com.athleticaos.backend.entities.TournamentCategory cat = com.athleticaos.backend.entities.TournamentCategory.builder()
+                .id(java.util.UUID.randomUUID()).name("Men's Open").build();
+        com.athleticaos.backend.entities.Tournament t = com.athleticaos.backend.entities.Tournament.builder()
+                .id(tournamentId).name("Tourney").categories(List.of(cat)).build();
+        org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(t));
+
+        com.athleticaos.backend.entities.TournamentStage pool = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).name("Group A").category(cat).isGroupStage(true).build();
+        org.mockito.Mockito.when(stages.findByTournamentIdOrderByDisplayOrderAsc(tournamentId)).thenReturn(List.of(pool));
+
+        Team team1 = Team.builder().id(java.util.UUID.randomUUID()).name("Team 1").build();
+        Team team2 = Team.builder().id(java.util.UUID.randomUUID()).name("Team 2").build();
+        com.athleticaos.backend.entities.Match pm = poolMatch(pool, team1, team2, 10, 5, com.athleticaos.backend.enums.MatchStatus.COMPLETED);
+        org.mockito.Mockito.when(matches.findByStageId(pool.getId())).thenReturn(List.of(pm));
+
+        com.athleticaos.backend.entities.TournamentStage koStage = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(java.util.UUID.randomUUID()).name("Final").category(cat).isKnockoutStage(true).build();
+        com.athleticaos.backend.entities.Match koMatch = com.athleticaos.backend.entities.Match.builder().id(java.util.UUID.randomUUID()).stage(koStage).matchNumber(10)
+                .homeTeamPlaceholder("Group A 1st")
+                .awayTeamPlaceholder("Group A first") // unresolved label
+                .build();
+        org.mockito.Mockito.when(matches.findByTournamentId(tournamentId)).thenReturn(List.of(pm, koMatch));
+
+        com.athleticaos.backend.dtos.tournament.PoolSeedingResult result = service.progressPoolsToKnockout(tournamentId);
+
+        assertEquals(1, result.getFilledSlots());
+        assertEquals(team1, koMatch.getHomeTeam());
+        assertEquals(1, result.getUnresolvedSlots().size());
+        assertEquals("Group A first", result.getUnresolvedSlots().get(0).getLabel());
+        assertEquals("AWAY", result.getUnresolvedSlots().get(0).getSide());
+        assertEquals(10, result.getUnresolvedSlots().get(0).getMatchNumber());
+    }
 }
 

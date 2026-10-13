@@ -80,6 +80,12 @@ public class KnockoutProgressionIntegrationTest {
     private BracketService bracketService;
 
     @Autowired
+    private TournamentCategoryRepository categoryRepository;
+
+    @Autowired
+    private TournamentReadinessService readinessService;
+
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Autowired
@@ -407,5 +413,155 @@ public class KnockoutProgressionIntegrationTest {
                 .as("Winner Team A should be stored in finalMatch homeTeam")
                 .isNotNull();
         assertThat(reloadedFinal.getHomeTeam().getId()).isEqualTo(teamA.getId());
+    }
+
+    @Test
+    @DisplayName("S5: Category with Group A/B pools: 'Group A 1st' / 'Group B 2nd' seed correctly and unresolvedSlots is empty; 'Group A first' appears in unresolvedSlots and readiness as SLOT_WILL_NOT_SEED")
+    void s5_categoryPools_seedingAndReadinessGuards() {
+        Tournament tournament = createTournament("Test Cup S5", "test-cup-s5");
+        TournamentCategory category = categoryRepository.saveAndFlush(TournamentCategory.builder()
+                .tournament(tournament)
+                .name("Men's Open")
+                .build());
+
+        Team teamA1 = createTeam("Team A1", "TA1", "team-a1-" + UUID.randomUUID());
+        Team teamA2 = createTeam("Team A2", "TA2", "team-a2-" + UUID.randomUUID());
+        Team teamB1 = createTeam("Team B1", "TB1", "team-b1-" + UUID.randomUUID());
+        Team teamB2 = createTeam("Team B2", "TB2", "team-b2-" + UUID.randomUUID());
+
+        tournamentTeamRepository.saveAndFlush(TournamentTeam.builder()
+                .tournament(tournament).team(teamA1).isActive(true).deleted(false).build());
+        tournamentTeamRepository.saveAndFlush(TournamentTeam.builder()
+                .tournament(tournament).team(teamA2).isActive(true).deleted(false).build());
+        tournamentTeamRepository.saveAndFlush(TournamentTeam.builder()
+                .tournament(tournament).team(teamB1).isActive(true).deleted(false).build());
+        tournamentTeamRepository.saveAndFlush(TournamentTeam.builder()
+                .tournament(tournament).team(teamB2).isActive(true).deleted(false).build());
+
+        TournamentStage groupA = stageRepository.saveAndFlush(TournamentStage.builder()
+                .tournament(tournament)
+                .category(category)
+                .name("Group A")
+                .stageType(TournamentStageType.POOL)
+                .isGroupStage(true)
+                .isKnockoutStage(false)
+                .displayOrder(1)
+                .build());
+
+        TournamentStage groupB = stageRepository.saveAndFlush(TournamentStage.builder()
+                .tournament(tournament)
+                .category(category)
+                .name("Group B")
+                .stageType(TournamentStageType.POOL)
+                .isGroupStage(true)
+                .isKnockoutStage(false)
+                .displayOrder(2)
+                .build());
+
+        TournamentStage cupFinal = stageRepository.saveAndFlush(TournamentStage.builder()
+                .tournament(tournament)
+                .category(category)
+                .name("Cup Final")
+                .stageType(TournamentStageType.FINAL)
+                .isGroupStage(false)
+                .isKnockoutStage(true)
+                .displayOrder(3)
+                .build());
+
+        Match poolMatchA = matchRepository.saveAndFlush(Match.builder()
+                .tournament(tournament)
+                .stage(groupA)
+                .category(category)
+                .homeTeam(teamA1)
+                .awayTeam(teamA2)
+                .matchCode("S5-GA-M1")
+                .matchNumber(1)
+                .status(MatchStatus.SCHEDULED)
+                .matchDate(LocalDate.now())
+                .kickOffTime(LocalTime.of(10, 0))
+                .build());
+
+        Match poolMatchB = matchRepository.saveAndFlush(Match.builder()
+                .tournament(tournament)
+                .stage(groupB)
+                .category(category)
+                .homeTeam(teamB1)
+                .awayTeam(teamB2)
+                .matchCode("S5-GB-M1")
+                .matchNumber(2)
+                .status(MatchStatus.SCHEDULED)
+                .matchDate(LocalDate.now())
+                .kickOffTime(LocalTime.of(10, 30))
+                .build());
+
+        Match finalMatch = matchRepository.saveAndFlush(Match.builder()
+                .tournament(tournament)
+                .stage(cupFinal)
+                .category(category)
+                .homeTeamPlaceholder("Group A 1st")
+                .awayTeamPlaceholder("Group B 2nd")
+                .matchCode("S5-FN-M1")
+                .matchNumber(3)
+                .status(MatchStatus.SCHEDULED)
+                .matchDate(LocalDate.now())
+                .kickOffTime(LocalTime.of(14, 0))
+                .build());
+
+        Match plateMatch = matchRepository.saveAndFlush(Match.builder()
+                .tournament(tournament)
+                .stage(cupFinal)
+                .category(category)
+                .homeTeamPlaceholder("Group A first")
+                .awayTeamPlaceholder("Group B 1st")
+                .matchCode("S5-PL-M1")
+                .matchNumber(4)
+                .status(MatchStatus.SCHEDULED)
+                .matchDate(LocalDate.now())
+                .kickOffTime(LocalTime.of(15, 0))
+                .build());
+
+        // Check readiness: "Group A first" must be flagged as SLOT_WILL_NOT_SEED
+        var readiness = readinessService.checkReadiness(tournament.getId());
+        assertThat(readiness.getIssues())
+                .anyMatch(issue -> "SLOT_WILL_NOT_SEED".equals(issue.getCode()) &&
+                        issue.getMessage().contains("Group A first"));
+        assertThat(readiness.getIssues())
+                .noneMatch(issue -> "SLOT_WILL_NOT_SEED".equals(issue.getCode()) &&
+                        (issue.getMessage().contains("Group A 1st") || issue.getMessage().contains("Group B 2nd")));
+
+        // Complete Group A match: teamA1 wins
+        matchService.updateMatch(poolMatchA.getId(), MatchUpdateRequest.builder()
+                .homeScore(20)
+                .awayScore(0)
+                .status(MatchStatus.COMPLETED)
+                .build(), null);
+
+        // Complete Group B match: teamB1 wins
+        matchService.updateMatch(poolMatchB.getId(), MatchUpdateRequest.builder()
+                .homeScore(15)
+                .awayScore(10)
+                .status(MatchStatus.COMPLETED)
+                .build(), null);
+
+        // After pools complete, progressPoolsToKnockout seeds finalMatch
+        var seedingResult = bracketService.progressPoolsToKnockout(tournament.getId());
+        assertThat(seedingResult).isNotNull();
+
+        Match reloadedFinal = reloadMatch(finalMatch.getId());
+        assertThat(reloadedFinal.getHomeTeam()).isNotNull();
+        assertThat(reloadedFinal.getHomeTeam().getId()).isEqualTo(teamA1.getId());
+        assertThat(reloadedFinal.getAwayTeam()).isNotNull();
+        assertThat(reloadedFinal.getAwayTeam().getId()).isEqualTo(teamB2.getId());
+
+        // "Group A first" appears in unresolvedSlots
+        assertThat(seedingResult.getUnresolvedSlots())
+                .anyMatch(slot -> "Group A first".equals(slot.getLabel()) && slot.getMatchId().equals(plateMatch.getId()));
+
+        // When plateMatch placeholder is fixed to "Group A 2nd", unresolvedSlots becomes empty
+        plateMatch.setHomeTeamPlaceholder("Group A 2nd");
+        matchRepository.saveAndFlush(plateMatch);
+
+        var fixedSeedingResult = bracketService.progressPoolsToKnockout(tournament.getId());
+        assertThat(fixedSeedingResult.getUnresolvedSlots()).isEmpty();
     }
 }

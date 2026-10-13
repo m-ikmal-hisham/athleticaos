@@ -273,7 +273,7 @@ public class MatchServiceImpl implements MatchService {
         UUID resolvedVenueId = resolvedVenue != null ? resolvedVenue.getId() : null;
         String resolvedVenueName = resolvedVenue != null ? resolvedVenue.getName() : null;
 
-        Match match = Match.builder()
+        Match.MatchBuilder matchBuilder = Match.builder()
                 .tournament(tournament)
                 .homeTeam(homeTeam)
                 .awayTeam(awayTeam)
@@ -289,8 +289,12 @@ public class MatchServiceImpl implements MatchService {
                 .stage(stage)
                 .matchCode(request.getMatchCode())
                 .matchNumber(matchRepository.findMaxMatchNumber(tournament.getId(), resolvedVenueId) + 1)
-                .status(MatchStatus.SCHEDULED) // Default status
-                .build();
+                .status(MatchStatus.SCHEDULED); // Default status
+
+        if (stage != null && stage.getCategory() != null) {
+            matchBuilder.category(stage.getCategory());
+        }
+        Match match = matchBuilder.build();
 
         if (match == null) {
             throw new IllegalStateException("Match cannot be null");
@@ -357,6 +361,11 @@ public class MatchServiceImpl implements MatchService {
             com.athleticaos.backend.entities.TournamentStage stage = stageRepository.findById(stageId)
                     .orElseThrow(() -> new EntityNotFoundException("Stage not found with ID: " + stageId));
             match.setStage(stage);
+        }
+        if (match.getStage() != null && match.getStage().getCategory() != null) {
+            if (match.getCategory() == null || !match.getStage().getCategory().getId().equals(match.getCategory().getId())) {
+                match.setCategory(match.getStage().getCategory());
+            }
         }
         if (request.getMatchCode() != null) {
             match.setMatchCode(request.getMatchCode());
@@ -627,26 +636,10 @@ public class MatchServiceImpl implements MatchService {
         }
 
         // Populate lineup configuration from tournament format config
-        if (match.getTournament() != null) {
-            UUID categoryId = null;
-            if (match.getStage() != null && match.getStage().getCategory() != null) {
-                categoryId = match.getStage().getCategory().getId();
-            }
-            TournamentFormatConfig config = match.getTournament().getFormatConfig(categoryId);
-            
-            if (config != null) {
-                builder.startersCount(config.getStartersCount());
-                builder.maxBenchCount(config.getMaxBenchCount());
-            } else {
-                // Fallback to XV defaults for backward compatibility
-                builder.startersCount(15);
-                builder.maxBenchCount(10);
-            }
-        } else {
-            // Fallback to XV defaults for backward compatibility
-            builder.startersCount(15);
-            builder.maxBenchCount(10);
-        }
+        com.athleticaos.backend.utils.LineupConfigHelper.LineupLimits limits =
+                com.athleticaos.backend.utils.LineupConfigHelper.resolveLimits(match);
+        builder.startersCount(limits.startersCount());
+        builder.maxBenchCount(limits.maxBenchCount());
 
         String homePlaceholder = match.getHomeTeamPlaceholder();
         String awayPlaceholder = match.getAwayTeamPlaceholder();

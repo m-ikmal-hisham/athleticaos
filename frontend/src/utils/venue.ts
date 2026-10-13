@@ -1,3 +1,5 @@
+import { formatPoolPositionPlaceholder } from './formatters';
+
 /**
  * Utility functions for tournament venue handling and match numbering labels.
  */
@@ -83,7 +85,7 @@ export const formatFeederPlaceholder = (
     }
 
     if (!feederMatch) {
-        return raw;
+        return formatPoolPositionPlaceholder(raw);
     }
 
     const feederVenueName = feederMatch.venueName || normalizeVenue(feederMatch.venue);

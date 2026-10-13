@@ -22,6 +22,7 @@ import ConfirmDeleteModal from '@/components/modals/ConfirmDeleteModal';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { deleteTournament } from '@/api/tournaments.api';
 import TournamentRosters from './TournamentRosters';
+import { TournamentReadinessCard } from '@/components/content/TournamentReadinessCard';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -337,6 +338,7 @@ export default function TournamentDetail() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Overview Content */}
                         <div className="lg:col-span-2 space-y-6">
+                            <TournamentReadinessCard tournamentId={tournament.id} />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <GlassCard className="p-6 flex flex-col items-center justify-center text-center">
                                     <div className="w-12 h-12 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center mb-4">
