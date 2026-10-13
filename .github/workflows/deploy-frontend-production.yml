@@ -1,0 +1,106 @@
+name: Deploy Frontend to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend-production.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-production
+  cancel-in-progress: false
+
+# Switched on with the repository variable PRODUCTION_ENABLED=true and approved through the
+# "production" environment. Release order: staging first, verify, then main.
+
+jobs:
+  lint:
+    name: Frontend Lint (deploy gate)
+    if: vars.PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend lint gate
+        working-directory: frontend
+        run: npm run lint:ci
+
+  deploy:
+    needs: [lint]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build for production
+        working-directory: frontend
+        # Public build-time values only (they end up in the JavaScript bundle). No secrets here.
+        # frontend/.env.production is git-ignored, so the values are set in this step.
+        env:
+          VITE_API_URL: https://api.athleticaos.com
+          VITE_ENV: production
+          # Released modules only; federation, analytics, operations, monetization and signup stay off.
+          VITE_FEATURES: ''
+        run: npm run build -- --mode production
+
+      - name: Check the build points at production
+        working-directory: frontend
+        run: |
+          if grep -rq "staging-api.athleticaos.com" dist/assets; then
+            echo "The production build references the staging API. Stopping." >&2
+            exit 1
+          fi
+          grep -rq "api.athleticaos.com" dist/assets
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.PROD_AWS_REGION }}
+
+      - name: Deploy to S3
+        # Hashed files under assets/ never change, so browsers may keep them for a year.
+        # Old ones are kept (no --delete) so a tab opened before the deploy can still load its chunks.
+        # index.html and the other root files are always revalidated so a new deploy shows up at once.
+        run: |
+          aws s3 sync frontend/dist/assets s3://${{ secrets.PROD_S3_BUCKET }}/assets \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync frontend/dist/ s3://${{ secrets.PROD_S3_BUCKET }} \
+            --exclude "assets/*" --delete --cache-control "no-cache"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.PROD_CF_DISTRIBUTION_ID }} \
+            --paths "/*"

@@ -166,4 +166,52 @@ export const formatTeamShortName = (shortName?: string | null, fullName?: string
     return clean.slice(0, 3).toUpperCase();
 };
 
+export const ordinal = (n: number): string => {
+    if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
+    switch (n % 10) {
+        case 1: return `${n}st`;
+        case 2: return `${n}nd`;
+        case 3: return `${n}rd`;
+        default: return `${n}th`;
+    }
+};
+
+/**
+ * Formats a stored pool position placeholder (e.g. "Group A1", "Pool B2")
+ * into human-readable display form ("Group A 1st", "Pool B 2nd").
+ * Preserves stored values and passes through other placeholders unchanged.
+ */
+export const formatPoolPositionPlaceholder = (label?: string | null): string => {
+    if (!label) return '';
+    const trimmed = label.trim();
+    if (!trimmed) return '';
+
+    // If it's already ordinal formatted like "Group A 1st" or "1st Group A", keep it
+    if (/\b\d+(?:st|nd|rd|th)\b/i.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Do not format "Seed 1", "Match 1", "Court 1", "Pitch 1", etc.
+    if (/^(seed|match|court|pitch|table|m)\s*\d+$/i.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Do not format winner/loser feeders like "Win 1", "Lose 2", "Winner 3"
+    if (/^(win|winner|lose|loser)\b/i.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Match "<pool><n>" or "<pool> <n>"
+    const match = trimmed.match(/^(.*?)\s*(\d+)$/);
+    if (match) {
+        const pool = match[1].trim();
+        const pos = parseInt(match[2], 10);
+        if (pool && pos > 0 && pos <= 32) {
+            return `${pool} ${ordinal(pos)}`;
+        }
+    }
+
+    return trimmed;
+};
+
 

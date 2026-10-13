@@ -133,18 +133,25 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                                 || (e.getRole() == null && e.isStarter()))
                                 .count();
 
-                // Get limits from config
-                int maxStarters = 15; // default
-                // Try to fetch from config
-                com.athleticaos.backend.entities.TournamentFormatConfig config = match.getTournament()
-                                .getFormatConfig();
-                if (config != null) {
-                        maxStarters = config.getStartersCount();
-                }
+                long benchCount = entries.stream()
+                                .filter(e -> (e.getRole() == com.athleticaos.backend.enums.LineupRole.BENCH)
+                                                || (e.getRole() == null && !e.isStarter()))
+                                .count();
+
+                // Get limits from shared helper
+                com.athleticaos.backend.utils.LineupConfigHelper.LineupLimits limits =
+                                com.athleticaos.backend.utils.LineupConfigHelper.resolveLimits(match);
+                int maxStarters = limits.startersCount();
+                int maxBench = limits.maxBenchCount();
 
                 if (starterCount > maxStarters) {
                         throw new IllegalArgumentException(
                                         "Too many starters: " + starterCount + ". Maximum allowed is " + maxStarters);
+                }
+
+                if (benchCount > maxBench) {
+                        throw new IllegalArgumentException(
+                                        "Too many bench players: " + benchCount + ". Maximum allowed is " + maxBench);
                 }
 
                 // Check self-duplicates within the request

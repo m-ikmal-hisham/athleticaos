@@ -1,0 +1,156 @@
+name: Deploy Backend to Production
+
+on:
+  push:
+    branches: [main]
+    # Same filter as the staging deploy: only a release that changes the backend restarts it.
+    # To redeploy without a code change (e.g. after editing the server's .env.production), run this
+    # workflow by hand: Actions > Deploy Backend to Production > Run workflow, on the main branch.
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend-production.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: false
+
+# Production deploys are switched on with the repository variable PRODUCTION_ENABLED=true
+# (Settings > Secrets and variables > Actions > Variables) and wait for a reviewer's approval
+# through the "production" environment (Settings > Environments). Release order: staging first,
+# verify, then main.
+
+jobs:
+  test:
+    name: Backend Unit Tests
+    if: vars.PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Unit Tests
+        working-directory: backend
+        run: ./mvnw test -B
+
+  integration-test:
+    name: Backend Integration Tests
+    if: vars.PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Backend Integration Tests
+        working-directory: backend
+        run: ./mvnw test -B -Pintegration
+
+  deploy:
+    name: Deploy Backend
+    needs: [test, integration-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker image
+        working-directory: backend
+        run: docker build -t athleticaos-backend:${{ github.sha }} --build-arg GIT_SHA=${{ github.sha }} .
+
+      - name: Save Docker image
+        run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
+
+      - name: Copy image to EC2
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          source: backend-image.tar.gz
+          target: /home/ec2-user/
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            set -e
+            NEW_IMAGE=athleticaos-backend:${{ github.sha }}
+
+            # Remember what is running now, for a quick rollback (see the end of this script).
+            PREVIOUS_IMAGE=$(docker inspect -f '{{.Config.Image}}' athleticaos-backend 2>/dev/null || true)
+            echo "Previous image: ${PREVIOUS_IMAGE:-none}"
+
+            # Free disk space, but never the image that is running.
+            docker image prune -af --filter "until=72h" || true
+            docker builder prune -af || true
+
+            docker load < /home/ec2-user/backend-image.tar.gz
+            rm /home/ec2-user/backend-image.tar.gz
+
+            start_backend() {
+              docker stop athleticaos-backend 2>/dev/null || true
+              docker rm athleticaos-backend 2>/dev/null || true
+              # 127.0.0.1 only: nginx is the single way in; port 8080 is never published to the internet.
+              docker run -d \
+                --name athleticaos-backend \
+                --restart unless-stopped \
+                --env-file /home/ec2-user/athleticaos/backend/.env.production \
+                -p 127.0.0.1:8080:8080 \
+                -v athleticaos-uploads:/app/uploads \
+                "$1"
+            }
+
+            healthy() {
+              for i in $(seq 1 12); do
+                if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+                  echo "Backend health check passed on attempt $i."
+                  return 0
+                fi
+                echo "Attempt $i/12 failed, retrying in 10s..."
+                sleep 10
+              done
+              return 1
+            }
+
+            start_backend "$NEW_IMAGE"
+            if healthy; then
+              docker container prune -f || true
+              exit 0
+            fi
+
+            echo "Health check failed after 120s. Last log lines:"
+            docker logs --tail 40 athleticaos-backend || true
+
+            # Roll back to the image that was running before. A release with a database migration
+            # may not start on the old code; in that case restore the pre-release snapshot instead.
+            if [ -n "$PREVIOUS_IMAGE" ] && [ "$PREVIOUS_IMAGE" != "$NEW_IMAGE" ]; then
+              echo "Rolling back to $PREVIOUS_IMAGE"
+              start_backend "$PREVIOUS_IMAGE"
+              healthy || echo "Rollback did not become healthy either."
+            fi
+            exit 1
