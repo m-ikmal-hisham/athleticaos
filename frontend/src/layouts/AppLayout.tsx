@@ -447,7 +447,8 @@ export const AppLayout = () => {
                                 </>
                             )}
                         </button>
-                        {!isCollapsed && (
+                        {/* Build label helps testers report what they saw; hidden on production like the public footer. */}
+                        {!isCollapsed && import.meta.env.VITE_ENV !== 'production' && (
                             <p className="mt-2 text-[10px] text-black/60 dark:text-white/60 font-mono text-center">
                                 v{import.meta.env.VITE_GIT_SHA || 'dev'}
                             </p>
