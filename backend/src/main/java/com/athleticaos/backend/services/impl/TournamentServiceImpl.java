@@ -11,6 +11,8 @@ import com.athleticaos.backend.dtos.tournament.CreateCategoryRequest;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Tournament;
+import com.athleticaos.backend.entities.TournamentCategory;
+import com.athleticaos.backend.entities.TournamentStage;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.SeasonRepository;
@@ -1005,7 +1007,7 @@ public class TournamentServiceImpl implements TournamentService {
             }
         }
 
-        Match match = Match.builder()
+        Match.MatchBuilder matchBuilder = Match.builder()
                 .tournament(tournament)
                 .homeTeam(homeTeam)
                 .awayTeam(awayTeam)
@@ -1016,8 +1018,12 @@ public class TournamentServiceImpl implements TournamentService {
                 .pitch(request.getPitch())
                 .matchCode(request.getMatchCode())
                 .phase(request.getPhase())
-                .status(com.athleticaos.backend.enums.MatchStatus.SCHEDULED)
-                .build();
+                .status(com.athleticaos.backend.enums.MatchStatus.SCHEDULED);
+
+        if (stage != null && stage.getCategory() != null) {
+            matchBuilder.category(stage.getCategory());
+        }
+        Match match = matchBuilder.build();
 
         Match savedMatch = matchRepository.save(match);
         return com.athleticaos.backend.dtos.match.MatchResponse.builder()
@@ -1202,11 +1208,44 @@ public class TournamentServiceImpl implements TournamentService {
     @Override
     @Transactional
     public void updateStage(UUID tournamentId, UUID stageId, String name) {
-        // Validate tournament ownership if needed, but stageId lookup in formatService
-        // handles it via Entity reference
-        // Ideally we should check if stage belongs to tournamentId, but FormatService
-        // checks Stage existence.
-        // We can add check here if we want to be strict.
-        formatService.updateStageName(stageId, name);
+        updateStage(tournamentId, stageId, name, false, null);
+    }
+
+    @Override
+    @Transactional
+    public void updateStage(UUID tournamentId, UUID stageId, String name, boolean updateCategory, UUID categoryId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+        TournamentStage stage = tournamentStageRepository.findById(stageId)
+                .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+        if (!stage.getTournament().getId().equals(tournamentId)) {
+            throw new IllegalArgumentException("Stage does not belong to this tournament");
+        }
+
+        if (name != null && !name.isBlank()) {
+            formatService.updateStageName(stageId, name.trim());
+        }
+
+        if (updateCategory) {
+            boolean hasCategories = tournament.getCategories() != null && !tournament.getCategories().isEmpty();
+            if (hasCategories && categoryId == null) {
+                throw new IllegalArgumentException("Category cannot be null when tournament has categories");
+            }
+            TournamentCategory category = null;
+            if (categoryId != null) {
+                category = tournament.getCategories().stream()
+                        .filter(c -> c.getId().equals(categoryId))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Category does not belong to this tournament"));
+            }
+            stage.setCategory(category);
+            tournamentStageRepository.save(stage);
+
+            List<Match> stageMatches = matchRepository.findByStageId(stage.getId());
+            for (Match m : stageMatches) {
+                m.setCategory(category);
+            }
+            matchRepository.saveAll(stageMatches);
+        }
     }
 }

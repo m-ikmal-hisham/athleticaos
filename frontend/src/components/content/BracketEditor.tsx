@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { TournamentStageResponse, MatchResponse } from '@/types';
+import { TournamentStageResponse, MatchResponse, TournamentCategory } from '@/types';
 import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent } from '@/components/GlassCard';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
@@ -7,10 +7,10 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { Trash, PencilSimple, Plus, Info, Trophy, CaretRight, ArrowsClockwise, SkipForward, ArrowFatLineRight } from '@phosphor-icons/react';
-import { tournamentService } from '@/services/tournamentService';
+import { Trash, PencilSimple, Plus, Info, Trophy, CaretRight, ArrowsClockwise, SkipForward, ArrowFatLineRight, WarningCircle } from '@phosphor-icons/react';
+import { tournamentService, UnresolvedSlot } from '@/services/tournamentService';
 import { showToast } from '@/lib/customToast';
-import { buildBracketGroups } from '@/utils/bracketUtils';
+import { buildBracketGroups, getBracketTypeId, getBracketTitle } from '@/utils/bracketUtils';
 import { hasMultipleVenues, formatFeederPlaceholder } from '@/utils/venue';
 
 interface BracketEditorProps {
@@ -21,6 +21,7 @@ interface BracketEditorProps {
     onMatchEdit: (match: MatchResponse) => void;
     onRefresh: () => void;
     selectedCategoryId?: string | null;
+    categories?: TournamentCategory[];
 }
 
 /**
@@ -32,6 +33,7 @@ interface BracketEditorProps {
  * not a CUP stage type, so it cannot be added as a standalone manual bracket.
  */
 const MANUAL_BRACKET_TYPES: { type: string; label: string; places: string }[] = [
+    { type: 'THIRD_PLACE', label: '3rd Place Playoff (Cup)', places: '3rd – 4th' },
     { type: 'PLATE', label: 'Plate', places: '5th – 8th' },
     { type: 'BOWL', label: 'Bowl', places: '9th – 12th' },
     { type: 'SHIELD', label: 'Shield', places: '13th – 16th' },
@@ -45,14 +47,23 @@ const MANUAL_BRACKET_TYPES: { type: string; label: string; places: string }[] = 
 
 const BRACKET_TEAM_COUNTS = [2, 4, 8, 16];
 
-export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId }: BracketEditorProps) {
+export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId, categories = [] }: BracketEditorProps) {
     const [loading, setLoading] = useState(false);
     const [addBracketOpen, setAddBracketOpen] = useState(false);
     const [newBracketType, setNewBracketType] = useState('PLATE');
     const [newBracketTeamCount, setNewBracketTeamCount] = useState(4);
     const [newBracketPlayoff, setNewBracketPlayoff] = useState(true);
     const [newBracketName, setNewBracketName] = useState('');
+    const [newBracketCategoryId, setNewBracketCategoryId] = useState<string>('');
+    const [assignCategoryBracketId, setAssignCategoryBracketId] = useState<string | null>(null);
+    const [selectedAssignCategoryId, setSelectedAssignCategoryId] = useState<string>('');
+    const [assigningCategory, setAssigningCategory] = useState(false);
+    const [unresolvedSlots, setUnresolvedSlots] = useState<UnresolvedSlot[]>([]);
     const [bracketToDelete, setBracketToDelete] = useState<string | null>(null);
+    // Set when the delete is for one category's bracket only (the 3rd place playoff inside Cup).
+    const [bracketDeleteCategoryId, setBracketDeleteCategoryId] = useState<string | null>(null);
+
+    const hasCategories = Boolean(categories && categories.length > 0);
     // Brackets start collapsed. A tournament can run eight or more of them (Cup, Plate, Bowl,
     // Shield, Spoon, Fork, Wooden Spoon...), and each expands to a horizontally scrolling row
     // of rounds, which pushed the match schedule far below the fold. The header carries the
@@ -73,23 +84,26 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const categoryStages = useMemo(() => {
         const knockoutOnly = stages.filter(s => s.knockoutStage);
         if (!selectedCategoryId) return knockoutOnly;
-        return knockoutOnly.filter(s => s.categoryId === selectedCategoryId);
+        return knockoutOnly.filter(s => s.categoryId === selectedCategoryId || !s.categoryId);
     }, [stages, selectedCategoryId]);
 
     // Filter matches by category first if category is selected
     const categoryMatches = useMemo(() => {
         if (!selectedCategoryId) return matches;
-        return matches.filter(m => m.stage?.categoryId === selectedCategoryId);
+        return matches.filter(m => m.stage?.categoryId === selectedCategoryId || !m.stage?.categoryId);
     }, [matches, selectedCategoryId]);
 
-    // Check which bracket types already exist for the current category
-    const existingBracketTypes = useMemo(() => {
+    // Check which bracket types already exist for the dialog category
+    const existingBracketTypesForDialog = useMemo(() => {
+        const catId = hasCategories ? newBracketCategoryId : selectedCategoryId;
         const types = new Set<string>();
-        categoryStages.forEach(stage => {
-            types.add(stage.stageType || '');
-        });
+        stages
+            .filter(s => s.knockoutStage && (!catId || s.categoryId === catId))
+            .forEach(stage => {
+                types.add(stage.stageType || '');
+            });
         return types;
-    }, [categoryStages]);
+    }, [stages, hasCategories, newBracketCategoryId, selectedCategoryId]);
 
     // Check if tournament has multiple venues
     const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
@@ -105,24 +119,27 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
 
     // A placement playoff is fed by the losers of a semi-final, so it needs a bracket
     // large enough to have one.
-    const playoffAvailable = newBracketTeamCount >= 4;
+    const playoffAvailable = newBracketType !== 'THIRD_PLACE' && newBracketTeamCount >= 4;
 
     const handleAddBracketSubmit = async () => {
         setLoading(true);
         try {
+            const chosenCategoryId = hasCategories ? (newBracketCategoryId || undefined) : (selectedCategoryId || undefined);
+            const isThirdPlace = newBracketType === 'THIRD_PLACE';
             await tournamentService.createManualBracket(tournamentId, {
                 type: newBracketType,
-                teamCount: newBracketTeamCount,
-                categoryId: selectedCategoryId || undefined,
-                includePlacementPlayoff: playoffAvailable && newBracketPlayoff,
+                teamCount: isThirdPlace ? 2 : newBracketTeamCount,
+                categoryId: chosenCategoryId,
+                includePlacementPlayoff: !isThirdPlace && playoffAvailable && newBracketPlayoff,
                 name: newBracketName.trim() || undefined,
             });
-            showToast.success(`Created ${newBracketName.trim() || newBracketType} Bracket`);
+            showToast.success(`Created ${newBracketName.trim() || defaultBracketLabel} Bracket`);
             setAddBracketOpen(false);
             setNewBracketName('');
             onRefresh();
-        } catch (error: any) {
-            const message = error?.response?.data?.message || error?.message || 'Failed to create bracket';
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            const message = err?.response?.data?.message || err?.message || 'Failed to create bracket';
             if (message.includes('already exists')) {
                 showToast.error(`A ${newBracketType} bracket already exists for this category. Delete it first.`);
             } else {
@@ -136,24 +153,77 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const handleSeedFromPools = async () => {
         setLoading(true);
         try {
-            const { seededCategories = [], skippedCategories = [] } =
-                (await tournamentService.progressPoolsToKnockout(tournamentId)) ?? {};
-            // Categories are seeded only once all their pool matches are done, so say which ones waited.
-            if (seededCategories.length > 0) {
-                showToast.success(`Seeded from pool results: ${seededCategories.join(', ')}`);
+            const res = await tournamentService.progressPoolsToKnockout(tournamentId);
+            const {
+                seededCategories = [],
+                skippedCategories = [],
+                filledSlots = 0,
+                unresolvedSlots: unresolved = [],
+            } = res ?? {};
+
+            setUnresolvedSlots(unresolved);
+
+            if (filledSlots > 0) {
+                const catLabel = seededCategories.length > 0 ? ` (${seededCategories.join(', ')})` : '';
+                showToast.success(`Filled ${filledSlots} slot${filledSlots === 1 ? '' : 's'} from pool results${catLabel}`);
             }
             if (skippedCategories.length > 0) {
                 showToast.info(`Not seeded yet, pools still in progress: ${skippedCategories.join('; ')}`);
             }
-            if (seededCategories.length === 0 && skippedCategories.length === 0) {
-                showToast.info('No pools found to seed from');
+            if (filledSlots === 0 && unresolved.length === 0) {
+                showToast.info('Nothing to fill — all slots already have teams or are fed by other matches.');
             }
             onRefresh();
-        } catch (error: any) {
-            showToast.error(error?.response?.data?.message || 'Failed to seed brackets from pool results');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to seed brackets from pool results');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleAssignCategory = async () => {
+        if (!assignCategoryBracketId || !selectedAssignCategoryId) return;
+        setAssigningCategory(true);
+        try {
+            const stageIds = new Set<string>();
+            stages.forEach(s => {
+                if (s.knockoutStage && getBracketTypeId(s.name, s.stageType) === assignCategoryBracketId) {
+                    stageIds.add(s.id);
+                }
+            });
+            matches.forEach(m => {
+                if (m.stage && getBracketTypeId(m.stage.name, m.stage.stageType) === assignCategoryBracketId) {
+                    stageIds.add(m.stage.id);
+                }
+            });
+
+            await Promise.all(
+                Array.from(stageIds).map(stageId =>
+                    tournamentService.updateStage(tournamentId, stageId, { categoryId: selectedAssignCategoryId })
+                )
+            );
+
+            showToast.success('Assigned bracket to category');
+            setAssignCategoryBracketId(null);
+            setSelectedAssignCategoryId('');
+            onRefresh();
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to assign category to bracket');
+        } finally {
+            setAssigningCategory(false);
+        }
+    };
+
+    const openAddBracket = () => {
+        const defaultCatId = selectedCategoryId || (categories && categories.length === 1 ? categories[0].id : '');
+        setNewBracketCategoryId(defaultCatId);
+        setNewBracketType('PLATE');
+        setNewBracketTeamCount(4);
+        setNewBracketPlayoff(true);
+        setNewBracketName('');
+        setAddBracketOpen(true);
     };
 
     const handleApplyByes = async () => {
@@ -164,8 +234,9 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 ? `Advanced ${applied} team${applied === 1 ? '' : 's'} on a bye`
                 : 'No byes to apply — every match has an opponent or is still waiting on a result');
             onRefresh();
-        } catch (error: any) {
-            showToast.error(error?.response?.data?.message || 'Failed to apply byes');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to apply byes');
         } finally {
             setLoading(false);
         }
@@ -179,8 +250,9 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 ? `Advanced ${progressed} winner${progressed === 1 ? '' : 's'}`
                 : 'Nothing to advance — every completed match has already progressed');
             onRefresh();
-        } catch (error: any) {
-            showToast.error(error?.response?.data?.message || 'Failed to advance winners');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to advance winners');
         } finally {
             setLoading(false);
         }
@@ -189,14 +261,17 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const handleDeleteBracket = async () => {
         if (!bracketToDelete) return;
         const bracketId = bracketToDelete;
+        const categoryId = bracketDeleteCategoryId || selectedCategoryId || undefined;
         setBracketToDelete(null);
+        setBracketDeleteCategoryId(null);
         setLoading(true);
         try {
-            await tournamentService.deleteManualBracket(tournamentId, bracketId, selectedCategoryId || undefined);
-            showToast.success(`Deleted ${bracketId} Bracket`);
+            await tournamentService.deleteManualBracket(tournamentId, bracketId, categoryId);
+            showToast.success(bracketId === 'THIRD_PLACE' ? 'Removed the 3rd Place Playoff' : `Deleted ${bracketId} Bracket`);
             onRefresh();
-        } catch (error: any) {
-            showToast.error(error?.response?.data?.message || 'Failed to delete bracket');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to delete bracket');
         } finally {
             setLoading(false);
         }
@@ -259,11 +334,62 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                     >
                         <ArrowFatLineRight className="w-4 h-4 mr-1" /> Advance Winners
                     </Button>
-                    <Button size="sm" onClick={() => setAddBracketOpen(true)} disabled={loading}>
+                    <Button size="sm" onClick={openAddBracket} disabled={loading}>
                         <Plus className="w-4 h-4 mr-1" /> Add Bracket
                     </Button>
                 </div>
             </div>
+
+            {unresolvedSlots.length > 0 && (
+                <div className="p-4 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <WarningCircle className="w-5 h-5 text-[var(--accent-text)] shrink-0" />
+                            <span className="text-sm font-semibold text-white">
+                                {unresolvedSlots.length} Unresolved Knockout {unresolvedSlots.length === 1 ? 'Slot' : 'Slots'}
+                            </span>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setUnresolvedSlots([])}
+                            className="text-xs h-7 px-2 text-muted-foreground hover:text-white"
+                        >
+                            Dismiss
+                        </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        The following knockout slots hold placeholders that could not be matched to a completed pool standing:
+                    </p>
+                    <div className="space-y-2">
+                        {unresolvedSlots.map((slot, idx) => {
+                            const targetMatch = matches.find(m => m.id === slot.matchId);
+                            const sideLabel = slot.side === 'HOME' ? 'Home' : 'Away';
+                            const matchLabel = slot.matchNumber ? `Match ${slot.matchNumber}` : (slot.stageName || 'Match');
+                            return (
+                                <div
+                                    key={`${slot.matchId}-${slot.side}-${idx}`}
+                                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-black/20 border border-white/5 text-xs"
+                                >
+                                    <span className="text-white/90">
+                                        <span className="font-semibold text-white">{matchLabel}</span> — {sideLabel}: &lsquo;<span className="text-[var(--accent-text)] font-mono">{slot.label}</span>&rsquo; could not be matched to a group position
+                                    </span>
+                                    {targetMatch && (
+                                        <Button
+                                            size="sm"
+                                            variant="tertiary"
+                                            onClick={() => onMatchEdit(targetMatch)}
+                                            className="h-7 px-2.5 text-xs shrink-0"
+                                        >
+                                            <PencilSimple className="w-3.5 h-3.5 mr-1" /> Edit
+                                        </Button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             <Modal
                 isOpen={addBracketOpen}
@@ -272,20 +398,42 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 size="sm"
             >
                 <div className="space-y-4">
+                    {hasCategories && (
+                        <div className="space-y-2">
+                            <Label>Category <span className="text-[var(--accent-text)]">*</span></Label>
+                            <SearchableSelect
+                                value={newBracketCategoryId}
+                                onChange={(value) => setNewBracketCategoryId(value as string)}
+                                options={categories.map(c => ({
+                                    value: c.id,
+                                    label: c.name,
+                                }))}
+                                placeholder="Select category"
+                            />
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <Label>Bracket</Label>
                         <SearchableSelect
                             value={newBracketType}
-                            onChange={(value) => setNewBracketType(value as string)}
+                            onChange={(value) => {
+                                const val = value as string;
+                                setNewBracketType(val);
+                                if (val === 'THIRD_PLACE') {
+                                    setNewBracketTeamCount(2);
+                                    setNewBracketPlayoff(false);
+                                }
+                            }}
                             options={MANUAL_BRACKET_TYPES.map(({ type, label, places }) => ({
                                 value: type,
-                                label: existingBracketTypes.has(type)
+                                label: existingBracketTypesForDialog.has(type)
                                     ? `${label} — already added`
                                     : `${label} (${places})`,
                             }))}
                             placeholder="Select bracket"
                         />
-                        {existingBracketTypes.has(newBracketType) && (
+                        {existingBracketTypesForDialog.has(newBracketType) && (
                             <p className="text-xs text-amber-400 flex items-start gap-1.5">
                                 <Info className="w-4 h-4 shrink-0 mt-0.5" />
                                 A {newBracketType} bracket already exists for this category. Delete it first
@@ -294,23 +442,32 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                         )}
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Teams in this bracket</Label>
-                        <SearchableSelect
-                            value={String(newBracketTeamCount)}
-                            onChange={(value) => setNewBracketTeamCount(Number(value))}
-                            options={BRACKET_TEAM_COUNTS.map(count => ({
-                                value: String(count),
-                                label: `${count} teams`,
-                            }))}
-                            placeholder="Select size"
-                        />
-                        <p className="text-xs text-slate-400">
-                            Place ranges shown above assume the standard four-team bracket. A larger
-                            bracket covers proportionally more places. Sizes that are not a power of
-                            two are rounded up, leaving the surplus slots as byes.
-                        </p>
-                    </div>
+                    {newBracketType !== 'THIRD_PLACE' ? (
+                        <div className="space-y-2">
+                            <Label>Teams in this bracket</Label>
+                            <SearchableSelect
+                                value={String(newBracketTeamCount)}
+                                onChange={(value) => setNewBracketTeamCount(Number(value))}
+                                options={BRACKET_TEAM_COUNTS.map(count => ({
+                                    value: String(count),
+                                    label: `${count} teams`,
+                                }))}
+                                placeholder="Select size"
+                            />
+                            <p className="text-xs text-slate-400">
+                                Place ranges shown above assume the standard four-team bracket. A larger
+                                bracket covers proportionally more places. Sizes that are not a power of
+                                two are rounded up, leaving the surplus slots as byes.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            <Label>Teams in this bracket</Label>
+                            <p className="text-xs text-muted-foreground">
+                                Fixed at 2 teams (contested by the two Cup Semi-Final losers).
+                            </p>
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         <Label>Bracket name (optional)</Label>
@@ -325,25 +482,27 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                         </p>
                     </div>
 
-                    <label className={`flex items-start gap-2.5 ${playoffAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
-                        <input
-                            type="checkbox"
-                            // Render unticked when unavailable: a ticked-but-disabled box reads as
-                            // "this will be created" while the hint says it cannot be.
-                            checked={playoffAvailable && newBracketPlayoff}
-                            onChange={(e) => setNewBracketPlayoff(e.target.checked)}
-                            disabled={!playoffAvailable}
-                            className="mt-0.5"
-                        />
-                        <span className="text-sm">
-                            Include placement playoff
-                            <span className="block text-xs text-slate-400">
-                                {playoffAvailable
-                                    ? 'Adds a match for the losers of this bracket\'s semi-finals, like the Cup bracket\'s 3rd Place Playoff.'
-                                    : 'Needs at least 4 teams — a bracket this small has no semi-finals.'}
+                    {newBracketType !== 'THIRD_PLACE' && (
+                        <label className={`flex items-start gap-2.5 ${playoffAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+                            <input
+                                type="checkbox"
+                                // Render unticked when unavailable: a ticked-but-disabled box reads as
+                                // "this will be created" while the hint says it cannot be.
+                                checked={playoffAvailable && newBracketPlayoff}
+                                onChange={(e) => setNewBracketPlayoff(e.target.checked)}
+                                disabled={!playoffAvailable}
+                                className="mt-0.5"
+                            />
+                            <span className="text-sm">
+                                Include placement playoff
+                                <span className="block text-xs text-slate-400">
+                                    {playoffAvailable
+                                        ? 'Adds a match for the losers of this bracket\'s semi-finals, like the Cup bracket\'s 3rd Place Playoff.'
+                                        : 'Needs at least 4 teams — a bracket this small has no semi-finals.'}
+                                </span>
                             </span>
-                        </span>
-                    </label>
+                        </label>
+                    )}
 
                     <div className="flex justify-end gap-2 pt-2">
                         <Button type="button" variant="cancel" onClick={() => setAddBracketOpen(false)}>
@@ -353,9 +512,57 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             type="button"
                             onClick={handleAddBracketSubmit}
                             isLoading={loading}
-                            disabled={existingBracketTypes.has(newBracketType)}
+                            disabled={existingBracketTypesForDialog.has(newBracketType) || (hasCategories && !newBracketCategoryId)}
                         >
                             Add Bracket
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={assignCategoryBracketId !== null}
+                onClose={() => {
+                    setAssignCategoryBracketId(null);
+                    setSelectedAssignCategoryId('');
+                }}
+                title={`Assign Category to ${assignCategoryBracketId ? getBracketTitle(assignCategoryBracketId) : 'Bracket'}`}
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                        This bracket is not assigned to a category and is currently hidden on the public site. Select a category to assign to every stage and match in this bracket.
+                    </p>
+                    <div className="space-y-2">
+                        <Label>Category <span className="text-[var(--accent-text)]">*</span></Label>
+                        <SearchableSelect
+                            value={selectedAssignCategoryId}
+                            onChange={(val) => setSelectedAssignCategoryId(val as string)}
+                            options={categories.map(c => ({
+                                value: c.id,
+                                label: c.name,
+                            }))}
+                            placeholder="Select category"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button
+                            type="button"
+                            variant="cancel"
+                            onClick={() => {
+                                setAssignCategoryBracketId(null);
+                                setSelectedAssignCategoryId('');
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleAssignCategory}
+                            isLoading={assigningCategory}
+                            disabled={!selectedAssignCategoryId}
+                        >
+                            Assign Category
                         </Button>
                     </div>
                 </div>
@@ -364,6 +571,11 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
             {bracketGroups.map((bracket) => {
                 const isExpanded = expandedBrackets.has(bracket.id);
                 const matchCount = bracket.rounds.reduce((total, round) => total + round.matches.length, 0);
+                const isUnassigned = hasCategories && (
+                    stages.some(s => s.knockoutStage && getBracketTypeId(s.name, s.stageType) === bracket.id && !s.categoryId) ||
+                    bracket.rounds.some(r => r.matches.some(m => !m.stage?.categoryId))
+                );
+
                 return (
                 <GlassCard key={bracket.id} className="border-t-4 border-t-primary transition-all duration-300">
                     <GlassCardHeader
@@ -392,15 +604,36 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             </span>
                             </span>
                         </button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setBracketToDelete(bracket.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
-                            aria-label="Delete bracket"
-                        >
-                            <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete Bracket</span>
-                        </Button>
+                        <div className="flex items-center gap-2 shrink-0">
+                            {isUnassigned && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-semibold text-[var(--accent-text)]">
+                                        Not assigned to a category — hidden on the public site
+                                    </span>
+                                    <Button
+                                        size="sm"
+                                        variant="tertiary"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setAssignCategoryBracketId(bracket.id);
+                                            setSelectedAssignCategoryId(selectedCategoryId || (categories.length === 1 ? categories[0].id : ''));
+                                        }}
+                                        className="h-7 px-2 text-xs text-[var(--accent-text)] border-[var(--accent)]/30 hover:bg-[var(--accent)]/10"
+                                    >
+                                        Assign category
+                                    </Button>
+                                </div>
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setBracketToDelete(bracket.id)}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
+                                aria-label="Delete bracket"
+                            >
+                                <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete Bracket</span>
+                            </Button>
+                        </div>
                     </GlassCardHeader>
                     <GlassCardContent
                         id={`bracket-panel-${bracket.id}`}
@@ -414,6 +647,23 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                         <span>{round.name}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (
                                             <CaretRight className="w-4 h-4 opacity-50" />
+                                        )}
+                                        {/* The 3rd place playoff sits inside Cup, so it gets its own remove action
+                                            (Delete Bracket on Cup would remove the whole Cup). */}
+                                        {round.stageType === 'THIRD_PLACE' && (
+                                            <button
+                                                type="button"
+                                                aria-label="Remove 3rd Place Playoff"
+                                                title="Remove 3rd Place Playoff"
+                                                disabled={loading}
+                                                onClick={() => {
+                                                    setBracketDeleteCategoryId(round.matches[0]?.stage?.categoryId || null);
+                                                    setBracketToDelete('THIRD_PLACE');
+                                                }}
+                                                className="ml-1 p-1 rounded text-black/60 dark:text-white/60 hover:text-crimson dark:hover:text-crimson-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy"
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </button>
                                         )}
                                     </div>
 
@@ -497,11 +747,13 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
 
             <ConfirmModal
                 isOpen={bracketToDelete !== null}
-                onClose={() => setBracketToDelete(null)}
+                onClose={() => { setBracketToDelete(null); setBracketDeleteCategoryId(null); }}
                 onConfirm={handleDeleteBracket}
-                title="Delete Bracket"
-                message={`Delete the entire ${bracketToDelete} bracket? Every match in it will be removed, and any match feeding into it will lose that link. This cannot be undone.`}
-                confirmText="Delete Bracket"
+                title={bracketToDelete === 'THIRD_PLACE' ? 'Remove 3rd Place Playoff' : 'Delete Bracket'}
+                message={bracketToDelete === 'THIRD_PLACE'
+                    ? 'Remove the 3rd Place Playoff? Its match will be deleted and the semi-finals will no longer send their losers to it. This cannot be undone.'
+                    : `Delete the entire ${bracketToDelete} bracket? Every match in it will be removed, and any match feeding into it will lose that link. This cannot be undone.`}
+                confirmText={bracketToDelete === 'THIRD_PLACE' ? 'Remove' : 'Delete Bracket'}
                 variant="destructive"
             />
         </div>

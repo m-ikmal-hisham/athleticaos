@@ -37,6 +37,7 @@ public class TournamentController {
     private final com.athleticaos.backend.services.TournamentCategoryService categoryService;
     private final com.athleticaos.backend.services.MatchService matchService;
     private final com.athleticaos.backend.services.TournamentVenueService venueService;
+    private final com.athleticaos.backend.services.TournamentReadinessService readinessService;
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping
@@ -183,6 +184,15 @@ public class TournamentController {
     public ResponseEntity<com.athleticaos.backend.dtos.tournament.PoolSeedingResult> progressPoolsToKnockout(
             @PathVariable UUID id) {
         return ResponseEntity.ok(bracketService.progressPoolsToKnockout(id));
+    }
+
+    @GetMapping("/{idOrSlug}/readiness")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
+    @Operation(summary = "Check tournament setup readiness")
+    public ResponseEntity<com.athleticaos.backend.dtos.tournament.TournamentReadinessResponse> getReadiness(
+            @PathVariable String idOrSlug) {
+        UUID tournamentId = fetchTournament(idOrSlug).getId();
+        return ResponseEntity.ok(readinessService.checkReadiness(tournamentId));
     }
 
     @PutMapping("/{id}/status")
@@ -443,15 +453,19 @@ public class TournamentController {
 
     @PutMapping("/{idOrSlug}/stages/{stageId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
-    @Operation(summary = "Update tournament stage (e.g. rename pool)")
+    @Operation(summary = "Update tournament stage (e.g. rename pool or update category)")
     public ResponseEntity<Void> updateStage(
             @PathVariable String idOrSlug,
             @PathVariable UUID stageId,
-            @RequestBody java.util.Map<String, String> request) {
+            @RequestBody java.util.Map<String, Object> request) {
         UUID tournamentId = fetchTournament(idOrSlug).getId();
-        if (request.containsKey("name")) {
-            tournamentService.updateStage(tournamentId, stageId, request.get("name"));
+        String name = request.containsKey("name") && request.get("name") != null ? String.valueOf(request.get("name")) : null;
+        boolean updateCategory = request.containsKey("categoryId");
+        UUID categoryId = null;
+        if (updateCategory && request.get("categoryId") != null && !String.valueOf(request.get("categoryId")).isBlank()) {
+            categoryId = UUID.fromString(String.valueOf(request.get("categoryId")));
         }
+        tournamentService.updateStage(tournamentId, stageId, name, updateCategory, categoryId);
         return ResponseEntity.ok().build();
     }
 }
