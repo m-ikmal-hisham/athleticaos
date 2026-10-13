@@ -31,7 +31,9 @@ logging:
 application:
   security:
     cors:
-      allowed-origins: ${FRONTEND_URL},${PUBLIC_URL}
+      # Admin app and public site by default. CORS_ALLOWED_ORIGINS replaces the whole list when more
+      # origins are needed (e.g. the bare domain once DNS moves): comma-separated, no spaces.
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:${FRONTEND_URL},${PUBLIC_URL}}
     jwt:
       secret-key: ${JWT_SECRET}
       expiration: ${JWT_EXPIRATION:86400000}
