@@ -19,7 +19,7 @@ public class ContactServiceImpl implements ContactService {
     private final ContactMessageRepository contactMessageRepository;
     private final JavaMailSender mailSender;
     private final boolean mailEnabled;
-    private final String recipient;
+    private final java.util.List<String> recipients;
     private final String fromAddress;
 
     public ContactServiceImpl(
@@ -31,7 +31,7 @@ public class ContactServiceImpl implements ContactService {
         this.contactMessageRepository = contactMessageRepository;
         this.mailSender = mailSender;
         this.mailEnabled = mailEnabled;
-        this.recipient = recipient != null ? recipient.trim() : "";
+        this.recipients = parseRecipients(recipient);
         this.fromAddress = fromAddress != null ? fromAddress.trim() : "no-reply@athleticaos.com";
     }
 
@@ -60,7 +60,7 @@ public class ContactServiceImpl implements ContactService {
         message = contactMessageRepository.save(message);
 
         // Send email if mail is enabled and recipient is configured
-        if (mailEnabled && !recipient.isEmpty()) {
+        if (mailEnabled && !recipients.isEmpty()) {
             sendNotificationEmail(message);
         }
     }
@@ -74,7 +74,6 @@ public class ContactServiceImpl implements ContactService {
         try {
             String cleanName = stripHeaderLineBreaks(message.getName());
             String cleanEmail = stripHeaderLineBreaks(message.getEmail());
-            String cleanRecipient = stripHeaderLineBreaks(recipient);
             String cleanFrom = stripHeaderLineBreaks(fromAddress);
             String subjectLabel = stripHeaderLineBreaks(message.getSubject().getLabel());
 
@@ -93,7 +92,7 @@ public class ContactServiceImpl implements ContactService {
             body.append("Message:\n").append(message.getMessage()).append("\n");
 
             SimpleMailMessage mailMessage = new SimpleMailMessage();
-            mailMessage.setTo(cleanRecipient);
+            mailMessage.setTo(recipients.stream().map(this::stripHeaderLineBreaks).toArray(String[]::new));
             mailMessage.setFrom(cleanFrom);
             mailMessage.setReplyTo(cleanEmail);
             mailMessage.setSubject(emailSubject);
@@ -107,6 +106,21 @@ public class ContactServiceImpl implements ContactService {
             // Mail failure must be logged (without the message body or email address) and must not fail the request
             log.error("Failed to send contact notification email for message id {}: {}", message.getId(), ex.getMessage());
         }
+    }
+
+    /**
+     * app.contact.recipient may list several addresses separated by commas or semicolons
+     * (e.g. the shared contact@ alias and an owner's address). Blank entries are ignored.
+     */
+    static java.util.List<String> parseRecipients(String value) {
+        if (value == null || value.isBlank()) {
+            return java.util.List.of();
+        }
+        return java.util.Arrays.stream(value.split("[,;]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
     }
 
     private String stripHeaderLineBreaks(String value) {
