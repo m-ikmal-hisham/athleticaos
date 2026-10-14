@@ -60,6 +60,14 @@ jobs:
         working-directory: frontend
         run: npm run build -- --mode staging
 
+      - name: Check the staging build is hidden from search engines
+        working-directory: frontend
+        run: |
+          grep -q '<meta name="robots" content="noindex, nofollow"' dist/index.html || {
+            echo "Staging index.html is missing the noindex robots tag. Stopping." >&2
+            exit 1
+          }
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
