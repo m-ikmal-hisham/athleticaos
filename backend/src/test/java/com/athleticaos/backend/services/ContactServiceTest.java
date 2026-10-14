@@ -161,4 +161,54 @@ class ContactServiceTest {
         verify(contactMessageRepository, times(1)).save(any());
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
+
+    @Test
+    @DisplayName("Sends one notification to every configured recipient (comma or semicolon separated)")
+    void processContactMessage_multipleRecipients_sendsToAll() {
+        ContactServiceImpl multiRecipientService = new ContactServiceImpl(
+                contactMessageRepository,
+                mailSender,
+                true,
+                " contact@athleticaos.local, owner@example.com ; ,contact@athleticaos.local ",
+                "no-reply@athleticaos.com"
+        );
+
+        ContactRequest request = ContactRequest.builder()
+                .name("Dana")
+                .email("dana@example.com")
+                .subject(ContactSubject.PARTNERSHIP)
+                .message("Two people should receive this.")
+                .build();
+
+        multiRecipientService.processContactMessage(request);
+
+        ArgumentCaptor<SimpleMailMessage> mailCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender, times(1)).send(mailCaptor.capture());
+        assertThat(mailCaptor.getValue().getTo())
+                .containsExactly("contact@athleticaos.local", "owner@example.com");
+    }
+
+    @Test
+    @DisplayName("Blank recipient list stores the message without sending")
+    void processContactMessage_blankRecipients_storesWithoutSending() {
+        ContactServiceImpl noRecipientService = new ContactServiceImpl(
+                contactMessageRepository,
+                mailSender,
+                true,
+                " , ; ",
+                "no-reply@athleticaos.com"
+        );
+
+        ContactRequest request = ContactRequest.builder()
+                .name("Eve")
+                .email("eve@example.com")
+                .subject(ContactSubject.MEDIA)
+                .message("Nobody configured to receive this.")
+                .build();
+
+        noRecipientService.processContactMessage(request);
+
+        verify(contactMessageRepository, times(1)).save(any());
+        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+    }
 }
