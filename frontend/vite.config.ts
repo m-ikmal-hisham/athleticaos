@@ -13,12 +13,31 @@ try {
   console.warn('Could not get git sha', e)
 }
 
+// Staging builds (VITE_ENV=staging) tell search engines not to list the site, so only the live
+// platform appears in results. Production keeps index.html's own "index, follow". This works on any
+// CloudFront plan, unlike a response-header policy; staging-api sends the same as an nginx header.
+function stagingNoindex() {
+  let isStaging = false
+  return {
+    name: 'athleticaos-staging-noindex',
+    configResolved(config: { env: Record<string, string> }) {
+      isStaging = config.env.VITE_ENV === 'staging'
+    },
+    transformIndexHtml(html: string) {
+      if (!isStaging) return html
+      const tag = '<meta name="robots" content="noindex, nofollow" />'
+      const robots = /<meta\s+name="robots"\s+content="[^"]*"\s*\/?>/i
+      return robots.test(html) ? html.replace(robots, tag) : html.replace('</head>', `  ${tag}\n</head>`)
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
     'import.meta.env.VITE_GIT_SHA': JSON.stringify(gitSha),
   },
-  plugins: [react()],
+  plugins: [react(), stagingNoindex()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
