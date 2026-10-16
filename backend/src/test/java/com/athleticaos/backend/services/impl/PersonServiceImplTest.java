@@ -35,9 +35,18 @@ import org.springframework.beans.factory.ObjectProvider;
 import jakarta.persistence.EntityNotFoundException;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -709,5 +718,124 @@ class PersonServiceImplTest {
 
         verify(personDuplicateService, never()).check(any(), any(), any(), any(), any());
         verify(personRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void getPersonsByOrganisation_orgScopedUser_page0SortedByFirstName_appliesScopeIntersection() {
+        UUID orgA = UUID.randomUUID();
+        UUID orgB = UUID.randomUUID();
+        UUID orgC = UUID.randomUUID();
+        Set<UUID> accessibleIds = new HashSet<>(Set.of(orgA, orgB));
+        Set<UUID> descendants = new HashSet<>(Set.of(orgA, orgC));
+
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(accessibleIds);
+        when(organisationService.getAllDescendantIds(orgA)).thenReturn(descendants);
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by("firstName"));
+        Page<Person> mockPage = new PageImpl<>(List.of(existingPerson), pageRequest, 1);
+        when(organisationPersonRepository.findUniquePersonsByOrganisationIds(eq(Set.of(orgA)), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        Page<PersonResponseDTO> result = personService.getPersonsByOrganisation(orgA, pageRequest, null, false);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(personId.toString());
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(organisationPersonRepository).findUniquePersonsByOrganisationIds(eq(Set.of(orgA)), pageableCaptor.capture());
+        Sort capturedSort = pageableCaptor.getValue().getSort();
+        assertThat(capturedSort.getOrderFor("firstName")).isNotNull();
+        assertThat(capturedSort.getOrderFor("firstName").getDirection()).isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
+    void getPersonsByOrganisation_orgScopedUser_sortedByLastName() {
+        UUID orgA = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(new HashSet<>(Set.of(orgA)));
+        when(organisationService.getAllDescendantIds(orgA)).thenReturn(new HashSet<>(Set.of(orgA)));
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "lastName"));
+        Page<Person> mockPage = new PageImpl<>(List.of(existingPerson), pageRequest, 1);
+        when(organisationPersonRepository.findUniquePersonsByOrganisationIds(eq(Set.of(orgA)), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        personService.getPersonsByOrganisation(orgA, pageRequest, null, false);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(organisationPersonRepository).findUniquePersonsByOrganisationIds(eq(Set.of(orgA)), pageableCaptor.capture());
+        Sort capturedSort = pageableCaptor.getValue().getSort();
+        assertThat(capturedSort.getOrderFor("lastName")).isNotNull();
+        assertThat(capturedSort.getOrderFor("lastName").getDirection()).isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void getPersonsByOrganisation_orgScopedUser_withSearchAndMissingEmail() {
+        UUID orgA = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(new HashSet<>(Set.of(orgA)));
+        when(organisationService.getAllDescendantIds(orgA)).thenReturn(new HashSet<>(Set.of(orgA)));
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by("firstName"));
+        Page<Person> mockPage = new PageImpl<>(List.of(existingPerson), pageRequest, 1);
+        when(organisationPersonRepository.searchPersonsWithMissingEmailByOrganisationIds(eq(Set.of(orgA)), eq("Alice"), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        personService.getPersonsByOrganisation(orgA, pageRequest, "  Alice  ", true);
+
+        verify(organisationPersonRepository).searchPersonsWithMissingEmailByOrganisationIds(eq(Set.of(orgA)), eq("Alice"), any(Pageable.class));
+    }
+
+    @Test
+    void getPersonsByOrganisation_orgScopedUser_outOfScope_returnsEmptyPage() {
+        UUID orgA = UUID.randomUUID();
+        UUID orgB = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(new HashSet<>(Set.of(orgB)));
+        when(organisationService.getAllDescendantIds(orgA)).thenReturn(new HashSet<>(Set.of(orgA)));
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by("firstName"));
+        Page<PersonResponseDTO> result = personService.getPersonsByOrganisation(orgA, pageRequest, null, false);
+
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        assertThat(result.getContent()).isEmpty();
+        verify(organisationPersonRepository, never()).findUniquePersonsByOrganisationIds(any(), any());
+    }
+
+    @Test
+    void getPersonsByOrganisation_orgScopedUser_unknownSort_fallsBackToLastNameFirstName() {
+        UUID orgA = UUID.randomUUID();
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(new HashSet<>(Set.of(orgA)));
+        when(organisationService.getAllDescendantIds(orgA)).thenReturn(new HashSet<>(Set.of(orgA)));
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by("nonExistentField"));
+        Page<Person> mockPage = new PageImpl<>(List.of(existingPerson), pageRequest, 1);
+        when(organisationPersonRepository.findUniquePersonsByOrganisationIds(eq(Set.of(orgA)), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        personService.getPersonsByOrganisation(orgA, pageRequest, null, false);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(organisationPersonRepository).findUniquePersonsByOrganisationIds(eq(Set.of(orgA)), pageableCaptor.capture());
+        Sort capturedSort = pageableCaptor.getValue().getSort();
+        assertThat(capturedSort.getOrderFor("lastName")).isNotNull();
+        assertThat(capturedSort.getOrderFor("firstName")).isNotNull();
+        assertThat(capturedSort.getOrderFor("nonExistentField")).isNull();
+    }
+
+    @Test
+    void getPersonsByOrganisation_superAdmin_unknownSort_fallsBackToLastNameFirstName() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by("unknownAdminField"));
+        Page<Person> mockPage = new PageImpl<>(List.of(existingPerson), pageRequest, 1);
+        when(personRepository.findAll(any(Pageable.class))).thenReturn(mockPage);
+
+        personService.getPersonsByOrganisation(null, pageRequest, null, false);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(personRepository).findAll(pageableCaptor.capture());
+        Sort capturedSort = pageableCaptor.getValue().getSort();
+        assertThat(capturedSort.getOrderFor("lastName")).isNotNull();
+        assertThat(capturedSort.getOrderFor("firstName")).isNotNull();
+        assertThat(capturedSort.getOrderFor("unknownAdminField")).isNull();
     }
 }

@@ -28,7 +28,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +57,24 @@ import jakarta.servlet.http.HttpServletRequest;
 @Service
 @RequiredArgsConstructor
 public class PersonServiceImpl implements PersonService {
+
+    private static final Map<String, String> PROPERTY_CANONICAL_NAMES = Map.ofEntries(
+            Map.entry("id", "id"),
+            Map.entry("firstname", "firstName"),
+            Map.entry("lastname", "lastName"),
+            Map.entry("dob", "dob"),
+            Map.entry("gender", "gender"),
+            Map.entry("nationality", "nationality"),
+            Map.entry("email", "email"),
+            Map.entry("phone", "phone"),
+            Map.entry("registrationno", "registrationNo"),
+            Map.entry("createdat", "createdAt"),
+            Map.entry("recordverificationstatus", "recordVerificationStatus"),
+            Map.entry("recordverifiedat", "recordVerifiedAt"),
+            Map.entry("nationalplayerstatus", "nationalPlayerStatus"),
+            Map.entry("userid", "userId"),
+            Map.entry("isstaff", "isStaff")
+    );
 
     private final PersonRepository personRepository;
     private final OrganisationPersonRepository organisationPersonRepository;
@@ -98,6 +118,7 @@ public class PersonServiceImpl implements PersonService {
     @SuppressWarnings("null")
     public Page<PersonResponseDTO> getPersonsByOrganisation(UUID organisationId, Pageable pageable, String search, boolean missingEmail) {
         Objects.requireNonNull(pageable);
+        pageable = sanitizePersonPageable(pageable);
         boolean hasSearch = search != null && !search.trim().isEmpty();
         String searchTerm = hasSearch ? search.trim() : null;
         log.info("Fetching hierarchical persons for organisation: {}, search present: {}, missingEmail: {}", organisationId, hasSearch, missingEmail);
@@ -166,6 +187,54 @@ public class PersonServiceImpl implements PersonService {
                 .collect(Collectors.toList());
 
         return new PageImpl<PersonResponseDTO>(content, pageable, personsToMap.getTotalElements());
+    }
+
+    private Pageable sanitizePersonPageable(Pageable pageable) {
+        if (pageable == null) {
+            return PageRequest.of(0, 50, Sort.by(Sort.Order.asc("lastName"), Sort.Order.asc("firstName")));
+        }
+        if (!pageable.getSort().isSorted()) {
+            return pageable;
+        }
+
+        List<Sort.Order> sanitizedOrders = new ArrayList<>();
+        for (Sort.Order order : pageable.getSort()) {
+            String property = order.getProperty();
+            if (property == null) {
+                return fallbackPageable(pageable);
+            }
+            String normalized = property.trim().toLowerCase();
+            if ("name".equals(normalized)) {
+                sanitizedOrders.add(new Sort.Order(order.getDirection(), "lastName"));
+                sanitizedOrders.add(new Sort.Order(order.getDirection(), "firstName"));
+            } else if ("regno".equals(normalized)) {
+                sanitizedOrders.add(new Sort.Order(order.getDirection(), "registrationNo"));
+            } else if ("verification".equals(normalized)) {
+                sanitizedOrders.add(new Sort.Order(order.getDirection(), "recordVerificationStatus"));
+            } else if (PROPERTY_CANONICAL_NAMES.containsKey(normalized)) {
+                sanitizedOrders.add(new Sort.Order(order.getDirection(), PROPERTY_CANONICAL_NAMES.get(normalized)));
+            } else {
+                return fallbackPageable(pageable);
+            }
+        }
+
+        if (sanitizedOrders.isEmpty()) {
+            return fallbackPageable(pageable);
+        }
+
+        Sort sanitizedSort = Sort.by(sanitizedOrders);
+        if (pageable.isPaged()) {
+            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sanitizedSort);
+        }
+        return Pageable.unpaged(sanitizedSort);
+    }
+
+    private Pageable fallbackPageable(Pageable pageable) {
+        Sort fallbackSort = Sort.by(Sort.Order.asc("lastName"), Sort.Order.asc("firstName"));
+        if (pageable.isPaged()) {
+            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), fallbackSort);
+        }
+        return Pageable.unpaged(fallbackSort);
     }
 
     private Map<UUID, String> prefetchNationalLogos(List<UUID> personIds) {
