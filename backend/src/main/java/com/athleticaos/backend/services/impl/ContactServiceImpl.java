@@ -4,13 +4,20 @@ import com.athleticaos.backend.dtos.contact.ContactRequest;
 import com.athleticaos.backend.entities.ContactMessage;
 import com.athleticaos.backend.repositories.ContactMessageRepository;
 import com.athleticaos.backend.services.ContactService;
+import com.athleticaos.backend.services.mail.ContactEmailRenderer;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Slf4j
 @Service
@@ -75,30 +82,37 @@ public class ContactServiceImpl implements ContactService {
             String cleanName = stripHeaderLineBreaks(message.getName());
             String cleanEmail = stripHeaderLineBreaks(message.getEmail());
             String cleanFrom = stripHeaderLineBreaks(fromAddress);
-            String subjectLabel = stripHeaderLineBreaks(message.getSubject().getLabel());
 
-            // Subject format: "[AthleticaOS] <subject label> – <name>"
-            String emailSubject = "[AthleticaOS] " + subjectLabel + " \u2013 " + cleanName;
+            ZonedDateTime receivedAt = ZonedDateTime.now(ZoneId.of("Asia/Kuala_Lumpur"));
+            ContactEmailRenderer.RenderResult rendered = ContactEmailRenderer.render(message, receivedAt);
 
-            StringBuilder body = new StringBuilder();
-            body.append("New contact form submission received:\n\n");
-            body.append("Message ID: ").append(message.getId()).append("\n");
-            body.append("Name: ").append(message.getName()).append("\n");
-            body.append("Email: ").append(message.getEmail()).append("\n");
-            body.append("Organisation: ")
-                    .append(message.getOrganisation() != null ? message.getOrganisation() : "\u2014")
-                    .append("\n");
-            body.append("Subject: ").append(message.getSubject().getLabel()).append("\n\n");
-            body.append("Message:\n").append(message.getMessage()).append("\n");
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, StandardCharsets.UTF_8.name());
 
-            SimpleMailMessage mailMessage = new SimpleMailMessage();
-            mailMessage.setTo(recipients.stream().map(this::stripHeaderLineBreaks).toArray(String[]::new));
-            mailMessage.setFrom(cleanFrom);
-            mailMessage.setReplyTo(cleanEmail);
-            mailMessage.setSubject(emailSubject);
-            mailMessage.setText(body.toString());
+            String[] toAddresses = recipients.stream()
+                    .map(this::stripHeaderLineBreaks)
+                    .filter(s -> !s.isEmpty())
+                    .toArray(String[]::new);
 
-            mailSender.send(mailMessage);
+            helper.setTo(toAddresses);
+
+            InternetAddress[] fromParsed = InternetAddress.parse(cleanFrom);
+            if (fromParsed != null && fromParsed.length > 0) {
+                helper.setFrom(fromParsed[0]);
+            } else {
+                helper.setFrom(cleanFrom);
+            }
+
+            if (cleanName.isEmpty()) {
+                helper.setReplyTo(new InternetAddress(cleanEmail));
+            } else {
+                helper.setReplyTo(new InternetAddress(cleanEmail, cleanName, StandardCharsets.UTF_8.name()));
+            }
+
+            helper.setSubject(rendered.subject());
+            helper.setText(rendered.plainText(), rendered.html());
+
+            mailSender.send(mimeMessage);
 
             message.setMailSent(true);
             contactMessageRepository.save(message);
