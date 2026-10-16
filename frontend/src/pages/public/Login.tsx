@@ -172,14 +172,14 @@ export const Login = () => {
                             )}
                         </div>
 
-                        <div className="flex items-center justify-between">
+                        <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm text-black/72 dark:text-white/72 cursor-pointer select-none">
                                 <input type="checkbox" className="w-4 h-4 rounded border-black/24 dark:border-white/28 accent-navy bg-white dark:bg-deep-navy cursor-pointer" />
                                 Keep me logged in
                             </label>
-                            <Link to="/forgot-password" className="text-sm font-medium text-navy dark:text-navy-tint hover:underline">
-                                Forgot password?
-                            </Link>
+                            <p className="text-sm text-black/60 dark:text-white/60">
+                                Forgot your password? Ask your organisation's administrator to reset it.
+                            </p>
                         </div>
 
                         <div className="flex gap-3">

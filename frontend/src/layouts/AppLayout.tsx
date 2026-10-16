@@ -9,6 +9,7 @@ import { ProfilePopup } from '@/components/ProfilePopup';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { PageLoader } from '@/components/PageLoader';
 import { isFeatureEnabled, FeatureKey } from '@/config/features';
+import { SITE_NAME } from '@/config/site';
 
 interface NavItem {
     label: string;
@@ -317,7 +318,7 @@ export const AppLayout = () => {
                             </div>
                             <div className={clsx("flex flex-col overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
                                 <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
-                                    AthleticaOS
+                                    {SITE_NAME}
                                 </span>
                                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mt-0.5 whitespace-nowrap">
                                     Manager
@@ -476,7 +477,7 @@ export const AppLayout = () => {
                                 <span className="w-full h-0.5 bg-current rounded-full"></span>
                             </div>
                         </button>
-                        <span className="font-bold text-base text-foreground">AthleticaOS</span>
+                        <span className="font-bold text-base text-foreground">{SITE_NAME}</span>
                         <div className="w-9"></div> {/* Spacer for centering */}
                     </div>
                 </header>
