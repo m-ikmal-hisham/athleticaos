@@ -33,38 +33,65 @@ public interface OrganisationPersonRepository extends JpaRepository<Organisation
     
     List<OrganisationPerson> findByPersonId(UUID personId);
 
-    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
-           "WHERE op.organisation.id IN :orgIds")
+    @Query(
+        value = "SELECT p FROM Person p WHERE p.id IN (" +
+               "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds)",
+        countQuery = "SELECT COUNT(p) FROM Person p WHERE p.id IN (" +
+                     "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds)"
+    )
     org.springframework.data.domain.Page<Person> findUniquePersonsByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds, 
         org.springframework.data.domain.Pageable pageable
     );
 
     // Phase 1: IC/passport substring search removed to prevent PII exposure in search logs/results.
-    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
-           "WHERE op.organisation.id IN :orgIds AND (" +
-           "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
+    @Query(
+        value = "SELECT p FROM Person p WHERE p.id IN (" +
+               "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds) AND (" +
+               "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%')))",
+        countQuery = "SELECT COUNT(p) FROM Person p WHERE p.id IN (" +
+                     "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds) AND (" +
+                     "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                     "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                     "LOWER(p.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                     "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%')))"
+    )
     org.springframework.data.domain.Page<Person> searchPersonsByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,
         @Param("search") String search,
         org.springframework.data.domain.Pageable pageable
     );
 
-    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
-           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '' OR LOWER(op.person.email) LIKE '%@placeholder.invalid')")
+    @Query(
+        value = "SELECT p FROM Person p WHERE p.id IN (" +
+               "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds) AND (" +
+               "p.email IS NULL OR TRIM(p.email) = '' OR LOWER(p.email) LIKE '%@placeholder.invalid')",
+        countQuery = "SELECT COUNT(p) FROM Person p WHERE p.id IN (" +
+                     "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds) AND (" +
+                     "p.email IS NULL OR TRIM(p.email) = '' OR LOWER(p.email) LIKE '%@placeholder.invalid')"
+    )
     org.springframework.data.domain.Page<Person> findUniquePersonsWithMissingEmailByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,
         org.springframework.data.domain.Pageable pageable
     );
 
-    @Query("SELECT DISTINCT op.person FROM OrganisationPerson op " +
-           "WHERE op.organisation.id IN :orgIds AND (op.person.email IS NULL OR TRIM(op.person.email) = '' OR LOWER(op.person.email) LIKE '%@placeholder.invalid') AND (" +
-           "LOWER(op.person.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(op.person.registrationNo) LIKE LOWER(CONCAT(:search, '%')))")
+    @Query(
+        value = "SELECT p FROM Person p WHERE p.id IN (" +
+               "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds) AND (" +
+               "p.email IS NULL OR TRIM(p.email) = '' OR LOWER(p.email) LIKE '%@placeholder.invalid') AND (" +
+               "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+               "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%')))",
+        countQuery = "SELECT COUNT(p) FROM Person p WHERE p.id IN (" +
+                     "SELECT op.person.id FROM OrganisationPerson op WHERE op.organisation.id IN :orgIds) AND (" +
+                     "p.email IS NULL OR TRIM(p.email) = '' OR LOWER(p.email) LIKE '%@placeholder.invalid') AND (" +
+                     "LOWER(p.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                     "LOWER(p.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                     "LOWER(p.registrationNo) LIKE LOWER(CONCAT(:search, '%')))"
+    )
     org.springframework.data.domain.Page<Person> searchPersonsWithMissingEmailByOrganisationIds(
         @Param("orgIds") java.util.Collection<UUID> orgIds,
         @Param("search") String search,

@@ -21,6 +21,10 @@ export default function PublicLayout() {
 
     const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
+    const brandParts = SITE_NAME.split(' ');
+    const brandMain = brandParts.slice(0, -1).join(' ') || SITE_NAME;
+    const brandSuffix = brandParts.length > 1 ? brandParts[brandParts.length - 1] : '';
+
     return (
         <div className="min-h-screen bg-background transition-colors duration-300 relative">
             {/* Global Background */}
@@ -33,20 +37,20 @@ export default function PublicLayout() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
-                        <Link to="/" className="flex items-center gap-3 group" onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0" onClick={() => setMobileMenuOpen(false)}>
                             <img
                                 src={logoSrc}
                                 alt="AthleticaOS Logo"
-                                className="h-10 w-auto object-contain"
+                                className="h-9 sm:h-10 w-auto object-contain shrink-0"
                             />
-                            <div className="flex flex-col">
-                                <span className="text-lg font-bold text-black dark:text-white leading-none">
-                                    AthleticaOS
-                                </span>
-                                <span className="text-xs text-black/70 dark:text-white/70 font-medium">
-                                    Rugby Malaysia
-                                </span>
-                            </div>
+                            <span className="text-lg font-bold text-black dark:text-white leading-none whitespace-nowrap">
+                                {brandMain}
+                                {brandSuffix && (
+                                    <span className="text-navy dark:text-navy-tint ml-1">
+                                        {brandSuffix}
+                                    </span>
+                                )}
+                            </span>
                         </Link>
 
                         {/* Desktop Navigation Links */}

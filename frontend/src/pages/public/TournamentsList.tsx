@@ -6,6 +6,7 @@ import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
 import { formatCompetitionType, formatTournamentLevel } from '@/utils/formatters';
+import { sortTournamentsForList } from '@/utils/tournamentSort';
 
 export default function TournamentsList() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
@@ -54,7 +55,8 @@ export default function TournamentsList() {
             });
         }
 
-        setFilteredTournaments(filtered);
+        const sorted = sortTournamentsForList(filtered);
+        setFilteredTournaments(sorted);
     };
 
     return (
@@ -65,7 +67,7 @@ export default function TournamentsList() {
                     Tournaments
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                    Browse all rugby tournaments across Malaysia
+                    Browse rugby tournaments — live, upcoming and completed
                 </p>
             </div>
 
