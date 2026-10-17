@@ -16,9 +16,10 @@ import clsx from 'clsx';
 interface TournamentFormatProps {
     tournamentId: string;
     onScheduleGenerated?: () => void;
+    readonly?: boolean;
 }
 
-export function TournamentFormat({ tournamentId, onScheduleGenerated }: TournamentFormatProps) {
+export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly = false }: TournamentFormatProps) {
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [structureLoading, setStructureLoading] = useState(false);
@@ -444,7 +445,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                 size="sm"
                                 className="w-full"
                                 onClick={handleSaveConfig}
-                                disabled={loading}
+                                disabled={loading || readonly}
                             >
                                 <FloppyDisk className="w-4 h-4 mr-2" />
                                 {selectedCategoryId && currentCategory
@@ -584,7 +585,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                     variant="outline"
                                     size="sm"
                                     onClick={handleGenerateStructure}
-                                    disabled={structureLoading || generating}
+                                    disabled={structureLoading || generating || readonly}
                                 >
                                     {structureLoading ? 'Building...' : `Build Pools ${currentCategory ? 'for ' + currentCategory.name : ''}`}
                                 </Button>
@@ -600,7 +601,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                                         stages={stages}
                                         categoryId={selectedCategoryId || undefined}
                                         onAssign={handleAssignTeam}
-                                        readonly={generating}
+                                        readonly={generating || readonly}
                                         onRename={reloadStructure}
                                         tournamentId={tournamentId}
                                     />
@@ -639,7 +640,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated }: Tourname
                         </div>
                         <Button
                             onClick={handleGenerateMatches}
-                            disabled={loading || generating || stages.length === 0 || hasEmptyPools}
+                            disabled={loading || generating || stages.length === 0 || hasEmptyPools || readonly}
                             variant="primary"
                             size="lg"
                             className="flex items-center gap-2"

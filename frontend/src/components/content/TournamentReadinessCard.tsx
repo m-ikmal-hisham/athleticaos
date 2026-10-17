@@ -28,6 +28,7 @@ export function TournamentReadinessCard({
     const location = useLocation();
     const [loading, setLoading] = useState(false);
     const [readiness, setReadiness] = useState<TournamentReadinessResponse | null>(null);
+    const [notFound, setNotFound] = useState(false);
     // Assigning a category is done here, so the button works wherever the card is shown.
     const [stageToAssign, setStageToAssign] = useState<{ id: string; name?: string } | null>(null);
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -40,10 +41,15 @@ export function TournamentReadinessCard({
         try {
             const data = await tournamentService.getReadiness(tournamentId);
             setReadiness(data);
+            setNotFound(false);
             if (isManual) {
                 showToast.info('Setup check completed.');
             }
-        } catch (error) {
+        } catch (error: any) {
+            if (error?.response?.status === 404) {
+                setNotFound(true);
+                return;
+            }
             console.error('Failed to load tournament readiness', error);
             if (isManual) {
                 showToast.error('Failed to check tournament setup.');
@@ -157,6 +163,10 @@ export function TournamentReadinessCard({
                 return null;
         }
     };
+
+    if (notFound) {
+        return null;
+    }
 
     return (
         <GlassCard className={`p-4 md:p-5 ${className}`}>

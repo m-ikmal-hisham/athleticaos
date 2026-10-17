@@ -55,6 +55,9 @@ public class MatchLineupControllerSecurityTest {
     @MockBean
     private UserDetailsService userDetailsService;
 
+    @MockBean
+    private com.athleticaos.backend.services.AccessScopeService accessScopeService;
+
     private final UUID matchId = UUID.randomUUID();
     private MatchLineupUpdateRequest updateRequest;
 

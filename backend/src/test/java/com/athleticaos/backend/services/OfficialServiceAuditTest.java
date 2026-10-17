@@ -54,6 +54,9 @@ class OfficialServiceAuditTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private com.athleticaos.backend.services.AccessScopeService accessScopeService;
+
     private OfficialServiceImpl officialService;
 
     @BeforeEach
@@ -68,8 +71,12 @@ class OfficialServiceAuditTest {
                 officialRoleRepository,
                 tournamentOfficialRepository,
                 auditLogger,
-                requestProvider
+                requestProvider,
+                accessScopeService
         );
+        org.mockito.Mockito.lenient().when(accessScopeService.isTournamentInScope(any(UUID.class))).thenReturn(true);
+        org.mockito.Mockito.lenient().when(accessScopeService.isTournamentInScope(any(Tournament.class))).thenReturn(true);
+        org.mockito.Mockito.lenient().when(accessScopeService.isTournamentInScope((Tournament) org.mockito.ArgumentMatchers.isNull())).thenReturn(true);
     }
 
     @Test

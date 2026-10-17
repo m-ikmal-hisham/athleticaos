@@ -3,10 +3,13 @@ package com.athleticaos.backend.controllers;
 import com.athleticaos.backend.dtos.analytics.DisciplineCorrelation;
 import com.athleticaos.backend.dtos.analytics.SeasonSummary;
 import com.athleticaos.backend.dtos.analytics.TeamPerformanceTrend;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,15 +23,26 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Advanced Analytics", description = "Endpoints for performance and trend analysis")
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final AccessScopeService accessScopeService;
+    private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
 
     @GetMapping("/teams/{teamId}/trends")
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Get performance trends for a team", description = "Returns historical match results and scoring for a team.")
     public ResponseEntity<List<TeamPerformanceTrend>> getTeamTrends(@PathVariable UUID teamId) {
+        var team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+        if (!accessScopeService.isTeamInScope(team)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for team trends read outside accessible scope: userId={}, teamId={}",
+                    currentUserId, teamId);
+            throw new EntityNotFoundException("Team not found");
+        }
         return ResponseEntity.ok(analyticsService.getTeamPerformanceTrends(teamId));
     }
 
@@ -36,6 +50,12 @@ public class AnalyticsController {
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Get discipline vs performance correlation", description = "Returns aggregated card counts and league points for all teams in a tournament.")
     public ResponseEntity<List<DisciplineCorrelation>> getDisciplineImpact(@PathVariable UUID tournamentId) {
+        if (!accessScopeService.canReadTournament(tournamentId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for discipline impact read outside accessible scope: userId={}, tournamentId={}",
+                    currentUserId, tournamentId);
+            throw new EntityNotFoundException("Tournament not found");
+        }
         return ResponseEntity.ok(analyticsService.getDisciplineImpact(tournamentId));
     }
 
@@ -43,6 +63,12 @@ public class AnalyticsController {
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN')")
     @Operation(summary = "Get season summary", description = "Returns high-level aggregated statistics for a tournament.")
     public ResponseEntity<SeasonSummary> getSeasonSummary(@PathVariable UUID tournamentId) {
+        if (!accessScopeService.canReadTournament(tournamentId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for competition summary read outside accessible scope: userId={}, tournamentId={}",
+                    currentUserId, tournamentId);
+            throw new EntityNotFoundException("Tournament not found");
+        }
         return ResponseEntity.ok(analyticsService.getSeasonSummary(tournamentId));
     }
 }
