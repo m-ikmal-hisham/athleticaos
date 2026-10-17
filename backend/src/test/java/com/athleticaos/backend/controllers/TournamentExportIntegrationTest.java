@@ -1,5 +1,8 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.repositories.RoleRepository;
+import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.support.IntegrationTestUsers;
 import com.athleticaos.backend.entities.Match;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.entities.Team;
@@ -91,8 +94,16 @@ class TournamentExportIntegrationTest {
     private static Team sharedTeamA;
     private static Team sharedTeamB;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
     @BeforeEach
     void setUp() {
+        IntegrationTestUsers.ensureSuperAdmin(userRepository, roleRepository);
+        IntegrationTestUsers.ensure(userRepository, roleRepository, IntegrationTestUsers.PLAYER_NO_ORG, "ROLE_PLAYER", null);
         if (seeded || organisationRepository.findBySlug("test-export-org").isPresent()) {
             seeded = true;
             return;
@@ -190,7 +201,7 @@ class TournamentExportIntegrationTest {
 
     @Test
     @DisplayName("exportMatches returns 200 with matches CSV without scores")
-    @WithMockUser(roles = "PLAYER")
+    @WithMockUser(username = IntegrationTestUsers.SUPER_ADMIN, roles = "SUPER_ADMIN")
     void exportMatches_ShouldReturnCsv_WhenAuthenticated() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/tournaments/{idOrSlug}/export/matches", tournamentId))
                 .andExpect(status().isOk())
@@ -234,7 +245,7 @@ class TournamentExportIntegrationTest {
 
     @Test
     @DisplayName("exportResults returns 200 with results CSV including scores")
-    @WithMockUser(roles = "PLAYER")
+    @WithMockUser(username = IntegrationTestUsers.SUPER_ADMIN, roles = "SUPER_ADMIN")
     void exportResults_ShouldReturnCsv_WhenAuthenticated() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/tournaments/{idOrSlug}/export/results", tournamentId))
                 .andExpect(status().isOk())
@@ -271,7 +282,7 @@ class TournamentExportIntegrationTest {
 
     @Test
     @DisplayName("export matches and results with category grouping, match number fallbacks, and exact field count")
-    @WithMockUser(roles = "PLAYER")
+    @WithMockUser(username = IntegrationTestUsers.SUPER_ADMIN, roles = "SUPER_ADMIN")
     void export_ShouldGroupByCategoryAndFallbackMatchNumber_AndHaveMatchingFieldCounts() throws Exception {
         Organisation org = sharedOrg != null ? sharedOrg : organisationRepository.findBySlug("test-export-org").orElseThrow();
         Team teamA = sharedTeamA != null ? sharedTeamA : teamRepository.findBySlug("test-export-team-a").orElseThrow();
@@ -465,5 +476,15 @@ class TournamentExportIntegrationTest {
             String[] rowCols = resultLines[i].split(",", -1);
             assertThat(rowCols).withFailMessage("Result line %d expected 12 columns but got %d: %s", i, rowCols.length, resultLines[i]).hasSize(12);
         }
+    }
+
+    @Test
+    @DisplayName("SEC-04: exports are organiser-scope only — a PLAYER outside the organisation gets 404")
+    @WithMockUser(username = IntegrationTestUsers.PLAYER_NO_ORG, roles = "PLAYER")
+    void export_ShouldReturnNotFound_ForCallerOutsideOrganiserScope() throws Exception {
+        mockMvc.perform(get("/api/v1/tournaments/{idOrSlug}/export/matches", tournamentId))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/tournaments/{idOrSlug}/export/results", tournamentId))
+                .andExpect(status().isNotFound());
     }
 }
