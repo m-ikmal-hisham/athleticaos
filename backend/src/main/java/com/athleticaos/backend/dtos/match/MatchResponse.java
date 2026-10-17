@@ -44,6 +44,9 @@ public class MatchResponse {
     private String resultType;
     /** Set only for walkovers and byes, which have no scores to derive a winner from. */
     private UUID winnerTeamId;
+    // Admin GET /api/v1/matches/{id} only: true when the caller may score this match
+    // (organiser scope, the match's official, or the tournament officials panel). Null elsewhere.
+    private Boolean canWrite;
     private String phase;
     private String matchCode;
     /** Sequential number within the tournament (1, 2, 3, …) for easy identification. */

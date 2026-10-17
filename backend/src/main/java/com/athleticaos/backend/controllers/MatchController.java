@@ -52,6 +52,7 @@ public class MatchController {
                     currentUserId, match.getId());
             throw new EntityNotFoundException("Match not found");
         }
+        match.setCanWrite(accessScopeService.canWriteMatch(match.getId()));
         return ResponseEntity.ok(match);
     }
 
