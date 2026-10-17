@@ -34,7 +34,7 @@ public class MatchEventController {
     }
 
     @PostMapping("/{matchIdOrSlug}/events")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
     @Operation(summary = "Add an event to a match")
     public ResponseEntity<MatchEventResponse> addEventToMatch(@PathVariable String matchIdOrSlug,
             @RequestBody @Valid MatchEventCreateRequest request, HttpServletRequest httpRequest) {
@@ -45,7 +45,7 @@ public class MatchEventController {
     }
 
     @PutMapping("/events/{eventId}")
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
     @Operation(summary = "Update a match event")
     public ResponseEntity<MatchEventResponse> updateMatchEvent(@PathVariable UUID eventId,
             @RequestBody @Valid MatchEventUpdateRequest request,
@@ -55,7 +55,7 @@ public class MatchEventController {
 
     @DeleteMapping("/events/{eventId}")
     @Operation(summary = "Delete a match event")
-    @PreAuthorize("hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
     public ResponseEntity<UUID> deleteEvent(@PathVariable UUID eventId, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(matchEventService.deleteEvent(eventId, httpRequest));
     }
