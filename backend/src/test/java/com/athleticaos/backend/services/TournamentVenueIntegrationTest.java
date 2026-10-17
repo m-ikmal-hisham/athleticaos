@@ -1,5 +1,8 @@
 package com.athleticaos.backend.services;
 
+import com.athleticaos.backend.repositories.RoleRepository;
+import com.athleticaos.backend.repositories.UserRepository;
+import com.athleticaos.backend.support.IntegrationTestUsers;
 import com.athleticaos.backend.dtos.match.MatchCreateRequest;
 import com.athleticaos.backend.dtos.match.MatchRenumberResponse;
 import com.athleticaos.backend.dtos.match.MatchResponse;
@@ -47,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @Tag("integration")
-@WithMockUser(roles = "SUPER_ADMIN")
+@WithMockUser(username = IntegrationTestUsers.SUPER_ADMIN, roles = "SUPER_ADMIN")
 @SuppressWarnings("null")
 public class TournamentVenueIntegrationTest {
 
@@ -89,8 +92,15 @@ public class TournamentVenueIntegrationTest {
 
     private Organisation testOrg;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
     @BeforeEach
     void setUp() {
+        IntegrationTestUsers.ensureSuperAdmin(userRepository, roleRepository);
         testOrg = organisationRepository.findBySlug("test-venue-mgmt-org")
                 .orElseGet(() -> organisationRepository.saveAndFlush(Organisation.builder()
                         .name("Test Venue Management Org")
