@@ -3,9 +3,11 @@ package com.athleticaos.backend.services.impl;
 import com.athleticaos.backend.dtos.roster.*;
 import com.athleticaos.backend.entities.*;
 import com.athleticaos.backend.repositories.*;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.EligibilityService;
 import com.athleticaos.backend.services.PlayerSuspensionService;
 import com.athleticaos.backend.services.TournamentRosterService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
         private final TournamentStaffRepository tournamentStaffRepository;
         private final StaffRoleRepository staffRoleRepository;
         private final PersonRepository personRepository;
+        private final AccessScopeService accessScopeService;
 
         @Override
         @Transactional
@@ -54,10 +57,34 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                                 teamId);
 
                 Tournament tournament = tournamentRepository.findById(tournamentId)
-                                .orElseThrow(() -> new IllegalArgumentException("Tournament not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
                 Team team = teamRepository.findById(teamId)
-                                .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
+                boolean inTournamentScope = accessScopeService.isTournamentInScope(tournament);
+                boolean inTeamScope = accessScopeService.isTeamInScope(team);
+
+                if (!inTournamentScope && !inTeamScope) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for roster add outside accessible scope: userId={}, tournamentId={}, teamId={}",
+                                        currentUserId, tournamentId, teamId);
+                        throw new EntityNotFoundException("Tournament not found");
+                }
+
+                // If access comes only from isTeamInScope, validate every player is in scope and belongs to this team (C5)
+                if (!inTournamentScope && inTeamScope) {
+                        for (UUID pId : playerIds) {
+                                Player player = playerRepository.findById(pId)
+                                                .orElseThrow(() -> new EntityNotFoundException("Player not found: " + pId));
+                                if (!accessScopeService.isPlayerInScope(player) || !playerTeamRepository.existsByPlayerIdAndTeamId(pId, teamId)) {
+                                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                                        log.warn("Access denied for player add outside team scope: userId={}, playerId={}, teamId={}",
+                                                        currentUserId, pId, teamId);
+                                        throw new EntityNotFoundException("Player not found: " + pId);
+                                }
+                        }
+                }
 
                 // Get TournamentTeam to identify Category
                 TournamentTeam tournamentTeam = tournamentTeamRepository
@@ -128,7 +155,17 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
                 log.info("Removing player from roster: {}", tournamentPlayerId);
 
                 TournamentPlayer tournamentPlayer = tournamentPlayerRepository.findById(tournamentPlayerId)
-                                .orElseThrow(() -> new IllegalArgumentException("Tournament player not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Tournament player not found"));
+
+                boolean inTournamentScope = accessScopeService.isTournamentInScope(tournamentPlayer.getTournament());
+                boolean inTeamScope = accessScopeService.isTeamInScope(tournamentPlayer.getTeam());
+
+                if (!inTournamentScope && !inTeamScope) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for player remove outside accessible scope: userId={}, tournamentPlayerId={}",
+                                        currentUserId, tournamentPlayerId);
+                        throw new EntityNotFoundException("Tournament player not found");
+                }
 
                 tournamentPlayer.setActive(false);
                 tournamentPlayerRepository.save(tournamentPlayer);
@@ -139,6 +176,13 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
         @Transactional(readOnly = true)
         public List<TournamentPlayerDTO> getRoster(UUID tournamentId, UUID teamId) {
                 log.info("Getting roster for tournament {} team {}", tournamentId, teamId);
+
+                if (!accessScopeService.canReadTournament(tournamentId)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for roster read outside accessible scope: userId={}, tournamentId={}",
+                                        currentUserId, tournamentId);
+                        throw new EntityNotFoundException("Tournament not found");
+                }
 
                 List<TournamentPlayer> roster = tournamentPlayerRepository.findByTournamentIdAndTeamIdAndIsActiveTrue(
                                 tournamentId, teamId);
@@ -152,9 +196,17 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
         @Transactional(readOnly = true)
         public List<TournamentStaffDTO> getTournamentStaff(UUID tournamentId, UUID teamId) {
                 log.info("Getting staff roster for tournament {} team {}", tournamentId, teamId);
+
+                if (!accessScopeService.canReadTournament(tournamentId)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for tournament staff read outside accessible scope: userId={}, tournamentId={}",
+                                        currentUserId, tournamentId);
+                        throw new EntityNotFoundException("Tournament not found");
+                }
+
                 TournamentTeam tournamentTeam = tournamentTeamRepository
                                 .findByTournamentIdAndTeamId(tournamentId, teamId)
-                                .orElseThrow(() -> new IllegalArgumentException("Team is not registered in this tournament"));
+                                .orElseThrow(() -> new EntityNotFoundException("Team is not registered in this tournament"));
                 
                 return tournamentStaffRepository.findByTournamentTeamIdAndIsActiveTrue(tournamentTeam.getId()).stream()
                                 .map(this::toStaffDTO)
@@ -166,14 +218,33 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
         public TournamentStaffDTO addStaffToRoster(UUID tournamentId, AddTournamentStaffRequest request) {
                 log.info("Adding staff to roster for tournament {} team {}", tournamentId, request.getTeamId());
                 Tournament tournament = tournamentRepository.findById(tournamentId)
-                                .orElseThrow(() -> new IllegalArgumentException("Tournament not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
                 TournamentTeam tournamentTeam = tournamentTeamRepository
                                 .findByTournamentIdAndTeamId(tournamentId, request.getTeamId())
-                                .orElseThrow(() -> new IllegalArgumentException("Team is not registered in this tournament"));
+                                .orElseThrow(() -> new EntityNotFoundException("Team is not registered in this tournament"));
                 Person person = personRepository.findById(request.getPersonId())
-                                .orElseThrow(() -> new IllegalArgumentException("Person not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
                 StaffRole role = staffRoleRepository.findById(request.getStaffRoleId())
-                                .orElseThrow(() -> new IllegalArgumentException("Staff Role not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Staff Role not found"));
+
+                boolean inTournamentScope = accessScopeService.isTournamentInScope(tournament);
+                boolean inTeamScope = accessScopeService.isTeamInScope(tournamentTeam.getTeam());
+
+                if (!inTournamentScope && !inTeamScope) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for staff add outside accessible scope: userId={}, tournamentId={}",
+                                        currentUserId, tournamentId);
+                        throw new EntityNotFoundException("Tournament not found");
+                }
+
+                if (!inTournamentScope && inTeamScope) {
+                        if (!accessScopeService.isPersonInScope(person.getId())) {
+                                UUID currentUserId = accessScopeService.getCurrentUserId();
+                                log.warn("Access denied for staff person outside team scope: userId={}, personId={}",
+                                                currentUserId, person.getId());
+                                throw new EntityNotFoundException("Person not found: " + person.getId());
+                        }
+                }
                 
                 var existing = tournamentStaffRepository.findByTournamentTeamIdAndPersonIdAndStaffRoleId(
                                 tournamentTeam.getId(), person.getId(), role.getId());
@@ -204,7 +275,18 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
         public void removeStaffFromRoster(UUID tournamentStaffId) {
                 log.info("Removing staff from roster: {}", tournamentStaffId);
                 TournamentStaff ts = tournamentStaffRepository.findById(tournamentStaffId)
-                                .orElseThrow(() -> new IllegalArgumentException("Tournament staff not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Tournament staff not found"));
+
+                boolean inTournamentScope = accessScopeService.isTournamentInScope(ts.getTournament());
+                boolean inTeamScope = accessScopeService.isTeamInScope(ts.getTournamentTeam().getTeam());
+
+                if (!inTournamentScope && !inTeamScope) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for staff remove outside accessible scope: userId={}, tournamentStaffId={}",
+                                        currentUserId, tournamentStaffId);
+                        throw new EntityNotFoundException("Tournament staff not found");
+                }
+
                 ts.setActive(false);
                 tournamentStaffRepository.save(ts);
                 log.info("Successfully removed staff from roster");
@@ -376,8 +458,18 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
                 TournamentPlayer tp = tournamentPlayerRepository
                                 .findByTournamentIdAndTeamIdAndPlayerId(tournamentId, teamId, playerId)
-                                .orElseThrow(() -> new IllegalArgumentException(
+                                .orElseThrow(() -> new EntityNotFoundException(
                                                 "Player not found in tournament roster"));
+
+                boolean inTournamentScope = accessScopeService.isTournamentInScope(tp.getTournament());
+                boolean inTeamScope = accessScopeService.isTeamInScope(tp.getTeam());
+
+                if (!inTournamentScope && !inTeamScope) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for jersey number update outside accessible scope: userId={}, tournamentId={}, teamId={}",
+                                        currentUserId, tournamentId, teamId);
+                        throw new EntityNotFoundException("Tournament not found");
+                }
 
                 tp.setTournamentJerseyNumber(jerseyNumber);
                 tournamentPlayerRepository.save(tp);
@@ -397,8 +489,18 @@ public class TournamentRosterServiceImpl implements TournamentRosterService {
 
                 TournamentPlayer tp = tournamentPlayerRepository
                                 .findByTournamentIdAndTeamIdAndPlayerId(tournamentId, teamId, playerId)
-                                .orElseThrow(() -> new IllegalArgumentException(
+                                .orElseThrow(() -> new EntityNotFoundException(
                                                 "Player not found in tournament roster"));
+
+                boolean inTournamentScope = accessScopeService.isTournamentInScope(tp.getTournament());
+                boolean inTeamScope = accessScopeService.isTeamInScope(tp.getTeam());
+
+                if (!inTournamentScope && !inTeamScope) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for position update outside accessible scope: userId={}, tournamentId={}, teamId={}",
+                                        currentUserId, tournamentId, teamId);
+                        throw new EntityNotFoundException("Tournament not found");
+                }
 
                 tp.setPosition(position);
                 tournamentPlayerRepository.save(tp);

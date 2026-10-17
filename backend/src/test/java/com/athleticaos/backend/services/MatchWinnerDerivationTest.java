@@ -82,6 +82,8 @@ class MatchWinnerDerivationTest {
     private com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
     @Mock
     private PlatformTransactionManager transactionManager;
+    @Mock
+    private com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
     private MatchServiceImpl matchService;
 
@@ -93,6 +95,10 @@ class MatchWinnerDerivationTest {
     void setUp() {
         TransactionStatus txStatus = org.mockito.Mockito.mock(TransactionStatus.class);
         org.mockito.Mockito.lenient().when(transactionManager.getTransaction(any())).thenReturn(txStatus);
+        org.mockito.Mockito.lenient().when(accessScopeService.canWriteMatch(any(UUID.class))).thenReturn(true);
+        org.mockito.Mockito.lenient().when(accessScopeService.canWriteMatch(any(com.athleticaos.backend.entities.Match.class))).thenReturn(true);
+        org.mockito.Mockito.lenient().when(accessScopeService.isTournamentInScope(any(UUID.class))).thenReturn(true);
+        org.mockito.Mockito.lenient().when(accessScopeService.isTournamentInScope(any(Tournament.class))).thenReturn(true);
 
         matchService = new MatchServiceImpl(
                 matchRepository,
@@ -112,7 +118,8 @@ class MatchWinnerDerivationTest {
                 progressionService,
                 bracketService,
                 venueRepository,
-                transactionManager
+                transactionManager,
+                accessScopeService
         );
 
         homeTeam = Team.builder().id(UUID.randomUUID()).name("Home Team").build();

@@ -33,4 +33,5 @@ public class TournamentResponse {
     private String livestreamUrl;
     private java.util.List<com.athleticaos.backend.entities.LivestreamLink> livestreamLinks;
     private String rugbyFormat;
+    private String accessLevel;
 }

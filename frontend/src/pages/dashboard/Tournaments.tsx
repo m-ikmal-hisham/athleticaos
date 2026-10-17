@@ -237,22 +237,26 @@ export default function Tournaments() {
                                     </div>
                                 </div>
 
-                                {isAdmin && (
+                                {(t.accessLevel === 'MANAGE' || user?.roles?.includes('ROLE_SUPER_ADMIN')) && (
                                     <div className="absolute top-4 right-auto left-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                        <button
-                                            onClick={(e) => handleEdit(e, t.id)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-white/20 text-white transition-colors border border-white/10"
-                                            title="Edit Tournament"
-                                        >
-                                            <PencilSimple className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => handleDeleteClick(e, t)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-red-500/80 text-white hover:border-red-500/50 transition-colors border border-white/10"
-                                            title="Delete Tournament"
-                                        >
-                                            <Trash className="w-4 h-4" />
-                                        </button>
+                                        {t.accessLevel === 'MANAGE' && (
+                                            <button
+                                                onClick={(e) => handleEdit(e, t.id)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-white/20 text-white transition-colors border border-white/10"
+                                                title="Edit Tournament"
+                                            >
+                                                <PencilSimple className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        {user?.roles?.includes('ROLE_SUPER_ADMIN') && (
+                                            <button
+                                                onClick={(e) => handleDeleteClick(e, t)}
+                                                className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md hover:bg-red-500/80 text-white hover:border-red-500/50 transition-colors border border-white/10"
+                                                title="Delete Tournament"
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>

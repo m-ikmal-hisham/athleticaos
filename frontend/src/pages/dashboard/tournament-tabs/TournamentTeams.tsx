@@ -11,9 +11,10 @@ import { Select } from '@/components/Select';
 
 interface TournamentTeamsProps {
     tournamentId: string;
+    canManage?: boolean;
 }
 
-export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
+export function TournamentTeams({ tournamentId, canManage = false }: TournamentTeamsProps) {
     const [teams, setTeams] = useState<Team[]>([]);
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -177,7 +178,7 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                 </h3>
                 <div className="flex gap-2 w-full md:w-auto items-center">
                     {/* Bulk Actions */}
-                    {selectedRegisteredTeamIds.size > 0 && (
+                    {canManage && selectedRegisteredTeamIds.size > 0 && (
                         <div className="flex items-center gap-2 mr-2">
                             <Select
                                 value=""
@@ -229,15 +230,17 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                         </div>
                     )}
 
-                    <Button onClick={handleOpenAddModal} className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add Teams
-                    </Button>
+                    {canManage && (
+                        <Button onClick={handleOpenAddModal} className="flex items-center gap-2">
+                            <Plus className="w-4 h-4" />
+                            Add Teams
+                        </Button>
+                    )}
                 </div>
             </div>
 
             {/* Select All Bar */}
-            {filteredTeams.length > 0 && (
+            {canManage && filteredTeams.length > 0 && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                     <input
                         type="checkbox"
@@ -260,23 +263,26 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                     </div>
                 ) : (
                     filteredTeams.map(team => (
-                        <GlassCard key={team.id} className={`p-4 flex justify-between items-center group cursor-pointer transition-colors ${selectedRegisteredTeamIds.has(team.id) ? 'border-navy ring-1 ring-navy bg-blue-50/50 dark:bg-blue-900/10' : ''
+                        <GlassCard key={team.id} className={`p-4 flex justify-between items-center group transition-colors ${canManage ? 'cursor-pointer' : ''} ${selectedRegisteredTeamIds.has(team.id) ? 'border-navy ring-1 ring-navy bg-blue-50/50 dark:bg-blue-900/10' : ''
                             }`}
                             onClick={(e) => {
+                                if (!canManage) return;
                                 // Prevent toggle if clicking delete button
                                 if ((e.target as HTMLElement).closest('button')) return;
                                 handleToggleRegisteredTeamSelection(team.id);
                             }}
                         >
                             <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedRegisteredTeamIds.has(team.id)}
-                                    onChange={() => handleToggleRegisteredTeamSelection(team.id)}
-                                    className="rounded border-slate-300 text-navy dark:text-navy-tint focus:ring-navy"
-                                    onClick={(e) => e.stopPropagation()}
-                                    aria-label={`Select team ${team.name}`}
-                                />
+                                {canManage && (
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedRegisteredTeamIds.has(team.id)}
+                                        onChange={() => handleToggleRegisteredTeamSelection(team.id)}
+                                        className="rounded border-slate-300 text-navy dark:text-navy-tint focus:ring-navy"
+                                        onClick={(e) => e.stopPropagation()}
+                                        aria-label={`Select team ${team.name}`}
+                                    />
+                                )}
                                 {/* Team Logo */}
                                 <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                                     {team.logoUrl ? (
@@ -298,17 +304,19 @@ export function TournamentTeams({ tournamentId }: TournamentTeamsProps) {
                                     )}
                                 </div>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveTeam(team.id);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            >
-                                <Trash className="w-4 h-4" />
-                            </Button>
+                            {canManage && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveTeam(team.id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                >
+                                    <Trash className="w-4 h-4" />
+                                </Button>
+                            )}
                         </GlassCard>
                     ))
                 )}

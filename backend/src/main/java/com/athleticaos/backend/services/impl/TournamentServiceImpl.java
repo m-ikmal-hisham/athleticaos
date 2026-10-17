@@ -53,18 +53,19 @@ public class TournamentServiceImpl implements TournamentService {
     private final TournamentStageRepository tournamentStageRepository;
     private final com.athleticaos.backend.services.MatchService matchService;
     private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
+    private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
     @Override
     @Transactional(readOnly = true)
     public List<TournamentResponse> getAllTournaments(String level) {
-        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+        java.util.Set<UUID> accessibleTournamentIds = accessScopeService.getAccessibleTournamentIds();
         List<Tournament> tournaments;
-        if (accessibleIds == null) {
+        if (accessibleTournamentIds == null) {
             tournaments = tournamentRepository.findAll();
-        } else if (accessibleIds.isEmpty()) {
+        } else if (accessibleTournamentIds.isEmpty()) {
             tournaments = java.util.Collections.emptyList();
         } else {
-            tournaments = tournamentRepository.findByOrganiserOrg_IdIn(accessibleIds);
+            tournaments = tournamentRepository.findByIdIn(accessibleTournamentIds);
         }
 
         return tournaments.stream()
@@ -119,6 +120,13 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (!accessScopeService.isTournamentInScope(tournament)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament dashboard outside organiser scope: userId={}, tournamentId={}",
+                    currentUserId, tournament.getId());
+            throw new EntityNotFoundException("Tournament not found");
+        }
 
         int totalMatches = matchRepository.findByTournamentId(id).size();
         int completedMatches = matchRepository
@@ -182,6 +190,13 @@ public class TournamentServiceImpl implements TournamentService {
         // Validate organiser organisation exists
         Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
                 .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
+
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found");
+        }
 
         Tournament.TournamentBuilder builder = Tournament.builder()
                 .organiserOrg(org)
@@ -285,9 +300,18 @@ public class TournamentServiceImpl implements TournamentService {
             tournament.setLevel(request.getLevel());
         }
         if (request.getOrganiserOrgId() != null) {
-            Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
-                    .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
-            tournament.setOrganiserOrg(org);
+            UUID currentOrgId = tournament.getOrganiserOrg() != null ? tournament.getOrganiserOrg().getId() : null;
+            if (!request.getOrganiserOrgId().equals(currentOrgId)) {
+                if (!accessScopeService.isOrganisationInScope(request.getOrganiserOrgId())) {
+                    UUID currentUserId = accessScopeService.getCurrentUserId();
+                    log.warn("Access denied outside organiser scope: userId={}, organisationId={}",
+                            currentUserId, request.getOrganiserOrgId());
+                    throw new EntityNotFoundException("Organisation not found");
+                }
+                Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
+                        .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
+                tournament.setOrganiserOrg(org);
+            }
         }
         if (request.getStartDate() != null) {
             tournament.setStartDate(request.getStartDate());
@@ -482,6 +506,13 @@ public class TournamentServiceImpl implements TournamentService {
     private byte[] generateCsv(UUID tournamentId, boolean includeResults) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (!accessScopeService.isTournamentInScope(tournament)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament export outside organiser scope: userId={}, tournamentId={}",
+                    currentUserId, tournament.getId());
+            throw new EntityNotFoundException("Tournament not found");
+        }
 
         List<Match> matches = matchRepository.findByTournamentIdWithTeams(tournamentId);
 

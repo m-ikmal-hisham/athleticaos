@@ -5,8 +5,15 @@ import com.athleticaos.backend.entities.Person;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.User;
+import com.athleticaos.backend.entities.Match;
+import com.athleticaos.backend.entities.Tournament;
+import com.athleticaos.backend.repositories.MatchOfficialRepository;
+import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.OrganisationPersonRepository;
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
+import com.athleticaos.backend.repositories.TournamentOfficialRepository;
+import com.athleticaos.backend.repositories.TournamentRepository;
+import com.athleticaos.backend.repositories.TournamentTeamRepository;
 import com.athleticaos.backend.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +43,21 @@ class AccessScopeServiceImplTest {
 
     @Mock
     private PlayerTeamRepository playerTeamRepository;
+
+    @Mock
+    private TournamentRepository tournamentRepository;
+
+    @Mock
+    private TournamentOfficialRepository tournamentOfficialRepository;
+
+    @Mock
+    private MatchOfficialRepository matchOfficialRepository;
+
+    @Mock
+    private TournamentTeamRepository tournamentTeamRepository;
+
+    @Mock
+    private MatchRepository matchRepository;
 
     @InjectMocks
     private AccessScopeServiceImpl accessScopeService;
@@ -244,5 +266,101 @@ class AccessScopeServiceImplTest {
         when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(orgId));
         User targetUser = User.builder().id(UUID.randomUUID()).organisation(Organisation.builder().id(otherId).build()).build();
         assertThat(accessScopeService.isUserInScope(targetUser)).isFalse();
+    }
+
+    @Test
+    void canReadMatch_and_canWriteMatch_assignedAsTournamentOfficial_allowsAccess() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID officialUserId = UUID.randomUUID();
+        UUID matchId = UUID.randomUUID();
+
+        Tournament tournament = Tournament.builder()
+                .id(tournamentId)
+                .organiserOrg(Organisation.builder().id(UUID.randomUUID()).build())
+                .build();
+        Match match = Match.builder()
+                .id(matchId)
+                .tournament(tournament)
+                .build();
+
+        // Not super admin, tournament not in org scope
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(UUID.randomUUID()));
+        when(userService.getCurrentUser()).thenReturn(User.builder().id(officialUserId).build());
+
+        // Official is NOT assigned to this specific match
+        when(matchOfficialRepository.isUserAssignedToMatch(matchId, officialUserId)).thenReturn(false);
+
+        // Official IS assigned to the tournament (TournamentOfficial with isActive = true)
+        when(tournamentOfficialRepository.isUserAssignedToTournament(tournamentId, officialUserId)).thenReturn(true);
+
+        // Both canReadMatch and canWriteMatch should return true (isUserAssignedToMatch checks tournamentOfficialRepository)
+        assertThat(accessScopeService.canReadMatch(match)).isTrue();
+        assertThat(accessScopeService.canWriteMatch(match)).isTrue();
+    }
+
+    @Test
+    void matchLevelOfficial_canWriteAssignedMatch_cannotWriteOtherMatch_inSameTournament() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID officialUserId = UUID.randomUUID();
+        UUID m1Id = UUID.randomUUID();
+        UUID m2Id = UUID.randomUUID();
+
+        Tournament tournament = Tournament.builder()
+                .id(tournamentId)
+                .organiserOrg(Organisation.builder().id(UUID.randomUUID()).build())
+                .build();
+        Match m1 = Match.builder().id(m1Id).tournament(tournament).build();
+        Match m2 = Match.builder().id(m2Id).tournament(tournament).build();
+
+        // Not super admin, tournament not in org scope
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(UUID.randomUUID()));
+        when(userService.getCurrentUser()).thenReturn(User.builder().id(officialUserId).build());
+
+        // Official assigned to M1, but NOT M2
+        when(matchOfficialRepository.isUserAssignedToMatch(m1Id, officialUserId)).thenReturn(true);
+        when(matchOfficialRepository.isUserAssignedToMatch(m2Id, officialUserId)).thenReturn(false);
+
+        // NOT on tournament panel
+        when(tournamentOfficialRepository.isUserAssignedToTournament(tournamentId, officialUserId)).thenReturn(false);
+
+        // For M2 read check: isUserAssignedToTournamentMatches returns true because official is assigned to M1 in this tournament
+        when(matchOfficialRepository.isUserAssignedToTournamentMatches(tournamentId, officialUserId)).thenReturn(true);
+
+        // M1: canWrite is true
+        assertThat(accessScopeService.canWriteMatch(m1)).isTrue();
+
+        // M2: canWrite is false, canRead is true
+        assertThat(accessScopeService.canWriteMatch(m2)).isFalse();
+        assertThat(accessScopeService.canReadMatch(m2)).isTrue();
+    }
+
+    @Test
+    void canReadMatch_and_canWriteMatch_unassignedOfficial_deniesAccess() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID officialUserId = UUID.randomUUID();
+        UUID matchId = UUID.randomUUID();
+
+        Tournament tournament = Tournament.builder()
+                .id(tournamentId)
+                .organiserOrg(Organisation.builder().id(UUID.randomUUID()).build())
+                .build();
+        Match match = Match.builder()
+                .id(matchId)
+                .tournament(tournament)
+                .build();
+
+        // Not super admin, tournament not in org scope
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Set.of(UUID.randomUUID()));
+        when(userService.getCurrentUser()).thenReturn(User.builder().id(officialUserId).build());
+
+        // Not assigned to match
+        when(matchOfficialRepository.isUserAssignedToMatch(matchId, officialUserId)).thenReturn(false);
+        // Not assigned to tournament
+        when(tournamentOfficialRepository.isUserAssignedToTournament(tournamentId, officialUserId)).thenReturn(false);
+        when(matchOfficialRepository.isUserAssignedToTournamentMatches(tournamentId, officialUserId)).thenReturn(false);
+
+        // Can neither read nor write
+        assertThat(accessScopeService.canReadMatch(match)).isFalse();
+        assertThat(accessScopeService.canWriteMatch(match)).isFalse();
     }
 }

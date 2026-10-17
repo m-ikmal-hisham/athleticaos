@@ -60,6 +60,7 @@ class MatchEventServiceImplTest {
     @Mock private MatchService matchService;
     @Mock private UserService userService;
     @Mock private MatchOfficialRepository matchOfficialRepository;
+    @Mock private com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
     @InjectMocks
     private MatchEventServiceImpl service;
@@ -71,6 +72,8 @@ class MatchEventServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(accessScopeService.canWriteMatch(any(Match.class))).thenReturn(true);
+        lenient().when(accessScopeService.canWriteMatch(any(UUID.class))).thenReturn(true);
         Tournament tournament = Tournament.builder().id(UUID.randomUUID()).name("Carnival").build();
         team = Team.builder().id(UUID.randomUUID()).name("Home XV").build();
         match = Match.builder().id(UUID.randomUUID()).tournament(tournament).homeTeam(team).build();
@@ -177,5 +180,23 @@ class MatchEventServiceImplTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Grace period expired");
         assertThat(teamOnlyTry.getPlayer()).isNull();
+    }
+
+    @Test
+    void addEventToMatch_whenCallerCannotWriteMatch_throwsEntityNotFoundException_andSavesNothing() {
+        when(accessScopeService.canWriteMatch(any(Match.class))).thenReturn(false);
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+
+        com.athleticaos.backend.dtos.match.MatchEventCreateRequest request = new com.athleticaos.backend.dtos.match.MatchEventCreateRequest();
+        request.setEventType(MatchEventType.TRY);
+        request.setMinute(10);
+        request.setTeamId(team.getId());
+
+        assertThatThrownBy(() -> service.addEventToMatch(match.getId(), request, null))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessageContaining("Match not found");
+
+        verify(matchEventRepository, never()).save(any());
+        verify(matchEventRepository, never()).saveAndFlush(any());
     }
 }

@@ -317,6 +317,7 @@ export interface Tournament {
         logoUrl?: string;
     };
     venues?: TournamentVenue[];
+    accessLevel?: 'MANAGE' | 'READ_ONLY';
 }
 
 export interface TournamentVenue {

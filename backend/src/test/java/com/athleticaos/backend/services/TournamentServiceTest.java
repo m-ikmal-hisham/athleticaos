@@ -52,6 +52,8 @@ class TournamentServiceTest {
     private TeamRepository teamRepository;
     @Mock
     private TournamentPlayerRepository tournamentPlayerRepository;
+    @Mock
+    private com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
     @InjectMocks
     private TournamentServiceImpl tournamentService;
@@ -74,10 +76,10 @@ class TournamentServiceTest {
                 .deleted(false)
                 .build();
 
-        Set<UUID> accessibleIds = Set.of(orgId);
+        Set<UUID> accessibleTournamentIds = Set.of(tournament.getId());
 
-        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(accessibleIds);
-        when(tournamentRepository.findByOrganiserOrg_IdIn(accessibleIds)).thenReturn(List.of(tournament));
+        when(accessScopeService.getAccessibleTournamentIds()).thenReturn(accessibleTournamentIds);
+        when(tournamentRepository.findByIdIn(accessibleTournamentIds)).thenReturn(List.of(tournament));
 
         // Act
         List<TournamentResponse> result = tournamentService.getAllTournaments(null);
@@ -86,13 +88,13 @@ class TournamentServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("Test Tournament", result.get(0).getName());
-        verify(tournamentRepository).findByOrganiserOrg_IdIn(accessibleIds);
+        verify(tournamentRepository).findByIdIn(accessibleTournamentIds);
     }
 
     @Test
     void getAllTournaments_ShouldReturnEmpty_WhenUserHasNoAccess() {
         // Arrange
-        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(Collections.emptySet());
+        when(accessScopeService.getAccessibleTournamentIds()).thenReturn(Collections.emptySet());
 
         // Act
         List<TournamentResponse> result = tournamentService.getAllTournaments(null);
@@ -101,7 +103,113 @@ class TournamentServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
         // Verify repository was NOT called
-        verify(tournamentRepository, never()).findByOrganiserOrg_IdIn(any());
+        verify(tournamentRepository, never()).findByIdIn(any());
         verify(tournamentRepository, never()).findAll();
+    }
+
+    @Test
+    void updateTournament_moveOrganiser_outOfScope_throwsEntityNotFoundException_andOrganiserUnchanged() {
+        UUID orgAId = UUID.randomUUID();
+        UUID orgBId = UUID.randomUUID();
+        Organisation orgA = Organisation.builder().id(orgAId).name("Org A").build();
+        Tournament tournament = Tournament.builder()
+                .id(UUID.randomUUID())
+                .name("Tournament A")
+                .organiserOrg(orgA)
+                .deleted(false)
+                .build();
+
+        when(tournamentRepository.findById(tournament.getId())).thenReturn(java.util.Optional.of(tournament));
+        when(accessScopeService.isOrganisationInScope(orgBId)).thenReturn(false);
+        when(accessScopeService.getCurrentUserId()).thenReturn(UUID.randomUUID());
+
+        com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest request = new com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest();
+        request.setOrganiserOrgId(orgBId);
+
+        assertThrows(jakarta.persistence.EntityNotFoundException.class, () ->
+                tournamentService.updateTournament(tournament.getId(), request, null)
+        );
+
+        assertEquals(orgA, tournament.getOrganiserOrg());
+        verify(organisationRepository, never()).findById(orgBId);
+    }
+
+    @Test
+    void updateTournament_moveOrganiser_childOrgInScope_allowed() {
+        UUID orgAId = UUID.randomUUID();
+        UUID childOrgId = UUID.randomUUID();
+        Organisation orgA = Organisation.builder().id(orgAId).name("Org A").build();
+        Organisation childOrg = Organisation.builder().id(childOrgId).name("Child Org").build();
+        Tournament tournament = Tournament.builder()
+                .id(UUID.randomUUID())
+                .name("Tournament A")
+                .organiserOrg(orgA)
+                .deleted(false)
+                .categories(Collections.emptyList())
+                .build();
+
+        when(tournamentRepository.findById(tournament.getId())).thenReturn(java.util.Optional.of(tournament));
+        when(accessScopeService.isOrganisationInScope(childOrgId)).thenReturn(true);
+        when(organisationRepository.findById(childOrgId)).thenReturn(java.util.Optional.of(childOrg));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest request = new com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest();
+        request.setOrganiserOrgId(childOrgId);
+
+        TournamentResponse response = tournamentService.updateTournament(tournament.getId(), request, null);
+        assertNotNull(response);
+        assertEquals(childOrgId, tournament.getOrganiserOrg().getId());
+    }
+
+    @Test
+    void updateTournament_moveOrganiser_superAdmin_allowed() {
+        UUID orgAId = UUID.randomUUID();
+        UUID anyOrgId = UUID.randomUUID();
+        Organisation orgA = Organisation.builder().id(orgAId).name("Org A").build();
+        Organisation anyOrg = Organisation.builder().id(anyOrgId).name("Any Org").build();
+        Tournament tournament = Tournament.builder()
+                .id(UUID.randomUUID())
+                .name("Tournament A")
+                .organiserOrg(orgA)
+                .deleted(false)
+                .categories(Collections.emptyList())
+                .build();
+
+        when(tournamentRepository.findById(tournament.getId())).thenReturn(java.util.Optional.of(tournament));
+        when(accessScopeService.isOrganisationInScope(anyOrgId)).thenReturn(true);
+        when(organisationRepository.findById(anyOrgId)).thenReturn(java.util.Optional.of(anyOrg));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest request = new com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest();
+        request.setOrganiserOrgId(anyOrgId);
+
+        TournamentResponse response = tournamentService.updateTournament(tournament.getId(), request, null);
+        assertNotNull(response);
+        assertEquals(anyOrgId, tournament.getOrganiserOrg().getId());
+    }
+
+    @Test
+    void updateTournament_sameOrganiserReSent_allowedWithoutScopeCheck() {
+        UUID orgAId = UUID.randomUUID();
+        Organisation orgA = Organisation.builder().id(orgAId).name("Org A").build();
+        Tournament tournament = Tournament.builder()
+                .id(UUID.randomUUID())
+                .name("Tournament A")
+                .organiserOrg(orgA)
+                .deleted(false)
+                .categories(Collections.emptyList())
+                .build();
+
+        when(tournamentRepository.findById(tournament.getId())).thenReturn(java.util.Optional.of(tournament));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest request = new com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest();
+        request.setOrganiserOrgId(orgAId);
+
+        TournamentResponse response = tournamentService.updateTournament(tournament.getId(), request, null);
+        assertNotNull(response);
+        assertEquals(orgAId, tournament.getOrganiserOrg().getId());
+        verify(accessScopeService, never()).isOrganisationInScope(any());
+        verify(organisationRepository, never()).findById(any());
     }
 }

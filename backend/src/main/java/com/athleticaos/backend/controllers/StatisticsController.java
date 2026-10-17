@@ -4,9 +4,12 @@ import com.athleticaos.backend.dtos.stats.PlayerStatsResponse;
 import com.athleticaos.backend.dtos.stats.TeamStatsResponse;
 import com.athleticaos.backend.dtos.stats.TournamentStatsSummaryResponse;
 import com.athleticaos.backend.dtos.stats.leaderboard.TournamentLeaderboardResponse;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.StatisticsService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,17 +22,29 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/stats")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Statistics")
 public class StatisticsController {
 
     private final StatisticsService statisticsService;
     private final com.athleticaos.backend.services.PlayerService playerService;
+    private final AccessScopeService accessScopeService;
+
+    private void checkTournamentReadScope(UUID tournamentId) {
+        if (!accessScopeService.canReadTournament(tournamentId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for stats read outside accessible scope: userId={}, tournamentId={}",
+                    currentUserId, tournamentId);
+            throw new EntityNotFoundException("Tournament not found");
+        }
+    }
 
     @GetMapping("/tournaments/{tournamentId}/summary")
     @PreAuthorize("isAuthenticated()")
     public TournamentStatsSummaryResponse getTournamentSummary(
             @PathVariable UUID tournamentId,
             @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        checkTournamentReadScope(tournamentId);
         return statisticsService.getTournamentSummary(tournamentId, categoryId);
     }
 
@@ -38,6 +53,7 @@ public class StatisticsController {
     public List<PlayerStatsResponse> getTournamentPlayerStats(
             @PathVariable UUID tournamentId,
             @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        checkTournamentReadScope(tournamentId);
         return statisticsService.getPlayerStatsForTournament(tournamentId, categoryId);
     }
 
@@ -46,6 +62,7 @@ public class StatisticsController {
     public List<TeamStatsResponse> getTournamentTeamStats(
             @PathVariable UUID tournamentId,
             @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        checkTournamentReadScope(tournamentId);
         return statisticsService.getTeamStatsForTournament(tournamentId, categoryId);
     }
 
@@ -54,6 +71,7 @@ public class StatisticsController {
     public TournamentLeaderboardResponse getTournamentLeaderboard(
             @PathVariable UUID tournamentId,
             @org.springframework.web.bind.annotation.RequestParam(required = false) UUID categoryId) {
+        checkTournamentReadScope(tournamentId);
         return statisticsService.getTournamentLeaderboard(tournamentId, categoryId);
     }
 

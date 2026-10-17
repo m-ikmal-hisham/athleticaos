@@ -195,7 +195,8 @@ export default function TournamentDetail() {
         { id: 'rosters', label: 'Rosters', icon: Users },
     ];
 
-    const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
+    const isSuperAdmin = Boolean(user?.roles?.includes('ROLE_SUPER_ADMIN'));
+    const canManageTournament = isSuperAdmin || tournament?.accessLevel === 'MANAGE';
 
     {/* Header */ }
     return (
@@ -237,7 +238,7 @@ export default function TournamentDetail() {
                         </div>
                     </div>
 
-                    {isAdmin && (
+                    {canManageTournament && (
                         <div className="flex flex-wrap gap-2 md:gap-3 shrink-0">
                             {tournament.status === TournamentStatus.DRAFT && (
                                 <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
@@ -251,14 +252,16 @@ export default function TournamentDetail() {
                             {tournament.status === TournamentStatus.ONGOING && (
                                 <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
                             )}
-                            <Button
-                                variant="danger"
-                                disabled={tournament.status === TournamentStatus.ONGOING}
-                                disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
-                                onClick={() => setIsDeleteModalOpen(true)}
-                            >
-                                Delete
-                            </Button>
+                            {isSuperAdmin && (
+                                <Button
+                                    variant="danger"
+                                    disabled={tournament.status === TournamentStatus.ONGOING}
+                                    disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
+                                    onClick={() => setIsDeleteModalOpen(true)}
+                                >
+                                    Delete
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -338,7 +341,7 @@ export default function TournamentDetail() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Overview Content */}
                         <div className="lg:col-span-2 space-y-6">
-                            <TournamentReadinessCard tournamentId={tournament.id} />
+                            {canManageTournament && <TournamentReadinessCard tournamentId={tournament.id} />}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <GlassCard className="p-6 flex flex-col items-center justify-center text-center">
                                     <div className="w-12 h-12 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center mb-4">
@@ -375,7 +378,9 @@ export default function TournamentDetail() {
                                 </GlassCard>
                             </div>
 
-                            {/* Additional Stats or Info could go here */}
+                            {/* Stats come from the organiser-scope dashboard endpoint; read-only
+                                viewers would only see zeros, so the card is for managers. */}
+                            {canManageTournament && (
                             <GlassCard className="p-6">
                                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                                     <ListNumbers className="w-5 h-5 text-navy dark:text-navy-tint" />
@@ -396,6 +401,7 @@ export default function TournamentDetail() {
                                     </div>
                                 </div>
                             </GlassCard>
+                            )}
                         </div>
 
                         {/* Recent Suspensions Widget */}
@@ -406,15 +412,15 @@ export default function TournamentDetail() {
                 )}
 
                 {activeTab === 'teams' && tournament && (
-                    <TournamentTeams tournamentId={tournament.id} />
+                    <TournamentTeams tournamentId={tournament.id} canManage={canManageTournament} />
                 )}
 
                 {activeTab === 'format' && tournament && (
-                    <TournamentFormat tournamentId={tournament.id} onScheduleGenerated={() => setActiveTab('matches')} />
+                    <TournamentFormat tournamentId={tournament.id} onScheduleGenerated={() => setActiveTab('matches')} readonly={!canManageTournament} />
                 )}
 
                 {activeTab === 'matches' && tournament && (
-                    <TournamentMatches tournamentId={tournament.id} tournamentSlug={tournament.slug} />
+                    <TournamentMatches tournamentId={tournament.id} tournamentSlug={tournament.slug} canManage={canManageTournament} />
                 )}
 
                 {activeTab === 'standings' && (
