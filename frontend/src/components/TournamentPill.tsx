@@ -5,6 +5,8 @@ import { clsx } from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
+import { fetchTournaments } from '@/api/tournaments.api';
+import { Tournament } from '@/types';
 import { useUIStore } from '@/store/ui.store';
 
 export const TournamentPill = () => {
@@ -12,7 +14,7 @@ export const TournamentPill = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const location = useLocation();
-    const { setActiveTournamentId } = useUIStore();
+    const { activeTournamentId, setActiveTournamentId } = useUIStore();
 
     // Check if we are in the admin dashboard
     const isAdmin = location.pathname.startsWith('/dashboard');
@@ -21,8 +23,31 @@ export const TournamentPill = () => {
         const loadTournaments = async () => {
             try {
                 setLoading(true);
-                // Fetch public tournaments
-                const fetchedTournaments = await publicTournamentApi.getTournaments();
+                let fetchedTournaments: PublicTournamentSummary[] = [];
+                if (isAdmin) {
+                    const res = await fetchTournaments();
+                    fetchedTournaments = (res.data || []).map((t: Tournament) => ({
+                        id: t.id,
+                        slug: t.slug,
+                        name: t.name,
+                        level: t.level,
+                        seasonName: t.seasonName,
+                        startDate: t.startDate,
+                        endDate: t.endDate,
+                        venue: t.venue,
+                        live: (t.status as string) === 'LIVE' || (t.status as string) === 'ONGOING',
+                        completed: (t.status as string) === 'COMPLETED',
+                        organiserName: t.organiserBranding?.name || '',
+                        competitionType: t.competitionType,
+                        organiserBranding: t.organiserBranding,
+                        logoUrl: t.logoUrl,
+                        bannerUrl: t.bannerUrl,
+                        livestreamUrl: t.livestreamUrl,
+                        livestreamLinks: t.livestreamLinks,
+                    }));
+                } else {
+                    fetchedTournaments = await publicTournamentApi.getTournaments();
+                }
 
                 if (fetchedTournaments.length > 0) {
                     // Sort tournaments by date - closest to today first
@@ -39,7 +64,21 @@ export const TournamentPill = () => {
                     });
 
                     setTournaments(sorted);
-                    setCurrentIndex(0);
+                    // If active tournament is in list, select it; otherwise clear/select 0
+                    if (activeTournamentId) {
+                        const existingIdx = sorted.findIndex(t => t.id === activeTournamentId);
+                        if (existingIdx !== -1) {
+                            setCurrentIndex(existingIdx);
+                        } else {
+                            setActiveTournamentId(null);
+                            setCurrentIndex(0);
+                        }
+                    } else {
+                        setCurrentIndex(0);
+                    }
+                } else {
+                    setTournaments([]);
+                    setActiveTournamentId(null);
                 }
             } catch (error) {
                 console.error("Failed to load tournaments for pill", error);
@@ -48,7 +87,7 @@ export const TournamentPill = () => {
             }
         };
         loadTournaments();
-    }, []);
+    }, [isAdmin]);
 
     // Sync active tournament to global store
     useEffect(() => {

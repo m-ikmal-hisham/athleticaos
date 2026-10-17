@@ -22,6 +22,9 @@ interface BracketEditorProps {
     onRefresh: () => void;
     selectedCategoryId?: string | null;
     categories?: TournamentCategory[];
+    // Read-only viewers (a participating team, an assigned official) see the brackets but no
+    // bracket or match actions. The backend refuses those writes anyway (SEC-04).
+    readonly?: boolean;
 }
 
 /**
@@ -47,7 +50,7 @@ const MANUAL_BRACKET_TYPES: { type: string; label: string; places: string }[] = 
 
 const BRACKET_TEAM_COUNTS = [2, 4, 8, 16];
 
-export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId, categories = [] }: BracketEditorProps) {
+export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId, categories = [], readonly = false }: BracketEditorProps) {
     const [loading, setLoading] = useState(false);
     const [addBracketOpen, setAddBracketOpen] = useState(false);
     const [newBracketType, setNewBracketType] = useState('PLATE');
@@ -307,6 +310,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             {expandedBrackets.size === bracketGroups.length ? 'Collapse all' : 'Expand all'}
                         </Button>
                     )}
+                    {!readonly && (<>
                     <Button
                         size="sm"
                         variant="tertiary"
@@ -337,10 +341,11 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                     <Button size="sm" onClick={openAddBracket} disabled={loading}>
                         <Plus className="w-4 h-4 mr-1" /> Add Bracket
                     </Button>
+                    </>)}
                 </div>
             </div>
 
-            {unresolvedSlots.length > 0 && (
+            {!readonly && unresolvedSlots.length > 0 && (
                 <div className="p-4 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -605,7 +610,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             </span>
                         </button>
                         <div className="flex items-center gap-2 shrink-0">
-                            {isUnassigned && (
+                            {!readonly && isUnassigned && (
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-xs font-semibold text-[var(--accent-text)]">
                                         Not assigned to a category — hidden on the public site
@@ -624,6 +629,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                     </Button>
                                 </div>
                             )}
+                            {!readonly && (
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -633,6 +639,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             >
                                 <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete Bracket</span>
                             </Button>
+                            )}
                         </div>
                     </GlassCardHeader>
                     <GlassCardContent
@@ -650,7 +657,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                         )}
                                         {/* The 3rd place playoff sits inside Cup, so it gets its own remove action
                                             (Delete Bracket on Cup would remove the whole Cup). */}
-                                        {round.stageType === 'THIRD_PLACE' && (
+                                        {!readonly && round.stageType === 'THIRD_PLACE' && (
                                             <button
                                                 type="button"
                                                 aria-label="Remove 3rd Place Playoff"
@@ -674,6 +681,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                 className="bg-background/60 border border-white/10 rounded-xl overflow-hidden relative group hover:border-primary/60 transition-all shadow-md"
                                             >
                                                 {/* Admin edit button */}
+                                                {!readonly && (
                                                 <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <button
                                                         onClick={() => onMatchEdit(match)}
@@ -684,6 +692,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                         <PencilSimple className="w-4 h-4" />
                                                     </button>
                                                 </div>
+                                                )}
 
                                                 <div className="text-[10px] text-muted-foreground/80 px-3 py-1 bg-black/40 border-b border-white/5 uppercase tracking-wider flex justify-between font-mono">
                                                     {/* Bracket cards are narrow: show the number and venue, and keep the long generated code in the tooltip. */}

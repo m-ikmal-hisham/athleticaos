@@ -9,7 +9,7 @@ import { ProfilePopup } from '@/components/ProfilePopup';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { PageLoader } from '@/components/PageLoader';
 import { isFeatureEnabled, FeatureKey } from '@/config/features';
-import { SITE_NAME } from '@/config/site';
+import { SITE_NAME, PRODUCT_NAME, SPORT_NAME } from '@/config/site';
 
 interface NavItem {
     label: string;
@@ -293,8 +293,9 @@ export const AppLayout = () => {
 
 
                     {/* Logo & Header */}
-                    <div className={clsx("flex items-center p-6 pb-2 transition-all duration-300", isCollapsed ? "justify-center px-0" : "justify-between")}>
-                        <Link to="/dashboard" className={clsx("flex items-center group", isCollapsed ? "gap-0" : "gap-3")}>
+                    {/* pr-12 keeps the brand clear of the floating collapse button (top-8 right-5). */}
+                    <div className={clsx("flex items-center p-6 pb-2 transition-all duration-300", isCollapsed ? "justify-center px-0" : "justify-between lg:pr-12")}>
+                        <Link to="/dashboard" title={SITE_NAME} aria-label={`${SITE_NAME} Manager`} className={clsx("flex items-center group min-w-0", isCollapsed ? "gap-0" : "gap-3")}>
                             <div className="relative shrink-0">
                                 {brandLogoUrl ? (
                                     <img
@@ -317,11 +318,13 @@ export const AppLayout = () => {
                                 )}
                             </div>
                             <div className={clsx("flex flex-col overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                                {/* Two lines, so the full "AthleticaOS Rugby" brand fits the 240px sidebar
+                                    instead of being cut to "AthleticaOS Ru…". */}
                                 <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
-                                    {SITE_NAME}
+                                    {PRODUCT_NAME}
                                 </span>
-                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mt-0.5 whitespace-nowrap">
-                                    Manager
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-1 whitespace-nowrap">
+                                    {SPORT_NAME} Manager
                                 </span>
                             </div>
                         </Link>

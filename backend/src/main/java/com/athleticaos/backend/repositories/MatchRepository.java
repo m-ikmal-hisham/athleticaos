@@ -116,6 +116,19 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "LEFT JOIN FETCH m.tournament t " +
                         "LEFT JOIN FETCH t.organiserOrg tOrg " +
                         "LEFT JOIN FETCH m.stage " +
+                        "WHERE t.id IN :tournamentIds AND m.deleted = false " +
+                        "ORDER BY m.matchDate ASC, m.kickOffTime ASC")
+        List<Match> findByTournamentIdInWithDetails(
+                        @org.springframework.data.repository.query.Param("tournamentIds") java.util.Collection<UUID> tournamentIds);
+
+        @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
+                        "LEFT JOIN FETCH m.homeTeam ht " +
+                        "LEFT JOIN FETCH ht.organisation hto " +
+                        "LEFT JOIN FETCH m.awayTeam at " +
+                        "LEFT JOIN FETCH at.organisation ato " +
+                        "LEFT JOIN FETCH m.tournament t " +
+                        "LEFT JOIN FETCH t.organiserOrg tOrg " +
+                        "LEFT JOIN FETCH m.stage " +
                         "WHERE t.id = :tournamentId AND m.deleted = false " +
                         "ORDER BY m.matchDate ASC, m.kickOffTime ASC")
         List<Match> findByTournamentIdWithDetails(

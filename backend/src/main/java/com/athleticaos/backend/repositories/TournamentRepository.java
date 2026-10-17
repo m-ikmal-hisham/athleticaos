@@ -11,6 +11,11 @@ import java.util.UUID;
 public interface TournamentRepository extends JpaRepository<Tournament, UUID> {
     java.util.List<Tournament> findByOrganiserOrg_IdIn(java.util.Set<UUID> orgIds);
 
+    @org.springframework.data.jpa.repository.Query("SELECT t.id FROM Tournament t WHERE t.organiserOrg.id IN :orgIds")
+    java.util.Set<UUID> findIdsByOrganiserOrg_IdIn(@org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
+
+    java.util.List<Tournament> findByIdIn(java.util.Collection<UUID> ids);
+
     java.util.List<Tournament> findBySeasonId(UUID seasonId);
 
     java.util.List<Tournament> findByCompetitionType(CompetitionType competitionType);

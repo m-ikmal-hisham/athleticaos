@@ -20,6 +20,7 @@ import com.athleticaos.backend.services.PlayerSuspensionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchEventServiceImpl implements MatchEventService {
@@ -42,6 +44,18 @@ public class MatchEventServiceImpl implements MatchEventService {
         private final MatchService matchService;
         private final com.athleticaos.backend.services.UserService userService;
         private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
+        private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
+
+        private boolean isOfficialUser(com.athleticaos.backend.entities.MatchOfficial mo, UUID userId) {
+                if (mo == null || mo.getOfficial() == null || userId == null) {
+                        return false;
+                }
+                var official = mo.getOfficial();
+                UUID officialUserId = official.getUser() != null
+                                ? official.getUser().getId()
+                                : (official.getPerson() != null ? official.getPerson().getUserId() : null);
+                return userId.equals(officialUserId);
+        }
 
         @Override
         @Transactional(readOnly = true)
@@ -49,6 +63,12 @@ public class MatchEventServiceImpl implements MatchEventService {
         public List<MatchEventResponse> getEventsForMatch(UUID matchId) {
                 if (!matchRepository.existsById(matchId)) {
                         throw new EntityNotFoundException("Match not found with ID: " + matchId);
+                }
+                if (!accessScopeService.canReadMatch(matchId)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for match events read outside accessible scope: userId={}, matchId={}",
+                                        currentUserId, matchId);
+                        throw new EntityNotFoundException("Match not found");
                 }
                 return matchEventRepository.findByMatchId(matchId).stream()
                                 .map(this::mapToResponse)
@@ -66,31 +86,11 @@ public class MatchEventServiceImpl implements MatchEventService {
                                                 "Match not found with ID: " + matchId));
 
                 // Granular Permission Check
-                com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
-                boolean isGlobalAdmin = currentUser.getRoles().stream()
-                                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN")
-                                                || r.getName().equals("ROLE_MATCH_MANAGER")
-                                                || r.getName().equals("ROLE_CLUB_ADMIN")); // Club Admin? Maybe restrict
-                                                                                           // to own club games?
-
-                // For CLUB_ADMIN, additional check: is this their club's match?
-                // For now, simpler: if not global admin, check if assigned official.
-                // Note: Club Admin logic is tricky if we don't fix it properly. Let's assume
-                // Club Admin is handled by global role check for now,
-                // but strictly speaking they should only edit their own games.
-                // For officials (Referees etc), we MUST check assignment.
-
-                if (!isGlobalAdmin) {
-                        List<com.athleticaos.backend.entities.MatchOfficial> assignments = matchOfficialRepository
-                                        .findByMatchId(matchId);
-                        boolean isAssigned = assignments.stream()
-                                        .anyMatch(mo -> mo.getOfficial().getUser().getId().equals(currentUser.getId()));
-
-                        if (!isAssigned) {
-                                // Fallback check for Club Admin specific match ownership could go here
-                                throw new org.springframework.security.access.AccessDeniedException(
-                                                "User is not assigned to this match.");
-                        }
+                if (!accessScopeService.canWriteMatch(match)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for match event create outside accessible scope: userId={}, matchId={}",
+                                        currentUserId, matchId);
+                        throw new EntityNotFoundException("Match not found");
                 }
 
                 Team team = teamRepository.findById(request.getTeamId())
@@ -289,26 +289,34 @@ public class MatchEventServiceImpl implements MatchEventService {
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Match Event not found with ID: " + eventId));
 
+                Match match = event.getMatch();
+                if (!accessScopeService.canWriteMatch(match)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for match event update outside accessible scope: userId={}, eventId={}",
+                                        currentUserId, eventId);
+                        throw new EntityNotFoundException("Match Event not found with ID: " + eventId);
+                }
+
                 // Time-bound correction logic & Permissions
                 // Similar to delete logic: check if locked/timed out
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
                 boolean isTimeLocked = event.getCreatedAt().plusMinutes(5).isBefore(now);
 
                 com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
-                boolean isGlobalAdmin = currentUser.getRoles().stream()
+                boolean isPrivileged = currentUser.getRoles().stream()
                                 .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN")
                                                 || r.getName().equals("ROLE_MATCH_MANAGER")
-                                                || r.getName().equals("ROLE_SUPERVISOR"));
+                                                || r.getName().equals("ROLE_SUPERVISOR"))
+                                || accessScopeService.isTournamentInScope(match.getTournament());
 
                 // If event is locked/timed out, strict override required
                 if (event.isLocked() || isTimeLocked) {
-                        if (!isGlobalAdmin) {
+                        if (!isPrivileged) {
                                 // Allow referees to edit if assigned (maybe they made a mistake)
                                 List<com.athleticaos.backend.entities.MatchOfficial> assignments = matchOfficialRepository
                                                 .findByMatchId(event.getMatch().getId());
                                 boolean isAssignedReferee = assignments.stream()
-                                                .anyMatch(mo -> mo.getOfficial().getUser().getId()
-                                                                .equals(currentUser.getId()) &&
+                                                .anyMatch(mo -> isOfficialUser(mo, currentUser.getId()) &&
                                                                 ("REFEREE".equalsIgnoreCase(mo.getAssignedRole()) ||
                                                                                 "MATCH_MANAGER".equalsIgnoreCase(
                                                                                                 mo.getAssignedRole())));
@@ -317,19 +325,6 @@ public class MatchEventServiceImpl implements MatchEventService {
                                         throw new IllegalStateException(
                                                         "Cannot edit event: Grace period expired and no override permissions.");
                                 }
-                        }
-                }
-
-                // Granular Check: If NOT global admin, valid official assignment required
-                if (!isGlobalAdmin) {
-                        List<com.athleticaos.backend.entities.MatchOfficial> assignments = matchOfficialRepository
-                                        .findByMatchId(event.getMatch().getId());
-                        boolean isAssigned = assignments.stream()
-                                        .anyMatch(mo -> mo.getOfficial().getUser().getId().equals(currentUser.getId()));
-
-                        if (!isAssigned) {
-                                throw new org.springframework.security.access.AccessDeniedException(
-                                                "User is not assigned to this match.");
                         }
                 }
 
@@ -364,36 +359,38 @@ public class MatchEventServiceImpl implements MatchEventService {
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Match Event not found with ID: " + eventId));
 
+                Match match = event.getMatch();
+                if (!accessScopeService.canWriteMatch(match)) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for match event delete outside accessible scope: userId={}, eventId={}",
+                                        currentUserId, eventId);
+                        throw new EntityNotFoundException("Match Event not found with ID: " + eventId);
+                }
+
                 // Time-bound correction logic
                 // Check if event is locked or outside 5 minute grace period
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
                 boolean isTimeLocked = event.getCreatedAt().plusMinutes(5).isBefore(now);
 
                 // Fetch current user
-                // Note: using security context directly here since we have httpRequest but need
-                // User entity for ID
                 com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
 
-                boolean isGlobalAdmin = currentUser.getRoles().stream()
+                boolean isPrivileged = currentUser.getRoles().stream()
                                 .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN")
                                                 || r.getName().equals("ROLE_MATCH_MANAGER")
-                                                || r.getName().equals("ROLE_SUPERVISOR"));
+                                                || r.getName().equals("ROLE_SUPERVISOR"))
+                                || accessScopeService.isTournamentInScope(match.getTournament());
 
                 // If event is locked/timed out, strict override required
                 if (event.isLocked() || isTimeLocked) {
-                        if (!isGlobalAdmin) {
-                                // Check if user is a REFEREE assigned to this match (Referees can override time
-                                // lock? Maybe only Supervisor?)
-                                // User requirement said: "only users with ROLE_SUPER_ADMIN or designated
-                                // supervisor roles can override"
-                                // So we KEEP generic check for overrides.
+                        if (!isPrivileged) {
                                 throw new IllegalStateException(
                                                 "Cannot delete event: Grace period expired and no override permissions.");
                         }
                 }
 
-                // Granular Check: If NOT global admin, valid official assignment required
-                if (!isGlobalAdmin) {
+                // Granular Check: If NOT privileged, valid official assignment required
+                if (!isPrivileged) {
                         List<com.athleticaos.backend.entities.MatchOfficial> assignments = matchOfficialRepository
                                         .findByMatchId(event.getMatch().getId());
 
@@ -401,7 +398,7 @@ public class MatchEventServiceImpl implements MatchEventService {
                         boolean canDelete = false;
 
                         for (com.athleticaos.backend.entities.MatchOfficial mo : assignments) {
-                                if (mo.getOfficial().getUser().getId().equals(currentUser.getId())) {
+                                if (isOfficialUser(mo, currentUser.getId())) {
                                         isAssigned = true;
                                         // Granular Roles
                                         String role = mo.getAssignedRole();
@@ -409,8 +406,6 @@ public class MatchEventServiceImpl implements MatchEventService {
                                                         || "MATCH_MANAGER".equalsIgnoreCase(role)) {
                                                 canDelete = true;
                                         }
-                                        // TMO and AR cannot delete events (read-only/add-only usually)
-                                        // For now we restrict delete to Referee/Manager
                                 }
                         }
 
