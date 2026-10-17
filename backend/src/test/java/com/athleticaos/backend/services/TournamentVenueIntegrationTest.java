@@ -237,7 +237,11 @@ public class TournamentVenueIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("currently assigned to it")));
 
-        // Clear venue from match (set to null / unassigned)
+        // Clear venue from match (set to null / unassigned).
+        // MockMvc clears the thread's security context when a request ends, and updateMatch now
+        // checks organiser scope (SEC-04), so put the test user back before calling the service.
+        org.springframework.security.core.context.SecurityContextHolder.setContext(
+                org.springframework.security.test.context.TestSecurityContextHolder.getContext());
         matchService.updateMatch(match.getId(), MatchUpdateRequest.builder()
                 .venueId(null)
                 .venueIdSet(true)
