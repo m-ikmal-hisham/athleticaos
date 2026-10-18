@@ -140,6 +140,30 @@ class UserServiceAccountEmailsTest {
     }
 
     @Test
+    @DisplayName("invite WITHOUT password while invite emails are off is refused with a clear message (no null hashing)")
+    void inviteWithoutPasswordWhenMailDisabledIsRefused() {
+        org.mockito.Mockito.lenient().when(userRepository.findByEmail(ADMIN_EMAIL)).thenReturn(Optional.of(superAdmin));
+        org.mockito.Mockito.lenient().when(userRepository.existsByEmail("invited@example.com")).thenReturn(false);
+        org.mockito.Mockito.lenient().when(roleRepository.findByName("ROLE_COACH")).thenReturn(Optional.of(coachRole));
+        org.mockito.Mockito.lenient().when(organisationRepository.findById(rugbyOrg.getId())).thenReturn(Optional.of(rugbyOrg));
+        org.mockito.Mockito.lenient().when(accountMailService.isMailEnabled()).thenReturn(false);
+
+        InviteUserRequest request = InviteUserRequest.builder()
+                .firstName("Dave")
+                .lastName("Coach")
+                .email("invited@example.com")
+                .role("COACH")
+                .organisationId(rugbyOrg.getId())
+                .password(null)
+                .build();
+
+        assertThatThrownBy(() -> userService.inviteUser(request, mock(HttpServletRequest.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Password is required when invite emails are switched off.");
+        verify(userRepository, org.mockito.Mockito.never()).save(any(User.class));
+    }
+
+    @Test
     @DisplayName("invite WITHOUT password creates token, dispatches email, leaves inviteAcceptedAt=null and emailSent=true")
     void inviteWithoutPasswordFlow() {
         when(userRepository.findByEmail(ADMIN_EMAIL)).thenReturn(Optional.of(superAdmin));

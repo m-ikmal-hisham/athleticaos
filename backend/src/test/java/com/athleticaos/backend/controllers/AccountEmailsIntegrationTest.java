@@ -66,7 +66,8 @@ public class AccountEmailsIntegrationTest {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.flyway.enabled", () -> "true");
-        registry.add("app.accounts.mail-enabled", () -> "false"); // Mail disabled: tokens logged/stored, no SMTP needed
+        // Invite emails ON so the email-invite path runs; JavaMailSender is a mock (no SMTP server needed)
+        registry.add("app.accounts.mail-enabled", () -> "true");
     }
 
     @Autowired
@@ -90,11 +91,16 @@ public class AccountEmailsIntegrationTest {
     @Autowired
     private com.athleticaos.backend.services.AccountTokenService tokenService;
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private org.springframework.mail.javamail.JavaMailSender mailSender;
+
     private Organisation testOrg;
 
     @BeforeEach
     void setUp() {
         IntegrationTestUsers.ensureSuperAdmin(userRepository, roleRepository);
+        org.mockito.Mockito.when(mailSender.createMimeMessage())
+                .thenAnswer(inv -> new jakarta.mail.internet.MimeMessage((jakarta.mail.Session) null));
         testOrg = organisationRepository.findBySlug("it-account-org")
                 .orElseGet(() -> organisationRepository.saveAndFlush(Organisation.builder()
                         .name("IT Account Rugby Club")
@@ -127,15 +133,14 @@ public class AccountEmailsIntegrationTest {
         mockMvc.perform(post("/api/v1/users/invite")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(inviteRequest)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.emailSent").value(false)) // mail-enabled is false in test config
-                .andExpect(jsonPath("$.mustChangePassword").value(true));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.emailSent").value(true));
 
         restoreSuperAdminSecurityContext();
 
         User createdUser = userRepository.findByEmail(userEmail).orElseThrow();
         assertThat(createdUser.getInviteAcceptedAt()).isNull();
-        assertThat(createdUser.isMustChangePassword()).isTrue();
+        assertThat(createdUser.isMustChangePassword()).isFalse();
 
         // 2. Generate a known raw token via tokenService for public invite testing
         String rawInviteToken = tokenService.createToken(
@@ -146,7 +151,7 @@ public class AccountEmailsIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/features"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.accountEmails").value(false));
+                .andExpect(jsonPath("$.accountEmails").value(true));
 
         // 4. Public endpoint: GET /api/v1/auth/invite?token=...
         mockMvc.perform(get("/api/v1/auth/invite").param("token", rawInviteToken))
@@ -238,7 +243,7 @@ public class AccountEmailsIntegrationTest {
         mockMvc.perform(post("/api/v1/users/invite")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(inviteRequest)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk());
 
         restoreSuperAdminSecurityContext();
 

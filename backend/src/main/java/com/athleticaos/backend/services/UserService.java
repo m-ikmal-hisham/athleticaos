@@ -289,6 +289,10 @@ public class UserService {
 
         if (hasPassword) {
             passwordPolicy.validate(request.getPassword(), request.getEmail());
+        } else if (!useEmailInvite) {
+            // Invite emails are off (e.g. production before SES access): the inviter must set the password,
+            // as before D2b. Without this check the null password reached the encoder ("rawPassword cannot be null").
+            throw new IllegalArgumentException("Password is required when invite emails are switched off.");
         }
 
         // Fetch organisation
