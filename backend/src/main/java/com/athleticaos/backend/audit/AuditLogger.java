@@ -285,6 +285,64 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logUserInviteSent(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("USER_INVITE_SENT")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("User invite email sent: userId=%s", user.getId()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logUserInviteResent(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("USER_INVITE_RESENT")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("User invite email resent: userId=%s", user.getId()))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logUserInviteAccepted(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("USER_INVITE_ACCEPTED")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("User invite accepted: userId=%s", user.getId()))
+                                .build();
+
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPasswordResetRequested(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PASSWORD_RESET_REQUESTED")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("Password reset requested: userId=%s", user.getId()))
+                                .build();
+
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logPasswordResetCompleted(User user, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("PASSWORD_RESET_COMPLETED")
+                                .entityType("USER")
+                                .entityId(user.getId())
+                                .entitySummary(String.format("Password reset completed with token: userId=%s", user.getId()))
+                                .build();
+
+                // Unauthenticated request: the SecurityContext has no user yet, so name the actor explicitly
+                auditLogService.logAs(user, entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== ORGANISATION ACTIONS ====================
 
         public void logOrganisationCreated(Organisation organisation, HttpServletRequest request) {

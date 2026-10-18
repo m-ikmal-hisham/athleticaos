@@ -1,15 +1,21 @@
 package com.athleticaos.backend.controllers;
 
+import com.athleticaos.backend.dtos.auth.AcceptInviteRequest;
+import com.athleticaos.backend.dtos.auth.AuthFeaturesResponse;
 import com.athleticaos.backend.dtos.auth.AuthResponse;
 import com.athleticaos.backend.dtos.auth.ChangePasswordRequest;
+import com.athleticaos.backend.dtos.auth.ForgotPasswordRequest;
+import com.athleticaos.backend.dtos.auth.InviteDetailsResponse;
 import com.athleticaos.backend.dtos.auth.LoginRequest;
 import com.athleticaos.backend.dtos.auth.RegisterRequest;
+import com.athleticaos.backend.dtos.auth.ResetPasswordWithTokenRequest;
 import com.athleticaos.backend.dtos.user.UserRolesResponse;
 import com.athleticaos.backend.services.AuthService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.utils.ClientIpUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -161,5 +168,70 @@ public class AuthenticationController {
         // Get current user and return their roles
         com.athleticaos.backend.entities.User user = userService.getCurrentUser();
         return ResponseEntity.ok(userService.getUserRoles(user.getId()));
+    }
+
+    @GetMapping("/features")
+    public ResponseEntity<AuthFeaturesResponse> getFeatures() {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(new AuthFeaturesResponse(authService.isAccountEmailsEnabled()));
+    }
+
+    @GetMapping("/invite")
+    public ResponseEntity<InviteDetailsResponse> getInviteDetails(@RequestParam String token) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(authService.getInviteDetails(token));
+    }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<?> acceptInvite(@RequestBody @Valid AcceptInviteRequest request,
+                                          jakarta.servlet.http.HttpServletRequest httpRequest) {
+        authService.acceptInvite(request, httpRequest);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(java.util.Map.of("message", "Password set successfully. You can now sign in."));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request,
+                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        authService.forgotPassword(request, httpRequest);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(java.util.Map.of("message", "If an account exists for that email, we've sent a reset link."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordWithTokenRequest request,
+                                           jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String clientIp = ClientIpUtils.getClientIp(httpRequest);
+        if (loginAttemptService.isBlocked(clientIp)) {
+            long remainingMinutes = loginAttemptService.getRemainingLockoutMinutes(clientIp);
+            return ResponseEntity.status(423)
+                    .cacheControl(CacheControl.noStore())
+                    .body(java.util.Map.of(
+                            "message", "Account locked due to too many failed attempts. Try again in " + remainingMinutes + " minute(s).",
+                            "remainingMinutes", remainingMinutes
+                    ));
+        }
+
+        try {
+            authService.resetPasswordWithToken(request, httpRequest);
+            return ResponseEntity.ok()
+                    .cacheControl(CacheControl.noStore())
+                    .body(java.util.Map.of("message", "Password reset successfully. You can now sign in."));
+        } catch (IllegalArgumentException e) {
+            if (loginAttemptService.isBlocked(clientIp)) {
+                long remainingMinutes = loginAttemptService.getRemainingLockoutMinutes(clientIp);
+                return ResponseEntity.status(423)
+                        .cacheControl(CacheControl.noStore())
+                        .body(java.util.Map.of(
+                                "message", "Account locked due to too many failed attempts. Try again in " + remainingMinutes + " minute(s).",
+                                "remainingMinutes", remainingMinutes
+                        ));
+            }
+            throw e;
+        }
     }
 }

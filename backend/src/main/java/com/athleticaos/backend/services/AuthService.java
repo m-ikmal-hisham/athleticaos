@@ -12,8 +12,17 @@ import com.athleticaos.backend.repositories.RoleRepository;
 import com.athleticaos.backend.repositories.UserRepository;
 import com.athleticaos.backend.security.JwtService;
 import com.athleticaos.backend.security.PasswordPolicy;
+import com.athleticaos.backend.dtos.auth.AcceptInviteRequest;
+import com.athleticaos.backend.dtos.auth.ForgotPasswordRequest;
+import com.athleticaos.backend.dtos.auth.InviteDetailsResponse;
+import com.athleticaos.backend.dtos.auth.ResetPasswordWithTokenRequest;
+import com.athleticaos.backend.entities.AccountToken;
+import com.athleticaos.backend.enums.AccountTokenPurpose;
+import com.athleticaos.backend.services.mail.AccountMailService;
+import com.athleticaos.backend.utils.ClientIpUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,15 +30,20 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
         private final UserRepository userRepository;
@@ -39,6 +53,12 @@ public class AuthService {
         private final AuthenticationManager authenticationManager;
         private final PasswordPolicy passwordPolicy;
         private final AuditLogger auditLogger;
+        private final AccountTokenService accountTokenService;
+        private final AccountMailService accountMailService;
+        private final AccountRateLimiter accountRateLimiter;
+        private final LoginAttemptService loginAttemptService;
+        @Qualifier("accountMailExecutor")
+        private final Executor accountMailExecutor;
 
         @Transactional
         @SuppressWarnings("null")
@@ -157,6 +177,124 @@ public class AuthService {
                                 .email(user.getEmail())
                                 .password(request.getNewPassword())
                                 .build(), httpRequest);
+        }
+
+        /**
+         * Unauthenticated: validates an invite token without consuming it.
+         */
+        @Transactional(readOnly = true)
+        public InviteDetailsResponse getInviteDetails(String rawToken) {
+                AccountToken token = accountTokenService.findValidToken(rawToken, AccountTokenPurpose.INVITE);
+                User user = token.getUser();
+                return InviteDetailsResponse.builder()
+                                .email(AccountMailService.maskEmail(user.getEmail()))
+                                .firstName(user.getFirstName())
+                                .organisationName(user.getOrganisation() != null ? user.getOrganisation().getName() : null)
+                                .build();
+        }
+
+        /**
+         * Unauthenticated: validates password first (A1), then consumes the invite token and sets the initial password.
+         */
+        @Transactional
+        public void acceptInvite(AcceptInviteRequest request, HttpServletRequest httpRequest) {
+                AccountToken token = accountTokenService.findValidToken(request.getToken(), AccountTokenPurpose.INVITE);
+                User user = token.getUser();
+
+                passwordPolicy.validate(request.getNewPassword(), user.getEmail());
+
+                accountTokenService.consumeToken(token);
+
+                user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+                user.setMustChangePassword(false);
+                user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+                user.setInviteAcceptedAt(LocalDateTime.now());
+                userRepository.save(user);
+
+                auditLogger.logUserInviteAccepted(user, httpRequest);
+        }
+
+        /**
+         * Unauthenticated: requests a password reset link. Always completes silently with constant timing.
+         */
+        public void forgotPassword(ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+                // One dummy hash on EVERY path (rate-limited, unknown, inactive, pending, real account) so the
+                // response time does not reveal whether an account exists. The real email is sent off-thread.
+                passwordEncoder.encode("dummy-password-timing-defense");
+                String clientIp = ClientIpUtils.getClientIp(httpRequest);
+                boolean allowed = accountRateLimiter.tryAcquireForgotPassword(request.getEmail(), clientIp);
+                if (!allowed) {
+                        return;
+                }
+
+                Optional<User> found = userRepository.findByEmail(request.getEmail().trim());
+                if (found.isEmpty()) {
+                        return;
+                }
+
+                User user = found.get();
+                if (!user.isActive() || user.getInviteAcceptedAt() == null || !accountMailService.isMailEnabled()) {
+                        return;
+                }
+
+                String rawToken = accountTokenService.createToken(user, AccountTokenPurpose.RESET, null, clientIp);
+                Runnable sendTask = () -> {
+                        accountMailExecutor.execute(() -> {
+                                try {
+                                        accountMailService.sendPasswordResetEmail(user, rawToken);
+                                } catch (Exception ex) {
+                                        log.warn("Failed to send async password reset email to {}: {}",
+                                                        accountMailService.maskEmail(user.getEmail()), ex.getClass().getSimpleName());
+                                }
+                        });
+                };
+
+                if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() {
+                                        sendTask.run();
+                                }
+                        });
+                } else {
+                        sendTask.run();
+                }
+
+                auditLogger.logPasswordResetRequested(user, httpRequest);
+        }
+
+        /**
+         * Unauthenticated: validates password first (A1), then consumes the reset token, revokes earlier sessions,
+         * and records success in LoginAttemptService. Invalid tokens count as failure against IP brute-force protection.
+         */
+        @Transactional
+        public void resetPasswordWithToken(ResetPasswordWithTokenRequest request, HttpServletRequest httpRequest) {
+                String clientIp = ClientIpUtils.getClientIp(httpRequest);
+
+                AccountToken token;
+                try {
+                        token = accountTokenService.findValidToken(request.getToken(), AccountTokenPurpose.RESET);
+                } catch (IllegalArgumentException ex) {
+                        loginAttemptService.recordFailure(clientIp);
+                        throw ex;
+                }
+
+                User user = token.getUser();
+                passwordPolicy.validate(request.getNewPassword(), user.getEmail());
+
+                accountTokenService.consumeToken(token);
+
+                user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+                user.setMustChangePassword(false);
+                user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
+                userRepository.save(user);
+
+                loginAttemptService.recordSuccess(clientIp);
+                auditLogger.logPasswordResetCompleted(user, httpRequest);
+        }
+
+        public boolean isAccountEmailsEnabled() {
+                return accountMailService.isMailEnabled();
         }
 
         private UserResponse mapToUserResponse(User user) {

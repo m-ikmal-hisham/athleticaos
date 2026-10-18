@@ -14,6 +14,7 @@ export interface User {
     active: boolean;
     isActive?: boolean; // Backend returns isActive
     status?: string;
+    inviteStatus?: string | null;
     createdAt?: string;
     updatedAt?: string;
     // Address fields
@@ -45,6 +46,30 @@ export interface RegisterRequest {
 export interface AuthResponse {
     token: string;
     user: User;
+}
+
+export interface AuthFeaturesResponse {
+    accountEmails: boolean;
+}
+
+export interface InviteDetailsResponse {
+    email: string;
+    firstName: string;
+    organisationName?: string;
+}
+
+export interface AcceptInviteRequest {
+    token: string;
+    newPassword: string;
+}
+
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordWithTokenRequest {
+    token: string;
+    newPassword: string;
 }
 
 // ============================================

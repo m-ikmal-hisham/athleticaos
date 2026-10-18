@@ -25,6 +25,9 @@ const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
 const Partners = lazy(() => import('@/pages/public/Partners'));
 const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
+const ForgotPassword = lazyNamed(() => import('@/pages/public/ForgotPassword'), 'ForgotPassword');
+const ResetPassword = lazyNamed(() => import('@/pages/public/ResetPassword'), 'ResetPassword');
+const AcceptInvite = lazyNamed(() => import('@/pages/public/AcceptInvite'), 'AcceptInvite');
 // Signup — behind the 'signup' feature flag
 const Signup = lazyNamed(() => import('@/pages/public/Signup'), 'Signup');
 const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
@@ -171,6 +174,18 @@ export const router = createBrowserRouter([
             {
                 path: '/login',
                 element: <Login />,
+            },
+            {
+                path: '/forgot-password',
+                element: <ForgotPassword />,
+            },
+            {
+                path: '/reset-password',
+                element: <ResetPassword />,
+            },
+            {
+                path: '/accept-invite',
+                element: <AcceptInvite />,
             },
             // /signup route — behind the 'signup' feature flag
             {

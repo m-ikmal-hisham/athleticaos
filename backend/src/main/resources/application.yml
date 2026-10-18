@@ -47,6 +47,13 @@ app:
     mail-enabled: ${CONTACT_MAIL_ENABLED:false}
     recipient: ${CONTACT_RECIPIENT:}
     from: ${CONTACT_FROM:no-reply@athleticaos.com}
+  accounts:
+    mail-enabled: ${ACCOUNT_MAIL_ENABLED:false}
+    from: ${ACCOUNT_MAIL_FROM:no-reply@athleticaos.com}
+    app-url: ${ACCOUNT_APP_URL:http://localhost:5173}
+    invite-ttl-hours: 72
+    reset-ttl-minutes: 60
+    allowed-recipients: ${ACCOUNT_MAIL_ALLOWED_RECIPIENTS:}
 
 
 server:

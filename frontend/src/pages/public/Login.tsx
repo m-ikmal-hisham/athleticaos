@@ -10,6 +10,8 @@ import { Input } from '@/components/Input';
 import { useAuthStore } from '@/store/auth.store';
 import { ForcedPasswordChange } from '@/components/auth/ForcedPasswordChange';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
+import { authApi } from '@/api/auth.api';
+import { useEffect } from 'react';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -27,8 +29,21 @@ export const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [lockoutMessage, setLockoutMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [accountEmailsEnabled, setAccountEmailsEnabled] = useState(false);
     // Set when login answers PASSWORD_CHANGE_REQUIRED; held in memory only until the change completes
     const [pendingChange, setPendingChange] = useState<{ email: string; currentPassword: string } | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        authApi.getFeatures()
+            .then(res => {
+                if (mounted && res.data?.accountEmails) {
+                    setAccountEmailsEnabled(true);
+                }
+            })
+            .catch(() => {});
+        return () => { mounted = false; };
+    }, []);
 
     const {
         register,
@@ -173,13 +188,22 @@ export const Login = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm text-black/72 dark:text-white/72 cursor-pointer select-none">
-                                <input type="checkbox" className="w-4 h-4 rounded border-black/24 dark:border-white/28 accent-navy bg-white dark:bg-deep-navy cursor-pointer" />
-                                Keep me logged in
-                            </label>
-                            <p className="text-sm text-black/60 dark:text-white/60">
-                                Forgot your password? Ask your organisation's administrator to reset it.
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-sm text-black/72 dark:text-white/72 cursor-pointer select-none">
+                                    <input type="checkbox" className="w-4 h-4 rounded border-black/24 dark:border-white/28 accent-navy bg-white dark:bg-deep-navy cursor-pointer" />
+                                    Keep me logged in
+                                </label>
+                                {accountEmailsEnabled && (
+                                    <Link to="/forgot-password" className="text-sm text-navy dark:text-navy-tint hover:underline font-medium">
+                                        Forgot password?
+                                    </Link>
+                                )}
+                            </div>
+                            {!accountEmailsEnabled && (
+                                <p className="text-sm text-black/60 dark:text-white/60">
+                                    Forgot your password? Ask your organisation's administrator to reset it.
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex gap-3">

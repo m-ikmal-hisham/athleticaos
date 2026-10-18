@@ -16,6 +16,9 @@ import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.UserRepository;
 import com.athleticaos.backend.security.PasswordPolicy;
+import com.athleticaos.backend.enums.AccountTokenPurpose;
+import com.athleticaos.backend.services.mail.AccountMailService;
+import com.athleticaos.backend.utils.ClientIpUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -40,6 +43,9 @@ public class UserService {
     private final PlayerTeamService playerTeamService;
     private final AuditLogger auditLogger;
     private final PasswordPolicy passwordPolicy;
+    private final AccountTokenService accountTokenService;
+    private final AccountMailService accountMailService;
+    private final AccountRateLimiter accountRateLimiter;
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers(UUID organisationId) {
@@ -240,6 +246,13 @@ public class UserService {
         // Revokes every token issued before now (JwtAuthenticationFilter)
         user.setPasswordChangedAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
 
+        // Invalidate unused RESET tokens; if user was a pending invite, set inviteAcceptedAt = now and invalidate INVITE tokens too
+        accountTokenService.invalidateUnusedTokens(user, AccountTokenPurpose.RESET);
+        if (user.getInviteAcceptedAt() == null) {
+            user.setInviteAcceptedAt(LocalDateTime.now());
+            accountTokenService.invalidateUnusedTokens(user, AccountTokenPurpose.INVITE);
+        }
+
         User savedUser = userRepository.save(user);
         auditLogger.logPasswordReset(savedUser, httpRequest);
         return mapToResponse(savedUser);
@@ -261,6 +274,7 @@ public class UserService {
                             existingUser.getOrganisation() != null ? existingUser.getOrganisation().getId() : null)
                     .inviteStatus("EXISTS")
                     .message("User with this email already exists. Consider reassigning their role.")
+                    .emailSent(false)
                     .build();
         }
 
@@ -269,7 +283,13 @@ public class UserService {
 
         // Validate role permissions
         validateInvitePermissions(currentUser, roleName, request.getOrganisationId());
-        passwordPolicy.validate(request.getPassword(), request.getEmail());
+
+        boolean hasPassword = request.getPassword() != null && !request.getPassword().isBlank();
+        boolean useEmailInvite = accountMailService.isMailEnabled() && !hasPassword;
+
+        if (hasPassword) {
+            passwordPolicy.validate(request.getPassword(), request.getEmail());
+        }
 
         // Fetch organisation
         @SuppressWarnings("null")
@@ -281,29 +301,125 @@ public class UserService {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new EntityNotFoundException("Role not found: " + roleName));
 
-        // Inviter-set initial password; the user must replace it at first sign-in
-        User newUser = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .mustChangePassword(true)
-                .isActive(true)
-                .organisation(organisation)
-                .roles(Collections.singleton(role))
-                .build();
+        User newUser;
+        if (useEmailInvite) {
+            newUser = User.builder()
+                    .firstName(request.getFirstName())
+                    .lastName(request.getLastName())
+                    .email(request.getEmail())
+                    .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .mustChangePassword(false)
+                    .isActive(true)
+                    .inviteAcceptedAt(null)
+                    .organisation(organisation)
+                    .roles(Collections.singleton(role))
+                    .build();
+        } else {
+            // Inviter-set initial password; the user must replace it at first sign-in
+            newUser = User.builder()
+                    .firstName(request.getFirstName())
+                    .lastName(request.getLastName())
+                    .email(request.getEmail())
+                    .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .mustChangePassword(true)
+                    .isActive(true)
+                    .inviteAcceptedAt(LocalDateTime.now())
+                    .organisation(organisation)
+                    .roles(Collections.singleton(role))
+                    .build();
+        }
 
         @SuppressWarnings("null")
         User savedUser = userRepository.save(newUser);
         auditLogger.logUserInvited(savedUser, httpRequest);
 
+        if (useEmailInvite) {
+            String clientIp = ClientIpUtils.getClientIp(httpRequest);
+            String rawToken = accountTokenService.createToken(savedUser, AccountTokenPurpose.INVITE, currentUser, clientIp);
+            boolean sent = accountMailService.sendInviteEmail(savedUser, rawToken, currentUser);
+            if (sent) {
+                auditLogger.logUserInviteSent(savedUser, httpRequest);
+            }
+            String msg;
+            if (sent) {
+                msg = "Invite sent to " + AccountMailService.maskEmail(savedUser.getEmail()) + ".";
+            } else if (!accountMailService.isRecipientAllowed(savedUser.getEmail())) {
+                msg = "Invite created; email not sent (test-site allow-list)";
+            } else {
+                msg = "Invite created; email not sent.";
+            }
+            return InviteUserResponse.builder()
+                    .userId(savedUser.getId())
+                    .email(savedUser.getEmail())
+                    .role(roleName)
+                    .organisationId(organisation.getId())
+                    .inviteStatus("PENDING")
+                    .message(msg)
+                    .emailSent(sent)
+                    .build();
+        } else {
+            return InviteUserResponse.builder()
+                    .userId(savedUser.getId())
+                    .email(savedUser.getEmail())
+                    .role(roleName)
+                    .organisationId(organisation.getId())
+                    .inviteStatus("PENDING")
+                    .message("User invited. Share the initial password with them through a secure channel; they must change it at first sign-in.")
+                    .emailSent(false)
+                    .build();
+        }
+    }
+
+    @Transactional
+    public InviteUserResponse resendInvite(UUID targetUserId, HttpServletRequest httpRequest) {
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        assertUserInScope(targetUser);
+
+        User currentUser = getCurrentUser();
+        String targetRole = targetUser.getRoles().stream()
+                .findFirst()
+                .map(Role::getName)
+                .orElse("ROLE_PLAYER");
+        UUID targetOrgId = targetUser.getOrganisation() != null ? targetUser.getOrganisation().getId() : null;
+        validateInvitePermissions(currentUser, targetRole, targetOrgId);
+
+        if (!targetUser.isActive()) {
+            throw new IllegalArgumentException("This user is deactivated.");
+        }
+
+        if (targetUser.getInviteAcceptedAt() != null) {
+            throw new IllegalArgumentException("This user has already set their password.");
+        }
+
+        if (!accountRateLimiter.tryAcquireResendInvite(targetUser.getId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                    "Too many invite resend attempts for this user. Please try again later.");
+        }
+
+        String clientIp = ClientIpUtils.getClientIp(httpRequest);
+        String rawToken = accountTokenService.createToken(targetUser, AccountTokenPurpose.INVITE, currentUser, clientIp);
+        boolean sent = accountMailService.sendInviteEmail(targetUser, rawToken, currentUser);
+        auditLogger.logUserInviteResent(targetUser, httpRequest);
+
+        String msg;
+        if (sent) {
+            msg = "Invite resent to " + AccountMailService.maskEmail(targetUser.getEmail()) + ".";
+        } else if (!accountMailService.isRecipientAllowed(targetUser.getEmail())) {
+            msg = "Invite created; email not sent (test-site allow-list)";
+        } else {
+            msg = "Invite created; email not sent.";
+        }
+
         return InviteUserResponse.builder()
-                .userId(savedUser.getId())
-                .email(savedUser.getEmail())
-                .role(roleName)
-                .organisationId(organisation.getId())
+                .userId(targetUser.getId())
+                .email(targetUser.getEmail())
+                .role(targetRole)
+                .organisationId(targetOrgId)
                 .inviteStatus("PENDING")
-                .message("User invited. Share the initial password with them through a secure channel; they must change it at first sign-in.")
+                .message(msg)
+                .emailSent(sent)
                 .build();
     }
 
@@ -403,6 +519,7 @@ public class UserService {
                 .phone(user.getPhone())
                 .isActive(user.isActive())
                 .status(user.isActive() ? "Active" : "Inactive")
+                .inviteStatus(user.getInviteAcceptedAt() == null ? "INVITED" : null)
                 .roles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet()))
                 .organisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null)
                 .organisationName(user.getOrganisation() != null ? user.getOrganisation().getName() : null)

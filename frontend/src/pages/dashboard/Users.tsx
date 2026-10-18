@@ -7,7 +7,7 @@ import { User } from '@/types';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { PageHeader } from '@/components/PageHeader';
-import { MagnifyingGlass, UserPlus, PencilSimple, Trash, Shield, Crown, User as UserIcon, Buildings } from '@phosphor-icons/react';
+import { MagnifyingGlass, UserPlus, PencilSimple, Trash, Shield, Crown, User as UserIcon, Buildings, EnvelopeSimple } from '@phosphor-icons/react';
 import { Badge } from '@/components/Badge';
 import { showToast } from '@/lib/customToast';
 import { ConfirmModal } from '@/components/ConfirmModal';
@@ -26,6 +26,11 @@ export default function Users() {
         isOpen: false,
         userId: null
     });
+    const [confirmResend, setConfirmResend] = useState<{ isOpen: boolean, user: User | null }>({
+        isOpen: false,
+        user: null
+    });
+    const [resending, setResending] = useState(false);
 
     const fetchUsers = async () => {
         try {
@@ -68,6 +73,36 @@ export default function Users() {
             showToast.error('Failed to deactivate user');
         }
     };
+
+    const handleResendInvite = async () => {
+        if (!confirmResend.user) return;
+        try {
+            setResending(true);
+            const res = await userService.resendInvite(confirmResend.user.id);
+            if (res.emailSent) {
+                showToast.success(`Invitation resent to ${confirmResend.user.email}`);
+            } else {
+                showToast.info('Invitation link refreshed, but email sending is disabled in this environment.');
+            }
+            setConfirmResend({ isOpen: false, user: null });
+        } catch (error: unknown) {
+            console.error('Failed to resend invite:', error);
+            const err = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+            const status = err.response?.status;
+            const msg = err.response?.data?.message || err.message;
+            if (status === 429) {
+                showToast.error('Too many resend attempts. Please wait before trying again.');
+            } else if (msg) {
+                showToast.error(msg);
+            } else {
+                showToast.error('Failed to resend invitation');
+            }
+        } finally {
+            setResending(false);
+        }
+    };
+
+    const pendingInvitesCount = users.filter(u => u.inviteStatus === 'INVITED').length;
 
     const getRoleBadge = (roles: string[]) => {
         const primaryRole = roles[0]?.replace('ROLE_', '');
@@ -123,7 +158,7 @@ export default function Users() {
             <UsersSummaryCards
                 totalUsers={users.length}
                 activeUsers={activeUsersCount}
-                pendingInvites={0} // Placeholder until invite tracking is implemented
+                pendingInvites={pendingInvitesCount}
                 adminRolesCount={adminRolesCount}
             />
 
@@ -175,15 +210,39 @@ export default function Users() {
                                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 text-navy dark:bg-navy-tint/15 dark:text-navy-tint font-bold border border-navy/20 dark:border-navy-tint/30">
                                     {user.firstName[0]}{user.lastName[0]}
                                 </div>
-                                <div className="flex gap-1">
-                                    <Badge
-                                        variant={user.isActive ? 'success' : 'secondary'}
-                                        className="h-5 text-[10px] px-1.5"
-                                    >
-                                        {user.isActive ? 'Active' : 'Inactive'}
-                                    </Badge>
+                                {/* One status badge, so the badge and the action icons stay on one row:
+                                    a pending invite shows "Invited" instead of "Active". */}
+                                <div className="flex gap-1 items-center shrink-0">
+                                    {user.inviteStatus === 'INVITED' && user.isActive ? (
+                                        <Badge
+                                            variant="warning"
+                                            className="h-5 text-[10px] px-1.5"
+                                        >
+                                            Invited
+                                        </Badge>
+                                    ) : (
+                                        <Badge
+                                            variant={user.isActive ? 'success' : 'secondary'}
+                                            className="h-5 text-[10px] px-1.5"
+                                        >
+                                            {user.isActive ? 'Active' : 'Inactive'}
+                                        </Badge>
+                                    )}
                                     {canManageUsers && (
                                         <>
+                                            {user.inviteStatus === 'INVITED' && user.isActive && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setConfirmResend({ isOpen: true, user });
+                                                    }}
+                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-black/60 dark:text-white/60 hover:bg-navy/10 hover:text-navy dark:hover:bg-navy-tint/15 dark:hover:text-navy-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint transition-colors"
+                                                    aria-label="Resend invite"
+                                                    title="Resend invite"
+                                                >
+                                                    <EnvelopeSimple className="w-4 h-4" />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/users/${user.id}/edit`); }}
                                                 className="w-8 h-8 rounded-full flex items-center justify-center text-black/60 dark:text-white/60 hover:bg-navy/10 hover:text-navy dark:hover:bg-navy-tint/15 dark:hover:text-navy-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint transition-colors"
@@ -235,6 +294,15 @@ export default function Users() {
                 onConfirm={handleDeleteUser}
                 title="Deactivate User"
                 message="Are you sure you want to deactivate this user? They will no longer be able to log in."
+            />
+
+            <ConfirmModal
+                isOpen={confirmResend.isOpen}
+                onClose={() => setConfirmResend({ isOpen: false, user: null })}
+                onConfirm={handleResendInvite}
+                title="Resend Invitation"
+                message={`Resend invitation email to ${confirmResend.user?.email || 'this user'}? The previous link will be invalidated and a fresh link valid for 72 hours will be sent.`}
+                confirmText={resending ? 'Sending...' : 'Resend Invite'}
             />
         </div>
     );
