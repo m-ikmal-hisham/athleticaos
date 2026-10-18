@@ -117,8 +117,9 @@ public class AccountEmailsIntegrationTest {
     @DisplayName("End-to-end account lifecycle: invite without password -> accept invite -> login -> forgot password -> reset password -> login")
     void fullAccountLifecycleFlow() throws Exception {
         String userEmail = "invited-player-" + UUID.randomUUID() + "@example.test";
-        String initialPassword = "Strong-Password-101!";
-        String newPassword = "New-Strong-Password-202!";
+        // Synthetic test passwords: PasswordPolicy rejects common words such as "password"
+        String initialPassword = "Tq9#vLm2-Zr8@wPx4";
+        String newPassword = "Hy3!nBd6-Qs1$kTe9";
 
         // 1. Super Admin invites user without password
         InviteUserRequest inviteRequest = InviteUserRequest.builder()
@@ -252,7 +253,7 @@ public class AccountEmailsIntegrationTest {
 
         // Super Admin resets password directly
         AdminPasswordResetRequest resetRequest = AdminPasswordResetRequest.builder()
-                .newPassword("Super-Admin-Reset-Password-999!")
+                .newPassword("Wm5@rCx8-Lp2#gVz7")
                 .build();
 
         mockMvc.perform(post("/api/v1/users/{id}/reset-password", user.getId())
