@@ -52,6 +52,8 @@ class AuthServiceChangePasswordTest {
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
     @Spy
     private PasswordPolicy passwordPolicy = new PasswordPolicy();
+    @Mock
+    private java.util.concurrent.Executor accountMailExecutor;
 
     @InjectMocks
     private AuthService authService;

@@ -52,6 +52,8 @@ class UserServicePasswordProvisioningTest {
     @Mock private OrganisationRepository organisationRepository;
     @Mock private AuditLogger auditLogger;
     @Mock private PlayerTeamService playerTeamService;
+    @Mock private AccountTokenService accountTokenService;
+    @Mock private com.athleticaos.backend.services.mail.AccountMailService accountMailService;
     @Spy  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
     @Spy  private PasswordPolicy passwordPolicy = new PasswordPolicy();
 

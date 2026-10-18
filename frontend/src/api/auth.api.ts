@@ -37,4 +37,31 @@ export const authApi = {
         const response = await api.post('/auth/logout');
         return response;
     },
+
+    getFeatures: async () => {
+        const response = await api.get<{ accountEmails: boolean }>('/auth/features');
+        return response;
+    },
+
+    getInviteDetails: async (token: string) => {
+        const response = await api.get<{ email: string; firstName: string; organisationName?: string }>('/auth/invite', {
+            params: { token },
+        });
+        return response;
+    },
+
+    acceptInvite: async (data: { token: string; newPassword: string }) => {
+        const response = await api.post<{ message: string }>('/auth/accept-invite', data);
+        return response;
+    },
+
+    forgotPassword: async (data: { email: string }) => {
+        const response = await api.post<{ message: string }>('/auth/forgot-password', data);
+        return response;
+    },
+
+    resetPassword: async (data: { token: string; newPassword: string }) => {
+        const response = await api.post<{ message: string }>('/auth/reset-password', data);
+        return response;
+    },
 };

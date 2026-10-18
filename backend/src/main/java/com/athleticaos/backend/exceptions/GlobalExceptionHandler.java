@@ -27,6 +27,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.Set;
 
 @RestControllerAdvice
@@ -231,6 +232,24 @@ public class GlobalExceptionHandler {
         String method = request != null ? request.getMethod() : "UNKNOWN";
         String path = request != null ? request.getRequestURI() : "UNKNOWN";
         log.debug("Client aborted request [{} {}]", method, path, ex);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            ResponseStatusException ex,
+            HttpServletRequest request) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        String reasonPhrase = status != null ? status.getReasonPhrase() : ex.getStatusCode().toString();
+        String message = ex.getReason() != null ? ex.getReason() : reasonPhrase;
+        ErrorResponse error = new ErrorResponse(
+                ex.getStatusCode().value(),
+                reasonPhrase,
+                message,
+                null,
+                null,
+                request != null ? request.getRequestURI() : null,
+                LocalDateTime.now());
+        return new ResponseEntity<>(error, ex.getStatusCode());
     }
 
     @ExceptionHandler(Exception.class)
