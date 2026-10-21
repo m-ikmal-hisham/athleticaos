@@ -35,6 +35,7 @@ export interface PublicTournamentSummary {
     bannerUrl?: string;
     livestreamUrl?: string;
     livestreamLinks?: LivestreamLink[];
+    featured?: boolean;
 }
 
 export interface PublicTournamentDetail extends PublicTournamentSummary {
@@ -184,6 +185,14 @@ export interface PublicTournamentStats {
 export const publicTournamentApi = {
     getTournaments: async (): Promise<PublicTournamentSummary[]> => {
         const response = await publicApi.get('/tournaments');
+        return response.data;
+    },
+
+    // fresh = true is for the admin panel: the public response is cached by browsers for 30 s
+    // (plus stale-while-revalidate) for home-page visitors, so admins add a unique query string to
+    // see their change at once. A query parameter avoids a CORS preflight that a request header would cause.
+    getFeaturedTournaments: async (fresh = false): Promise<PublicTournamentSummary[]> => {
+        const response = await publicApi.get('/tournaments/featured', fresh ? { params: { fresh: Date.now() } } : undefined);
         return response.data;
     },
 

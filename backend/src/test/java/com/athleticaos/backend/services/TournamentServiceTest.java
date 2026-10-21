@@ -212,4 +212,210 @@ class TournamentServiceTest {
         verify(accessScopeService, never()).isOrganisationInScope(any());
         verify(organisationRepository, never()).findById(any());
     }
+
+    @Test
+    void updateFeatured_superAdmin_featuresAndReorders_shiftsAndClosesGaps() {
+        Tournament t1 = Tournament.builder().id(UUID.randomUUID()).name("T1").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        Tournament t2 = Tournament.builder().id(UUID.randomUUID()).name("T2").isPublished(true).featured(true).featuredOrder(2).categories(Collections.emptyList()).build();
+        Tournament newT = Tournament.builder().id(UUID.randomUUID()).name("New T").isPublished(true).featured(false).categories(Collections.emptyList()).build();
+
+        when(tournamentRepository.findById(newT.getId())).thenReturn(java.util.Optional.of(newT));
+        when(accessScopeService.isSuperAdmin()).thenReturn(true);
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t1, t2)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, 1);
+
+        TournamentResponse response = tournamentService.updateFeatured(newT.getId(), req, null);
+
+        assertTrue(response.isFeatured());
+        assertEquals(1, response.getFeaturedOrder());
+        assertEquals(2, t1.getFeaturedOrder());
+        assertEquals(3, t2.getFeaturedOrder());
+        verify(auditLogger).logTournamentFeatured(eq(newT.getId()), eq(1), isNull());
+    }
+
+    @Test
+    void updateFeatured_orgAdmin_ignoresFeaturedOrder_appendsLast() {
+        Tournament t1 = Tournament.builder().id(UUID.randomUUID()).name("T1").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        Tournament newT = Tournament.builder().id(UUID.randomUUID()).name("New T").isPublished(true).featured(false).categories(Collections.emptyList()).build();
+
+        when(tournamentRepository.findById(newT.getId())).thenReturn(java.util.Optional.of(newT));
+        when(accessScopeService.isSuperAdmin()).thenReturn(false);
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t1)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, 1);
+
+        TournamentResponse response = tournamentService.updateFeatured(newT.getId(), req, null);
+
+        assertTrue(response.isFeatured());
+        assertEquals(2, response.getFeaturedOrder());
+        assertEquals(1, t1.getFeaturedOrder());
+    }
+
+    @Test
+    void updateFeatured_orgAdmin_whenFull_throws400() {
+        Tournament newT = Tournament.builder().id(UUID.randomUUID()).name("New T").isPublished(true).featured(false).build();
+        when(tournamentRepository.findById(newT.getId())).thenReturn(java.util.Optional.of(newT));
+        when(accessScopeService.isSuperAdmin()).thenReturn(false);
+        List<Tournament> fullList = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            fullList.add(Tournament.builder().id(UUID.randomUUID()).name("T" + i).isPublished(true).featured(true).featuredOrder(i + 1).build());
+        }
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(fullList);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> tournamentService.updateFeatured(newT.getId(), req, null));
+        assertEquals("The home page already shows six tournaments — ask a platform administrator to make room.", ex.getMessage());
+    }
+
+    @Test
+    void updateFeatured_superAdmin_whenFull_throws400() {
+        Tournament newT = Tournament.builder().id(UUID.randomUUID()).name("New T").isPublished(true).featured(false).build();
+        when(tournamentRepository.findById(newT.getId())).thenReturn(java.util.Optional.of(newT));
+        when(accessScopeService.isSuperAdmin()).thenReturn(true);
+        List<Tournament> fullList = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            fullList.add(Tournament.builder().id(UUID.randomUUID()).name("T" + i).isPublished(true).featured(true).featuredOrder(i + 1).build());
+        }
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(fullList);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, 1);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> tournamentService.updateFeatured(newT.getId(), req, null));
+        assertEquals("Six tournaments are already featured — remove one first.", ex.getMessage());
+    }
+
+    @Test
+    void updateFeatured_invalidOrder_throws400() {
+        Tournament t = Tournament.builder().id(UUID.randomUUID()).name("T").isPublished(true).build();
+        when(tournamentRepository.findById(t.getId())).thenReturn(java.util.Optional.of(t));
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, 7);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> tournamentService.updateFeatured(t.getId(), req, null));
+        assertEquals("Order must be between 1 and 6.", ex.getMessage());
+    }
+
+    @Test
+    void updateFeatured_unpublishedOrDeleted_throws400() {
+        Tournament unpublished = Tournament.builder().id(UUID.randomUUID()).name("Unpublished").isPublished(false).build();
+        when(tournamentRepository.findById(unpublished.getId())).thenReturn(java.util.Optional.of(unpublished));
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, null);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> tournamentService.updateFeatured(unpublished.getId(), req, null));
+        assertEquals("Only published tournaments can be featured.", ex.getMessage());
+    }
+
+    @Test
+    void updateFeatured_unfeaturesAndClosesGaps() {
+        Tournament t1 = Tournament.builder().id(UUID.randomUUID()).name("T1").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        Tournament t2 = Tournament.builder().id(UUID.randomUUID()).name("T2").isPublished(true).featured(true).featuredOrder(2).categories(Collections.emptyList()).build();
+        Tournament t3 = Tournament.builder().id(UUID.randomUUID()).name("T3").isPublished(true).featured(true).featuredOrder(3).categories(Collections.emptyList()).build();
+
+        when(tournamentRepository.findById(t2.getId())).thenReturn(java.util.Optional.of(t2));
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t1, t2, t3)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest req =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(false, null);
+
+        TournamentResponse response = tournamentService.updateFeatured(t2.getId(), req, null);
+
+        assertFalse(response.isFeatured());
+        assertNull(response.getFeaturedOrder());
+        assertEquals(1, t1.getFeaturedOrder());
+        assertEquals(2, t3.getFeaturedOrder());
+        verify(auditLogger).logTournamentUnfeatured(eq(t2.getId()), isNull());
+    }
+
+    @Test
+    void updatePublishStatus_whenFalse_unfeatures() {
+        Tournament t = Tournament.builder().id(UUID.randomUUID()).name("T").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        when(tournamentRepository.findById(t.getId())).thenReturn(java.util.Optional.of(t));
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TournamentResponse response = tournamentService.updatePublishStatus(t.getId(), false, null);
+
+        assertFalse(response.isPublished());
+        assertFalse(t.isFeatured());
+        assertNull(t.getFeaturedOrder());
+        verify(auditLogger).logTournamentUnfeatured(eq(t.getId()), isNull());
+    }
+
+    @Test
+    void updateStatus_whenDraft_unfeatures() {
+        Tournament t = Tournament.builder().id(UUID.randomUUID()).name("T").isPublished(true).status(TournamentStatus.PUBLISHED).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        when(tournamentRepository.findById(t.getId())).thenReturn(java.util.Optional.of(t));
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TournamentResponse response = tournamentService.updateStatus(t.getId(), TournamentStatus.DRAFT, null);
+
+        assertEquals("Draft", response.getStatus());
+        assertFalse(t.isFeatured());
+        assertNull(t.getFeaturedOrder());
+        verify(auditLogger).logTournamentUnfeatured(eq(t.getId()), isNull());
+    }
+
+    @Test
+    void updateTournament_whenUnpublished_unfeatures() {
+        Tournament t = Tournament.builder().id(UUID.randomUUID()).name("T").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        when(tournamentRepository.findById(t.getId())).thenReturn(java.util.Optional.of(t));
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest req = new com.athleticaos.backend.dtos.tournament.TournamentUpdateRequest();
+        req.setIsPublished(false);
+
+        TournamentResponse response = tournamentService.updateTournament(t.getId(), req, null);
+
+        assertFalse(response.isPublished());
+        assertFalse(t.isFeatured());
+        assertNull(t.getFeaturedOrder());
+        verify(auditLogger).logTournamentUnfeatured(eq(t.getId()), isNull());
+    }
+
+    @Test
+    void deleteTournament_unfeatures() {
+        Tournament t = Tournament.builder().id(UUID.randomUUID()).name("T").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        when(tournamentRepository.findById(t.getId())).thenReturn(java.util.Optional.of(t));
+        when(tournamentRepository.findFeaturedForUpdate()).thenReturn(new java.util.ArrayList<>(List.of(t)));
+        when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        tournamentService.deleteTournament(t.getId());
+
+        assertTrue(t.getDeleted());
+        assertFalse(t.isFeatured());
+        assertNull(t.getFeaturedOrder());
+        verify(auditLogger).logTournamentUnfeatured(eq(t.getId()), isNull());
+    }
+
+    @Test
+    void getFeaturedTournaments_returnsMax6Ordered() {
+        Tournament t1 = Tournament.builder().id(UUID.randomUUID()).name("T1").isPublished(true).featured(true).featuredOrder(1).categories(Collections.emptyList()).build();
+        Tournament t2 = Tournament.builder().id(UUID.randomUUID()).name("T2").isPublished(true).featured(true).featuredOrder(2).categories(Collections.emptyList()).build();
+
+        when(tournamentRepository.findFeaturedPublished()).thenReturn(List.of(t1, t2));
+
+        List<TournamentResponse> results = tournamentService.getFeaturedTournaments();
+
+        assertEquals(2, results.size());
+        assertEquals("T1", results.get(0).getName());
+        assertEquals("T2", results.get(1).getName());
+    }
 }

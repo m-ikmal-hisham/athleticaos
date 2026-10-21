@@ -101,6 +101,16 @@ public class TournamentController {
         return ResponseEntity.ok(withAccessLevel(tournamentService.updatePublishStatus(id, publish, httpRequest)));
     }
 
+    @PatchMapping("/{id}/featured")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<TournamentResponse> updateFeatured(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request,
+            HttpServletRequest httpRequest) {
+        fetchTournamentInOrganiserScope(id.toString());
+        return ResponseEntity.ok(withAccessLevel(tournamentService.updateFeatured(id, request, httpRequest)));
+    }
+
     @GetMapping("/{idOrSlug}/export/matches")
     @PreAuthorize("isAuthenticated()")
     @SuppressWarnings("null")

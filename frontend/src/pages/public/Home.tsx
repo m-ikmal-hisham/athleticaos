@@ -4,10 +4,12 @@ import { CalendarBlank, MapPin, Trophy, ArrowRight } from '@phosphor-icons/react
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
 import { GlassCard } from '@/components/GlassCard';
 import { formatTournamentLevel, formatCompetitionType } from '@/utils/formatters';
+import { sortForHomeFallback } from '@/utils/tournamentSort';
 
 export default function Home() {
     const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isFallback, setIsFallback] = useState(false);
 
     useEffect(() => {
         loadTournaments();
@@ -15,14 +17,30 @@ export default function Home() {
 
     const loadTournaments = async () => {
         try {
-            const data = await publicTournamentApi.getTournaments();
-            // Show only live and upcoming tournaments on home page
-            const featured = data.filter(t => t.live || !t.completed).slice(0, 6);
-            setTournaments(featured);
+            const featured = await publicTournamentApi.getFeaturedTournaments();
+            if (featured && featured.length > 0) {
+                setTournaments(featured);
+                setIsFallback(false);
+            } else {
+                await loadFallback();
+            }
         } catch (error) {
-            console.error('Failed to load tournaments:', error);
+            console.error('Failed to load featured tournaments, using fallback:', error);
+            await loadFallback();
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadFallback = async () => {
+        try {
+            const all = await publicTournamentApi.getTournaments();
+            setTournaments(sortForHomeFallback(all));
+            setIsFallback(true);
+        } catch (err) {
+            console.error('Failed to load fallback tournaments:', err);
+            setTournaments([]);
+            setIsFallback(true);
         }
     };
 
@@ -62,7 +80,7 @@ export default function Home() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        Featured Tournaments
+                        {isFallback ? 'Live and upcoming tournaments' : 'Featured Tournaments'}
                     </h2>
                     <Link
                         to="/tournaments"

@@ -519,4 +519,128 @@ public class TournamentSecurityRegressionTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessLevel").doesNotExist());
     }
+
+    @Test
+    @DisplayName("Super Admin can feature a tournament")
+    @WithMockUser(roles = "SUPER_ADMIN")
+    void superAdminCanFeatureTournament() throws Exception {
+        when(tournamentService.getTournamentById(tournamentId)).thenReturn(tournamentResponse);
+        when(accessScopeService.isTournamentInScope(tournamentId)).thenReturn(true);
+        when(accessScopeService.isSuperAdmin()).thenReturn(true);
+
+        TournamentResponse updatedResponse = TournamentResponse.builder()
+                .id(tournamentId)
+                .name("National Sevens Championship")
+                .featured(true)
+                .featuredOrder(1)
+                .build();
+
+        when(tournamentService.updateFeatured(eq(tournamentId), any(), any())).thenReturn(updatedResponse);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, 1);
+
+        mockMvc.perform(patch("/api/v1/tournaments/{id}/featured", tournamentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.featured").value(true))
+                .andExpect(jsonPath("$.featuredOrder").value(1))
+                .andExpect(jsonPath("$.accessLevel").value("MANAGE"));
+    }
+
+    @Test
+    @DisplayName("Org Admin in scope can feature own tournament")
+    @WithMockUser(roles = "ORG_ADMIN")
+    void orgAdminInScopeCanFeatureTournament() throws Exception {
+        when(tournamentService.getTournamentById(tournamentId)).thenReturn(tournamentResponse);
+        when(accessScopeService.isTournamentInScope(tournamentId)).thenReturn(true);
+        when(accessScopeService.isSuperAdmin()).thenReturn(false);
+        when(accessScopeService.isOrganisationInScope(tournamentResponse.getOrganiserOrgId())).thenReturn(true);
+
+        TournamentResponse updatedResponse = TournamentResponse.builder()
+                .id(tournamentId)
+                .name("National Sevens Championship")
+                .organiserOrgId(tournamentResponse.getOrganiserOrgId())
+                .featured(true)
+                .featuredOrder(2)
+                .build();
+
+        when(tournamentService.updateFeatured(eq(tournamentId), any(), any())).thenReturn(updatedResponse);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, null);
+
+        mockMvc.perform(patch("/api/v1/tournaments/{id}/featured", tournamentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.featured").value(true))
+                .andExpect(jsonPath("$.featuredOrder").value(2))
+                .andExpect(jsonPath("$.accessLevel").value("MANAGE"));
+    }
+
+    @Test
+    @DisplayName("Org Admin out of scope gets 404 Tournament not found (SEC-04)")
+    @WithMockUser(roles = "ORG_ADMIN")
+    void orgAdminOutOfScopeGets404() throws Exception {
+        when(tournamentService.getTournamentById(tournamentId)).thenReturn(tournamentResponse);
+        when(accessScopeService.isTournamentInScope(tournamentId)).thenReturn(false);
+
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, null);
+
+        mockMvc.perform(patch("/api/v1/tournaments/{id}/featured", tournamentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Tournament not found"));
+    }
+
+    @Test
+    @DisplayName("Club Admin cannot feature tournament (403 Forbidden)")
+    @WithMockUser(roles = "CLUB_ADMIN")
+    void clubAdminCannotFeatureTournament() throws Exception {
+        com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request =
+                new com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest(true, null);
+
+        mockMvc.perform(patch("/api/v1/tournaments/{id}/featured", tournamentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /api/public/tournaments/featured returns list with literal route winning over slug")
+    void publicFeaturedTournaments_literalPathWins() throws Exception {
+        TournamentResponse featuredTourn = TournamentResponse.builder()
+                .id(tournamentId)
+                .name("Featured Tournament")
+                .slug("featured-tournament")
+                .status("Upcoming")
+                .featured(true)
+                .featuredOrder(1)
+                .build();
+
+        when(tournamentService.getFeaturedTournaments()).thenReturn(List.of(featuredTourn));
+
+        mockMvc.perform(get("/api/public/tournaments/featured"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(tournamentId.toString()))
+                .andExpect(jsonPath("$[0].name").value("Featured Tournament"))
+                .andExpect(jsonPath("$[0].featured").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/public/tournaments/{idOrSlug} still resolves normal slugs")
+    void publicTournamentDetail_normalSlugResolves() throws Exception {
+        when(tournamentService.getTournamentBySlug("national-sevens")).thenReturn(tournamentResponse);
+        when(tournamentTeamRepository.findByTournamentIdWithTeamAndOrganisation(tournamentId))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/public/tournaments/{slug}", "national-sevens"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(tournamentId.toString()))
+                .andExpect(jsonPath("$.name").value("National Sevens Championship"));
+    }
 }

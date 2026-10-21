@@ -16,8 +16,10 @@ export const exportResults = (idOrSlug: string) =>
 
 export const deleteTournament = (id: string) => api.delete(`/tournaments/${id}`);
 
-
 export const updateTournament = (id: string, data: any) => api.put(`/tournaments/${id}`, data);
+
+export const updateTournamentFeatured = (id: string, data: { featured: boolean; featuredOrder?: number }) =>
+    api.patch<import('@/types').Tournament>(`/tournaments/${id}/featured`, data);
 
 export const getTournamentTeams = (idOrSlug: string) => api.get(`/tournaments/${idOrSlug}/teams`);
 

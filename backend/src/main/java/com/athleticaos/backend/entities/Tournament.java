@@ -92,6 +92,13 @@ public class Tournament {
     @Builder.Default
     private Boolean deleted = false;
 
+    @Column(name = "featured", nullable = false)
+    @Builder.Default
+    private boolean featured = false;
+
+    @Column(name = "featured_order")
+    private Integer featuredOrder;
+
     @Column(name = "logo_url")
     private String logoUrl;
 
