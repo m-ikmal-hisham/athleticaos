@@ -342,6 +342,8 @@ export interface Tournament {
         logoUrl?: string;
     };
     venues?: TournamentVenue[];
+    featured?: boolean;
+    featuredOrder?: number | null;
     accessLevel?: 'MANAGE' | 'READ_ONLY';
 }
 

@@ -55,6 +55,32 @@ public class TournamentServiceImpl implements TournamentService {
     private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
     private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private javax.sql.DataSource dataSource;
+    private Boolean isPostgres;
+
+    private boolean isPostgresDatabase() {
+        if (isPostgres == null) {
+            if (dataSource == null) {
+                isPostgres = false;
+            } else {
+                try (java.sql.Connection conn = dataSource.getConnection()) {
+                    String productName = conn.getMetaData().getDatabaseProductName();
+                    isPostgres = productName != null && productName.toLowerCase().contains("postgres");
+                } catch (Exception e) {
+                    isPostgres = false;
+                }
+            }
+        }
+        return Boolean.TRUE.equals(isPostgres);
+    }
+
+    private void acquireFeaturedAdvisoryLock() {
+        if (isPostgresDatabase()) {
+            tournamentRepository.acquireFeaturedAdvisoryLock();
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<TournamentResponse> getAllTournaments(String level) {
@@ -338,6 +364,9 @@ public class TournamentServiceImpl implements TournamentService {
         }
         if (request.getIsPublished() != null) {
             tournament.setPublished(request.getIsPublished());
+            if (!request.getIsPublished()) {
+                unfeatureTournamentIfFeatured(tournament, httpRequest);
+            }
         }
 
         // Handle Season Linking
@@ -425,6 +454,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setDeleted(true);
+        unfeatureTournamentIfFeatured(tournament, null);
         tournamentRepository.save(tournament);
 
         // Cascade soft delete to matches and teams
@@ -441,6 +471,9 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setPublished(publish);
+        if (!publish) {
+            unfeatureTournamentIfFeatured(tournament, httpRequest);
+        }
         Tournament savedTournament = tournamentRepository.save(tournament);
         auditLogger.logTournamentUpdated(savedTournament, httpRequest);
         return mapToResponse(savedTournament);
@@ -461,6 +494,7 @@ public class TournamentServiceImpl implements TournamentService {
         // Sync flags
         if (status == com.athleticaos.backend.enums.TournamentStatus.DRAFT) {
             tournament.setPublished(false);
+            unfeatureTournamentIfFeatured(tournament, httpRequest);
         } else {
             tournament.setPublished(true);
         }
@@ -715,6 +749,8 @@ public class TournamentServiceImpl implements TournamentService {
                                 .maxAge(cat.getMaxAge())
                                 .build())
                         .collect(Collectors.toList()))
+                .featured(tournament.isFeatured())
+                .featuredOrder(tournament.getFeaturedOrder())
                 .build();
     }
 
@@ -1278,5 +1314,124 @@ public class TournamentServiceImpl implements TournamentService {
             }
             matchRepository.saveAll(stageMatches);
         }
+    }
+
+    private void unfeatureTournamentIfFeatured(Tournament tournament, HttpServletRequest httpRequest) {
+        if (!tournament.isFeatured()) {
+            return;
+        }
+        acquireFeaturedAdvisoryLock();
+        tournament.setFeatured(false);
+        tournament.setFeaturedOrder(null);
+        tournamentRepository.save(tournament);
+
+        List<Tournament> remaining = tournamentRepository.findFeaturedForUpdate();
+        remaining.removeIf(t -> t.getId().equals(tournament.getId()));
+        for (int i = 0; i < remaining.size(); i++) {
+            Tournament t = remaining.get(i);
+            t.setFeatured(true);
+            t.setFeaturedOrder(i + 1);
+            tournamentRepository.save(t);
+        }
+        auditLogger.logTournamentUnfeatured(tournament.getId(), httpRequest);
+    }
+
+    @Override
+    @Transactional
+    public TournamentResponse updateFeatured(UUID id, com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request,
+            HttpServletRequest httpRequest) {
+        acquireFeaturedAdvisoryLock();
+
+        Tournament tournament = tournamentRepository.findById(id)
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (Boolean.TRUE.equals(request.getFeatured())) {
+            if (!tournament.isPublished() || Boolean.TRUE.equals(tournament.getDeleted())) {
+                throw new IllegalArgumentException("Only published tournaments can be featured.");
+            }
+
+            if (request.getFeaturedOrder() != null && (request.getFeaturedOrder() < 1 || request.getFeaturedOrder() > 6)) {
+                throw new IllegalArgumentException("Order must be between 1 and 6.");
+            }
+
+            boolean isSuper = accessScopeService.isSuperAdmin();
+            List<Tournament> featuredList = tournamentRepository.findFeaturedForUpdate();
+            boolean alreadyFeatured = featuredList.stream().anyMatch(t -> t.getId().equals(id));
+
+            if (!alreadyFeatured) {
+                if (featuredList.size() >= 6) {
+                    if (isSuper) {
+                        throw new IllegalArgumentException("Six tournaments are already featured — remove one first.");
+                    } else {
+                        throw new IllegalArgumentException("The home page already shows six tournaments — ask a platform administrator to make room.");
+                    }
+                }
+
+                tournament.setFeatured(true);
+                int targetOrder;
+                if (!isSuper || request.getFeaturedOrder() == null) {
+                    targetOrder = featuredList.size() + 1;
+                } else {
+                    targetOrder = Math.min(request.getFeaturedOrder(), featuredList.size() + 1);
+                }
+
+                int targetIndex = targetOrder - 1;
+                featuredList.add(targetIndex, tournament);
+
+                for (int i = 0; i < featuredList.size(); i++) {
+                    Tournament t = featuredList.get(i);
+                    t.setFeatured(true);
+                    t.setFeaturedOrder(i + 1);
+                    tournamentRepository.save(t);
+                }
+
+                auditLogger.logTournamentFeatured(tournament.getId(), tournament.getFeaturedOrder(), httpRequest);
+            } else {
+                if (isSuper && request.getFeaturedOrder() != null) {
+                    featuredList.removeIf(t -> t.getId().equals(id));
+                    int targetOrder = Math.min(request.getFeaturedOrder(), featuredList.size() + 1);
+                    int targetIndex = targetOrder - 1;
+                    featuredList.add(targetIndex, tournament);
+
+                    for (int i = 0; i < featuredList.size(); i++) {
+                        Tournament t = featuredList.get(i);
+                        t.setFeatured(true);
+                        t.setFeaturedOrder(i + 1);
+                        tournamentRepository.save(t);
+                    }
+
+                    auditLogger.logTournamentFeatured(tournament.getId(), tournament.getFeaturedOrder(), httpRequest);
+                }
+            }
+        } else {
+            if (tournament.isFeatured()) {
+                tournament.setFeatured(false);
+                tournament.setFeaturedOrder(null);
+                tournamentRepository.save(tournament);
+
+                List<Tournament> remaining = tournamentRepository.findFeaturedForUpdate();
+                remaining.removeIf(t -> t.getId().equals(id));
+                for (int i = 0; i < remaining.size(); i++) {
+                    Tournament t = remaining.get(i);
+                    t.setFeatured(true);
+                    t.setFeaturedOrder(i + 1);
+                    tournamentRepository.save(t);
+                }
+
+                auditLogger.logTournamentUnfeatured(tournament.getId(), httpRequest);
+            }
+        }
+
+        return mapToResponse(tournament);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TournamentResponse> getFeaturedTournaments() {
+        return tournamentRepository.findFeaturedPublished().stream()
+                .limit(6)
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 }

@@ -133,6 +133,28 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logTournamentFeatured(UUID tournamentId, int featuredOrder, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TOURNAMENT_FEATURED")
+                                .entityType("TOURNAMENT")
+                                .entityId(tournamentId)
+                                .entitySummary(String.format("Tournament featured: id=%s, order=%d", tournamentId, featuredOrder))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logTournamentUnfeatured(UUID tournamentId, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("TOURNAMENT_UNFEATURED")
+                                .entityType("TOURNAMENT")
+                                .entityId(tournamentId)
+                                .entitySummary(String.format("Tournament unfeatured: id=%s", tournamentId))
+                                .build();
+
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         public void logMatchesRenumbered(UUID tournamentId, int matchesChanged, HttpServletRequest request) {
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType("MATCHES_RENUMBERED")
