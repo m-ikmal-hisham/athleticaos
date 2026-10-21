@@ -214,4 +214,24 @@ export const formatPoolPositionPlaceholder = (label?: string | null): string => 
     return trimmed;
 };
 
+/**
+ * Formats a date per STYLE_GUIDE §7: 'Sat, 4 Oct 2026' (EEE, d MMM yyyy)
+ * using locale 'en-MY' and timezone 'Asia/Kuala_Lumpur'.
+ */
+export const formatDisplayDate = (date: string | Date | undefined | null): string => {
+    if (!date) return '—';
+    const d = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? new Date(`${date}T00:00:00+08:00`)
+        : new Date(date);
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('en-MY', {
+        timeZone: 'Asia/Kuala_Lumpur',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    }).format(d);
+};
+
 

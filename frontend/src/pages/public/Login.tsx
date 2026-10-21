@@ -227,7 +227,19 @@ export const Login = () => {
                         </div>
                     </form>
 
-                    <div className="mt-8 text-center text-xs text-black/60 dark:text-white/60">
+                    <p className="mt-4 text-center text-xs text-black/60 dark:text-white/60">
+                        By signing in you agree to the{' '}
+                        <Link to="/terms" className="text-navy dark:text-navy-tint hover:underline font-medium">
+                            Terms of use
+                        </Link>
+                        . See our{' '}
+                        <Link to="/privacy" className="text-navy dark:text-navy-tint hover:underline font-medium">
+                            Privacy notice
+                        </Link>
+                        .
+                    </p>
+
+                    <div className="mt-6 text-center text-xs text-black/60 dark:text-white/60">
                         Need an account for your organisation?{' '}
                         <Link to="/contact?subject=ORGANISATION_REGISTRATION" className="text-navy dark:text-navy-tint hover:underline font-medium">
                             Register your interest

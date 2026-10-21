@@ -19,10 +19,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.athleticaos.backend.utils.PublicAgeGroups;
 
 import com.athleticaos.backend.repositories.PlayerTeamRepository;
 
@@ -629,15 +632,32 @@ public class PublicProfileController {
 
             List<PublicTeamDetailResponse.TournamentSummary> tournamentsList = new java.util.ArrayList<>(tournamentMap.values());
             
+            Integer age = null;
+            String ageGroup = null;
+            String city = player.city();
+            if (player.dob() != null) {
+                int computedAge = Period.between(player.dob(), LocalDate.now(ZoneId.of("Asia/Kuala_Lumpur"))).getYears();
+                if (computedAge < 18) {
+                    age = null;
+                    city = null;
+                    ageGroup = PublicAgeGroups.ageGroupFor(computedAge);
+                } else {
+                    age = computedAge;
+                    city = player.city();
+                    ageGroup = null;
+                }
+            }
+
             PublicPlayerDetailResponse response = PublicPlayerDetailResponse.builder()
                     .id(player.id())
                     .firstName(player.firstName())
                     .lastName(player.lastName())
-                    .age(player.dob() != null ? Period.between(player.dob(), LocalDate.now()).getYears() : null)
+                    .age(age)
+                    .ageGroup(ageGroup)
                     .gender(player.gender())
                     .country(player.country())
                     .state(player.state())
-                    .city(player.city())
+                    .city(city)
                     .position(position)
                     .position2(position2)
                     .jerseyNumber(jerseyNumber)

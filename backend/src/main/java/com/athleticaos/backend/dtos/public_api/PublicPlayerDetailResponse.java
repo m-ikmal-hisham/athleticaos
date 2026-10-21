@@ -16,6 +16,7 @@ public class PublicPlayerDetailResponse {
     private String firstName;
     private String lastName;
     private Integer age;
+    private String ageGroup;
     private String gender;
     private String country;
     private String state;

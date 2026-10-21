@@ -24,6 +24,8 @@ const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
 const Partners = lazy(() => import('@/pages/public/Partners'));
+const LegalPage = lazy(() => import('@/pages/public/LegalPage'));
+const DataRequests = lazy(() => import('@/pages/public/DataRequests'));
 const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
 const ForgotPassword = lazyNamed(() => import('@/pages/public/ForgotPassword'), 'ForgotPassword');
 const ResetPassword = lazyNamed(() => import('@/pages/public/ResetPassword'), 'ResetPassword');
@@ -164,6 +166,18 @@ export const router = createBrowserRouter([
             {
                 path: '/players/:id',
                 element: <PublicPlayerProfile />,
+            },
+            {
+                path: '/privacy',
+                element: <LegalPage docType="privacy" />,
+            },
+            {
+                path: '/terms',
+                element: <LegalPage docType="terms" />,
+            },
+            {
+                path: '/data-requests',
+                element: <DataRequests />,
             },
         ],
     },
