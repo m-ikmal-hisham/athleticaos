@@ -175,12 +175,16 @@ export function PublicPlayerProfile() {
                 )}
 
                 {/* Quick Stats Row */}
-                {(age || player.gender || player.country || player.jerseyNumber) && (
+                {(player.ageGroup || age || player.gender || player.country || player.jerseyNumber) && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-                        {age && (
+                        {(player.ageGroup || age) && (
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 text-center">
-                                <div className="text-2xl font-black text-slate-900 dark:text-white">{age}</div>
-                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Age</div>
+                                <div className="text-2xl font-black text-slate-900 dark:text-white">
+                                    {player.ageGroup || age}
+                                </div>
+                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">
+                                    {player.ageGroup ? 'Age group' : 'Age'}
+                                </div>
                             </div>
                         )}
                         {player.gender && (
@@ -223,24 +227,30 @@ export function PublicPlayerProfile() {
                                 <span className="text-slate-500 text-sm">Gender</span>
                                 <span className="font-medium text-slate-900 dark:text-white capitalize">{player.gender?.toLowerCase() || '-'}</span>
                             </div>
-                            {age !== null && (
+                            {(player.ageGroup || age !== null) && (
                                 <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
-                                    <span className="text-slate-500 text-sm flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Age</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">{age} yrs</span>
+                                    <span className="text-slate-500 text-sm flex items-center gap-1.5">
+                                        <Calendar className="w-4 h-4" /> {player.ageGroup ? 'Age group' : 'Age'}
+                                    </span>
+                                    <span className="font-medium text-slate-900 dark:text-white">
+                                        {player.ageGroup ? player.ageGroup : `${age} yrs`}
+                                    </span>
                                 </div>
                             )}
                             <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
                                 <span className="text-slate-500 text-sm flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Country</span>
                                 <span className="font-medium text-slate-900 dark:text-white">{player.country || '-'}</span>
                             </div>
-                            <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
+                            <div className={`flex justify-between items-center py-2 ${player.city ? 'border-b border-slate-100 dark:border-slate-700/50' : ''}`}>
                                 <span className="text-slate-500 text-sm flex items-center gap-1.5"><MapPin className="w-4 h-4" /> State</span>
                                 <span className="font-medium text-slate-900 dark:text-white">{player.state || '-'}</span>
                             </div>
-                            <div className="flex justify-between items-center py-2">
-                                <span className="text-slate-500 text-sm">City</span>
-                                <span className="font-medium text-slate-900 dark:text-white">{player.city || '-'}</span>
-                            </div>
+                            {player.city && (
+                                <div className="flex justify-between items-center py-2">
+                                    <span className="text-slate-500 text-sm">City</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{player.city}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 

@@ -314,6 +314,18 @@ export const AcceptInvite = () => {
                                 </Button>
                             </div>
 
+                            <p className="text-center text-xs text-black/60 dark:text-white/60 pt-1">
+                                By setting your password you agree to the{' '}
+                                <Link to="/terms" className="text-navy dark:text-navy-tint hover:underline font-medium">
+                                    Terms of use
+                                </Link>
+                                . See our{' '}
+                                <Link to="/privacy" className="text-navy dark:text-navy-tint hover:underline font-medium">
+                                    Privacy notice
+                                </Link>
+                                .
+                            </p>
+
                             <div className="text-center pt-2">
                                 <Link
                                     to="/login"

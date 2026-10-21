@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CaretRight, SignOut, User, Pencil } from '@phosphor-icons/react';
+import { CaretRight, SignOut, User, Pencil, ShieldCheck } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '@/components/Modal';
@@ -82,6 +82,17 @@ export const ProfilePopup = ({ isOpen, onClose }: ProfilePopupProps) => {
                         <div className="flex items-center gap-3">
                             <Pencil className="w-5 h-5 text-black/72 dark:text-white/72 group-hover:text-black dark:group-hover:text-white" />
                             <span className="text-sm font-medium">Edit profile</span>
+                        </div>
+                        <CaretRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black/90 dark:group-hover:text-white/90" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleNavigate('/privacy')}
+                        className="w-full flex items-center justify-between p-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group text-black dark:text-white"
+                    >
+                        <div className="flex items-center gap-3">
+                            <ShieldCheck className="w-5 h-5 text-black/72 dark:text-white/72 group-hover:text-black dark:group-hover:text-white" />
+                            <span className="text-sm font-medium">Privacy &amp; terms</span>
                         </div>
                         <CaretRight className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-black/90 dark:group-hover:text-white/90" />
                     </button>

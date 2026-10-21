@@ -25,8 +25,9 @@ export default function PublicLayout() {
     const brandMain = brandParts.slice(0, -1).join(' ') || SITE_NAME;
     const brandSuffix = brandParts.length > 1 ? brandParts[brandParts.length - 1] : '';
 
+    // pb-32 keeps the footer clear of the fixed TournamentPill (a bottom margin on the footer collapsed away)
     return (
-        <div className="min-h-screen bg-background transition-colors duration-300 relative">
+        <div className="min-h-screen bg-background transition-colors duration-300 relative pb-32">
             {/* Global Background */}
             <AppBackground />
 
@@ -154,10 +155,10 @@ export default function PublicLayout() {
             </main>
 
             {/* Footer */}
-            <footer className="mt-16 border-t border-black/10 dark:border-white/12 bg-white/50 dark:bg-deep-navy/50 relative z-10 mb-24">
+            <footer className="mt-16 border-t border-black/10 dark:border-white/12 bg-white/50 dark:bg-deep-navy/50 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="text-sm text-black/70 dark:text-white/70">
+                        <div className="text-sm text-black/70 dark:text-white/70 text-center md:text-left">
                             <p className="font-semibold text-black dark:text-white mb-1">
                                 {SITE_NAME}
                             </p>
@@ -173,13 +174,16 @@ export default function PublicLayout() {
                             )}
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm font-medium text-black/70 dark:text-white/70">
-                            <Link to="/how-it-works" className="hover:text-navy dark:hover:text-navy-tint transition-colors">About</Link>
-                            <Link to="/contact" className="hover:text-navy dark:hover:text-navy-tint transition-colors">Contact</Link>
-                            <Link to="/partners" className="hover:text-navy dark:hover:text-navy-tint transition-colors">Partners</Link>
+                        <div className="flex flex-wrap items-center justify-center gap-x-5 md:gap-x-6 gap-y-0 text-sm font-medium text-black/70 dark:text-white/70">
+                            <Link to="/how-it-works" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">About</Link>
+                            <Link to="/contact" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Contact</Link>
+                            <Link to="/partners" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Partners</Link>
+                            <Link to="/privacy" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Privacy</Link>
+                            <Link to="/terms" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Terms</Link>
+                            <Link to="/data-requests" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Data requests</Link>
                         </div>
 
-                        <div className="text-xs text-black/70 dark:text-white/70 flex flex-col md:items-end">
+                        <div className="text-xs text-black/70 dark:text-white/70 flex flex-col items-center md:items-end">
                             <p>© {new Date().getFullYear()} {COPYRIGHT_HOLDER}.</p>
                             {import.meta.env.VITE_ENV !== 'production' && (
                                 <p className="mt-1 opacity-70 font-mono text-xs">v{import.meta.env.VITE_GIT_SHA || 'dev'}</p>

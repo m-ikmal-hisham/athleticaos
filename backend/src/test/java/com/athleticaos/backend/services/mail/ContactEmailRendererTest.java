@@ -40,6 +40,13 @@ class ContactEmailRendererTest {
 
         String trimmedSubject = ContactEmailRenderer.renderSubject(longMsg);
         assertThat(trimmedSubject).isEqualTo("New enquiry · General enquiry · " + "A".repeat(60) + "…");
+
+        ContactMessage privacyMsg = ContactMessage.builder()
+                .name("Sarah Lee")
+                .subject(ContactSubject.PRIVACY_REQUEST)
+                .build();
+        String privacySubject = ContactEmailRenderer.renderSubject(privacyMsg);
+        assertThat(privacySubject).isEqualTo("New enquiry · Privacy / data request · Sarah Lee");
     }
 
     @Test

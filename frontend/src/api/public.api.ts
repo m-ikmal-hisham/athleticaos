@@ -285,14 +285,11 @@ export interface PublicPlayerDetailResponse {
     firstName: string;
     lastName: string;
     age?: number | null;
+    ageGroup?: string | null;
     gender?: string;
     country?: string;
     state?: string;
     city?: string;
-    bloodGroup?: string;
-    emergencyContactName?: string;
-    emergencyContactNumber?: string;
-    emergencyContactRelationship?: string;
     position?: string;
     position2?: string;
     jerseyNumber?: number;
@@ -450,7 +447,8 @@ export type ContactSubjectValue =
     | 'PARTNERSHIP'
     | 'ORGANISATION_REGISTRATION'
     | 'MEDIA'
-    | 'TOURNAMENT_SUPPORT';
+    | 'TOURNAMENT_SUPPORT'
+    | 'PRIVACY_REQUEST';
 
 export interface ContactPayload {
     name: string;
