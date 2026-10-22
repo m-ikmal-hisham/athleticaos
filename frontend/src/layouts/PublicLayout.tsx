@@ -1,44 +1,208 @@
-import { Suspense, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { List, X } from '@phosphor-icons/react';
-import { TournamentPill } from '@/components/TournamentPill';
+import { Suspense, useEffect, useRef, useState, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, CaretDown, SignIn, SquaresFour } from '@phosphor-icons/react';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { AppBackground } from '@/components/public/AppBackground';
+import { PublicBottomNav } from '@/components/public/PublicBottomNav';
+import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { PageLoader } from '@/components/PageLoader';
+import { Button } from '@/components/Button';
 import { clsx } from 'clsx';
+import { useAuthStore } from '@/store/auth.store';
 import { SITE_NAME, COPYRIGHT_HOLDER, OWNER_NAME, SHOW_OWNER } from '@/config/site';
 import { PARTNERS } from '@/config/partners';
+import {
+    PUBLIC_PRIMARY_NAV,
+    PUBLIC_MORE_NAV,
+    PUBLIC_NAV_LABELS,
+    isNavItemActive,
+    getDetailParent,
+} from '@/config/navigation';
+
+const focusRing =
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint';
+
+const footerLink = clsx(
+    'inline-flex items-center min-h-[44px] rounded-sm hover:text-navy dark:hover:text-navy-tint motion-safe:transition-colors',
+    focusRing
+);
+
+/** Desktop (≥ lg) "More" dropdown. Lives inside the sticky z-50 top bar so it sits above page content. */
+function DesktopMoreMenu({ pathname }: { pathname: string }) {
+    const [open, setOpen] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLUListElement>(null);
+    const moreActive = PUBLIC_MORE_NAV.some((item) => isNavItemActive(item, pathname));
+
+    // Close when the route changes
+    useEffect(() => {
+        setOpen(false);
+    }, [pathname]);
+
+    useEffect(() => {
+        if (!open) return;
+        // Focus the first item when opened
+        menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (buttonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+            setOpen(false);
+        };
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                setOpen(false);
+                buttonRef.current?.focus();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [open]);
+
+    const handleMenuKeyDown = (e: ReactKeyboardEvent<HTMLUListElement>) => {
+        const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+        const index = items.indexOf(document.activeElement as HTMLElement);
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            items[(index + 1) % items.length]?.focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            items[(index - 1 + items.length) % items.length]?.focus();
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            items[0]?.focus();
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            items[items.length - 1]?.focus();
+        } else if (e.key === 'Tab') {
+            setOpen(false);
+        }
+    };
+
+    return (
+        <div className="relative h-full flex items-center">
+            <button
+                ref={buttonRef}
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={open}
+                aria-controls="public-more-menu"
+                onClick={() => setOpen((v) => !v)}
+                onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown' && !open) {
+                        e.preventDefault();
+                        setOpen(true);
+                    }
+                }}
+                className={clsx(
+                    'inline-flex items-center gap-1 h-full px-1 text-sm font-medium border-b-2 motion-safe:transition-colors',
+                    focusRing,
+                    moreActive
+                        ? 'text-navy dark:text-navy-tint border-navy dark:border-navy-tint'
+                        : 'text-black/72 dark:text-white/72 border-transparent hover:text-navy dark:hover:text-navy-tint'
+                )}
+            >
+                {PUBLIC_NAV_LABELS.more}
+                <CaretDown
+                    size={16}
+                    aria-hidden="true"
+                    className={clsx('motion-safe:transition-transform', open && 'rotate-180')}
+                />
+            </button>
+
+            {open && (
+                <ul
+                    ref={menuRef}
+                    id="public-more-menu"
+                    role="menu"
+                    aria-label={PUBLIC_NAV_LABELS.more}
+                    onKeyDown={handleMenuKeyDown}
+                    className="absolute right-0 top-full mt-1 min-w-[200px] p-1 bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 rounded-[10px] shadow-md motion-safe:animate-fade-in"
+                >
+                    {PUBLIC_MORE_NAV.map((item) => {
+                        const active = isNavItemActive(item, pathname);
+                        const Icon = item.icon;
+                        return (
+                            <li key={item.key} role="none">
+                                <Link
+                                    to={item.to}
+                                    role="menuitem"
+                                    aria-current={active ? 'page' : undefined}
+                                    onClick={() => setOpen(false)}
+                                    className={clsx(
+                                        'flex items-center gap-3 min-h-[44px] px-3 rounded-[8px] text-sm font-medium motion-safe:transition-colors',
+                                        focusRing,
+                                        active
+                                            ? 'text-navy dark:text-navy-tint bg-navy/[0.08] dark:bg-navy-tint/12'
+                                            : 'text-black/90 dark:text-white/92 hover:bg-black/4 dark:hover:bg-white/6'
+                                    )}
+                                >
+                                    <Icon size={20} weight={active ? 'fill' : 'duotone'} aria-hidden="true" />
+                                    {item.label}
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+        </div>
+    );
+}
 
 export default function PublicLayout() {
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const partnerNames = PARTNERS.map((p) => p.name).join(', ');
-
-    // Hide Tournament Pill on Match Details pages (e.g. /matches/...)
-    const shouldShowTournamentPill = !location.pathname.startsWith('/matches/');
-
-    const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
     const brandParts = SITE_NAME.split(' ');
     const brandMain = brandParts.slice(0, -1).join(' ') || SITE_NAME;
     const brandSuffix = brandParts.length > 1 ? brandParts[brandParts.length - 1] : '';
 
-    // pb-32 keeps the footer clear of the fixed TournamentPill (a bottom margin on the footer collapsed away)
+    const auth = isAuthenticated
+        ? { label: PUBLIC_NAV_LABELS.dashboard, to: '/dashboard', icon: SquaresFour }
+        : { label: PUBLIC_NAV_LABELS.signIn, to: '/login', icon: SignIn };
+    const AuthIcon = auth.icon;
+
+    const detailParent = getDetailParent(location.pathname);
+    const handleBack = () => {
+        if (!detailParent) return;
+        // 'default' means this is the first entry in the session (deep link): go to the parent instead
+        if (location.key !== 'default') {
+            navigate(-1);
+        } else {
+            navigate(detailParent.to);
+        }
+    };
+
+    // < lg: bottom padding clears the fixed bottom bar (64px + safe area + 16px) so the footer stays visible.
+    // Padding on the wrapper, not margin on the footer (a footer margin collapsed away before).
     return (
-        <div className="min-h-screen bg-background transition-colors duration-300 relative pb-32">
+        <div className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pb-[calc(64px+env(safe-area-inset-bottom,0px)+16px)] lg:pb-0">
             {/* Global Background */}
             <AppBackground />
 
-            {/* Top Navigation */}
-            <nav
-                className="backdrop-blur-nav sticky top-0 z-50 bg-white/70 dark:bg-deep-navy/70 border-b border-black/10 dark:border-white/12"
-            >
+            <EnvironmentRibbon />
+
+            {/* Top bar: sticky on every size */}
+            <header className="print:hidden backdrop-blur-nav sticky top-0 z-50 bg-white/90 dark:bg-deep-navy/90 border-b border-black/10 dark:border-white/12">
+                <a
+                    href="#main-content"
+                    className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-[10px] focus:bg-navy focus:text-white focus:text-sm focus:font-medium focus:outline-none focus:ring-2 focus:ring-navy-tint"
+                >
+                    {PUBLIC_NAV_LABELS.skipToContent}
+                </a>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
+                    <div className="flex items-center justify-between gap-4 h-16">
                         {/* Logo */}
-                        <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0" onClick={() => setMobileMenuOpen(false)}>
+                        <Link to="/" className={clsx('flex items-center gap-2 sm:gap-3 shrink-0 min-w-0 rounded-[10px]', focusRing)}>
                             <img
                                 src={logoSrc}
                                 alt="AthleticaOS Logo"
@@ -54,101 +218,81 @@ export default function PublicLayout() {
                             </span>
                         </Link>
 
-                        {/* Desktop Navigation Links */}
-                        <div className="hidden md:flex items-center gap-6">
-                            <Link
-                                to="/tournaments"
-                                className="text-sm font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint transition-colors"
-                            >
-                                Tournaments
-                            </Link>
-                            <Link
-                                to="/teams"
-                                className="text-sm font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint transition-colors"
-                            >
-                                Teams
-                            </Link>
-                            <Link
-                                to="/players"
-                                className="text-sm font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint transition-colors"
-                            >
-                                Players
-                            </Link>
-                            <Link
-                                to="/how-it-works"
-                                className="text-sm font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint transition-colors"
-                            >
-                                How It Works
-                            </Link>
-                            <Link
-                                to="/partners"
-                                className="text-sm font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint transition-colors"
-                            >
-                                Partners
-                            </Link>
+                        {/* Desktop / large tablet (≥ lg) */}
+                        <div className="hidden lg:flex items-center gap-8 h-full">
+                            <nav aria-label={PUBLIC_NAV_LABELS.primaryNav} className="h-full">
+                                <ul className="flex items-center gap-6 h-full">
+                                    {PUBLIC_PRIMARY_NAV.map((item) => {
+                                        const active = isNavItemActive(item, location.pathname);
+                                        return (
+                                            <li key={item.key} className="h-full">
+                                                <Link
+                                                    to={item.to}
+                                                    aria-current={active ? 'page' : undefined}
+                                                    className={clsx(
+                                                        'inline-flex items-center h-full px-1 text-sm font-medium border-b-2 motion-safe:transition-colors',
+                                                        focusRing,
+                                                        active
+                                                            ? 'text-navy dark:text-navy-tint border-navy dark:border-navy-tint'
+                                                            : 'text-black/72 dark:text-white/72 border-transparent hover:text-navy dark:hover:text-navy-tint'
+                                                    )}
+                                                >
+                                                    {item.label}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                    <li className="h-full">
+                                        <DesktopMoreMenu pathname={location.pathname} />
+                                    </li>
+                                </ul>
+                            </nav>
+                            <Button variant="secondary" size="sm" onClick={() => navigate(auth.to)}>
+                                {auth.label}
+                            </Button>
                         </div>
 
-                        {/* Mobile Menu Button */}
-                        <button
-                            className="md:hidden p-2 text-black/70 dark:text-white/70"
-                            onClick={toggleMobileMenu}
-                            aria-label="Toggle menu"
-                        >
-                            {mobileMenuOpen ? (
-                                <X className="w-6 h-6" />
-                            ) : (
-                                <List className="w-6 h-6" />
+                        {/* Phones / portrait tablets (< lg): sign-in icon only; primary nav is in the bottom bar */}
+                        <Link
+                            to={auth.to}
+                            aria-label={auth.label}
+                            className={clsx(
+                                'lg:hidden inline-flex items-center justify-center w-11 h-11 -mr-2 rounded-[10px] text-black/72 dark:text-white/72 hover:text-navy dark:hover:text-navy-tint hover:bg-black/4 dark:hover:bg-white/6 motion-safe:transition-colors',
+                                focusRing
                             )}
-                        </button>
+                        >
+                            <AuthIcon size={24} aria-hidden="true" />
+                        </Link>
                     </div>
                 </div>
+            </header>
 
-                {/* Mobile Menu Dropdown */}
-                {mobileMenuOpen && (
-                    <div
-                        className="backdrop-blur-menu md:hidden bg-white/95 dark:bg-deep-navy/95 border-b border-black/10 dark:border-white/12 absolute top-16 left-0 right-0 p-4 space-y-4 shadow-xl z-40 animate-in slide-in-from-top-4 duration-200"
+            {/* Back row on detail pages (< lg only). Scrolls with the page; desktop keeps breadcrumbs. */}
+            {detailParent && (
+                <div className="print:hidden lg:hidden relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-2">
+                    <button
+                        type="button"
+                        onClick={handleBack}
+                        className={clsx(
+                            'inline-flex items-center gap-2 min-h-[44px] -ml-2 px-2 rounded-[10px] text-sm font-medium text-black/72 dark:text-white/72 hover:text-navy dark:hover:text-navy-tint motion-safe:transition-colors',
+                            focusRing
+                        )}
                     >
-                        <Link
-                            to="/tournaments"
-                            className="block text-base font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint py-2 border-b border-black/10 dark:border-white/12"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Tournaments
-                        </Link>
-                        <Link
-                            to="/teams"
-                            className="block text-base font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint py-2 border-b border-black/10 dark:border-white/12"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Teams
-                        </Link>
-                        <Link
-                            to="/players"
-                            className="block text-base font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint py-2 border-b border-black/10 dark:border-white/12"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Players
-                        </Link>
-                        <Link
-                            to="/how-it-works"
-                            className="block text-base font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint py-2 border-b border-black/10 dark:border-white/12"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            How It Works
-                        </Link>
-                        <Link
-                            to="/partners"
-                            className="block text-base font-medium text-black/70 dark:text-white/70 hover:text-navy dark:hover:text-navy-tint py-2 border-b border-black/10 dark:border-white/12"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Partners
-                        </Link>
-                    </div>
-                )}
-            </nav>
+                        <ArrowLeft size={20} aria-hidden="true" />
+                        {detailParent.label}
+                    </button>
+                </div>
+            )}
 
-            {/* Main Content - pb-28 ensures content isn't hidden behind the fixed TournamentPill on mobile */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 relative z-10">
+            {/* Main Content (relative z-10 keeps it above the fixed z-0 AppBackground) */}
+            <main
+                id="main-content"
+                tabIndex={-1}
+                className={clsx(
+                    'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 outline-none',
+                    detailParent && 'pt-2 lg:pt-8'
+                )}
+            >
                 <Suspense fallback={<PageLoader />}>
                     <Outlet />
                 </Suspense>
@@ -158,7 +302,7 @@ export default function PublicLayout() {
             <footer className="mt-16 border-t border-black/10 dark:border-white/12 bg-white/50 dark:bg-deep-navy/50 relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="text-sm text-black/70 dark:text-white/70 text-center md:text-left">
+                        <div className="text-sm text-black/72 dark:text-white/72 text-center md:text-left">
                             <p className="font-semibold text-black dark:text-white mb-1">
                                 {SITE_NAME}
                             </p>
@@ -174,16 +318,17 @@ export default function PublicLayout() {
                             )}
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-center gap-x-5 md:gap-x-6 gap-y-0 text-sm font-medium text-black/70 dark:text-white/70">
-                            <Link to="/how-it-works" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">About</Link>
-                            <Link to="/contact" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Contact</Link>
-                            <Link to="/partners" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Partners</Link>
-                            <Link to="/privacy" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Privacy</Link>
-                            <Link to="/terms" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Terms</Link>
-                            <Link to="/data-requests" className="inline-flex items-center min-h-[44px] hover:text-navy dark:hover:text-navy-tint transition-colors">Data requests</Link>
+                        <div className="flex flex-wrap items-center justify-center gap-x-5 md:gap-x-6 gap-y-0 text-sm font-medium text-black/72 dark:text-white/72">
+                            <Link to="/how-it-works" className={footerLink}>About</Link>
+                            <Link to="/contact" className={footerLink}>Contact</Link>
+                            <Link to="/partners" className={footerLink}>Partners</Link>
+                            <Link to="/privacy" className={footerLink}>Privacy</Link>
+                            <Link to="/terms" className={footerLink}>Terms</Link>
+                            <Link to="/data-requests" className={footerLink}>Data requests</Link>
+                            <Link to={auth.to} className={footerLink}>{auth.label}</Link>
                         </div>
 
-                        <div className="text-xs text-black/70 dark:text-white/70 flex flex-col items-center md:items-end">
+                        <div className="text-xs text-black/72 dark:text-white/72 flex flex-col items-center md:items-end">
                             <p>© {new Date().getFullYear()} {COPYRIGHT_HOLDER}.</p>
                             {import.meta.env.VITE_ENV !== 'production' && (
                                 <p className="mt-1 opacity-70 font-mono text-xs">v{import.meta.env.VITE_GIT_SHA || 'dev'}</p>
@@ -192,15 +337,9 @@ export default function PublicLayout() {
                     </div>
                 </div>
             </footer>
-            {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
-            <div className={clsx(
-                "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-opacity duration-300",
-                shouldShowTournamentPill ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}>
-                <div className="pointer-events-auto w-full max-w-3xl px-6">
-                    <TournamentPill />
-                </div>
-            </div>
+
+            {/* Phones / portrait tablets: primary nav */}
+            <PublicBottomNav />
         </div>
     );
 }

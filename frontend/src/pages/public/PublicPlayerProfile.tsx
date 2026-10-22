@@ -90,7 +90,7 @@ export function PublicPlayerProfile() {
 
                 <button 
                     onClick={() => navigate(-1)}
-                    className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 text-slate-700 dark:text-white backdrop-blur-md transition-colors text-sm font-medium border border-white/30 dark:border-white/10"
+                    className="absolute top-6 left-6 z-20 hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 text-slate-700 dark:text-white backdrop-blur-md transition-colors text-sm font-medium border border-white/30 dark:border-white/10"
                 >
                     <ArrowLeft className="w-4 h-4" /> Back
                 </button>

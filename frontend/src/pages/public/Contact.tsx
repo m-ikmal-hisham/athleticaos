@@ -185,7 +185,7 @@ export default function Contact() {
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <div className="space-y-2">
-                <h1 className="text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
+                <h1 className="font-score text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
                     Contact us
                 </h1>
                 <p className="text-base sm:text-lg text-black/72 dark:text-white/72">

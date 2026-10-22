@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useLocation, Link } from 'react-router-dom';
-import { LinkSimple, Check, List, X, WarningCircle } from '@phosphor-icons/react';
+import { LinkSimple, Check, List, WarningCircle } from '@phosphor-icons/react';
+import { BottomSheet } from '@/components/public/BottomSheet';
 import { useLegalLanguage } from '@/hooks/useLegalLanguage';
 import { privacyDocModule } from '@/content/legal/privacy';
 import { termsDocModule } from '@/content/legal/terms';
@@ -132,11 +132,14 @@ export default function LegalPage({ docType }: LegalPageProps) {
 
     const scrollToSection = (sectionId: string) => {
         setTocSheetOpen(false);
-        const element = document.getElementById(sectionId);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-            window.history.pushState(null, '', `#${sectionId}`);
-        }
+        // Next frame: let the sheet close (and release its scroll lock) before scrolling
+        requestAnimationFrame(() => {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+                window.history.pushState(null, '', `#${sectionId}`);
+            }
+        });
     };
 
     // Production gate for unpublishable draft documents
@@ -387,48 +390,27 @@ export default function LegalPage({ docType }: LegalPageProps) {
                 </article>
             </div>
 
-            {/* Mobile Bottom Sheet for Table of Contents */}
-            {/* Portalled to body: <main> is its own stacking context (z-10), so the sheet must escape it to sit above the TournamentPill (z-40) */}
-            {tocSheetOpen && createPortal(
-                <div className="legal-print-hide fixed inset-0 z-50 lg:hidden">
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-                        onClick={() => setTocSheetOpen(false)}
-                    />
-
-                    {/* Bottom Sheet */}
-                    <div className="fixed inset-x-0 bottom-0 bg-surface-card border-t border-line-subtle rounded-t-2xl max-h-[80vh] flex flex-col p-6 shadow-2xl z-10 animate-slide-up">
-                        <div className="flex items-center justify-between pb-4 border-b border-line-subtle mb-4">
-                            <span className="text-base font-bold text-content-primary">
-                                {language === 'ms' ? 'Kandungan' : 'Contents'}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setTocSheetOpen(false)}
-                                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-content-secondary hover:text-content-primary"
-                                aria-label="Close contents"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="overflow-y-auto space-y-1 pb-6">
-                            {currentDoc.sections.map((section) => (
-                                <button
-                                    key={section.id}
-                                    type="button"
-                                    onClick={() => scrollToSection(section.id)}
-                                    className="w-full text-left min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-content-primary hover:bg-surface-sunken flex items-center justify-between"
-                                >
-                                    <span>{section.heading}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            {/* Mobile Bottom Sheet for Table of Contents (shared BottomSheet portals to body, z-50) */}
+            <BottomSheet
+                isOpen={tocSheetOpen}
+                onClose={() => setTocSheetOpen(false)}
+                title={language === 'ms' ? 'Kandungan' : 'Contents'}
+                closeLabel="Close contents"
+                className="legal-print-hide lg:hidden"
+            >
+                <div className="space-y-1 pb-6">
+                    {currentDoc.sections.map((section) => (
+                        <button
+                            key={section.id}
+                            type="button"
+                            onClick={() => scrollToSection(section.id)}
+                            className="w-full text-left min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-content-primary hover:bg-surface-sunken flex items-center justify-between"
+                        >
+                            <span>{section.heading}</span>
+                        </button>
+                    ))}
+                </div>
+            </BottomSheet>
         </div>
     );
 }
