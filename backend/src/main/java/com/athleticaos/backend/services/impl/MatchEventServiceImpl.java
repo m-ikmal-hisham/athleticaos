@@ -304,9 +304,7 @@ public class MatchEventServiceImpl implements MatchEventService {
 
                 com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
                 boolean isPrivileged = currentUser.getRoles().stream()
-                                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN")
-                                                || r.getName().equals("ROLE_MATCH_MANAGER")
-                                                || r.getName().equals("ROLE_SUPERVISOR"))
+                                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN"))
                                 || accessScopeService.isTournamentInScope(match.getTournament());
 
                 // If event is locked/timed out, strict override required
@@ -376,9 +374,7 @@ public class MatchEventServiceImpl implements MatchEventService {
                 com.athleticaos.backend.entities.User currentUser = userService.getCurrentUser();
 
                 boolean isPrivileged = currentUser.getRoles().stream()
-                                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN")
-                                                || r.getName().equals("ROLE_MATCH_MANAGER")
-                                                || r.getName().equals("ROLE_SUPERVISOR"))
+                                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN"))
                                 || accessScopeService.isTournamentInScope(match.getTournament());
 
                 // If event is locked/timed out, strict override required

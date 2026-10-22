@@ -231,7 +231,7 @@ export const MatchDetail = () => {
     // tournament officials panel) and sends it as canWrite. Matching officials by first
     // name here was unreliable, and the officials list is not readable by scorers.
     const canManageEvents = useMemo(() => {
-        const isGlobalAdmin = user?.roles.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_MATCH_MANAGER', 'SUPER_ADMIN', 'MATCH_MANAGER'].includes(r));
+        const isGlobalAdmin = Boolean(user?.roles?.includes('ROLE_SUPER_ADMIN'));
         if (isGlobalAdmin) return true;
         return selectedMatch?.canWrite === true;
     }, [user, selectedMatch?.canWrite]);
