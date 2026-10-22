@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.athleticaos.backend.security.MatchRoles;
 
 import java.util.List;
 import java.util.UUID;
@@ -61,7 +62,7 @@ public class MatchLineupController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ORG_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @PreAuthorize(MatchRoles.MATCH_WRITE)
     @Operation(summary = "Update lineup for a team in a match")
     public ResponseEntity<List<MatchLineupEntryDTO>> updateLineup(
             @PathVariable String matchIdOrSlug,

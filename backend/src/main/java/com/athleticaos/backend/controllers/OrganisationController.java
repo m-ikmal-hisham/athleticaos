@@ -146,14 +146,14 @@ public class OrganisationController {
     }
 
     @GetMapping("/{id}/persons")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN', 'ROLE_OFFICIAL')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<List<PersonSummaryDTO>> getPersonsByOrganisation(@PathVariable UUID id) {
         log.info("Fetching persons for organisation: {}", id);
         return ResponseEntity.ok(organisationService.getPersonsByOrganisationInScope(id));
     }
 
     @PostMapping("/{id}/persons")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     @SuppressWarnings("null")
     public ResponseEntity<PersonSummaryDTO> registerPerson(
             @PathVariable UUID id,

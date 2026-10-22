@@ -147,7 +147,7 @@ const navSections: NavSection[] = [
                 path: '/dashboard/operations',
                 icon: <Wrench className="w-5 h-5" />,
                 iconFilled: <Wrench className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL'],
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'],
                 feature: 'operations'
             },
             {
@@ -155,7 +155,7 @@ const navSections: NavSection[] = [
                 path: '/dashboard/officials',
                 icon: <Users className="w-5 h-5" />,
                 iconFilled: <Users className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN']
+                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']
             },
             {
                 label: 'Monetization',

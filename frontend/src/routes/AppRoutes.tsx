@@ -431,7 +431,7 @@ export const router = createBrowserRouter([
             {
                 path: 'officials',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
                         <Officials />
                     </AuthGuard>
                 ),
@@ -440,7 +440,7 @@ export const router = createBrowserRouter([
                 path: 'operations',
                 element: (
                     <FeatureRoute feature="operations">
-                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
                             <OperationsConsole />
                         </AuthGuard>
                     </FeatureRoute>

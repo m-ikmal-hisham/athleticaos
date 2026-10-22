@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { getAllOfficials, OfficialRegistryDTO } from '@/api/officials.api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { Plus, Calendar } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
-import { OfficialHistoryModal } from '@/components/admin/officials/OfficialHistoryModal';
 import { RegisterOfficialModal } from '@/components/admin/officials/RegisterOfficialModal';
 import { Badge } from '@/components/Badge';
 
@@ -13,8 +12,6 @@ const Officials: React.FC = () => {
     const { user } = useAuthStore();
     const [officials, setOfficials] = useState<OfficialRegistryDTO[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedOfficial, setSelectedOfficial] = useState<OfficialRegistryDTO | null>(null);
-    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
     useEffect(() => {
@@ -62,13 +59,12 @@ const Officials: React.FC = () => {
                                 <TableHead>Level</TableHead>
                                 <TableHead>Badge #</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead className="w-24">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {officials.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-4">No officials registered.</TableCell>
+                                    <TableCell colSpan={5} className="text-center py-4">No officials registered.</TableCell>
                                 </TableRow>
                             ) : (
                                 officials.map((official) => (
@@ -100,19 +96,6 @@ const Officials: React.FC = () => {
                                                 {official.isActive || official.active ? 'Active' : 'Inactive'}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setSelectedOfficial(official);
-                                                    setIsHistoryModalOpen(true);
-                                                }}
-                                            >
-                                                <Calendar className="w-4 h-4 mr-2" />
-                                                History
-                                            </Button>
-                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
@@ -120,13 +103,6 @@ const Officials: React.FC = () => {
                     </Table>
                 </CardContent>
             </Card>
-
-            <OfficialHistoryModal
-                isOpen={isHistoryModalOpen}
-                onClose={() => setIsHistoryModalOpen(false)}
-                officialId={selectedOfficial?.id || null}
-                officialName={selectedOfficial ? `${selectedOfficial.firstName} ${selectedOfficial.lastName}` : ''}
-            />
 
             <RegisterOfficialModal
                 isOpen={isRegisterModalOpen}

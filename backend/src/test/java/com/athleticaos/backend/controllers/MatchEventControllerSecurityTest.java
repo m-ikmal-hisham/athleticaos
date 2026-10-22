@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -162,5 +163,130 @@ class MatchEventControllerSecurityTest {
         mockMvc.perform(get("/api/v1/matches/{id}", matchId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.canWrite").value(false));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SUPER_ADMIN")
+    void superAdminCanAddEvent() throws Exception {
+        when(matchEventService.addEventToMatch(eq(matchId), any(), any())).thenReturn(new MatchEventResponse());
+
+        mockMvc.perform(post("/api/v1/matches/{id}/events", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content(tryBody))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_CLUB_ADMIN")
+    void clubAdminCanAddEvent() throws Exception {
+        when(matchEventService.addEventToMatch(eq(matchId), any(), any())).thenReturn(new MatchEventResponse());
+
+        mockMvc.perform(post("/api/v1/matches/{id}/events", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content(tryBody))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_PLAYER")
+    void playerCannotAddEvent() throws Exception {
+        mockMvc.perform(post("/api/v1/matches/{id}/events", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content(tryBody))
+                .andExpect(status().isForbidden());
+        verify(matchEventService, never()).addEventToMatch(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_MATCH_MANAGER")
+    void matchManagerCannotAddEvent() throws Exception {
+        mockMvc.perform(post("/api/v1/matches/{id}/events", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content(tryBody))
+                .andExpect(status().isForbidden());
+        verify(matchEventService, never()).addEventToMatch(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_OFFICIAL")
+    void officialCannotAddEvent() throws Exception {
+        mockMvc.perform(post("/api/v1/matches/{id}/events", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content(tryBody))
+                .andExpect(status().isForbidden());
+        verify(matchEventService, never()).addEventToMatch(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_SUPER_ADMIN")
+    void superAdminCanUpdateMatchStatus() throws Exception {
+        when(matchService.updateMatchStatus(eq(matchId), eq("LIVE"), any())).thenReturn(new MatchResponse());
+
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_ORG_ADMIN")
+    void orgAdminCanUpdateMatchStatus() throws Exception {
+        when(matchService.updateMatchStatus(eq(matchId), eq("LIVE"), any())).thenReturn(new MatchResponse());
+
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_CLUB_ADMIN")
+    void clubAdminCanUpdateMatchStatus() throws Exception {
+        when(matchService.updateMatchStatus(eq(matchId), eq("LIVE"), any())).thenReturn(new MatchResponse());
+
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_COACH")
+    void coachCannotUpdateMatchStatus() throws Exception {
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_PLAYER")
+    void playerCannotUpdateMatchStatus() throws Exception {
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_MATCH_MANAGER")
+    void matchManagerCannotUpdateMatchStatus() throws Exception {
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_OFFICIAL")
+    void officialCannotUpdateMatchStatus() throws Exception {
+        mockMvc.perform(put("/api/v1/matches/{id}/status", matchId)
+                        .param("status", "LIVE"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_CLUB_ADMIN")
+    void clubAdminCanViewOperationsDashboard() throws Exception {
+        when(matchService.getOperationsDashboard()).thenReturn(com.athleticaos.backend.dtos.match.OperationsDashboardDTO.builder().build());
+
+        mockMvc.perform(get("/api/v1/matches/operations/dashboard"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_COACH")
+    void coachCannotViewOperationsDashboard() throws Exception {
+        mockMvc.perform(get("/api/v1/matches/operations/dashboard"))
+                .andExpect(status().isForbidden());
     }
 }

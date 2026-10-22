@@ -165,7 +165,7 @@ public class TournamentSecurityRegressionTest {
 
     @Test
     @DisplayName("Official can GET match when assigned (even if outside org scope)")
-    @WithMockUser(roles = "OFFICIAL")
+    @WithMockUser(roles = "CLUB_ADMIN")
     void officialCanGetMatchWhenAssigned() throws Exception {
         when(matchService.getMatchById(matchId)).thenReturn(matchResponse);
         when(accessScopeService.canReadMatch(matchId)).thenReturn(true);
@@ -177,7 +177,7 @@ public class TournamentSecurityRegressionTest {
 
     @Test
     @DisplayName("Official can GET tournament when assigned to match/tournament")
-    @WithMockUser(roles = "OFFICIAL")
+    @WithMockUser(roles = "CLUB_ADMIN")
     void officialCanGetTournamentWhenAssigned() throws Exception {
         when(tournamentService.getTournamentById(tournamentId)).thenReturn(tournamentResponse);
         when(accessScopeService.canReadTournament(tournamentId)).thenReturn(true);
@@ -189,7 +189,7 @@ public class TournamentSecurityRegressionTest {
 
     @Test
     @DisplayName("Official can add a try to assigned match")
-    @WithMockUser(roles = "OFFICIAL")
+    @WithMockUser(roles = "CLUB_ADMIN")
     void officialCanAddTryToAssignedMatch() throws Exception {
         when(matchService.getMatchById(matchId)).thenReturn(matchResponse);
 
@@ -218,7 +218,7 @@ public class TournamentSecurityRegressionTest {
 
     @Test
     @DisplayName("Official can update match status to COMPLETED")
-    @WithMockUser(roles = "OFFICIAL")
+    @WithMockUser(roles = "CLUB_ADMIN")
     void officialCanCompleteMatch() throws Exception {
         MatchResponse completedMatch = MatchResponse.builder()
                 .id(matchId)
@@ -235,7 +235,7 @@ public class TournamentSecurityRegressionTest {
 
     @Test
     @DisplayName("Official CANNOT delete a match (forbidden at security level)")
-    @WithMockUser(roles = "OFFICIAL")
+    @WithMockUser(roles = "CLUB_ADMIN")
     void officialCannotDeleteMatch() throws Exception {
         mockMvc.perform(delete("/api/v1/matches/{id}", matchId))
                 .andExpect(status().isForbidden());
@@ -247,6 +247,22 @@ public class TournamentSecurityRegressionTest {
     void officialCannotUpdateTournamentStatus() throws Exception {
         mockMvc.perform(put("/api/v1/tournaments/{id}/status", tournamentId)
                         .param("status", "LIVE"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Phantom role OFFICIAL cannot add a try (rejected by role gate)")
+    @WithMockUser(roles = "OFFICIAL")
+    void phantomOfficialRoleCannotAddTry() throws Exception {
+        MatchEventCreateRequest request = MatchEventCreateRequest.builder()
+                .teamId(ownTeamId)
+                .eventType(MatchEventType.TRY)
+                .minute(12)
+                .build();
+
+        mockMvc.perform(post("/api/v1/matches/{id}/events", matchId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
 

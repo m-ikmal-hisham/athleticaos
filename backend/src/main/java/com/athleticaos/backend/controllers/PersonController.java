@@ -42,7 +42,7 @@ public class PersonController {
     }
 
     @GetMapping("/organisation/{orgId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<Page<PersonResponseDTO>> getPersonsByOrganisation(
             @PathVariable UUID orgId,
             @PageableDefault(size = 50, sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable,
@@ -70,7 +70,7 @@ public class PersonController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TEAM_ADMIN', 'ROLE_OFFICIAL')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<PersonResponseDTO> getPerson(@PathVariable UUID id) {
         return ResponseEntity.ok(personService.getPersonByIdInScope(id));
     }
