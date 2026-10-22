@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { Icon } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 
@@ -39,9 +40,11 @@ export function GlassTabBar({
     activeKey,
     accessorySlot,
     hasAccessory = false,
-    ariaLabel = 'Primary',
+    ariaLabel,
     className,
 }: GlassTabBarProps) {
+    const { t } = useTranslation();
+    const resolvedAriaLabel = ariaLabel ?? t('nav.primaryNav');
     const [isMinimised, setIsMinimised] = useState(false);
     const lastScrollY = useRef(0);
     const scrollAnchorY = useRef(0);
@@ -170,7 +173,7 @@ export function GlassTabBar({
 
                 {/* Tab Bar Capsule (z-index nav 30) */}
                 <nav
-                    aria-label={ariaLabel}
+                    aria-label={resolvedAriaLabel}
                     className={clsx(
                         'glass absolute z-30 bottom-0 left-0 overflow-hidden',
                         'motion-safe:transition-all motion-safe:duration-300 motion-reduce:transition-none',
@@ -220,7 +223,7 @@ export function GlassTabBar({
                                         <button
                                             type="button"
                                             onClick={handleMinimisedTap}
-                                            aria-label={`${item.label} (Expand tab bar)`}
+                                            aria-label={t('nav.expandTabBar', { label: item.label })}
                                             className={clsx(
                                                 itemBase,
                                                 'w-full h-full p-0 flex items-center justify-center',

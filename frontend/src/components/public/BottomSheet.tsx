@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/store/ui.store';
 
 interface BottomSheetProps {
@@ -23,7 +24,9 @@ const FOCUSABLE =
  * Portalled to document.body (z-50) so it sits above the bottom bar (z-30) and any
  * stacking context inside <main>. Escape / scrim close, focus moved in and returned.
  */
-export function BottomSheet({ isOpen, onClose, title, children, closeLabel = 'Close', className }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, title, children, closeLabel, className }: BottomSheetProps) {
+    const { t } = useTranslation();
+    const resolvedCloseLabel = closeLabel ?? t('dialog.close');
     const sheetRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const onCloseRef = useRef(onClose);
@@ -109,7 +112,7 @@ export function BottomSheet({ isOpen, onClose, title, children, closeLabel = 'Cl
                         type="button"
                         onClick={onClose}
                         className="min-w-[44px] min-h-[44px] -mr-2 inline-flex items-center justify-center rounded-[10px] text-content-secondary hover:text-content-primary hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint"
-                        aria-label={closeLabel}
+                        aria-label={resolvedCloseLabel}
                     >
                         <X size={20} />
                     </button>

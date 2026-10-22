@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LinkSimple, Check, List, WarningCircle } from '@phosphor-icons/react';
 import { BottomSheet } from '@/components/public/BottomSheet';
 import { useLegalLanguage } from '@/hooks/useLegalLanguage';
+import { LanguageSwitch } from '@/components/common/LanguageSwitch';
 import { privacyDocModule } from '@/content/legal/privacy';
 import { termsDocModule } from '@/content/legal/terms';
 import { isDocumentPublishable } from '@/content/legal/types';
@@ -45,7 +47,8 @@ export default function LegalPage({ docType }: LegalPageProps) {
     const resolvedType = docType || (location.pathname.includes('terms') ? 'terms' : 'privacy');
     const docModule = resolvedType === 'terms' ? termsDocModule : privacyDocModule;
 
-    const { language, setLanguage } = useLegalLanguage();
+    const { t } = useTranslation('legal');
+    const { language } = useLegalLanguage();
     const currentDoc = language === 'ms' ? docModule.ms : docModule.en;
 
     const [activeSectionId, setActiveSectionId] = useState<string>('');
@@ -60,9 +63,9 @@ export default function LegalPage({ docType }: LegalPageProps) {
     // Set page title
     useEffect(() => {
         document.title = resolvedType === 'terms'
-            ? 'Terms of use — AthleticaOS'
-            : 'Privacy notice — AthleticaOS';
-    }, [resolvedType]);
+            ? t('termsTitle')
+            : t('privacyTitle');
+    }, [resolvedType, t, language]);
 
     // Handle scroll spy for table of contents
     useEffect(() => {
@@ -147,16 +150,16 @@ export default function LegalPage({ docType }: LegalPageProps) {
         return (
             <div className="max-w-2xl mx-auto py-16 px-4 text-center">
                 <h1 className="text-2xl font-bold text-content-primary mb-3">
-                    This page is being updated.
+                    {t('pageUpdatingTitle')}
                 </h1>
                 <p className="text-content-secondary mb-6 text-sm">
-                    Please check back soon, or contact us if you have any questions.
+                    {t('pageUpdatingMessage')}
                 </p>
                 <Link
                     to="/contact"
                     className="inline-flex items-center justify-center min-h-[44px] px-6 py-2.5 rounded-xl font-semibold bg-brand text-white hover:bg-brand-hover transition-colors text-sm"
                 >
-                    Contact us
+                    {t('contactUs')}
                 </Link>
             </div>
         );
@@ -186,7 +189,7 @@ export default function LegalPage({ docType }: LegalPageProps) {
             {isDraft && (
                 <div className="legal-print-hide mb-8 p-4 rounded-xl border border-crimson dark:border-crimson-tint bg-crimson/5 flex items-center gap-3 text-sm text-crimson dark:text-crimson-tint font-medium">
                     <WarningCircle size={20} className="shrink-0" />
-                    <span>Draft — under review</span>
+                    <span>{t('draftBanner')}</span>
                 </div>
             )}
 
@@ -198,40 +201,15 @@ export default function LegalPage({ docType }: LegalPageProps) {
                             {currentDoc.title}
                         </h1>
                         <p className="text-sm text-content-secondary">
-                            {language === 'ms' ? 'Kemas kini terakhir: ' : 'Last updated: '}
+                            {t('lastUpdated')}
                             <time dateTime={docModule.lastUpdated}>
-                                {formatDisplayDate(docModule.lastUpdated)}
+                                {formatDisplayDate(docModule.lastUpdated, language)}
                             </time>
                         </p>
                     </div>
 
                     {/* Language Switch Segmented Control */}
-                    <div className="legal-print-hide inline-flex items-center p-1 rounded-xl bg-surface-sunken border border-line-subtle self-start sm:self-auto">
-                        <button
-                            type="button"
-                            onClick={() => setLanguage('en')}
-                            className={`min-h-[36px] min-w-[44px] px-3.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                                language === 'en'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'text-content-secondary hover:text-content-primary'
-                            }`}
-                            aria-pressed={language === 'en'}
-                        >
-                            EN
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setLanguage('ms')}
-                            className={`min-h-[36px] min-w-[44px] px-3.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                                language === 'ms'
-                                    ? 'bg-brand text-white shadow-sm'
-                                    : 'text-content-secondary hover:text-content-primary'
-                            }`}
-                            aria-pressed={language === 'ms'}
-                        >
-                            BM
-                        </button>
-                    </div>
+                    <LanguageSwitch className="legal-print-hide self-start sm:self-auto" />
                 </div>
 
                 {/* Mobile / Tablet Contents button under header */}
@@ -240,10 +218,10 @@ export default function LegalPage({ docType }: LegalPageProps) {
                         type="button"
                         onClick={() => setTocSheetOpen(true)}
                         className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl border border-line-strong bg-surface-card text-content-primary text-sm font-semibold hover:bg-surface-sunken transition-colors"
-                        aria-label="Open table of contents"
+                        aria-label={t('contents')}
                     >
                         <List size={20} />
-                        <span>Contents</span>
+                        <span>{t('contents')}</span>
                     </button>
                 </div>
             </header>
@@ -253,7 +231,7 @@ export default function LegalPage({ docType }: LegalPageProps) {
                 {/* Desktop Sticky Table of Contents */}
                 <aside className="legal-print-hide hidden lg:block lg:col-span-4 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-4">
                     <div className="text-xs font-semibold text-content-secondary uppercase tracking-wider mb-3">
-                        {language === 'ms' ? 'Kandungan' : 'Contents'}
+                        {t('contents')}
                     </div>
                     <nav className="space-y-1">
                         {currentDoc.sections.map((section) => {
@@ -289,15 +267,15 @@ export default function LegalPage({ docType }: LegalPageProps) {
                                 </h2>
                                 {linkInBarId === section.id && (
                                     <span role="status" className="legal-print-hide ml-auto text-xs text-content-secondary">
-                                        {language === 'ms' ? 'Pautan ada di bar alamat' : 'Link is in the address bar'}
+                                        {t('linkInBar')}
                                     </span>
                                 )}
                                 <button
                                     type="button"
                                     onClick={() => copySectionLink(section.id)}
                                     className="legal-print-hide min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 rounded-lg text-content-secondary hover:text-content-primary hover:bg-surface-sunken transition-colors"
-                                    aria-label="Copy link to section"
-                                    title="Copy link to section"
+                                    aria-label={t('copySectionLink')}
+                                    title={t('copySectionLink')}
                                 >
                                     {copiedId === section.id ? (
                                         <Check size={18} className="text-brand-text" />
@@ -394,8 +372,8 @@ export default function LegalPage({ docType }: LegalPageProps) {
             <BottomSheet
                 isOpen={tocSheetOpen}
                 onClose={() => setTocSheetOpen(false)}
-                title={language === 'ms' ? 'Kandungan' : 'Contents'}
-                closeLabel="Close contents"
+                title={t('contents')}
+                closeLabel={t('closeContents')}
                 className="legal-print-hide lg:hidden"
             >
                 <div className="space-y-1 pb-6">

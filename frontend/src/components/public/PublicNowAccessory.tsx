@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CaretRight } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
@@ -30,6 +31,7 @@ interface PublicNowAccessoryProps {
  * hidden on /matches/* and while any sheet/modal is open.
  */
 export function PublicNowAccessory({ tournament: propTournament, className }: PublicNowAccessoryProps) {
+    const { t } = useTranslation();
     const { tournament: hookTournament } = useSpotlightTournament({ isAdmin: false });
     const tournament = propTournament !== undefined ? propTournament : hookTournament;
     const isLive = useIsPublicAccessoryLive();
@@ -43,7 +45,7 @@ export function PublicNowAccessory({ tournament: propTournament, className }: Pu
     return (
         <Link
             to={tournamentPath}
-            aria-label={`Live now: ${tournament.name}`}
+            aria-label={t('accessory.liveNow', { name: tournament.name })}
             className={clsx(
                 'glass z-[35] flex items-center justify-between w-full h-[52px] px-3 rounded-full',
                 'text-content-primary no-underline outline-none',
@@ -77,7 +79,7 @@ export function PublicNowAccessory({ tournament: propTournament, className }: Pu
             <div className="flex items-center gap-2 shrink-0">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-crimson text-white text-xs font-bold uppercase tracking-wider shadow-sm select-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />
-                    LIVE
+                    {t('status.live')}
                 </span>
                 <CaretRight size={18} weight="bold" className="text-black/60 dark:text-white/60" aria-hidden="true" />
             </div>

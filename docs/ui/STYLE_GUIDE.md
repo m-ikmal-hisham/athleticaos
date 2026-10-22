@@ -290,8 +290,12 @@ Rules:
 - **Empty values:** `—` (em dash), never `null`, `N/A`, or blank.
 - **Voice:** short, direct, Malaysian-English spelling (organisation, colour,
   favourite). Buttons are verbs ("Save changes", "Add team").
-- **Language readiness:** keep user-facing strings out of logic so Bahasa Malaysia
-  can be added later.
+- **Bilingual public site (EN + BM):** every branch that adds or changes public
+  text ships EN + MS keys in `frontend/src/i18n/locales/` (verified by CI
+  `check-i18n.mjs`). User content (team names, player names, tournament names,
+  venues) is never translated. World Rugby terms stay in English inside BM (try,
+  conversion, penalty try, drop goal, scrum, lineout, ruck, maul, sin bin,
+  yellow card, red card).
 
 ---
 

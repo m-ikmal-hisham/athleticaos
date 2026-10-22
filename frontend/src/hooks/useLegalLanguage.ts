@@ -1,38 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { changeLanguage, STORAGE_KEY } from '@/i18n';
 
 export type LegalLanguage = 'en' | 'ms';
 
-const STORAGE_KEY = 'athos-lang';
-
-const getInitialLanguage = (): LegalLanguage => {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored === 'ms' || stored === 'en') {
-            return stored;
-        }
-    } catch {
-        // localStorage unavailable or restricted
-    }
-    return 'en';
-};
-
 export function useLegalLanguage() {
-    const [language, setLanguageState] = useState<LegalLanguage>(getInitialLanguage);
+    const { i18n } = useTranslation();
+    const language: LegalLanguage = i18n.language && i18n.language.startsWith('ms') ? 'ms' : 'en';
 
     const setLanguage = useCallback((lang: LegalLanguage) => {
-        setLanguageState(lang);
-        try {
-            localStorage.setItem(STORAGE_KEY, lang);
-        } catch {
-            // localStorage unavailable
-        }
+        void changeLanguage(lang);
     }, []);
 
     // Sync across tabs if user changes language in another tab
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === STORAGE_KEY && (e.newValue === 'en' || e.newValue === 'ms')) {
-                setLanguageState(e.newValue);
+                void changeLanguage(e.newValue);
             }
         };
         window.addEventListener('storage', handleStorageChange);
