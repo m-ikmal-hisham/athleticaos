@@ -39,4 +39,7 @@ public interface TeamRepository extends JpaRepository<Team, UUID>,
     /** Raw categories of active teams, for the public filter dropdown. */
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t.category FROM Team t WHERE (t.status IS NULL OR LOWER(t.status) <> 'inactive') AND t.category IS NOT NULL")
     java.util.List<String> findDistinctCategoriesOfActiveTeams();
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Team t WHERE t.status IS NULL OR LOWER(t.status) <> 'inactive'")
+    long countActiveTeams();
 }

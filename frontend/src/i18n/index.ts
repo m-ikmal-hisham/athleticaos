@@ -6,6 +6,7 @@ import enHome from './locales/en/home.json';
 import enLegal from './locales/en/legal.json';
 import enDataRequests from './locales/en/dataRequests.json';
 import enAdmin from './locales/en/admin.json';
+import enJourney from './locales/en/journey.json';
 
 export type AppLanguage = 'en' | 'ms';
 
@@ -35,15 +36,16 @@ export function getDetectedLanguage(): AppLanguage {
 
 let msResourcesLoaded = false;
 
-type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests' | 'admin', Record<string, unknown>>;
+type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests' | 'admin' | 'journey', Record<string, unknown>>;
 
 async function importMsResources(): Promise<Namespaces> {
-    const [msCommon, msHome, msLegal, msDataRequests, msAdmin] = await Promise.all([
+    const [msCommon, msHome, msLegal, msDataRequests, msAdmin, msJourney] = await Promise.all([
         import('./locales/ms/common.json'),
         import('./locales/ms/home.json'),
         import('./locales/ms/legal.json'),
         import('./locales/ms/dataRequests.json'),
         import('./locales/ms/admin.json'),
+        import('./locales/ms/journey.json'),
     ]);
     return {
         common: msCommon.default,
@@ -51,6 +53,7 @@ async function importMsResources(): Promise<Namespaces> {
         legal: msLegal.default,
         dataRequests: msDataRequests.default,
         admin: msAdmin.default,
+        journey: msJourney.default,
     };
 }
 
@@ -91,7 +94,7 @@ export async function initI18n(): Promise<typeof i18n> {
         supportedLngs: ['en', 'ms'],
         load: 'languageOnly',
         defaultNS: 'common',
-        ns: ['common', 'home', 'legal', 'dataRequests', 'admin'],
+        ns: ['common', 'home', 'legal', 'dataRequests', 'admin', 'journey'],
         resources: {
             en: {
                 common: enCommon,
@@ -99,6 +102,7 @@ export async function initI18n(): Promise<typeof i18n> {
                 legal: enLegal,
                 dataRequests: enDataRequests,
                 admin: enAdmin,
+                journey: enJourney,
             },
             ...(msInitial ? { ms: msInitial } : {}),
         },

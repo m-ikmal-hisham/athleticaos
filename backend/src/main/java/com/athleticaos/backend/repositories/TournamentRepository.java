@@ -44,4 +44,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, UUID> {
 
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Tournament t WHERE t.featured = true AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) ORDER BY t.featuredOrder ASC")
     java.util.List<Tournament> findFeaturedPublished();
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tournament t WHERE t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false)")
+    long countPublished();
 }

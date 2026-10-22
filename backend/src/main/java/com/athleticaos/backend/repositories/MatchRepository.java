@@ -42,6 +42,12 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.status = :status AND m.deleted = false")
         long countByStatus(@org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                        "WHERE m.status = :status AND m.deleted = false " +
+                        "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false)")
+        long countByStatusInPublishedTournaments(
+                        @org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
+
         // Same visibility rule as MatchServiceImpl: either team's organisation or the organiser is in scope
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT m) FROM Match m " +
                         "LEFT JOIN m.homeTeam ht LEFT JOIN m.awayTeam at LEFT JOIN m.tournament t " +

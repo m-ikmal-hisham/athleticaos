@@ -69,4 +69,17 @@
 | Appearance | Paparan | Paparan | no | Theme & display appearance |
 | Monetization | Pengewangan | Pengewangan | no | Subscriptions & sponsor packages |
 | Federation | Persekutuan | Persekutuan | no | Governing body / federation management |
+| Our journey | Perjalanan kami | Perjalanan kami | no | Public journey page & footer link |
+| We're live | Kini dilancarkan | Kini dilancarkan | no | Platform release milestone & journey goal |
+| Phone-first navigation | Navigasi mesra telefon | Navigasi mesra telefon | no | Mobile layout and bilingual milestone |
+| Email / Account emails | E-mel / e-mel | e-mel | no | Official DBP spelling for electronic mail |
+| Later | Kemudian | Kemudian | no | Roadmap column (distinct from UPCOMING/Akan datang) |
+| Kick-off | Kick-off | Kick-off | no | World Rugby standard term; stays English in technical/match context |
+| Phase play | Phase play | Phase play | no | World Rugby standard term; stays English in technical/match context |
+| Scrum | Scrum | Scrum | no | World Rugby standard term; stays English in technical/match context |
+| Lineout | Lineout | Lineout | no | World Rugby standard term; stays English in technical/match context |
+| Ruck | Ruck | Ruck | no | World Rugby standard term; stays English in technical/match context |
+| Maul | Maul | Maul | no | World Rugby standard term; stays English in technical/match context |
+| Try | Try | Try | no | World Rugby standard term; stays English in technical/match context |
+| Conversion | Conversion | Conversion | no | World Rugby standard term; stays English in technical/match context |
 

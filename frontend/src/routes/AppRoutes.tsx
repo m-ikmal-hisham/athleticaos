@@ -23,6 +23,7 @@ const PlayersList = lazy(() => import('@/pages/public/PlayersList'));
 const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
+const Journey = lazy(() => import('@/pages/public/Journey'));
 const Partners = lazy(() => import('@/pages/public/Partners'));
 const LegalPage = lazy(() => import('@/pages/public/LegalPage'));
 const DataRequests = lazy(() => import('@/pages/public/DataRequests'));
@@ -139,6 +140,10 @@ export const router = createBrowserRouter([
             {
                 path: '/how-it-works',
                 element: <HowItWorks />,
+            },
+            {
+                path: '/journey',
+                element: <Journey />,
             },
             {
                 path: '/partners',
