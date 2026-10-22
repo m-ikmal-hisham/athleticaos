@@ -130,9 +130,10 @@ yellow.
 
 ## 3. Typography
 
-- **Family:** Inter for everything. Remove the unused Outfit font load from
-  `index.html`. Use `font-variant-numeric: tabular-nums` (`tabular-nums`) on scores,
-  clocks, tables, and stats so digits do not jump.
+- **Family:** Inter for UI text. Oswald (`font-score`) only for scores, team short
+  names and public page headings (decided 2026-10-07). Use
+  `font-variant-numeric: tabular-nums` (`tabular-nums`) on scores, clocks, tables,
+  and stats so digits do not jump.
 - **Minimum size:** 12px. The 148 current uses of `text-[9|10|11px]` migrate to
   `text-xs` (12px) or are removed.
 

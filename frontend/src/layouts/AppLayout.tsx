@@ -9,6 +9,7 @@ import { ProfilePopup } from '@/components/ProfilePopup';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { PageLoader } from '@/components/PageLoader';
 import { isFeatureEnabled, FeatureKey } from '@/config/features';
+import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { SITE_NAME, PRODUCT_NAME, SPORT_NAME } from '@/config/site';
 
 interface NavItem {
@@ -263,14 +264,16 @@ export const AppLayout = () => {
         .filter((section) => section.items.length > 0);
 
     return (
-        <div className="min-h-screen flex">
-            {/* Mobile Overlay */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+        <div className="min-h-screen flex flex-col">
+            <EnvironmentRibbon />
+            <div className="flex-1 flex min-h-0 relative">
+                {/* Mobile Overlay */}
+                {sidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                )}
 
             {/* Sidebar - Apple TV/Music Style Floating */}
             <aside
@@ -511,6 +514,7 @@ export const AppLayout = () => {
                 isOpen={showProfilePopup}
                 onClose={() => setShowProfilePopup(false)}
             />
+            </div>
         </div>
     );
 };

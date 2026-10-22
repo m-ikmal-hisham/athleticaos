@@ -10,6 +10,8 @@ export default {
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
                 display: ['Inter', 'sans-serif'],
+                // Oswald: scores, team short names and public page headings only (STYLE_GUIDE §3)
+                score: ['Oswald', 'Inter', 'sans-serif'],
             },
             opacity: {
                 4: '0.04',
