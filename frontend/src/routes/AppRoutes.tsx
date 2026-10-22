@@ -52,6 +52,7 @@ const Activity = lazy(() => import('@/pages/dashboard/Activity'));
 const TournamentRosters = lazy(() => import('@/pages/dashboard/TournamentRosters'));
 const DashboardTournamentDetail = lazy(() => import('@/pages/dashboard/TournamentDetail'));
 const PeopleDirectory = lazy(() => import('@/pages/dashboard/PeopleDirectory'));
+const You = lazy(() => import('@/pages/dashboard/You'));
 
 // ─── Dashboard Sub-pages ────────────────────────────────────────────
 const CreateUser = lazyNamed(() => import('@/pages/dashboard/users/CreateUser'), 'CreateUser');
@@ -227,6 +228,10 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <DashboardHome />,
+            },
+            {
+                path: 'you',
+                element: <You />,
             },
             {
                 path: 'users',

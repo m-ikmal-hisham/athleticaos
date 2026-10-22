@@ -8,7 +8,8 @@ export interface GlassTabBarItem {
     key: string;
     label: string;
     to?: string;
-    icon: Icon;
+    icon?: Icon;
+    renderIcon?: (active: boolean) => ReactNode;
     onClick?: () => void;
     ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | boolean;
     ariaHasPopup?: 'dialog' | 'menu' | boolean;
@@ -213,7 +214,6 @@ export function GlassTabBar({
                     <ul className="flex items-stretch h-full w-full m-0 p-0 list-none">
                         {items.map((item) => {
                             const isActive = item.key === activeKey;
-                            const Icon = item.icon;
 
                             // When minimised, only the active item is shown
                             if (isMinimised) {
@@ -230,11 +230,15 @@ export function GlassTabBar({
                                                 activeCls
                                             )}
                                         >
-                                            <Icon
-                                                size={24}
-                                                weight="fill"
-                                                aria-hidden="true"
-                                            />
+                                            {item.renderIcon ? (
+                                                item.renderIcon(true)
+                                            ) : item.icon ? (
+                                                <item.icon
+                                                    size={24}
+                                                    weight="fill"
+                                                    aria-hidden="true"
+                                                />
+                                            ) : null}
                                         </button>
                                     </li>
                                 );
@@ -243,11 +247,15 @@ export function GlassTabBar({
                             // Expanded state: show all items
                             const itemContent = (
                                 <>
-                                    <Icon
-                                        size={24}
-                                        weight={isActive ? 'fill' : 'duotone'}
-                                        aria-hidden="true"
-                                    />
+                                    {item.renderIcon ? (
+                                        item.renderIcon(isActive)
+                                    ) : item.icon ? (
+                                        <item.icon
+                                            size={24}
+                                            weight={isActive ? 'fill' : 'duotone'}
+                                            aria-hidden="true"
+                                        />
+                                    ) : null}
                                     <span className="truncate max-w-full leading-tight px-0.5">
                                         {item.label}
                                     </span>

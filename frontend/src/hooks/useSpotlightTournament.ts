@@ -23,59 +23,82 @@ let publicCache: PublicTournamentSummary[] | null = null;
 let publicPromise: Promise<PublicTournamentSummary[]> | null = null;
 let lastPublicFetch = 0;
 
+let adminCache: PublicTournamentSummary[] | null = null;
+let adminPromise: Promise<PublicTournamentSummary[]> | null = null;
+let lastAdminFetch = 0;
+
 /**
  * Shared hook for spotlight tournament selection.
- * - Admin: reads/writes ui.store activeTournamentId, fetches via fetchTournaments once on mount.
+ * - Admin: ui.store activeTournamentId is the selection. Shared module-level cache
+ *   with in-flight promise de-duplication.
  * - Public: strictly no ui.store writes, uses publicTournamentApi, re-checks on tab visibility (throttled 30s).
  */
 export function useSpotlightTournament({ isAdmin = false }: UseSpotlightTournamentOptions = {}) {
-    const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>(() => (!isAdmin && publicCache ? publicCache : []));
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [loading, setLoading] = useState(!isAdmin && !!publicCache ? false : true);
+    const activeTournamentId = useUIStore((s) => s.activeTournamentId);
     const setActiveTournamentId = useUIStore((s) => s.setActiveTournamentId);
 
-    const loadAdminTournaments = useCallback(async () => {
+    const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>(() => {
+        if (isAdmin) return adminCache ?? [];
+        return publicCache ?? [];
+    });
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [loading, setLoading] = useState(() => {
+        if (isAdmin) return !adminCache;
+        return !publicCache;
+    });
+
+    const loadAdminTournaments = useCallback(async (force = false) => {
+        const now = Date.now();
+        if (!force && adminCache && now - lastAdminFetch < 30000) {
+            setTournaments(adminCache);
+            setLoading(false);
+            return;
+        }
+
         try {
+            if (!adminPromise) {
+                adminPromise = fetchTournaments().then((res) => {
+                    const mapped: PublicTournamentSummary[] = (res.data || []).map((t: Tournament) => ({
+                        id: t.id,
+                        slug: t.slug,
+                        name: t.name,
+                        level: t.level,
+                        seasonName: t.seasonName,
+                        startDate: t.startDate,
+                        endDate: t.endDate,
+                        venue: t.venue,
+                        live: (t.status as string) === 'LIVE' || (t.status as string) === 'ONGOING',
+                        completed: (t.status as string) === 'COMPLETED',
+                        organiserName: t.organiserBranding?.name || '',
+                        competitionType: t.competitionType,
+                        organiserBranding: t.organiserBranding,
+                        logoUrl: t.logoUrl,
+                        bannerUrl: t.bannerUrl,
+                        livestreamUrl: t.livestreamUrl,
+                        livestreamLinks: t.livestreamLinks,
+                    }));
+                    const sorted = sortTournamentsByProximity(mapped);
+                    adminCache = sorted;
+                    lastAdminFetch = Date.now();
+                    return sorted;
+                }).finally(() => {
+                    adminPromise = null;
+                });
+            }
+
             setLoading(true);
-            const res = await fetchTournaments();
-            const mapped: PublicTournamentSummary[] = (res.data || []).map((t: Tournament) => ({
-                id: t.id,
-                slug: t.slug,
-                name: t.name,
-                level: t.level,
-                seasonName: t.seasonName,
-                startDate: t.startDate,
-                endDate: t.endDate,
-                venue: t.venue,
-                live: (t.status as string) === 'LIVE' || (t.status as string) === 'ONGOING',
-                completed: (t.status as string) === 'COMPLETED',
-                organiserName: t.organiserBranding?.name || '',
-                competitionType: t.competitionType,
-                organiserBranding: t.organiserBranding,
-                logoUrl: t.logoUrl,
-                bannerUrl: t.bannerUrl,
-                livestreamUrl: t.livestreamUrl,
-                livestreamLinks: t.livestreamLinks,
-            }));
+            const sorted = await adminPromise;
+            setTournaments(sorted);
 
-            if (mapped.length > 0) {
-                const sorted = sortTournamentsByProximity(mapped);
-                setTournaments(sorted);
-
-                const currentActiveId = useUIStore.getState().activeTournamentId;
-                if (currentActiveId) {
-                    const existingIdx = sorted.findIndex((t) => t.id === currentActiveId);
-                    if (existingIdx !== -1) {
-                        setCurrentIndex(existingIdx);
-                    } else {
-                        setActiveTournamentId(null);
-                        setCurrentIndex(0);
-                    }
-                } else {
-                    setCurrentIndex(0);
+            if (sorted.length > 0) {
+                const currentId = useUIStore.getState().activeTournamentId;
+                const existing = currentId ? sorted.find((t) => t.id === currentId) : null;
+                if (!existing) {
+                    // Pick one: live first, else nearest date (first in proximity sorted list)
+                    const picked = sorted.find((t) => t.live) ?? sorted[0];
+                    setActiveTournamentId(picked.id);
                 }
             } else {
-                setTournaments([]);
                 setActiveTournamentId(null);
             }
         } catch (error) {
@@ -128,17 +151,6 @@ export function useSpotlightTournament({ isAdmin = false }: UseSpotlightTourname
         }
     }, [isAdmin, loadAdminTournaments, loadPublicTournaments]);
 
-    // Admin-only: sync active tournament to ui.store
-    useEffect(() => {
-        if (!isAdmin) return;
-        if (tournaments.length > 0) {
-            const activeId = tournaments[currentIndex]?.id ?? null;
-            setActiveTournamentId(activeId);
-        } else {
-            setActiveTournamentId(null);
-        }
-    }, [isAdmin, currentIndex, tournaments, setActiveTournamentId]);
-
     // Public-only: re-fetch on visibility change (throttled to 30s)
     useEffect(() => {
         if (isAdmin) return;
@@ -158,6 +170,7 @@ export function useSpotlightTournament({ isAdmin = false }: UseSpotlightTourname
         };
     }, [isAdmin, loadPublicTournaments]);
 
+    // Public-only prev/next handlers (admin no longer uses prev/next buttons)
     const handlePrevious = useCallback((e?: React.MouseEvent) => {
         if (e) {
             e.preventDefault();
@@ -174,7 +187,10 @@ export function useSpotlightTournament({ isAdmin = false }: UseSpotlightTourname
         setCurrentIndex((prev) => (prev < tournaments.length - 1 ? prev + 1 : 0));
     }, [tournaments.length]);
 
-    const tournament = tournaments[currentIndex] || null;
+    const tournament = isAdmin
+        ? (tournaments.find((t) => t.id === activeTournamentId) ?? null)
+        : (tournaments[currentIndex] ?? null);
+
     const hasMultipleTournaments = tournaments.length > 1;
 
     return {
@@ -186,6 +202,6 @@ export function useSpotlightTournament({ isAdmin = false }: UseSpotlightTourname
         hasMultipleTournaments,
         handlePrevious,
         handleNext,
-        refetch: isAdmin ? loadAdminTournaments : loadPublicTournaments,
+        refetch: isAdmin ? () => loadAdminTournaments(true) : () => loadPublicTournaments(true),
     };
 }

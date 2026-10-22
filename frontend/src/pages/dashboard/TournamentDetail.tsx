@@ -23,6 +23,8 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { deleteTournament } from '@/api/tournaments.api';
 import TournamentRosters from './TournamentRosters';
 import { TournamentReadinessCard } from '@/components/content/TournamentReadinessCard';
+import { ShareButton } from '@/components/common/ShareButton';
+import { WatchLiveLinks } from '@/components/public/WatchLiveLinks';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -238,33 +240,50 @@ export default function TournamentDetail() {
                         </div>
                     </div>
 
-                    {canManageTournament && (
-                        <div className="flex flex-wrap gap-2 md:gap-3 shrink-0">
-                            {tournament.status === TournamentStatus.DRAFT && (
-                                <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
-                            )}
-                            {tournament.status === TournamentStatus.UPCOMING && (
-                                <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
-                                    <Play className="w-4 h-4" />
-                                    Start Tournament
-                                </Button>
-                            )}
-                            {tournament.status === TournamentStatus.ONGOING && (
-                                <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
-                            )}
-                            {isSuperAdmin && (
-                                <Button
-                                    variant="danger"
-                                    disabled={tournament.status === TournamentStatus.ONGOING}
-                                    disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
-                                    onClick={() => setIsDeleteModalOpen(true)}
-                                >
-                                    Delete
-                                </Button>
-                            )}
-                        </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
+                        <ShareButton
+                            title={tournament.name}
+                            url={`${window.location.origin}/tournaments/${tournament.slug || tournament.id}`}
+                            variant="secondary"
+                            size="md"
+                        />
+                        {canManageTournament && (
+                            <>
+                                {tournament.status === TournamentStatus.DRAFT && (
+                                    <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
+                                )}
+                                {tournament.status === TournamentStatus.UPCOMING && (
+                                    <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
+                                        <Play className="w-4 h-4" />
+                                        Start Tournament
+                                    </Button>
+                                )}
+                                {tournament.status === TournamentStatus.ONGOING && (
+                                    <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
+                                )}
+                                {isSuperAdmin && (
+                                    <Button
+                                        variant="danger"
+                                        disabled={tournament.status === TournamentStatus.ONGOING}
+                                        disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
+                                        onClick={() => setIsDeleteModalOpen(true)}
+                                    >
+                                        Delete
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
+
+                {/* Livestreams */}
+                {((tournament.livestreamLinks && tournament.livestreamLinks.length > 0) || tournament.livestreamUrl) && (
+                    <div className="mt-4 pt-3 border-t border-line-subtle">
+                        <WatchLiveLinks
+                            links={tournament.livestreamLinks ?? (tournament.livestreamUrl ? [{ url: tournament.livestreamUrl }] : [])}
+                        />
+                    </div>
+                )}
             </GlassCard>
 
             <ConfirmDeleteModal

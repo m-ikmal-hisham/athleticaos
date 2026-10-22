@@ -5,6 +5,7 @@ import enCommon from './locales/en/common.json';
 import enHome from './locales/en/home.json';
 import enLegal from './locales/en/legal.json';
 import enDataRequests from './locales/en/dataRequests.json';
+import enAdmin from './locales/en/admin.json';
 
 export type AppLanguage = 'en' | 'ms';
 
@@ -34,20 +35,22 @@ export function getDetectedLanguage(): AppLanguage {
 
 let msResourcesLoaded = false;
 
-type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests', Record<string, unknown>>;
+type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests' | 'admin', Record<string, unknown>>;
 
 async function importMsResources(): Promise<Namespaces> {
-    const [msCommon, msHome, msLegal, msDataRequests] = await Promise.all([
+    const [msCommon, msHome, msLegal, msDataRequests, msAdmin] = await Promise.all([
         import('./locales/ms/common.json'),
         import('./locales/ms/home.json'),
         import('./locales/ms/legal.json'),
         import('./locales/ms/dataRequests.json'),
+        import('./locales/ms/admin.json'),
     ]);
     return {
         common: msCommon.default,
         home: msHome.default,
         legal: msLegal.default,
         dataRequests: msDataRequests.default,
+        admin: msAdmin.default,
     };
 }
 
@@ -88,13 +91,14 @@ export async function initI18n(): Promise<typeof i18n> {
         supportedLngs: ['en', 'ms'],
         load: 'languageOnly',
         defaultNS: 'common',
-        ns: ['common', 'home', 'legal', 'dataRequests'],
+        ns: ['common', 'home', 'legal', 'dataRequests', 'admin'],
         resources: {
             en: {
                 common: enCommon,
                 home: enHome,
                 legal: enLegal,
                 dataRequests: enDataRequests,
+                admin: enAdmin,
             },
             ...(msInitial ? { ms: msInitial } : {}),
         },

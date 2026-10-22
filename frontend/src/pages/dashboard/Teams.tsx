@@ -19,6 +19,7 @@ import { Team } from "../../types";
 import { getImageUrl } from "../../utils/image";
 import { formatTeamCategory, formatAgeGroup } from "../../utils/formatters";
 import { useAdminTeams, useAdminTeamFilters, useAdminTeamCategoryCounts } from "../../hooks/admin";
+import { SquadsSegmentedSwitch } from "@/components/admin/SquadsSegmentedSwitch";
 
 export default function Teams() {
     const navigate = useNavigate();
@@ -268,6 +269,9 @@ export default function Teams() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="lg:hidden">
+                <SquadsSegmentedSwitch current="teams" />
+            </div>
             <PageHeader
                 title="Teams"
                 description={`${totalTeams.toLocaleString()} teams`}
