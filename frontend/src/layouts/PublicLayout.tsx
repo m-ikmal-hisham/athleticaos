@@ -337,6 +337,7 @@ export default function PublicLayout() {
 
                         <div className="flex flex-wrap items-center justify-center gap-x-5 md:gap-x-6 gap-y-0 text-sm font-medium text-black/72 dark:text-white/72">
                             <Link to="/how-it-works" className={footerLink}>{t('nav.about')}</Link>
+                            <Link to="/journey" className={footerLink}>{t('nav.journey')}</Link>
                             <Link to="/contact" className={footerLink}>{t('nav.contact')}</Link>
                             <Link to="/partners" className={footerLink}>{t('nav.partners')}</Link>
                             <Link to="/privacy" className={footerLink}>{t('nav.privacy')}</Link>

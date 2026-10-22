@@ -467,3 +467,15 @@ export const submitContact = async (payload: ContactPayload) => {
     return publicApi.post<ContactResponse>('/contact', payload);
 };
 
+export interface PublicStatsSummary {
+    tournaments: number;
+    teams: number;
+    players: number;
+    matchesPlayed: number;
+}
+
+export const getPublicStatsSummary = async (): Promise<PublicStatsSummary> => {
+    const response = await publicApi.get<PublicStatsSummary>('/stats/summary');
+    return response.data;
+};
+
