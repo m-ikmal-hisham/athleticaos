@@ -264,7 +264,7 @@ export const AppLayout = () => {
         .filter((section) => section.items.length > 0);
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
             <EnvironmentRibbon />
             <div className="flex-1 flex min-h-0 relative">
                 {/* Mobile Overlay */}
@@ -285,11 +285,16 @@ export const AppLayout = () => {
                     'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]',
                     'lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[24px]',
                     'lg:translate-x-0',
-                    sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
+                    sidebarOpen
+                        ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]'
+                        : '-translate-x-full lg:translate-x-0'
                 )}
             >
                 <div
-                    className="backdrop-blur-nav relative flex flex-col h-full bg-white/40 dark:bg-black/40 rounded-[24px] overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                    className={clsx(
+                        "backdrop-blur-nav relative flex flex-col h-full bg-white/40 dark:bg-black/40 overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl",
+                        sidebarOpen ? "rounded-none" : "rounded-[24px]"
+                    )}
                 >
 
                     {/* Toggle Button (Desktop Only) */}
@@ -470,7 +475,7 @@ export const AppLayout = () => {
                 isCollapsed ? "lg:ml-[100px]" : "lg:ml-[260px]" // Adjusted margin for wider sidebar
             )}>
                 {/* Topbar - Mobile Only */}
-                <header className="sticky top-0 z-30 glass-card border-b border-white/10 lg:hidden rounded-none">
+                <header className="sticky top-0 z-30 glass pt-[env(safe-area-inset-top,0px)] lg:hidden rounded-none">
                     <div className="flex items-center justify-between px-4 py-3">
                         <button
                             aria-label="Open sidebar"
@@ -490,7 +495,7 @@ export const AppLayout = () => {
 
                 {/* Page Content Container - Centered */}
                 <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden">
-                    <div className="max-w-7xl mx-auto w-full pb-32"> {/* Increased bottom padding for pill */}
+                    <div className="max-w-7xl mx-auto w-full pb-[calc(8rem+env(safe-area-inset-bottom,0px))]"> {/* Increased bottom padding for pill + safe area */}
                         <Suspense fallback={<PageLoader />}>
                             <Outlet />
                         </Suspense>
@@ -499,7 +504,7 @@ export const AppLayout = () => {
 
                 {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
                 <div className={clsx(
-                    "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
+                    "fixed bottom-[max(24px,env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
                     isCollapsed ? "lg:pl-[100px]" : "lg:pl-[260px]",
                     location.pathname.startsWith('/dashboard/matches/') ? "opacity-0 invisible" : "opacity-100 visible"
                 )}>

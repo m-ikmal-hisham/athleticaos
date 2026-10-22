@@ -3,117 +3,19 @@ import { ShareButton } from '@/components/common/ShareButton';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { clsx } from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
-import { fetchTournaments } from '@/api/tournaments.api';
-import { Tournament } from '@/types';
-import { useUIStore } from '@/store/ui.store';
+import { useSpotlightTournament } from '@/hooks/useSpotlightTournament';
 
 export const TournamentPill = () => {
-    const [tournaments, setTournaments] = useState<PublicTournamentSummary[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [loading, setLoading] = useState(true);
     const location = useLocation();
-    const { activeTournamentId, setActiveTournamentId } = useUIStore();
-
-    // Check if we are in the admin dashboard
     const isAdmin = location.pathname.startsWith('/dashboard');
 
-    useEffect(() => {
-        const loadTournaments = async () => {
-            try {
-                setLoading(true);
-                let fetchedTournaments: PublicTournamentSummary[] = [];
-                if (isAdmin) {
-                    const res = await fetchTournaments();
-                    fetchedTournaments = (res.data || []).map((t: Tournament) => ({
-                        id: t.id,
-                        slug: t.slug,
-                        name: t.name,
-                        level: t.level,
-                        seasonName: t.seasonName,
-                        startDate: t.startDate,
-                        endDate: t.endDate,
-                        venue: t.venue,
-                        live: (t.status as string) === 'LIVE' || (t.status as string) === 'ONGOING',
-                        completed: (t.status as string) === 'COMPLETED',
-                        organiserName: t.organiserBranding?.name || '',
-                        competitionType: t.competitionType,
-                        organiserBranding: t.organiserBranding,
-                        logoUrl: t.logoUrl,
-                        bannerUrl: t.bannerUrl,
-                        livestreamUrl: t.livestreamUrl,
-                        livestreamLinks: t.livestreamLinks,
-                    }));
-                } else {
-                    fetchedTournaments = await publicTournamentApi.getTournaments();
-                }
-
-                if (fetchedTournaments.length > 0) {
-                    // Sort tournaments by date - closest to today first
-                    const today = new Date();
-                    const sorted = [...fetchedTournaments].sort((a, b) => {
-                        const dateA = new Date(a.startDate);
-                        const dateB = new Date(b.startDate);
-
-                        // Calculate absolute difference from today
-                        const diffA = Math.abs(dateA.getTime() - today.getTime());
-                        const diffB = Math.abs(dateB.getTime() - today.getTime());
-
-                        return diffA - diffB;
-                    });
-
-                    setTournaments(sorted);
-                    // If active tournament is in list, select it; otherwise clear/select 0
-                    if (activeTournamentId) {
-                        const existingIdx = sorted.findIndex(t => t.id === activeTournamentId);
-                        if (existingIdx !== -1) {
-                            setCurrentIndex(existingIdx);
-                        } else {
-                            setActiveTournamentId(null);
-                            setCurrentIndex(0);
-                        }
-                    } else {
-                        setCurrentIndex(0);
-                    }
-                } else {
-                    setTournaments([]);
-                    setActiveTournamentId(null);
-                }
-            } catch (error) {
-                console.error("Failed to load tournaments for pill", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadTournaments();
-    }, [isAdmin]);
-
-    // Sync active tournament to global store
-    useEffect(() => {
-        if (tournaments.length > 0) {
-            const activeId = tournaments[currentIndex].id;
-            setActiveTournamentId(activeId);
-        } else {
-            setActiveTournamentId(null);
-        }
-    }, [currentIndex, tournaments, setActiveTournamentId]);
-
-    const handlePrevious = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setCurrentIndex((prev) => (prev > 0 ? prev - 1 : tournaments.length - 1));
-    };
-
-    const handleNext = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setCurrentIndex((prev) => (prev < tournaments.length - 1 ? prev + 1 : 0));
-    };
-
-    // Always show the pill, even if loading or no tournaments
-    const tournament = tournaments[currentIndex];
-    const hasMultipleTournaments = tournaments.length > 1;
+    const {
+        tournament,
+        loading,
+        hasMultipleTournaments,
+        handlePrevious,
+        handleNext,
+    } = useSpotlightTournament({ isAdmin });
 
     // Helper to get the correct link based on context
     const getTournamentLink = () => {
@@ -128,10 +30,7 @@ export const TournamentPill = () => {
     if (loading) {
         return (
             <div className={clsx(
-                "backdrop-blur-pill relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
-                "bg-white/10 dark:bg-black/20",
-                "border border-white/20 dark:border-white/10 shadow-lg",
-                "w-full"
+                "glass relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-blue-500/20">
                     <Trophy className="w-5 h-5 text-navy dark:text-navy-tint animate-pulse" />
@@ -147,10 +46,7 @@ export const TournamentPill = () => {
     if (!tournament) {
         return (
             <div className={clsx(
-                "backdrop-blur-pill relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full",
-                "bg-white/10 dark:bg-black/20",
-                "border border-white/20 dark:border-white/10 shadow-lg",
-                "w-full"
+                "glass relative flex items-center gap-4 pl-2 pr-4 py-2 rounded-full w-full"
             )}>
                 <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-gray-500/20">
                     <Trophy className="w-5 h-5 text-black/60 dark:text-white/60" />
@@ -169,18 +65,10 @@ export const TournamentPill = () => {
 
     const status = tournament.live ? 'LIVE' : (tournament.completed ? 'COMPLETED' : 'UPCOMING');
 
-
-
-    // ... imports ...
-
     return (
         <div className="relative w-full">
             <div className={clsx(
-                "backdrop-blur-pill group relative flex items-center justify-between px-3 md:px-5 py-3 md:py-4 rounded-full", // True Pill shape
-                "bg-white/10 dark:bg-black/20", // Glass Background (Glass Only, No Tint)
-                "border border-white/20 dark:border-white/10", // Softer border
-                "shadow-lg shadow-black/10", // Softer shadow
-                "w-full transition-all duration-300 hover:scale-[1.005]"
+                "glass group relative flex items-center justify-between px-3 md:px-5 py-3 md:py-4 rounded-full w-full transition-all duration-300 hover:scale-[1.005]"
             )}>
                 {/* Progress Bar (Visual only) - Top Edge - hidden for now to clean up look */}
                 {/* <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary-500/20 overflow-hidden rounded-t-[20px]">

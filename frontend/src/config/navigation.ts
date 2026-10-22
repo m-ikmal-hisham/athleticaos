@@ -9,6 +9,8 @@ import { House, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple } from
 export interface PublicNavItem {
     key: string;
     label: string;
+    /** Shorter label for the phone tab bar, where each item is ~70 px wide */
+    tabLabel?: string;
     to: string;
     icon: Icon;
     /** Match only the exact path (used for '/') */
@@ -18,7 +20,7 @@ export interface PublicNavItem {
 export const PUBLIC_PRIMARY_NAV: PublicNavItem[] = [
     // D10 (Matchday home) renames this to Matchday / Lightning
     { key: 'home', label: 'Home', to: '/', icon: House, exact: true },
-    { key: 'tournaments', label: 'Tournaments', to: '/tournaments', icon: Trophy },
+    { key: 'tournaments', label: 'Tournaments', tabLabel: 'Tours', to: '/tournaments', icon: Trophy },
     { key: 'teams', label: 'Teams', to: '/teams', icon: UsersThree },
     { key: 'players', label: 'Players', to: '/players', icon: User },
 ];

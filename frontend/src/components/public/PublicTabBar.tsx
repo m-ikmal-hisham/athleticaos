@@ -1,0 +1,119 @@
+import { useState } from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import { DotsThreeOutline, SignIn, SquaresFour } from '@phosphor-icons/react';
+import { clsx } from 'clsx';
+import { useAuthStore } from '@/store/auth.store';
+import {
+    PUBLIC_PRIMARY_NAV,
+    PUBLIC_MORE_NAV,
+    PUBLIC_NAV_LABELS,
+    isNavItemActive,
+    isMoreActive,
+} from '@/config/navigation';
+import { BottomSheet } from './BottomSheet';
+import { GlassTabBar, GlassTabBarItem } from '@/components/navigation/GlassTabBar';
+import { PublicNowAccessory, useIsPublicAccessoryLive } from './PublicNowAccessory';
+
+const sheetRow =
+    'flex items-center gap-3 w-full min-h-[48px] px-3 rounded-[10px] text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint';
+
+/**
+ * Public floating glass tab bar (< lg).
+ * Thin wrapper around generic GlassTabBar that wires up the public nav items,
+ * More bottom sheet, and the live tournament accessory.
+ */
+export function PublicTabBar() {
+    const { pathname } = useLocation();
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const [moreOpen, setMoreOpen] = useState(false);
+    const isAccessoryLive = useIsPublicAccessoryLive();
+
+    const authItem = isAuthenticated
+        ? { label: PUBLIC_NAV_LABELS.dashboard, to: '/dashboard', icon: SquaresFour }
+        : { label: PUBLIC_NAV_LABELS.signIn, to: '/login', icon: SignIn };
+    const AuthIcon = authItem.icon;
+
+    // Determine active key
+    let activeKey: string | null = null;
+    for (const item of PUBLIC_PRIMARY_NAV) {
+        if (isNavItemActive(item, pathname)) {
+            activeKey = item.key;
+            break;
+        }
+    }
+    if (!activeKey && isMoreActive(pathname)) {
+        activeKey = 'more';
+    }
+
+    // Build items for GlassTabBar
+    const items: GlassTabBarItem[] = [
+        ...PUBLIC_PRIMARY_NAV.map((navItem) => ({
+            key: navItem.key,
+            label: navItem.tabLabel ?? navItem.label,
+            to: navItem.to,
+            icon: navItem.icon,
+        })),
+        {
+            key: 'more',
+            label: PUBLIC_NAV_LABELS.more,
+            icon: DotsThreeOutline,
+            onClick: () => setMoreOpen(true),
+            ariaHasPopup: 'dialog',
+            ariaExpanded: moreOpen,
+        },
+    ];
+
+    return (
+        <>
+            <GlassTabBar
+                items={items}
+                activeKey={activeKey}
+                hasAccessory={isAccessoryLive}
+                accessorySlot={<PublicNowAccessory />}
+                ariaLabel={PUBLIC_NAV_LABELS.primaryNav}
+            />
+
+            <BottomSheet
+                isOpen={moreOpen}
+                onClose={() => setMoreOpen(false)}
+                title={PUBLIC_NAV_LABELS.more}
+                className="lg:hidden"
+            >
+                <ul className="space-y-1 pb-2">
+                    {PUBLIC_MORE_NAV.map((item) => {
+                        const active = isNavItemActive(item, pathname);
+                        const Icon = item.icon;
+                        return (
+                            <li key={item.key}>
+                                <Link
+                                    to={item.to}
+                                    onClick={() => setMoreOpen(false)}
+                                    aria-current={active ? 'page' : undefined}
+                                    className={clsx(
+                                        sheetRow,
+                                        active
+                                            ? 'bg-navy/[0.08] dark:bg-navy-tint/12 text-navy dark:text-navy-tint'
+                                            : 'text-content-primary hover:bg-surface-sunken'
+                                    )}
+                                >
+                                    <Icon size={20} weight={active ? 'fill' : 'duotone'} aria-hidden="true" />
+                                    {item.label}
+                                </Link>
+                            </li>
+                        );
+                    })}
+                    <li className="pt-1 mt-1 border-t border-line-subtle">
+                        <Link
+                            to={authItem.to}
+                            onClick={() => setMoreOpen(false)}
+                            className={clsx(sheetRow, 'text-content-primary hover:bg-surface-sunken')}
+                        >
+                            <AuthIcon size={20} aria-hidden="true" />
+                            {authItem.label}
+                        </Link>
+                    </li>
+                </ul>
+            </BottomSheet>
+        </>
+    );
+}

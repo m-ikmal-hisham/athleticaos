@@ -10,6 +10,9 @@ interface UIState {
   getEffectiveTheme: () => 'light' | 'dark';
   activeTournamentId: string | null;
   setActiveTournamentId: (id: string | null) => void;
+  overlayCount: number;
+  incrementOverlayCount: () => void;
+  decrementOverlayCount: () => void;
 }
 
 const getSystemTheme = (): 'light' | 'dark' => {
@@ -41,6 +44,10 @@ export const useUIStore = create<UIState>()(
 
       activeTournamentId: null,
       setActiveTournamentId: (id: string | null) => set({ activeTournamentId: id }),
+
+      overlayCount: 0,
+      incrementOverlayCount: () => set((state) => ({ overlayCount: state.overlayCount + 1 })),
+      decrementOverlayCount: () => set((state) => ({ overlayCount: Math.max(0, state.overlayCount - 1) })),
     }),
     {
       name: "athos-ui-storage", // content is persisted to localStorage
@@ -48,6 +55,7 @@ export const useUIStore = create<UIState>()(
       onRehydrateStorage: () => (state) => {
         // Re-apply theme on hydration
         if (state) {
+          state.overlayCount = 0;
           const effectiveTheme = state.theme === 'system' ? getSystemTheme() : state.theme;
           document.documentElement.setAttribute("data-theme", effectiveTheme);
           if (effectiveTheme === 'dark') {
