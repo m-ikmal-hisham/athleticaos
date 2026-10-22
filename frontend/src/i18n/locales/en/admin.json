@@ -1,0 +1,87 @@
+{
+  "tabs": {
+    "home": "Home",
+    "matches": "Matches",
+    "tournaments": "Tournaments",
+    "squads": "Squads",
+    "teams": "Teams",
+    "players": "Players",
+    "you": "You"
+  },
+  "topBar": {
+    "dashboard": "Dashboard",
+    "matches": "Matches",
+    "tournaments": "Tournaments",
+    "teams": "Teams",
+    "players": "Players",
+    "users": "Users",
+    "organisations": "Organisations",
+    "people": "People",
+    "competitions": "Competitions",
+    "officials": "Officials",
+    "stats": "Stats",
+    "activity": "Activity",
+    "you": "Account",
+    "profile": "Profile",
+    "federation": "Federation",
+    "operations": "Operations",
+    "analytics": "Analytics",
+    "monetization": "Monetization"
+  },
+  "squadsSwitch": {
+    "teams": "Teams",
+    "players": "Players"
+  },
+  "you": {
+    "title": "Account",
+    "viewProfile": "View profile",
+    "editProfile": "Edit profile",
+    "groups": {
+      "manage": "Manage",
+      "insights": "Insights",
+      "federation": "Federation",
+      "operations": "Operations",
+      "app": "App"
+    },
+    "rows": {
+      "users": "Users",
+      "organisations": "Organisations",
+      "people": "People",
+      "competitions": "Competitions",
+      "officials": "Officials",
+      "tournaments": "Tournaments",
+      "stats": "Stats & Leaderboards",
+      "activity": "Activity & Logs",
+      "federationDashboard": "Dashboard",
+      "sanctioning": "Sanctioning",
+      "oversight": "Oversight",
+      "discipline": "Discipline",
+      "operations": "Operations",
+      "monetization": "Monetization",
+      "appearance": "Appearance",
+      "viewPublicSite": "View public site",
+      "privacyTerms": "Privacy & terms"
+    },
+    "signOut": "Sign out",
+    "signingOut": "Signing out…"
+  },
+  "switcher": {
+    "title": "Switch tournament",
+    "searchPlaceholder": "Search tournaments…",
+    "groups": {
+      "live": "Live",
+      "upcoming": "Upcoming",
+      "recent": "Recent"
+    },
+    "emptyState": "No tournaments found",
+    "selectTournament": "Select tournament",
+    "allTournaments": "All Tournaments"
+  },
+  "matches": {
+    "filterChip": "Tournament: {{name}}",
+    "clearFilter": "Clear tournament filter"
+  },
+  "accessory": {
+    "openSwitcher": "Switch tournament"
+  }
+}

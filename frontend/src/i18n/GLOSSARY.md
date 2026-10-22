@@ -64,3 +64,9 @@
 | Anonymised / without name | Tanpa nama | Tanpa nama | no | Data anonymisation / masking |
 | Acting for a child under 18? | Bertindak bagi pihak anak di bawah umur 18 tahun? | Bertindak bagi pihak anak di bawah umur 18 tahun? | no | Legal guardian enquiry card |
 | We reply within 21 days. | Kami membalas dalam tempoh 21 hari. | Kami membalas dalam tempoh 21 hari. | no | Service commitment note |
+| Insights / Analysis | Analisis | Analisis | no | Admin You group / analytics |
+| Sanctioning | Kelulusan | Kelulusan | no | Tournament sanctioning & approval |
+| Appearance | Paparan | Paparan | no | Theme & display appearance |
+| Monetization | Pengewangan | Pengewangan | no | Subscriptions & sponsor packages |
+| Federation | Persekutuan | Persekutuan | no | Governing body / federation management |
+

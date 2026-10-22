@@ -1,0 +1,87 @@
+{
+  "tabs": {
+    "home": "Utama",
+    "matches": "Perlawanan",
+    "tournaments": "Kejohanan",
+    "squads": "Skuad",
+    "teams": "Pasukan",
+    "players": "Pemain",
+    "you": "Anda"
+  },
+  "topBar": {
+    "dashboard": "Papan pemuka",
+    "matches": "Perlawanan",
+    "tournaments": "Kejohanan",
+    "teams": "Pasukan",
+    "players": "Pemain",
+    "users": "Pengguna",
+    "organisations": "Organisasi",
+    "people": "Individu",
+    "competitions": "Pertandingan",
+    "officials": "Pegawai",
+    "stats": "Statistik",
+    "activity": "Aktiviti",
+    "you": "Akaun",
+    "profile": "Profil",
+    "federation": "Persekutuan",
+    "operations": "Operasi",
+    "analytics": "Analitis",
+    "monetization": "Pengewangan"
+  },
+  "squadsSwitch": {
+    "teams": "Pasukan",
+    "players": "Pemain"
+  },
+  "you": {
+    "title": "Akaun",
+    "viewProfile": "Lihat profil",
+    "editProfile": "Sunting profil",
+    "groups": {
+      "manage": "Urus",
+      "insights": "Analisis",
+      "federation": "Persekutuan",
+      "operations": "Operasi",
+      "app": "Aplikasi"
+    },
+    "rows": {
+      "users": "Pengguna",
+      "organisations": "Organisasi",
+      "people": "Individu",
+      "competitions": "Pertandingan",
+      "officials": "Pegawai",
+      "tournaments": "Kejohanan",
+      "stats": "Statistik & Kedudukan",
+      "activity": "Aktiviti & Log",
+      "federationDashboard": "Papan pemuka",
+      "sanctioning": "Kelulusan",
+      "oversight": "Pengawasan",
+      "discipline": "Disiplin",
+      "operations": "Operasi",
+      "monetization": "Pengewangan",
+      "appearance": "Paparan",
+      "viewPublicSite": "Lihat laman awam",
+      "privacyTerms": "Privasi & terma"
+    },
+    "signOut": "Log keluar",
+    "signingOut": "Sedang log keluar…"
+  },
+  "switcher": {
+    "title": "Tukar kejohanan",
+    "searchPlaceholder": "Cari kejohanan…",
+    "groups": {
+      "live": "Langsung",
+      "upcoming": "Akan datang",
+      "recent": "Tamat"
+    },
+    "emptyState": "Tiada kejohanan ditemui",
+    "selectTournament": "Pilih kejohanan",
+    "allTournaments": "Semua Kejohanan"
+  },
+  "matches": {
+    "filterChip": "Kejohanan: {{name}}",
+    "clearFilter": "Kosongkan penapis kejohanan"
+  },
+  "accessory": {
+    "openSwitcher": "Tukar kejohanan"
+  }
+}

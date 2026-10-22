@@ -172,7 +172,7 @@ Card padding: 16px mobile, 24px ≥768px. Page gutter: 16px mobile, 24px tablet,
 
 Retire the current 18px and 24px card radii.
 
-**Glass material:** one material, used only by: the public floating tab bar, its accessory, the public/admin sticky top bars, and the TournamentPill. Never on cards, tables or content.
+**Glass material:** one material, used only by: the public and admin floating glass tab bars, their accessories, and the public/admin sticky top bars. Never on cards, tables or content.
 Tokens (CSS variables in `frontend/src/styles/theme.css`, light / dark):
 - `--glass-bg`: `rgb(255 255 255 / 0.72)` / `rgb(13 27 42 / 0.72)` (deep navy `#0D1B2A`)
 - `--glass-border`: `rgb(255 255 255 / 0.55)` / `rgb(255 255 255 / 0.12)` (1px inner hairline, "glass edge")
@@ -194,7 +194,7 @@ shimmer. Two named exceptions only:
 2. **tab bar minimise:** the bar/accessory morph on scroll, 300ms, standard easing.
 Both exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
 
-**Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament pill) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
+**Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
 
 ---
 
@@ -204,11 +204,11 @@ Both exceptions switch off under `prefers-reduced-motion` (state switches instan
 
 | Name | Width | Target | Admin shell | Public shell |
 |---|---|---|---|---|
-| base | <640 | Phone | Top bar + drawer | Top bar + floating glass tab bar (+ live accessory) |
+| base | <640 | Phone | Top bar + floating glass tab bar (+ tournament accessory) | Top bar + floating glass tab bar (+ live accessory) |
 | `sm` | ≥640 | Large phone | same | Top bar + floating glass tab bar (+ live accessory) |
-| `md` | ≥768 | Tablet portrait | **Icon rail (72px)** + expand on tap | Inline nav |
-| `lg` | ≥1024 | Tablet landscape / laptop | Icon rail, expandable | Inline nav |
-| `xl` | ≥1280 | Desktop | Full sidebar (248px) | Inline nav |
+| `md` | ≥768 | Tablet portrait | same | Inline nav |
+| `lg` | ≥1024 | Tablet landscape / laptop | Icon rail (72px), expandable (collapsed by default) | Inline nav |
+| `xl` | ≥1280 | Desktop | Full sidebar (240px, expanded by default) | Inline nav |
 
 Tablets are first-class: no layout may jump straight from phone drawer to full
 desktop sidebar.

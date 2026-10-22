@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -10,13 +11,23 @@ import { useTranslation } from 'react-i18next';
  * and stick to top-0 once it has scrolled away.
  */
 export function EnvironmentRibbon() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const location = useLocation();
     const env = import.meta.env.VITE_ENV;
+
+    // Use fixed English on admin and auth routes
+    const isFixedEnglishRoute =
+        location.pathname.startsWith('/dashboard') ||
+        ['/login', '/forgot-password', '/reset-password', '/accept-invite', '/signup'].some(
+            (p) => location.pathname === p || location.pathname.startsWith(p + '/')
+        );
+
+    const resolveT = isFixedEnglishRoute ? i18n.getFixedT('en', 'common') : t;
 
     if (env === 'staging') {
         return (
             <div role="note" className="relative z-10 w-full bg-crimson text-white text-xs font-medium text-center px-4 pb-1 pt-[calc(4px+env(safe-area-inset-top,0px))] select-none">
-                {t('ribbon.staging')}
+                {resolveT('ribbon.staging')}
             </div>
         );
     }
@@ -24,7 +35,7 @@ export function EnvironmentRibbon() {
     if (env === 'development' || import.meta.env.DEV) {
         return (
             <div role="note" className="relative z-10 w-full bg-black/72 dark:bg-white/28 text-white text-xs font-medium text-center px-4 pb-1 pt-[calc(4px+env(safe-area-inset-top,0px))] select-none">
-                {t('ribbon.local')}
+                {resolveT('ribbon.local')}
             </div>
         );
     }
