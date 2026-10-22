@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import { IconContext } from '@phosphor-icons/react';
 import { HelmetProvider } from 'react-helmet-async';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { initI18n } from '@/i18n';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -62,8 +63,12 @@ export const Root = () => {
     );
 };
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-        <Root />
-    </React.StrictMode>,
-)
+// Render even if i18n setup fails (falls back to keys/English) so the site never stays blank
+initI18n().catch((err) => console.error('i18n init failed', err)).finally(() => {
+    ReactDOM.createRoot(document.getElementById('root')!).render(
+        <React.StrictMode>
+            <Root />
+        </React.StrictMode>,
+    );
+});
+

@@ -1,0 +1,18 @@
+{
+  "title": "AthleticaOS Rugby — skor langsung, jadual perlawanan dan keputusan",
+  "hero": {
+    "badge": "Pertandingan Ragbi Malaysia",
+    "titleLine1": "Skor Langsung, Jadual Perlawanan",
+    "titleLine2": "& Keputusan",
+    "subtitle": "Ikuti semua pertandingan ragbi di seluruh Malaysia secara langsung. Dikuasakan oleh AthleticaOS Rugby.",
+    "cta": "Lihat Semua Kejohanan"
+  },
+  "section": {
+    "featured": "Kejohanan pilihan",
+    "liveAndUpcoming": "Kejohanan langsung dan akan datang",
+    "viewAll": "Lihat semua →"
+  },
+  "empty": {
+    "noActive": "Tiada kejohanan aktif pada masa ini"
+  }
+}

@@ -1,69 +1,70 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DownloadSimple, PencilSimple, EyeSlash, HandPalm, Info, ArrowRight } from '@phosphor-icons/react';
 
-interface RequestOption {
+interface RequestOptionDef {
     type: 'copy' | 'correct' | 'remove' | 'withdraw';
-    title: string;
-    description: string;
-    actionLabel: string;
+    titleKey: string;
+    descriptionKey: string;
+    actionKey: string;
     icon: typeof DownloadSimple;
 }
 
-const REQUEST_OPTIONS: RequestOption[] = [
+const REQUEST_OPTIONS: RequestOptionDef[] = [
     {
         type: 'copy',
-        title: 'Get a copy of my data',
-        description: 'Request an export of the personal data we hold about you across tournaments, teams, and match records.',
-        actionLabel: 'Request my data',
+        titleKey: 'options.copy.title',
+        descriptionKey: 'options.copy.description',
+        actionKey: 'options.copy.action',
         icon: DownloadSimple,
     },
     {
         type: 'correct',
-        title: 'Correct my details',
-        description: 'Ask us to update incorrect or outdated details, such as misspelled names or outdated information.',
-        actionLabel: 'Request a correction',
+        titleKey: 'options.correct.title',
+        descriptionKey: 'options.correct.description',
+        actionKey: 'options.correct.action',
         icon: PencilSimple,
     },
     {
         type: 'remove',
-        title: 'Remove or hide my public profile',
-        description: 'Ask to remove your public player profile, hide specific details, or anonymise your public records.',
-        actionLabel: 'Request removal or masking',
+        titleKey: 'options.remove.title',
+        descriptionKey: 'options.remove.description',
+        actionKey: 'options.remove.action',
         icon: EyeSlash,
     },
     {
         type: 'withdraw',
-        title: 'Withdraw consent',
-        description: 'Withdraw your consent or request limits on how your personal data is processed on the platform.',
-        actionLabel: 'Withdraw consent',
+        titleKey: 'options.withdraw.title',
+        descriptionKey: 'options.withdraw.description',
+        actionKey: 'options.withdraw.action',
         icon: HandPalm,
     },
 ];
 
 export default function DataRequests() {
+    const { t, i18n } = useTranslation('dataRequests');
+
     useEffect(() => {
-        document.title = 'Data requests — AthleticaOS';
-    }, []);
+        document.title = t('pageTitle');
+    }, [t, i18n.language]);
 
     return (
         <div className="max-w-4xl mx-auto py-4 sm:py-8 space-y-8">
             {/* Header */}
             <div className="space-y-3">
                 <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-content-primary">
-                    Personal data requests
+                    {t('title')}
                 </h1>
                 <p className="text-base sm:text-lg text-content-secondary leading-relaxed">
-                    Under the Personal Data Protection Act, you have rights over how your personal data is handled.
-                    Choose a request type below to send your request directly to our privacy team.
+                    {t('description')}
                 </p>
                 <div className="text-sm text-content-secondary">
-                    Learn more in the{' '}
                     <Link
                         to="/privacy#your-rights"
                         className="text-brand-text font-medium hover:underline inline-flex items-center gap-1"
                     >
-                        Your rights section of our Privacy notice
+                        {t('rightsLinkText')}
                         <ArrowRight size={14} />
                     </Link>
                 </div>
@@ -83,10 +84,10 @@ export default function DataRequests() {
                                     <Icon size={24} weight="duotone" />
                                 </div>
                                 <h2 className="text-lg font-bold text-content-primary">
-                                    {opt.title}
+                                    {t(opt.titleKey)}
                                 </h2>
                                 <p className="text-sm text-content-secondary leading-relaxed">
-                                    {opt.description}
+                                    {t(opt.descriptionKey)}
                                 </p>
                             </div>
 
@@ -94,7 +95,7 @@ export default function DataRequests() {
                                 to={`/contact?subject=PRIVACY_REQUEST&type=${opt.type}`}
                                 className="inline-flex items-center justify-center min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold bg-surface-sunken hover:bg-brand hover:text-white border border-line-subtle transition-colors text-content-primary"
                             >
-                                {opt.actionLabel}
+                                {t(opt.actionKey)}
                             </Link>
                         </div>
                     );
@@ -106,14 +107,13 @@ export default function DataRequests() {
                 <Info size={24} className="text-brand-text shrink-0 mt-0.5" weight="duotone" />
                 <div className="space-y-2 text-sm text-content-secondary leading-relaxed">
                     <p className="font-semibold text-content-primary">
-                        Acting for a child under 18?
+                        {t('guardian.heading')}
                     </p>
                     <p>
-                        Parents and legal guardians can submit any of these requests on behalf of their child.
-                        Please mention that you are a parent or guardian when submitting your enquiry.
+                        {t('guardian.body')}
                     </p>
                     <p className="text-content-primary font-medium">
-                        We reply within 21 days.
+                        {t('guardian.replyNotice')}
                     </p>
                 </div>
             </div>

@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Home",
+    "tournaments": "Tournaments",
+    "tournamentsShort": "Tours",
+    "teams": "Teams",
+    "players": "Players",
+    "more": "More",
+    "howItWorks": "How it works",
+    "partners": "Partners",
+    "contact": "Contact",
+    "signIn": "Sign in",
+    "dashboard": "Dashboard",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "dataRequests": "Data requests",
+    "about": "About",
+    "skipToContent": "Skip to content",
+    "primaryNav": "Primary",
+    "back": "Back",
+    "expandTabBar": "{{label}} (Expand tab bar)"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ms": "Bahasa Melayu"
+  },
+  "footer": {
+    "ownedBy": "Owned and operated by {{name}}",
+    "inPartnershipWith": "In partnership with {{partners}}",
+    "copyright": "© {{year}} {{holder}}."
+  },
+  "status": {
+    "live": "LIVE",
+    "liveNow": "LIVE NOW",
+    "upcoming": "UPCOMING",
+    "completed": "COMPLETED"
+  },
+  "accessory": {
+    "liveNow": "Live now: {{name}}"
+  },
+  "ribbon": {
+    "staging": "TEST SITE — data here is not real and may be reset",
+    "local": "LOCAL"
+  },
+  "dialog": {
+    "close": "Close"
+  }
+}

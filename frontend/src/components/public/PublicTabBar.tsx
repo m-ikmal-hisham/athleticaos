@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { DotsThreeOutline, SignIn, SquaresFour } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { DotsThreeOutline, Globe, SignIn, SquaresFour } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
+import { changeLanguage } from '@/i18n';
 import {
     PUBLIC_PRIMARY_NAV,
     PUBLIC_MORE_NAV,
-    PUBLIC_NAV_LABELS,
     isNavItemActive,
     isMoreActive,
 } from '@/config/navigation';
@@ -23,14 +24,17 @@ const sheetRow =
  * More bottom sheet, and the live tournament accessory.
  */
 export function PublicTabBar() {
+    const { t, i18n } = useTranslation();
     const { pathname } = useLocation();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const [moreOpen, setMoreOpen] = useState(false);
     const isAccessoryLive = useIsPublicAccessoryLive();
 
+    const currentLang = i18n.language && i18n.language.startsWith('ms') ? 'ms' : 'en';
+
     const authItem = isAuthenticated
-        ? { label: PUBLIC_NAV_LABELS.dashboard, to: '/dashboard', icon: SquaresFour }
-        : { label: PUBLIC_NAV_LABELS.signIn, to: '/login', icon: SignIn };
+        ? { label: t('nav.dashboard'), to: '/dashboard', icon: SquaresFour }
+        : { label: t('nav.signIn'), to: '/login', icon: SignIn };
     const AuthIcon = authItem.icon;
 
     // Determine active key
@@ -49,19 +53,24 @@ export function PublicTabBar() {
     const items: GlassTabBarItem[] = [
         ...PUBLIC_PRIMARY_NAV.map((navItem) => ({
             key: navItem.key,
-            label: navItem.tabLabel ?? navItem.label,
+            label: navItem.tabLabelKey ? t(navItem.tabLabelKey) : t(navItem.labelKey),
             to: navItem.to,
             icon: navItem.icon,
         })),
         {
             key: 'more',
-            label: PUBLIC_NAV_LABELS.more,
+            label: t('nav.more'),
             icon: DotsThreeOutline,
             onClick: () => setMoreOpen(true),
             ariaHasPopup: 'dialog',
             ariaExpanded: moreOpen,
         },
     ];
+
+    const toggleLanguage = () => {
+        const next = currentLang === 'en' ? 'ms' : 'en';
+        void changeLanguage(next);
+    };
 
     return (
         <>
@@ -70,13 +79,14 @@ export function PublicTabBar() {
                 activeKey={activeKey}
                 hasAccessory={isAccessoryLive}
                 accessorySlot={<PublicNowAccessory />}
-                ariaLabel={PUBLIC_NAV_LABELS.primaryNav}
+                ariaLabel={t('nav.primaryNav')}
             />
 
             <BottomSheet
                 isOpen={moreOpen}
                 onClose={() => setMoreOpen(false)}
-                title={PUBLIC_NAV_LABELS.more}
+                title={t('nav.more')}
+                closeLabel={t('dialog.close')}
                 className="lg:hidden"
             >
                 <ul className="space-y-1 pb-2">
@@ -97,11 +107,30 @@ export function PublicTabBar() {
                                     )}
                                 >
                                     <Icon size={20} weight={active ? 'fill' : 'duotone'} aria-hidden="true" />
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </Link>
                             </li>
                         );
                     })}
+
+                    {/* Language row: shows current, toggles */}
+                    <li className="pt-1 mt-1 border-t border-line-subtle">
+                        <button
+                            type="button"
+                            onClick={toggleLanguage}
+                            className={clsx(sheetRow, 'text-content-primary hover:bg-surface-sunken justify-between')}
+                            aria-label={`${t('language.label')}: ${currentLang === 'ms' ? 'Bahasa Melayu' : 'English'}`}
+                        >
+                            <span className="flex items-center gap-3">
+                                <Globe size={20} weight="duotone" aria-hidden="true" />
+                                <span>{t('language.label')}</span>
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-1 rounded-md bg-surface-sunken border border-line-subtle text-content-secondary">
+                                {currentLang === 'ms' ? 'BM' : 'EN'}
+                            </span>
+                        </button>
+                    </li>
+
                     <li className="pt-1 mt-1 border-t border-line-subtle">
                         <Link
                             to={authItem.to}

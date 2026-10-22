@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * Environment strip shown above every shell so testers always know where they are.
  * - staging: crimson "TEST SITE" strip
@@ -8,12 +10,13 @@
  * and stick to top-0 once it has scrolled away.
  */
 export function EnvironmentRibbon() {
+    const { t } = useTranslation();
     const env = import.meta.env.VITE_ENV;
 
     if (env === 'staging') {
         return (
             <div role="note" className="relative z-10 w-full bg-crimson text-white text-xs font-medium text-center px-4 pb-1 pt-[calc(4px+env(safe-area-inset-top,0px))] select-none">
-                TEST SITE — data here is not real and may be reset
+                {t('ribbon.staging')}
             </div>
         );
     }
@@ -21,7 +24,7 @@ export function EnvironmentRibbon() {
     if (env === 'development' || import.meta.env.DEV) {
         return (
             <div role="note" className="relative z-10 w-full bg-black/72 dark:bg-white/28 text-white text-xs font-medium text-center px-4 pb-1 pt-[calc(4px+env(safe-area-inset-top,0px))] select-none">
-                LOCAL
+                {t('ribbon.local')}
             </div>
         );
     }

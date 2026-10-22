@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef, useState, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CaretDown, SignIn, SquaresFour } from '@phosphor-icons/react';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { AppBackground } from '@/components/public/AppBackground';
@@ -8,6 +9,8 @@ import { useIsPublicAccessoryLive } from '@/components/public/PublicNowAccessory
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { PageLoader } from '@/components/PageLoader';
 import { Button } from '@/components/Button';
+import { LanguageSwitch } from '@/components/common/LanguageSwitch';
+import { changeLanguage } from '@/i18n';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { SITE_NAME, COPYRIGHT_HOLDER, OWNER_NAME, SHOW_OWNER } from '@/config/site';
@@ -15,7 +18,6 @@ import { PARTNERS } from '@/config/partners';
 import {
     PUBLIC_PRIMARY_NAV,
     PUBLIC_MORE_NAV,
-    PUBLIC_NAV_LABELS,
     isNavItemActive,
     getDetailParent,
 } from '@/config/navigation';
@@ -30,6 +32,7 @@ const footerLink = clsx(
 
 /** Desktop (≥ lg) "More" dropdown. Lives inside the sticky z-50 top bar so it sits above page content. */
 function DesktopMoreMenu({ pathname }: { pathname: string }) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLUListElement>(null);
@@ -108,7 +111,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
                         : 'text-black/72 dark:text-white/72 border-transparent hover:text-navy dark:hover:text-navy-tint'
                 )}
             >
-                {PUBLIC_NAV_LABELS.more}
+                {t('nav.more')}
                 <CaretDown
                     size={16}
                     aria-hidden="true"
@@ -121,7 +124,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
                     ref={menuRef}
                     id="public-more-menu"
                     role="menu"
-                    aria-label={PUBLIC_NAV_LABELS.more}
+                    aria-label={t('nav.more')}
                     onKeyDown={handleMenuKeyDown}
                     className="absolute right-0 top-full mt-1 min-w-[200px] p-1 bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 rounded-[10px] shadow-md motion-safe:animate-fade-in"
                 >
@@ -144,7 +147,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
                                     )}
                                 >
                                     <Icon size={20} weight={active ? 'fill' : 'duotone'} aria-hidden="true" />
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </Link>
                             </li>
                         );
@@ -156,6 +159,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
 }
 
 export default function PublicLayout() {
+    const { t, i18n } = useTranslation();
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
     const location = useLocation();
@@ -163,13 +167,15 @@ export default function PublicLayout() {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const partnerNames = PARTNERS.map((p) => p.name).join(', ');
 
+    const currentLang = i18n.language && i18n.language.startsWith('ms') ? 'ms' : 'en';
+
     const brandParts = SITE_NAME.split(' ');
     const brandMain = brandParts.slice(0, -1).join(' ') || SITE_NAME;
     const brandSuffix = brandParts.length > 1 ? brandParts[brandParts.length - 1] : '';
 
     const auth = isAuthenticated
-        ? { label: PUBLIC_NAV_LABELS.dashboard, to: '/dashboard', icon: SquaresFour }
-        : { label: PUBLIC_NAV_LABELS.signIn, to: '/login', icon: SignIn };
+        ? { label: t('nav.dashboard'), to: '/dashboard', icon: SquaresFour }
+        : { label: t('nav.signIn'), to: '/login', icon: SignIn };
     const AuthIcon = auth.icon;
 
     const detailParent = getDetailParent(location.pathname);
@@ -207,7 +213,7 @@ export default function PublicLayout() {
                     href="#main-content"
                     className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-[10px] focus:bg-navy focus:text-white focus:text-sm focus:font-medium focus:outline-none focus:ring-2 focus:ring-navy-tint"
                 >
-                    {PUBLIC_NAV_LABELS.skipToContent}
+                    {t('nav.skipToContent')}
                 </a>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between gap-4 h-16">
@@ -229,8 +235,8 @@ export default function PublicLayout() {
                         </Link>
 
                         {/* Desktop / large tablet (≥ lg) */}
-                        <div className="hidden lg:flex items-center gap-8 h-full">
-                            <nav aria-label={PUBLIC_NAV_LABELS.primaryNav} className="h-full">
+                        <div className="hidden lg:flex items-center gap-6 h-full">
+                            <nav aria-label={t('nav.primaryNav')} className="h-full">
                                 <ul className="flex items-center gap-6 h-full">
                                     {PUBLIC_PRIMARY_NAV.map((item) => {
                                         const active = isNavItemActive(item, location.pathname);
@@ -247,7 +253,7 @@ export default function PublicLayout() {
                                                             : 'text-black/72 dark:text-white/72 border-transparent hover:text-navy dark:hover:text-navy-tint'
                                                     )}
                                                 >
-                                                    {item.label}
+                                                    {t(item.labelKey)}
                                                 </Link>
                                             </li>
                                         );
@@ -257,6 +263,7 @@ export default function PublicLayout() {
                                     </li>
                                 </ul>
                             </nav>
+                            <LanguageSwitch />
                             <Button variant="secondary" size="sm" onClick={() => navigate(auth.to)}>
                                 {auth.label}
                             </Button>
@@ -289,7 +296,7 @@ export default function PublicLayout() {
                         )}
                     >
                         <ArrowLeft size={20} aria-hidden="true" />
-                        {detailParent.label}
+                        {t(detailParent.labelKey)}
                     </button>
                 </div>
             )}
@@ -318,30 +325,56 @@ export default function PublicLayout() {
                             </p>
                             {SHOW_OWNER && (
                                 <p className="text-xs mb-1">
-                                    Owned and operated by {OWNER_NAME}
+                                    {t('footer.ownedBy', { name: OWNER_NAME })}
                                 </p>
                             )}
                             {partnerNames && (
                                 <p className="text-xs">
-                                    In partnership with {partnerNames}
+                                    {t('footer.inPartnershipWith', { partners: partnerNames })}
                                 </p>
                             )}
                         </div>
 
                         <div className="flex flex-wrap items-center justify-center gap-x-5 md:gap-x-6 gap-y-0 text-sm font-medium text-black/72 dark:text-white/72">
-                            <Link to="/how-it-works" className={footerLink}>About</Link>
-                            <Link to="/contact" className={footerLink}>Contact</Link>
-                            <Link to="/partners" className={footerLink}>Partners</Link>
-                            <Link to="/privacy" className={footerLink}>Privacy</Link>
-                            <Link to="/terms" className={footerLink}>Terms</Link>
-                            <Link to="/data-requests" className={footerLink}>Data requests</Link>
+                            <Link to="/how-it-works" className={footerLink}>{t('nav.about')}</Link>
+                            <Link to="/contact" className={footerLink}>{t('nav.contact')}</Link>
+                            <Link to="/partners" className={footerLink}>{t('nav.partners')}</Link>
+                            <Link to="/privacy" className={footerLink}>{t('nav.privacy')}</Link>
+                            <Link to="/terms" className={footerLink}>{t('nav.terms')}</Link>
+                            <Link to="/data-requests" className={footerLink}>{t('nav.dataRequests')}</Link>
                             <Link to={auth.to} className={footerLink}>{auth.label}</Link>
                         </div>
 
-                        <div className="text-xs text-black/72 dark:text-white/72 flex flex-col items-center md:items-end">
-                            <p>© {new Date().getFullYear()} {COPYRIGHT_HOLDER}.</p>
+                        <div className="text-xs text-black/72 dark:text-white/72 flex flex-col items-center md:items-end gap-2">
+                            {/* Language link pair */}
+                            <div className="flex items-center gap-1.5 text-xs text-black/72 dark:text-white/72" aria-label="Language selection">
+                                <button
+                                    type="button"
+                                    onClick={() => void changeLanguage('en')}
+                                    className={clsx(
+                                        'min-h-[44px] px-1 hover:text-navy dark:hover:text-navy-tint transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint rounded-sm',
+                                        currentLang === 'en' ? 'font-bold text-navy dark:text-navy-tint' : 'text-black/72 dark:text-white/72'
+                                    )}
+                                    aria-pressed={currentLang === 'en'}
+                                >
+                                    English
+                                </button>
+                                <span aria-hidden="true" className="opacity-50">·</span>
+                                <button
+                                    type="button"
+                                    onClick={() => void changeLanguage('ms')}
+                                    className={clsx(
+                                        'min-h-[44px] px-1 hover:text-navy dark:hover:text-navy-tint transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint rounded-sm',
+                                        currentLang === 'ms' ? 'font-bold text-navy dark:text-navy-tint' : 'text-black/72 dark:text-white/72'
+                                    )}
+                                    aria-pressed={currentLang === 'ms'}
+                                >
+                                    Bahasa Melayu
+                                </button>
+                            </div>
+                            <p>{t('footer.copyright', { year: new Date().getFullYear(), holder: COPYRIGHT_HOLDER })}</p>
                             {import.meta.env.VITE_ENV !== 'production' && (
-                                <p className="mt-1 opacity-70 font-mono text-xs">v{import.meta.env.VITE_GIT_SHA || 'dev'}</p>
+                                <p className="opacity-70 font-mono text-xs">v{import.meta.env.VITE_GIT_SHA || 'dev'}</p>
                             )}
                         </div>
                     </div>

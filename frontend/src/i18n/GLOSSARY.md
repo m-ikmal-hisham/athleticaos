@@ -1,0 +1,66 @@
+# AthleticaOS Bahasa Melayu Glossary & Translation Conventions
+
+## Conventions & Rules
+1. **Spelling Standard:** Spelling follows Dewan Bahasa dan Pustaka (DBP) standard Malay (*Ejaan Rumi*).
+2. **World Rugby Terminology:** Specific World Rugby terms stay in English inside BM text: `try`, `conversion`, `penalty try`, `drop goal`, `scrum`, `lineout`, `ruck`, `maul`, `sin bin`, `yellow card`, `red card`.
+3. **User Content:** User-generated and entity content (team names, player names, tournament titles, organiser names, venue locations) is never translated.
+4. **PRPM Verification Workflow:** The "DBP/PRPM form" column contains the expected standard form from DBP PRPM (*Pusat Rujukan Persuratan Melayu*: prpm.dbp.gov.my). Set "PRPM checked" to "no" until checked and verified by a reviewer with date.
+
+> [!IMPORTANT]
+> **Legal BM Note:**
+> The Bahasa Melayu Privacy notice and Terms of use (`src/content/legal`) are drafts. Before either document is set to status 'final' for production, the BM text must be reviewed by a qualified reviewer (a Malay-speaking lawyer or a certified translation service) and key terms checked on PRPM. English prevails if the two versions differ.
+
+---
+
+## Glossary Table
+
+| EN | MS used in the app | DBP/PRPM form | PRPM checked (yes/no + date) | Notes |
+|---|---|---|---|---|
+| Home | Utama | Utama | no | Top-level navigation / home screen |
+| Tournaments | Kejohanan | Kejohanan | no | Standard sports competition term |
+| Tours (tab, short) | Kejohanan | Kejohanan | no | Measured at 62px in 67.2px tab slot; fits 360px without truncation |
+| Teams | Pasukan | Pasukan | no | Standard sports team term |
+| Players | Pemain | Pemain | no | Standard player term |
+| More | Lagi | Lagi | no | Overflow navigation menu / sheet |
+| How it works | Cara ia berfungsi | Cara ia berfungsi | no | Plain informational section |
+| Partners | Rakan kongsi | Rakan kongsi | no | Commercial & organisation partners |
+| Contact | Hubungi | Hubungi | no | Contact action / page |
+| Sign in | Log masuk | Log masuk | no | User authentication |
+| Dashboard | Papan pemuka | Papan pemuka | no | Administrative / management console |
+| Privacy | Privasi | Privasi | no | Privacy notice |
+| Terms | Terma | Terma / Syarat | no | Terms of use |
+| Data requests | Permintaan data | Permintaan data | no | PDPA user data requests |
+| About | Tentang kami | Tentang kami | no | About link |
+| Skip to content | Langkau ke kandungan | Langkau ke kandungan | no | Accessibility skip link |
+| Primary navigation | Navigasi utama | Navigasi utama | no | Accessible label for main nav |
+| Back | Kembali | Kembali | no | Mobile navigation return button |
+| LIVE / LIVE NOW | LANGSUNG / LANGSUNG SEKARANG | Langsung / Langsung sekarang | no | Match / tournament status badges (uppercase per §3) |
+| UPCOMING | AKAN DATANG | Akan datang | no | Match / tournament status badges (uppercase per §3) |
+| COMPLETED | TAMAT | Tamat / Selesai | no | Match / tournament status badges (uppercase per §3) |
+| View all | Lihat semua | Lihat semua | no | Section link |
+| Featured tournaments | Kejohanan pilihan | Kejohanan pilihan | no | Curated / spotlight tournaments |
+| Live and upcoming tournaments | Kejohanan langsung dan akan datang | Kejohanan langsung dan akan datang | no | Fallback list header |
+| TEST SITE — data here is not real and may be reset | LAMAN UJIAN — data di sini bukan sebenar dan mungkin ditetapkan semula | Laman ujian — data di sini bukan sebenar dan mungkin ditetapkan semula | no | Staging environment notification ribbon |
+| LOCAL | TEMPATAN | Tempatan | no | Local dev ribbon |
+| Language | Bahasa | Bahasa | no | Language selection label |
+| English | English | Bahasa Inggeris | no | Self-name retained for language switch |
+| Bahasa Melayu | Bahasa Melayu | Bahasa Melayu | no | Endonym for Malay language |
+| Close | Tutup | Tutup | no | Dialog / bottom sheet close action |
+| Last updated | Kemas kini terakhir | Kemas kini terakhir | no | Document metadata timestamp |
+| Contents | Kandungan | Kandungan | no | Table of contents header |
+| Close contents | Tutup kandungan | Tutup kandungan | no | TOC bottom sheet close label |
+| Draft — under review | Draf — dalam semakan | Draf — dalam semakan | no | Legal draft status banner |
+| Copy link to section | Salin pautan ke bahagian | Salin pautan ke bahagian | no | Legal section anchor copy action |
+| Link is in the address bar | Pautan ada di bar alamat | Pautan ada di bar alamat | no | Clipboard fallback status message |
+| This page is being updated. | Halaman ini sedang dikemas kini. | Halaman ini sedang dikemas kini. | no | Production draft gate heading |
+| Contact us | Hubungi kami | Hubungi kami | no | Button / link |
+| Personal data requests | Permintaan data peribadi | Permintaan data peribadi | no | PDPA page title |
+| Personal Data Protection Act 2010 | Akta Perlindungan Data Peribadi 2010 | Akta Perlindungan Data Peribadi 2010 | no | Malaysian statutory title (Act 709) |
+| Get a copy of my data | Dapatkan salinan data saya | Dapatkan salinan data saya | no | Data portability request |
+| Correct my details | Betulkan butiran saya | Betulkan butiran saya | no | Rectification request |
+| Remove or hide my public profile | Alih keluar atau sembunyikan profil awam saya | Alih keluar atau sembunyikan profil awam saya | no | Erasure / profile masking request |
+| Remove / Take down | Alih keluar | Alih keluar / Buang | no | Specific data request verb |
+| Withdraw consent | Tarik balik persetujuan | Tarik balik persetujuan | no | Consent withdrawal request |
+| Anonymised / without name | Tanpa nama | Tanpa nama | no | Data anonymisation / masking |
+| Acting for a child under 18? | Bertindak bagi pihak anak di bawah umur 18 tahun? | Bertindak bagi pihak anak di bawah umur 18 tahun? | no | Legal guardian enquiry card |
+| We reply within 21 days. | Kami membalas dalam tempoh 21 hari. | Kami membalas dalam tempoh 21 hari. | no | Service commitment note |
