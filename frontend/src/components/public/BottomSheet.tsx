@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
+import { useUIStore } from '@/store/ui.store';
 
 interface BottomSheetProps {
     isOpen: boolean;
@@ -30,6 +31,9 @@ export function BottomSheet({ isOpen, onClose, title, children, closeLabel = 'Cl
 
     useEffect(() => {
         if (!isOpen) return;
+
+        const { incrementOverlayCount, decrementOverlayCount } = useUIStore.getState();
+        incrementOverlayCount();
 
         const previouslyFocused = document.activeElement as HTMLElement | null;
         const originalOverflow = document.body.style.overflow;
@@ -65,6 +69,7 @@ export function BottomSheet({ isOpen, onClose, title, children, closeLabel = 'Cl
         document.addEventListener('keydown', handleKeyDown);
 
         return () => {
+            decrementOverlayCount();
             window.clearTimeout(focusTimer);
             document.removeEventListener('keydown', handleKeyDown);
             document.body.style.overflow = originalOverflow;

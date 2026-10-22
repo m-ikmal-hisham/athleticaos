@@ -12,7 +12,7 @@ export function EnvironmentRibbon() {
 
     if (env === 'staging') {
         return (
-            <div role="note" className="relative z-10 w-full bg-crimson text-white text-xs font-medium text-center px-4 py-1 select-none">
+            <div role="note" className="relative z-10 w-full bg-crimson text-white text-xs font-medium text-center px-4 pb-1 pt-[calc(4px+env(safe-area-inset-top,0px))] select-none">
                 TEST SITE — data here is not real and may be reset
             </div>
         );
@@ -20,7 +20,7 @@ export function EnvironmentRibbon() {
 
     if (env === 'development' || import.meta.env.DEV) {
         return (
-            <div role="note" className="relative z-10 w-full bg-black/72 dark:bg-white/28 text-white text-xs font-medium text-center px-4 py-1 select-none">
+            <div role="note" className="relative z-10 w-full bg-black/72 dark:bg-white/28 text-white text-xs font-medium text-center px-4 pb-1 pt-[calc(4px+env(safe-area-inset-top,0px))] select-none">
                 LOCAL
             </div>
         );

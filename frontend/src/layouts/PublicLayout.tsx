@@ -3,7 +3,8 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CaretDown, SignIn, SquaresFour } from '@phosphor-icons/react';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { AppBackground } from '@/components/public/AppBackground';
-import { PublicBottomNav } from '@/components/public/PublicBottomNav';
+import { PublicTabBar } from '@/components/public/PublicTabBar';
+import { useIsPublicAccessoryLive } from '@/components/public/PublicNowAccessory';
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { PageLoader } from '@/components/PageLoader';
 import { Button } from '@/components/Button';
@@ -182,17 +183,26 @@ export default function PublicLayout() {
         }
     };
 
-    // < lg: bottom padding clears the fixed bottom bar (64px + safe area + 16px) so the footer stays visible.
-    // Padding on the wrapper, not margin on the footer (a footer margin collapsed away before).
+    const isAccessoryLive = useIsPublicAccessoryLive();
+
+    // < lg: bottom padding clears the floating tab bar + accessory + safe area + 16px clearance
+    // so the footer stays fully visible.
+    const bottomChrome = isAccessoryLive
+        ? 'calc(140px + max(12px, env(safe-area-inset-bottom, 0px)))'
+        : 'calc(80px + max(12px, env(safe-area-inset-bottom, 0px)))';
+
     return (
-        <div className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pb-[calc(64px+env(safe-area-inset-bottom,0px)+16px)] lg:pb-0">
+        <div
+            className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[var(--public-bottom-chrome)] lg:pb-0"
+            style={{ '--public-bottom-chrome': bottomChrome } as React.CSSProperties}
+        >
             {/* Global Background */}
             <AppBackground />
 
             <EnvironmentRibbon />
 
             {/* Top bar: sticky on every size */}
-            <header className="print:hidden backdrop-blur-nav sticky top-0 z-50 bg-white/90 dark:bg-deep-navy/90 border-b border-black/10 dark:border-white/12">
+            <header className="print:hidden glass sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
                 <a
                     href="#main-content"
                     className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-[10px] focus:bg-navy focus:text-white focus:text-sm focus:font-medium focus:outline-none focus:ring-2 focus:ring-navy-tint"
@@ -338,8 +348,8 @@ export default function PublicLayout() {
                 </div>
             </footer>
 
-            {/* Phones / portrait tablets: primary nav */}
-            <PublicBottomNav />
+            {/* Phones / portrait tablets: floating glass tab bar */}
+            <PublicTabBar />
         </div>
     );
 }

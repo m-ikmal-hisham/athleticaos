@@ -5,9 +5,9 @@ import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 
 export const AuthLayout = () => {
     return (
-        <div className="min-h-[100dvh] w-full flex flex-col">
+        <div className="min-h-[100dvh] w-full flex flex-col pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)]">
             <EnvironmentRibbon />
-            <div className="flex-1 w-full flex flex-col items-center justify-between p-4 relative overflow-hidden">
+            <div className="flex-1 w-full flex flex-col items-center justify-between p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] relative overflow-hidden">
                 {/* Spacer to balance vertical centering */}
                 <div className="w-full" />
                 <div className="w-full z-10 flex-1 flex flex-col justify-center">
