@@ -396,4 +396,87 @@ class TournamentReadinessServiceImplTest {
                 i.getMessage().contains("Empty RFC")
         );
     }
+
+    @Test
+    @DisplayName("Check 2: Accepts Rank 8 with 8 teams in category, flags Rank 9, resolves Pool A #1, flags Champion")
+    void check2_seedSynonyms_validationThresholds() {
+        TournamentStage poolStage = TournamentStage.builder()
+                .id(UUID.randomUUID())
+                .tournament(tournament)
+                .name("Pool A")
+                .stageType(TournamentStageType.POOL)
+                .isGroupStage(true)
+                .category(categoryOpen)
+                .build();
+
+        List<TournamentTeam> teams = new ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            Team t = Team.builder().id(UUID.randomUUID()).name("Team " + i).build();
+            teams.add(TournamentTeam.builder()
+                    .id(UUID.randomUUID())
+                    .tournament(tournament)
+                    .team(t)
+                    .category(categoryOpen)
+                    .poolNumber("Pool A")
+                    .isActive(true)
+                    .deleted(false)
+                    .build());
+        }
+
+        TournamentStage koStage = TournamentStage.builder()
+                .id(UUID.randomUUID())
+                .tournament(tournament)
+                .name("Knockout")
+                .stageType(TournamentStageType.QUARTER_FINAL)
+                .isKnockoutStage(true)
+                .category(categoryOpen)
+                .build();
+
+        // Valid: "Rank 8" and "Pool A #1"
+        Match matchValid = Match.builder()
+                .id(UUID.randomUUID())
+                .tournament(tournament)
+                .stage(koStage)
+                .category(categoryOpen)
+                .homeTeamPlaceholder("Rank 8")
+                .awayTeamPlaceholder("Pool A #1")
+                .matchNumber(1)
+                .build();
+
+        // Invalid: "Rank 9" and "Champion"
+        Match matchInvalid = Match.builder()
+                .id(UUID.randomUUID())
+                .tournament(tournament)
+                .stage(koStage)
+                .category(categoryOpen)
+                .homeTeamPlaceholder("Rank 9")
+                .awayTeamPlaceholder("Champion")
+                .matchNumber(2)
+                .build();
+
+        when(stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId))
+                .thenReturn(List.of(poolStage, koStage));
+        when(matchRepository.findByTournamentId(tournamentId))
+                .thenReturn(List.of(matchValid, matchInvalid));
+        when(tournamentTeamRepository.findByTournamentId(tournamentId))
+                .thenReturn(teams);
+
+        TournamentReadinessResponse res = readinessService.checkReadiness(tournamentId);
+
+        // "Rank 8" and "Pool A #1" must NOT produce errors
+        assertThat(res.getIssues()).noneMatch(i ->
+                "SLOT_WILL_NOT_SEED".equals(i.getCode()) && i.getMessage().contains("Rank 8")
+        );
+        assertThat(res.getIssues()).noneMatch(i ->
+                "SLOT_WILL_NOT_SEED".equals(i.getCode()) && i.getMessage().contains("Pool A #1")
+        );
+
+        // "Rank 9" and "Champion" MUST produce SLOT_WILL_NOT_SEED errors
+        assertThat(res.getIssues()).anyMatch(i ->
+                "SLOT_WILL_NOT_SEED".equals(i.getCode()) && i.getMessage().contains("Rank 9")
+        );
+        assertThat(res.getIssues()).anyMatch(i ->
+                "SLOT_WILL_NOT_SEED".equals(i.getCode()) && i.getMessage().contains("Champion")
+        );
+    }
 }

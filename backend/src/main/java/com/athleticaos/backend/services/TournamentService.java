@@ -62,6 +62,8 @@ public interface TournamentService {
 
         void clearSchedule(UUID tournamentId, boolean clearStructure);
 
+        void deleteEmptyStage(UUID tournamentId, UUID stageId);
+
         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId);
 
         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId,

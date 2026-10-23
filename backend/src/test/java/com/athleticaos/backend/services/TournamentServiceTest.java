@@ -8,11 +8,20 @@ import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.OrganisationRepository;
 import com.athleticaos.backend.repositories.SeasonRepository;
 import com.athleticaos.backend.repositories.TournamentRepository;
+import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.repositories.TournamentTeamRepository;
 import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.services.impl.TournamentServiceImpl;
 import com.athleticaos.backend.repositories.TeamRepository;
-import com.athleticaos.backend.repositories.TournamentPlayerRepository;
+import com.athleticaos.backend.repositories.TournamentStageRepository;
+import com.athleticaos.backend.entities.TournamentStage;
+import com.athleticaos.backend.entities.TournamentTeam;
+import com.athleticaos.backend.entities.Team;
+import com.athleticaos.backend.entities.TournamentCategory;
+import com.athleticaos.backend.enums.TournamentStageType;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,6 +54,8 @@ class TournamentServiceTest {
     private MatchRepository matchRepository;
     @Mock
     private TournamentTeamRepository tournamentTeamRepository;
+    @Mock
+    private TournamentStageRepository tournamentStageRepository;
     @Mock
     private AuditLogger auditLogger;
     @Mock
@@ -417,5 +429,104 @@ class TournamentServiceTest {
         assertEquals(2, results.size());
         assertEquals("T1", results.get(0).getName());
         assertEquals("T2", results.get(1).getName());
+    }
+
+    @Test
+    void deleteEmptyStage_removesEmptyKnockoutStage_andClosesDisplayOrderGap() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        Tournament t = Tournament.builder().id(tournamentId).build();
+        TournamentStage stageToRemove = TournamentStage.builder()
+                .id(stageId).tournament(t).name("Plate Final").displayOrder(2).stageType(TournamentStageType.FINAL).build();
+        TournamentStage stageBefore = TournamentStage.builder()
+                .id(UUID.randomUUID()).tournament(t).name("Cup Final").displayOrder(1).build();
+        TournamentStage stageAfter = TournamentStage.builder()
+                .id(UUID.randomUUID()).tournament(t).name("Bowl Final").displayOrder(3).build();
+
+        when(tournamentStageRepository.findById(stageId)).thenReturn(Optional.of(stageToRemove));
+        when(matchRepository.countByStageIdIncludingDeleted(stageId)).thenReturn(0L);
+        when(tournamentStageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId))
+                .thenReturn(new java.util.ArrayList<>(List.of(stageBefore, stageAfter)));
+
+        tournamentService.deleteEmptyStage(tournamentId, stageId);
+
+        verify(tournamentStageRepository).delete(stageToRemove);
+        assertEquals(1, stageBefore.getDisplayOrder());
+        assertEquals(2, stageAfter.getDisplayOrder()); // 3 decremented to 2
+        verify(tournamentStageRepository).saveAll(any());
+    }
+
+    @Test
+    void deleteEmptyStage_throws409WhenLiveMatchExists() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        Tournament t = Tournament.builder().id(tournamentId).build();
+        TournamentStage stage = TournamentStage.builder().id(stageId).tournament(t).name("Plate Final").build();
+
+        when(tournamentStageRepository.findById(stageId)).thenReturn(Optional.of(stage));
+        when(matchRepository.countByStageIdIncludingDeleted(stageId)).thenReturn(1L);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> tournamentService.deleteEmptyStage(tournamentId, stageId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertEquals("This stage still has matches. Delete or move them first.", ex.getReason());
+        verify(tournamentStageRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteEmptyStage_throws409WhenSoftDeletedMatchExists() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        Tournament t = Tournament.builder().id(tournamentId).build();
+        TournamentStage stage = TournamentStage.builder().id(stageId).tournament(t).name("Plate Final").build();
+
+        when(tournamentStageRepository.findById(stageId)).thenReturn(Optional.of(stage));
+        // Soft-deleted match row exists
+        when(matchRepository.countByStageIdIncludingDeleted(stageId)).thenReturn(1L);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> tournamentService.deleteEmptyStage(tournamentId, stageId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertEquals("This stage still has matches. Delete or move them first.", ex.getReason());
+        verify(tournamentStageRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteEmptyStage_throws409WhenPoolHasAssignedActiveTeams() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        TournamentCategory cat = TournamentCategory.builder().id(UUID.randomUUID()).name("Men").build();
+        Tournament t = Tournament.builder().id(tournamentId).build();
+        TournamentStage poolStage = TournamentStage.builder()
+                .id(stageId).tournament(t).name("Pool A").isGroupStage(true).stageType(TournamentStageType.POOL).category(cat).build();
+
+        TournamentTeam tt = TournamentTeam.builder()
+                .id(UUID.randomUUID()).tournament(t).category(cat).poolNumber("Pool A").isActive(true).deleted(false).build();
+
+        when(tournamentStageRepository.findById(stageId)).thenReturn(Optional.of(poolStage));
+        when(matchRepository.countByStageIdIncludingDeleted(stageId)).thenReturn(0L);
+        when(tournamentTeamRepository.findByTournamentId(tournamentId)).thenReturn(List.of(tt));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> tournamentService.deleteEmptyStage(tournamentId, stageId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertEquals("Teams are still assigned to this pool.", ex.getReason());
+        verify(tournamentStageRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteEmptyStage_throws404WhenStageBelongsToAnotherTournament() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID otherTournamentId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        Tournament otherT = Tournament.builder().id(otherTournamentId).build();
+        TournamentStage stage = TournamentStage.builder().id(stageId).tournament(otherT).name("Other Stage").build();
+
+        when(tournamentStageRepository.findById(stageId)).thenReturn(Optional.of(stage));
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> tournamentService.deleteEmptyStage(tournamentId, stageId));
+        assertTrue(ex.getMessage().contains("Stage not found for this tournament"));
+        verify(tournamentStageRepository, never()).delete(any());
     }
 }

@@ -4,6 +4,7 @@
   "journey1Tab": "Journey 1 · Build to launch",
   "journey2Tab": "Journey 2 · Grow the audience",
   "field": {
+    "aria": "Rugby field showing the {{journey}} route",
     "startPosts": "AthleticaOS start",
     "goalPosts": "Goal: {{goal}}",
     "ballAria": "Rugby ball showing current milestone: {{title}}",

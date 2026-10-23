@@ -1502,6 +1502,27 @@ public class BracketServiceImpl implements BracketService {
     }
 
     /**
+     * Generates all recognized placeholder labels that mean overall position n:
+     * "seed n", "seedn", "rank n", "ranked n", "position n", "#n", "<ordinal> overall".
+     */
+    public static List<String> generateSeedLabels(int n) {
+        if (n <= 0) {
+            return Collections.emptyList();
+        }
+        String ord = ordinal(n).toLowerCase(Locale.ROOT);
+        List<String> labels = new ArrayList<>();
+        labels.add("seed " + n);
+        labels.add("seed" + n);
+        labels.add("rank " + n);
+        labels.add("ranked " + n);
+        labels.add("position " + n);
+        labels.add("#" + n);
+        labels.add("# " + n);
+        labels.add(ord + " overall");
+        return labels;
+    }
+
+    /**
      * Generates all recognized placeholder labels for a given pool name and position,
      * including "<pool> <ordinal>", "<ordinal> <pool>", "<pool> #<n>", and winner/runner-up forms.
      */
@@ -1628,8 +1649,12 @@ public class BracketServiceImpl implements BracketService {
 
         Map<String, Team> teamBySeedLabel = new HashMap<>();
         for (int i = 0; i < ranked.size(); i++) {
-            teamBySeedLabel.put("seed " + (i + 1), ranked.get(i).team);
-            teamBySeedLabel.put("seed" + (i + 1), ranked.get(i).team);
+            for (String label : generateSeedLabels(i + 1)) {
+                String normalized = normalizePlaceholder(label);
+                if (normalized != null) {
+                    teamBySeedLabel.put(normalized, ranked.get(i).team);
+                }
+            }
         }
 
         // Also resolve slots written as a pool position, e.g. "Pool A1", "Group A 1st", "Winner Pool A"

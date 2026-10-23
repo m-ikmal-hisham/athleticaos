@@ -233,5 +233,9 @@ export const tournamentService = {
 
     async deleteVenue(tournamentId: string, venueId: string): Promise<void> {
         await axios.delete(`/tournaments/${tournamentId}/venues/${venueId}`);
+    },
+
+    async deleteStage(tournamentId: string, stageId: string): Promise<void> {
+        await axios.delete(`/tournaments/${tournamentId}/stages/${stageId}`);
     }
 };

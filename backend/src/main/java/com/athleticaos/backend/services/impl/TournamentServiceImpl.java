@@ -26,11 +26,16 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import com.athleticaos.backend.enums.TournamentStageType;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -1433,5 +1438,58 @@ public class TournamentServiceImpl implements TournamentService {
                 .limit(6)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteEmptyStage(UUID tournamentId, UUID stageId) {
+        TournamentStage stage = tournamentStageRepository.findById(stageId)
+                .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+
+        if (stage.getTournament() == null || !stage.getTournament().getId().equals(tournamentId)) {
+            throw new EntityNotFoundException("Stage not found for this tournament");
+        }
+
+        if (matchRepository.countByStageIdIncludingDeleted(stageId) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This stage still has matches. Delete or move them first.");
+        }
+
+        boolean isGroupOrPool = Boolean.TRUE.equals(stage.getIsGroupStage()) || stage.getStageType() == TournamentStageType.POOL;
+        if (isGroupOrPool) {
+            List<com.athleticaos.backend.entities.TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
+            UUID stageCatId = stage.getCategory() != null ? stage.getCategory().getId() : null;
+            boolean hasAssignedTeams = teams.stream()
+                    .filter(tt -> tt.isActive() && !tt.isDeleted())
+                    .filter(tt -> stage.getName() != null && stage.getName().equals(tt.getPoolNumber()))
+                    .anyMatch(tt -> {
+                        UUID ttCatId = tt.getCategory() != null ? tt.getCategory().getId() : null;
+                        return Objects.equals(stageCatId, ttCatId);
+                    });
+            if (hasAssignedTeams) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Teams are still assigned to this pool.");
+            }
+        }
+
+        Integer removedOrder = stage.getDisplayOrder();
+        tournamentStageRepository.delete(stage);
+
+        if (removedOrder != null) {
+            List<TournamentStage> remaining = tournamentStageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
+            List<TournamentStage> toUpdate = new ArrayList<>();
+            for (TournamentStage s : remaining) {
+                if (s.getDisplayOrder() != null && s.getDisplayOrder() > removedOrder) {
+                    s.setDisplayOrder(s.getDisplayOrder() - 1);
+                    toUpdate.add(s);
+                }
+            }
+            if (!toUpdate.isEmpty()) {
+                tournamentStageRepository.saveAll(toUpdate);
+            }
+        }
+
+        String actor = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null
+                ? org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName()
+                : "system";
+        log.info("Stage '{}' ({}) in tournament {} removed by user {}", stage.getName(), stageId, tournamentId, actor);
     }
 }

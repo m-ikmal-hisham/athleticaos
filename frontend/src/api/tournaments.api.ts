@@ -39,3 +39,7 @@ export const updateTournamentVenue = (idOrSlug: string, venueId: string, data: i
 
 export const deleteTournamentVenue = (idOrSlug: string, venueId: string) =>
     api.delete(`/tournaments/${idOrSlug}/venues/${venueId}`);
+
+export const deleteStage = (idOrSlug: string, stageId: string) =>
+    api.delete(`/tournaments/${idOrSlug}/stages/${stageId}`);
+
