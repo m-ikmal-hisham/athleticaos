@@ -724,222 +724,78 @@ VITE_ENV=staging
 ## Phase D: CI/CD Automation — Detailed Steps
 
 > [!NOTE]
-> Only set up CI/CD **after** Phase C (manual deploy) is validated and working. CI/CD automates what you already know works.
-
-> **Last updated**: 2026-03-13
+> Deploys operate **without SSH and without AWS access keys**. GitHub Actions authenticates with AWS via OpenID Connect (OIDC) assuming IAM role `athleticaos-gha-staging` in region `ap-southeast-5`. Backend images are pushed to Amazon ECR, and the deployment is executed on the EC2 instance via AWS Systems Manager (SSM `AWS-RunShellScript`). SSH is no longer used by CI/CD deploys.
 
 ### D1. GitHub Actions — Backend Workflow
 
-Create `.github/workflows/deploy-backend-staging.yml`:
+File: `.github/workflows/deploy-backend-staging.yml`
 
-> [!IMPORTANT]
-> **Why no separate JDK/Maven step?** Your Dockerfile is multi-stage — it includes JDK 21 and runs `mvnw package` inside the Docker build. GitHub Actions only needs Docker, which comes preinstalled on `ubuntu-latest`.
-
-```yaml
-name: Deploy Backend to Staging
-
-on:
-  push:
-    branches: [staging]
-    paths:
-      - 'backend/**'
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        working-directory: backend
-        run: docker build -t athleticaos-backend:${{ github.sha }} .
-
-      - name: Save Docker image
-        run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
-
-      - name: Copy image to EC2
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: backend-image.tar.gz
-          target: /home/ec2-user/
-
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Load the new Docker image
-            docker load < /home/ec2-user/backend-image.tar.gz
-
-            # Stop and remove old container (|| true prevents error if not running)
-            docker stop athleticaos-backend || true
-            docker rm athleticaos-backend || true
-
-            # Start new container with existing env file and uploads volume
-            docker run -d \
-              --name athleticaos-backend \
-              --restart unless-stopped \
-              --env-file /home/ec2-user/athleticaos/backend/.env.staging \
-              -p 8080:8080 \
-              -v athleticaos-uploads:/app/uploads \
-              athleticaos-backend:${{ github.sha }}
-
-            # Health check with retries (Spring Boot + Flyway can take 30-60s)
-            echo "Waiting for backend to start..."
-            for i in $(seq 1 9); do
-              if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
-                echo "Backend health check passed on attempt $i!"
-                break
-              fi
-              if [ $i -eq 9 ]; then
-                echo "Health check failed after 9 attempts (90s). Checking logs..."
-                docker logs --tail 30 athleticaos-backend
-                exit 1
-              fi
-              echo "Attempt $i/9 failed, retrying in 10s..."
-              sleep 10
-            done
-
-            # Clean up
-            rm /home/ec2-user/backend-image.tar.gz
-
-            # Remove old Docker images (keep only the latest 2)
-            docker image prune -f
-            echo "Deployment complete!"
-```
+- Triggers on push to `staging` affecting `backend/**` or the workflow itself, or via manual `workflow_dispatch`.
+- Runs unit and integration tests (skipped if a rollback `image_tag` is specified).
+- Assumes AWS OIDC role (`athleticaos-gha-staging`) and logs in to Amazon ECR.
+- Builds an `amd64` container image and pushes to Amazon ECR (`athleticaos-backend:staging-${{ github.sha }}`).
+- Sends an SSM `AWS-RunShellScript` command to EC2 instance `i-0723625b6c7ca52bf`:
+  - Prunes old images/containers to reclaim disk space before pulling.
+  - Pulls the image from ECR.
+  - Restarts `athleticaos-backend` container with identical parameters (`-p 127.0.0.1:8080:8080`, `.env.staging`, `athleticaos-uploads` volume).
+  - Validates health endpoint (`http://localhost:8080/actuator/health`) over 9 retries (90s).
+  - Traps `EXIT` to clean up credentials with `docker logout`.
+- Polls `aws ssm get-command-invocation` every 10s (up to 10 minutes) until completion and reports stdout/stderr.
 
 ### D2. GitHub Actions — Frontend Workflow
 
-Create `.github/workflows/deploy-frontend-staging.yml`:
+File: `.github/workflows/deploy-frontend-staging.yml`
 
-> [!WARNING]
-> The previous version of this guide used `jakejarvis/s3-sync-action` — that action has been **archived** (deprecated Jan 2025). The workflow below uses the official `aws-actions/configure-aws-credentials` + native AWS CLI instead.
+- Runs frontend lint gate (`npm run lint:ci`).
+- Builds frontend for staging (`npm run build -- --mode staging`) and checks `noindex, nofollow` robots tag.
+- Assumes AWS OIDC role via `aws-actions/configure-aws-credentials@v6`.
+- Syncs hashed assets to S3 bucket `athleticaos-staging-frontend-my` with immutable 1-year cache headers.
+- Syncs root HTML/assets with `--delete` and `no-cache`.
+- Invalidates CloudFront distribution `E2RZUY7LEUN900`.
 
-```yaml
-name: Deploy Frontend to Staging
+### D3. GitHub Environment Variables to Configure
 
-on:
-  push:
-    branches: [staging]
-    paths:
-      - 'frontend/**'
+Go to [**GitHub Repo → Settings → Environments → staging → Environment variables**](https://github.com/m-ikmal-hisham/athleticaos/settings/environments) and configure these **6 variables** (no secrets required for CI/CD deploys):
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+| Variable | Value | Description |
+|---|---|---|
+| `AWS_ROLE_ARN` | `arn:aws:iam::834517082662:role/athleticaos-gha-staging` | IAM role assumed via GitHub OIDC |
+| `AWS_REGION` | `ap-southeast-5` | AWS Region (Malaysia) |
+| `EC2_INSTANCE_ID` | `i-0723625b6c7ca52bf` | EC2 instance running backend container |
+| `ECR_REPOSITORY` | `athleticaos-backend` | Amazon ECR repository for backend images |
+| `STAGING_S3_BUCKET` | `athleticaos-staging-frontend-my` | S3 bucket hosting frontend static assets |
+| `STAGING_CF_DISTRIBUTION_ID` | `E2RZUY7LEUN900` | CloudFront distribution serving staging frontend |
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build for staging
-        working-directory: frontend
-        run: npm run build -- --mode staging
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Deploy to S3
-        run: aws s3 sync frontend/dist/ s3://${{ secrets.STAGING_S3_BUCKET }} --delete
-
-      - name: Invalidate CloudFront cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.STAGING_CF_DISTRIBUTION_ID }} \
-            --paths "/*"
-          echo "CloudFront invalidation created! Changes will be visible within 1-2 minutes."
-```
-
-### D3. GitHub Secrets to Configure
-
-Go to [**GitHub Repo → Settings → Secrets → Actions**](https://github.com/m-ikmal-hisham/athleticaos/settings/secrets/actions) and add these **7 secrets**:
-
-| Secret | Value | Where to find it |
-|--------|-------|-------------------|
-| `EC2_HOST` | EC2 Elastic IP (e.g., `13.229.x.x`) | AWS Console → EC2 → Instances → Elastic IP |
-| `EC2_SSH_KEY` | Entire contents of your `.pem` key file | `cat ~/Downloads/athleticaos-staging-backend.pem \| pbcopy` → paste |
-| `AWS_ACCESS_KEY_ID` | From IAM user `athleticaos-deployer` (B1) | AWS Console → IAM → Users → Security credentials |
-| `AWS_SECRET_ACCESS_KEY` | Paired with the access key ID above | Same as above |
-| `AWS_REGION` | e.g., `ap-southeast-1` | Your AWS region |
-| `STAGING_S3_BUCKET` | `athleticaos-staging-frontend` | AWS Console → S3 → Buckets |
-| `STAGING_CF_DISTRIBUTION_ID` | e.g., `E1A2B3C4D5E6F7` | AWS Console → CloudFront → Distributions |
-
-> [!CAUTION]
-> **For `EC2_SSH_KEY`**: Include the **entire** file contents including `-----BEGIN RSA PRIVATE KEY-----` and `-----END RSA PRIVATE KEY-----`. Use `pbcopy` as shown above to avoid missing characters.
+> [!NOTE]
+> `EC2_SSH_KEY`, `EC2_HOST`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` are **no longer used** by staging deploys. SSH port 22 does not need to be accessible to GitHub Actions.
 
 ### D4. Test CI/CD Pipeline
 
-#### Step 1: Commit and push workflow files
+#### Step 1: Trigger backend workflow
+Push a commit modifying `backend/` or run the workflow manually via GitHub Actions console:
+**Actions → Deploy Backend to Staging → Run workflow**.
 
-🍎 **Run on your Mac Terminal:**
-```bash
-cd ~/Developer/athleticaos
-git add .github/workflows/deploy-backend-staging.yml .github/workflows/deploy-frontend-staging.yml
-git commit -m "ci: add GitHub Actions workflows for staging deployment"
-git push origin staging
+Monitor the deploy step in GitHub Actions:
+```
+Sending SSM command to instance i-0723625b6c7ca52bf...
+SSM Command ID: <command-id>
+Waiting for command execution to complete...
+Poll attempt 1/60: Status=InProgress
+...
+Command finished with status: Success
+--- StandardOutputContent ---
+==> Authenticating Docker to ECR...
+==> Cleaning up disk space...
+==> Pulling image...
+==> Stopping and removing old container...
+==> Starting new container...
+==> Waiting for backend health check...
+Backend health check passed on attempt 2!
+==> Pruning dangling images...
+==> Deployment complete!
 ```
 
-> [!NOTE]
-> This push only adds `.github/` files — neither workflow will trigger since no `backend/` or `frontend/` files changed.
-
-#### Step 2: Test frontend deployment
-
-🍎 **Run on your Mac Terminal:**
-```bash
-echo "<!-- CI/CD test $(date +%Y%m%d%H%M%S) -->" >> frontend/index.html
-git add frontend/index.html
-git commit -m "test: trigger frontend CI/CD pipeline"
-git push origin staging
-```
-
-Monitor at: https://github.com/m-ikmal-hisham/athleticaos/actions
-
-#### Step 3: Test backend deployment
-
-🍎 **Run on your Mac Terminal:**
-```bash
-echo "" >> backend/src/main/resources/application.yml
-git add backend/src/main/resources/application.yml
-git commit -m "test: trigger backend CI/CD pipeline"
-git push origin staging
-```
-
-Monitor at: https://github.com/m-ikmal-hisham/athleticaos/actions — the "Deploy on EC2" step should show:
-```
-Backend health check passed!
-Deployment complete!
-```
-
-#### Step 4: Verify both deployments
-
-🍎 **Run on your Mac Terminal:**
+#### Step 2: Verify deployments
 ```bash
 # Frontend
 open https://staging.athleticaos.com
@@ -949,30 +805,33 @@ curl https://staging-api.athleticaos.com/actuator/health
 # Expected: {"status":"UP"}
 ```
 
-#### Step 5: Clean up test commits
-
-```bash
-# Remove the test lines from frontend/index.html and backend application.yml
-git add -A && git commit -m "chore: clean up CI/CD test changes" && git push origin staging
-```
-
 ---
 
 ## Rollback Plan
 
-### Backend
+### Backend Rollback via GitHub Actions (Recommended)
+1. Navigate to **Actions → Deploy Backend to Staging → Run workflow**.
+2. In the `image_tag` field, enter the target tag from Amazon ECR (e.g. `staging-abc1234567890abcdef1234567890abcdef12345`).
+3. Run the workflow. This bypasses the unit tests and build step, directly invoking SSM on EC2 to pull and redeploy that specific container tag.
+
+### Backend Rollback via AWS Systems Manager (CLI fallback)
+Run `aws ssm send-command` directly from terminal:
 ```bash
-docker stop athleticaos-backend && docker rm athleticaos-backend
-docker run -d --name athleticaos-backend --env-file .env.staging -p 8080:8080 athleticaos-backend:previous
+aws ssm send-command \
+  --region ap-southeast-5 \
+  --document-name "AWS-RunShellScript" \
+  --instance-ids i-0723625b6c7ca52bf \
+  --parameters 'commands=["docker stop athleticaos-backend || true","docker rm athleticaos-backend || true","docker run -d --name athleticaos-backend --restart unless-stopped --env-file /home/ec2-user/athleticaos/backend/.env.staging -p 127.0.0.1:8080:8080 -v athleticaos-uploads:/app/uploads 834517082662.dkr.ecr.ap-southeast-5.amazonaws.com/athleticaos-backend:staging-<previous-sha>"]'
 ```
 
-### Frontend
+### Frontend Rollback
+Re-deploy the previous commit via GitHub Actions, or sync previous build artifacts:
 ```bash
-aws s3 sync ./dist-backup s3://athleticaos-staging-frontend --delete
-aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
+aws s3 sync ./dist-backup s3://athleticaos-staging-frontend-my --delete
+aws cloudfront create-invalidation --distribution-id E2RZUY7LEUN900 --paths "/*"
 ```
 
-### Database
+### Database Rollback
 ```bash
 aws rds restore-db-instance-from-db-snapshot \
   --db-instance-identifier athleticaos-staging-restored \
