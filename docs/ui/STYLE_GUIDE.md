@@ -33,6 +33,7 @@ If code and this guide disagree, the guide wins and the code is a migration item
 - [ ] No placeholder people ("John Doe"), companies, or numbers
 - [ ] No "Loading..." strings; use `Skeleton` or `Spinner`
 - [ ] Icons from Phosphor only, `duotone` by default (set once in IconContext); `fill` only for active/selected state and small solid status marks; `bold` only below 16px
+- [ ] Animated backgrounds only through the shared journey/background engine
 
 ---
 
@@ -192,7 +193,8 @@ easing `cubic-bezier(0.2, 0, 0, 1)`. Wrap all non-essential animation in
 shimmer. Two named exceptions only:
 1. **tab press:** scale to `0.96` for 150ms on tab-bar items only.
 2. **tab bar minimise:** the bar/accessory morph on scroll, 300ms, standard easing.
-Both exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
+3. **animated background (pilot: /journey only):** particle pitch background with strict opacity caps (markings ≤ 35%, grass ≤ 12% light / 18% dark), idle drift ≤ 4 px/s screen, subtle camera sway ≤ 1°, DPR ≤ 1.5, pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion` or `saveData`.
+All three exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
 
 **Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
 
