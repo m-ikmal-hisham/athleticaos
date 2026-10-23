@@ -441,11 +441,12 @@ export function TournamentMatches({ tournamentId, tournamentSlug, canManage = fa
                     )}
                     {canManage && matches.length > 0 && (
                         <div className="relative">
+                            {/* Outlined like Actions: destructive but not the page's main action (New Match is) */}
                             <Button
-                                variant="danger"
+                                variant="secondary"
                                 size="sm"
                                 onClick={() => setClearScheduleStep('CONFIRM')}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 !text-[var(--accent-text)]"
                             >
                                 <Trash className="w-4 h-4" />
                                 Clear Schedule
@@ -486,7 +487,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug, canManage = fa
                         </div>
                     )}
                     {canManage && (
-                        <Button onClick={openCreateModal} className="flex items-center gap-2">
+                        <Button size="sm" onClick={openCreateModal} className="flex items-center gap-2">
                             <Plus className="w-4 h-4" />
                             New Match
                         </Button>

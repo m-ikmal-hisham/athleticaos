@@ -341,12 +341,14 @@ export default function TournamentDetail() {
                                 className={`
                                     min-w-0 py-2.5 px-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 whitespace-nowrap transition-all duration-300
                                     ${isActive
-                                        ? 'bg-blue-500/10 dark:bg-red-500/20 text-navy dark:text-navy-tint dark:text-red-400 shadow-sm ring-1 ring-blue-500/20 dark:ring-red-500/20'
-                                        : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-slate-200'
+                                        // Selected is navy in both themes; crimson is reserved for LIVE / destructive (STYLE_GUIDE §2)
+                                        ? 'bg-navy/10 dark:bg-white/10 text-navy dark:text-white shadow-sm ring-1 ring-navy/20 dark:ring-white/15'
+                                        // The bar itself is translucent white, so a white hover is invisible in light mode
+                                        : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black/90 dark:hover:text-white'
                                     }
                                 `}
                             >
-                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-navy dark:text-navy-tint' : ''}`} />
+                                <Icon className="w-4 h-4 shrink-0" weight={isActive ? 'fill' : 'regular'} />
                                 <span className="truncate">{tab.label}</span>
                             </button>
                         );
