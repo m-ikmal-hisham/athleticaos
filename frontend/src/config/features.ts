@@ -1,4 +1,4 @@
-export type FeatureKey = 'signup' | 'monetization' | 'federation' | 'analytics' | 'operations';
+export type FeatureKey = 'signup' | 'monetization' | 'federation' | 'analytics' | 'operations' | 'animatedBackground';
 
 /**
  * Feature flag checker.

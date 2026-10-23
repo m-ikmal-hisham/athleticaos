@@ -1,7 +1,15 @@
-import React, { useId, useMemo, useState, useEffect } from 'react';
+import React, { useId, useMemo, useState, useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import type { Journey, Milestone, SetPiece } from '@/content/journey';
+import {
+    getPitchMarkingLines,
+    generateDenseRoute,
+    project,
+    runDevFieldAssertions,
+    type CameraPreset,
+} from './fieldProjection';
+import { JourneyPitchCanvas } from './JourneyPitchCanvas';
 
 // ----------------------------------------------------------------------
 // Set-piece SVG glyphs (simple, crisp 16x16 icon map)
@@ -202,10 +210,11 @@ export function JourneyField({
     const { t: tJourney } = useTranslation('journey');
     const isDesktop = useIsLg();
     const prefersReducedMotion = usePrefersReducedMotion();
+    const fieldWrapperRef = useRef<HTMLDivElement>(null);
+
     const [focusedMilestoneId, setFocusedMilestoneId] = useState<string | null>(null);
-    // Hover in/out with a short grace period on leave, so the pointer sitting on a milestone's edge
-    // (or moving between neighbouring milestones) doesn't toggle the highlight every frame.
-    const leaveTimer = React.useRef<number | null>(null);
+    const leaveTimer = useRef<number | null>(null);
+
     const hoverMilestone = React.useCallback((id: string | null) => {
         if (leaveTimer.current !== null) {
             window.clearTimeout(leaveTimer.current);
@@ -217,9 +226,11 @@ export function JourneyField({
             leaveTimer.current = window.setTimeout(() => setFocusedMilestoneId(null), 80);
         }
     }, []);
+
     useEffect(() => () => {
         if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
     }, []);
+
     const [hasAnimatedBall, setHasAnimatedBall] = useState(false);
     const animId = useId();
 
@@ -245,84 +256,101 @@ export function JourneyField({
         return () => clearTimeout(timer);
     }, [journey.id]);
 
-    // Compute milestone coordinates along a gentle S-curve route
-    // Horizontal (desktop): 1000 x 480
-    // Vertical (mobile): 440 x 960
-    const coords = useMemo(() => {
-        const count = milestones.length;
-        return milestones.map((_, i) => {
-            const t = count <= 1 ? 0.5 : i / (count - 1);
-            if (isDesktop) {
-                // X: Start posts at 110, Goal posts at 890. Milestones spread from 170 to 830.
-                const x = 170 + t * (830 - 170);
-                // Y: Gentle oscillation around centerline 240
-                const y = 240 + Math.sin(t * Math.PI * 2.2) * 85;
-                return { x, y };
-            } else {
-                // Y: Start posts at 110, Goal posts at 850. Milestones spread from 180 to 780.
-                const y = 180 + t * (780 - 180);
-                // X: Gentle oscillation around centerline 220
-                const x = 220 + Math.sin(t * Math.PI * 2.2) * 90;
-                return { x, y };
-            }
+    // Dev-only assertions check
+    useEffect(() => {
+        runDevFieldAssertions();
+    }, []);
+
+    // Active camera preset
+    const preset: CameraPreset = isDesktop ? 'sideline' : 'behindPosts';
+
+    // Projected ground markings
+    const projectedMarkings = useMemo(() => {
+        const groundLines = getPitchMarkingLines();
+        return groundLines.map((line) => {
+            const p1 = project(line.x1, line.z1, preset);
+            const p2 = project(line.x2, line.z2, preset);
+            return {
+                id: line.id,
+                type: line.type,
+                isTryLine: Boolean(line.isTryLine),
+                x1: p1.x,
+                y1: p1.y,
+                x2: p2.x,
+                y2: p2.y,
+            };
         });
-    }, [milestones, isDesktop]);
+    }, [preset]);
 
-    // Start & Goal posts coordinates
-    const startPosts = useMemo(() => {
-        return isDesktop ? { x: 110, y: 240 } : { x: 220, y: 110 };
-    }, [isDesktop]);
+    // Halfway centre spot
+    const centreSpot = useMemo(() => project(60, 35, preset), [preset]);
 
-    const goalPosts = useMemo(() => {
-        return isDesktop ? { x: 890, y: 240 } : { x: 220, y: 850 };
-    }, [isDesktop]);
+    // Dense route generation (shared by SVG path, milestone positions & ball travel)
+    const routeData = useMemo(() => {
+        return generateDenseRoute(milestones.length, preset);
+    }, [milestones.length, preset]);
 
-    // Build SVG path segments between milestones
-    // 0: startPosts -> m[0]
-    // i: m[i-1] -> m[i]
-    // last: m[n-1] -> goalPosts
+    const coords = routeData.milestonePoints;
+    const startPosts = routeData.startPost;
+    const goalPosts = routeData.goalPost;
+
+    // Segmented paths for route styling & hover highlighting
     const pathSegments = useMemo(() => {
         const segments: { path: string; fromIdx: number; toIdx: number }[] = [];
         if (coords.length === 0) return segments;
 
-        // Start to first
+        // 0: Start post to first milestone
+        const firstM = coords[0];
+        let dStart = `M ${startPosts.x.toFixed(2)} ${startPosts.y.toFixed(2)}`;
+        for (let i = 0; i <= firstM.sampleIndex; i++) {
+            const s = routeData.samples[i];
+            dStart += ` L ${s.x.toFixed(2)} ${s.y.toFixed(2)}`;
+        }
         segments.push({
-            path: `M ${startPosts.x} ${startPosts.y} Q ${(startPosts.x + coords[0].x) / 2} ${(startPosts.y + coords[0].y) / 2} ${coords[0].x} ${coords[0].y}`,
+            path: dStart,
             fromIdx: -1,
             toIdx: 0,
         });
 
         // Between consecutive milestones
-        for (let i = 0; i < coords.length - 1; i++) {
-            const p0 = coords[i];
-            const p1 = coords[i + 1];
-            const midX = (p0.x + p1.x) / 2;
-            const midY = (p0.y + p1.y) / 2;
+        for (let m = 0; m < coords.length - 1; m++) {
+            const mFrom = coords[m];
+            const mTo = coords[m + 1];
+            let dSeg = `M ${mFrom.x.toFixed(2)} ${mFrom.y.toFixed(2)}`;
+            for (let i = mFrom.sampleIndex + 1; i <= mTo.sampleIndex; i++) {
+                const s = routeData.samples[i];
+                dSeg += ` L ${s.x.toFixed(2)} ${s.y.toFixed(2)}`;
+            }
             segments.push({
-                path: `M ${p0.x} ${p0.y} Q ${midX} ${midY} ${p1.x} ${p1.y}`,
-                fromIdx: i,
-                toIdx: i + 1,
+                path: dSeg,
+                fromIdx: m,
+                toIdx: m + 1,
             });
         }
 
-        // Last to goal
-        const last = coords[coords.length - 1];
+        // Last milestone to goal post
+        const lastM = coords[coords.length - 1];
+        let dEnd = `M ${lastM.x.toFixed(2)} ${lastM.y.toFixed(2)}`;
+        for (let i = lastM.sampleIndex + 1; i < routeData.samples.length; i++) {
+            const s = routeData.samples[i];
+            dEnd += ` L ${s.x.toFixed(2)} ${s.y.toFixed(2)}`;
+        }
+        dEnd += ` L ${goalPosts.x.toFixed(2)} ${goalPosts.y.toFixed(2)}`;
         segments.push({
-            path: `M ${last.x} ${last.y} Q ${(last.x + goalPosts.x) / 2} ${(last.y + goalPosts.y) / 2} ${goalPosts.x} ${goalPosts.y}`,
+            path: dEnd,
             fromIdx: coords.length - 1,
             toIdx: coords.length,
         });
 
         return segments;
-    }, [coords, startPosts, goalPosts]);
+    }, [coords, startPosts, goalPosts, routeData]);
 
-    // Current ball position
+    // Current ball resting position
     const restPos = useMemo(() => {
-        return coords[currentMilestoneIndex] || (isDesktop ? { x: 500, y: 240 } : { x: 220, y: 480 });
-    }, [coords, currentMilestoneIndex, isDesktop]);
+        return coords[currentMilestoneIndex] || { x: centreSpot.x, y: centreSpot.y };
+    }, [coords, currentMilestoneIndex, centreSpot]);
 
-    // Ball travels once from our posts along the route to the current milestone (≤ 1.2 s).
-    // requestAnimationFrame + linear interpolation, so no CSS offset-path is needed (works in all Safari versions).
+    // Ball travel along dense route samples
     const [travel, setTravel] = useState(1);
     useEffect(() => {
         if (prefersReducedMotion) {
@@ -344,23 +372,25 @@ export function JourneyField({
 
     const ballPos = useMemo(() => {
         if (travel >= 1) return restPos;
-        const startPost = isDesktop ? { x: 110, y: 240 } : { x: 220, y: 110 };
-        const pts = [startPost, ...coords.slice(0, currentMilestoneIndex + 1)];
-        const seg = pts.slice(1).map((q, i) => Math.hypot(q.x - pts[i].x, q.y - pts[i].y));
-        const total = seg.reduce((s, l) => s + l, 0);
-        if (total === 0) return restPos;
-        let d = travel * total;
-        for (let i = 0; i < seg.length; i++) {
-            if (d <= seg[i]) {
-                const r = seg[i] === 0 ? 0 : d / seg[i];
-                return { x: pts[i].x + (pts[i + 1].x - pts[i].x) * r, y: pts[i].y + (pts[i + 1].y - pts[i].y) * r };
-            }
-            d -= seg[i];
-        }
-        return restPos;
-    }, [travel, restPos, coords, currentMilestoneIndex, isDesktop]);
+        const targetSampleIndex = coords[currentMilestoneIndex]?.sampleIndex ?? 0;
+        if (targetSampleIndex <= 0) return restPos;
 
-    // Ball rotation towards hovered milestone (≤ 15°, pass being lined up)
+        const floatIndex = travel * targetSampleIndex;
+        const baseIndex = Math.floor(floatIndex);
+        const frac = floatIndex - baseIndex;
+
+        const s0 = routeData.samples[baseIndex];
+        const s1 = routeData.samples[Math.min(targetSampleIndex, baseIndex + 1)];
+
+        if (!s0 || !s1) return restPos;
+
+        return {
+            x: s0.x + (s1.x - s0.x) * frac,
+            y: s0.y + (s1.y - s0.y) * frac,
+        };
+    }, [travel, restPos, coords, currentMilestoneIndex, routeData]);
+
+    // Ball rotation towards hovered milestone (<= 15 deg)
     const ballRotation = useMemo(() => {
         if (activeHoverIndex === null || activeHoverIndex === currentMilestoneIndex || prefersReducedMotion) {
             return 0;
@@ -370,7 +400,7 @@ export function JourneyField({
         const dx = target.x - ballPos.x;
         const dy = target.y - ballPos.y;
         let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
-        // Normalize angle to within [-15, 15] degrees relative to direction
+
         if (isDesktop) {
             if (deg > 180) deg -= 360;
             return Math.max(-15, Math.min(15, deg));
@@ -408,18 +438,23 @@ export function JourneyField({
             const nextMilestone = milestones[nextIndex];
             onSelectMilestone(nextMilestone);
             setFocusedMilestoneId(nextMilestone.id);
-            // Programmatically focus next button
             const btn = document.getElementById(`milestone-btn-${nextMilestone.id}`);
             btn?.focus();
         }
     };
 
-    const viewBox = isDesktop ? '0 0 1000 480' : '0 0 440 960';
+    // ViewBox:
+    // Desktop: 0 0 1000 480
+    // Mobile: cropped frame "0 240 440 600"
+    const viewBox = isDesktop ? '0 0 1000 480' : '0 240 440 600';
 
     return (
-        <div className="relative w-full overflow-hidden rounded-xl bg-surface-card border border-line-subtle shadow-sm select-none">
-            {/* Background layer for Three.js D6b pitch background mounting */}
-            <div data-journey-bg className="absolute inset-0 pointer-events-none z-0" aria-hidden="true" />
+        <div
+            ref={fieldWrapperRef}
+            className="relative w-full overflow-hidden rounded-xl bg-surface-card border border-line-subtle shadow-sm select-none"
+        >
+            {/* Background layer for Three.js pitch background mounting */}
+            <JourneyPitchCanvas isDesktop={isDesktop} fieldWrapperRef={fieldWrapperRef} />
 
             <svg
                 viewBox={viewBox}
@@ -436,116 +471,76 @@ export function JourneyField({
                 </defs>
 
                 {/* ---------------------------------------------------------- */}
-                {/* 1. Rugby Pitch Markings (Navy at low opacity ~0.14)        */}
+                {/* 1. Rugby Pitch Markings in Perspective                     */}
                 {/* ---------------------------------------------------------- */}
-                <g className="text-navy dark:text-navy-tint stroke-current pointer-events-none" opacity="0.14">
-                    {isDesktop ? (
-                        <>
-                            {/* Perimeter touchlines & dead-ball lines */}
-                            <rect x="40" y="40" width="920" height="400" fill="none" strokeWidth="2" />
-                            {/* Start try line (x=110) & Goal try line (x=890) */}
-                            <line x1="110" y1="40" x2="110" y2="440" strokeWidth="3" />
-                            <line x1="890" y1="40" x2="890" y2="440" strokeWidth="3" />
-                            {/* 22m lines (x=270, x=730) */}
-                            <line x1="270" y1="40" x2="270" y2="440" strokeWidth="1.5" />
-                            <line x1="730" y1="40" x2="730" y2="440" strokeWidth="1.5" />
-                            {/* Halfway line (x=500) */}
-                            <line x1="500" y1="40" x2="500" y2="440" strokeWidth="2" />
-                            {/* 10m dashed lines (x=430, x=570) */}
-                            <line x1="430" y1="40" x2="430" y2="440" strokeWidth="1.5" strokeDasharray="6 6" />
-                            <line x1="570" y1="40" x2="570" y2="440" strokeWidth="1.5" strokeDasharray="6 6" />
-                            {/* Halfway center spot */}
-                            <circle cx="500" cy="240" r="3" fill="currentColor" stroke="none" />
-                        </>
-                    ) : (
-                        <>
-                            {/* Perimeter touchlines & dead-ball lines */}
-                            <rect x="30" y="40" width="380" height="880" fill="none" strokeWidth="2" />
-                            {/* Start try line (y=110) & Goal try line (y=850) */}
-                            <line x1="30" y1="110" x2="410" y2="110" strokeWidth="3" />
-                            <line x1="30" y1="850" x2="410" y2="850" strokeWidth="3" />
-                            {/* 22m lines (y=270, y=690) */}
-                            <line x1="30" y1="270" x2="410" y2="270" strokeWidth="1.5" />
-                            <line x1="30" y1="690" x2="410" y2="690" strokeWidth="1.5" />
-                            {/* Halfway line (y=480) */}
-                            <line x1="30" y1="480" x2="410" y2="480" strokeWidth="2" />
-                            {/* 10m dashed lines (y=410, y=550) */}
-                            <line x1="30" y1="410" x2="410" y2="410" strokeWidth="1.5" strokeDasharray="6 6" />
-                            <line x1="30" y1="550" x2="410" y2="550" strokeWidth="1.5" strokeDasharray="6 6" />
-                            {/* Halfway center spot */}
-                            <circle cx="220" cy="480" r="3" fill="currentColor" stroke="none" />
-                        </>
-                    )}
+                <g className="pointer-events-none">
+                    {projectedMarkings.map((line) => {
+                        const isTry = line.isTryLine;
+                        return (
+                            <line
+                                key={line.id}
+                                x1={line.x1.toFixed(1)}
+                                y1={line.y1.toFixed(1)}
+                                x2={line.x2.toFixed(1)}
+                                y2={line.y2.toFixed(1)}
+                                stroke={isTry ? '#C1121F' : 'currentColor'}
+                                strokeWidth={isTry ? 3 : line.id.startsWith('touch') || line.id === 'halfway' ? 2 : 1.5}
+                                strokeDasharray={line.type === 'dashed' ? '6 6' : undefined}
+                                opacity={isTry ? 0.45 : 0.16}
+                                className={clsx(!isTry && 'text-navy dark:text-navy-tint')}
+                            />
+                        );
+                    })}
+
+                    {/* Halfway centre spot */}
+                    <circle
+                        cx={centreSpot.x.toFixed(1)}
+                        cy={centreSpot.y.toFixed(1)}
+                        r="3.5"
+                        fill="currentColor"
+                        opacity="0.22"
+                        className="text-navy dark:text-navy-tint"
+                    />
                 </g>
 
                 {/* ---------------------------------------------------------- */}
-                {/* 2. Goal Posts (Start Posts & Opposite Goal Posts)          */}
+                {/* 2. Goal Posts Upright (Vertical in Screen Space)           */}
                 {/* ---------------------------------------------------------- */}
                 {/* Start posts (AthleticaOS Brand Mark) */}
-                <g className="pointer-events-none" transform={`translate(${startPosts.x}, ${startPosts.y})`}>
-                    {isDesktop ? (
-                        <>
-                            {/* Uprights & crossbar */}
-                            <line x1="0" y1="-32" x2="0" y2="32" stroke="rgb(var(--brand))" strokeWidth="3.5" strokeLinecap="round" opacity="0.8" />
-                            <circle cx="0" cy="-28" r="3.5" fill="rgb(var(--brand))" />
-                            <circle cx="0" cy="28" r="3.5" fill="rgb(var(--brand))" />
-                            {/* Crossbar */}
-                            <line x1="0" y1="-16" x2="0" y2="16" stroke="rgb(var(--brand))" strokeWidth="2" />
-                            {/* AthleticaOS Mark Monogram badge */}
-                            <g transform="translate(-48, -12)">
-                                <rect width="36" height="24" rx="6" fill="rgb(var(--brand))" />
-                                <text x="18" y="16" textAnchor="middle" fill="#FFFFFF" fontSize="12" fontWeight="800" fontFamily="Oswald, sans-serif">
-                                    ATH
-                                </text>
-                            </g>
-                        </>
-                    ) : (
-                        <>
-                            {/* Vertical top posts */}
-                            <line x1="-32" y1="0" x2="32" y2="0" stroke="rgb(var(--brand))" strokeWidth="3.5" strokeLinecap="round" opacity="0.8" />
-                            <circle cx="-28" cy="0" r="3.5" fill="rgb(var(--brand))" />
-                            <circle cx="28" cy="0" r="3.5" fill="rgb(var(--brand))" />
-                            <g transform="translate(-18, -32)">
-                                <rect width="36" height="22" rx="6" fill="rgb(var(--brand))" />
-                                <text x="18" y="15" textAnchor="middle" fill="#FFFFFF" fontSize="11" fontWeight="800" fontFamily="Oswald, sans-serif">
-                                    ATH
-                                </text>
-                            </g>
-                        </>
-                    )}
+                <g className="pointer-events-none" transform={`translate(${startPosts.x.toFixed(1)}, ${startPosts.y.toFixed(1)})`}>
+                    {/* Uprights extending vertical screen space upwards */}
+                    <line x1="-12" y1="0" x2="-12" y2="-42" stroke="rgb(var(--brand))" strokeWidth="3" strokeLinecap="round" opacity="0.85" />
+                    <line x1="12" y1="0" x2="12" y2="-42" stroke="rgb(var(--brand))" strokeWidth="3" strokeLinecap="round" opacity="0.85" />
+                    <circle cx="-12" cy="-40" r="3" fill="rgb(var(--brand))" />
+                    <circle cx="12" cy="-40" r="3" fill="rgb(var(--brand))" />
+                    {/* Crossbar */}
+                    <line x1="-12" y1="-20" x2="12" y2="-20" stroke="rgb(var(--brand))" strokeWidth="2.2" />
+                    {/* AthleticaOS Mark Monogram badge */}
+                    <g transform="translate(-18, -32)">
+                        <rect width="36" height="20" rx="5" fill="rgb(var(--brand))" />
+                        <text x="18" y="14" textAnchor="middle" fill="#FFFFFF" fontSize="10.5" fontWeight="800" fontFamily="Oswald, sans-serif">
+                            ATH
+                        </text>
+                    </g>
                 </g>
 
-                {/* Goal posts (Opposite Try Line - Labelled with Journey Goal) */}
-                <g className="pointer-events-none" transform={`translate(${goalPosts.x}, ${goalPosts.y})`}>
-                    {isDesktop ? (
-                        <>
-                            <line x1="0" y1="-34" x2="0" y2="34" stroke="rgb(var(--brand))" strokeWidth="3.5" strokeLinecap="round" opacity="0.8" />
-                            <circle cx="0" cy="-30" r="3.5" fill="rgb(var(--brand))" />
-                            <circle cx="0" cy="30" r="3.5" fill="rgb(var(--brand))" />
-                            {/* Label card */}
-                            <g transform="translate(10, -18)">
-                                <rect width="56" height="36" rx="6" fill="rgb(var(--brand))" opacity="0.9" />
-                                <text x="28" y="16" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="700" fontFamily="Inter, sans-serif">
-                                    TRY LINE
-                                </text>
-                                <text x="28" y="27" textAnchor="middle" fill="#FFFFFF" fontSize="8" fontWeight="600" opacity="0.85">
-                                    GOAL
-                                </text>
-                            </g>
-                        </>
-                    ) : (
-                        <>
-                            <line x1="-34" y1="0" x2="34" y2="0" stroke="rgb(var(--brand))" strokeWidth="3.5" strokeLinecap="round" opacity="0.8" />
-                            <circle cx="-30" cy="0" r="3.5" fill="rgb(var(--brand))" />
-                            <circle cx="30" cy="0" r="3.5" fill="rgb(var(--brand))" />
-                            <g transform="translate(-40, 10)">
-                                <rect width="80" height="24" rx="6" fill="rgb(var(--brand))" opacity="0.9" />
-                                <text x="40" y="15" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="700" fontFamily="Inter, sans-serif">
-                                    GOAL: {journey.goal[lang]}
-                                </text>
-                            </g>
-                        </>
-                    )}
+                {/* Goal posts (Far Try Line - Labelled with Journey Goal) */}
+                <g className="pointer-events-none" transform={`translate(${goalPosts.x.toFixed(1)}, ${goalPosts.y.toFixed(1)})`}>
+                    <line x1="-12" y1="0" x2="-12" y2="-38" stroke="rgb(var(--brand))" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+                    <line x1="12" y1="0" x2="12" y2="-38" stroke="rgb(var(--brand))" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+                    <circle cx="-12" cy="-36" r="2.8" fill="rgb(var(--brand))" />
+                    <circle cx="12" cy="-36" r="2.8" fill="rgb(var(--brand))" />
+                    <line x1="-12" y1="-18" x2="12" y2="-18" stroke="rgb(var(--brand))" strokeWidth="2" />
+                    {/* Goal label badge */}
+                    <g transform="translate(-32, -34)">
+                        <rect width="64" height="22" rx="5" fill="rgb(var(--brand))" opacity="0.92" />
+                        <text x="32" y="11" textAnchor="middle" fill="#FFFFFF" fontSize="8.5" fontWeight="700" fontFamily="Inter, sans-serif">
+                            TRY LINE
+                        </text>
+                        <text x="32" y="19" textAnchor="middle" fill="#FFFFFF" fontSize="6.5" fontWeight="600" opacity="0.85">
+                            GOAL
+                        </text>
+                    </g>
                 </g>
 
                 {/* ---------------------------------------------------------- */}
@@ -554,7 +549,6 @@ export function JourneyField({
                 <g className="route-segments">
                     {pathSegments.map((seg, idx) => {
                         const isDone = seg.toIdx <= currentMilestoneIndex;
-                        // Check if this segment connects to the active hover/focused milestone
                         const isHighlighted =
                             activeHoverIndex !== null &&
                             activeHoverIndex !== currentMilestoneIndex &&
@@ -578,7 +572,7 @@ export function JourneyField({
                 </g>
 
                 {/* ---------------------------------------------------------- */}
-                {/* 4. Milestones Buttons & Nodes                              */}
+                {/* 4. Milestones Buttons & Nodes (Decision F)                 */}
                 {/* ---------------------------------------------------------- */}
                 {milestones.map((milestone, idx) => {
                     const pos = coords[idx];
@@ -589,7 +583,7 @@ export function JourneyField({
                     const isDone = milestone.status === 'done';
 
                     return (
-                        <g key={milestone.id} transform={`translate(${pos.x}, ${pos.y})`}>
+                        <g key={milestone.id} transform={`translate(${pos.x.toFixed(1)}, ${pos.y.toFixed(1)})`}>
                             {/* LIVE Pulse on Current milestone */}
                             {isCurrent && (
                                 <circle
@@ -598,8 +592,6 @@ export function JourneyField({
                                     r="24"
                                     fill={`url(#current-pulse-${animId})`}
                                     className="motion-safe:animate-ping opacity-75"
-                                    // Scale from the milestone's own centre: without fill-box the CSS scale runs from the
-                                    // SVG origin, so the ring sweeps across the field (corner artefact + hover flicker)
                                     style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
                                     pointerEvents="none"
                                 />
@@ -620,8 +612,7 @@ export function JourneyField({
                                 />
                             )}
 
-                            {/* Milestone as a native SVG button (no foreignObject: Safari repaints/hit-tests HTML
-                                inside SVG badly, which made hover flicker). role=button + tabIndex + Enter/Space. */}
+                            {/* Native SVG button group (no foreignObject) */}
                             <g
                                 id={`milestone-btn-${milestone.id}`}
                                 role="button"
@@ -657,43 +648,50 @@ export function JourneyField({
                                 <SetPieceIcon piece={milestone.setPiece} x={-8} y={-8} width={16} height={16} />
                             </g>
 
-                            {/* Hover/Focus Tooltip Pill (Date · Title) */}
+                            {/* Hover/Focus Tooltip Pill (Clamped strictly within active viewBox bounds) */}
                             {(isHovered || isSelected) && (() => {
-                                // Size the pill to its label (~6.4 units per character at 11px Inter + padding)
-                                // and keep it inside the field horizontally.
                                 const label = `${milestone.date} · ${milestone.title[lang]}`;
-                                const pillW = Math.min(Math.max(label.length * 6.4 + 24, 80), isDesktop ? 420 : 400);
+                                const pillW = Math.min(Math.max(label.length * 6.4 + 24, 80), isDesktop ? 420 : 380);
                                 const fieldW = isDesktop ? 1000 : 440;
+
+                                // Horizontal clamp inside field width with 8px margin
                                 const minDx = 8 - (pos.x - pillW / 2);
                                 const maxDx = fieldW - 8 - (pos.x + pillW / 2);
                                 const dx = Math.min(Math.max(0, minDx), maxDx);
+
+                                // Vertical placement clamp:
+                                // Desktop viewBox y in [0, 480]: place below if pos.y < 60
+                                // Mobile cropped viewBox y in [240, 840]: place below if pos.y < 300, above otherwise
+                                const placeBelow = isDesktop ? pos.y < 60 : pos.y < 300;
+                                const dy = placeBelow ? 32 : -32;
+
                                 return (
-                                <g
-                                    transform={`translate(${dx}, ${pos.y < 90 ? 32 : -32})`}
-                                    className="pointer-events-none"
-                                >
-                                    <rect
-                                        x={-pillW / 2}
-                                        y="-13"
-                                        width={pillW}
-                                        height="24"
-                                        rx="6"
-                                        fill="#0D1B2A"
-                                        stroke="rgba(255,255,255,0.2)"
-                                        strokeWidth="1"
-                                    />
-                                    <text
-                                        x="0"
-                                        y="3"
-                                        textAnchor="middle"
-                                        fill="#FFFFFF"
-                                        fontSize="11"
-                                        fontWeight="600"
-                                        fontFamily="Inter, sans-serif"
+                                    <g
+                                        transform={`translate(${dx.toFixed(1)}, ${dy})`}
+                                        className="pointer-events-none"
                                     >
-                                        {label}
-                                    </text>
-                                </g>
+                                        <rect
+                                            x={-pillW / 2}
+                                            y="-13"
+                                            width={pillW}
+                                            height="24"
+                                            rx="6"
+                                            fill="#0D1B2A"
+                                            stroke="rgba(255,255,255,0.2)"
+                                            strokeWidth="1"
+                                        />
+                                        <text
+                                            x="0"
+                                            y="3"
+                                            textAnchor="middle"
+                                            fill="#FFFFFF"
+                                            fontSize="11"
+                                            fontWeight="600"
+                                            fontFamily="Inter, sans-serif"
+                                        >
+                                            {label}
+                                        </text>
+                                    </g>
                                 );
                             })()}
                         </g>
@@ -704,25 +702,24 @@ export function JourneyField({
                 {/* 5. Rugby Ball (at current milestone with rotate <= 15°)     */}
                 {/* ---------------------------------------------------------- */}
                 <g
-                    transform={`translate(${ballPos.x}, ${ballPos.y})`}
+                    transform={`translate(${ballPos.x.toFixed(1)}, ${ballPos.y.toFixed(1)})`}
                     className="pointer-events-none"
                     role="img"
                     aria-label={tJourney('field.ballAria', { title: milestones[currentMilestoneIndex]?.title[lang] || '' })}
                 >
                     <g
-                        transform={`rotate(${ballRotation})`}
+                        transform={`rotate(${ballRotation.toFixed(1)})`}
                         className={clsx(
                             !prefersReducedMotion && 'motion-safe:transition-transform motion-safe:duration-200 ease-out'
                         )}
                     >
-                        {/* Offset ball slightly above milestone icon so both remain visible */}
+                        {/* Upright ball offset slightly above milestone icon */}
                         <g
-                            transform={isDesktop ? 'translate(0, -22)' : 'translate(22, 0)'}
+                            transform="translate(0, -22)"
                             className={clsx(
                                 !hasAnimatedBall && !prefersReducedMotion && 'motion-safe:animate-fade-in'
                             )}
                         >
-                            {/* Nested <svg> inside SVG needs explicit x/y/width/height (CSS w-/h- classes are ignored by Safari) */}
                             <RugbyBallSVG x={-16} y={-10} width={32} height={20} className="drop-shadow-md" />
                         </g>
                     </g>
