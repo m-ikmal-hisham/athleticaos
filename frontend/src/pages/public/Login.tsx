@@ -59,7 +59,11 @@ export const Login = () => {
 
         // Redirect to the page they tried to visit or role-based default
         const state = location.state as { from?: { pathname: string } } | null;
-        const from = state?.from?.pathname || defaultRoute;
+        const requested = state?.from?.pathname;
+        // Only same-site paths: "//host" or "/\host" would be read by the browser as another site
+        // (React Router 6 open-redirect advisory, fixed upstream only in v7).
+        const isSafePath = typeof requested === 'string' && /^\/(?![/\\])/.test(requested);
+        const from = isSafePath ? requested : defaultRoute;
         navigate(from, { replace: true });
     };
 
