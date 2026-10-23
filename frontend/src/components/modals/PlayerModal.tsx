@@ -8,7 +8,7 @@ import { fetchTeams } from "../../api/teams.api";
 import { fetchOrganisations, Organisation } from "../../api/organisations.api";
 import { assignPlayerToTeam } from "../../api/playerTeams.api";
 import toast from "react-hot-toast";
-import { calculateAge } from "../../utils/date";
+import { calculateAge, DOB_MIN, todayIsoDate } from "../../utils/date";
 
 interface Props {
     isOpen: boolean;
@@ -285,6 +285,8 @@ export function PlayerModal({ isOpen, mode, initialPlayer, onClose, onSubmit }: 
                                 type="date"
                                 value={dob}
                                 onChange={(e) => setDob(e.target.value)}
+                                min={DOB_MIN}
+                                max={todayIsoDate()}
                                 required
                                 className="input-base w-full"
                             />

@@ -242,6 +242,26 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void unreadableDateOfBirth_returns400WithPlainMessage() throws Exception {
+        // Production ref 48f1831f: a year typed as 21996 used to fall through to the 500 catch-all
+        mockMvc.perform(post("/test-errors/dob")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dob\":\"21996-07-27\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("Date of birth is not a valid date")));
+    }
+
+    @Test
+    void malformedJson_returns400NotUnexpectedError() throws Exception {
+        mockMvc.perform(post("/test-errors/dob")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dob\":"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(not(containsString("unexpected error"))));
+    }
+
     @RestController
     @RequestMapping("/test-errors")
     static class TestController {
@@ -254,6 +274,11 @@ public class GlobalExceptionHandlerTest {
         @PostMapping("/bulk")
         public String testBulk(@RequestBody @Valid List<TestDto> items) {
             return "ok: " + items.size();
+        }
+
+        @PostMapping("/dob")
+        public String testDob(@RequestBody DobDto body) {
+            return "ok: " + body.dob();
         }
 
         @GetMapping("/unique-violation-other")
@@ -369,5 +394,8 @@ public class GlobalExceptionHandlerTest {
         public void setFieldB(String fieldB) {
             this.fieldB = fieldB;
         }
+    }
+
+    public record DobDto(java.time.LocalDate dob) {
     }
 }
