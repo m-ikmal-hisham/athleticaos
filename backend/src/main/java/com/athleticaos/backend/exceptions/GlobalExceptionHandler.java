@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterErrors;
@@ -210,6 +211,30 @@ public class GlobalExceptionHandler {
                 request != null ? request.getRequestURI() : null,
                 LocalDateTime.now());
         return new ResponseEntity<>(error, headers, HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    /**
+     * The request body could not be read: malformed JSON, or a value of the wrong shape such as a
+     * date of birth typed as "21996-07-27". Without this the catch-all answered with a 500
+     * "unexpected error" and a support reference, for what is a typing mistake (prod ref 48f1831f).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+        String field = null;
+        if (ex.getCause() instanceof com.fasterxml.jackson.databind.JsonMappingException jme && !jme.getPath().isEmpty()) {
+            field = jme.getPath().get(jme.getPath().size() - 1).getFieldName();
+        }
+        String message;
+        if ("dob".equals(field)) {
+            message = "Date of birth is not a valid date. Use a real date with a 4-digit year.";
+        } else if (field != null) {
+            message = String.format("The value for '%s' is not valid.", field);
+        } else {
+            message = "The request could not be read. Check the values you entered and try again.";
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

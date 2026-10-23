@@ -14,7 +14,7 @@ public record PlayerCreateRequest(
 
         @NotBlank(message = "Gender is required") String gender, // MALE or FEMALE
 
-        @NotNull(message = "Date of birth is required") LocalDate dob,
+        @NotNull(message = "Date of birth is required") @jakarta.validation.constraints.Past(message = "Date of birth must be in the past") LocalDate dob,
 
         @NotBlank(message = "Nationality is required") String nationality,
 
