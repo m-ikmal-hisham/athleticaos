@@ -35,6 +35,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -658,5 +660,42 @@ public class TournamentSecurityRegressionTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tournamentId.toString()))
                 .andExpect(jsonPath("$.name").value("National Sevens Championship"));
+    }
+
+    @Test
+    @DisplayName("DELETE stage by user without role returns 403 Forbidden")
+    @WithMockUser(roles = "OFFICIAL")
+    void deleteEmptyStage_userWithoutRole_returns403() throws Exception {
+        UUID stageId = UUID.randomUUID();
+        mockMvc.perform(delete("/api/v1/tournaments/{id}/stages/{stageId}", tournamentId, stageId))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("DELETE stage by Club Admin outside organiser scope returns 404 (scope convention)")
+    @WithMockUser(roles = "CLUB_ADMIN")
+    void deleteEmptyStage_clubAdminOutOfScope_returns404() throws Exception {
+        UUID stageId = UUID.randomUUID();
+        when(tournamentService.getTournamentById(tournamentId)).thenReturn(tournamentResponse);
+        when(accessScopeService.isTournamentInScope(tournamentId)).thenReturn(false);
+
+        mockMvc.perform(delete("/api/v1/tournaments/{id}/stages/{stageId}", tournamentId, stageId))
+                .andExpect(status().isNotFound());
+
+        verify(tournamentService, never()).deleteEmptyStage(any(), any());
+    }
+
+    @Test
+    @DisplayName("DELETE stage by Club Admin in organiser scope succeeds with 200 OK")
+    @WithMockUser(roles = "CLUB_ADMIN")
+    void deleteEmptyStage_clubAdminInScope_returns200() throws Exception {
+        UUID stageId = UUID.randomUUID();
+        when(tournamentService.getTournamentById(tournamentId)).thenReturn(tournamentResponse);
+        when(accessScopeService.isTournamentInScope(tournamentId)).thenReturn(true);
+
+        mockMvc.perform(delete("/api/v1/tournaments/{id}/stages/{stageId}", tournamentId, stageId))
+                .andExpect(status().isOk());
+
+        verify(tournamentService).deleteEmptyStage(tournamentId, stageId);
     }
 }

@@ -460,7 +460,7 @@ export function JourneyField({
                 viewBox={viewBox}
                 className="relative z-10 w-full h-auto block"
                 role="img"
-                aria-label={`Rugby field showing ${journey.title[lang]} journey route`}
+                aria-label={tJourney('field.aria', { journey: journey.title[lang] })}
             >
                 <defs>
                     {/* Subtle pulse animation for LIVE / current milestone */}
@@ -532,15 +532,32 @@ export function JourneyField({
                     <circle cx="12" cy="-36" r="2.8" fill="rgb(var(--brand))" />
                     <line x1="-12" y1="-18" x2="12" y2="-18" stroke="rgb(var(--brand))" strokeWidth="2" />
                     {/* Goal label badge */}
-                    <g transform="translate(-32, -34)">
-                        <rect width="64" height="22" rx="5" fill="rgb(var(--brand))" opacity="0.92" />
-                        <text x="32" y="11" textAnchor="middle" fill="#FFFFFF" fontSize="8.5" fontWeight="700" fontFamily="Inter, sans-serif">
-                            TRY LINE
-                        </text>
-                        <text x="32" y="19" textAnchor="middle" fill="#FFFFFF" fontSize="6.5" fontWeight="600" opacity="0.85">
-                            GOAL
-                        </text>
-                    </g>
+                    {(() => {
+                        const goalText = tJourney('field.goalPosts', { goal: journey.goal[lang] });
+                        const pillWidth = Math.max(80, Math.min(220, goalText.length * 6.8 + 20));
+                        const pillHeight = 22;
+                        const halfWidth = pillWidth / 2;
+                        const screenX = goalPosts.x;
+                        const minX = isDesktop ? 10 : 10;
+                        const maxX = isDesktop ? 990 : 430;
+                        const clampedCenterOffset = Math.max(minX + halfWidth, Math.min(maxX - halfWidth, screenX)) - screenX;
+                        return (
+                            <g transform={`translate(${clampedCenterOffset - halfWidth}, -34)`}>
+                                <rect width={pillWidth} height={pillHeight} rx={11} fill="rgb(var(--brand))" opacity="0.92" />
+                                <text
+                                    x={halfWidth}
+                                    y={15}
+                                    textAnchor="middle"
+                                    fill="#FFFFFF"
+                                    fontSize="9.5"
+                                    fontWeight="700"
+                                    fontFamily="Inter, sans-serif"
+                                >
+                                    {goalText}
+                                </text>
+                            </g>
+                        );
+                    })()}
                 </g>
 
                 {/* ---------------------------------------------------------- */}

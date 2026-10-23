@@ -183,6 +183,17 @@ public class TournamentController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/{idOrSlug}/stages/{stageId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete an empty stage from a tournament")
+    public ResponseEntity<Void> deleteEmptyStage(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID stageId) {
+        UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
+        tournamentService.deleteEmptyStage(id, stageId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{id}/progress")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
     public ResponseEntity<Integer> progressTournament(@PathVariable UUID id) {

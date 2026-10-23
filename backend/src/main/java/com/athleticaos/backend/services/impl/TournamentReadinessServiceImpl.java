@@ -104,8 +104,12 @@ public class TournamentReadinessServiceImpl implements TournamentReadinessServic
             }
 
             for (int s = 1; s <= totalTeamsInCat; s++) {
-                validPlaceholders.add("seed " + s);
-                validPlaceholders.add("seed" + s);
+                for (String label : BracketServiceImpl.generateSeedLabels(s)) {
+                    String norm = BracketServiceImpl.normalizePlaceholder(label);
+                    if (norm != null) {
+                        validPlaceholders.add(norm);
+                    }
+                }
             }
 
             validPlaceholdersByCategory.put(catId, validPlaceholders);

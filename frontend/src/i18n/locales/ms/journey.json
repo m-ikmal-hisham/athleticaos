@@ -4,6 +4,7 @@
   "journey1Tab": "Perjalanan 1 · Bina hingga pelancaran",
   "journey2Tab": "Perjalanan 2 · Luaskan peminat",
   "field": {
+    "aria": "Padang ragbi yang menunjukkan laluan {{journey}}",
     "startPosts": "Permulaan AthleticaOS",
     "goalPosts": "Matlamat: {{goal}}",
     "ballAria": "Bola ragbi menandakan pencapaian semasa: {{title}}",

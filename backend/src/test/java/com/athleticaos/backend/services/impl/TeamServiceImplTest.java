@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +62,8 @@ class TeamServiceImplTest {
     private com.athleticaos.backend.audit.AuditLogger auditLogger;
     @Mock
     private com.athleticaos.backend.services.UserService userService;
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
 
     @InjectMocks
     private TeamServiceImpl teamService;
@@ -428,5 +432,38 @@ class TeamServiceImplTest {
 
         assertThat(options).hasSize(1);
         assertThat(options.get(0).getId()).isEqualTo(teamId);
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void getTeamCategoryCounts_mergesMixedCaseCategories() {
+        when(userService.getAccessibleOrgIdsForCurrentUser()).thenReturn(null);
+        jakarta.persistence.criteria.CriteriaBuilder cb = mock(jakarta.persistence.criteria.CriteriaBuilder.class);
+        jakarta.persistence.criteria.CriteriaQuery cq = mock(jakarta.persistence.criteria.CriteriaQuery.class);
+        jakarta.persistence.criteria.Root root = mock(jakarta.persistence.criteria.Root.class);
+        jakarta.persistence.criteria.Path path = mock(jakarta.persistence.criteria.Path.class);
+        jakarta.persistence.TypedQuery query = mock(jakarta.persistence.TypedQuery.class);
+
+        when(entityManager.getCriteriaBuilder()).thenReturn(cb);
+        when(cb.createQuery(Object[].class)).thenReturn(cq);
+        when(cq.from(Team.class)).thenReturn(root);
+        when(root.get("category")).thenReturn(path);
+        when(entityManager.createQuery(cq)).thenReturn(query);
+
+        List<Object[]> rows = List.of(
+                new Object[]{"Men", 3L},
+                new Object[]{"MEN", 5L},
+                new Object[]{"Women", 4L},
+                new Object[]{"  women ", 2L}
+        );
+        when(query.getResultList()).thenReturn(rows);
+
+        Map<String, Long> counts = teamService.getTeamCategoryCounts(null, null, null, null);
+
+        assertThat(counts.get("MEN")).isEqualTo(8L);
+        assertThat(counts.get("WOMEN")).isEqualTo(6L);
+        assertThat(counts.get("ALL")).isEqualTo(14L);
+        assertThat(counts).doesNotContainKey("Men");
+        assertThat(counts).doesNotContainKey("Women");
     }
 }
