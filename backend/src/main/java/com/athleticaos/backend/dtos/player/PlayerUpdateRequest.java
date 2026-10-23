@@ -10,7 +10,7 @@ public record PlayerUpdateRequest(
         String firstName,
         String lastName,
         String gender,
-        @JsonFormat(pattern = "yyyy-MM-dd") LocalDate dob,
+        @JsonFormat(pattern = "yyyy-MM-dd") @jakarta.validation.constraints.Past(message = "Date of birth must be in the past") LocalDate dob,
         String nationality,
 
         @Email(message = "Invalid email format") String email,

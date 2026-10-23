@@ -13,7 +13,7 @@ import { Gender, DominantSide } from '@/types';
 import { AddressInputs, AddressData } from '@/components/AddressInputs';
 import { ImageUpload } from '@/components/common/ImageUpload';
 import { showToast } from '@/lib/customToast';
-import { calculateAge } from '@/utils/date';
+import { calculateAge, DOB_MIN, isValidDob, todayIsoDate } from '@/utils/date';
 import { formatGender } from '@/utils/formatters';
 import { PossibleDuplicateDialog, PossibleDuplicateMatchItem } from '@/components/admin/persons/PossibleDuplicateDialog';
 
@@ -103,6 +103,11 @@ export const CreatePlayer = () => {
         if (!email.trim()) {
             setEmailError("Email is required.");
             showToast.error("Email is required.");
+            return;
+        }
+
+        if (!isValidDob(dob)) {
+            showToast.error("Date of birth is not a valid date. Check the year has 4 digits.");
             return;
         }
 
@@ -261,6 +266,8 @@ export const CreatePlayer = () => {
                                     type="date"
                                     value={dob}
                                     onChange={(e) => setDob(e.target.value)}
+                                    min={DOB_MIN}
+                                    max={todayIsoDate()}
                                     required
                                     className="input-base w-full"
                                     aria-label="Date of Birth"
