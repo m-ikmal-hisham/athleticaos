@@ -24,7 +24,7 @@ public class TournamentRosterController {
     private final com.athleticaos.backend.services.TournamentService tournamentService;
 
     @GetMapping("/{teamId}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TOURNAMENT_ADMIN', 'ROLE_TEAM_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<List<TournamentPlayerDTO>> getRoster(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID teamId) {
@@ -33,7 +33,7 @@ public class TournamentRosterController {
     }
 
     @PostMapping("/{teamId}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TOURNAMENT_ADMIN', 'ROLE_TEAM_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<List<TournamentPlayerDTO>> addPlayersToRoster(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID teamId,
@@ -44,7 +44,7 @@ public class TournamentRosterController {
     }
 
     @DeleteMapping("/{tournamentPlayerId}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TOURNAMENT_ADMIN', 'ROLE_TEAM_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<Void> removePlayerFromRoster(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID tournamentPlayerId) {
@@ -53,7 +53,7 @@ public class TournamentRosterController {
     }
 
     @PatchMapping("/{teamId}/players/{playerId}/number")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TOURNAMENT_ADMIN', 'ROLE_TEAM_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<TournamentPlayerDTO> updatePlayerNumber(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID teamId,
@@ -73,7 +73,7 @@ public class TournamentRosterController {
     }
 
     @GetMapping("/{teamId}/staff")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_TOURNAMENT_ADMIN', 'ROLE_TEAM_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<List<TournamentStaffDTO>> getTournamentStaff(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID teamId) {
@@ -82,7 +82,7 @@ public class TournamentRosterController {
     }
 
     @PostMapping("/{teamId}/staff")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<TournamentStaffDTO> addStaffToRoster(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID teamId,
@@ -94,7 +94,7 @@ public class TournamentRosterController {
     }
 
     @DeleteMapping("/staff/{tournamentStaffId}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_TEAM_MANAGER')")
     public ResponseEntity<Void> removeStaffFromRoster(
             @PathVariable String tournamentIdOrSlug,
             @PathVariable UUID tournamentStaffId) {

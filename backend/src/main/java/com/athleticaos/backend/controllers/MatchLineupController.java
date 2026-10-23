@@ -3,15 +3,19 @@ package com.athleticaos.backend.controllers;
 import com.athleticaos.backend.dtos.roster.LineupHintsDTO;
 import com.athleticaos.backend.dtos.roster.MatchLineupEntryDTO;
 import com.athleticaos.backend.dtos.roster.MatchLineupUpdateRequest;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.MatchLineupService;
 import com.athleticaos.backend.services.MatchService;
 import com.athleticaos.backend.services.TournamentRosterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.athleticaos.backend.security.MatchRoles;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,18 +23,26 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/matches/{matchIdOrSlug}/lineup")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Match Lineup", description = "Endpoints for match lineup management and hints")
 public class MatchLineupController {
 
     private final TournamentRosterService rosterService;
     private final MatchService matchService;
     private final MatchLineupService matchLineupService;
+    private final AccessScopeService accessScopeService;
 
     @GetMapping("/hints")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get lineup hints (eligibility, suspensions) for a match")
     public ResponseEntity<LineupHintsDTO> getLineupHints(@PathVariable String matchIdOrSlug) {
         UUID matchId = resolveMatchId(matchIdOrSlug);
+        if (!accessScopeService.canReadMatch(matchId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for lineup hints read outside accessible scope: userId={}, matchId={}",
+                    currentUserId, matchId);
+            throw new EntityNotFoundException("Match not found");
+        }
         return ResponseEntity.ok(rosterService.getLineupHints(matchId));
     }
 
@@ -40,11 +52,17 @@ public class MatchLineupController {
             @PathVariable String matchIdOrSlug,
             @RequestParam UUID teamId) {
         UUID matchId = resolveMatchId(matchIdOrSlug);
+        if (!accessScopeService.canReadMatch(matchId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for lineup read outside accessible scope: userId={}, matchId={}",
+                    currentUserId, matchId);
+            throw new EntityNotFoundException("Match not found");
+        }
         return ResponseEntity.ok(matchLineupService.getLineup(matchId, teamId));
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_MATCH_MANAGER') or hasAuthority('ROLE_CLUB_ADMIN') or hasAuthority('ROLE_OFFICIAL')")
+    @PreAuthorize(MatchRoles.MATCH_WRITE)
     @Operation(summary = "Update lineup for a team in a match")
     public ResponseEntity<List<MatchLineupEntryDTO>> updateLineup(
             @PathVariable String matchIdOrSlug,

@@ -82,6 +82,14 @@ public class UserController {
         return ResponseEntity.ok(userService.inviteUser(request, httpRequest));
     }
 
+    @PostMapping("/{id}/resend-invite")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
+    public ResponseEntity<InviteUserResponse> resendInvite(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(userService.resendInvite(id, httpRequest));
+    }
+
     @GetMapping("/{id}/roles")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserRolesResponse> getUserRoles(@PathVariable UUID id) {

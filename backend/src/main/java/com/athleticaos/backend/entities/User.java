@@ -69,6 +69,10 @@ public class User {
     @Column(name = "password_changed_at")
     private LocalDateTime passwordChangedAt;
 
+    /** Null while the user has not accepted their email invite and set their initial password. */
+    @Column(name = "invite_accepted_at")
+    private LocalDateTime inviteAcceptedAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default

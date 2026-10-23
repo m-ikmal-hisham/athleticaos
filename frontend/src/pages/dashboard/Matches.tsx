@@ -16,9 +16,14 @@ import { clsx } from 'clsx';
 import { showToast } from '@/lib/customToast';
 
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { useTranslation } from 'react-i18next';
+import { useSpotlightTournament } from '@/hooks/useSpotlightTournament';
 
 export const Matches = () => {
     const navigate = useNavigate();
+    const { i18n } = useTranslation();
+    const t = i18n.getFixedT('en', 'admin');
+    const { tournaments } = useSpotlightTournament({ isAdmin: true });
     const { matches, loadingList, filters, setFilters, loadMatches, deleteMatch, deleteMatches } = useMatchesStore();
     const { user } = useAuthStore();
     const [searchTerm, setSearchTerm] = useState('');
@@ -237,6 +242,31 @@ export const Matches = () => {
                     className="w-full md:w-auto"
                 />
             </div>
+
+            {filters.tournamentId && (
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-navy/10 dark:bg-white/10 text-navy dark:text-navy-tint border border-navy/20 dark:border-white/20">
+                        <span>
+                            {t('matches.filterChip', {
+                                name:
+                                    tournaments.find((t) => t.id === filters.tournamentId)?.name ||
+                                    'Tournament',
+                            })}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setFilters({ tournamentId: undefined });
+                                void loadMatches();
+                            }}
+                            className="hover:opacity-75 transition-opacity p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                            aria-label={t('matches.clearFilter')}
+                        >
+                            <X size={14} weight="bold" />
+                        </button>
+                    </span>
+                </div>
+            )}
 
             {loadingList ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

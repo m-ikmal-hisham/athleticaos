@@ -22,6 +22,9 @@ interface BracketEditorProps {
     onRefresh: () => void;
     selectedCategoryId?: string | null;
     categories?: TournamentCategory[];
+    // Read-only viewers (a participating team, an assigned official) see the brackets but no
+    // bracket or match actions. The backend refuses those writes anyway (SEC-04).
+    readonly?: boolean;
 }
 
 /**
@@ -47,7 +50,7 @@ const MANUAL_BRACKET_TYPES: { type: string; label: string; places: string }[] = 
 
 const BRACKET_TEAM_COUNTS = [2, 4, 8, 16];
 
-export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId, categories = [] }: BracketEditorProps) {
+export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId, categories = [], readonly = false }: BracketEditorProps) {
     const [loading, setLoading] = useState(false);
     const [addBracketOpen, setAddBracketOpen] = useState(false);
     const [newBracketType, setNewBracketType] = useState('PLATE');
@@ -62,6 +65,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const [bracketToDelete, setBracketToDelete] = useState<string | null>(null);
     // Set when the delete is for one category's bracket only (the 3rd place playoff inside Cup).
     const [bracketDeleteCategoryId, setBracketDeleteCategoryId] = useState<string | null>(null);
+    const [stageToDelete, setStageToDelete] = useState<{ id: string; name: string } | null>(null);
 
     const hasCategories = Boolean(categories && categories.length > 0);
     // Brackets start collapsed. A tournament can run eight or more of them (Cup, Plate, Bowl,
@@ -277,6 +281,23 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         }
     };
 
+    const handleDeleteStage = async () => {
+        if (!stageToDelete) return;
+        const target = stageToDelete;
+        setStageToDelete(null);
+        setLoading(true);
+        try {
+            await tournamentService.deleteStage(tournamentId, target.id);
+            showToast.success(`Stage '${target.name}' removed`);
+            onRefresh();
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to remove stage');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Title on its own line and actions that wrap: in one row, five buttons pushed the
@@ -307,6 +328,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                             {expandedBrackets.size === bracketGroups.length ? 'Collapse all' : 'Expand all'}
                         </Button>
                     )}
+                    {!readonly && (<>
                     <Button
                         size="sm"
                         variant="tertiary"
@@ -337,10 +359,11 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                     <Button size="sm" onClick={openAddBracket} disabled={loading}>
                         <Plus className="w-4 h-4 mr-1" /> Add Bracket
                     </Button>
+                    </>)}
                 </div>
             </div>
 
-            {unresolvedSlots.length > 0 && (
+            {!readonly && unresolvedSlots.length > 0 && (
                 <div className="p-4 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -579,34 +602,46 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 return (
                 <GlassCard key={bracket.id} className="border-t-4 border-t-primary transition-all duration-300">
                     <GlassCardHeader
-                        className={`py-3 px-3 md:py-3.5 md:px-5 flex flex-row items-center justify-between gap-2 ${isExpanded ? 'border-b border-white/10' : ''}`}
+                        className={`py-3 px-3 md:py-3.5 md:px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${isExpanded ? 'border-b border-white/10' : ''}`}
                     >
-                        <button
-                            type="button"
-                            onClick={() => toggleBracket(bracket.id)}
-                            aria-expanded={isExpanded}
-                            aria-controls={`bracket-panel-${bracket.id}`}
-                            className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg -m-1 p-1 hover:bg-white/5 transition-colors"
-                        >
-                            <CaretRight
-                                className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                                aria-hidden="true"
- />
-                            {/* Title above the count, so the count no longer squeezes the title to "C…" */}
-                            <span className="min-w-0 flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                            <GlassCardTitle className="text-sm md:text-base font-bold tracking-tight uppercase truncate">
-                                {bracket.title}
-                            </GlassCardTitle>
-                            <span className="text-xs font-normal normal-case text-muted-foreground whitespace-nowrap">
-                                {bracket.rounds.length} {bracket.rounds.length === 1 ? 'round' : 'rounds'}
-                                {' · '}
-                                {matchCount} {matchCount === 1 ? 'match' : 'matches'}
-                            </span>
-                            </span>
-                        </button>
-                        <div className="flex items-center gap-2 shrink-0">
-                            {isUnassigned && (
-                                <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center justify-between w-full sm:w-auto flex-1 min-w-0 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => toggleBracket(bracket.id)}
+                                aria-expanded={isExpanded}
+                                aria-controls={`bracket-panel-${bracket.id}`}
+                                className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg -m-1 p-1 hover:bg-white/5 transition-colors"
+                            >
+                                <CaretRight
+                                    className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                                    aria-hidden="true"
+                                />
+                                <span className="min-w-0 flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                                    <GlassCardTitle className="text-sm md:text-base font-bold tracking-tight uppercase truncate">
+                                        {bracket.title}
+                                    </GlassCardTitle>
+                                    <span className="text-xs font-normal normal-case text-muted-foreground whitespace-nowrap">
+                                        {bracket.rounds.length} {bracket.rounds.length === 1 ? 'round' : 'rounds'}
+                                        {' · '}
+                                        {matchCount} {matchCount === 1 ? 'match' : 'matches'}
+                                    </span>
+                                </span>
+                            </button>
+                            {!readonly && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setBracketToDelete(bracket.id)}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0 sm:hidden"
+                                    aria-label="Delete bracket"
+                                >
+                                    <Trash className="w-4 h-4" />
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
+                            {!readonly && isUnassigned && (
+                                <div className="flex flex-wrap items-center justify-between gap-2 w-full sm:w-auto">
                                     <span className="text-xs font-semibold text-[var(--accent-text)]">
                                         Not assigned to a category — hidden on the public site
                                     </span>
@@ -624,15 +659,17 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                     </Button>
                                 </div>
                             )}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setBracketToDelete(bracket.id)}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
-                                aria-label="Delete bracket"
-                            >
-                                <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete Bracket</span>
-                            </Button>
+                            {!readonly && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setBracketToDelete(bracket.id)}
+                                    className="hidden sm:inline-flex text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
+                                    aria-label="Delete bracket"
+                                >
+                                    <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Delete Bracket</span>
+                                </Button>
+                            )}
                         </div>
                     </GlassCardHeader>
                     <GlassCardContent
@@ -650,7 +687,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                         )}
                                         {/* The 3rd place playoff sits inside Cup, so it gets its own remove action
                                             (Delete Bracket on Cup would remove the whole Cup). */}
-                                        {round.stageType === 'THIRD_PLACE' && (
+                                        {!readonly && round.stageType === 'THIRD_PLACE' && (
                                             <button
                                                 type="button"
                                                 aria-label="Remove 3rd Place Playoff"
@@ -673,8 +710,9 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                 key={match.id}
                                                 className="bg-background/60 border border-white/10 rounded-xl overflow-hidden relative group hover:border-primary/60 transition-all shadow-md"
                                             >
-                                                {/* Admin edit button */}
-                                                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                {/* Admin edit button: hover-reveal on desktop; phones get a full-width row below the teams */}
+                                                {!readonly && (
+                                                <div className="hidden md:block absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-10">
                                                     <button
                                                         onClick={() => onMatchEdit(match)}
                                                         className="p-1.5 bg-primary/30 hover:bg-primary text-white rounded-lg backdrop-blur-md transition-colors"
@@ -684,6 +722,7 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                         <PencilSimple className="w-4 h-4" />
                                                     </button>
                                                 </div>
+                                                )}
 
                                                 <div className="text-[10px] text-muted-foreground/80 px-3 py-1 bg-black/40 border-b border-white/5 uppercase tracking-wider flex justify-between font-mono">
                                                     {/* Bracket cards are narrow: show the number and venue, and keep the long generated code in the tooltip. */}
@@ -721,12 +760,31 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                                                         </span>
                                                     </div>
                                                 </div>
+                                                {!readonly && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onMatchEdit(match)}
+                                                        className="md:hidden w-full min-h-[44px] flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-primary/30 hover:bg-primary border-t border-white/10 transition-colors"
+                                                    >
+                                                        <PencilSimple className="w-4 h-4" aria-hidden="true" /> Edit match
+                                                    </button>
+                                                )}
                                             </div>
                                         ))}
 
                                         {round.matches.length === 0 && (
-                                            <div className="text-xs text-center text-muted-foreground italic py-8 border border-dashed border-white/10 rounded-xl">
-                                                No matches defined for this stage
+                                            <div className="text-xs text-center text-muted-foreground italic py-8 border border-dashed border-white/10 rounded-xl space-y-2">
+                                                <p>No matches defined for this stage</p>
+                                                {!readonly && round.id && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => setStageToDelete({ id: round.id, name: round.name })}
+                                                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-7 px-2 text-xs"
+                                                    >
+                                                        <Trash className="w-3.5 h-3.5 mr-1" /> Remove empty stage
+                                                    </Button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -754,6 +812,16 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                     ? 'Remove the 3rd Place Playoff? Its match will be deleted and the semi-finals will no longer send their losers to it. This cannot be undone.'
                     : `Delete the entire ${bracketToDelete} bracket? Every match in it will be removed, and any match feeding into it will lose that link. This cannot be undone.`}
                 confirmText={bracketToDelete === 'THIRD_PLACE' ? 'Remove' : 'Delete Bracket'}
+                variant="destructive"
+            />
+
+            <ConfirmModal
+                isOpen={stageToDelete !== null}
+                onClose={() => setStageToDelete(null)}
+                onConfirm={handleDeleteStage}
+                title="Remove empty stage"
+                message={`Remove '${stageToDelete?.name}'? This cannot be undone.`}
+                confirmText="Remove"
                 variant="destructive"
             />
         </div>

@@ -26,6 +26,9 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE m.stage.id = :stageId AND m.deleted = false")
         List<Match> findByStageId(@org.springframework.data.repository.query.Param("stageId") UUID stageId);
 
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.stage.id = :stageId")
+        long countByStageIdIncludingDeleted(@org.springframework.data.repository.query.Param("stageId") UUID stageId);
+
         // Find matches where the team is either home or away
         @org.springframework.data.jpa.repository.Query("SELECT m FROM Match m WHERE (m.homeTeam.id = :homeTeamId OR m.awayTeam.id = :awayTeamId) AND m.deleted = false")
         List<Match> findByHomeTeamIdOrAwayTeamId(@org.springframework.data.repository.query.Param("homeTeamId") UUID homeTeamId, @org.springframework.data.repository.query.Param("awayTeamId") UUID awayTeamId);
@@ -41,6 +44,12 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
 
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.status = :status AND m.deleted = false")
         long countByStatus(@org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
+
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                        "WHERE m.status = :status AND m.deleted = false " +
+                        "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false)")
+        long countByStatusInPublishedTournaments(
+                        @org.springframework.data.repository.query.Param("status") com.athleticaos.backend.enums.MatchStatus status);
 
         // Same visibility rule as MatchServiceImpl: either team's organisation or the organiser is in scope
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT m) FROM Match m " +
@@ -107,6 +116,19 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "LEFT JOIN FETCH t.organiserOrg tOrg " +
                         "LEFT JOIN FETCH m.stage")
         List<Match> findAllWithDetails();
+
+        @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
+                        "LEFT JOIN FETCH m.homeTeam ht " +
+                        "LEFT JOIN FETCH ht.organisation hto " +
+                        "LEFT JOIN FETCH m.awayTeam at " +
+                        "LEFT JOIN FETCH at.organisation ato " +
+                        "LEFT JOIN FETCH m.tournament t " +
+                        "LEFT JOIN FETCH t.organiserOrg tOrg " +
+                        "LEFT JOIN FETCH m.stage " +
+                        "WHERE t.id IN :tournamentIds AND m.deleted = false " +
+                        "ORDER BY m.matchDate ASC, m.kickOffTime ASC")
+        List<Match> findByTournamentIdInWithDetails(
+                        @org.springframework.data.repository.query.Param("tournamentIds") java.util.Collection<UUID> tournamentIds);
 
         @org.springframework.data.jpa.repository.Query("SELECT DISTINCT m FROM Match m " +
                         "LEFT JOIN FETCH m.homeTeam ht " +

@@ -35,6 +35,7 @@ export interface PublicTournamentSummary {
     bannerUrl?: string;
     livestreamUrl?: string;
     livestreamLinks?: LivestreamLink[];
+    featured?: boolean;
 }
 
 export interface PublicTournamentDetail extends PublicTournamentSummary {
@@ -187,6 +188,14 @@ export const publicTournamentApi = {
         return response.data;
     },
 
+    // fresh = true is for the admin panel: the public response is cached by browsers for 30 s
+    // (plus stale-while-revalidate) for home-page visitors, so admins add a unique query string to
+    // see their change at once. A query parameter avoids a CORS preflight that a request header would cause.
+    getFeaturedTournaments: async (fresh = false): Promise<PublicTournamentSummary[]> => {
+        const response = await publicApi.get('/tournaments/featured', fresh ? { params: { fresh: Date.now() } } : undefined);
+        return response.data;
+    },
+
     getTournament: async (idOrSlug: string): Promise<PublicTournamentDetail> => {
         const response = await publicApi.get(`/tournaments/${idOrSlug}`);
         return response.data;
@@ -276,14 +285,11 @@ export interface PublicPlayerDetailResponse {
     firstName: string;
     lastName: string;
     age?: number | null;
+    ageGroup?: string | null;
     gender?: string;
     country?: string;
     state?: string;
     city?: string;
-    bloodGroup?: string;
-    emergencyContactName?: string;
-    emergencyContactNumber?: string;
-    emergencyContactRelationship?: string;
     position?: string;
     position2?: string;
     jerseyNumber?: number;
@@ -441,7 +447,8 @@ export type ContactSubjectValue =
     | 'PARTNERSHIP'
     | 'ORGANISATION_REGISTRATION'
     | 'MEDIA'
-    | 'TOURNAMENT_SUPPORT';
+    | 'TOURNAMENT_SUPPORT'
+    | 'PRIVACY_REQUEST';
 
 export interface ContactPayload {
     name: string;
@@ -458,5 +465,17 @@ export interface ContactResponse {
 
 export const submitContact = async (payload: ContactPayload) => {
     return publicApi.post<ContactResponse>('/contact', payload);
+};
+
+export interface PublicStatsSummary {
+    tournaments: number;
+    teams: number;
+    players: number;
+    matchesPlayed: number;
+}
+
+export const getPublicStatsSummary = async (): Promise<PublicStatsSummary> => {
+    const response = await publicApi.get<PublicStatsSummary>('/stats/summary');
+    return response.data;
 };
 

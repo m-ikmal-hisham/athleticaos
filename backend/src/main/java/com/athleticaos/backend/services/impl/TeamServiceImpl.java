@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
@@ -267,9 +268,12 @@ public class TeamServiceImpl implements TeamService {
         for (Object[] row : rows) {
             if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
                 String cat = row[0].toString().trim();
+                if (cat.isEmpty()) {
+                    continue;
+                }
+                String key = cat.toUpperCase(Locale.ROOT);
                 long c = ((Number) row[1]).longValue();
-                counts.put(cat, c);
-                counts.put(cat.toUpperCase(), c);
+                counts.merge(key, c, Long::sum);
                 total += c;
             }
         }

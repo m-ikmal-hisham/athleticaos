@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuthStore } from '@/store/auth.store';
 import { updateMatch, updateMatchStatus, updateMatchEvent, recordUnplayedResult } from '@/api/matches.api';
 import { fetchTeamRoster } from '@/api/playerTeams.api';
-import { getMatchOfficials, MatchOfficialDTO } from '@/api/officials.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
@@ -134,7 +133,6 @@ export const MatchDetail = () => {
     const [matchTimeSeconds, setMatchTimeSeconds] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-    const [matchOfficials, setMatchOfficials] = useState<MatchOfficialDTO[]>([]);
 
     // Operations Interaction State
     const [interactionState, setInteractionState] = useState<'IDLE' | 'SELECT_TEAM' | 'SELECT_PLAYER'>('IDLE');
@@ -193,18 +191,8 @@ export const MatchDetail = () => {
     useEffect(() => {
         if (id) {
             loadMatchDetail(id);
-            loadOfficials(id);
         }
     }, [id]);
-
-    const loadOfficials = async (matchId: string) => {
-        try {
-            const data = await getMatchOfficials(matchId);
-            setMatchOfficials(data);
-        } catch (e) {
-            console.error("Failed to load officials", e);
-        }
-    };
 
     // Reacting to selectedMatch changes to load lineups once we know team IDs
     // Reacting to selectedMatch changes to load lineups once we know team IDs
@@ -239,18 +227,14 @@ export const MatchDetail = () => {
     }, [selectedMatch?.id, selectedMatch?.homeTeamId, selectedMatch?.awayTeamId]);
 
     // Role Checks
-    const assignedRole = useMemo(() => {
-        if (!user || !matchOfficials.length) return null;
-        const myAssignment = matchOfficials.find(mo => mo.officialName?.includes(user.firstName || ''));
-        return myAssignment ? (myAssignment.officialRoleName || myAssignment.assignedRole) : null;
-    }, [user, matchOfficials]);
-
+    // The backend decides who may score (organiser scope, the match's official, or the
+    // tournament officials panel) and sends it as canWrite. Matching officials by first
+    // name here was unreliable, and the officials list is not readable by scorers.
     const canManageEvents = useMemo(() => {
-        const isGlobalAdmin = user?.roles.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_MATCH_MANAGER', 'SUPER_ADMIN', 'MATCH_MANAGER'].includes(r));
+        const isGlobalAdmin = Boolean(user?.roles?.includes('ROLE_SUPER_ADMIN'));
         if (isGlobalAdmin) return true;
-        if (!assignedRole) return false;
-        return ['REFEREE', 'MATCH_MANAGER'].includes(assignedRole);
-    }, [user, assignedRole]);
+        return selectedMatch?.canWrite === true;
+    }, [user, selectedMatch?.canWrite]);
 
     const isAdmin = canManageEvents;
 

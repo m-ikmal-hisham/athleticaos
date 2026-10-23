@@ -35,10 +35,17 @@
   --athos-radius-lg: 18px;
   --athos-radius-md: 12px;
 
+  /* Glass Material System §4 */
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.55);
+  --glass-outline: rgb(0 0 0 / 0.08);
+  --glass-blur: 20px;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --glass-shadow: var(--shadow-md);
+
   /* Locked Glassmorphism System */
-  --glass-blur: 24px;
   --glass-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
-  --glass-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --glass-shadow-md: var(--shadow-md);
   --glass-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
 
   /* Legacy shadows - now using soft values */
@@ -67,8 +74,6 @@
   --brand-primary: var(--athos-blue);
   --brand-secondary: #D32F2F;
   --brand-accent: #FFFFFF;
-
-  --glass-bg: rgba(255, 255, 255, 0.65);
 }
 
 [data-theme="dark"] {
@@ -86,7 +91,14 @@
   --content-secondary: rgb(255 255 255 / 0.72);
   --content-tertiary: rgb(255 255 255 / 0.60);
 
-  --glass-bg: rgba(2, 6, 23, 0.70);
+  /* Glass Material System §4 */
+  --glass-bg: rgb(13 27 42 / 0.72);
+  --glass-border: rgb(255 255 255 / 0.12);
+  --glass-outline: rgb(0 0 0 / 0.40);
+  --glass-blur: 20px;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.40);
+  --glass-shadow: var(--shadow-md);
+
   --text-color: var(--content-primary);
   --text-muted: var(--content-secondary);
   --bg-base: var(--surface-page);

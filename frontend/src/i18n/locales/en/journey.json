@@ -1,0 +1,46 @@
+{
+  "pageTitle": "Our journey",
+  "subtitle": "How AthleticaOS was built, where we are now, and what comes next.",
+  "journey1Tab": "Journey 1 · Build to launch",
+  "journey2Tab": "Journey 2 · Grow the audience",
+  "field": {
+    "aria": "Rugby field showing the {{journey}} route",
+    "startPosts": "AthleticaOS start",
+    "goalPosts": "Goal: {{goal}}",
+    "ballAria": "Rugby ball showing current milestone: {{title}}",
+    "milestoneAria": "{{setPiece}} · {{date}} · {{title}}"
+  },
+  "legend": {
+    "title": "Set pieces",
+    "subtitle": "How rugby moments tell our development story",
+    "kick": "Kick-off = start",
+    "phase": "Phase play = features delivered",
+    "scrum": "Scrum = foundations rebuilt",
+    "lineout": "Lineout = opened up to partners",
+    "ruck": "Ruck = fixed under pressure",
+    "maul": "Maul = big team push",
+    "try": "Try = journey goal released",
+    "conv": "Conversion = the follow-up that proves it"
+  },
+  "counters": {
+    "tournaments": "Tournaments",
+    "teams": "Teams",
+    "players": "Players",
+    "matchesPlayed": "Matches played"
+  },
+  "roadmap": {
+    "title": "What's next",
+    "now": "Now",
+    "next": "Next",
+    "later": "Later",
+    "testingOnStaging": "Testing on staging"
+  },
+  "joinUs": {
+    "title": "Run a club, school, association or tournament?",
+    "cta": "Register your organisation"
+  },
+  "howItWorks": {
+    "journeyPrompt": "Want to see how AthleticaOS was built?",
+    "journeyLink": "Follow our journey →"
+  }
+}

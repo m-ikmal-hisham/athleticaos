@@ -4,6 +4,7 @@ import com.athleticaos.backend.entities.Team;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -954,6 +955,90 @@ class BracketServiceImplTest {
         assertEquals("Group A first", result.getUnresolvedSlots().get(0).getLabel());
         assertEquals("AWAY", result.getUnresolvedSlots().get(0).getSide());
         assertEquals(10, result.getUnresolvedSlots().get(0).getMatchNumber());
+    }
+
+    @Test
+    void generateSeedLabels_returnsAllSynonyms() {
+        List<String> labels1 = BracketServiceImpl.generateSeedLabels(1);
+        org.assertj.core.api.Assertions.assertThat(labels1).containsExactlyInAnyOrder(
+                "seed 1", "seed1", "rank 1", "ranked 1", "position 1", "#1", "# 1", "1st overall"
+        );
+
+        List<String> labels8 = BracketServiceImpl.generateSeedLabels(8);
+        org.assertj.core.api.Assertions.assertThat(labels8).contains(
+                "seed 8", "rank 8", "ranked 8", "position 8", "#8", "8th overall"
+        );
+
+        org.assertj.core.api.Assertions.assertThat(BracketServiceImpl.generateSeedLabels(0)).isEmpty();
+    }
+
+    @Test
+    void seedBracketsFromStandings_resolvesSeedSynonymsWithMixedCaseAndWhitespace() {
+        var matchRepository = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class),
+                matchRepository
+        );
+
+        UUID tournamentId = UUID.randomUUID();
+        Team t1 = Team.builder().id(UUID.randomUUID()).name("Team 1").build();
+        Team t2 = Team.builder().id(UUID.randomUUID()).name("Team 2").build();
+        Team t3 = Team.builder().id(UUID.randomUUID()).name("Team 3").build();
+        Team t4 = Team.builder().id(UUID.randomUUID()).name("Team 4").build();
+
+        BracketServiceImpl.PoolStanding s1 = new BracketServiceImpl.PoolStanding(t1);
+        BracketServiceImpl.PoolStanding s2 = new BracketServiceImpl.PoolStanding(t2);
+        BracketServiceImpl.PoolStanding s3 = new BracketServiceImpl.PoolStanding(t3);
+        BracketServiceImpl.PoolStanding s4 = new BracketServiceImpl.PoolStanding(t4);
+
+        com.athleticaos.backend.entities.TournamentStage koStage = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(UUID.randomUUID()).name("Semi Final").isKnockoutStage(true).build();
+
+        com.athleticaos.backend.entities.Match m1 = com.athleticaos.backend.entities.Match.builder().id(UUID.randomUUID()).stage(koStage)
+                .homeTeamPlaceholder("  Rank  1 ").awayTeamPlaceholder("ranked   2").build();
+        com.athleticaos.backend.entities.Match m2 = com.athleticaos.backend.entities.Match.builder().id(UUID.randomUUID()).stage(koStage)
+                .homeTeamPlaceholder("#3").awayTeamPlaceholder("4th   OVERALL").build();
+
+        org.mockito.Mockito.when(matchRepository.findByTournamentId(tournamentId))
+                .thenReturn(List.of(m1, m2));
+
+        int filled = service.seedBracketsFromStandings(tournamentId, null, List.of(s1, s2, s3, s4));
+
+        assertEquals(4, filled);
+        assertEquals(t1, m1.getHomeTeam());
+        assertEquals(t2, m1.getAwayTeam());
+        assertEquals(t3, m2.getHomeTeam());
+        assertEquals(t4, m2.getAwayTeam());
+    }
+
+    @Test
+    void seedBracketsFromStandings_unknownLabelRemainsUnresolved() {
+        var matchRepository = org.mockito.Mockito.mock(com.athleticaos.backend.repositories.MatchRepository.class);
+        BracketServiceImpl service = serviceWith(
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentRepository.class),
+                org.mockito.Mockito.mock(com.athleticaos.backend.repositories.TournamentStageRepository.class),
+                matchRepository
+        );
+
+        UUID tournamentId = UUID.randomUUID();
+        Team t1 = Team.builder().id(UUID.randomUUID()).name("Team 1").build();
+        BracketServiceImpl.PoolStanding s1 = new BracketServiceImpl.PoolStanding(t1);
+
+        com.athleticaos.backend.entities.TournamentStage koStage = com.athleticaos.backend.entities.TournamentStage.builder()
+                .id(UUID.randomUUID()).name("Semi Final").isKnockoutStage(true).build();
+
+        com.athleticaos.backend.entities.Match m1 = com.athleticaos.backend.entities.Match.builder().id(UUID.randomUUID()).stage(koStage)
+                .homeTeamPlaceholder("Champion").awayTeamPlaceholder("Pool A #1").build();
+
+        org.mockito.Mockito.when(matchRepository.findByTournamentId(tournamentId))
+                .thenReturn(List.of(m1));
+
+        int filled = service.seedBracketsFromStandings(tournamentId, null, List.of(s1));
+
+        assertEquals(0, filled);
+        assertNull(m1.getHomeTeam());
+        assertEquals("Champion", m1.getHomeTeamPlaceholder());
     }
 }
 

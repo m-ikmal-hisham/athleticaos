@@ -5,7 +5,8 @@ public enum ContactSubject {
     PARTNERSHIP("Partnership"),
     ORGANISATION_REGISTRATION("Register my organisation"),
     MEDIA("Media & press"),
-    TOURNAMENT_SUPPORT("Tournament organiser support");
+    TOURNAMENT_SUPPORT("Tournament organiser support"),
+    PRIVACY_REQUEST("Privacy / data request");
 
     private final String label;
 

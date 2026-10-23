@@ -35,6 +35,7 @@ public class UserResponse {
     private boolean isActive;
 
     private String status;
+    private String inviteStatus;
     private Set<String> roles;
     private UUID organisationId;
     private String organisationName;

@@ -27,6 +27,19 @@ public class SeasonServiceImpl implements SeasonService {
     private final SeasonRepository seasonRepository;
     private final TournamentRepository tournamentRepository;
     private final OrganisationRepository organisationRepository;
+    private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
+
+    private void checkSeasonWriteScope(Season season, String operation) {
+        if (accessScopeService.isSuperAdmin()) {
+            return;
+        }
+        if (season == null || season.getOrganiser() == null || !accessScopeService.isOrganisationInScope(season.getOrganiser().getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for season {} outside organiser scope: userId={}, seasonId={}",
+                    operation, currentUserId, season != null ? season.getId() : null);
+            throw new EntityNotFoundException("Season not found");
+        }
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -58,6 +71,15 @@ public class SeasonServiceImpl implements SeasonService {
     @SuppressWarnings("null")
     public SeasonResponse createSeason(Season season) {
         log.info("Creating season: {}", season.getName());
+        if (!accessScopeService.isSuperAdmin()) {
+            if (season.getOrganiser() == null || season.getOrganiser().getId() == null
+                    || !accessScopeService.isOrganisationInScope(season.getOrganiser().getId())) {
+                UUID currentUserId = accessScopeService.getCurrentUserId();
+                log.warn("Access denied for season create outside organiser scope: userId={}, orgId={}",
+                        currentUserId, season.getOrganiser() != null ? season.getOrganiser().getId() : null);
+                throw new EntityNotFoundException("Organiser not found");
+            }
+        }
         if (season.getOrganiser() != null && season.getOrganiser().getId() != null) {
             Organisation org = organisationRepository.findById(season.getOrganiser().getId())
                     .orElseThrow(() -> new EntityNotFoundException("Organiser not found"));
@@ -74,18 +96,26 @@ public class SeasonServiceImpl implements SeasonService {
         Season season = seasonRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Season not found"));
 
+        checkSeasonWriteScope(season, "update");
+
+        if (seasonDetails.getOrganiser() != null && seasonDetails.getOrganiser().getId() != null) {
+            if (!accessScopeService.isSuperAdmin() && !accessScopeService.isOrganisationInScope(seasonDetails.getOrganiser().getId())) {
+                UUID currentUserId = accessScopeService.getCurrentUserId();
+                log.warn("Access denied for season update to new organiser outside scope: userId={}, orgId={}",
+                        currentUserId, seasonDetails.getOrganiser().getId());
+                throw new EntityNotFoundException("Organiser not found");
+            }
+            Organisation org = organisationRepository.findById(seasonDetails.getOrganiser().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organiser not found"));
+            season.setOrganiser(org);
+        }
+
         season.setName(seasonDetails.getName());
         season.setCode(seasonDetails.getCode());
         season.setStartDate(seasonDetails.getStartDate());
         season.setEndDate(seasonDetails.getEndDate());
         season.setDescription(seasonDetails.getDescription());
         season.setLevel(seasonDetails.getLevel());
-
-        if (seasonDetails.getOrganiser() != null) {
-            Organisation org = organisationRepository.findById(seasonDetails.getOrganiser().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Organiser not found"));
-            season.setOrganiser(org);
-        }
 
         return mapToResponse(seasonRepository.save(season));
     }
@@ -97,6 +127,7 @@ public class SeasonServiceImpl implements SeasonService {
         log.info("Updating season status: {} -> {}", id, status);
         Season season = seasonRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Season not found"));
+        checkSeasonWriteScope(season, "status update");
         season.setStatus(SeasonStatus.valueOf(status));
         return mapToResponse(seasonRepository.save(season));
     }
@@ -108,6 +139,7 @@ public class SeasonServiceImpl implements SeasonService {
         log.info("Deleting season (soft): {}", id);
         Season season = seasonRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Season not found"));
+        checkSeasonWriteScope(season, "delete");
         season.setDeleted(true);
         seasonRepository.save(season);
     }

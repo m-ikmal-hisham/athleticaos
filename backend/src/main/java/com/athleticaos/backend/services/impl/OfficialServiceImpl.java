@@ -4,10 +4,12 @@ import com.athleticaos.backend.audit.AuditLogger;
 import com.athleticaos.backend.dtos.official.*;
 import com.athleticaos.backend.entities.*;
 import com.athleticaos.backend.repositories.*;
+import com.athleticaos.backend.services.AccessScopeService;
 import com.athleticaos.backend.services.OfficialService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @SuppressWarnings("null")
 public class OfficialServiceImpl implements OfficialService {
 
@@ -33,6 +36,7 @@ public class OfficialServiceImpl implements OfficialService {
     private final TournamentOfficialRepository tournamentOfficialRepository;
     private final AuditLogger auditLogger;
     private final ObjectProvider<HttpServletRequest> requestProvider;
+    private final AccessScopeService accessScopeService;
 
     // ─── Registry Management ────────────────────────────────────────────
 
@@ -84,6 +88,14 @@ public class OfficialServiceImpl implements OfficialService {
         OfficialRegistry official = officialRepository.findById(Objects.requireNonNull(officialId))
                 .orElseThrow(() -> new EntityNotFoundException("Official not found"));
 
+        UUID orgId = official.getOrganisation() != null ? official.getOrganisation().getId() : null;
+        if (!accessScopeService.isOrganisationInScope(orgId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for official update outside accessible scope: userId={}, officialId={}",
+                    currentUserId, officialId);
+            throw new EntityNotFoundException("Official not found");
+        }
+
         official.setAccreditationLevel(req.getAccreditationLevel());
         official.setPrimaryRole(req.getPrimaryRole());
 
@@ -98,7 +110,14 @@ public class OfficialServiceImpl implements OfficialService {
     @Override
     @Transactional(readOnly = true)
     public List<OfficialRegistryDTO> getAllOfficials() {
-        return officialRepository.findAll().stream()
+        java.util.Set<UUID> accessibleOrgIds = accessScopeService.getAccessibleOrgIds();
+        List<OfficialRegistry> all = officialRepository.findAll();
+        if (accessibleOrgIds != null) {
+            all = all.stream()
+                    .filter(o -> o.getOrganisation() != null && accessibleOrgIds.contains(o.getOrganisation().getId()))
+                    .collect(Collectors.toList());
+        }
+        return all.stream()
                 .map(this::toRegistryDTO)
                 .collect(Collectors.toList());
     }
@@ -108,6 +127,13 @@ public class OfficialServiceImpl implements OfficialService {
     public OfficialRegistryDTO getOfficialById(UUID officialId) {
         OfficialRegistry official = officialRepository.findById(Objects.requireNonNull(officialId))
                 .orElseThrow(() -> new EntityNotFoundException("Official not found"));
+        UUID orgId = official.getOrganisation() != null ? official.getOrganisation().getId() : null;
+        if (!accessScopeService.isOrganisationInScope(orgId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for official read outside accessible scope: userId={}, officialId={}",
+                    currentUserId, officialId);
+            throw new EntityNotFoundException("Official not found");
+        }
         return toRegistryDTO(official);
     }
 
@@ -118,6 +144,14 @@ public class OfficialServiceImpl implements OfficialService {
     public MatchOfficialDTO assignOfficialToMatch(UUID matchId, AssignOfficialRequest req) {
         Match match = matchRepository.findById(Objects.requireNonNull(matchId))
                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
+
+        if (!accessScopeService.isTournamentInScope(match.getTournament())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match official assign outside tournament scope: userId={}, matchId={}",
+                    currentUserId, matchId);
+            throw new EntityNotFoundException("Match not found");
+        }
+
         OfficialRegistry official = officialRepository.findById(Objects.requireNonNull(req.getOfficialId()))
                 .orElseThrow(() -> new EntityNotFoundException("Official not found"));
 
@@ -150,15 +184,28 @@ public class OfficialServiceImpl implements OfficialService {
     @Override
     @Transactional
     public void removeOfficialFromMatch(UUID assignmentId) {
-        if (!matchOfficialRepository.existsById(Objects.requireNonNull(assignmentId))) {
+        MatchOfficial assignment = matchOfficialRepository.findById(Objects.requireNonNull(assignmentId))
+                .orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
+
+        if (!accessScopeService.isTournamentInScope(assignment.getMatch().getTournament())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match official remove outside tournament scope: userId={}, assignmentId={}",
+                    currentUserId, assignmentId);
             throw new EntityNotFoundException("Assignment not found");
         }
-        matchOfficialRepository.deleteById(Objects.requireNonNull(assignmentId));
+
+        matchOfficialRepository.delete(assignment);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MatchOfficialDTO> getOfficialsForMatch(UUID matchId) {
+        if (!accessScopeService.canReadMatch(matchId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match officials read outside accessible scope: userId={}, matchId={}",
+                    currentUserId, matchId);
+            throw new EntityNotFoundException("Match not found");
+        }
         return matchOfficialRepository.findByMatchId(matchId).stream()
                 .map(this::toMatchOfficialDTO)
                 .collect(Collectors.toList());
@@ -171,6 +218,14 @@ public class OfficialServiceImpl implements OfficialService {
     public TournamentOfficialDTO addOfficialToTournament(UUID tournamentId, AddTournamentOfficialRequest req) {
         Tournament tournament = tournamentRepository.findById(Objects.requireNonNull(tournamentId))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (!accessScopeService.isTournamentInScope(tournament)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament official add outside tournament scope: userId={}, tournamentId={}",
+                    currentUserId, tournamentId);
+            throw new EntityNotFoundException("Tournament not found");
+        }
+
         OfficialRegistry official = officialRepository.findById(Objects.requireNonNull(req.getOfficialId()))
                 .orElseThrow(() -> new EntityNotFoundException("Official not found"));
 
@@ -206,6 +261,14 @@ public class OfficialServiceImpl implements OfficialService {
     public void removeOfficialFromTournament(UUID tournamentOfficialId) {
         TournamentOfficial to = tournamentOfficialRepository.findById(Objects.requireNonNull(tournamentOfficialId))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament official not found"));
+
+        if (!accessScopeService.isTournamentInScope(to.getTournament())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament official remove outside tournament scope: userId={}, tournamentOfficialId={}",
+                    currentUserId, tournamentOfficialId);
+            throw new EntityNotFoundException("Tournament official not found");
+        }
+
         to.setActive(false);
         tournamentOfficialRepository.save(to);
     }
@@ -213,6 +276,12 @@ public class OfficialServiceImpl implements OfficialService {
     @Override
     @Transactional(readOnly = true)
     public List<TournamentOfficialDTO> getTournamentOfficials(UUID tournamentId) {
+        if (!accessScopeService.canReadTournament(tournamentId)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament officials read outside accessible scope: userId={}, tournamentId={}",
+                    currentUserId, tournamentId);
+            throw new EntityNotFoundException("Tournament not found");
+        }
         return tournamentOfficialRepository.findByTournamentIdAndIsActiveTrue(tournamentId).stream()
                 .map(this::toTournamentOfficialDTO)
                 .collect(Collectors.toList());

@@ -113,119 +113,54 @@ public class ContactEmailRenderer {
         String encodedSubject = URLEncoder.encode(mailtoSubject, StandardCharsets.UTF_8).replace("+", "%20");
         String mailtoHref = "mailto:" + escEmail + "?subject=" + encodedSubject;
 
-        StringBuilder html = new StringBuilder();
-        html.append("<!DOCTYPE html>\n");
-        html.append("<html lang=\"en\">\n");
-        html.append("<head>\n");
-        html.append("  <meta charset=\"UTF-8\">\n");
-        html.append("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
-        html.append("  <title>New enquiry</title>\n");
-        html.append("</head>\n");
-        html.append("<body style=\"margin: 0; padding: 24px 0; background-color: #F0F4F8; font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased;\">\n");
-
-        // Hidden preheader
-        html.append("  <span style=\"display: none !important; visibility: hidden; mso-hide: all; font-size: 1px; line-height: 1px; max-height: 0; max-width: 0; opacity: 0; overflow: hidden;\">")
-                .append(escPreheader)
-                .append("</span>\n");
-
-        // Outer container
-        html.append("  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color: #F0F4F8; margin: 0; padding: 0;\">\n");
-        html.append("    <tr>\n");
-        html.append("      <td align=\"center\" style=\"padding: 0 12px;\">\n");
-
-        // Email card (560px max width)
-        html.append("        <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width: 560px; margin: 0 auto; background-color: #FFFFFF; border-collapse: separate; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);\">\n");
-
-        // Header bar
-        html.append("          <tr>\n");
-        html.append("            <td style=\"background-color: #0D1B2A; padding: 16px 24px;\">\n");
-        html.append("              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n");
-        html.append("                <tr>\n");
-        html.append("                  <td align=\"left\" style=\"font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: bold; color: #FFFFFF;\">AthleticaOS</td>\n");
-        html.append("                  <td align=\"right\" style=\"font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #8CACD9;\">New enquiry</td>\n");
-        html.append("                </tr>\n");
-        html.append("              </table>\n");
-        html.append("            </td>\n");
-        html.append("          </tr>\n");
-
-        // Body content
-        html.append("          <tr>\n");
-        html.append("            <td style=\"background-color: #FFFFFF; padding: 28px 24px 24px 24px; color: #0D1B2A;\">\n");
-
+        StringBuilder innerBody = new StringBuilder();
         // a. Subject pill
-        html.append("              <div style=\"margin: 0 0 12px 0;\">\n");
-        html.append("                <span style=\"display: inline-block; background-color: #E6EDF7; color: #0047AB; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">")
+        innerBody.append("              <div style=\"margin: 0 0 12px 0;\">\n");
+        innerBody.append("                <span style=\"display: inline-block; background-color: #E6EDF7; color: #0047AB; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">")
                 .append(escSubject)
                 .append("</span>\n");
-        html.append("              </div>\n");
+        innerBody.append("              </div>\n");
 
         // b. Heading
-        html.append("              <h1 style=\"font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: bold; color: #0D1B2A; margin: 0 0 6px 0; padding: 0;\">")
+        innerBody.append("              <h1 style=\"font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: bold; color: #0D1B2A; margin: 0 0 6px 0; padding: 0;\">")
                 .append(escName)
                 .append(" sent you a message</h1>\n");
 
         // c. Received time
-        html.append("              <p style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; margin: 0 0 20px 0; padding: 0;\">")
+        innerBody.append("              <p style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; margin: 0 0 20px 0; padding: 0;\">")
                 .append(receivedTime)
                 .append("</p>\n");
 
         // d. The message
-        html.append("              <div style=\"border-left: 3px solid #0047AB; background-color: #F8FAFC; padding: 14px 18px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.6; color: #0D1B2A; margin: 0 0 24px 0;\">\n");
-        html.append("                ").append(formattedMsg).append("\n");
-        html.append("              </div>\n");
+        innerBody.append("              <div style=\"border-left: 3px solid #0047AB; background-color: #F8FAFC; padding: 14px 18px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.6; color: #0D1B2A; margin: 0 0 24px 0;\">\n");
+        innerBody.append("                ").append(formattedMsg).append("\n");
+        innerBody.append("              </div>\n");
 
         // e. Details table
-        html.append("              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse; margin: 0 0 28px 0;\">\n");
-        html.append("                <tr>\n");
-        html.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; padding: 10px 0; border-top: 1px solid #E5E7EB; width: 110px; font-weight: 500;\">Name</td>\n");
-        html.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0D1B2A; padding: 10px 0; border-top: 1px solid #E5E7EB; font-weight: 600;\">").append(escName).append("</td>\n");
-        html.append("                </tr>\n");
-        html.append("                <tr>\n");
-        html.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; padding: 10px 0; border-top: 1px solid #E5E7EB; width: 110px; font-weight: 500;\">Email</td>\n");
-        html.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0D1B2A; padding: 10px 0; border-top: 1px solid #E5E7EB;\"><a href=\"mailto:").append(escEmail).append("\" style=\"color: #0047AB; text-decoration: none;\">").append(escEmail).append("</a></td>\n");
-        html.append("                </tr>\n");
+        innerBody.append("              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse; margin: 0 0 28px 0;\">\n");
+        innerBody.append("                <tr>\n");
+        innerBody.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; padding: 10px 0; border-top: 1px solid #E5E7EB; width: 110px; font-weight: 500;\">Name</td>\n");
+        innerBody.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0D1B2A; padding: 10px 0; border-top: 1px solid #E5E7EB; font-weight: 600;\">").append(escName).append("</td>\n");
+        innerBody.append("                </tr>\n");
+        innerBody.append("                <tr>\n");
+        innerBody.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; padding: 10px 0; border-top: 1px solid #E5E7EB; width: 110px; font-weight: 500;\">Email</td>\n");
+        innerBody.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0D1B2A; padding: 10px 0; border-top: 1px solid #E5E7EB;\"><a href=\"mailto:").append(escEmail).append("\" style=\"color: #0047AB; text-decoration: none;\">").append(escEmail).append("</a></td>\n");
+        innerBody.append("                </tr>\n");
         if (!rawOrg.isEmpty()) {
-            html.append("                <tr>\n");
-            html.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; padding: 10px 0; border-top: 1px solid #E5E7EB; width: 110px; font-weight: 500;\">Organisation</td>\n");
-            html.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0D1B2A; padding: 10px 0; border-top: 1px solid #E5E7EB;\">").append(escOrg).append("</td>\n");
-            html.append("                </tr>\n");
+            innerBody.append("                <tr>\n");
+            innerBody.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #6B7280; padding: 10px 0; border-top: 1px solid #E5E7EB; width: 110px; font-weight: 500;\">Organisation</td>\n");
+            innerBody.append("                  <td style=\"font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #0D1B2A; padding: 10px 0; border-top: 1px solid #E5E7EB;\">").append(escOrg).append("</td>\n");
+            innerBody.append("                </tr>\n");
         }
-        html.append("              </table>\n");
+        innerBody.append("              </table>\n");
 
         // f. Button & helper text
-        html.append("              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin: 0 0 8px 0;\">\n");
-        html.append("                <tr>\n");
-        html.append("                  <td align=\"center\">\n");
-        html.append("                    <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: separate;\">\n");
-        html.append("                      <tr>\n");
-        html.append("                        <td align=\"center\" bgcolor=\"#0047AB\" style=\"background-color: #0047AB; border-radius: 6px; padding: 12px 24px;\">\n");
-        html.append("                          <a href=\"").append(mailtoHref).append("\" target=\"_blank\" style=\"font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: bold; color: #FFFFFF; text-decoration: none; display: inline-block;\">Reply to ").append(escName).append("</a>\n");
-        html.append("                        </td>\n");
-        html.append("                      </tr>\n");
-        html.append("                    </table>\n");
-        html.append("                  </td>\n");
-        html.append("                </tr>\n");
-        html.append("              </table>\n");
-        html.append("              <p style=\"font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #6B7280; text-align: center; margin: 0 0 16px 0; padding: 0;\">Or press Reply \u2014 it goes straight to ").append(escEmail).append(".</p>\n");
+        innerBody.append(EmailLayout.renderButton(mailtoHref, "Reply to " + escName));
+        innerBody.append("              <p style=\"font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #6B7280; text-align: center; margin: 0 0 16px 0; padding: 0;\">Or press Reply \u2014 it goes straight to ").append(escEmail).append(".</p>\n");
 
-        html.append("            </td>\n");
-        html.append("          </tr>\n");
+        String footer = "Sent from the contact form on www.athleticaos.com · Ref " + shortId;
 
-        // Footer
-        html.append("          <tr>\n");
-        html.append("            <td style=\"background-color: #F5F7FA; padding: 16px 24px; text-align: center; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #6B7280; border-top: 1px solid #E5E7EB;\">\n");
-        html.append("              Sent from the contact form on www.athleticaos.com · Ref ").append(shortId).append("\n");
-        html.append("            </td>\n");
-        html.append("          </tr>\n");
-
-        html.append("        </table>\n");
-        html.append("      </td>\n");
-        html.append("    </tr>\n");
-        html.append("  </table>\n");
-        html.append("</body>\n");
-        html.append("</html>");
-
-        return html.toString();
+        return EmailLayout.wrapHtml("New enquiry", escPreheader, "New enquiry", innerBody.toString(), footer);
     }
 
     private static String stripHeaderLineBreaks(String value) {

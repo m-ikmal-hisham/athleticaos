@@ -20,6 +20,8 @@ app:
   contact:
     mail-enabled: true
     recipient: contact-inbox@athleticaos.local
+  accounts:
+    mail-enabled: true
 
 logging:
   level:

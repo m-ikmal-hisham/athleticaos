@@ -12,6 +12,8 @@ import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.User;
 import com.athleticaos.backend.enums.MatchEventType;
+import com.athleticaos.backend.entities.MatchOfficial;
+import com.athleticaos.backend.entities.OfficialRegistry;
 import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.MatchOfficialRepository;
 import com.athleticaos.backend.repositories.MatchRepository;
@@ -60,6 +62,7 @@ class MatchEventServiceImplTest {
     @Mock private MatchService matchService;
     @Mock private UserService userService;
     @Mock private MatchOfficialRepository matchOfficialRepository;
+    @Mock private com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
     @InjectMocks
     private MatchEventServiceImpl service;
@@ -71,6 +74,8 @@ class MatchEventServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(accessScopeService.canWriteMatch(any(Match.class))).thenReturn(true);
+        lenient().when(accessScopeService.canWriteMatch(any(UUID.class))).thenReturn(true);
         Tournament tournament = Tournament.builder().id(UUID.randomUUID()).name("Carnival").build();
         team = Team.builder().id(UUID.randomUUID()).name("Home XV").build();
         match = Match.builder().id(UUID.randomUUID()).tournament(tournament).homeTeam(team).build();
@@ -177,5 +182,82 @@ class MatchEventServiceImplTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Grace period expired");
         assertThat(teamOnlyTry.getPlayer()).isNull();
+    }
+
+    @Test
+    void addEventToMatch_whenCallerCannotWriteMatch_throwsEntityNotFoundException_andSavesNothing() {
+        when(accessScopeService.canWriteMatch(any(Match.class))).thenReturn(false);
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+
+        com.athleticaos.backend.dtos.match.MatchEventCreateRequest request = new com.athleticaos.backend.dtos.match.MatchEventCreateRequest();
+        request.setEventType(MatchEventType.TRY);
+        request.setMinute(10);
+        request.setTeamId(team.getId());
+
+        assertThatThrownBy(() -> service.addEventToMatch(match.getId(), request, null))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessageContaining("Match not found");
+
+        verify(matchEventRepository, never()).save(any());
+        verify(matchEventRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void userWithOnlyRoleMatchManagerIsNotPrivilegedForLockedEvent_editRefused() {
+        teamOnlyTry.setCreatedAt(LocalDateTime.now().minusMinutes(30));
+        User matchManagerUser = User.builder().id(UUID.randomUUID())
+                .roles(Set.of(Role.builder().name("ROLE_MATCH_MANAGER").build()))
+                .build();
+        when(userService.getCurrentUser()).thenReturn(matchManagerUser);
+        when(accessScopeService.isTournamentInScope(match.getTournament())).thenReturn(false);
+        when(matchOfficialRepository.findByMatchId(match.getId())).thenReturn(java.util.List.of());
+
+        assertThatThrownBy(() -> service.updateEvent(teamOnlyTry.getId(), withPlayer(player.getId()), null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Grace period expired and no override permissions");
+    }
+
+    @Test
+    void userWithOnlyRoleMatchManagerIsNotPrivilegedForLockedEvent_deleteRefused() {
+        teamOnlyTry.setCreatedAt(LocalDateTime.now().minusMinutes(30));
+        User matchManagerUser = User.builder().id(UUID.randomUUID())
+                .roles(Set.of(Role.builder().name("ROLE_MATCH_MANAGER").build()))
+                .build();
+        when(userService.getCurrentUser()).thenReturn(matchManagerUser);
+        when(accessScopeService.isTournamentInScope(match.getTournament())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deleteEvent(teamOnlyTry.getId(), null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Grace period expired and no override permissions");
+    }
+
+    @Test
+    void userWithAssignedRoleMatchManagerOnMatchCanEditLockedEvent() {
+        teamOnlyTry.setCreatedAt(LocalDateTime.now().minusMinutes(30));
+        User officialUser = User.builder().id(UUID.randomUUID())
+                .roles(Set.of(Role.builder().name("ROLE_CLUB_ADMIN").build()))
+                .build();
+        when(userService.getCurrentUser()).thenReturn(officialUser);
+        when(accessScopeService.isTournamentInScope(match.getTournament())).thenReturn(false);
+
+        OfficialRegistry registry = OfficialRegistry.builder()
+                .id(UUID.randomUUID())
+                .user(officialUser)
+                .build();
+        MatchOfficial assignment = MatchOfficial.builder()
+                .id(UUID.randomUUID())
+                .match(match)
+                .official(registry)
+                .assignedRole("MATCH_MANAGER")
+                .isConfirmed(true)
+                .build();
+        when(matchOfficialRepository.findByMatchId(match.getId())).thenReturn(java.util.List.of(assignment));
+        when(playerRepository.findById(player.getId())).thenReturn(Optional.of(player));
+        when(playerTeamRepository.existsByPlayerIdAndTeamId(player.getId(), team.getId())).thenReturn(true);
+
+        MatchEventResponse response = service.updateEvent(teamOnlyTry.getId(), withPlayer(player.getId()), null);
+
+        assertThat(teamOnlyTry.getPlayer()).isSameAs(player);
+        assertThat(response.getPlayerName()).isEqualTo("Alex Test");
     }
 }

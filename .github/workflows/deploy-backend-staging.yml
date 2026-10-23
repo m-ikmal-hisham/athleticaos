@@ -1,30 +1,39 @@
 name: Deploy Backend to Staging
 
+# Staging backend deploy pipeline:
+# 1. GitHub Actions signs in to AWS via OIDC assuming role athleticaos-gha-staging (no access keys, no SSH).
+# 2. Builds amd64 Docker image in backend/ and pushes to Amazon ECR (${{ vars.ECR_REPOSITORY }}:staging-${{ github.sha }}).
+# 3. Invokes AWS Systems Manager (SSM) RunShellScript on EC2 (${{ vars.EC2_INSTANCE_ID }}):
+#    - ECR login and disk clean-up before pull
+#    - Pulls new image from ECR
+#    - Restarts athleticaos-backend container with identical port binding (127.0.0.1:8080:8080), env file, and volumes
+#    - Runs 9 x 10s health check on http://localhost:8080/actuator/health
+#    - Traps EXIT to ensure Docker logs out of ECR
+# 4. Redeploy / Rollback: Trigger workflow manually via workflow_dispatch with image_tag (e.g. staging-<sha>).
+#    When provided, tests and build/push steps are skipped and that tag is deployed directly via SSM.
+
 on:
   push:
     branches: [staging]
-    # Only a release that changes the backend redeploys it. Every deploy stops and restarts the
-    # container (a short API outage), which frontend-only releases used to trigger during live
-    # events. The filter is the same one Backend CI uses. To redeploy the backend without a code
-    # change (e.g. after editing the server's .env.staging), run this workflow by hand:
-    # Actions > Deploy Backend to Staging > Run workflow, on the staging branch.
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend-staging.yml'
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Redeploy an existing ECR tag, e.g. staging-<sha>; leave empty to build'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   group: deploy-backend-staging-${{ github.ref }}
-  cancel-in-progress: true
-
-# NOTE: Tests must pass before deployment to staging.
-# TODO: Frontend lint gate is intentionally deferred. Currently `npm run lint` fails
-# with 8 pre-existing errors and 215 warnings under zero-warning policy. Enable frontend
-# lint gate once those issues are resolved.
+  cancel-in-progress: false
 
 jobs:
   test:
     name: Backend Unit Tests
+    if: ${{ inputs.image_tag == '' || inputs.image_tag == null }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -44,6 +53,7 @@ jobs:
 
   integration-test:
     name: Backend Integration Tests
+    if: ${{ inputs.image_tag == '' || inputs.image_tag == null }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -64,80 +74,156 @@ jobs:
   deploy:
     name: Deploy Backend
     needs: [test, integration-test]
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-staging-backend-${{ github.run_id }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Docker Buildx
+        if: ${{ inputs.image_tag == '' || inputs.image_tag == null }}
         uses: docker/setup-buildx-action@v4
 
-      - name: Build Docker image
+      - name: Build and push Docker image
+        if: ${{ inputs.image_tag == '' || inputs.image_tag == null }}
         working-directory: backend
-        run: docker build -t athleticaos-backend:${{ github.sha }} --build-arg GIT_SHA=${{ github.sha }} .
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:staging-${GIT_SHA}"
+          docker build --platform linux/amd64 -t "$IMAGE_URI" --build-arg GIT_SHA="$GIT_SHA" .
+          docker push "$IMAGE_URI"
 
-      - name: Save Docker image
-        run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
+      - name: Deploy via AWS Systems Manager
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          TARGET_TAG: ${{ inputs.image_tag != '' && inputs.image_tag || format('staging-{0}', github.sha) }}
+        run: |
+          # Validate TARGET_TAG format to prevent command injection
+          [[ "$TARGET_TAG" =~ ^staging-[0-9a-f]{40}$ ]] || { echo "Invalid image tag: $TARGET_TAG" >&2; exit 1; }
 
-      - name: Copy image to EC2
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: backend-image.tar.gz
-          target: /home/ec2-user/
+          export TARGET_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${TARGET_TAG}"
+          echo "Target image: $TARGET_IMAGE"
 
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Free disk space before loading new image
-            echo "Cleaning up disk space..."
-            docker image prune -af --filter "until=24h"
-            docker container prune -f
-            docker builder prune -af
+          # Build remote script parameter file via Python 3 without nested shell quoting
+          python3 - << 'EOF'
+          import json, os
 
-            # Load the new Docker image
-            docker load < /home/ec2-user/backend-image.tar.gz
+          region = os.environ['AWS_REGION']
+          registry = os.environ['ECR_REGISTRY']
+          image = os.environ['TARGET_IMAGE']
 
-            # Stop and remove old container (|| true prevents error if not running)
-            docker stop athleticaos-backend || true
-            docker rm athleticaos-backend || true
+          commands = [
+              "set -euo pipefail",
+              f"REGION='{region}'",
+              f"REGISTRY='{registry}'",
+              f"IMAGE='{image}'",
+              'echo "==> Authenticating Docker to ECR..."',
+              'aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"',
+              'trap \'docker logout "$REGISTRY" >/dev/null 2>&1 || true\' EXIT',
+              'echo "==> Cleaning up disk space..."',
+              'docker image prune -af --filter "until=24h"',
+              'docker container prune -f',
+              'docker builder prune -af',
+              'echo "==> Pulling $IMAGE..."',
+              'docker pull "$IMAGE"',
+              'echo "==> Stopping and removing old container..."',
+              'docker stop athleticaos-backend || true',
+              'docker rm athleticaos-backend || true',
+              'echo "==> Starting new container..."',
+              'docker run -d --name athleticaos-backend --restart unless-stopped --env-file /home/ec2-user/athleticaos/backend/.env.staging -p 127.0.0.1:8080:8080 -v athleticaos-uploads:/app/uploads "$IMAGE"',
+              'echo "==> Waiting for backend health check..."',
+              'for i in $(seq 1 9); do',
+              '  if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then',
+              '    echo "Backend health check passed on attempt $i!"',
+              '    break',
+              '  fi',
+              '  if [ "$i" -eq 9 ]; then',
+              '    echo "Health check failed after 9 attempts (90s). Checking logs..."',
+              '    docker logs --tail 30 athleticaos-backend',
+              '    exit 1',
+              '  fi',
+              '  echo "Attempt $i/9 failed, retrying in 10s..."',
+              '  sleep 10',
+              'done',
+              'echo "==> Pruning dangling images..."',
+              'docker image prune -f',
+              'echo "==> Deployment complete!"'
+          ]
 
-            # Start new container with existing env file and uploads volume
-            docker run -d \
-              --name athleticaos-backend \
-              --restart unless-stopped \
-              --env-file /home/ec2-user/athleticaos/backend/.env.staging \
-              -p 8080:8080 \
-              -v athleticaos-uploads:/app/uploads \
-              athleticaos-backend:${{ github.sha }}
+          with open("ssm-params.json", "w") as f:
+              json.dump({"commands": commands}, f, indent=2)
+          EOF
 
-            # Health check with retries (Spring Boot + Flyway can take 30-60s)
-            echo "Waiting for backend to start..."
-            for i in $(seq 1 9); do
-              if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
-                echo "Backend health check passed on attempt $i!"
-                break
-              fi
-              if [ $i -eq 9 ]; then
-                echo "Health check failed after 9 attempts (90s). Checking logs..."
-                docker logs --tail 30 athleticaos-backend
-                exit 1
-              fi
-              echo "Attempt $i/9 failed, retrying in 10s..."
-              sleep 10
-            done
+          echo "Sending SSM command to instance $EC2_INSTANCE_ID..."
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --parameters file://ssm-params.json \
+            --timeout-seconds 900 \
+            --comment "staging backend $TARGET_TAG" \
+            --query "Command.CommandId" \
+            --output text)
 
-            # Clean up
-            rm /home/ec2-user/backend-image.tar.gz
+          echo "SSM Command ID: $COMMAND_ID"
 
-            # Remove old Docker images (keep only the latest 2)
-            docker image prune -f
-            echo "Deployment complete!"
+          # Poll get-command-invocation every 10s for up to 10 minutes (60 iterations)
+          echo "Waiting for command execution to complete..."
+          sleep 10
+          STATUS="Pending"
+          for i in $(seq 1 60); do
+            INVOCATION=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --output json 2>/dev/null || true)
+
+            if [ -n "$INVOCATION" ]; then
+              STATUS=$(echo "$INVOCATION" | jq -r '.Status // "Pending"')
+              echo "Poll attempt $i/60: Status=$STATUS"
+              case "$STATUS" in
+                Success|Failed|Cancelled|TimedOut)
+                  echo "Command finished with status: $STATUS"
+                  echo "--- StandardOutputContent ---"
+                  echo "$INVOCATION" | jq -r '.StandardOutputContent // ""'
+                  echo "--- StandardErrorContent ---"
+                  echo "$INVOCATION" | jq -r '.StandardErrorContent // ""'
+                  if [ "$STATUS" = "Success" ]; then
+                    exit 0
+                  else
+                    exit 1
+                  fi
+                  ;;
+              esac
+            else
+              echo "Poll attempt $i/60: Invocation not yet available..."
+            fi
+            sleep 10
+          done
+
+          echo "Timed out waiting for SSM command $COMMAND_ID after 10 minutes" >&2
+          exit 1

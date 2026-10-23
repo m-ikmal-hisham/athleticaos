@@ -1,0 +1,18 @@
+{
+  "title": "AthleticaOS Rugby — live scores, fixtures and results",
+  "hero": {
+    "badge": "Malaysia Rugby Competitions",
+    "titleLine1": "Live Scores, Fixtures",
+    "titleLine2": "& Results",
+    "subtitle": "Follow all rugby competitions across Malaysia in real-time. Powered by AthleticaOS Rugby.",
+    "cta": "View All Tournaments"
+  },
+  "section": {
+    "featured": "Featured Tournaments",
+    "liveAndUpcoming": "Live and upcoming tournaments",
+    "viewAll": "View all →"
+  },
+  "empty": {
+    "noActive": "No active tournaments at the moment"
+  }
+}

@@ -14,6 +14,7 @@ export interface User {
     active: boolean;
     isActive?: boolean; // Backend returns isActive
     status?: string;
+    inviteStatus?: string | null;
     createdAt?: string;
     updatedAt?: string;
     // Address fields
@@ -45,6 +46,30 @@ export interface RegisterRequest {
 export interface AuthResponse {
     token: string;
     user: User;
+}
+
+export interface AuthFeaturesResponse {
+    accountEmails: boolean;
+}
+
+export interface InviteDetailsResponse {
+    email: string;
+    firstName: string;
+    organisationName?: string;
+}
+
+export interface AcceptInviteRequest {
+    token: string;
+    newPassword: string;
+}
+
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordWithTokenRequest {
+    token: string;
+    newPassword: string;
 }
 
 // ============================================
@@ -317,6 +342,9 @@ export interface Tournament {
         logoUrl?: string;
     };
     venues?: TournamentVenue[];
+    featured?: boolean;
+    featuredOrder?: number | null;
+    accessLevel?: 'MANAGE' | 'READ_ONLY';
 }
 
 export interface TournamentVenue {
@@ -490,6 +518,8 @@ export interface Match {
     resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
     /** Set only for walkovers and byes, which complete without a scoreline. */
     winnerTeamId?: string;
+    // Admin match detail only: the backend says whether the caller may score this match.
+    canWrite?: boolean;
     homeTeamPlaceholder?: string;
     awayTeamPlaceholder?: string;
     

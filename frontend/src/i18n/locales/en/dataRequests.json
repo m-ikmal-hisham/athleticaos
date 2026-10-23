@@ -1,0 +1,33 @@
+{
+  "pageTitle": "Data requests — AthleticaOS",
+  "title": "Personal data requests",
+  "description": "Under the Personal Data Protection Act 2010, you have rights over how your personal data is handled. Choose a request type below to send your request directly to our privacy team.",
+  "rightsLinkText": "Learn more in the Your rights section of our Privacy notice",
+  "options": {
+    "copy": {
+      "title": "Get a copy of my data",
+      "description": "Request an export of the personal data we hold about you across tournaments, teams, and match records.",
+      "action": "Request my data"
+    },
+    "correct": {
+      "title": "Correct my details",
+      "description": "Ask us to update incorrect or outdated details, such as misspelled names or outdated information.",
+      "action": "Request a correction"
+    },
+    "remove": {
+      "title": "Remove or hide my public profile",
+      "description": "Ask to remove your public player profile, hide specific details, or anonymise your public records.",
+      "action": "Request removal or masking"
+    },
+    "withdraw": {
+      "title": "Withdraw consent",
+      "description": "Withdraw your consent or request limits on how your personal data is processed on the platform.",
+      "action": "Withdraw consent"
+    }
+  },
+  "guardian": {
+    "heading": "Acting for a child under 18?",
+    "body": "Parents and legal guardians can submit any of these requests on behalf of their child. Please mention that you are a parent or guardian when submitting your enquiry.",
+    "replyNotice": "We reply within 21 days."
+  }
+}

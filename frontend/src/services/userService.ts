@@ -20,4 +20,9 @@ export const userService = {
     async delete(id: string): Promise<void> {
         await axios.delete(`/users/${id}`);
     },
+
+    async resendInvite(id: string): Promise<{ message?: string; emailSent?: boolean }> {
+        const response = await axios.post<{ message?: string; emailSent?: boolean }>(`/users/${id}/resend-invite`);
+        return response.data;
+    },
 };

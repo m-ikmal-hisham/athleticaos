@@ -49,6 +49,12 @@ class MatchLineupServiceImplTest {
     @Mock
     private PlayerRepository playerRepository;
 
+    @Mock
+    private com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
+
+    @Mock
+    private com.athleticaos.backend.services.AccessScopeService accessScopeService;
+
     @InjectMocks
     private MatchLineupServiceImpl matchLineupService;
 
@@ -61,6 +67,8 @@ class MatchLineupServiceImplTest {
         matchId = UUID.randomUUID();
         teamId = UUID.randomUUID();
         team = Team.builder().id(teamId).name("Test Team").build();
+        org.mockito.Mockito.lenient().when(accessScopeService.canWriteMatch(any(UUID.class))).thenReturn(true);
+        org.mockito.Mockito.lenient().when(accessScopeService.canWriteMatch(any(com.athleticaos.backend.entities.Match.class))).thenReturn(true);
     }
 
     private MatchLineupEntryDTO createEntry(UUID playerId, boolean isStarter, LineupRole role) {

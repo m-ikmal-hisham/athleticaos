@@ -2,6 +2,7 @@ import { Fragment, ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
+import { useUIStore } from '@/store/ui.store';
 
 interface ModalProps {
     isOpen: boolean;
@@ -12,6 +13,15 @@ interface ModalProps {
 }
 
 export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
+    // Overlay counter only follows open/close. Keeping it out of the onClose effect matters:
+    // callers often pass an inline onClose, and a store write on every re-render loops forever.
+    useEffect(() => {
+        if (!isOpen) return;
+        const { incrementOverlayCount, decrementOverlayCount } = useUIStore.getState();
+        incrementOverlayCount();
+        return () => decrementOverlayCount();
+    }, [isOpen]);
+
     useEffect(() => {
         if (!isOpen) return;
 

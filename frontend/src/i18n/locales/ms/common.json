@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "home": "Utama",
+    "tournaments": "Kejohanan",
+    "tournamentsShort": "Kejohanan",
+    "teams": "Pasukan",
+    "players": "Pemain",
+    "more": "Lagi",
+    "howItWorks": "Cara ia berfungsi",
+    "partners": "Rakan kongsi",
+    "contact": "Hubungi",
+    "signIn": "Log masuk",
+    "dashboard": "Papan pemuka",
+    "privacy": "Privasi",
+    "terms": "Terma",
+    "dataRequests": "Permintaan data",
+    "about": "Tentang kami",
+    "journey": "Perjalanan kami",
+    "skipToContent": "Langkau ke kandungan",
+    "primaryNav": "Navigasi utama",
+    "back": "Kembali",
+    "expandTabBar": "{{label}} (Kembangkan bar tab)"
+  },
+  "language": {
+    "label": "Bahasa",
+    "en": "English",
+    "ms": "Bahasa Melayu"
+  },
+  "footer": {
+    "ownedBy": "Dimiliki dan dikendalikan oleh {{name}}",
+    "inPartnershipWith": "Dengan kerjasama {{partners}}",
+    "copyright": "© {{year}} {{holder}}."
+  },
+  "status": {
+    "live": "LANGSUNG",
+    "liveNow": "LANGSUNG SEKARANG",
+    "upcoming": "AKAN DATANG",
+    "completed": "TAMAT"
+  },
+  "accessory": {
+    "liveNow": "Langsung sekarang: {{name}}"
+  },
+  "ribbon": {
+    "staging": "LAMAN UJIAN — data di sini bukan sebenar dan mungkin ditetapkan semula",
+    "local": "TEMPATAN"
+  },
+  "dialog": {
+    "close": "Tutup"
+  }
+}

@@ -63,6 +63,7 @@ public class MatchServiceImpl implements MatchService {
     private final BracketService bracketService;
     private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
     private final PlatformTransactionManager transactionManager;
+    private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
     private TransactionTemplate requiresNewTransactionTemplate;
 
@@ -94,53 +95,35 @@ public class MatchServiceImpl implements MatchService {
     @Override
     @Transactional(readOnly = true)
     public List<MatchResponse> getAllMatches(String status, UUID tournamentId, UUID teamId) {
-        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+        java.util.Set<UUID> accessibleTournamentIds = accessScopeService.getAccessibleTournamentIds();
         List<Match> matches;
 
-        if (teamId != null) {
-            matches = matchRepository.findByHomeTeamIdOrAwayTeamId(teamId, teamId);
-            
-            // If the user has a restricted set of accessible organisations, filter results
-            if (accessibleIds != null) {
-                matches = matches.stream()
-                        .filter(m -> {
-                            UUID homeOrgId = m.getHomeTeam() != null && m.getHomeTeam().getOrganisation() != null ? m.getHomeTeam().getOrganisation().getId() : null;
-                            UUID awayOrgId = m.getAwayTeam() != null && m.getAwayTeam().getOrganisation() != null ? m.getAwayTeam().getOrganisation().getId() : null;
-                            UUID tournamentOrgId = m.getTournament() != null && m.getTournament().getOrganiserOrg() != null ? m.getTournament().getOrganiserOrg().getId() : null;
-                            return (homeOrgId != null && accessibleIds.contains(homeOrgId)) ||
-                                   (awayOrgId != null && accessibleIds.contains(awayOrgId)) ||
-                                   (tournamentOrgId != null && accessibleIds.contains(tournamentOrgId));
-                        })
-                        .collect(Collectors.toList());
-            }
-
-            // If tournamentId is provided, filter the results
+        if (accessibleTournamentIds == null) {
+            // SUPER_ADMIN sees all
             if (tournamentId != null) {
-                matches = matches.stream()
-                        .filter(m -> m.getTournament() != null && m.getTournament().getId().equals(tournamentId))
-                        .collect(Collectors.toList());
+                matches = matchRepository.findByTournamentIdWithDetails(tournamentId);
+            } else {
+                matches = matchRepository.findAllWithDetails();
             }
+        } else if (accessibleTournamentIds.isEmpty()) {
+            matches = java.util.Collections.emptyList();
         } else {
-            if (accessibleIds == null) {
-                // SUPER_ADMIN sees all
-                if (tournamentId != null) {
+            if (tournamentId != null) {
+                if (accessibleTournamentIds.contains(tournamentId)) {
                     matches = matchRepository.findByTournamentIdWithDetails(tournamentId);
                 } else {
-                    matches = matchRepository.findAllWithDetails();
+                    matches = java.util.Collections.emptyList();
                 }
-            } else if (accessibleIds.isEmpty()) {
-                matches = java.util.Collections.emptyList();
             } else {
-                // Filter by accessible organisations
-                matches = matchRepository.findMatchesByOrganisationIds(accessibleIds);
-
-                // If tournamentId is provided, filter the results
-                if (tournamentId != null) {
-                    matches = matches.stream()
-                            .filter(m -> m.getTournament() != null && m.getTournament().getId().equals(tournamentId))
-                            .collect(Collectors.toList());
-                }
+                matches = matchRepository.findByTournamentIdInWithDetails(accessibleTournamentIds);
             }
+        }
+
+        if (teamId != null) {
+            matches = matches.stream()
+                    .filter(m -> (m.getHomeTeam() != null && teamId.equals(m.getHomeTeam().getId()))
+                            || (m.getAwayTeam() != null && teamId.equals(m.getAwayTeam().getId())))
+                    .collect(Collectors.toList());
         }
 
         // Filter by status if provided
@@ -154,6 +137,11 @@ public class MatchServiceImpl implements MatchService {
                 return java.util.Collections.emptyList();
             }
         }
+
+        // Final filter to ensure caller can read each match
+        matches = matches.stream()
+                .filter(accessScopeService::canReadMatch)
+                .collect(Collectors.toList());
 
         return mapMatchesToResponses(matches);
     }
@@ -217,6 +205,13 @@ public class MatchServiceImpl implements MatchService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Tournament not found with ID: " + tournamentId));
+
+        if (!accessScopeService.isTournamentInScope(tournament)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament match creation outside organiser scope: userId={}, tournamentId={}",
+                    currentUserId, tournament.getId());
+            throw new EntityNotFoundException("Tournament not found");
+        }
 
         Team homeTeam = null;
         UUID homeTeamId = request.getHomeTeamId();
@@ -312,6 +307,13 @@ public class MatchServiceImpl implements MatchService {
         }
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
+
+        if (match.getTournament() == null || !accessScopeService.isTournamentInScope(match.getTournament())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match update outside organiser scope: userId={}, matchId={}",
+                    currentUserId, match.getId());
+            throw new EntityNotFoundException("Match not found");
+        }
 
         if (request.getMatchDate() != null) {
             match.setMatchDate(request.getMatchDate());
@@ -533,9 +535,16 @@ public class MatchServiceImpl implements MatchService {
         if (id == null) {
             throw new IllegalArgumentException("Match ID must not be null");
         }
-        if (!matchRepository.existsById(id)) {
-            throw new EntityNotFoundException("Match not found with ID: " + id);
+        Match match = matchRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
+
+        if (match.getTournament() == null || !accessScopeService.isTournamentInScope(match.getTournament())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match delete outside organiser scope: userId={}, matchId={}",
+                    currentUserId, match.getId());
+            throw new EntityNotFoundException("Match not found");
         }
+
         matchEventRepository.deleteByMatchId(id);
         matchLineupRepository.deleteByMatchId(id);
         matchOfficialRepository.deleteByMatchId(id);
@@ -551,6 +560,16 @@ public class MatchServiceImpl implements MatchService {
     public void deleteMatches(List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return;
+        }
+        for (UUID id : ids) {
+            Match match = matchRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
+            if (match.getTournament() == null || !accessScopeService.isTournamentInScope(match.getTournament())) {
+                UUID currentUserId = accessScopeService.getCurrentUserId();
+                log.warn("Access denied for match delete outside organiser scope: userId={}, matchId={}",
+                        currentUserId, match.getId());
+                throw new EntityNotFoundException("Match not found");
+            }
         }
         matchEventRepository.deleteByMatchIdIn(ids);
         matchLineupRepository.deleteByMatchIdIn(ids);
@@ -815,6 +834,13 @@ public class MatchServiceImpl implements MatchService {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
 
+        if (!accessScopeService.canWriteMatch(match)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match status update outside permitted scope: userId={}, matchId={}",
+                    currentUserId, match.getId());
+            throw new EntityNotFoundException("Match not found");
+        }
+
         MatchStatus matchStatus;
         try {
             matchStatus = MatchStatus.valueOf(status.toUpperCase());
@@ -854,6 +880,13 @@ public class MatchServiceImpl implements MatchService {
 
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + id));
+
+        if (match.getTournament() == null || !accessScopeService.isTournamentInScope(match.getTournament())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match unplayed result outside organiser scope: userId={}, matchId={}",
+                    currentUserId, match.getId());
+            throw new EntityNotFoundException("Match not found");
+        }
 
         Team winner = resolveUnplayedWinner(match, resultType, winnerTeamId);
 

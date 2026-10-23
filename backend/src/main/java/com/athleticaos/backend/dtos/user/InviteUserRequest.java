@@ -33,8 +33,7 @@ public class InviteUserRequest {
     @NotNull(message = "Organisation ID is required")
     private UUID organisationId;
 
-    // Inviter-set initial password; validated by PasswordPolicy. The user must change it at first sign-in.
-    @NotBlank(message = "Password is required")
+    // Optional initial password. If omitted and mail is enabled, an invite email is sent instead.
     @ToString.Exclude
     private String password;
 }

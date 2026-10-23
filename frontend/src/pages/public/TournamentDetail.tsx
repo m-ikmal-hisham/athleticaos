@@ -402,13 +402,13 @@ export default function TournamentDetail() {
     return (
         <div className="space-y-5 md:space-y-8 pb-20">
 
-            {/* Nav & Context */}
+            {/* Nav & Context (≥ lg; phones get the Back row from PublicLayout) */}
             <Breadcrumbs
                 items={[
                     { label: 'Tournaments', path: '/tournaments' },
                     { label: tournament.name }
                 ]}
-                className="mb-4"
+                className="hidden lg:block mb-4"
             />
 
             {/* Hero / Header Section */}

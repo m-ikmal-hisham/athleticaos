@@ -155,4 +155,90 @@ public class UserControllerSecurityTest {
                         .content("{\"newPassword\":\"Violet-Kettle-Harbour-58\"}"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void anonymousCannotResendInvite() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", java.util.UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "PLAYER")
+    void playerCannotResendInvite() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", java.util.UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "ORG_ADMIN")
+    void orgAdminResendingOutOfHierarchyGets404() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new jakarta.persistence.EntityNotFoundException("User not found"))
+                .when(userService).resendInvite(org.mockito.ArgumentMatchers.eq(targetId), org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", targetId))
+                .andExpect(status().isNotFound())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("User not found"));
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "ORG_ADMIN")
+    void resendInviteForAcceptedUserReturns400() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("This user has already set their password."))
+                .when(userService).resendInvite(org.mockito.ArgumentMatchers.eq(targetId), org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", targetId))
+                .andExpect(status().isBadRequest())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("This user has already set their password."));
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "ORG_ADMIN")
+    void resendInviteForDeactivatedUserReturns400() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("This user is deactivated."))
+                .when(userService).resendInvite(org.mockito.ArgumentMatchers.eq(targetId), org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", targetId))
+                .andExpect(status().isBadRequest())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("This user is deactivated."));
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "SUPER_ADMIN")
+    void superAdminCanResendInvite() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.when(userService.resendInvite(org.mockito.ArgumentMatchers.eq(targetId), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(com.athleticaos.backend.dtos.user.InviteUserResponse.builder()
+                        .message("Invite resent successfully.")
+                        .emailSent(true)
+                        .build());
+
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", targetId))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("Invite resent successfully."));
+
+        org.mockito.Mockito.verify(userService).resendInvite(org.mockito.ArgumentMatchers.eq(targetId), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "ORG_ADMIN")
+    void resendInviteRateLimitExceededReturns429() throws Exception {
+        java.util.UUID targetId = java.util.UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                "Too many invitation resends. Please wait before trying again."))
+                .when(userService).resendInvite(org.mockito.ArgumentMatchers.eq(targetId), org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(post("/api/v1/users/{id}/resend-invite", targetId))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status").value(429))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.message")
+                        .value("Too many invitation resends. Please wait before trying again."));
+    }
 }

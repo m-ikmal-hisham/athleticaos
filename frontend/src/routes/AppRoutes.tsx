@@ -23,8 +23,14 @@ const PlayersList = lazy(() => import('@/pages/public/PlayersList'));
 const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
+const Journey = lazy(() => import('@/pages/public/Journey'));
 const Partners = lazy(() => import('@/pages/public/Partners'));
+const LegalPage = lazy(() => import('@/pages/public/LegalPage'));
+const DataRequests = lazy(() => import('@/pages/public/DataRequests'));
 const Login = lazyNamed(() => import('@/pages/public/Login'), 'Login');
+const ForgotPassword = lazyNamed(() => import('@/pages/public/ForgotPassword'), 'ForgotPassword');
+const ResetPassword = lazyNamed(() => import('@/pages/public/ResetPassword'), 'ResetPassword');
+const AcceptInvite = lazyNamed(() => import('@/pages/public/AcceptInvite'), 'AcceptInvite');
 // Signup — behind the 'signup' feature flag
 const Signup = lazyNamed(() => import('@/pages/public/Signup'), 'Signup');
 const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
@@ -47,6 +53,7 @@ const Activity = lazy(() => import('@/pages/dashboard/Activity'));
 const TournamentRosters = lazy(() => import('@/pages/dashboard/TournamentRosters'));
 const DashboardTournamentDetail = lazy(() => import('@/pages/dashboard/TournamentDetail'));
 const PeopleDirectory = lazy(() => import('@/pages/dashboard/PeopleDirectory'));
+const You = lazy(() => import('@/pages/dashboard/You'));
 
 // ─── Dashboard Sub-pages ────────────────────────────────────────────
 const CreateUser = lazyNamed(() => import('@/pages/dashboard/users/CreateUser'), 'CreateUser');
@@ -135,6 +142,10 @@ export const router = createBrowserRouter([
                 element: <HowItWorks />,
             },
             {
+                path: '/journey',
+                element: <Journey />,
+            },
+            {
                 path: '/partners',
                 element: <Partners />,
             },
@@ -162,6 +173,18 @@ export const router = createBrowserRouter([
                 path: '/players/:id',
                 element: <PublicPlayerProfile />,
             },
+            {
+                path: '/privacy',
+                element: <LegalPage docType="privacy" />,
+            },
+            {
+                path: '/terms',
+                element: <LegalPage docType="terms" />,
+            },
+            {
+                path: '/data-requests',
+                element: <DataRequests />,
+            },
         ],
     },
     // Auth Routes
@@ -171,6 +194,18 @@ export const router = createBrowserRouter([
             {
                 path: '/login',
                 element: <Login />,
+            },
+            {
+                path: '/forgot-password',
+                element: <ForgotPassword />,
+            },
+            {
+                path: '/reset-password',
+                element: <ResetPassword />,
+            },
+            {
+                path: '/accept-invite',
+                element: <AcceptInvite />,
             },
             // /signup route — behind the 'signup' feature flag
             {
@@ -198,6 +233,10 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <DashboardHome />,
+            },
+            {
+                path: 'you',
+                element: <You />,
             },
             {
                 path: 'users',
@@ -402,7 +441,7 @@ export const router = createBrowserRouter([
             {
                 path: 'officials',
                 element: (
-                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                    <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
                         <Officials />
                     </AuthGuard>
                 ),
@@ -411,7 +450,7 @@ export const router = createBrowserRouter([
                 path: 'operations',
                 element: (
                     <FeatureRoute feature="operations">
-                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL']}>
+                        <AuthGuard requiredRoles={['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']}>
                             <OperationsConsole />
                         </AuthGuard>
                     </FeatureRoute>

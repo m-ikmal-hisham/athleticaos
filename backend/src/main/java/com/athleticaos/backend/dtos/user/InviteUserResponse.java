@@ -19,4 +19,5 @@ public class InviteUserResponse {
     private UUID organisationId;
     private String inviteStatus;
     private String message;
+    private boolean emailSent;
 }

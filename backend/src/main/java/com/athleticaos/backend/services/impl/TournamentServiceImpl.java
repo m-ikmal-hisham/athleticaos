@@ -26,11 +26,16 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import com.athleticaos.backend.enums.TournamentStageType;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -53,18 +58,45 @@ public class TournamentServiceImpl implements TournamentService {
     private final TournamentStageRepository tournamentStageRepository;
     private final com.athleticaos.backend.services.MatchService matchService;
     private final com.athleticaos.backend.repositories.TournamentVenueRepository venueRepository;
+    private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private javax.sql.DataSource dataSource;
+    private Boolean isPostgres;
+
+    private boolean isPostgresDatabase() {
+        if (isPostgres == null) {
+            if (dataSource == null) {
+                isPostgres = false;
+            } else {
+                try (java.sql.Connection conn = dataSource.getConnection()) {
+                    String productName = conn.getMetaData().getDatabaseProductName();
+                    isPostgres = productName != null && productName.toLowerCase().contains("postgres");
+                } catch (Exception e) {
+                    isPostgres = false;
+                }
+            }
+        }
+        return Boolean.TRUE.equals(isPostgres);
+    }
+
+    private void acquireFeaturedAdvisoryLock() {
+        if (isPostgresDatabase()) {
+            tournamentRepository.acquireFeaturedAdvisoryLock();
+        }
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<TournamentResponse> getAllTournaments(String level) {
-        java.util.Set<UUID> accessibleIds = userService.getAccessibleOrgIdsForCurrentUser();
+        java.util.Set<UUID> accessibleTournamentIds = accessScopeService.getAccessibleTournamentIds();
         List<Tournament> tournaments;
-        if (accessibleIds == null) {
+        if (accessibleTournamentIds == null) {
             tournaments = tournamentRepository.findAll();
-        } else if (accessibleIds.isEmpty()) {
+        } else if (accessibleTournamentIds.isEmpty()) {
             tournaments = java.util.Collections.emptyList();
         } else {
-            tournaments = tournamentRepository.findByOrganiserOrg_IdIn(accessibleIds);
+            tournaments = tournamentRepository.findByIdIn(accessibleTournamentIds);
         }
 
         return tournaments.stream()
@@ -119,6 +151,13 @@ public class TournamentServiceImpl implements TournamentService {
         Tournament tournament = tournamentRepository.findById(id)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (!accessScopeService.isTournamentInScope(tournament)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament dashboard outside organiser scope: userId={}, tournamentId={}",
+                    currentUserId, tournament.getId());
+            throw new EntityNotFoundException("Tournament not found");
+        }
 
         int totalMatches = matchRepository.findByTournamentId(id).size();
         int completedMatches = matchRepository
@@ -182,6 +221,13 @@ public class TournamentServiceImpl implements TournamentService {
         // Validate organiser organisation exists
         Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
                 .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
+
+        if (!accessScopeService.isOrganisationInScope(org.getId())) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for organisation outside accessible scope: userId={}, organisationId={}",
+                    currentUserId, org.getId());
+            throw new EntityNotFoundException("Organisation not found");
+        }
 
         Tournament.TournamentBuilder builder = Tournament.builder()
                 .organiserOrg(org)
@@ -285,9 +331,18 @@ public class TournamentServiceImpl implements TournamentService {
             tournament.setLevel(request.getLevel());
         }
         if (request.getOrganiserOrgId() != null) {
-            Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
-                    .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
-            tournament.setOrganiserOrg(org);
+            UUID currentOrgId = tournament.getOrganiserOrg() != null ? tournament.getOrganiserOrg().getId() : null;
+            if (!request.getOrganiserOrgId().equals(currentOrgId)) {
+                if (!accessScopeService.isOrganisationInScope(request.getOrganiserOrgId())) {
+                    UUID currentUserId = accessScopeService.getCurrentUserId();
+                    log.warn("Access denied outside organiser scope: userId={}, organisationId={}",
+                            currentUserId, request.getOrganiserOrgId());
+                    throw new EntityNotFoundException("Organisation not found");
+                }
+                Organisation org = organisationRepository.findById(request.getOrganiserOrgId())
+                        .orElseThrow(() -> new EntityNotFoundException("Organiser Organisation not found"));
+                tournament.setOrganiserOrg(org);
+            }
         }
         if (request.getStartDate() != null) {
             tournament.setStartDate(request.getStartDate());
@@ -314,6 +369,9 @@ public class TournamentServiceImpl implements TournamentService {
         }
         if (request.getIsPublished() != null) {
             tournament.setPublished(request.getIsPublished());
+            if (!request.getIsPublished()) {
+                unfeatureTournamentIfFeatured(tournament, httpRequest);
+            }
         }
 
         // Handle Season Linking
@@ -401,6 +459,7 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setDeleted(true);
+        unfeatureTournamentIfFeatured(tournament, null);
         tournamentRepository.save(tournament);
 
         // Cascade soft delete to matches and teams
@@ -417,6 +476,9 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         tournament.setPublished(publish);
+        if (!publish) {
+            unfeatureTournamentIfFeatured(tournament, httpRequest);
+        }
         Tournament savedTournament = tournamentRepository.save(tournament);
         auditLogger.logTournamentUpdated(savedTournament, httpRequest);
         return mapToResponse(savedTournament);
@@ -437,6 +499,7 @@ public class TournamentServiceImpl implements TournamentService {
         // Sync flags
         if (status == com.athleticaos.backend.enums.TournamentStatus.DRAFT) {
             tournament.setPublished(false);
+            unfeatureTournamentIfFeatured(tournament, httpRequest);
         } else {
             tournament.setPublished(true);
         }
@@ -482,6 +545,13 @@ public class TournamentServiceImpl implements TournamentService {
     private byte[] generateCsv(UUID tournamentId, boolean includeResults) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (!accessScopeService.isTournamentInScope(tournament)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for tournament export outside organiser scope: userId={}, tournamentId={}",
+                    currentUserId, tournament.getId());
+            throw new EntityNotFoundException("Tournament not found");
+        }
 
         List<Match> matches = matchRepository.findByTournamentIdWithTeams(tournamentId);
 
@@ -684,6 +754,8 @@ public class TournamentServiceImpl implements TournamentService {
                                 .maxAge(cat.getMaxAge())
                                 .build())
                         .collect(Collectors.toList()))
+                .featured(tournament.isFeatured())
+                .featuredOrder(tournament.getFeaturedOrder())
                 .build();
     }
 
@@ -1247,5 +1319,177 @@ public class TournamentServiceImpl implements TournamentService {
             }
             matchRepository.saveAll(stageMatches);
         }
+    }
+
+    private void unfeatureTournamentIfFeatured(Tournament tournament, HttpServletRequest httpRequest) {
+        if (!tournament.isFeatured()) {
+            return;
+        }
+        acquireFeaturedAdvisoryLock();
+        tournament.setFeatured(false);
+        tournament.setFeaturedOrder(null);
+        tournamentRepository.save(tournament);
+
+        List<Tournament> remaining = tournamentRepository.findFeaturedForUpdate();
+        remaining.removeIf(t -> t.getId().equals(tournament.getId()));
+        for (int i = 0; i < remaining.size(); i++) {
+            Tournament t = remaining.get(i);
+            t.setFeatured(true);
+            t.setFeaturedOrder(i + 1);
+            tournamentRepository.save(t);
+        }
+        auditLogger.logTournamentUnfeatured(tournament.getId(), httpRequest);
+    }
+
+    @Override
+    @Transactional
+    public TournamentResponse updateFeatured(UUID id, com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request,
+            HttpServletRequest httpRequest) {
+        acquireFeaturedAdvisoryLock();
+
+        Tournament tournament = tournamentRepository.findById(id)
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (Boolean.TRUE.equals(request.getFeatured())) {
+            if (!tournament.isPublished() || Boolean.TRUE.equals(tournament.getDeleted())) {
+                throw new IllegalArgumentException("Only published tournaments can be featured.");
+            }
+
+            if (request.getFeaturedOrder() != null && (request.getFeaturedOrder() < 1 || request.getFeaturedOrder() > 6)) {
+                throw new IllegalArgumentException("Order must be between 1 and 6.");
+            }
+
+            boolean isSuper = accessScopeService.isSuperAdmin();
+            List<Tournament> featuredList = tournamentRepository.findFeaturedForUpdate();
+            boolean alreadyFeatured = featuredList.stream().anyMatch(t -> t.getId().equals(id));
+
+            if (!alreadyFeatured) {
+                if (featuredList.size() >= 6) {
+                    if (isSuper) {
+                        throw new IllegalArgumentException("Six tournaments are already featured — remove one first.");
+                    } else {
+                        throw new IllegalArgumentException("The home page already shows six tournaments — ask a platform administrator to make room.");
+                    }
+                }
+
+                tournament.setFeatured(true);
+                int targetOrder;
+                if (!isSuper || request.getFeaturedOrder() == null) {
+                    targetOrder = featuredList.size() + 1;
+                } else {
+                    targetOrder = Math.min(request.getFeaturedOrder(), featuredList.size() + 1);
+                }
+
+                int targetIndex = targetOrder - 1;
+                featuredList.add(targetIndex, tournament);
+
+                for (int i = 0; i < featuredList.size(); i++) {
+                    Tournament t = featuredList.get(i);
+                    t.setFeatured(true);
+                    t.setFeaturedOrder(i + 1);
+                    tournamentRepository.save(t);
+                }
+
+                auditLogger.logTournamentFeatured(tournament.getId(), tournament.getFeaturedOrder(), httpRequest);
+            } else {
+                if (isSuper && request.getFeaturedOrder() != null) {
+                    featuredList.removeIf(t -> t.getId().equals(id));
+                    int targetOrder = Math.min(request.getFeaturedOrder(), featuredList.size() + 1);
+                    int targetIndex = targetOrder - 1;
+                    featuredList.add(targetIndex, tournament);
+
+                    for (int i = 0; i < featuredList.size(); i++) {
+                        Tournament t = featuredList.get(i);
+                        t.setFeatured(true);
+                        t.setFeaturedOrder(i + 1);
+                        tournamentRepository.save(t);
+                    }
+
+                    auditLogger.logTournamentFeatured(tournament.getId(), tournament.getFeaturedOrder(), httpRequest);
+                }
+            }
+        } else {
+            if (tournament.isFeatured()) {
+                tournament.setFeatured(false);
+                tournament.setFeaturedOrder(null);
+                tournamentRepository.save(tournament);
+
+                List<Tournament> remaining = tournamentRepository.findFeaturedForUpdate();
+                remaining.removeIf(t -> t.getId().equals(id));
+                for (int i = 0; i < remaining.size(); i++) {
+                    Tournament t = remaining.get(i);
+                    t.setFeatured(true);
+                    t.setFeaturedOrder(i + 1);
+                    tournamentRepository.save(t);
+                }
+
+                auditLogger.logTournamentUnfeatured(tournament.getId(), httpRequest);
+            }
+        }
+
+        return mapToResponse(tournament);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TournamentResponse> getFeaturedTournaments() {
+        return tournamentRepository.findFeaturedPublished().stream()
+                .limit(6)
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteEmptyStage(UUID tournamentId, UUID stageId) {
+        TournamentStage stage = tournamentStageRepository.findById(stageId)
+                .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+
+        if (stage.getTournament() == null || !stage.getTournament().getId().equals(tournamentId)) {
+            throw new EntityNotFoundException("Stage not found for this tournament");
+        }
+
+        if (matchRepository.countByStageIdIncludingDeleted(stageId) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This stage still has matches. Delete or move them first.");
+        }
+
+        boolean isGroupOrPool = Boolean.TRUE.equals(stage.getIsGroupStage()) || stage.getStageType() == TournamentStageType.POOL;
+        if (isGroupOrPool) {
+            List<com.athleticaos.backend.entities.TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
+            UUID stageCatId = stage.getCategory() != null ? stage.getCategory().getId() : null;
+            boolean hasAssignedTeams = teams.stream()
+                    .filter(tt -> tt.isActive() && !tt.isDeleted())
+                    .filter(tt -> stage.getName() != null && stage.getName().equals(tt.getPoolNumber()))
+                    .anyMatch(tt -> {
+                        UUID ttCatId = tt.getCategory() != null ? tt.getCategory().getId() : null;
+                        return Objects.equals(stageCatId, ttCatId);
+                    });
+            if (hasAssignedTeams) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Teams are still assigned to this pool.");
+            }
+        }
+
+        Integer removedOrder = stage.getDisplayOrder();
+        tournamentStageRepository.delete(stage);
+
+        if (removedOrder != null) {
+            List<TournamentStage> remaining = tournamentStageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
+            List<TournamentStage> toUpdate = new ArrayList<>();
+            for (TournamentStage s : remaining) {
+                if (s.getDisplayOrder() != null && s.getDisplayOrder() > removedOrder) {
+                    s.setDisplayOrder(s.getDisplayOrder() - 1);
+                    toUpdate.add(s);
+                }
+            }
+            if (!toUpdate.isEmpty()) {
+                tournamentStageRepository.saveAll(toUpdate);
+            }
+        }
+
+        String actor = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null
+                ? org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName()
+                : "system";
+        log.info("Stage '{}' ({}) in tournament {} removed by user {}", stage.getName(), stageId, tournamentId, actor);
     }
 }

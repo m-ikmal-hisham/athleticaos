@@ -10,6 +10,7 @@ import com.athleticaos.backend.repositories.MatchLineupRepository;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.PlayerRepository;
 import com.athleticaos.backend.repositories.TeamRepository;
+import com.athleticaos.backend.repositories.TournamentPlayerRepository;
 import com.athleticaos.backend.services.MatchLineupService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,8 @@ public class MatchLineupServiceImpl implements MatchLineupService {
         private final MatchRepository matchRepository;
         private final TeamRepository teamRepository;
         private final PlayerRepository playerRepository;
+        private final TournamentPlayerRepository tournamentPlayerRepository;
+        private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
         @Override
         @Transactional(readOnly = true)
@@ -48,8 +51,37 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                                 .findById(java.util.Objects.requireNonNull(matchId, "Match ID must not be null"))
                                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
 
+                Team team = teamRepository
+                                .findById(java.util.Objects.requireNonNull(teamId, "Team ID must not be null"))
+                                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
+
                 if (!isTeamInMatch(match, teamId)) {
                         throw new IllegalArgumentException("Team is not part of this match");
+                }
+
+                boolean canWriteMatch = accessScopeService.canWriteMatch(match);
+                boolean canManageTeam = accessScopeService.isTeamInScope(team);
+
+                if (!canWriteMatch && !canManageTeam) {
+                        UUID currentUserId = accessScopeService.getCurrentUserId();
+                        log.warn("Access denied for lineup update outside accessible scope: userId={}, matchId={}, teamId={}",
+                                        currentUserId, matchId, teamId);
+                        throw new EntityNotFoundException("Match not found");
+                }
+
+                // If access comes via team scope only, enforce that players must be on the team's tournament roster (C6)
+                if (!canWriteMatch && canManageTeam && request.getEntries() != null && !request.getEntries().isEmpty()
+                                && match.getTournament() != null) {
+                        List<com.athleticaos.backend.entities.TournamentPlayer> activeRoster = tournamentPlayerRepository
+                                        .findByTournamentIdAndTeamIdAndIsActiveTrue(match.getTournament().getId(), teamId);
+                        java.util.Set<UUID> activePlayerIds = activeRoster.stream()
+                                        .map(tp -> tp.getPlayer().getId())
+                                        .collect(Collectors.toSet());
+                        for (MatchLineupEntryDTO entry : request.getEntries()) {
+                                if (entry.getPlayerId() != null && !activePlayerIds.contains(entry.getPlayerId())) {
+                                        throw new IllegalArgumentException("Player is not on the tournament roster for this team");
+                                }
+                        }
                 }
 
                 // Cannot update lineup if match is completed (Locked) - Requirement says
@@ -60,20 +92,10 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                 // = STARTED".
                 if (match.getStatus() == com.athleticaos.backend.enums.MatchStatus.LIVE ||
                                 match.getStatus() == com.athleticaos.backend.enums.MatchStatus.COMPLETED) {
-                        // throw new IllegalStateException("Lineups cannot be modified after match has
-                        // started or completed.");
-                        // Commenting out stricter check for now to allow development/testing
-                        // flexibility, or maybe warning.
-                        // Requirement: "Lineups will be editable ONLY before match status = STARTED"
-                        // I will enforce it.
                         if (match.getStatus() == com.athleticaos.backend.enums.MatchStatus.COMPLETED) {
                                 throw new IllegalStateException("Lineups cannot be modified after match is completed.");
                         }
                 }
-
-                Team team = teamRepository
-                                .findById(java.util.Objects.requireNonNull(teamId, "Team ID must not be null"))
-                                .orElseThrow(() -> new EntityNotFoundException("Team not found"));
 
                 // Validate Counts
                 validateLineupCounts(match, team, request.getEntries());

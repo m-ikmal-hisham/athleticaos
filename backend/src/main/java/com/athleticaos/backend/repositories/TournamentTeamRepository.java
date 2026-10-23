@@ -36,4 +36,13 @@ public interface TournamentTeamRepository extends JpaRepository<TournamentTeam, 
 
     @org.springframework.data.jpa.repository.Query("SELECT tt.team.id, tt.tournament FROM TournamentTeam tt WHERE tt.team.id IN :teamIds AND tt.isActive = true AND tt.deleted = false")
     java.util.List<Object[]> findActiveTournamentsForTeamIds(@org.springframework.data.repository.query.Param("teamIds") java.util.Collection<UUID> teamIds);
+
+    @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(tt) > 0 THEN TRUE ELSE FALSE END FROM TournamentTeam tt " +
+            "WHERE tt.tournament.id = :tournamentId AND tt.team.organisation.id IN :orgIds AND tt.isActive = true AND tt.deleted = false")
+    boolean existsByTournamentIdAndTeamOrganisationIdIn(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+                                                       @org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT tt.tournament.id FROM TournamentTeam tt " +
+            "WHERE tt.team.organisation.id IN :orgIds AND tt.isActive = true AND tt.deleted = false")
+    java.util.List<UUID> findTournamentIdsByTeamOrganisationIdIn(@org.springframework.data.repository.query.Param("orgIds") java.util.Collection<UUID> orgIds);
 }

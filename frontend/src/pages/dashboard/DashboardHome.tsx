@@ -9,7 +9,8 @@ import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { useStatsStore } from '@/store/stats.store';
 import { useMatchesStore } from '@/store/matches.store';
 import { fetchDashboardStats, DashboardStats } from '@/api/dashboard.api';
-import { publicTournamentApi, PublicTournamentSummary } from '@/api/public.api';
+import { PublicTournamentSummary } from '@/api/public.api';
+import { getTournament } from '@/api/tournaments.api';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { BentoGrid, BentoItem } from '@/components/dashboard/BentoGrid';
 import { TrendChart } from '@/components/dashboard/TrendChart';
@@ -109,11 +110,36 @@ export const DashboardHome = () => {
             useMatchesStore.getState().setFilters({ tournamentId: activeTournamentId, status: "ALL" }); // Directly set without triggering loop
             loadMatches(); // Load all matches for trend analysis
 
-            // Fetch details for the card (using public API for simplicity)
-            // Ideally this could come from a cached store list, but fetch is cheap
-            publicTournamentApi.getTournament(activeTournamentId).then(res => {
-                setActiveTournamentDetails(res as unknown as PublicTournamentSummary); // Cast because Detail extends Summary roughly or strictly
-            }).catch(console.error);
+            // Fetch details for the card using admin API
+            getTournament(activeTournamentId).then(res => {
+                const t = res.data;
+                setActiveTournamentDetails({
+                    id: t.id,
+                    slug: t.slug,
+                    name: t.name,
+                    level: t.level,
+                    seasonName: t.seasonName,
+                    startDate: t.startDate,
+                    endDate: t.endDate,
+                    venue: t.venue,
+                    live: (t.status as string) === 'LIVE' || (t.status as string) === 'ONGOING',
+                    completed: (t.status as string) === 'COMPLETED',
+                    organiserName: t.organiserBranding?.name || '',
+                    competitionType: t.competitionType,
+                    organiserBranding: t.organiserBranding,
+                    logoUrl: t.logoUrl,
+                    bannerUrl: t.bannerUrl,
+                    livestreamUrl: t.livestreamUrl,
+                    livestreamLinks: t.livestreamLinks,
+                });
+            }).catch(err => {
+                if (err?.response?.status === 403 || err?.response?.status === 404) {
+                    useUIStore.getState().setActiveTournamentId(null);
+                    setActiveTournamentDetails(null);
+                } else {
+                    console.error('Failed to load active tournament details:', err);
+                }
+            });
         } else {
             setActiveTournamentDetails(null);
         }

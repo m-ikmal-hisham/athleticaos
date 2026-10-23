@@ -12,6 +12,7 @@ import { Team, Match, Tournament, TournamentVenue } from '@/types';
 import { useMatchesStore } from '@/store/matches.store';
 import { showToast } from '@/lib/customToast';
 import { formatMatchVenueLabel, hasMultipleVenues } from '@/utils/venue';
+import { parseSeedSynonym, formatSeedLabel } from '@/utils/seedLabels';
 
 interface MatchModalProps {
     isOpen: boolean;
@@ -146,11 +147,13 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 } else if (initialMatch.homeFromLoserOfMatchId) {
                     hSource = 'loser'; hLose = initialMatch.homeFromLoserOfMatchId; hTeam = '';
                 } else if (!hTeam && hPlaceholder) {
-                    // Generated brackets leave a label such as "Seed 1" until a team is known.
-                    // Without this the slot rendered as an empty team picker, hiding what it holds.
-                    // Detected by shape rather than by matching the pool list, because the stages
-                    // load asynchronously and are not available yet on the first render.
-                    hSource = isPoolPositionLabel(hPlaceholder) ? 'poolPosition' : 'placeholder';
+                    if (parseSeedSynonym(hPlaceholder) !== null) {
+                        hSource = 'leaguePosition';
+                    } else if (isPoolPositionLabel(hPlaceholder)) {
+                        hSource = 'poolPosition';
+                    } else {
+                        hSource = 'placeholder';
+                    }
                 }
 
                 // Determine source logic for Away using the match's own feeder fields
@@ -165,7 +168,13 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                 } else if (initialMatch.awayFromLoserOfMatchId) {
                     aSource = 'loser'; aLose = initialMatch.awayFromLoserOfMatchId; aTeam = '';
                 } else if (!aTeam && aPlaceholder) {
-                    aSource = isPoolPositionLabel(aPlaceholder) ? 'poolPosition' : 'placeholder';
+                    if (parseSeedSynonym(aPlaceholder) !== null) {
+                        aSource = 'leaguePosition';
+                    } else if (isPoolPositionLabel(aPlaceholder)) {
+                        aSource = 'poolPosition';
+                    } else {
+                        aSource = 'placeholder';
+                    }
                 }
 
                 setFormData({
@@ -262,7 +271,13 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
     }, [formData.tournamentId, mode]);
 
     // Fetch stages when tournamentId changes
-    const [stages, setStages] = useState<{id: string, name: string, groupStage?: boolean}[]>([]);
+    const [stages, setStages] = useState<{
+        id: string;
+        name: string;
+        groupStage?: boolean;
+        categoryId?: string;
+        categoryName?: string;
+    }[]>([]);
     useEffect(() => {
         const loadStages = async () => {
             if (!formData.tournamentId) {
@@ -272,22 +287,29 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
 
             try {
                 const res = await getTournamentBracket(formData.tournamentId);
-                const bracketStages = res.data?.stages?.map((s: any) => ({
+                type LoadedBracketStage = { id: string; name: string; groupStage?: boolean; categoryId?: string; categoryName?: string };
+                const bracketStages: LoadedBracketStage[] = (res.data?.stages || []).map((s: { stage: { id: string; name: string; groupStage?: boolean; category?: { id: string; name: string }; categoryId?: string; categoryName?: string } }) => ({
                     id: s.stage.id,
                     name: s.stage.name,
                     groupStage: s.stage.groupStage,
-                })) || [];
+                    categoryId: s.stage.category?.id || s.stage.categoryId,
+                    categoryName: s.stage.category?.name || s.stage.categoryName,
+                }));
                 setStages(bracketStages);
 
-                const loadedPoolNames = bracketStages.filter((s: any) => s.groupStage).map((s: any) => s.name);
+                const loadedPoolNames = bracketStages.filter(s => s.groupStage).map(s => s.name);
                 if (initialMatch && mode === 'edit') {
                     if (initialMatch.homeTeamPlaceholder && !initialMatch.homeTeamId && !initialMatch.homeFromWinnerOfMatchId && !initialMatch.homeFromLoserOfMatchId) {
-                        if (isPoolPositionLabel(initialMatch.homeTeamPlaceholder, loadedPoolNames)) {
+                        if (parseSeedSynonym(initialMatch.homeTeamPlaceholder) !== null) {
+                            setFormData(prev => ({ ...prev, homeSourceType: 'leaguePosition' }));
+                        } else if (isPoolPositionLabel(initialMatch.homeTeamPlaceholder, loadedPoolNames)) {
                             setFormData(prev => ({ ...prev, homeSourceType: 'poolPosition' }));
                         }
                     }
                     if (initialMatch.awayTeamPlaceholder && !initialMatch.awayTeamId && !initialMatch.awayFromWinnerOfMatchId && !initialMatch.awayFromLoserOfMatchId) {
-                        if (isPoolPositionLabel(initialMatch.awayTeamPlaceholder, loadedPoolNames)) {
+                        if (parseSeedSynonym(initialMatch.awayTeamPlaceholder) !== null) {
+                            setFormData(prev => ({ ...prev, awaySourceType: 'leaguePosition' }));
+                        } else if (isPoolPositionLabel(initialMatch.awayTeamPlaceholder, loadedPoolNames)) {
                             setFormData(prev => ({ ...prev, awaySourceType: 'poolPosition' }));
                         }
                     }
@@ -343,8 +365,9 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             payload.homeTeamId = null;
             payload.homeFromWinnerOfMatchId = null;
             payload.homeFromLoserOfMatchId = formData.homeFromLoserOfMatchId || undefined;
-        } else if (formData.homeSourceType === 'placeholder' || formData.homeSourceType === 'poolPosition') {
+        } else if (formData.homeSourceType === 'placeholder' || formData.homeSourceType === 'poolPosition' || formData.homeSourceType === 'leaguePosition') {
             // Keep the slot unassigned but relabelled, so seeding can still fill it later.
+            payload.homeTeamId = null;
             payload.homeFromWinnerOfMatchId = null;
             payload.homeFromLoserOfMatchId = null;
             payload.homeTeamPlaceholder = formData.homeTeamPlaceholder || undefined;
@@ -362,7 +385,8 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
             payload.awayTeamId = null;
             payload.awayFromWinnerOfMatchId = null;
             payload.awayFromLoserOfMatchId = formData.awayFromLoserOfMatchId || undefined;
-        } else if (formData.awaySourceType === 'placeholder' || formData.awaySourceType === 'poolPosition') {
+        } else if (formData.awaySourceType === 'placeholder' || formData.awaySourceType === 'poolPosition' || formData.awaySourceType === 'leaguePosition') {
+            payload.awayTeamId = null;
             payload.awayFromWinnerOfMatchId = null;
             payload.awayFromLoserOfMatchId = null;
             payload.awayTeamPlaceholder = formData.awayTeamPlaceholder || undefined;
@@ -450,6 +474,33 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
 
     const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
 
+    const categoryTeams = useMemo(() => {
+        const stage = stages.find(s => s.id === (formData.stageId || initialMatch?.stage?.id));
+        const catId = stage?.categoryId || initialMatch?.stage?.categoryId;
+        const catName = stage?.categoryName;
+        if (catId) {
+            const filtered = teams.filter(t => t.tournamentCategoryId === catId);
+            if (filtered.length > 0) return filtered;
+        }
+        if (catName) {
+            const filtered = teams.filter(t => t.category && t.category.toLowerCase() === catName.toLowerCase());
+            if (filtered.length > 0) return filtered;
+        }
+        return teams;
+    }, [stages, teams, formData.stageId, initialMatch]);
+
+    const maxLeaguePositions = useMemo(() => {
+        const count = categoryTeams.length;
+        return count > 0 ? count : 16;
+    }, [categoryTeams]);
+
+    const leaguePositionOptions = useMemo(() => {
+        return Array.from({ length: maxLeaguePositions }, (_, i) => ({
+            value: String(i + 1),
+            label: `Seed ${i + 1} (${ordinal(i + 1)} overall)`
+        }));
+    }, [maxLeaguePositions]);
+
     const availableMatchesOptions = matches
         .filter(m => m.id !== initialMatch?.id)
         .map(m => {
@@ -504,13 +555,17 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                 handleChange('homeTeamId', '');
                                 handleChange('homeFromWinnerOfMatchId', '');
                                 handleChange('homeFromLoserOfMatchId', '');
+                                if (value === 'leaguePosition' && !parseSeedSynonym(formData.homeTeamPlaceholder)) {
+                                    handleChange('homeTeamPlaceholder', formatSeedLabel(1));
+                                }
                             }}
                             options={[
                                 { value: 'team', label: 'Specific Team' },
                                 { value: 'winner', label: 'Winner of Match...' },
                                 { value: 'loser', label: 'Loser of Match...' },
-                                { value: 'placeholder', label: 'Seed / Placeholder' },
-                                { value: 'poolPosition', label: 'Pool Position' }
+                                { value: 'leaguePosition', label: 'League / overall position' },
+                                { value: 'poolPosition', label: 'Pool Position' },
+                                { value: 'placeholder', label: 'Seed / Placeholder' }
                             ]}
                         />
                         {formData.homeSourceType === 'team' && (
@@ -539,6 +594,27 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                 options={[{ value: '', label: 'Select Match' }, ...availableMatchesOptions]}
                                 placeholder="Select Feeder Match"
                             />
+                        )}
+                        {formData.homeSourceType === 'leaguePosition' && (
+                            <div className="space-y-2">
+                                <SearchableSelect
+                                    value={String(parseSeedSynonym(formData.homeTeamPlaceholder) || 1)}
+                                    onChange={(value) => {
+                                        const newPos = Number(value);
+                                        const originalPos = parseSeedSynonym(initialMatch?.homeTeamPlaceholder);
+                                        if (originalPos === newPos && initialMatch?.homeTeamPlaceholder) {
+                                            handleChange('homeTeamPlaceholder', initialMatch.homeTeamPlaceholder);
+                                        } else {
+                                            handleChange('homeTeamPlaceholder', formatSeedLabel(newPos));
+                                        }
+                                    }}
+                                    options={leaguePositionOptions}
+                                    placeholder="Select Overall Position"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Resolves to team ranked {parseSeedSynonym(formData.homeTeamPlaceholder) || 1} overall in this category after standings are finalised.
+                                </p>
+                            </div>
                         )}
                         {formData.homeSourceType === 'poolPosition' && (
                             <div className="space-y-2">
@@ -571,6 +647,30 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                     onChange={(e) => handleChange('homeTeamPlaceholder', e.target.value)}
                                     placeholder="e.g. Seed 1"
                                 />
+                                {(() => {
+                                    const detectedSeed = parseSeedSynonym(formData.homeTeamPlaceholder);
+                                    if (!detectedSeed) return null;
+                                    return (
+                                        <div className="mt-2 p-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-sunken)] flex flex-col items-start gap-2 text-xs">
+                                            <span className="text-[var(--text-secondary)]">
+                                                Matches overall position (Seed {detectedSeed}). Use overall position so this slot fills automatically.
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        homeSourceType: 'leaguePosition',
+                                                    }));
+                                                }}
+                                            >
+                                                Switch to overall position
+                                            </Button>
+                                        </div>
+                                    );
+                                })()}
                                 {(() => {
                                     const detected = detectPoolInText(formData.homeTeamPlaceholder, poolStageNames);
                                     if (!detected) return null;
@@ -613,13 +713,17 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                 handleChange('awayTeamId', '');
                                 handleChange('awayFromWinnerOfMatchId', '');
                                 handleChange('awayFromLoserOfMatchId', '');
+                                if (value === 'leaguePosition' && !parseSeedSynonym(formData.awayTeamPlaceholder)) {
+                                    handleChange('awayTeamPlaceholder', formatSeedLabel(1));
+                                }
                             }}
                             options={[
                                 { value: 'team', label: 'Specific Team' },
                                 { value: 'winner', label: 'Winner of Match...' },
                                 { value: 'loser', label: 'Loser of Match...' },
-                                { value: 'placeholder', label: 'Seed / Placeholder' },
-                                { value: 'poolPosition', label: 'Pool Position' }
+                                { value: 'leaguePosition', label: 'League / overall position' },
+                                { value: 'poolPosition', label: 'Pool Position' },
+                                { value: 'placeholder', label: 'Seed / Placeholder' }
                             ]}
                         />
                         {formData.awaySourceType === 'team' && (
@@ -648,6 +752,27 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                 options={[{ value: '', label: 'Select Match' }, ...availableMatchesOptions]}
                                 placeholder="Select Feeder Match"
                             />
+                        )}
+                        {formData.awaySourceType === 'leaguePosition' && (
+                            <div className="space-y-2">
+                                <SearchableSelect
+                                    value={String(parseSeedSynonym(formData.awayTeamPlaceholder) || 1)}
+                                    onChange={(value) => {
+                                        const newPos = Number(value);
+                                        const originalPos = parseSeedSynonym(initialMatch?.awayTeamPlaceholder);
+                                        if (originalPos === newPos && initialMatch?.awayTeamPlaceholder) {
+                                            handleChange('awayTeamPlaceholder', initialMatch.awayTeamPlaceholder);
+                                        } else {
+                                            handleChange('awayTeamPlaceholder', formatSeedLabel(newPos));
+                                        }
+                                    }}
+                                    options={leaguePositionOptions}
+                                    placeholder="Select Overall Position"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Resolves to team ranked {parseSeedSynonym(formData.awayTeamPlaceholder) || 1} overall in this category after standings are finalised.
+                                </p>
+                            </div>
                         )}
                         {formData.awaySourceType === 'poolPosition' && (
                             <div className="space-y-2">
@@ -680,6 +805,30 @@ export const MatchModal = ({ isOpen, onClose, onSuccess, mode = 'create', initia
                                     onChange={(e) => handleChange('awayTeamPlaceholder', e.target.value)}
                                     placeholder="e.g. Seed 8"
                                 />
+                                {(() => {
+                                    const detectedSeed = parseSeedSynonym(formData.awayTeamPlaceholder);
+                                    if (!detectedSeed) return null;
+                                    return (
+                                        <div className="mt-2 p-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-sunken)] flex flex-col items-start gap-2 text-xs">
+                                            <span className="text-[var(--text-secondary)]">
+                                                Matches overall position (Seed {detectedSeed}). Use overall position so this slot fills automatically.
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        awaySourceType: 'leaguePosition',
+                                                    }));
+                                                }}
+                                            >
+                                                Switch to overall position
+                                            </Button>
+                                        </div>
+                                    );
+                                })()}
                                 {(() => {
                                     const detected = detectPoolInText(formData.awayTeamPlaceholder, poolStageNames);
                                     if (!detected) return null;

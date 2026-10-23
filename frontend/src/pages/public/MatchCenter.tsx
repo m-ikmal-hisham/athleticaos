@@ -122,8 +122,8 @@ export default function MatchCenter() {
 
     return (
         <div className="space-y-4 md:space-y-6 animate-fade-in pb-20">
-            {/* Nav Back */}
-            <div className="flex items-center justify-between">
+            {/* Nav Back (≥ lg; phones get the Back row from PublicLayout) */}
+            <div className="hidden lg:flex items-center justify-between">
                 <Breadcrumbs
                     items={[
                         { label: 'Tournaments', path: '/tournaments' },

@@ -22,6 +22,7 @@ import { useCollapsibleDates } from '@/hooks/useCollapsibleDates';
 interface TournamentMatchesProps {
     tournamentId: string;
     tournamentSlug?: string;
+    canManage?: boolean;
 }
 
 interface VenueGroup {
@@ -29,7 +30,7 @@ interface VenueGroup {
     matches: MatchResponse[];
 }
 
-export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMatchesProps) {
+export function TournamentMatches({ tournamentId, tournamentSlug, canManage = false }: TournamentMatchesProps) {
     const navigate = useNavigate();
     const { matches, loadMatchesByTournament, deleteMatch, loadingList } = useMatchesStore();
     const [categories, setCategories] = useState<TournamentCategory[]>([]);
@@ -383,7 +384,9 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                 </h3>
 
                 <div className="flex flex-wrap gap-2">
-                    {/* Exports and renumbering live behind one menu so the row stays readable. */}
+                    {/* Exports and renumbering live behind one menu so the row stays readable.
+                        Exports are organiser-scope only on the backend, so read-only viewers get no menu. */}
+                    {canManage && (
                     <div className="relative" ref={actionsRef}>
                         <Button
                             variant="secondary"
@@ -435,13 +438,15 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                             </div>
                         )}
                     </div>
-                    {matches.length > 0 && (
+                    )}
+                    {canManage && matches.length > 0 && (
                         <div className="relative">
+                            {/* Outlined like Actions: destructive but not the page's main action (New Match is) */}
                             <Button
-                                variant="danger"
+                                variant="secondary"
                                 size="sm"
                                 onClick={() => setClearScheduleStep('CONFIRM')}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 !text-[var(--accent-text)]"
                             >
                                 <Trash className="w-4 h-4" />
                                 Clear Schedule
@@ -481,10 +486,12 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                             )}
                         </div>
                     )}
-                    <Button onClick={openCreateModal} className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        New Match
-                    </Button>
+                    {canManage && (
+                        <Button size="sm" onClick={openCreateModal} className="flex items-center gap-2">
+                            <Plus className="w-4 h-4" />
+                            New Match
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -514,20 +521,22 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
             </div>
 
             {/* Setup Check (Readiness) */}
-            <div className="mb-6">
-                <TournamentReadinessCard
-                    tournamentId={tournamentId}
-                    onEditMatch={(matchId) => {
-                        const targetMatch = matches.find(m => m.id === matchId);
-                        if (targetMatch) {
-                            openEditModal(targetMatch);
-                        }
-                    }}
-                    onAssignCategory={() => {
-                        setRefreshTrigger(prev => prev + 1);
-                    }}
-                />
-            </div>
+            {canManage && (
+                <div className="mb-6">
+                    <TournamentReadinessCard
+                        tournamentId={tournamentId}
+                        onEditMatch={(matchId) => {
+                            const targetMatch = matches.find(m => m.id === matchId);
+                            if (targetMatch) {
+                                openEditModal(targetMatch);
+                            }
+                        }}
+                        onAssignCategory={() => {
+                            setRefreshTrigger(prev => prev + 1);
+                        }}
+                    />
+                </div>
+            )}
 
             {/* Bracket Editor Section */}
             {!loadingList && (
@@ -540,6 +549,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                         onRefresh={() => setRefreshTrigger(prev => prev + 1)}
                         selectedCategoryId={selectedCategoryId}
                         categories={categories}
+                        readonly={!canManage}
                     />
                 </div>
             )}
@@ -614,6 +624,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                                 onEdit={(e) => openEditModal(match, e)}
                                                                 onDelete={(e) => handleDeleteMatch(match.id, e)}
                                                                 hasMultiVenues={hasMultiVenues}
+                                                                canManage={canManage}
                                                             />
                                                         ))}
                                                     </div>
@@ -630,6 +641,7 @@ export function TournamentMatches({ tournamentId, tournamentSlug }: TournamentMa
                                                     onEdit={(e) => openEditModal(match, e)}
                                                     onDelete={(e) => handleDeleteMatch(match.id, e)}
                                                     hasMultiVenues={hasMultiVenues}
+                                                    canManage={canManage}
                                                 />
                                             ))}
                                         </div>
@@ -739,29 +751,31 @@ function TeamLogo({ url, name, className = '' }: { url?: string | null; name?: s
     );
 }
 
-function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues }: { match: MatchResponse, onClick: () => void, onEdit: (e: React.MouseEvent) => void, onDelete: (e: React.MouseEvent) => void, hasMultiVenues?: boolean }) {
+function MatchCard({ match, onClick, onEdit, onDelete, hasMultiVenues, canManage }: { match: MatchResponse, onClick: () => void, onEdit: (e: React.MouseEvent) => void, onDelete: (e: React.MouseEvent) => void, hasMultiVenues?: boolean, canManage?: boolean }) {
     return (
         <div
             className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-navy dark:hover:border-navy rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden cursor-pointer"
             onClick={onClick}
         >
             {/* Admin Controls */}
-            <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                    onClick={onEdit}
-                    className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
-                    title="Edit Match"
-                >
-                    <PencilSimple className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={onDelete}
-                    className="p-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded text-red-500 dark:text-red-400"
-                    title="Delete Match"
-                >
-                    <Trash className="w-4 h-4" />
-                </button>
-            </div>
+            {canManage && (
+                <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={onEdit}
+                        className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400"
+                        title="Edit Match"
+                    >
+                        <PencilSimple className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="p-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded text-red-500 dark:text-red-400"
+                        title="Delete Match"
+                    >
+                        <Trash className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Status Indicator */}
             {['LIVE', 'ONGOING'].includes(match.status) && (

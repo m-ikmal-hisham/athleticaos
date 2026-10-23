@@ -1,191 +1,75 @@
 import { Suspense, useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { House, Users, UsersThree, Buildings, Trophy, X, CaretDown, ChartBar, CalendarBlank, Medal, Pulse as ActivityIcon, CaretLeft, CaretRight, Wrench, Globe, Gavel, Eye, ShieldWarning, ChartLine, CurrencyDollar } from '@phosphor-icons/react';
+import { CaretDown, CaretLeft, CaretRight, CaretUpDown, Trophy } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth.store';
+import { useUIStore } from '@/store/ui.store';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { TournamentPill } from '@/components/TournamentPill';
 import { ProfilePopup } from '@/components/ProfilePopup';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { PageLoader } from '@/components/PageLoader';
-import { isFeatureEnabled, FeatureKey } from '@/config/features';
-import { SITE_NAME } from '@/config/site';
-
-interface NavItem {
-    label: string;
-    path: string;
-    icon: React.ReactNode;
-    iconFilled: React.ReactNode;
-    roles?: string[]; // Optional roles for role-based visibility
-    feature?: FeatureKey;
-}
-
-interface NavSection {
-    title?: string;
-    items: NavItem[];
-    roles?: string[];
-    feature?: FeatureKey;
-}
-
-const navSections: NavSection[] = [
-    {
-        title: "Menu",
-        items: [
-            {
-                label: 'Dashboard',
-                path: '/dashboard',
-                icon: <House className="w-5 h-5" />,
-                iconFilled: <House className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'Users',
-                path: '/dashboard/users',
-                icon: <Users className="w-5 h-5" />,
-                iconFilled: <Users className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN']
-            },
-            {
-                label: 'Players',
-                path: '/dashboard/players',
-                icon: <Users className="w-5 h-5" />,
-                iconFilled: <Users className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'Teams',
-                path: '/dashboard/teams',
-                icon: <UsersThree className="w-5 h-5" />,
-                iconFilled: <UsersThree className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'Organisations',
-                path: '/dashboard/organisations',
-                icon: <Buildings className="w-5 h-5" />,
-                iconFilled: <Buildings className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'People',
-                path: '/dashboard/people',
-                icon: <Users className="w-5 h-5" />,
-                iconFilled: <Users className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN']
-            },
-            {
-                label: 'Competitions',
-                path: '/dashboard/competitions',
-                icon: <Medal className="w-5 h-5" />,
-                iconFilled: <Medal className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'Tournaments',
-                path: '/dashboard/tournaments',
-                icon: <Trophy className="w-5 h-5" />,
-                iconFilled: <Trophy className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'Matches',
-                path: '/dashboard/matches',
-                icon: <CalendarBlank className="w-5 h-5" />,
-                iconFilled: <CalendarBlank className="w-5 h-5" weight="fill" />
-            }
-        ]
-    },
-    {
-        title: "Federation",
-        feature: 'federation',
-        roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
-        items: [
-            {
-                label: 'Dashboard',
-                path: '/dashboard/federation/dashboard',
-                icon: <Globe className="w-5 h-5" />,
-                iconFilled: <Globe className="w-5 h-5" weight="fill" />,
-            },
-            {
-                label: 'Sanctioning',
-                path: '/dashboard/federation/sanctioning',
-                icon: <Gavel className="w-5 h-5" />,
-                iconFilled: <Gavel className="w-5 h-5" weight="fill" />,
-            },
-            {
-                label: 'Oversight',
-                path: '/dashboard/federation/oversight',
-                icon: <Eye className="w-5 h-5" />,
-                iconFilled: <Eye className="w-5 h-5" weight="fill" />,
-            },
-            {
-                label: 'Discipline',
-                path: '/dashboard/federation/discipline',
-                icon: <ShieldWarning className="w-5 h-5" />,
-                iconFilled: <ShieldWarning className="w-5 h-5" weight="fill" />,
-            }
-        ]
-    },
-    {
-        title: "Analysis",
-        items: [
-            {
-                label: 'Stats & Leaderboards',
-                path: '/dashboard/stats',
-                icon: <ChartBar className="w-5 h-5" />,
-                iconFilled: <ChartBar className="w-5 h-5" weight="fill" />
-            },
-            {
-                label: 'Analytics',
-                path: '/dashboard/analytics/teams',
-                icon: <ChartLine className="w-5 h-5" />,
-                iconFilled: <ChartLine className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
-                feature: 'analytics'
-            }
-        ]
-    },
-    {
-        title: "Operations",
-        items: [
-            {
-                label: 'Operations',
-                path: '/dashboard/operations',
-                icon: <Wrench className="w-5 h-5" />,
-                iconFilled: <Wrench className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL'],
-                feature: 'operations'
-            },
-            {
-                label: 'Officials',
-                path: '/dashboard/officials',
-                icon: <Users className="w-5 h-5" />,
-                iconFilled: <Users className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN']
-            },
-            {
-                label: 'Monetization',
-                path: '/dashboard/monetization/subscriptions',
-                icon: <CurrencyDollar className="w-5 h-5" />,
-                iconFilled: <CurrencyDollar className="w-5 h-5" weight="fill" />,
-                roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'],
-                feature: 'monetization'
-            },
-            {
-                label: 'Activity & Logs',
-                path: '/dashboard/activity',
-                icon: <ActivityIcon className="w-5 h-5" />,
-                iconFilled: <ActivityIcon className="w-5 h-5" weight="fill" />
-            }
-        ]
-    }
-];
-
+import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
+import { SITE_NAME, PRODUCT_NAME, SPORT_NAME } from '@/config/site';
 import { useBrandingStore } from '@/store/branding.store';
 import { getOrganisationById } from '@/api/organisations.api';
+import { getVisibleAdminNavSections } from '@/config/adminNav';
+import { AdminTabBar } from '@/components/admin/AdminTabBar';
+import { TournamentSwitcher } from '@/components/admin/TournamentSwitcher';
+import { useSpotlightTournament } from '@/hooks/useSpotlightTournament';
+import { TournamentLogo } from '@/components/common/TournamentLogo';
 
-// ... (existing imports)
+function getAdminPageTitle(pathname: string, t: (key: string) => string): string {
+    if (pathname === '/dashboard') return t('topBar.dashboard');
+    if (pathname.startsWith('/dashboard/matches')) return t('topBar.matches');
+    if (pathname.startsWith('/dashboard/tournaments')) return t('topBar.tournaments');
+    if (pathname.startsWith('/dashboard/teams')) return t('topBar.teams');
+    if (pathname.startsWith('/dashboard/players')) return t('topBar.players');
+    if (pathname.startsWith('/dashboard/users')) return t('topBar.users');
+    if (pathname.startsWith('/dashboard/organisations')) return t('topBar.organisations');
+    if (pathname.startsWith('/dashboard/people')) return t('topBar.people');
+    if (pathname.startsWith('/dashboard/competitions')) return t('topBar.competitions');
+    if (pathname.startsWith('/dashboard/officials')) return t('topBar.officials');
+    if (pathname.startsWith('/dashboard/stats')) return t('topBar.stats');
+    if (pathname.startsWith('/dashboard/activity')) return t('topBar.activity');
+    if (pathname.startsWith('/dashboard/you')) return t('topBar.you');
+    if (pathname.startsWith('/dashboard/profile')) return t('topBar.profile');
+    if (pathname.startsWith('/dashboard/federation')) return t('topBar.federation');
+    if (pathname.startsWith('/dashboard/operations')) return t('topBar.operations');
+    if (pathname.startsWith('/dashboard/analytics')) return t('topBar.analytics');
+    if (pathname.startsWith('/dashboard/monetization')) return t('topBar.monetization');
+    return t('topBar.dashboard');
+}
 
 export const AppLayout = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const { i18n } = useTranslation();
+    const t = i18n.getFixedT('en', 'admin');
+
+    // Default: icon rail on lg–xl (1024–1279), expanded on ≥ xl (1280)
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 1280;
+        }
+        return false;
+    });
+
+    // Follow the width (rotation, window resize) until the user toggles the sidebar themselves
+    const [userToggledSidebar, setUserToggledSidebar] = useState(false);
+    useEffect(() => {
+        if (userToggledSidebar || typeof window === 'undefined') return;
+        const mq = window.matchMedia('(min-width: 1280px)');
+        const apply = () => setIsCollapsed(!mq.matches);
+        apply();
+        mq.addEventListener('change', apply);
+        return () => mq.removeEventListener('change', apply);
+    }, [userToggledSidebar]);
+
     const [showProfilePopup, setShowProfilePopup] = useState(false);
+    const [switcherOpen, setSwitcherOpen] = useState(false);
     const location = useLocation();
     const { user, checkTokenValidity } = useAuthStore();
+    const overlayCount = useUIStore((s) => s.overlayCount);
+    const { tournament: spotlightTournament } = useSpotlightTournament({ isAdmin: true });
     const { setBrandingFromOrganisation, resetBranding, primaryColor, secondaryColor, accentColor, logoUrl: brandLogoUrl } = useBrandingStore();
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
@@ -198,7 +82,6 @@ export const AppLayout = () => {
     // Initialize Branding
     useEffect(() => {
         const initBranding = async () => {
-            // Check if user is SUPER_ADMIN. If so, force default branding (skip fetching org).
             if (user?.roles?.includes('ROLE_SUPER_ADMIN')) {
                 resetBranding();
                 return;
@@ -215,7 +98,6 @@ export const AppLayout = () => {
                     resetBranding();
                 }
             } else {
-                // If we can't find an org, reset to defaults
                 resetBranding();
             }
         };
@@ -238,276 +120,285 @@ export const AppLayout = () => {
 
         if (accentColor) root.style.setProperty('--brand-accent', accentColor);
         else root.style.removeProperty('--brand-accent');
-
-        // Optional: Force a repaint or re-evaluation if needed, but CSS vars usually update immediately
     }, [primaryColor, secondaryColor, accentColor]);
 
-    const visibleSections = navSections
-        .filter((section) => {
-            if (section.feature && !isFeatureEnabled(section.feature)) return false;
-            if (section.roles && section.roles.length > 0 && !section.roles.some((role) => user?.roles?.includes(role))) {
-                return false;
-            }
-            return true;
-        })
-        .map((section) => ({
-            ...section,
-            items: section.items.filter((item) => {
-                if (item.feature && !isFeatureEnabled(item.feature)) return false;
-                if (item.roles && item.roles.length > 0 && !item.roles.some((role) => user?.roles?.includes(role))) {
-                    return false;
-                }
-                return true;
-            }),
-        }))
-        .filter((section) => section.items.length > 0);
+    const visibleSections = getVisibleAdminNavSections(user);
+    const pageTitle = getAdminPageTitle(location.pathname, t);
+
+    // Calculate bottom space: tab bar (64px) + accessory (60px) + safe area + 16px clearance
+    const isAccessoryRoute =
+        location.pathname === '/dashboard' ||
+        location.pathname === '/dashboard/stats' ||
+        location.pathname === '/dashboard/matches';
+    const isAccessoryVisible = isAccessoryRoute && overlayCount === 0;
+
+    const bottomChrome = isAccessoryVisible
+        ? 'calc(140px + max(12px, env(safe-area-inset-bottom, 0px)))'
+        : 'calc(80px + max(12px, env(safe-area-inset-bottom, 0px)))';
 
     return (
-        <div className="min-h-screen flex">
-            {/* Mobile Overlay */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* Sidebar - Apple TV/Music Style Floating */}
-            <aside
-                className={clsx(
-                    'fixed z-50 transition-all duration-300',
-                    isCollapsed ? 'w-20' : 'w-60', // Width transition - narrower (240px)
-                    'p-0 flex flex-col',
-                    'border border-white/10 dark:border-white/5',
-                    'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]',
-                    'lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-[24px]',
-                    'lg:translate-x-0',
-                    sidebarOpen ? 'translate-x-0 top-0 bottom-0 left-0 w-64 rounded-none' : '-translate-x-full lg:translate-x-0'
-                )}
-            >
-                <div
-                    className="backdrop-blur-nav relative flex flex-col h-full bg-white/40 dark:bg-black/40 rounded-[24px] overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+        <div
+            className="min-h-screen flex flex-col pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]"
+            style={{ '--admin-bottom-chrome': bottomChrome } as React.CSSProperties}
+        >
+            <EnvironmentRibbon />
+            <div className="flex-1 flex min-h-0 relative">
+                {/* Sidebar - Desktop Only (≥ lg) */}
+                <aside
+                    className={clsx(
+                        'hidden lg:flex fixed z-50 transition-all duration-300',
+                        isCollapsed ? 'w-20' : 'w-60',
+                        'p-0 flex-col',
+                        'border border-white/10 dark:border-white/5',
+                        'shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]',
+                        'top-4 bottom-4 left-4 rounded-[24px]'
+                    )}
                 >
-
-                    {/* Toggle Button (Desktop Only) */}
-
-
-                    {/* Logo & Header */}
-                    <div className={clsx("flex items-center p-6 pb-2 transition-all duration-300", isCollapsed ? "justify-center px-0" : "justify-between")}>
-                        <Link to="/dashboard" className={clsx("flex items-center group", isCollapsed ? "gap-0" : "gap-3")}>
-                            <div className="relative shrink-0">
-                                {brandLogoUrl ? (
-                                    <img
-                                        src={brandLogoUrl}
-                                        alt="Logo"
-                                        className={clsx("rounded-xl object-contain bg-white/10 shadow-sm transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
-                                        onError={(e) => {
-                                            e.currentTarget.src = logoSrc;
-                                            e.currentTarget.className = clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10");
-                                            const fallbackA = e.currentTarget.nextElementSibling;
-                                            if (fallbackA) fallbackA.classList.add('hidden');
-                                        }}
-                                    />
-                                ) : (
-                                    <img
-                                        src={logoSrc}
-                                        alt="Logo"
-                                        className={clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
-                                    />
-                                )}
-                            </div>
-                            <div className={clsx("flex flex-col overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
-                                <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
-                                    {SITE_NAME}
-                                </span>
-                                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mt-0.5 whitespace-nowrap">
-                                    Manager
-                                </span>
-                            </div>
-                        </Link>
-                        <button
-                            type="button"
-                            aria-label="Close sidebar"
-                            onClick={() => setSidebarOpen(false)}
-                            className="lg:hidden p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-muted-foreground"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Toggle Button */}
-                    <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                        className={clsx(
-                            "hidden lg:flex w-6 h-6 bg-white dark:bg-deep-navy rounded-full shadow-sm items-center justify-center text-xs border border-black/10 dark:border-white/12 z-50 text-black/72 dark:text-white/72 hover:text-black dark:hover:text-white hover:bg-black/4 dark:hover:bg-white/6 transition-all duration-150 mb-2",
-                            isCollapsed
-                                ? "relative mx-auto" // In flow when collapsed
-                                : "absolute top-8 right-5" // Floating when expanded
-                        )}
-                    >
-                        {isCollapsed ? <CaretRight className="w-4 h-4" /> : <CaretLeft className="w-4 h-4" />}
-                    </button>
-
-                    {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
-                        {visibleSections.map((section, sectionIndex) => (
-                            <div key={section.title || sectionIndex} className={clsx("mb-6", isCollapsed && "mb-4")}>
-                                {section.title && !isCollapsed && (
-                                    <h3 className="px-3 text-xs font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider mb-2">
-                                        {section.title}
-                                    </h3>
-                                )}
-                                <ul className="space-y-0.5">
-                                    {section.items.map((item) => {
-                                        const isActive = item.path === '/dashboard'
-                                            ? location.pathname === '/dashboard'
-                                            : (location.pathname === item.path || location.pathname.startsWith(item.path + '/'));
-                                        return (
-                                            <li key={item.path}>
-                                                <Link
-                                                    to={item.path}
-                                                    onClick={() => setSidebarOpen(false)}
-                                                    className={clsx(
-                                                        'flex items-center gap-3 rounded-lg transition-all duration-150 group relative',
-                                                        isCollapsed ? 'justify-center py-3 px-2' : 'px-3 py-1.5 mx-0',
-                                                        isActive
-                                                            ? 'bg-navy text-white font-medium'
-                                                            : 'text-sm font-medium text-black/72 dark:text-white/72 hover:bg-black/4 dark:hover:bg-white/6 hover:text-black dark:hover:text-white'
-                                                    )}
-                                                >
-                                                    <span className={clsx("shrink-0", isActive ? "text-white" : "text-current")}>
-                                                        {isActive ? item.iconFilled : item.icon}
-                                                    </span>
-
-                                                    {!isCollapsed && (
-                                                        <span className="text-sm tracking-tight whitespace-nowrap overflow-hidden transition-all duration-150">
-                                                            {item.label}
-                                                        </span>
-                                                    )}
-
-                                                    {/* Tooltip for collapsed state */}
-                                                    {isCollapsed && (
-                                                        <div className="absolute left-full ml-4 px-2 py-1 bg-deep-navy text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-white/12">
-                                                            {item.label}
-                                                        </div>
-                                                    )}
-                                                </Link>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                                {isCollapsed && sectionIndex < visibleSections.length - 1 && (
-                                    <div className="mx-2 my-2 border-b border-black/10 dark:border-white/12" />
-                                )}
-                            </div>
-                        ))}
-                    </nav>
-
-                    {/* Bottom Section: Theme + Notifications + Profile */}
-                    <div className={clsx("m-3 mt-0 bg-black/4 dark:bg-white/6 rounded-2xl border border-black/10 dark:border-white/12 transition-all duration-150", isCollapsed ? "p-2" : "p-3")}>
-                        {!isCollapsed && (
-                            <div className="text-[10px] text-black/60 dark:text-white/60 px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
-                                <span>System</span>
-                                <div className="flex gap-2">
-                                    <ThemeToggle />
+                    <div className="backdrop-blur-nav relative flex flex-col h-full bg-white/40 dark:bg-black/40 overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl rounded-[24px]">
+                        {/* Logo & Header */}
+                        <div className={clsx("flex items-center p-6 pb-2 transition-all duration-300", isCollapsed ? "justify-center px-0" : "justify-between pr-12")}>
+                            <Link to="/dashboard" title={SITE_NAME} aria-label={`${SITE_NAME} Manager`} className={clsx("flex items-center group min-w-0", isCollapsed ? "gap-0" : "gap-3")}>
+                                <div className="relative shrink-0">
+                                    {brandLogoUrl ? (
+                                        <img
+                                            src={brandLogoUrl}
+                                            alt="Logo"
+                                            className={clsx("rounded-xl object-contain bg-white/10 shadow-sm transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
+                                            onError={(e) => {
+                                                e.currentTarget.src = logoSrc;
+                                                e.currentTarget.className = clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10");
+                                                const fallbackA = e.currentTarget.nextElementSibling;
+                                                if (fallbackA) fallbackA.classList.add('hidden');
+                                            }}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={logoSrc}
+                                            alt="Logo"
+                                            className={clsx("object-contain transition-all duration-300", isCollapsed ? "w-8 h-8" : "w-10 h-10")}
+                                        />
+                                    )}
                                 </div>
-                            </div>
-                        )}
+                                <div className={clsx("flex flex-col overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                                    <span className="font-bold text-lg text-foreground tracking-tight leading-none group-hover:text-primary transition-colors whitespace-nowrap">
+                                        {PRODUCT_NAME}
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-1 whitespace-nowrap">
+                                        {SPORT_NAME} Manager
+                                    </span>
+                                </div>
+                            </Link>
+                        </div>
 
-                        {isCollapsed && (
-                            <div className="flex justify-center mb-2">
-                                <ThemeToggle orientation="vertical" />
-                            </div>
-                        )}
-
-                        {/* Profile Block */}
+                        {/* Toggle Button */}
                         <button
-                            onClick={() => setShowProfilePopup(true)}
+                            onClick={() => { setUserToggledSidebar(true); setIsCollapsed(!isCollapsed); }}
+                            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                             className={clsx(
-                                "w-full flex items-center rounded-xl hover:bg-black/4 dark:hover:bg-white/6 transition-all duration-150 border border-transparent hover:border-black/10 dark:hover:border-white/12",
-                                isCollapsed ? "justify-center p-1" : "gap-3 p-2"
+                                "flex w-6 h-6 bg-white dark:bg-deep-navy rounded-full shadow-sm items-center justify-center text-xs border border-black/10 dark:border-white/12 z-50 text-black/72 dark:text-white/72 hover:text-black dark:hover:text-white hover:bg-black/4 dark:hover:bg-white/6 transition-all duration-150 mb-2",
+                                isCollapsed ? "relative mx-auto" : "absolute top-8 right-5"
                             )}
                         >
-                            <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
-                                <span className="font-bold text-white text-xs">
-                                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                                </span>
-                            </div>
-                            {!isCollapsed && (
-                                <>
-                                    <div className="flex-1 text-left overflow-hidden">
-                                        <p className="text-xs font-semibold text-black/90 dark:text-white/92 truncate leading-tight">
-                                            {user?.firstName} {user?.lastName}
-                                        </p>
-                                        <p className="text-[10px] text-black/60 dark:text-white/60 truncate">
-                                            Is Active
-                                        </p>
+                            {isCollapsed ? <CaretRight className="w-4 h-4" /> : <CaretLeft className="w-4 h-4" />}
+                        </button>
+
+                        {/* Tournament Chip (Desktop Only) */}
+                        <div className={clsx("px-3 mb-2", isCollapsed && "px-2")}>
+                            <button
+                                type="button"
+                                onClick={() => setSwitcherOpen(true)}
+                                title={spotlightTournament?.name || t('switcher.selectTournament')}
+                                aria-label={t('accessory.openSwitcher')}
+                                className={clsx(
+                                    "w-full flex items-center rounded-xl bg-black/4 dark:bg-white/6 hover:bg-black/8 dark:hover:bg-white/10 border border-black/10 dark:border-white/12 transition-all duration-150 text-left",
+                                    isCollapsed ? "justify-center p-2" : "justify-between p-2.5 gap-2"
+                                )}
+                            >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-6 h-6 rounded-lg bg-surface-sunken flex items-center justify-center shrink-0 border border-line-subtle overflow-hidden">
+                                        {spotlightTournament && (spotlightTournament.logoUrl || spotlightTournament.organiserBranding?.logoUrl) ? (
+                                            <TournamentLogo
+                                                tournamentId={spotlightTournament.id}
+                                                logoUrl={spotlightTournament.logoUrl || spotlightTournament.organiserBranding?.logoUrl}
+                                                className="w-full h-full object-contain"
+                                            />
+                                        ) : (
+                                            <Trophy size={14} className="text-content-secondary" />
+                                        )}
                                     </div>
-                                    <CaretDown className="w-3 h-3 text-black/60 dark:text-white/60" weight="bold" />
-                                </>
+                                    {!isCollapsed && (
+                                        <div className="min-w-0 flex-1">
+                                            <span className="block text-xs font-semibold text-content-primary truncate leading-tight">
+                                                {spotlightTournament ? spotlightTournament.name : t('switcher.selectTournament')}
+                                            </span>
+                                            {spotlightTournament?.live && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-crimson dark:text-crimson-tint">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-crimson animate-pulse" />
+                                                    Live
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {!isCollapsed && (
+                                    <CaretUpDown size={14} weight="bold" className="text-content-tertiary shrink-0" />
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Navigation */}
+                        <nav className="flex-1 overflow-y-auto px-3 py-2 custom-scrollbar">
+                            {visibleSections.map((section, sectionIndex) => (
+                                <div key={section.title || sectionIndex} className={clsx("mb-6", isCollapsed && "mb-4")}>
+                                    {section.title && !isCollapsed && (
+                                        <h3 className="px-3 text-xs font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider mb-2">
+                                            {section.title}
+                                        </h3>
+                                    )}
+                                    <ul className="space-y-0.5">
+                                        {section.items.map((item) => {
+                                            const isActive = item.path === '/dashboard'
+                                                ? location.pathname === '/dashboard'
+                                                : (location.pathname === item.path || location.pathname.startsWith(item.path + '/'));
+                                            return (
+                                                <li key={item.path}>
+                                                    <Link
+                                                        to={item.path}
+                                                        className={clsx(
+                                                            'flex items-center gap-3 rounded-lg transition-all duration-150 group relative',
+                                                            isCollapsed ? 'justify-center py-3 px-2' : 'px-3 py-1.5 mx-0',
+                                                            isActive
+                                                                ? 'bg-navy text-white font-medium'
+                                                                : 'text-sm font-medium text-black/72 dark:text-white/72 hover:bg-black/4 dark:hover:bg-white/6 hover:text-black dark:hover:text-white'
+                                                        )}
+                                                    >
+                                                        <span className={clsx("shrink-0", isActive ? "text-white" : "text-current")}>
+                                                            {isActive ? item.iconFilled : item.icon}
+                                                        </span>
+
+                                                        {!isCollapsed && (
+                                                            <span className="text-sm tracking-tight whitespace-nowrap overflow-hidden transition-all duration-150">
+                                                                {item.label}
+                                                            </span>
+                                                        )}
+
+                                                        {/* Tooltip for collapsed state */}
+                                                        {isCollapsed && (
+                                                            <div className="absolute left-full ml-4 px-2 py-1 bg-deep-navy text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-white/12">
+                                                                {item.label}
+                                                            </div>
+                                                        )}
+                                                    </Link>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                    {isCollapsed && sectionIndex < visibleSections.length - 1 && (
+                                        <div className="mx-2 my-2 border-b border-black/10 dark:border-white/12" />
+                                    )}
+                                </div>
+                            ))}
+                        </nav>
+
+                        {/* Bottom Section: Theme + Profile */}
+                        <div className={clsx("m-3 mt-0 bg-black/4 dark:bg-white/6 rounded-2xl border border-black/10 dark:border-white/12 transition-all duration-150", isCollapsed ? "p-2" : "p-3")}>
+                            {!isCollapsed && (
+                                <div className="text-[10px] text-black/60 dark:text-white/60 px-2 uppercase tracking-wider font-semibold mb-3 flex items-center justify-between">
+                                    <span>System</span>
+                                    <div className="flex gap-2">
+                                        <ThemeToggle />
+                                    </div>
+                                </div>
                             )}
-                        </button>
-                        {/* Build label helps testers report what they saw; hidden on production like the public footer. */}
-                        {!isCollapsed && import.meta.env.VITE_ENV !== 'production' && (
-                            <p className="mt-2 text-[10px] text-black/60 dark:text-white/60 font-mono text-center">
-                                v{import.meta.env.VITE_GIT_SHA || 'dev'}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            </aside>
 
-            {/* Main Content */}
-            <div className={clsx(
-                "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
-                isCollapsed ? "lg:ml-[100px]" : "lg:ml-[260px]" // Adjusted margin for wider sidebar
-            )}>
-                {/* Topbar - Mobile Only */}
-                <header className="sticky top-0 z-30 glass-card border-b border-white/10 lg:hidden rounded-none">
-                    <div className="flex items-center justify-between px-4 py-3">
-                        <button
-                            aria-label="Open sidebar"
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150"
-                        >
-                            <div className="w-5 h-5 flex flex-col justify-center gap-1">
-                                <span className="w-full h-0.5 bg-current rounded-full"></span>
-                                <span className="w-full h-0.5 bg-current rounded-full"></span>
-                                <span className="w-full h-0.5 bg-current rounded-full"></span>
-                            </div>
-                        </button>
-                        <span className="font-bold text-base text-foreground">{SITE_NAME}</span>
-                        <div className="w-9"></div> {/* Spacer for centering */}
-                    </div>
-                </header>
+                            {isCollapsed && (
+                                <div className="flex justify-center mb-2">
+                                    <ThemeToggle orientation="vertical" />
+                                </div>
+                            )}
 
-                {/* Page Content Container - Centered */}
-                <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden">
-                    <div className="max-w-7xl mx-auto w-full pb-32"> {/* Increased bottom padding for pill */}
-                        <Suspense fallback={<PageLoader />}>
-                            <Outlet />
-                        </Suspense>
+                            {/* Profile Block */}
+                            <button
+                                onClick={() => setShowProfilePopup(true)}
+                                className={clsx(
+                                    "w-full flex items-center rounded-xl hover:bg-black/4 dark:hover:bg-white/6 transition-all duration-150 border border-transparent hover:border-black/10 dark:hover:border-white/12",
+                                    isCollapsed ? "justify-center p-1" : "gap-3 p-2"
+                                )}
+                            >
+                                <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center shadow-inner ring-2 ring-white/10 shrink-0">
+                                    <span className="font-bold text-white text-xs">
+                                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                                    </span>
+                                </div>
+                                {!isCollapsed && (
+                                    <>
+                                        <div className="flex-1 text-left overflow-hidden">
+                                            <p className="text-xs font-semibold text-black/90 dark:text-white/92 truncate leading-tight">
+                                                {user?.firstName} {user?.lastName}
+                                            </p>
+                                            <p className="text-[10px] text-black/60 dark:text-white/60 truncate">
+                                                Is Active
+                                            </p>
+                                        </div>
+                                        <CaretDown className="w-3 h-3 text-black/60 dark:text-white/60" weight="bold" />
+                                    </>
+                                )}
+                            </button>
+                            {!isCollapsed && import.meta.env.VITE_ENV !== 'production' && (
+                                <p className="mt-2 text-[10px] text-black/60 dark:text-white/60 font-mono text-center">
+                                    v{import.meta.env.VITE_GIT_SHA || 'dev'}
+                                </p>
+                            )}
+                        </div>
                     </div>
-                </main>
+                </aside>
 
-                {/* Sticky Tournament Pill - Wide centered Floating Music Player style */}
+                {/* Main Content */}
                 <div className={clsx(
-                    "fixed bottom-6 left-0 right-0 z-40 pointer-events-none flex justify-center transition-all duration-300",
-                    isCollapsed ? "lg:pl-[100px]" : "lg:pl-[260px]",
-                    location.pathname.startsWith('/dashboard/matches/') ? "opacity-0 invisible" : "opacity-100 visible"
+                    "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
+                    isCollapsed ? "lg:ml-[100px]" : "lg:ml-[260px]"
                 )}>
-                    <div className="pointer-events-auto w-full max-w-3xl px-6">
-                        <TournamentPill />
-                    </div>
-                </div>
-            </div>
+                    {/* Topbar - Mobile / Tablet Only (< lg) */}
+                    <header className="sticky top-0 z-30 glass pt-[env(safe-area-inset-top,0px)] lg:hidden rounded-none border-b border-line-subtle">
+                        <div className="flex items-center gap-3 px-4 py-3 min-w-0">
+                            <Link to="/dashboard" aria-label={SITE_NAME} className="shrink-0 flex items-center">
+                                <img
+                                    src={brandLogoUrl || logoSrc}
+                                    alt="Logo"
+                                    className="w-7 h-7 object-contain rounded-md"
+                                />
+                            </Link>
+                            <h1 className="font-bold text-base text-content-primary truncate">
+                                {pageTitle}
+                            </h1>
+                        </div>
+                    </header>
 
-            {/* Profile Popup */}
-            <ProfilePopup
-                isOpen={showProfilePopup}
-                onClose={() => setShowProfilePopup(false)}
-            />
+                    {/* Page Content Container */}
+                    <main className="flex-1 p-4 lg:p-8 overflow-y-auto relative w-full overflow-x-hidden pb-[var(--admin-bottom-chrome)] lg:pb-8">
+                        <div className="max-w-7xl mx-auto w-full">
+                            <Suspense fallback={<PageLoader />}>
+                                <Outlet />
+                            </Suspense>
+                        </div>
+                    </main>
+
+                    {/* Admin Floating Glass Tab Bar (< lg) */}
+                    <AdminTabBar />
+                </div>
+
+                {/* Profile Popup (Desktop) */}
+                <ProfilePopup
+                    isOpen={showProfilePopup}
+                    onClose={() => setShowProfilePopup(false)}
+                />
+
+                {/* Desktop Tournament Switcher */}
+                <TournamentSwitcher
+                    isOpen={switcherOpen}
+                    onClose={() => setSwitcherOpen(false)}
+                />
+            </div>
         </div>
     );
 };
