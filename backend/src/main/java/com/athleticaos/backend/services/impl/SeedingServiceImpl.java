@@ -5,9 +5,10 @@ import com.athleticaos.backend.enums.OrganisationLevel;
 import com.athleticaos.backend.repositories.*;
 import com.athleticaos.backend.services.SeedingService;
 import com.athleticaos.backend.utils.SlugGenerator;
-import com.github.javafaker.Faker;
+import net.datafaker.Faker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Service
+@Profile("!prod")
 @RequiredArgsConstructor
 @Slf4j
 public class SeedingServiceImpl implements SeedingService {
