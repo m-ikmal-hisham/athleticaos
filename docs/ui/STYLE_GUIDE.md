@@ -33,6 +33,7 @@ If code and this guide disagree, the guide wins and the code is a migration item
 - [ ] No placeholder people ("John Doe"), companies, or numbers
 - [ ] No "Loading..." strings; use `Skeleton` or `Spinner`
 - [ ] Icons from Phosphor only, `duotone` by default (set once in IconContext); `fill` only for active/selected state and small solid status marks; `bold` only below 16px
+- [ ] Animated backgrounds only through the shared journey/background engine
 
 ---
 
@@ -130,9 +131,10 @@ yellow.
 
 ## 3. Typography
 
-- **Family:** Inter for everything. Remove the unused Outfit font load from
-  `index.html`. Use `font-variant-numeric: tabular-nums` (`tabular-nums`) on scores,
-  clocks, tables, and stats so digits do not jump.
+- **Family:** Inter for UI text. Oswald (`font-score`) only for scores, team short
+  names and public page headings (decided 2026-10-07). Use
+  `font-variant-numeric: tabular-nums` (`tabular-nums`) on scores, clocks, tables,
+  and stats so digits do not jump.
 - **Minimum size:** 12px. The 148 current uses of `text-[9|10|11px]` migrate to
   `text-xs` (12px) or are removed.
 
@@ -171,6 +173,16 @@ Card padding: 16px mobile, 24px ≥768px. Page gutter: 16px mobile, 24px tablet,
 
 Retire the current 18px and 24px card radii.
 
+**Glass material:** one material, used only by: the public and admin floating glass tab bars, their accessories, and the public/admin sticky top bars. Never on cards, tables or content.
+Tokens (CSS variables in `frontend/src/styles/theme.css`, light / dark):
+- `--glass-bg`: `rgb(255 255 255 / 0.72)` / `rgb(13 27 42 / 0.72)` (deep navy `#0D1B2A`)
+- `--glass-border`: `rgb(255 255 255 / 0.55)` / `rgb(255 255 255 / 0.12)` (1px inner hairline, "glass edge")
+- `--glass-outline`: `rgb(0 0 0 / 0.08)` / `rgb(0 0 0 / 0.40)` (1px outer line so it separates from white pages)
+- `--glass-blur`: `20px`, saturate `180%`
+- `--glass-shadow`: the existing `--shadow-md` (no new shadow level, no coloured glow)
+Fallbacks: `@supports not (backdrop-filter or -webkit-backdrop-filter)` AND `@media (prefers-reduced-transparency: reduce)` → solid `--surface-card` with the same border. Must stay readable (contrast AA) on the busiest background (hero image, dark mode red dots).
+Note on top inset: the sticky top bar and the EnvironmentRibbon above it both receive `padding-top: env(safe-area-inset-top)`. This ensures nothing sits under the status bar when edge-to-edge; in dev/staging where the ribbon renders, both elements having the inset is intended and safe.
+
 **Elevation:** three levels only.
 `--shadow-sm` (cards, optional), `--shadow-md` (dropdowns, sticky bars),
 `--shadow-lg` (modals). No coloured glows (`shadow-blue-500/30` and similar).
@@ -178,10 +190,13 @@ Retire the current 18px and 24px card radii.
 **Motion:** 150ms (hover, press), 200ms (dropdown, tab), 300ms (modal, drawer),
 easing `cubic-bezier(0.2, 0, 0, 1)`. Wrap all non-essential animation in
 `motion-safe:`. Allowed animations: fade, slide ≤8px, the LIVE dot pulse, skeleton
-shimmer. Nothing else animates.
+shimmer. Two named exceptions only:
+1. **tab press:** scale to `0.96` for 150ms on tab-bar items only.
+2. **tab bar minimise:** the bar/accessory morph on scroll, 300ms, standard easing.
+3. **animated background (pilot: /journey only):** particle pitch background with strict opacity caps (markings ≤ 35%, grass ≤ 12% light / 18% dark), idle drift ≤ 4 px/s screen, subtle camera sway ≤ 1°, DPR ≤ 1.5, pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion` or `saveData`.
+All three exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
 
-**Z-index scale:** `base 0` · `sticky 20` · `nav 30` · `pill 35` · `drawer 40` ·
-`modal 50` · `toast 60`. No arbitrary `z-[999]`.
+**Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
 
 ---
 
@@ -191,11 +206,11 @@ shimmer. Nothing else animates.
 
 | Name | Width | Target | Admin shell | Public shell |
 |---|---|---|---|---|
-| base | <640 | Phone | Top bar + drawer | Top bar + menu sheet + bottom pill |
-| `sm` | ≥640 | Large phone | same | same |
-| `md` | ≥768 | Tablet portrait | **Icon rail (72px)** + expand on tap | Inline nav |
-| `lg` | ≥1024 | Tablet landscape / laptop | Icon rail, expandable | Inline nav |
-| `xl` | ≥1280 | Desktop | Full sidebar (248px) | Inline nav |
+| base | <640 | Phone | Top bar + floating glass tab bar (+ tournament accessory) | Top bar + floating glass tab bar (+ live accessory) |
+| `sm` | ≥640 | Large phone | same | Top bar + floating glass tab bar (+ live accessory) |
+| `md` | ≥768 | Tablet portrait | same | Inline nav |
+| `lg` | ≥1024 | Tablet landscape / laptop | Icon rail (72px), expandable (collapsed by default) | Inline nav |
+| `xl` | ≥1280 | Desktop | Full sidebar (240px, expanded by default) | Inline nav |
 
 Tablets are first-class: no layout may jump straight from phone drawer to full
 desktop sidebar.
@@ -240,6 +255,7 @@ Every admin page uses `PageHeader`. Max one primary button per page header.
 | Error | `ErrorState` (what failed + Retry) | `console.error` only, silent blank |
 | Form field | `Field` = `Label` + `Input`/`Select`/`Textarea` + hint + error, error text in `--danger` | label/input pairs styled per page |
 | Dropdown | `Select` (searchable when > 7 options, bottom sheet on phones) | native `<select>`, per-page custom menus |
+| Tab bar / Live accessory | `GlassTabBar`, `PublicTabBar`, `PublicNowAccessory` (capsule floating nav with scroll minimise) | custom bottom navs, hardcoded floating menus |
 
 ### 6.1 Page or pop-up (CRUD rule)
 
@@ -276,8 +292,12 @@ Rules:
 - **Empty values:** `—` (em dash), never `null`, `N/A`, or blank.
 - **Voice:** short, direct, Malaysian-English spelling (organisation, colour,
   favourite). Buttons are verbs ("Save changes", "Add team").
-- **Language readiness:** keep user-facing strings out of logic so Bahasa Malaysia
-  can be added later.
+- **Bilingual public site (EN + BM):** every branch that adds or changes public
+  text ships EN + MS keys in `frontend/src/i18n/locales/` (verified by CI
+  `check-i18n.mjs`). User content (team names, player names, tournament names,
+  venues) is never translated. World Rugby terms stay in English inside BM (try,
+  conversion, penalty try, drop goal, scrum, lineout, ruck, maul, sin bin,
+  yellow card, red card).
 
 ---
 

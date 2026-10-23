@@ -129,13 +129,11 @@ public class MatchLineupControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "MATCH_MANAGER")
-    void matchManagerCanUpdateLineup() throws Exception {
-        when(matchLineupService.updateLineup(eq(matchId), any())).thenReturn(List.of());
-
+    void matchManagerCannotUpdateLineup() throws Exception {
         mockMvc.perform(put("/api/v1/matches/{matchIdOrSlug}/lineup", matchId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -151,12 +149,10 @@ public class MatchLineupControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "OFFICIAL")
-    void officialCanUpdateLineup() throws Exception {
-        when(matchLineupService.updateLineup(eq(matchId), any())).thenReturn(List.of());
-
+    void officialCannotUpdateLineup() throws Exception {
         mockMvc.perform(put("/api/v1/matches/{matchIdOrSlug}/lineup", matchId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 }

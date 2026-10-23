@@ -6,8 +6,8 @@ export interface InviteUserRequest {
     email: string;
     role: string;
     organisationId: string;
-    /** Initial password; the user must change it at first sign-in. */
-    password: string;
+    /** Optional initial password; if omitted, an invite email is sent */
+    password?: string;
 }
 
 export interface InviteUserResponse {
@@ -17,6 +17,7 @@ export interface InviteUserResponse {
     organisationId: string;
     inviteStatus: string;
     message?: string;
+    emailSent?: boolean;
 }
 
 export interface UserUpdateRequest {
@@ -66,6 +67,11 @@ export const usersApi = {
 
     deleteUser: async (id: string) => {
         const response = await api.delete(`/users/${id}`);
+        return response;
+    },
+
+    resendInvite: async (id: string) => {
+        const response = await api.post<InviteUserResponse>(`/users/${id}/resend-invite`);
         return response;
     },
 };

@@ -18,6 +18,7 @@ import { BulkUploadModal } from "../../components/modals/BulkUploadModal";
 import toast from "react-hot-toast";
 import ConfirmDeleteModal from "../../components/modals/ConfirmDeleteModal";
 import { useAdminPlayers, useAdminPlayerStatusCounts } from "../../hooks/admin";
+import { SquadsSegmentedSwitch } from "@/components/admin/SquadsSegmentedSwitch";
 
 export default function Players() {
     const navigate = useNavigate();
@@ -196,6 +197,9 @@ export default function Players() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="lg:hidden">
+                <SquadsSegmentedSwitch current="players" />
+            </div>
             <PageHeader
                 title="Players"
                 description={`${totalPlayers.toLocaleString()} players`}

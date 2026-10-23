@@ -108,8 +108,8 @@ class PublicProfilePrivacyTest {
                 .map(field -> field.getName())
                 .toList();
         assertThat(detailFields)
-                .as("PublicPlayerDetailResponse should declare age")
-                .contains("age")
+                .as("PublicPlayerDetailResponse should declare age and ageGroup")
+                .contains("age", "ageGroup")
                 .as("PublicPlayerDetailResponse should not declare unused blood or emergency contact fields")
                 .doesNotContain("bloodGroup", "emergencyContactName", "emergencyContactNumber", "emergencyContactRelationship");
     }
@@ -169,10 +169,49 @@ class PublicProfilePrivacyTest {
     }
 
     @Test
+    @DisplayName("Public player detail endpoint masks age and city and sets ageGroup for under-18 players")
+    void publicPlayerDetailUnder18MasksAgeAndCityAndSetsAgeGroup() throws Exception {
+        UUID playerId = UUID.randomUUID();
+        LocalDate under18Dob = LocalDate.now(java.time.ZoneId.of("Asia/Kuala_Lumpur")).minusYears(15).minusMonths(2);
+
+        PlayerResponse playerResponse = PlayerResponse.builder()
+                .id(playerId)
+                .firstName("Young")
+                .lastName("Athlete")
+                .dob(under18Dob)
+                .gender("M")
+                .country("Malaysia")
+                .state("Selangor")
+                .city("Subang Jaya")
+                .build();
+
+        when(playerService.getPlayerById(playerId)).thenReturn(playerResponse);
+        when(playerTeamRepository.findByPlayerIdAndIsActiveTrue(playerId)).thenReturn(List.of());
+        when(tournamentPlayerRepository.findActiveTournamentsByPlayerId(playerId)).thenReturn(List.of());
+        when(matchLineupRepository.findByPlayerId(playerId)).thenReturn(List.of());
+
+        ResponseEntity<PublicPlayerDetailResponse> response = controller.getPublicPlayer(playerId.toString(), null);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        PublicPlayerDetailResponse detail = Objects.requireNonNull(response.getBody());
+
+        assertThat(detail.getAge()).isNull();
+        assertThat(detail.getCity()).isNull();
+        assertThat(detail.getAgeGroup()).isEqualTo("Under 16");
+        assertThat(detail.getState()).isEqualTo("Selangor");
+
+        String json = objectMapper.writeValueAsString(detail);
+        assertThat(json)
+                .doesNotContain("Subang Jaya")
+                .doesNotContain(under18Dob.toString())
+                .contains("\"ageGroup\":\"Under 16\"");
+    }
+
+    @Test
     @DisplayName("Public player detail endpoint computes age correctly from date of birth and does not leak dateOfBirth")
     void publicPlayerDetailComputesAgeFromDob() throws Exception {
         UUID playerId = UUID.randomUUID();
-        LocalDate fabricatedDob = LocalDate.now().minusYears(22).minusMonths(1);
+        LocalDate fabricatedDob = LocalDate.now(java.time.ZoneId.of("Asia/Kuala_Lumpur")).minusYears(25).minusMonths(1);
 
         PlayerResponse playerResponse = PlayerResponse.builder()
                 .id(playerId)
@@ -196,7 +235,8 @@ class PublicProfilePrivacyTest {
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         PublicPlayerDetailResponse detail = Objects.requireNonNull(response.getBody());
 
-        assertThat(detail.getAge()).isEqualTo(22);
+        assertThat(detail.getAge()).isEqualTo(25);
+        assertThat(detail.getAgeGroup()).isNull();
         assertThat(detail.getGender()).isEqualTo("M");
         assertThat(detail.getCity()).isEqualTo("Cheras");
 
@@ -211,11 +251,12 @@ class PublicProfilePrivacyTest {
                 .doesNotContain("emergencyContactName")
                 .doesNotContain("emergencyContactNumber")
                 .doesNotContain("emergencyContactRelationship")
-                .contains("\"age\":22");
+                .contains("\"age\":25")
+                .contains("\"city\":\"Cheras\"");
     }
 
     @Test
-    @DisplayName("Public player detail returns null age when date of birth is null")
+    @DisplayName("Public player detail returns null age and null ageGroup and keeps city when date of birth is null")
     void publicPlayerDetailReturnsNullAgeWhenDobNull() throws Exception {
         UUID playerId = UUID.randomUUID();
 
@@ -240,6 +281,8 @@ class PublicProfilePrivacyTest {
         PublicPlayerDetailResponse detail = Objects.requireNonNull(response.getBody());
 
         assertThat(detail.getAge()).isNull();
+        assertThat(detail.getAgeGroup()).isNull();
+        assertThat(detail.getCity()).isEqualTo("George Town");
 
         String json = objectMapper.writeValueAsString(detail);
         assertThat(json)

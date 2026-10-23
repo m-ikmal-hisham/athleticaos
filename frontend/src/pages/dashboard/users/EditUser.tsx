@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { GlassCard } from '@/components/GlassCard';
 import { showToast } from '@/lib/customToast';
 import { ArrowLeft } from '@phosphor-icons/react';
+import { formatRoleName } from '@/utils/stringUtils';
 
 export const EditUser = () => {
     const { id } = useParams<{ id: string }>();
@@ -213,7 +214,7 @@ export const EditUser = () => {
                             onChange={(val) => setFormData({ ...formData, role: String(val) })}
                             required
                             aria-label="Select Role"
-                            options={getAvailableRoles().map(role => ({ value: role, label: role }))}
+                            options={getAvailableRoles().map(role => ({ value: role, label: formatRoleName(role) }))}
                         />
                     </div>
 

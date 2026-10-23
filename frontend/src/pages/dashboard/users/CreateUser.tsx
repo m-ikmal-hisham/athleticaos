@@ -11,8 +11,9 @@ import { PageHeader } from '@/components/PageHeader';
 import { GlassCard } from '@/components/GlassCard';
 import { showToast } from '@/lib/customToast';
 import { generateStrongPassword, passwordProblem, PASSWORD_MIN_LENGTH } from '@/utils/password';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Key } from '@phosphor-icons/react';
 import { AxiosError } from 'axios';
+import { authApi } from '@/api/auth.api';
 
 export const CreateUser = () => {
     const navigate = useNavigate();
@@ -30,6 +31,8 @@ export const CreateUser = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [accountEmailsEnabled, setAccountEmailsEnabled] = useState(false);
+    const [inviteMethod, setInviteMethod] = useState<'EMAIL' | 'MANUAL'>('EMAIL');
 
     const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
     const isOrgAdmin = user?.roles?.includes('ROLE_ORG_ADMIN');
@@ -47,6 +50,27 @@ export const CreateUser = () => {
             getOrganisations();
         }
     }, [isSuperAdmin, getOrganisations]);
+
+    useEffect(() => {
+        let mounted = true;
+        authApi.getFeatures()
+            .then(res => {
+                if (mounted && res.data?.accountEmails) {
+                    setAccountEmailsEnabled(true);
+                    setInviteMethod('EMAIL');
+                } else if (mounted) {
+                    setAccountEmailsEnabled(false);
+                    setInviteMethod('MANUAL');
+                }
+            })
+            .catch(() => {
+                if (mounted) {
+                    setAccountEmailsEnabled(false);
+                    setInviteMethod('MANUAL');
+                }
+            });
+        return () => { mounted = false; };
+    }, []);
 
     // Determine available roles based on current user's role
     const getAvailableRoles = () => {
@@ -69,16 +93,29 @@ export const CreateUser = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const problem = passwordProblem(formData.password, formData.email)
-            ?? (formData.password !== confirmPassword ? 'Passwords do not match' : null);
-        if (problem) {
-            showToast.error(problem);
-            return;
+
+        if (inviteMethod === 'MANUAL') {
+            const problem = passwordProblem(formData.password || '', formData.email)
+                ?? (formData.password !== confirmPassword ? 'Passwords do not match' : null);
+            if (problem) {
+                showToast.error(problem);
+                return;
+            }
+        } else {
+            if (!formData.email?.trim()) {
+                showToast.error('An email address is required to send an invitation email.');
+                return;
+            }
         }
+
         setLoading(true);
 
         try {
-            const response = await usersApi.inviteUser(formData);
+            const payload: InviteUserRequest = {
+                ...formData,
+                password: inviteMethod === 'MANUAL' ? formData.password : undefined,
+            };
+            const response = await usersApi.inviteUser(payload);
 
             if (response.data.inviteStatus === 'EXISTS') {
                 showToast.error(response.data.message || 'User already exists');
@@ -124,42 +161,85 @@ export const CreateUser = () => {
                     </div>
 
                     <Input
-                        label={formData.role === 'PLAYER' ? "Email (Optional)" : "Email"}
+                        label={formData.role === 'PLAYER' && !accountEmailsEnabled ? "Email (Optional)" : "Email"}
                         type="email"
                         value={formData.email}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
-                        required={formData.role !== 'PLAYER'}
+                        required={formData.role !== 'PLAYER' || inviteMethod === 'EMAIL'}
                     />
 
-                    <div className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Input
-                                label="Initial Password"
-                                type={showPassword ? 'text' : 'password'}
-                                autoComplete="new-password"
-                                value={formData.password}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, password: e.target.value })}
-                                helperText={`At least ${PASSWORD_MIN_LENGTH} characters. The user must change it at first sign-in.`}
-                                required
-                            />
-                            <Input
-                                label="Confirm Password"
-                                type={showPassword ? 'text' : 'password'}
-                                autoComplete="new-password"
-                                value={confirmPassword}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-                                required
-                            />
+                    {accountEmailsEnabled && (
+                        <div className="space-y-3 p-4 rounded-xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12">
+                            <label className="block text-sm font-semibold text-black/80 dark:text-white/80">
+                                Invitation Method
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setInviteMethod('EMAIL')}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                                        inviteMethod === 'EMAIL'
+                                            ? 'border-navy bg-navy/10 text-black dark:text-white'
+                                            : 'border-black/10 dark:border-white/12 text-black/72 dark:text-white/72 hover:bg-black/5 dark:hover:bg-white/5'
+                                    }`}
+                                >
+                                    <EnvelopeSimple size={20} className="shrink-0 mt-0.5 text-navy dark:text-navy-tint" />
+                                    <div>
+                                        <p className="text-sm font-semibold">Send invite email</p>
+                                        <p className="text-xs text-black/60 dark:text-white/60">User receives a setup link and chooses their own password.</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setInviteMethod('MANUAL')}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                                        inviteMethod === 'MANUAL'
+                                            ? 'border-navy bg-navy/10 text-black dark:text-white'
+                                            : 'border-black/10 dark:border-white/12 text-black/72 dark:text-white/72 hover:bg-black/5 dark:hover:bg-white/5'
+                                    }`}
+                                >
+                                    <Key size={20} className="shrink-0 mt-0.5 text-navy dark:text-navy-tint" />
+                                    <div>
+                                        <p className="text-sm font-semibold">Set initial password</p>
+                                        <p className="text-xs text-black/60 dark:text-white/60">Admin sets initial password and delivers it out-of-band.</p>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex gap-3">
-                            <Button type="button" variant="ghost" size="sm" onClick={handleGeneratePassword}>
-                                Generate strong password
-                            </Button>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)}>
-                                {showPassword ? 'Hide' : 'Show'}
-                            </Button>
+                    )}
+
+                    {inviteMethod === 'MANUAL' && (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Input
+                                    label="Initial Password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    autoComplete="new-password"
+                                    value={formData.password || ''}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, password: e.target.value })}
+                                    helperText={`At least ${PASSWORD_MIN_LENGTH} characters. The user must change it at first sign-in.`}
+                                    required
+                                />
+                                <Input
+                                    label="Confirm Password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    autoComplete="new-password"
+                                    value={confirmPassword}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <Button type="button" variant="ghost" size="sm" onClick={handleGeneratePassword}>
+                                    Generate strong password
+                                </Button>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? 'Hide' : 'Show'}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div>
                         <SearchableSelect

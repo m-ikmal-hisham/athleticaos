@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CaretDown, CaretUp, Trophy, MonitorPlay, ShareNetwork } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 
 export default function HowItWorks() {
+    const { t } = useTranslation('journey');
     return (
         <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
             {/* Header */}
@@ -54,6 +57,19 @@ export default function HowItWorks() {
                         answer="Live streams and replays are available for select tournaments. Look for the 'Live' badge on match cards."
                     />
                 </div>
+            </div>
+
+            {/* Link to /journey */}
+            <div className="text-center pt-8 border-t border-black/10 dark:border-white/12">
+                <p className="text-sm text-black/72 dark:text-white/72">
+                    {t('howItWorks.journeyPrompt')}{' '}
+                    <Link
+                        to="/journey"
+                        className="font-semibold text-navy dark:text-navy-tint hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint rounded-sm"
+                    >
+                        {t('howItWorks.journeyLink')}
+                    </Link>
+                </p>
             </div>
         </div>
     );

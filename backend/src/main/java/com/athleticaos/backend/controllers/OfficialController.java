@@ -26,14 +26,14 @@ public class OfficialController {
     // ─── Registry ───────────────────────────────────────────────────────
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     @Operation(summary = "Get all registered officials")
     public ResponseEntity<List<OfficialRegistryDTO>> getAllOfficials() {
         return ResponseEntity.ok(officialService.getAllOfficials());
     }
 
     @GetMapping("/{officialId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN')")
     @Operation(summary = "Get official by ID")
     public ResponseEntity<OfficialRegistryDTO> getOfficialById(@PathVariable UUID officialId) {
         return ResponseEntity.ok(officialService.getOfficialById(officialId));

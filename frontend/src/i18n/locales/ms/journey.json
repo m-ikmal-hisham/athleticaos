@@ -1,0 +1,46 @@
+{
+  "pageTitle": "Perjalanan kami",
+  "subtitle": "Bagaimana AthleticaOS dibina, kedudukan kami sekarang, dan langkah seterusnya.",
+  "journey1Tab": "Perjalanan 1 · Bina hingga pelancaran",
+  "journey2Tab": "Perjalanan 2 · Luaskan peminat",
+  "field": {
+    "aria": "Padang ragbi yang menunjukkan laluan {{journey}}",
+    "startPosts": "Permulaan AthleticaOS",
+    "goalPosts": "Matlamat: {{goal}}",
+    "ballAria": "Bola ragbi menandakan pencapaian semasa: {{title}}",
+    "milestoneAria": "{{setPiece}} · {{date}} · {{title}}"
+  },
+  "legend": {
+    "title": "Set piece",
+    "subtitle": "Bagaimana peristiwa ragbi menceritakan kisah pembangunan kami",
+    "kick": "Kick-off = permulaan",
+    "phase": "Phase play = ciri-ciri dibina",
+    "scrum": "Scrum = asas diperkukuh",
+    "lineout": "Lineout = dibuka kepada rakan kerjasama",
+    "ruck": "Ruck = dibaiki bawah tekanan",
+    "maul": "Maul = usaha padu berpasukan",
+    "try": "Try = matlamat perjalanan dilancarkan",
+    "conv": "Conversion = tindakan susulan yang membuktikannya"
+  },
+  "counters": {
+    "tournaments": "Kejohanan",
+    "teams": "Pasukan",
+    "players": "Pemain",
+    "matchesPlayed": "Perlawanan selesai"
+  },
+  "roadmap": {
+    "title": "Langkah seterusnya",
+    "now": "Sekarang",
+    "next": "Seterusnya",
+    "later": "Kemudian",
+    "testingOnStaging": "Diuji di laman ujian"
+  },
+  "joinUs": {
+    "title": "Mengendalikan kelab, sekolah, persatuan atau kejohanan?",
+    "cta": "Daftarkan organisasi anda"
+  },
+  "howItWorks": {
+    "journeyPrompt": "Ingin lihat bagaimana AthleticaOS dibina?",
+    "journeyLink": "Ikuti perjalanan kami →"
+  }
+}

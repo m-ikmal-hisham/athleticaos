@@ -32,4 +32,19 @@ public interface TournamentRepository extends JpaRepository<Tournament, UUID> {
 
     long countByStatusAndDeletedFalseAndOrganiserOrg_IdIn(com.athleticaos.backend.enums.TournamentStatus status,
             java.util.Collection<UUID> orgIds);
+
+    // pg_advisory_xact_lock returns PostgreSQL's "void" type, which Hibernate cannot map (JDBC type 1111);
+    // wrapping it makes the query return a plain integer. The lock is held until the transaction ends.
+    @org.springframework.data.jpa.repository.Query(value = "SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtext('tournament_featured'))) AS lock_taken", nativeQuery = true)
+    Integer acquireFeaturedAdvisoryLock();
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM Tournament t WHERE t.featured = true AND (t.deleted IS NULL OR t.deleted = false) ORDER BY t.featuredOrder ASC")
+    java.util.List<Tournament> findFeaturedForUpdate();
+
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM Tournament t WHERE t.featured = true AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) ORDER BY t.featuredOrder ASC")
+    java.util.List<Tournament> findFeaturedPublished();
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(t) FROM Tournament t WHERE t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false)")
+    long countPublished();
 }

@@ -62,6 +62,8 @@ public interface TournamentService {
 
         void clearSchedule(UUID tournamentId, boolean clearStructure);
 
+        void deleteEmptyStage(UUID tournamentId, UUID stageId);
+
         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId);
 
         com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO getFormatConfig(UUID tournamentId,
@@ -76,4 +78,9 @@ public interface TournamentService {
         void updateStage(UUID tournamentId, UUID stageId, String name);
 
         void updateStage(UUID tournamentId, UUID stageId, String name, boolean updateCategory, UUID categoryId);
+
+        TournamentResponse updateFeatured(UUID id, com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request,
+                        jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        List<TournamentResponse> getFeaturedTournaments();
 }

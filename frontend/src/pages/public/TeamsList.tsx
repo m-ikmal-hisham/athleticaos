@@ -203,7 +203,7 @@ export default function TeamsList() {
         <div className="space-y-6">
             {/* Header */}
             <div className="space-y-2">
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+                <h1 className="font-score text-3xl font-bold text-slate-900 dark:text-white">
                     Teams & Clubs
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">

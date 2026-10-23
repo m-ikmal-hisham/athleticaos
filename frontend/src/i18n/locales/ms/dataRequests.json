@@ -1,0 +1,33 @@
+{
+  "pageTitle": "Permintaan data — AthleticaOS",
+  "title": "Permintaan data peribadi",
+  "description": "Di bawah Akta Perlindungan Data Peribadi 2010, anda mempunyai hak terhadap cara data peribadi anda dikendalikan. Pilih jenis permintaan di bawah untuk menghantar permintaan anda terus kepada pasukan privasi kami.",
+  "rightsLinkText": "Ketahui lebih lanjut dalam bahagian Hak anda dalam Notis privasi kami",
+  "options": {
+    "copy": {
+      "title": "Dapatkan salinan data saya",
+      "description": "Minta salinan data peribadi yang kami simpan tentang anda dalam rekod kejohanan, pasukan dan perlawanan.",
+      "action": "Minta data saya"
+    },
+    "correct": {
+      "title": "Betulkan butiran saya",
+      "description": "Minta kami membetulkan butiran yang salah atau sudah lapuk, seperti ejaan nama yang salah.",
+      "action": "Minta pembetulan"
+    },
+    "remove": {
+      "title": "Alih keluar atau sembunyikan profil awam saya",
+      "description": "Minta profil pemain awam anda dibuang, butiran tertentu disembunyikan, atau rekod awam anda dijadikan tanpa nama.",
+      "action": "Minta profil dibuang atau disembunyikan"
+    },
+    "withdraw": {
+      "title": "Tarik balik persetujuan",
+      "description": "Tarik balik persetujuan anda atau minta sekatan terhadap cara data peribadi anda diproses di platform.",
+      "action": "Tarik balik persetujuan"
+    }
+  },
+  "guardian": {
+    "heading": "Bertindak bagi pihak anak di bawah umur 18 tahun?",
+    "body": "Ibu bapa dan penjaga yang sah boleh mengemukakan mana-mana permintaan ini bagi pihak anak mereka. Sila nyatakan bahawa anda adalah ibu bapa atau penjaga semasa mengemukakan pertanyaan anda.",
+    "replyNotice": "Kami membalas dalam tempoh 21 hari."
+  }
+}

@@ -101,6 +101,16 @@ public class TournamentController {
         return ResponseEntity.ok(withAccessLevel(tournamentService.updatePublishStatus(id, publish, httpRequest)));
     }
 
+    @PatchMapping("/{id}/featured")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<TournamentResponse> updateFeatured(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.TournamentFeaturedRequest request,
+            HttpServletRequest httpRequest) {
+        fetchTournamentInOrganiserScope(id.toString());
+        return ResponseEntity.ok(withAccessLevel(tournamentService.updateFeatured(id, request, httpRequest)));
+    }
+
     @GetMapping("/{idOrSlug}/export/matches")
     @PreAuthorize("isAuthenticated()")
     @SuppressWarnings("null")
@@ -170,6 +180,17 @@ public class TournamentController {
             @RequestParam(required = false) UUID categoryId) {
         UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
         bracketService.deleteKnockoutBracket(id, stageType, categoryId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{idOrSlug}/stages/{stageId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    @Operation(summary = "Delete an empty stage from a tournament")
+    public ResponseEntity<Void> deleteEmptyStage(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID stageId) {
+        UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
+        tournamentService.deleteEmptyStage(id, stageId);
         return ResponseEntity.ok().build();
     }
 

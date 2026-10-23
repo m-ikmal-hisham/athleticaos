@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
+import com.athleticaos.backend.security.MatchRoles;
 
 import java.util.List;
 import java.util.UUID;
@@ -86,7 +87,7 @@ public class MatchController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL', 'ROLE_MATCH_MANAGER')")
+    @PreAuthorize(MatchRoles.MATCH_WRITE)
     @Operation(summary = "Update match status")
     public ResponseEntity<MatchResponse> updateMatchStatus(@PathVariable UUID id, @RequestParam String status,
             HttpServletRequest httpRequest) {
@@ -150,7 +151,7 @@ public class MatchController {
     }
 
     @GetMapping("/operations/dashboard")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_OFFICIAL', 'ROLE_ORG_ADMIN', 'ROLE_MATCH_MANAGER')")
+    @PreAuthorize(MatchRoles.OPERATIONS_VIEW)
     @Operation(summary = "Get aggregated operations dashboard data")
     public ResponseEntity<com.athleticaos.backend.dtos.match.OperationsDashboardDTO> getOperationsDashboard() {
         return ResponseEntity.ok(matchService.getOperationsDashboard());

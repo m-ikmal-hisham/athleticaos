@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,9 +15,17 @@ const SUBJECT_OPTIONS: { value: ContactSubjectValue; label: string }[] = [
     { value: 'ORGANISATION_REGISTRATION', label: 'Register my organisation' },
     { value: 'MEDIA', label: 'Media & press' },
     { value: 'TOURNAMENT_SUPPORT', label: 'Tournament organiser support' },
+    { value: 'PRIVACY_REQUEST', label: 'Privacy / data request' },
 ];
 
 const VALID_SUBJECT_VALUES = SUBJECT_OPTIONS.map((opt) => opt.value);
+
+const PRIVACY_TEMPLATES: Record<string, string> = {
+    copy: 'Request: get a copy of my personal data. Player name / team / details: ',
+    correct: 'Request: correct my personal details. Details to correct: ',
+    remove: 'Request: remove or hide my public profile. Player name / team: ',
+    withdraw: 'Request: withdraw consent or limit use of data. Details: ',
+};
 
 const contactSchema = z.object({
     name: z
@@ -40,6 +48,7 @@ const contactSchema = z.object({
         'ORGANISATION_REGISTRATION',
         'MEDIA',
         'TOURNAMENT_SUPPORT',
+        'PRIVACY_REQUEST',
     ], {
         errorMap: () => ({ message: 'Please select a subject' }),
     }),
@@ -90,7 +99,16 @@ export default function Contact() {
         if (paramSubject && VALID_SUBJECT_VALUES.includes(paramSubject as ContactSubjectValue)) {
             setValue('subject', paramSubject as ContactSubjectValue);
         }
-    }, [searchParams, setValue]);
+        if (paramSubject === 'PRIVACY_REQUEST') {
+            const typeParam = searchParams.get('type')?.toLowerCase();
+            if (typeParam && PRIVACY_TEMPLATES[typeParam]) {
+                const currentMessage = watch('message');
+                if (!currentMessage || currentMessage.trim() === '') {
+                    setValue('message', PRIVACY_TEMPLATES[typeParam]);
+                }
+            }
+        }
+    }, [searchParams, setValue, watch]);
 
     const messageValue = watch('message') || '';
 
@@ -167,7 +185,7 @@ export default function Contact() {
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <div className="space-y-2">
-                <h1 className="text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
+                <h1 className="font-score text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
                     Contact us
                 </h1>
                 <p className="text-base sm:text-lg text-black/72 dark:text-white/72">
@@ -376,6 +394,13 @@ export default function Contact() {
                         )}
                         <span>{isSubmitting ? 'Sending...' : 'Send message'}</span>
                     </button>
+                    <p className="mt-4 text-center text-xs text-black/60 dark:text-white/60">
+                        We use your details only to reply. See our{' '}
+                        <Link to="/privacy" className="text-navy dark:text-navy-tint hover:underline font-medium">
+                            Privacy notice
+                        </Link>
+                        .
+                    </p>
                 </form>
             </div>
         </div>

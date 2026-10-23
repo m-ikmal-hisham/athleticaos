@@ -5,7 +5,7 @@ import { GlassCard } from "../../components/GlassCard";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin, PencilSimple, Trash } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plus, Funnel, Trophy, Calendar, MapPin, PencilSimple, Trash, CaretUp, CaretDown, Star } from "@phosphor-icons/react";
 import { Tournament, TournamentStatus } from "@/types";
 import { useTournamentsStore } from "../../store/tournaments.store";
 
@@ -15,10 +15,12 @@ import { SmartFilterPills, FilterOption } from "@/components/SmartFilterPills";
 import { EmptyState } from "@/components/EmptyState";
 import { getImageUrl } from "../../utils/image";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
-import { deleteTournament } from "@/api/tournaments.api";
+import { deleteTournament, updateTournamentFeatured } from "@/api/tournaments.api";
+import { publicTournamentApi, PublicTournamentSummary } from "@/api/public.api";
+import { showToast } from "@/lib/customToast";
 
 export default function Tournaments() {
-    const { tournaments, loading, getTournaments } = useTournamentsStore();
+    const { tournaments, loading, getTournaments, refreshTournaments } = useTournamentsStore();
     const { user } = useAuthStore();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
@@ -33,9 +35,67 @@ export default function Tournaments() {
     const [tournamentToDelete, setTournamentToDelete] = useState<Tournament | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Featured State
+    const [publicFeatured, setPublicFeatured] = useState<PublicTournamentSummary[]>([]);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [reorderingId, setReorderingId] = useState<string | null>(null);
+
+    const isSuperAdmin = Boolean(user?.roles?.includes('ROLE_SUPER_ADMIN'));
+    const isOrgAdmin = Boolean(user?.roles?.includes('ROLE_ORG_ADMIN'));
+    const canSeeFeaturedPanel = isSuperAdmin || isOrgAdmin;
+
+    const loadPublicFeatured = async () => {
+        try {
+            const data = await publicTournamentApi.getFeaturedTournaments(true);
+            setPublicFeatured(data);
+        } catch (error) {
+            console.error('Failed to load featured tournaments', error);
+        }
+    };
+
     useEffect(() => {
         getTournaments();
-    }, [getTournaments]);
+        if (canSeeFeaturedPanel) {
+            loadPublicFeatured();
+        }
+    }, [getTournaments, canSeeFeaturedPanel]);
+
+    const canToggleFeatured = (t: Tournament) => {
+        return Boolean(isSuperAdmin || (isOrgAdmin && t.accessLevel === 'MANAGE'));
+    };
+
+    const handleToggleFeatured = async (e: React.MouseEvent, tournament: Tournament) => {
+        e.stopPropagation();
+        if (togglingId) return;
+        const newFeatured = !tournament.featured;
+        try {
+            setTogglingId(tournament.id);
+            await updateTournamentFeatured(tournament.id, { featured: newFeatured });
+            showToast.success(newFeatured ? 'Tournament featured' : 'Tournament unfeatured');
+            await Promise.all([refreshTournaments(), loadPublicFeatured()]);
+        } catch (err: unknown) {
+            const anyErr = err as { response?: { data?: { message?: string } } };
+            const message = anyErr.response?.data?.message || 'Failed to update featured status';
+            showToast.error(message);
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
+    const handleMoveFeatured = async (id: string, newOrder: number) => {
+        if (reorderingId) return;
+        try {
+            setReorderingId(id);
+            await updateTournamentFeatured(id, { featured: true, featuredOrder: newOrder });
+            await Promise.all([refreshTournaments(), loadPublicFeatured()]);
+        } catch (err: unknown) {
+            const anyErr = err as { response?: { data?: { message?: string } } };
+            const message = anyErr.response?.data?.message || 'Failed to reorder tournament';
+            showToast.error(message);
+        } finally {
+            setReorderingId(null);
+        }
+    };
 
     const isAdmin = user?.roles?.some(r => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_CLUB_ADMIN'].includes(r));
 
@@ -116,6 +176,101 @@ export default function Tournaments() {
                     )
                 }
             />
+
+            {/* Featured on home page panel */}
+            {canSeeFeaturedPanel && (
+                <GlassCard className="p-4 sm:p-5 space-y-3 border-white/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Star className="w-5 h-5 text-navy dark:text-navy-tint" weight="duotone" />
+                            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                                Featured on home page
+                            </h2>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-navy/10 text-navy dark:text-navy-tint border border-navy/20">
+                                {publicFeatured.length}/6
+                            </span>
+                        </div>
+                        <span className="text-xs text-black/60 dark:text-white/60">
+                            {isSuperAdmin
+                                ? 'Platform administrators can feature and reorder up to six tournaments.'
+                                : 'Shows up to six tournaments on the public home page.'}
+                        </span>
+                    </div>
+
+                    {isSuperAdmin ? (
+                        publicFeatured.length === 0 ? (
+                            <p className="text-sm text-black/60 dark:text-white/60 py-2">
+                                No tournaments are currently featured on the home page. Use the switches below to feature up to six.
+                            </p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                                {publicFeatured.map((item, index) => (
+                                    <div
+                                        key={item.id}
+                                        className="flex items-center justify-between p-3 rounded-[10px] bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 gap-3"
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="shrink-0 w-6 h-6 rounded-full bg-navy text-white text-xs font-bold flex items-center justify-center">
+                                                {index + 1}
+                                            </span>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white truncate" title={item.name}>
+                                                {item.name}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <button
+                                                type="button"
+                                                aria-label={`Move ${item.name} up`}
+                                                disabled={index === 0 || reorderingId !== null}
+                                                onClick={() => handleMoveFeatured(item.id, index)}
+                                                className="w-11 h-11 flex items-center justify-center rounded-lg text-black/72 dark:text-white/72 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                title="Move up"
+                                            >
+                                                <CaretUp className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                aria-label={`Move ${item.name} down`}
+                                                disabled={index === publicFeatured.length - 1 || reorderingId !== null}
+                                                onClick={() => handleMoveFeatured(item.id, index + 2)}
+                                                className="w-11 h-11 flex items-center justify-center rounded-lg text-black/72 dark:text-white/72 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                title="Move down"
+                                            >
+                                                <CaretDown className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ) : (
+                        (() => {
+                            const ownFeatured = tournaments.filter(t => t.featured && t.accessLevel === 'MANAGE');
+                            return ownFeatured.length === 0 ? (
+                                <p className="text-sm text-black/60 dark:text-white/60 py-2">
+                                    Your organisation has no featured tournaments at the moment.
+                                </p>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                                    {ownFeatured.map((t) => (
+                                        <div
+                                            key={t.id}
+                                            className="flex items-center p-3 rounded-[10px] bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 gap-2.5 min-w-0"
+                                        >
+                                            <span className="shrink-0 w-6 h-6 rounded-full bg-navy text-white text-xs font-bold flex items-center justify-center">
+                                                {t.featuredOrder ?? '•'}
+                                            </span>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white truncate" title={t.name}>
+                                                {t.name}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()
+                    )}
+                </GlassCard>
+            )}
 
             {/* Controls Layout */}
             <div className="space-y-4">
@@ -202,7 +357,12 @@ export default function Tournaments() {
                             {/* Top Banner / Image Placeholder */}
                             <div className="h-32 bg-gradient-to-br from-primary-500/10 to-blue-500/10 relative overflow-hidden">
                                 {t.logoUrl && <img src={getImageUrl(t.logoUrl)} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 blur-sm" />}
-                                <div className="absolute top-2 right-2">
+                                <div className="absolute top-2 right-2 flex items-center gap-2">
+                                    {t.featured && t.featuredOrder != null && (
+                                        <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-navy/40 text-navy dark:text-navy-tint text-xs font-semibold shadow-lg">
+                                            Featured · {t.featuredOrder}
+                                        </div>
+                                    )}
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
                                         <span className={`w-2 h-2 rounded-full ${t.status === TournamentStatus.ONGOING ? 'bg-green-500 animate-pulse' : t.status === TournamentStatus.COMPLETED ? 'bg-slate-400' : 'bg-navy'}`} />
                                         {formatTournamentStatus(t.status)}
@@ -235,6 +395,25 @@ export default function Tournaments() {
                                         <MapPin className="w-4 h-4 text-navy dark:text-navy-tint" />
                                         <span className="truncate">{t.venue || 'Venue TBD'}</span>
                                     </div>
+                                    {canToggleFeatured(t) && (
+                                        <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                                            <span className="text-xs text-slate-400">Featured on home page</span>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={Boolean(t.featured)}
+                                                aria-label="Featured on home page"
+                                                disabled={togglingId === t.id}
+                                                onClick={(e) => handleToggleFeatured(e, t)}
+                                                className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-navy"
+                                                title="Featured on home page"
+                                            >
+                                                <span className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${t.featured ? 'bg-navy' : 'bg-slate-700'}`}>
+                                                    <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${t.featured ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                </span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {(t.accessLevel === 'MANAGE' || user?.roles?.includes('ROLE_SUPER_ADMIN')) && (

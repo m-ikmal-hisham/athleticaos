@@ -52,6 +52,17 @@ public class PublicTournamentController {
         return PublicHttpCache.ok(response);
     }
 
+    @GetMapping("/tournaments/featured")
+    public ResponseEntity<List<PublicTournamentSummaryResponse>> getFeaturedTournaments() {
+        List<TournamentResponse> tournaments = tournamentService.getFeaturedTournaments();
+
+        List<PublicTournamentSummaryResponse> response = tournaments.stream()
+                .map(this::mapToPublicSummary)
+                .collect(Collectors.toList());
+
+        return PublicHttpCache.ok(response);
+    }
+
     @GetMapping("/tournaments/{idOrSlug}")
     public ResponseEntity<PublicTournamentDetailResponse> getTournamentDetail(@PathVariable String idOrSlug) {
         try {
@@ -306,6 +317,7 @@ public class PublicTournamentController {
                 .bannerUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(t.getBannerUrl()))
                 .livestreamUrl(t.getLivestreamUrl())
                 .livestreamLinks(t.getLivestreamLinks())
+                .featured(t.isFeatured())
                 .build();
     }
 

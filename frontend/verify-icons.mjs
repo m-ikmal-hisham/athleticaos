@@ -8,7 +8,6 @@ const availableIcons = new Set(Object.keys(PhosphorIcons));
 const filesToCheck = [
     'src/components/MatchControls.tsx',
     'src/components/Navbar.tsx',
-    'src/components/TournamentPill.tsx',
     'src/components/roster/RosterManagement.tsx',
     'src/components/roster/PlayerSelectionModal.tsx',
     'src/components/roster/SuspensionWidget.tsx',

@@ -23,6 +23,8 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { deleteTournament } from '@/api/tournaments.api';
 import TournamentRosters from './TournamentRosters';
 import { TournamentReadinessCard } from '@/components/content/TournamentReadinessCard';
+import { ShareButton } from '@/components/common/ShareButton';
+import { WatchLiveLinks } from '@/components/public/WatchLiveLinks';
 
 export default function TournamentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -238,33 +240,50 @@ export default function TournamentDetail() {
                         </div>
                     </div>
 
-                    {canManageTournament && (
-                        <div className="flex flex-wrap gap-2 md:gap-3 shrink-0">
-                            {tournament.status === TournamentStatus.DRAFT && (
-                                <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
-                            )}
-                            {tournament.status === TournamentStatus.UPCOMING && (
-                                <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
-                                    <Play className="w-4 h-4" />
-                                    Start Tournament
-                                </Button>
-                            )}
-                            {tournament.status === TournamentStatus.ONGOING && (
-                                <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
-                            )}
-                            {isSuperAdmin && (
-                                <Button
-                                    variant="danger"
-                                    disabled={tournament.status === TournamentStatus.ONGOING}
-                                    disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
-                                    onClick={() => setIsDeleteModalOpen(true)}
-                                >
-                                    Delete
-                                </Button>
-                            )}
-                        </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
+                        <ShareButton
+                            title={tournament.name}
+                            url={`${window.location.origin}/tournaments/${tournament.slug || tournament.id}`}
+                            variant="secondary"
+                            size="md"
+                        />
+                        {canManageTournament && (
+                            <>
+                                {tournament.status === TournamentStatus.DRAFT && (
+                                    <Button onClick={() => handleStatusChange('PUBLISHED')}>Publish</Button>
+                                )}
+                                {tournament.status === TournamentStatus.UPCOMING && (
+                                    <Button onClick={() => handleStatusChange('LIVE')} className="gap-2">
+                                        <Play className="w-4 h-4" />
+                                        Start Tournament
+                                    </Button>
+                                )}
+                                {tournament.status === TournamentStatus.ONGOING && (
+                                    <Button variant="outline" onClick={() => handleStatusChange('COMPLETED')}>End Tournament</Button>
+                                )}
+                                {isSuperAdmin && (
+                                    <Button
+                                        variant="danger"
+                                        disabled={tournament.status === TournamentStatus.ONGOING}
+                                        disabledReason={tournament.status === TournamentStatus.ONGOING ? "End the tournament before deleting it." : undefined}
+                                        onClick={() => setIsDeleteModalOpen(true)}
+                                    >
+                                        Delete
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
+
+                {/* Livestreams */}
+                {((tournament.livestreamLinks && tournament.livestreamLinks.length > 0) || tournament.livestreamUrl) && (
+                    <div className="mt-4 pt-3 border-t border-line-subtle">
+                        <WatchLiveLinks
+                            links={tournament.livestreamLinks ?? (tournament.livestreamUrl ? [{ url: tournament.livestreamUrl }] : [])}
+                        />
+                    </div>
+                )}
             </GlassCard>
 
             <ConfirmDeleteModal
@@ -322,12 +341,14 @@ export default function TournamentDetail() {
                                 className={`
                                     min-w-0 py-2.5 px-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 whitespace-nowrap transition-all duration-300
                                     ${isActive
-                                        ? 'bg-blue-500/10 dark:bg-red-500/20 text-navy dark:text-navy-tint dark:text-red-400 shadow-sm ring-1 ring-blue-500/20 dark:ring-red-500/20'
-                                        : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-slate-200'
+                                        // Selected is navy in both themes; crimson is reserved for LIVE / destructive (STYLE_GUIDE §2)
+                                        ? 'bg-navy/10 dark:bg-white/10 text-navy dark:text-white shadow-sm ring-1 ring-navy/20 dark:ring-white/15'
+                                        // The bar itself is translucent white, so a white hover is invisible in light mode
+                                        : 'text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5 hover:text-black/90 dark:hover:text-white'
                                     }
                                 `}
                             >
-                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-navy dark:text-navy-tint' : ''}`} />
+                                <Icon className="w-4 h-4 shrink-0" weight={isActive ? 'fill' : 'regular'} />
                                 <span className="truncate">{tab.label}</span>
                             </button>
                         );

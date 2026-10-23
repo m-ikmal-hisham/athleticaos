@@ -19,6 +19,7 @@ import { Team } from "../../types";
 import { getImageUrl } from "../../utils/image";
 import { formatTeamCategory, formatAgeGroup } from "../../utils/formatters";
 import { useAdminTeams, useAdminTeamFilters, useAdminTeamCategoryCounts } from "../../hooks/admin";
+import { SquadsSegmentedSwitch } from "@/components/admin/SquadsSegmentedSwitch";
 
 export default function Teams() {
     const navigate = useNavigate();
@@ -229,16 +230,42 @@ export default function Teams() {
         setSearchParams(new URLSearchParams());
     };
 
-    // Category options for MEN/WOMEN pills with counts from category-counts
+    // Category options built from categoryCounts keys (excluding ALL), ordered MEN, WOMEN, MIXED, then alphabetical
     const categoryOptions: FilterOption[] = useMemo(() => {
-        const getCount = (key: string) => {
-            if (!categoryCounts) return 0;
-            return categoryCounts[key] ?? categoryCounts[key.toUpperCase()] ?? 0;
+        if (!categoryCounts) return [];
+
+        const priorityOrder: Record<string, number> = {
+            MEN: 1,
+            WOMEN: 2,
+            MIXED: 3,
         };
-        return [
-            { id: 'MEN', label: 'Men', count: getCount('MEN') },
-            { id: 'WOMEN', label: 'Women', count: getCount('WOMEN') },
-        ];
+
+        const keys = Object.keys(categoryCounts).filter(k => k.toUpperCase() !== 'ALL');
+
+        const toTitleCase = (str: string) =>
+            str
+                .toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+
+        return keys
+            .filter(key => (categoryCounts[key] ?? 0) > 0)
+            .sort((a, b) => {
+                const upperA = a.toUpperCase();
+                const upperB = b.toUpperCase();
+                const prioA = priorityOrder[upperA] ?? 99;
+                const prioB = priorityOrder[upperB] ?? 99;
+                if (prioA !== prioB) {
+                    return prioA - prioB;
+                }
+                return upperA.localeCompare(upperB);
+            })
+            .map(key => ({
+                id: key.toUpperCase(),
+                label: toTitleCase(key),
+                count: categoryCounts[key] ?? 0,
+            }));
     }, [categoryCounts]);
 
     // Select options from /teams/filters
@@ -268,6 +295,9 @@ export default function Teams() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="lg:hidden">
+                <SquadsSegmentedSwitch current="teams" />
+            </div>
             <PageHeader
                 title="Teams"
                 description={`${totalTeams.toLocaleString()} teams`}
