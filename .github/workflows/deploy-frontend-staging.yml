@@ -40,6 +40,8 @@ jobs:
     needs: [lint]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # Secrets come from the "staging" environment (deploys only from the staging branch)
+    environment: staging
 
     steps:
       - name: Checkout code

@@ -66,6 +66,8 @@ jobs:
     needs: [test, integration-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # Secrets come from the "staging" environment (deploys only from the staging branch)
+    environment: staging
 
     steps:
       - name: Checkout code
@@ -115,7 +117,7 @@ jobs:
               --name athleticaos-backend \
               --restart unless-stopped \
               --env-file /home/ec2-user/athleticaos/backend/.env.staging \
-              -p 8080:8080 \
+              -p 127.0.0.1:8080:8080 \
               -v athleticaos-uploads:/app/uploads \
               athleticaos-backend:${{ github.sha }}
 
