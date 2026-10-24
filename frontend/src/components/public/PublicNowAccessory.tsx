@@ -22,6 +22,8 @@ export function useIsPublicAccessoryLive(): boolean {
 interface PublicNowAccessoryProps {
     tournament?: PublicTournamentSummary | null;
     className?: string;
+    /** When several tournaments are live, the pill opens this list instead of linking to one of them. */
+    onShowAllLive?: () => void;
 }
 
 /**
@@ -29,10 +31,12 @@ interface PublicNowAccessoryProps {
  * Height 52px, glass material (§4), z-index pill 35.
  * Shown only when the picked public tournament is LIVE,
  * hidden on /matches/* and while any sheet/modal is open.
+ * One live tournament: a link to it. Several (e.g. three on one Saturday): a button that opens
+ * the list of all of them — the list itself lives in the tab bar, because opening a sheet hides this pill.
  */
-export function PublicNowAccessory({ tournament: propTournament, className }: PublicNowAccessoryProps) {
+export function PublicNowAccessory({ tournament: propTournament, className, onShowAllLive }: PublicNowAccessoryProps) {
     const { t } = useTranslation();
-    const { tournament: hookTournament } = useSpotlightTournament({ isAdmin: false });
+    const { tournament: hookTournament, liveTournaments } = useSpotlightTournament({ isAdmin: false });
     const tournament = propTournament !== undefined ? propTournament : hookTournament;
     const isLive = useIsPublicAccessoryLive();
 
@@ -41,19 +45,18 @@ export function PublicNowAccessory({ tournament: propTournament, className }: Pu
     }
 
     const tournamentPath = `/tournaments/${tournament.slug || tournament.id}`;
+    const othersLive = onShowAllLive ? Math.max(0, liveTournaments.length - 1) : 0;
 
-    return (
-        <Link
-            to={tournamentPath}
-            aria-label={t('accessory.liveNow', { name: tournament.name })}
-            className={clsx(
-                'glass z-[35] flex items-center justify-between w-full h-[52px] px-3 rounded-full',
-                'text-content-primary no-underline outline-none',
-                'focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint',
-                'active:scale-[0.98] motion-safe:transition-transform motion-safe:duration-150',
-                className
-            )}
-        >
+    const pillClass = clsx(
+        'glass z-[35] flex items-center justify-between w-full h-[52px] px-3 rounded-full',
+        'text-content-primary no-underline outline-none text-left',
+        'focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint',
+        'active:scale-[0.98] motion-safe:transition-transform motion-safe:duration-150',
+        className
+    );
+
+    const content = (
+        <>
             {/* Left: Logo + Name */}
             <div className="flex items-center gap-3 min-w-0 pr-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-surface-sunken flex items-center justify-center">
@@ -67,10 +70,16 @@ export function PublicNowAccessory({ tournament: propTournament, className }: Pu
                     <span className="block text-sm font-semibold truncate leading-tight text-black dark:text-white">
                         {tournament.name}
                     </span>
-                    {tournament.organiserName && (
-                        <span className="block text-xs text-black/60 dark:text-white/60 truncate leading-tight">
-                            {tournament.organiserName}
+                    {othersLive > 0 ? (
+                        <span className="block text-xs font-semibold text-navy dark:text-navy-tint truncate leading-tight">
+                            {t('accessory.moreLive', { count: othersLive })}
                         </span>
+                    ) : (
+                        tournament.organiserName && (
+                            <span className="block text-xs text-black/60 dark:text-white/60 truncate leading-tight">
+                                {tournament.organiserName}
+                            </span>
+                        )
                     )}
                 </div>
             </div>
@@ -83,6 +92,26 @@ export function PublicNowAccessory({ tournament: propTournament, className }: Pu
                 </span>
                 <CaretRight size={18} weight="bold" className="text-black/60 dark:text-white/60" aria-hidden="true" />
             </div>
+        </>
+    );
+
+    if (othersLive > 0) {
+        return (
+            <button
+                type="button"
+                onClick={onShowAllLive}
+                aria-haspopup="dialog"
+                aria-label={t('accessory.showAllLive', { count: liveTournaments.length })}
+                className={pillClass}
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <Link to={tournamentPath} aria-label={t('accessory.liveNow', { name: tournament.name })} className={pillClass}>
+            {content}
         </Link>
     );
 }
