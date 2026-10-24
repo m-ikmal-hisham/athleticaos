@@ -192,10 +192,13 @@ export function useSpotlightTournament({ isAdmin = false }: UseSpotlightTourname
         : (tournaments[currentIndex] ?? null);
 
     const hasMultipleTournaments = tournaments.length > 1;
+    // Public: every live tournament (live ones are sorted first), so the pill can offer all of them
+    const liveTournaments = isAdmin ? [] : tournaments.filter((t) => t.live);
 
     return {
         tournament,
         tournaments,
+        liveTournaments,
         currentIndex,
         setCurrentIndex,
         loading,
