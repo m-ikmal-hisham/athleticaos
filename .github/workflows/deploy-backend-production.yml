@@ -10,6 +10,12 @@ on:
       - 'backend/**'
       - '.github/workflows/deploy-backend-production.yml'
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Redeploy an existing ECR tag, e.g. prod-<sha>; leave empty to build'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   group: deploy-backend-production
@@ -19,11 +25,19 @@ concurrency:
 # (Settings > Secrets and variables > Actions > Variables) and wait for a reviewer's approval
 # through the "production" environment (Settings > Environments). Release order: staging first,
 # verify, then main.
+#
+# How a deploy runs (no SSH, no AWS access keys; same flow as staging since 24 Oct 2026):
+# 1. GitHub signs in to AWS with OIDC as role athleticaos-gha-production (environment "production" only).
+# 2. The image is built and pushed to ECR as athleticaos-backend:prod-<sha>.
+# 3. AWS Systems Manager runs the deploy on the production server: pull, restart with the same flags,
+#    health check, and an automatic rollback to the previous image if the new one is not healthy.
+# Redeploy or roll back an existing image: Run workflow with image_tag = prod-<40-char sha>
+# (tests and build are skipped; the production approval still applies).
 
 jobs:
   test:
     name: Backend Unit Tests
-    if: vars.PRODUCTION_ENABLED == 'true'
+    if: vars.PRODUCTION_ENABLED == 'true' && (inputs.image_tag == '' || inputs.image_tag == null)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -43,7 +57,7 @@ jobs:
 
   integration-test:
     name: Backend Integration Tests
-    if: vars.PRODUCTION_ENABLED == 'true'
+    if: vars.PRODUCTION_ENABLED == 'true' && (inputs.image_tag == '' || inputs.image_tag == null)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -64,93 +78,157 @@ jobs:
   deploy:
     name: Deploy Backend
     needs: [test, integration-test]
+    # Runs after green tests, or straight away for an image_tag redeploy (tests skipped).
+    if: |
+      always() &&
+      vars.PRODUCTION_ENABLED == 'true' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     environment: production
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-production-backend-${{ github.run_id }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Docker Buildx
+        if: ${{ inputs.image_tag == '' || inputs.image_tag == null }}
         uses: docker/setup-buildx-action@v4
 
-      - name: Build Docker image
+      - name: Build and push Docker image
+        if: ${{ inputs.image_tag == '' || inputs.image_tag == null }}
         working-directory: backend
-        run: docker build -t athleticaos-backend:${{ github.sha }} --build-arg GIT_SHA=${{ github.sha }} .
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:prod-${GIT_SHA}"
+          docker build --platform linux/amd64 -t "$IMAGE_URI" --build-arg GIT_SHA="$GIT_SHA" .
+          docker push "$IMAGE_URI"
 
-      - name: Save Docker image
-        run: docker save athleticaos-backend:${{ github.sha }} | gzip > backend-image.tar.gz
+      - name: Deploy via AWS Systems Manager
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          TARGET_TAG: ${{ inputs.image_tag != '' && inputs.image_tag || format('prod-{0}', github.sha) }}
+        run: |
+          # Only prod-<40 hex> tags: the value ends up in a shell script on the server.
+          [[ "$TARGET_TAG" =~ ^prod-[0-9a-f]{40}$ ]] || { echo "Invalid image tag: $TARGET_TAG" >&2; exit 1; }
 
-      - name: Copy image to EC2
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.PROD_EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.PROD_EC2_SSH_KEY }}
-          source: backend-image.tar.gz
-          target: /home/ec2-user/
+          export TARGET_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${TARGET_TAG}"
+          echo "Target image: $TARGET_IMAGE"
 
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.PROD_EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.PROD_EC2_SSH_KEY }}
-          script: |
-            set -e
-            NEW_IMAGE=athleticaos-backend:${{ github.sha }}
+          # The remote script as a JSON list of lines (no nested shell quoting).
+          python3 - << 'EOF'
+          import json, os
 
-            # Remember what is running now, for a quick rollback (see the end of this script).
-            PREVIOUS_IMAGE=$(docker inspect -f '{{.Config.Image}}' athleticaos-backend 2>/dev/null || true)
-            echo "Previous image: ${PREVIOUS_IMAGE:-none}"
+          region = os.environ['AWS_REGION']
+          registry = os.environ['ECR_REGISTRY']
+          image = os.environ['TARGET_IMAGE']
 
-            # Free disk space, but never the image that is running.
-            docker image prune -af --filter "until=72h" || true
-            docker builder prune -af || true
+          commands = [
+              "set -euo pipefail",
+              f"REGION='{region}'",
+              f"REGISTRY='{registry}'",
+              f"NEW_IMAGE='{image}'",
+              'echo "==> Authenticating Docker to ECR..."',
+              'aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY" >/dev/null',
+              'trap \'docker logout "$REGISTRY" >/dev/null 2>&1 || true\' EXIT',
+              '# Remember what is running now, for a quick rollback.',
+              'PREVIOUS_IMAGE=$(docker inspect -f "{{.Config.Image}}" athleticaos-backend 2>/dev/null || true)',
+              'echo "Previous image: ${PREVIOUS_IMAGE:-none}"',
+              '# Free disk space, but never the image that is running.',
+              'docker image prune -af --filter "until=72h" >/dev/null || true',
+              'docker builder prune -af >/dev/null || true',
+              'echo "==> Pulling $NEW_IMAGE..."',
+              'docker pull -q "$NEW_IMAGE"',
+              'start_backend() {',
+              '  docker stop athleticaos-backend >/dev/null 2>&1 || true',
+              '  docker rm athleticaos-backend >/dev/null 2>&1 || true',
+              '  # 127.0.0.1 only: nginx is the single way in; port 8080 is never published to the internet.',
+              '  docker run -d --name athleticaos-backend --restart unless-stopped --env-file /home/ec2-user/athleticaos/backend/.env.production -p 127.0.0.1:8080:8080 -v athleticaos-uploads:/app/uploads "$1" >/dev/null',
+              '}',
+              'healthy() {',
+              '  for i in $(seq 1 12); do',
+              '    if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then',
+              '      echo "Backend health check passed on attempt $i."',
+              '      return 0',
+              '    fi',
+              '    sleep 10',
+              '  done',
+              '  return 1',
+              '}',
+              'echo "==> Starting $NEW_IMAGE..."',
+              'start_backend "$NEW_IMAGE"',
+              'if healthy; then',
+              '  docker container prune -f >/dev/null || true',
+              '  echo "==> Deployment complete!"',
+              '  exit 0',
+              'fi',
+              'echo "Health check failed after 120s. Last log lines:"',
+              'docker logs --tail 40 athleticaos-backend 2>&1 || true',
+              '# Roll back to the image that was running before. A release with a database migration',
+              '# may not start on the old code; in that case restore the pre-release snapshot instead.',
+              'if [ -n "$PREVIOUS_IMAGE" ] && [ "$PREVIOUS_IMAGE" != "$NEW_IMAGE" ]; then',
+              '  echo "==> Rolling back to $PREVIOUS_IMAGE"',
+              '  start_backend "$PREVIOUS_IMAGE"',
+              '  healthy || echo "Rollback did not become healthy either."',
+              'fi',
+              'exit 1',
+          ]
 
-            docker load < /home/ec2-user/backend-image.tar.gz
-            rm /home/ec2-user/backend-image.tar.gz
+          with open("ssm-params.json", "w") as f:
+              json.dump({"commands": commands}, f, indent=2)
+          EOF
 
-            start_backend() {
-              docker stop athleticaos-backend 2>/dev/null || true
-              docker rm athleticaos-backend 2>/dev/null || true
-              # 127.0.0.1 only: nginx is the single way in; port 8080 is never published to the internet.
-              docker run -d \
-                --name athleticaos-backend \
-                --restart unless-stopped \
-                --env-file /home/ec2-user/athleticaos/backend/.env.production \
-                -p 127.0.0.1:8080:8080 \
-                -v athleticaos-uploads:/app/uploads \
-                "$1"
-            }
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --parameters file://ssm-params.json \
+            --timeout-seconds 900 \
+            --comment "production backend $TARGET_TAG" \
+            --query "Command.CommandId" \
+            --output text)
+          echo "SSM Command ID: $COMMAND_ID"
 
-            healthy() {
-              for i in $(seq 1 12); do
-                if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
-                  echo "Backend health check passed on attempt $i."
-                  return 0
-                fi
-                echo "Attempt $i/12 failed, retrying in 10s..."
-                sleep 10
-              done
-              return 1
-            }
-
-            start_backend "$NEW_IMAGE"
-            if healthy; then
-              docker container prune -f || true
-              exit 0
-            fi
-
-            echo "Health check failed after 120s. Last log lines:"
-            docker logs --tail 40 athleticaos-backend || true
-
-            # Roll back to the image that was running before. A release with a database migration
-            # may not start on the old code; in that case restore the pre-release snapshot instead.
-            if [ -n "$PREVIOUS_IMAGE" ] && [ "$PREVIOUS_IMAGE" != "$NEW_IMAGE" ]; then
-              echo "Rolling back to $PREVIOUS_IMAGE"
-              start_backend "$PREVIOUS_IMAGE"
-              healthy || echo "Rollback did not become healthy either."
-            fi
-            exit 1
+          # Poll every 10 s for up to 10 minutes (aws ssm wait gives up after ~100 s).
+          sleep 10
+          for i in $(seq 1 60); do
+            INVOCATION=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --output json 2>/dev/null || true)
+            STATUS=$(printf '%s' "$INVOCATION" | jq -r '.Status // "Pending"' 2>/dev/null || true)
+            STATUS=${STATUS:-Pending}
+            echo "Poll $i/60: $STATUS"
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut)
+                echo "--- output ---"
+                echo "$INVOCATION" | jq -r '.StandardOutputContent // ""'
+                echo "--- errors ---"
+                echo "$INVOCATION" | jq -r '.StandardErrorContent // ""'
+                [ "$STATUS" = "Success" ] && exit 0 || exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          echo "Timed out waiting for the SSM command." >&2
+          exit 1

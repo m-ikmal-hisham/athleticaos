@@ -38,7 +38,10 @@
     "completed": "COMPLETED"
   },
   "accessory": {
-    "liveNow": "Live now: {{name}}"
+    "liveNow": "Live now: {{name}}",
+    "moreLive": "+{{count}} more live",
+    "showAllLive": "Show {{count}} live tournaments",
+    "liveListTitle": "Live now"
   },
   "ribbon": {
     "staging": "TEST SITE — data here is not real and may be reset",
