@@ -38,7 +38,10 @@
     "completed": "TAMAT"
   },
   "accessory": {
-    "liveNow": "Langsung sekarang: {{name}}"
+    "liveNow": "Langsung sekarang: {{name}}",
+    "moreLive": "+{{count}} lagi langsung",
+    "showAllLive": "Lihat {{count}} kejohanan yang sedang langsung",
+    "liveListTitle": "Langsung sekarang"
   },
   "ribbon": {
     "staging": "LAMAN UJIAN — data di sini bukan sebenar dan mungkin ditetapkan semula",
