@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         MatchLineupController.class,
         PublicTournamentController.class
 })
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, com.athleticaos.backend.mappers.PublicMatchMapper.class})
 @SuppressWarnings("null")
 public class TournamentSecurityRegressionTest {
 

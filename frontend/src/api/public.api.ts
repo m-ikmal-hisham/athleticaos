@@ -87,6 +87,60 @@ export interface PublicMatchSummary {
     hasMultipleVenues?: boolean;
 }
 
+export type PublicMatchFeedItem = PublicMatchSummary & {
+    tournamentId: string;
+    tournamentName: string;
+    tournamentSlug?: string;
+    tournamentLogoUrl?: string;
+    tournamentStatus: string;
+    categoryName?: string | null;
+    homeTeamSlug?: string | null;
+    awayTeamSlug?: string | null;
+    livestreamUrl?: string | null;
+    updatedAt?: string | null;
+};
+
+export interface PublicMatchFeedCounts {
+    live: number;
+    today: number;
+    results: number;
+    upcoming: number;
+}
+
+export interface PublicMatchFeed {
+    items: PublicMatchFeedItem[];
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    counts?: PublicMatchFeedCounts | null;
+    lastUpdated?: string | null;
+}
+
+export interface PublicMatchDay {
+    date: string;
+    total: number;
+    live: number;
+    completed: number;
+    cancelled: number;
+}
+
+export interface GetPublicMatchFeedParams {
+    view: 'live' | 'today' | 'results' | 'upcoming' | 'range';
+    tournamentId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    size?: number;
+}
+
+export interface GetPublicMatchDaysParams {
+    from: string;
+    to: string;
+    tournamentId?: string;
+}
+
 export interface PublicMatchDetail extends PublicMatchSummary {
     events: PublicMatchEvent[];
     homeStats?: PublicTeamStats;
@@ -229,6 +283,18 @@ export const publicTournamentApi = {
 
     getMatchLineups: async (matchId: string): Promise<PublicMatchLineups> => {
         const response = await publicApi.get(`/matches/${matchId}/lineups`);
+        return response.data;
+    },
+};
+
+export const publicMatchApi = {
+    getFeed: async (params: GetPublicMatchFeedParams): Promise<PublicMatchFeed> => {
+        const response = await publicApi.get('/matches', { params });
+        return response.data;
+    },
+
+    getDays: async (params: GetPublicMatchDaysParams): Promise<PublicMatchDay[]> => {
+        const response = await publicApi.get('/matches/days', { params });
         return response.data;
     },
 };
