@@ -35,6 +35,7 @@ public class PublicTournamentController {
     private final com.athleticaos.backend.repositories.MatchOfficialRepository matchOfficialRepository;
     private final com.athleticaos.backend.repositories.TournamentStageRepository stageRepository;
     private final com.athleticaos.backend.services.MatchLineupService matchLineupService;
+    private final com.athleticaos.backend.mappers.PublicMatchMapper publicMatchMapper;
 
     @GetMapping("/tournaments")
     public ResponseEntity<List<PublicTournamentSummaryResponse>> getPublicTournaments(
@@ -405,46 +406,7 @@ public class PublicTournamentController {
     private PublicMatchSummaryResponse mapToPublicMatchSummary(
             MatchResponse m,
             java.util.Map<UUID, com.athleticaos.backend.entities.TournamentStage> stageMap) {
-        // Use stage name from the actual TournamentStage entity if available,
-        // falling back to the legacy phase field.
-        String stageName = m.getPhase(); // Default to phase (legacy)
-        Integer stageDisplayOrder = null;
-        if (m.getStage() != null && m.getStage().getName() != null) {
-            stageName = m.getStage().getName();
-            try {
-                UUID stageId = UUID.fromString(m.getStage().getId());
-                com.athleticaos.backend.entities.TournamentStage stageEntity = stageMap.get(stageId);
-                if (stageEntity != null) {
-                    stageDisplayOrder = stageEntity.getDisplayOrder();
-                }
-            } catch (Exception ignored) {
-                // If stage ID is not valid, skip display order
-            }
-        }
-
-        return PublicMatchSummaryResponse.builder()
-                .id(m.getId())
-                .code(m.getMatchCode())
-                .homeTeamName(m.getHomeTeamName())
-                .awayTeamName(m.getAwayTeamName())
-                .homeTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getHomeTeamLogoUrl()))
-                .awayTeamLogoUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(m.getAwayTeamLogoUrl()))
-                .homeTeamShortName(m.getHomeTeamShortName())
-                .awayTeamShortName(m.getAwayTeamShortName())
-                .homeScore(m.getHomeScore())
-                .awayScore(m.getAwayScore())
-                .matchDate(m.getMatchDate())
-                .matchTime(m.getKickOffTime())
-                .venueId(m.getVenueId())
-                .venueName(m.getVenueName())
-                .venue(m.getVenue())
-                .status(m.getStatus())
-                .resultType(m.getResultType())
-                .stage(stageName)
-                .stageType(m.getStage() != null ? m.getStage().getStageType() : null)
-                .stageDisplayOrder(stageDisplayOrder)
-                .matchNumber(m.getMatchNumber())
-                .build();
+        return publicMatchMapper.mapToPublicMatchSummary(m, stageMap);
     }
 
     private PublicMatchDetailResponse mapToPublicMatchDetail(MatchResponse m) {
