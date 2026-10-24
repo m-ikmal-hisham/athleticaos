@@ -16,25 +16,18 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      - dependency-name: "react"
+      # Major upgrades are planned work (platform sprint: React 19, Router 7, Vite, Tailwind 4,
+      # ESLint 9, TypeScript, zod, zustand...), not weekly bumps. Alerts still show in Security.
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-router-dom"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vite"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "tailwindcss"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@typescript-eslint/*"
-        update-types: ["version-update:semver-major"]
-      # three 0.x: any release can break the API; bumped with the platform sprint (F3)
+      # 0.x packages: a "minor" can break. three moves with the platform sprint (F3);
+      # eslint-plugin-react-refresh 0.5 needs ESLint 9 (F1).
       - dependency-name: "three"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+        update-types: ["version-update:semver-minor"]
       - dependency-name: "@types/three"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "eslint-plugin-react-refresh"
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: "maven"
     directory: "/backend"
@@ -52,6 +45,9 @@ updates:
           - "minor"
           - "patch"
     ignore:
+      # Majors are planned work (platform sprint P1–P3)
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.springframework.boot:*"
         update-types:
           - "version-update:semver-major"
@@ -82,3 +78,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # Major action versions (checkout, setup-node, setup-java...) move with the platform sprint
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
