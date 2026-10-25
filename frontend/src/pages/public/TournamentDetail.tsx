@@ -416,7 +416,7 @@ export default function TournamentDetail() {
                 {/* Background Decoration */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl -z-10" />
 
-                <GlassCard className="p-0 overflow-hidden border-0 shadow-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl group">
+                <GlassCard surface="glass" className="p-0 overflow-hidden group">
                     {/* Banners are roughly 3:1; the band only needs to be tall enough to show the artwork
                         behind the title, the content sets the height beyond that. */}
                     <div className={`relative flex flex-col justify-end ${showHeroImage ? 'min-h-[11rem] md:min-h-[14rem] lg:min-h-[17rem]' : 'min-h-[10rem]'}`}>

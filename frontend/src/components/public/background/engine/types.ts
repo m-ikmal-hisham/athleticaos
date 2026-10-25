@@ -7,6 +7,13 @@ export interface ThemeColors {
     grass: [number, number, number];
     markingsOpacity: number;
     grassOpacity: number;
+    stadiumLines: [number, number, number];
+    stadiumRoof: [number, number, number];
+    stadiumSeats: [number, number, number];
+    stadiumFloodlights: [number, number, number];
+    stadiumLinesOpacity: number;
+    stadiumRoofOpacity: number;
+    stadiumSeatsOpacity: number;
 }
 
 export interface SharedEngineOptions {

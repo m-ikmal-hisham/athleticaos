@@ -173,13 +173,20 @@ Card padding: 16px mobile, 24px ≥768px. Page gutter: 16px mobile, 24px tablet,
 
 Retire the current 18px and 24px card radii.
 
-**Glass material:** one material, used only by: the public and admin floating glass tab bars, their accessories, and the public/admin sticky top bars. Never on cards, tables or content.
-Tokens (CSS variables in `frontend/src/styles/theme.css`, light / dark):
-- `--glass-bg`: `rgb(255 255 255 / 0.72)` / `rgb(13 27 42 / 0.72)` (deep navy `#0D1B2A`)
-- `--glass-border`: `rgb(255 255 255 / 0.55)` / `rgb(255 255 255 / 0.12)` (1px inner hairline, "glass edge")
-- `--glass-outline`: `rgb(0 0 0 / 0.08)` / `rgb(0 0 0 / 0.40)` (1px outer line so it separates from white pages)
-- `--glass-blur`: `20px`, saturate `180%`
-- `--glass-shadow`: the existing `--shadow-md` (no new shadow level, no coloured glow)
+**Glass materials:**
+1. **Chrome glass:** used by the public and admin floating glass tab bars, their accessories, and the public/admin sticky top bars.
+   - Tokens (CSS variables in `frontend/src/styles/theme.css`, light / dark):
+     - `--glass-bg`: `rgb(255 255 255 / 0.72)` / `rgb(13 27 42 / 0.72)` (deep navy `#0D1B2A`)
+     - `--glass-border`: `rgb(255 255 255 / 0.55)` / `rgb(255 255 255 / 0.12)` (1px inner hairline, "glass edge")
+     - `--glass-outline`: `rgb(0 0 0 / 0.08)` / `rgb(0 0 0 / 0.40)` (1px outer line so it separates from white pages)
+     - `--glass-blur`: `20px`, saturate `180%`
+     - `--glass-shadow`: the existing `--shadow-md` (no new shadow level, no coloured glow)
+2. **Public glass cards (`surface="glass"`):** owner request 25 Oct. Public pages only (admin pages, tables, forms, bottom sheets/dialogs, dense match lists, and legal pages keep solid cards).
+   - Light: background white ~78% with faint navy tint gradient (`--glass-card-bg`, `--glass-card-gradient`), 1px glass edge (white ~55%, `--glass-card-edge`) + 1px navy ~8% outline (`--glass-card-outline`), `shadow-sm`.
+   - Dark: deep navy ~72% with navy-tint 6–8% (`--glass-card-bg`, `--glass-card-gradient`), 1px white ~10% edge (`--glass-card-edge`) + 1px black ~40% outline (`--glass-card-outline`).
+   - Blur: `backdrop-filter: blur(12px) saturate(140%)` strictly at $\ge$ lg; below lg tint at ~88% opacity, no blur. Hover on links: border and tint slightly stronger, no scale.
+   - Solid fallback (today's `--surface-card`): triggers under `prefers-reduced-transparency: reduce`, unsupported `backdrop-filter`, `?bg=off` / motion disallowed, and when the animated background flag is off in production (keeps today's solid look).
+
 Fallbacks: `@supports not (backdrop-filter or -webkit-backdrop-filter)` AND `@media (prefers-reduced-transparency: reduce)` → solid `--surface-card` with the same border. Must stay readable (contrast AA) on the busiest background (hero image, dark mode red dots).
 Note on top inset: the sticky top bar and the EnvironmentRibbon above it both receive `padding-top: env(safe-area-inset-top)`. This ensures nothing sits under the status bar when edge-to-edge; in dev/staging where the ribbon renders, both elements having the inset is intended and safe.
 
@@ -193,31 +200,35 @@ easing `cubic-bezier(0.2, 0, 0, 1)`. Wrap all non-essential animation in
 shimmer. Two named exceptions only:
 1. **tab press:** scale to `0.96` for 150ms on tab-bar items only.
 2. **tab bar minimise:** the bar/accessory morph on scroll, 300ms, standard easing.
-3. **animated background:** calm 3D particle rugby pitch background with retuned opacities (markings ~22% light / ~30% dark, grass ~16% light / ~22% dark, posts ~45% with crimson pads, subtle sideline benches, ≤ 35% in auth panel), dense stylized interactive grass (~5,000 blades, 1.2–2m tall, tips bend up to ~1.5m in the wake with white/deep-navy brightening, wind gust sweeping every 8–12s), click to kick (parabolic arc ≤ 1.2s, 1.2m 3× life size ball, crimson spark trail, goal post flash on score), settle mode on touch/standalone PWA (6s initial sway + gust, then pauses loop on last frame; replays on calm navigation and tab visibility), desktop idle pause (stops render loop after 30s of inactivity; resumes on input), default cursor (no custom cursor), pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion`, `saveData`, missing WebGL, or `?bg=off` (fading back to static SVG).
+3. **animated background:** calm 3D rugby pitch inside a stylized stadium bowl framing the pitch (inspired by National Stadium Bukit Jalil; generic naming, no stadium name or logo anywhere in UI). Markings ~22% light / ~30% dark, grass ~13% light / ~19% dark, stands ~15% light / ~22% dark, roof membrane ~20% light / ~28% dark, seats faint (~8–10%), posts ~45% with crimson pads, subtle sideline benches, ≤ 35% in auth panel. Dense stylized interactive grass (~16,000 fine blades, 0.45–0.75m tall, tips bend up to ~0.6m in the wake with white/deep-navy brightening, wind gust sweeping every 8–12s), click to kick (parabolic arc ≤ 1.2s, 1.2m 3× life size ball, crimson spark trail, goal post flash on score + inner roof floodlight glow for ~600ms), desktop slow crowd shimmer (≤ 2% of seats at a time; stops with desktop idle pause and settle mode), settle mode on touch/standalone PWA (6s initial sway + gust, then pauses loop on last frame; replays on calm navigation and tab visibility), desktop idle pause (stops render loop after 30s of inactivity; resumes on input), default cursor (no custom cursor), pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion`, `saveData`, missing WebGL, or `?bg=off` (fading back to static SVG with stadium outline).
 All three exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
 
 ### 4.1 Background system
 
-The public site and sign-in pages use a calm 3D rugby pitch made of particles and stylized grass built on the shared WebGL engine (`components/public/background/engine/`).
+The public site and sign-in pages use a calm 3D rugby pitch inside a stylized stadium bowl made of lines, points, and membranes built on the shared WebGL engine (`components/public/background/engine/`).
 
 1. **Scenes per route:**
-   - **Calm pitch (persistent WebGL canvas):** `/`, `/tournaments`, `/tournaments/:id`, `/teams`, `/teams/:id`, `/players`, `/players/:id`, `/partners`, `/sponsors`, `/how-it-works`.
-   - **Static SVG pitch (canvas paused, faded out, render loop stopped):** `/matches/:matchId`, `/media/matches/:matchId`, `/contact`, `/privacy`, `/terms`, `/data-requests`, and unknown routes.
+   - **Calm pitch + stadium framing (persistent WebGL canvas):** `/`, `/tournaments`, `/tournaments/:id`, `/teams`, `/teams/:id`, `/players`, `/players/:id`, `/partners`, `/sponsors`, `/how-it-works`.
+     - Presets: `bgStadiumSideline` at $\ge 1024\text{px}$ (main stand at halfway, ~25m up, ~45m back from near touchline, looking across pitch); `bgStadiumEnd` below $1024\text{px}$ (end stand behind posts).
+     - Geometry: merged into $\le 3$ extra draw calls (`LineSegments` for 400m 8-lane track, tier rims, vomitory aisles, roof rims/cables; `Points` for seats + inner roof floodlights; `Mesh` for translucent roof membrane).
+   - **Static SVG pitch + stadium (canvas paused, faded out, render loop stopped):** `/matches/:matchId`, `/media/matches/:matchId`, `/contact`, `/privacy`, `/terms`, `/data-requests`, and unknown routes.
+     - `PitchBackdropSvg` renders simplified track ring, tier boundaries, and roof rings matching the 3D projection, updating preset on crossing 1024px.
    - **/journey:** Global background canvas is completely disposed (static SVG backdrop remains), allowing Journey's dedicated milestone canvas to be the sole active WebGL context. Global canvas is re-created upon navigating away. If the initial page load is a static route, WebGL is deferred until a calm route is visited.
-   - **Sign-in pages:** The right-hand desktop panel (`hidden lg:flex`) renders `AuthPanelBackground` (tall behind-the-posts framing, opacity ≤ 35%, disposed on unmount, desktop hover wake active, no click kick). Mobile loads nothing in this panel.
+   - **Sign-in pages:** The right-hand desktop panel (`hidden lg:flex`) renders `AuthPanelBackground` (tall behind-the-posts framing, pitch-only scene without stadium, opacity ≤ 35%, disposed on unmount, desktop hover wake active, no click kick). Mobile loads nothing in this panel.
 2. **Distraction & Performance budgets:**
-   - Opacities: pitch markings ~22% light / ~30% dark; grass ~16% light / ~22% dark; H-posts ~45% with crimson post pads; auth panel ≤ 35%. Crimson try lines accent marks.
-   - Dense stylized grass: ~5,000 blades (1.2–2 m tall, tips bend up to ~1.5 m in the wake, recovering over ~800 ms). Wake brightens towards white in dark mode and deeper navy in light mode (no green/emerald). Wind gust sweeps every 8–12 s across all devices.
-   - Click to kick (desktop fine pointer on calm routes): window click launches a 1.2 m 3D rugby ball (3× life size) on a parabolic arc (≤ 1.2 s) with crimson spark trail and grass ripple at kick point. Uprights flash if ball passes between uprights above crossbar. Single ball at a time. Verified against interactive elements, `[data-no-kick]`, text selections, and non-transparent backgrounds between click target and `<main>`.
-   - Settle mode: touch devices (`pointer: coarse`) and installed PWA (`display-mode: standalone`) run idle sway + 1 wind gust for ~6 s on arriving at a calm route, then stop the render loop and keep the last frame (no continuous rendering). Replays on route change to a calm route and tab visibility.
-   - Desktop idle pause: stops render loop after 30 s without pointermove, scroll, wheel, or keydown; resumes on input. Frame remains visible while paused.
-   - Pure SVG & projection: `backgroundProjection.ts` and `PitchBackdropSvg` remain pure with zero Three.js imports for native app reusability.
+   - Opacities: pitch markings ~22% light / ~30% dark; grass ~13% light / ~19% dark; stands ~15% light / ~22% dark; roof membrane ~20% light / ~28% dark; seats ~8–10%; H-posts ~45% with crimson post pads; auth panel ≤ 35%. Crimson try lines accent marks.
+   - Real 400m athletics track: 8 lanes × 1.22m, 84.39m straights, 36.5m inner radius, centred around the 120 × 70m pitch. Lower stand starts ~3m outside lane 8 (approx 91m × 49.5m from centre).
+   - Click to kick (desktop fine pointer on calm routes): window click launches a 1.2 m 3D rugby ball (3× life size) on a parabolic arc (≤ 1.2 s) with crimson spark trail and grass ripple at kick point. Uprights and roof floodlights flash/glow if ball passes between uprights above crossbar. Single ball at a time. Verified against interactive elements, `[data-no-kick]`, text selections, and non-transparent backgrounds between click target and `<main>`.
+   - Settle mode: touch devices (`pointer: coarse`) and installed PWA (`display-mode: standalone`) run idle sway + 1 wind gust for ~6 s on arriving at a calm route, then stop the render loop and keep the last frame (no continuous rendering). Replays on route change to a calm route and tab visibility. Crowd shimmer is disabled.
+   - Desktop idle pause: stops render loop after 30 s without pointermove, scroll, wheel, or keydown; resumes on input. Frame remains visible while paused. Crowd shimmer freezes with pause.
+   - Pure SVG & projection: `backgroundProjection.ts`, `stadiumGeometry.ts`, and `PitchBackdropSvg` remain pure with zero Three.js imports for native app reusability.
    - Purely decorative: `aria-hidden="true"`, pointer-events none on canvas, zero text/interactive elements, no new i18n keys.
 3. **Environment switch & Fallbacks:**
    - **Production:** Switch stays OFF by default (renders legacy PNG background + overlay gradient exactly as before). Enabled only when `VITE_FEATURES` contains `animatedBackground`.
    - **Development & Staging:** Switch is ON by default by environment.
    - **Rollback / Override:** Staging is always on by environment; use `?bg=off` per browser for debugging, or revert the branch.
    - **Fallbacks:** Reduced motion (`prefers-reduced-motion: reduce`), Save-Data (`navigator.connection.saveData`), missing WebGL, or `?bg=off` render the zero-JS-animation static SVG pitch (`PitchBackdropSvg`).
+
 
 **Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
 

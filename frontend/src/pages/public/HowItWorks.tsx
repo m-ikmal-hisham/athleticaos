@@ -77,7 +77,7 @@ export default function HowItWorks() {
 
 function StepCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
-        <GlassCard className="p-8 text-center space-y-4 h-full hover:scale-105 transition-transform duration-300">
+        <GlassCard surface="glass" hover className="p-8 text-center space-y-4 h-full">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
                 {icon}
             </div>
@@ -95,7 +95,7 @@ function FAQItem({ question, answer }: { question: string, answer: string }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <GlassCard className="overflow-hidden transition-all">
+        <GlassCard surface="glass" className="overflow-hidden">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between p-6 text-left"

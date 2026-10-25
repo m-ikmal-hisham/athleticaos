@@ -108,12 +108,12 @@ export default function TournamentsList() {
                     {[1, 2, 3, 4, 5, 6].map(i => (
                         <div
                             key={i}
-                            className="h-56 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl animate-pulse"
+                            className="h-56 rounded-[14px] glass-card-surface animate-pulse"
                         />
                     ))}
                 </div>
             ) : filteredTournaments.length === 0 ? (
-                <div className="text-center py-16 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
+                <div className="text-center py-16 rounded-[14px] glass-card-surface">
                     <Trophy className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                     <p className="text-lg font-medium text-slate-900 dark:text-white mb-2">
                         No tournaments found
@@ -130,7 +130,7 @@ export default function TournamentsList() {
                             to={`/tournaments/${tournament.slug || tournament.id}`}
                             className="block group"
                         >
-                            <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10">
+                            <GlassCard surface="glass" hover className="h-full relative overflow-hidden">
                                 <div className="p-6 space-y-4 relative z-10">
                                     {/* Status Badge */}
                                     <div className="absolute top-3 right-3 flex items-center gap-2 z-20">

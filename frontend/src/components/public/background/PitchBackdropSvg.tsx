@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { getPitchMarkingLines } from '@/components/public/journey/fieldProjection';
 import {
     BG_CAMERA_PRESETS,
@@ -8,32 +8,69 @@ import {
     getBenchStructures,
     type BgCameraPreset,
 } from './backgroundProjection';
+import { getStadiumSvgOutlines } from './stadiumGeometry';
 import clsx from 'clsx';
 
 export interface PitchBackdropSvgProps {
     preset?: BgCameraPreset;
     isAuthPanel?: boolean;
     visible?: boolean;
+    /** Static routes behind long text/forms: much fainter backdrop */
+    quiet?: boolean;
     className?: string;
+}
+
+function pointsToSvgPath(
+    pts: Array<{ x: number; y: number; z: number }>,
+    preset: BgCameraPreset,
+    close = false
+): string {
+    if (pts.length === 0) return '';
+    const d = pts
+        .map((p, i) => {
+            const projected = projectBg3DPoint(p.x, p.y, p.z, preset);
+            const cmd = i === 0 ? 'M' : 'L';
+            return `${cmd}${projected.x.toFixed(1)},${projected.y.toFixed(1)}`;
+        })
+        .join(' ');
+    return close ? `${d} Z` : d;
 }
 
 export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
     preset,
     isAuthPanel = false,
     visible = true,
+    quiet = false,
     className,
 }) => {
-    // Determine preset based on prop or auth panel
+    // Dynamic breakpoint tracking: bgStadiumSideline at >= 1024px, bgStadiumEnd below
+    const [isDesktop, setIsDesktop] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        return window.innerWidth >= 1024;
+    });
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mql = window.matchMedia('(min-width: 1024px)');
+        const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+        mql.addEventListener('change', handler);
+        return () => mql.removeEventListener('change', handler);
+    }, []);
+
+    // Determine preset based on prop, auth panel, or breakpoint
     const activePreset: BgCameraPreset = preset
         ? preset
         : isAuthPanel
           ? 'authPanel'
-          : 'bgSideline';
+          : isDesktop
+            ? 'bgStadiumSideline'
+            : 'bgStadiumEnd';
 
     const camParam = BG_CAMERA_PRESETS[activePreset];
     const lines = useMemo(() => getPitchMarkingLines(), []);
     const posts = useMemo(() => getPostStructures(), []);
     const benches = useMemo(() => getBenchStructures(), []);
+    const stadiumOutlines = useMemo(() => getStadiumSvgOutlines(), []);
 
     // Project pitch ground markings
     const projectedLines = useMemo(() => {
@@ -83,19 +120,35 @@ export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
         });
     }, [benches, activePreset]);
 
+    // Project Stadium outlines (track ring, lower/upper tiers, roof ring)
+    const stadiumPaths = useMemo(() => {
+        if (isAuthPanel) return null;
+        return {
+            trackInner: pointsToSvgPath(stadiumOutlines.trackInner, activePreset, true),
+            trackOuter: pointsToSvgPath(stadiumOutlines.trackOuter, activePreset, true),
+            lowerTierFront: pointsToSvgPath(stadiumOutlines.lowerTierFront, activePreset, true),
+            lowerTierBack: pointsToSvgPath(stadiumOutlines.lowerTierBack, activePreset, true),
+            upperTierBack: pointsToSvgPath(stadiumOutlines.upperTierBack, activePreset, true),
+            roofOuter: pointsToSvgPath(stadiumOutlines.roofOuter, activePreset, true),
+            roofInner: pointsToSvgPath(stadiumOutlines.roofInner, activePreset, true),
+        };
+    }, [stadiumOutlines, activePreset, isAuthPanel]);
+
     // Opacity classes based on budget:
     // Markings: ~22% light / ~30% dark; Auth panel: ~35%
     const baseOpacityClass = isAuthPanel
         ? 'opacity-[0.32] dark:opacity-[0.38]'
-        : 'opacity-[0.22] dark:opacity-[0.30]';
+        : quiet
+          ? 'opacity-[0.08] dark:opacity-[0.12]'
+          : 'opacity-[0.22] dark:opacity-[0.30]';
 
     return (
         <svg
             viewBox={camParam.viewBox}
             preserveAspectRatio="xMidYMid slice"
             style={{
-                WebkitMaskImage: 'linear-gradient(to top, black 72%, transparent 100%)',
-                maskImage: 'linear-gradient(to top, black 72%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to top, black 85%, transparent 100%)',
+                maskImage: 'linear-gradient(to top, black 85%, transparent 100%)',
             }}
             className={clsx(
                 'w-full h-full block pointer-events-none select-none transition-opacity duration-[600ms]',
@@ -104,6 +157,24 @@ export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
             )}
             aria-hidden="true"
         >
+            {/* Simplified Stadium Outlines (400m Track, Tiers, Roof Ring) */}
+            {stadiumPaths && (
+                <g id="stadium-outlines" className="stroke-navy dark:stroke-navy-tint fill-none" strokeLinecap="round">
+                    {/* Track 8-lane bounds */}
+                    <path d={stadiumPaths.trackInner} strokeWidth="1.0" className="opacity-40" />
+                    <path d={stadiumPaths.trackOuter} strokeWidth="1.2" className="opacity-50" />
+
+                    {/* Bowl Tiers */}
+                    <path d={stadiumPaths.lowerTierFront} strokeWidth="1.2" className="opacity-55" />
+                    <path d={stadiumPaths.lowerTierBack} strokeWidth="1.2" className="opacity-55" />
+                    <path d={stadiumPaths.upperTierBack} strokeWidth="1.4" className="opacity-65" />
+
+                    {/* Signature Ring Roof */}
+                    <path d={stadiumPaths.roofOuter} strokeWidth="1.8" className="opacity-75" />
+                    <path d={stadiumPaths.roofInner} strokeWidth="1.8" className="opacity-80" />
+                </g>
+            )}
+
             {/* Ground pitch markings */}
             <g id="pitch-markings">
                 {projectedLines.map((line) => {

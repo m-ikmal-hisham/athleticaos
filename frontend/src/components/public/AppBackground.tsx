@@ -41,23 +41,27 @@ export const AppBackground: React.FC = () => {
         );
     }
 
+    // Static routes (match centre, contact, legal, data requests, journey) sit behind long text and
+    // forms, so their backdrop is drawn much fainter than on calm pages.
+    const routeType = getRouteBackgroundType(location.pathname);
+    const quiet = routeType !== 'calm';
+
     // 2. Motion not allowed (reduced motion, saveData, WebGL missing, ?bg=off): static SVG only
     if (!motionAllowed) {
         return (
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-                <PitchBackdropSvg />
+                <PitchBackdropSvg quiet={quiet} />
             </div>
         );
     }
 
     // 3. Switch ON and motion allowed: SVG first paint, then calm pitch WebGL canvas with cross-fade
-    const routeType = getRouteBackgroundType(location.pathname);
     const canvasActive = sceneReady && routeType === 'calm';
 
     return (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
             {/* Static SVG pitch backdrop (fades out when WebGL is active, fades back in on static routes / context lost) */}
-            <PitchBackdropSvg visible={!canvasActive} />
+            <PitchBackdropSvg visible={!canvasActive} quiet={quiet} />
 
             {/* Persistent calm pitch canvas */}
             <PitchBackgroundCanvas onSceneReadyChange={setSceneReady} />
