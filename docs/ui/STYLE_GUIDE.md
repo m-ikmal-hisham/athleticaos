@@ -33,7 +33,7 @@ If code and this guide disagree, the guide wins and the code is a migration item
 - [ ] No placeholder people ("John Doe"), companies, or numbers
 - [ ] No "Loading..." strings; use `Skeleton` or `Spinner`
 - [ ] Icons from Phosphor only, `duotone` by default (set once in IconContext); `fill` only for active/selected state and small solid status marks; `bold` only below 16px
-- [ ] Animated backgrounds only through the shared journey/background engine
+- [ ] Animated backgrounds only through the shared engine, within the budget
 
 ---
 
@@ -193,8 +193,31 @@ easing `cubic-bezier(0.2, 0, 0, 1)`. Wrap all non-essential animation in
 shimmer. Two named exceptions only:
 1. **tab press:** scale to `0.96` for 150ms on tab-bar items only.
 2. **tab bar minimise:** the bar/accessory morph on scroll, 300ms, standard easing.
-3. **animated background (pilot: /journey only):** particle pitch background with strict opacity caps (markings ≤ 35%, grass ≤ 12% light / 18% dark), idle drift ≤ 4 px/s screen, subtle camera sway ≤ 1°, DPR ≤ 1.5, pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion` or `saveData`.
+3. **animated background:** calm 3D particle rugby pitch background with retuned opacities (markings ~22% light / ~30% dark, grass ~16% light / ~22% dark, posts ~45% with crimson pads, subtle sideline benches, ≤ 35% in auth panel), dense stylized interactive grass (~5,000 blades, 1.2–2m tall, tips bend up to ~1.5m in the wake with white/deep-navy brightening, wind gust sweeping every 8–12s), click to kick (parabolic arc ≤ 1.2s, 1.2m 3× life size ball, crimson spark trail, goal post flash on score), settle mode on touch/standalone PWA (6s initial sway + gust, then pauses loop on last frame; replays on calm navigation and tab visibility), desktop idle pause (stops render loop after 30s of inactivity; resumes on input), default cursor (no custom cursor), pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion`, `saveData`, missing WebGL, or `?bg=off` (fading back to static SVG).
 All three exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
+
+### 4.1 Background system
+
+The public site and sign-in pages use a calm 3D rugby pitch made of particles and stylized grass built on the shared WebGL engine (`components/public/background/engine/`).
+
+1. **Scenes per route:**
+   - **Calm pitch (persistent WebGL canvas):** `/`, `/tournaments`, `/tournaments/:id`, `/teams`, `/teams/:id`, `/players`, `/players/:id`, `/partners`, `/sponsors`, `/how-it-works`.
+   - **Static SVG pitch (canvas paused, faded out, render loop stopped):** `/matches/:matchId`, `/media/matches/:matchId`, `/contact`, `/privacy`, `/terms`, `/data-requests`, and unknown routes.
+   - **/journey:** Global background canvas is completely disposed (static SVG backdrop remains), allowing Journey's dedicated milestone canvas to be the sole active WebGL context. Global canvas is re-created upon navigating away. If the initial page load is a static route, WebGL is deferred until a calm route is visited.
+   - **Sign-in pages:** The right-hand desktop panel (`hidden lg:flex`) renders `AuthPanelBackground` (tall behind-the-posts framing, opacity ≤ 35%, disposed on unmount, desktop hover wake active, no click kick). Mobile loads nothing in this panel.
+2. **Distraction & Performance budgets:**
+   - Opacities: pitch markings ~22% light / ~30% dark; grass ~16% light / ~22% dark; H-posts ~45% with crimson post pads; auth panel ≤ 35%. Crimson try lines accent marks.
+   - Dense stylized grass: ~5,000 blades (1.2–2 m tall, tips bend up to ~1.5 m in the wake, recovering over ~800 ms). Wake brightens towards white in dark mode and deeper navy in light mode (no green/emerald). Wind gust sweeps every 8–12 s across all devices.
+   - Click to kick (desktop fine pointer on calm routes): window click launches a 1.2 m 3D rugby ball (3× life size) on a parabolic arc (≤ 1.2 s) with crimson spark trail and grass ripple at kick point. Uprights flash if ball passes between uprights above crossbar. Single ball at a time. Verified against interactive elements, `[data-no-kick]`, text selections, and non-transparent backgrounds between click target and `<main>`.
+   - Settle mode: touch devices (`pointer: coarse`) and installed PWA (`display-mode: standalone`) run idle sway + 1 wind gust for ~6 s on arriving at a calm route, then stop the render loop and keep the last frame (no continuous rendering). Replays on route change to a calm route and tab visibility.
+   - Desktop idle pause: stops render loop after 30 s without pointermove, scroll, wheel, or keydown; resumes on input. Frame remains visible while paused.
+   - Pure SVG & projection: `backgroundProjection.ts` and `PitchBackdropSvg` remain pure with zero Three.js imports for native app reusability.
+   - Purely decorative: `aria-hidden="true"`, pointer-events none on canvas, zero text/interactive elements, no new i18n keys.
+3. **Environment switch & Fallbacks:**
+   - **Production:** Switch stays OFF by default (renders legacy PNG background + overlay gradient exactly as before). Enabled only when `VITE_FEATURES` contains `animatedBackground`.
+   - **Development & Staging:** Switch is ON by default by environment.
+   - **Rollback / Override:** Staging is always on by environment; use `?bg=off` per browser for debugging, or revert the branch.
+   - **Fallbacks:** Reduced motion (`prefers-reduced-motion: reduce`), Save-Data (`navigator.connection.saveData`), missing WebGL, or `?bg=off` render the zero-JS-animation static SVG pitch (`PitchBackdropSvg`).
 
 **Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
 

@@ -9,6 +9,7 @@ import { Input } from '@/components/Input';
 import { authApi } from '@/api/auth.api';
 import { SocialButtons } from '@/components/SocialButtons';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
+import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 
 const registerSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -178,14 +179,12 @@ export const Signup = () => {
                 </div>
             </div>
 
-            {/* Right Side - Abstract Art (Reused from Login) */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12 lg:w-1/2">
-                <img
-                    src={bgSrc}
-                    alt="AthleticaOS Background"
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-
+            {/* Right Side - Background with headline */}
+            <AuthPanelBackground
+                legacyImageSrc={bgSrc}
+                legacyImageClassName="opacity-100"
+                className="lg:w-1/2"
+            >
                 <div className="relative z-20 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
                         Join the<br />
@@ -197,11 +196,8 @@ export const Signup = () => {
                         Create your profile, manage teams, and compete at the highest level.
                         Your journey starts here.
                     </p>
-
-                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern dark:bg-dot-pattern-white">
-                    </div>
                 </div>
-            </div>
+            </AuthPanelBackground>
         </div>
     );
 };

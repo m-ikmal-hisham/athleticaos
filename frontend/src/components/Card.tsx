@@ -10,6 +10,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         return (
             <div
                 ref={ref}
+                data-no-kick
                 className={clsx(
                     'bg-surface-card border border-line-subtle rounded-[14px] p-6 text-content-primary',
                     hover && 'hover:bg-black/4 dark:hover:bg-white/6 transition-colors cursor-pointer',

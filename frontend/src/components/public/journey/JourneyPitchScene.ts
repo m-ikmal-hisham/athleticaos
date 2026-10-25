@@ -6,6 +6,9 @@ import {
     type CameraPreset,
 } from './fieldProjection';
 import type { AnimatedBgMode } from '@/config/animatedBackground';
+import { createSharedEngine } from '@/components/public/background/engine/renderEngine';
+import { readThemeColors } from '@/components/public/background/engine/themeColors';
+import type { ThemeColors } from '@/components/public/background/engine/types';
 
 export interface SceneController {
     resize: (isDesktop: boolean) => void;
@@ -45,42 +48,6 @@ function assertProjectionMatchesThree(camera: THREE.PerspectiveCamera, preset: C
 }
 
 // ----------------------------------------------------------------------
-// CSS Token Parser Helper
-// ----------------------------------------------------------------------
-function parseCssRgbTriplet(raw: string, fallback: [number, number, number]): [number, number, number] {
-    if (!raw) return fallback;
-    const parts = raw.trim().split(/\s+/).map((n) => Number.parseFloat(n));
-    if (parts.length >= 3 && !parts.some((n) => Number.isNaN(n))) {
-        return [parts[0] / 255, parts[1] / 255, parts[2] / 255];
-    }
-    return fallback;
-}
-
-function getThemeColors() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-        document.documentElement.classList.contains('dark');
-    const style = getComputedStyle(document.documentElement);
-
-    // Tokens are space-separated RGB triplets in theme.css: e.g. "0 71 171"
-    const brandTriplet = parseCssRgbTriplet(style.getPropertyValue('--brand'), [0, 71, 171]);
-    const brandTextTriplet = parseCssRgbTriplet(style.getPropertyValue('--brand-text'), [140, 172, 217]);
-    const accentTriplet = parseCssRgbTriplet(style.getPropertyValue('--accent'), [193, 18, 31]);
-
-    const markings = isDark ? brandTextTriplet : brandTriplet;
-    const tryLine = accentTriplet;
-    const grass: [number, number, number] = isDark ? [0.15, 0.25, 0.4] : [0.2, 0.35, 0.55];
-
-    return {
-        isDark,
-        markings,
-        tryLine,
-        grass,
-        markingsOpacity: 0.32, // <= 0.35 cap
-        grassOpacity: isDark ? 0.16 : 0.10, // <= 0.12 light, <= 0.18 dark
-    };
-}
-
-// ----------------------------------------------------------------------
 // Mount & Create Scene
 // ----------------------------------------------------------------------
 export function mountJourneyPitchScene(
@@ -88,25 +55,9 @@ export function mountJourneyPitchScene(
     fieldWrapper: HTMLElement,
     mode: AnimatedBgMode
 ): SceneController {
-    let animFrameId = 0;
-    let isDisposed = false;
     let currentPreset: CameraPreset = window.innerWidth >= 1024 ? 'sideline' : 'behindPosts';
 
-    // 1. Renderer Setup
-    const renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        antialias: true,
-        powerPreference: 'low-power',
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setClearColor(0x000000, 0);
-
-    const canvas = renderer.domElement;
-    canvas.className = 'w-full h-full block pointer-events-none';
-    canvas.setAttribute('aria-hidden', 'true');
-    container.appendChild(canvas);
-
-    // 2. Scene & Camera Setup
+    // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
 
     function createCamera(preset: CameraPreset): THREE.PerspectiveCamera {
@@ -132,7 +83,7 @@ export function mountJourneyPitchScene(
 
     let camera = createCamera(currentPreset);
 
-    // 3. Particle Generation (Markings + Grass)
+    // 2. Particle Generation (Markings + Grass)
     const lines = getPitchMarkingLines();
     const particlePositions: number[] = [];
     const particleColors: number[] = [];
@@ -140,7 +91,7 @@ export function mountJourneyPitchScene(
     const particleAlphas: number[] = [];
     const particleTypes: number[] = []; // 0 = markings, 1 = try line, 2 = grass
 
-    let themeColors = getThemeColors();
+    let themeColors = readThemeColors();
 
     // Sample markings along lines (every 0.75m)
     for (const line of lines) {
@@ -247,10 +198,10 @@ export function mountJourneyPitchScene(
     scene.add(pointsMesh);
 
     // ------------------------------------------------------------------
-    // Theme Update Observer
+    // Theme Update Handler
     // ------------------------------------------------------------------
-    function updateThemeColors() {
-        themeColors = getThemeColors();
+    function updateThemeColors(newColors: ThemeColors) {
+        themeColors = newColors;
         const colors = colAttr.array as Float32Array;
         const alphas = alphaAttr.array as Float32Array;
 
@@ -273,9 +224,6 @@ export function mountJourneyPitchScene(
         alphaAttr.needsUpdate = true;
     }
 
-    const themeObserver = new MutationObserver(() => updateThemeColors());
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
-
     // ------------------------------------------------------------------
     // Pointer Hover Interaction: Raycast ground displacement
     // ------------------------------------------------------------------
@@ -284,7 +232,7 @@ export function mountJourneyPitchScene(
     const pointerNDC = new THREE.Vector2(-999, -999);
     let pointerOnField = false;
 
-    // Displaced particles springs: index -> { dx, dz, startTime }
+    // Displaced particles springs: index -> { ox, oz, startTime }
     const displacedParticles = new Map<number, { ox: number; oz: number; startTime: number }>();
 
     function onPointerMove(e: PointerEvent) {
@@ -293,7 +241,7 @@ export function mountJourneyPitchScene(
             pointerOnField = false;
             return;
         }
-        const rect = canvas.getBoundingClientRect();
+        const rect = engine.canvas.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return;
 
         pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -326,7 +274,7 @@ export function mountJourneyPitchScene(
             return;
         }
 
-        const rect = canvas.getBoundingClientRect();
+        const rect = engine.canvas.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return;
 
         const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -392,70 +340,11 @@ export function mountJourneyPitchScene(
     fieldWrapper.addEventListener('click', onClick);
 
     // ------------------------------------------------------------------
-    // Resize Handler
+    // Shared Engine Setup
     // ------------------------------------------------------------------
-    function handleResize(isDesktop: boolean) {
-        const nextPreset: CameraPreset = isDesktop ? 'sideline' : 'behindPosts';
-        if (nextPreset !== currentPreset) {
-            currentPreset = nextPreset;
-            camera = createCamera(currentPreset);
-        }
-
-        const rect = container.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-            renderer.setSize(rect.width, rect.height, false);
-            const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
-            renderer.setPixelRatio(pixelRatio);
-            material.uniforms.uPixelRatio.value = pixelRatio;
-        }
-    }
-
-    // Keep the drawing buffer matched to the field size (window resizes within one layout)
-    const resizeObserver = new ResizeObserver(() => handleResize(currentPreset === 'sideline'));
-    resizeObserver.observe(container);
-
-    // ------------------------------------------------------------------
-    // Context Lost Handler (Stop loop, remove canvas cleanly)
-    // ------------------------------------------------------------------
-    function onContextLost() {
-        // Do NOT call event.preventDefault() - prevents restore attempt
-        dispose();
-    }
-    canvas.addEventListener('webglcontextlost', onContextLost);
-
-    // ------------------------------------------------------------------
-    // Visibility & Intersection Observers
-    // ------------------------------------------------------------------
-    let isVisible = true;
-    const intersectionObserver = new IntersectionObserver(([entry]) => {
-        isVisible = entry.isIntersecting;
-    });
-    intersectionObserver.observe(fieldWrapper);
-
-    function onVisibilityChange() {
-        isVisible = !document.hidden;
-    }
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    // ------------------------------------------------------------------
-    // Main Render Loop
-    // ------------------------------------------------------------------
-    const isCoarse = window.matchMedia('(pointer: coarse)').matches;
-    let lastFrameTime = performance.now();
     const positions = posAttr.array as Float32Array;
 
-    function render(now: number) {
-        if (isDisposed) return;
-        animFrameId = requestAnimationFrame(render);
-
-        // Throttle ~30fps on coarse pointer devices
-        if (isCoarse && now - lastFrameTime < 32) {
-            return;
-        }
-        lastFrameTime = now;
-
-        if (!isVisible) return;
-
+    function renderFrame(now: number) {
         material.uniforms.uTime.value = now * 0.001;
 
         // 1. Camera sway (<= 1 deg), eased towards the pointer and back to rest when it leaves
@@ -556,29 +445,52 @@ export function mountJourneyPitchScene(
             }
         }
 
-        renderer.render(scene, camera);
+        engine.renderer.render(scene, camera);
     }
+
+    const engine = createSharedEngine({
+        container,
+        observedElement: fieldWrapper,
+        onRender: renderFrame,
+        onContextLost: () => dispose(),
+        onThemeChange: updateThemeColors,
+    });
+
+    // ------------------------------------------------------------------
+    // Resize Handler
+    // ------------------------------------------------------------------
+    function handleResize(isDesktop: boolean) {
+        const nextPreset: CameraPreset = isDesktop ? 'sideline' : 'behindPosts';
+        if (nextPreset !== currentPreset) {
+            currentPreset = nextPreset;
+            camera = createCamera(currentPreset);
+        }
+
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+            engine.resize(rect.width, rect.height);
+            material.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 1.5);
+        }
+    }
+
+    const resizeObserver = new ResizeObserver(() => handleResize(currentPreset === 'sideline'));
+    resizeObserver.observe(container);
 
     // Initial size
     handleResize(window.innerWidth >= 1024);
-    animFrameId = requestAnimationFrame(render);
 
     // ------------------------------------------------------------------
     // Teardown / Cleanup
     // ------------------------------------------------------------------
+    let isDisposed = false;
     function dispose() {
         if (isDisposed) return;
         isDisposed = true;
 
-        cancelAnimationFrame(animFrameId);
         fieldWrapper.removeEventListener('pointermove', onPointerMove);
         fieldWrapper.removeEventListener('pointerleave', onPointerLeave);
         fieldWrapper.removeEventListener('click', onClick);
-        canvas.removeEventListener('webglcontextlost', onContextLost);
-        document.removeEventListener('visibilitychange', onVisibilityChange);
-        intersectionObserver.disconnect();
         resizeObserver.disconnect();
-        themeObserver.disconnect();
 
         if (activeArc) {
             scene.remove(activeArc.mesh);
@@ -589,10 +501,7 @@ export function mountJourneyPitchScene(
 
         geometry.dispose();
         material.dispose();
-        renderer.dispose();
-        if (canvas.parentNode) {
-            canvas.parentNode.removeChild(canvas);
-        }
+        engine.dispose();
     }
 
     return {

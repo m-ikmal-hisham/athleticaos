@@ -15,6 +15,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         return (
             <div
                 ref={ref}
+                data-no-kick
                 className={twMerge(
                     'bg-surface-card border border-line-subtle rounded-[14px] text-content-primary transition-colors',
                     hover && 'hover:bg-black/4 dark:hover:bg-white/6 cursor-pointer',
