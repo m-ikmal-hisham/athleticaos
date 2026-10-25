@@ -15,6 +15,7 @@ import { useBrandingStore } from '@/store/branding.store';
 import { getOrganisationById } from '@/api/organisations.api';
 import { getVisibleAdminNavSections } from '@/config/adminNav';
 import { AdminTabBar } from '@/components/admin/AdminTabBar';
+import { AdminBrandBackground } from '@/components/admin/AdminBrandBackground';
 import { TournamentSwitcher } from '@/components/admin/TournamentSwitcher';
 import { useSpotlightTournament } from '@/hooks/useSpotlightTournament';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
@@ -141,6 +142,7 @@ export const AppLayout = () => {
             className="min-h-screen flex flex-col pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]"
             style={{ '--admin-bottom-chrome': bottomChrome } as React.CSSProperties}
         >
+            <AdminBrandBackground />
             <EnvironmentRibbon />
             <div className="flex-1 flex min-h-0 relative">
                 {/* Sidebar - Desktop Only (≥ lg) */}
