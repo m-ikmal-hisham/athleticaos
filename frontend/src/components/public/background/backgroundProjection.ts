@@ -10,7 +10,12 @@
  * Mapped to 3D world as (x, y, -z).
  */
 
-export type BgCameraPreset = 'bgSideline' | 'bgBehindPosts' | 'authPanel';
+export type BgCameraPreset =
+    | 'bgStadiumSideline'
+    | 'bgStadiumEnd'
+    | 'bgSideline'
+    | 'bgBehindPosts'
+    | 'authPanel';
 
 export interface BgCameraParameters {
     preset: BgCameraPreset;
@@ -31,7 +36,29 @@ export interface ProjectedBgPoint {
 }
 
 export const BG_CAMERA_PRESETS: Record<BgCameraPreset, BgCameraParameters> = {
-    // Desktop (>= lg): low sideline view filling lower ~60% of viewport
+    // Desktop (>= lg): camera in main stand at halfway, ~25m up, ~45m back from near touchline (z = +45), looking across pitch
+    bgStadiumSideline: {
+        preset: 'bgStadiumSideline',
+        worldPosition: { x: 60, y: 25, z: 45 },
+        worldTarget: { x: 60, y: 3, z: -38 },
+        worldUp: { x: 0, y: 1, z: 0 },
+        verticalFov: 52,
+        fullWidth: 1440,
+        fullHeight: 900,
+        viewBox: '0 0 1440 900',
+    },
+    // Phones (< lg): camera in end stand behind posts
+    bgStadiumEnd: {
+        preset: 'bgStadiumEnd',
+        worldPosition: { x: -36, y: 32, z: -35 },
+        worldTarget: { x: 75, y: 6, z: -35 },
+        worldUp: { x: 0, y: 1, z: 0 },
+        verticalFov: 68,
+        fullWidth: 390,
+        fullHeight: 844,
+        viewBox: '0 0 390 844',
+    },
+    // Legacy desktop fallback
     bgSideline: {
         preset: 'bgSideline',
         worldPosition: { x: 60, y: 36, z: 24 },
@@ -42,7 +69,7 @@ export const BG_CAMERA_PRESETS: Record<BgCameraPreset, BgCameraParameters> = {
         fullHeight: 900,
         viewBox: '0 0 1440 900',
     },
-    // Phones (< lg): low behind-the-posts view filling lower ~60% of viewport
+    // Legacy phone fallback
     bgBehindPosts: {
         preset: 'bgBehindPosts',
         worldPosition: { x: -18, y: 72, z: -35 },
@@ -273,6 +300,22 @@ export function getBenchStructures(): BenchLineSegment[] {
  */
 export function runDevBgFieldAssertions(): void {
     if (!import.meta.env.DEV) return;
+
+    // Check stadium sideline: far touchline is higher (lower y) than near touchline
+    const stadSideNear = projectBgPoint(60, 0, 'bgStadiumSideline');
+    const stadSideFar = projectBgPoint(60, 70, 'bgStadiumSideline');
+    console.assert(
+        stadSideFar.y < stadSideNear.y,
+        `[BgProjection] StadiumSideline: far touchline (${stadSideFar.y.toFixed(1)}) must be above near touchline (${stadSideNear.y.toFixed(1)})`
+    );
+
+    // Check stadium end: far try line is higher (lower y) than our try line
+    const stadPostNearTry = projectBgPoint(10, 35, 'bgStadiumEnd');
+    const stadPostFarTry = projectBgPoint(110, 35, 'bgStadiumEnd');
+    console.assert(
+        stadPostFarTry.y < stadPostNearTry.y,
+        `[BgProjection] StadiumEnd: far try (${stadPostFarTry.y.toFixed(1)}) must be higher on screen than our try (${stadPostNearTry.y.toFixed(1)})`
+    );
 
     // Check sideline: far touchline is higher (lower y) than near touchline
     const sideNear = projectBgPoint(60, 0, 'bgSideline');

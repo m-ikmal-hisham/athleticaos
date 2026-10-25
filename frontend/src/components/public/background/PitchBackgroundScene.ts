@@ -7,6 +7,7 @@ import {
     getBenchStructures,
     type BgCameraPreset,
 } from './backgroundProjection';
+import { buildStadiumGeometry } from './stadiumGeometry';
 import { createSharedEngine } from './engine/renderEngine';
 import { readThemeColors } from './engine/themeColors';
 import type { ThemeColors } from './engine/types';
@@ -67,8 +68,8 @@ export function mountPitchBackgroundScene(
     let currentPreset: BgCameraPreset = isAuthPanel
         ? 'authPanel'
         : window.innerWidth >= 1024
-          ? 'bgSideline'
-          : 'bgBehindPosts';
+          ? 'bgStadiumSideline'
+          : 'bgStadiumEnd';
 
     // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
@@ -429,6 +430,183 @@ export function mountPitchBackgroundScene(
     const benchLinesMesh = new THREE.LineSegments(benchGeom, benchMat);
     scene.add(benchLinesMesh);
 
+    // 5b. Stylized 3D Stadium Bowl & Ring Roof (Inspired by National Stadium Bukit Jalil)
+    // Mounted only on calm public pages (!isAuthPanel) as 3 merged draw calls:
+    // 1. LineSegments (400m 8-lane track, tier rims, vomitory aisles, roof rims & radial cables)
+    // 2. Points (seats with slow desktop shimmer + inner roof floodlights with score glow)
+    // 3. Mesh (translucent annular roof membrane)
+    let stadiumLinesMesh: THREE.LineSegments | null = null;
+    let stadiumPointsMesh: THREE.Points | null = null;
+    let stadiumRoofMesh: THREE.Mesh | null = null;
+
+    let stadiumLinesGeom: THREE.BufferGeometry | null = null;
+    let stadiumLinesMat: THREE.ShaderMaterial | null = null;
+    let stadiumPointsGeom: THREE.BufferGeometry | null = null;
+    let stadiumPointsMat: THREE.ShaderMaterial | null = null;
+    let stadiumRoofGeom: THREE.BufferGeometry | null = null;
+    let stadiumRoofMat: THREE.ShaderMaterial | null = null;
+
+    if (!isAuthPanel) {
+        const stadiumData = buildStadiumGeometry();
+
+        // Draw Call 1: LineSegments (track lanes, bowl tier rims, vomitory stairs, roof compression/tension rims, radial cables)
+        stadiumLinesGeom = new THREE.BufferGeometry();
+        stadiumLinesGeom.setAttribute(
+            'position',
+            new THREE.BufferAttribute(stadiumData.lines.positions, 3)
+        );
+
+        stadiumLinesMat = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying float vAlpha;
+                void main() {
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    vec4 clipPos = projectionMatrix * mv;
+                    float normY = ((clipPos.y / clipPos.w) + 1.0) * 0.5;
+                    float fade = 1.0 - smoothstep(0.88, 1.0, normY);
+                    vAlpha = fade;
+                    gl_Position = clipPos;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uColor;
+                uniform float uAlpha;
+                varying float vAlpha;
+                void main() {
+                    gl_FragColor = vec4(uColor, uAlpha * vAlpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            uniforms: {
+                uColor: { value: new THREE.Color(themeColors.stadiumLines[0], themeColors.stadiumLines[1], themeColors.stadiumLines[2]) },
+                uAlpha: { value: themeColors.stadiumLinesOpacity },
+            },
+        });
+        stadiumLinesMesh = new THREE.LineSegments(stadiumLinesGeom, stadiumLinesMat);
+        scene.add(stadiumLinesMesh);
+
+        // Draw Call 2: Points (seat dots + inner roof floodlights)
+        stadiumPointsGeom = new THREE.BufferGeometry();
+        stadiumPointsGeom.setAttribute(
+            'position',
+            new THREE.BufferAttribute(stadiumData.points.positions, 3)
+        );
+        stadiumPointsGeom.setAttribute(
+            'aType',
+            new THREE.BufferAttribute(stadiumData.points.types, 1)
+        );
+        stadiumPointsGeom.setAttribute(
+            'aSeed',
+            new THREE.BufferAttribute(stadiumData.points.seeds, 1)
+        );
+
+        stadiumPointsMat = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute float aType; // 0.0 = seat, 1.0 = floodlight
+                attribute float aSeed;
+                uniform float uTime;
+                uniform float uPixelRatio;
+                uniform float uCrowdShimmer;
+                uniform float uFloodlightFlash;
+                uniform vec3 uSeatColor;
+                uniform vec3 uFloodlightColor;
+                uniform float uSeatAlpha;
+                varying vec3 vColor;
+                varying float vAlpha;
+
+                void main() {
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    vec4 clipPos = projectionMatrix * mv;
+
+                    float normY = ((clipPos.y / clipPos.w) + 1.0) * 0.5;
+                    float horizonFade = 1.0 - smoothstep(0.88, 1.0, normY);
+
+                    if (aType > 0.5) {
+                        // Inner roof perimeter floodlight point
+                        vColor = mix(uFloodlightColor, vec3(1.0, 1.0, 1.0), uFloodlightFlash);
+                        vAlpha = clamp(0.55 + uFloodlightFlash * 0.45, 0.0, 1.0) * horizonFade;
+                        gl_PointSize = (4.0 + uFloodlightFlash * 4.0) * uPixelRatio;
+                    } else {
+                        // Seat dot with slow crowd shimmer (twinkles <= 2% at a time)
+                        float shimmer = 0.0;
+                        if (uCrowdShimmer > 0.5) {
+                            float s = sin(uTime * 1.5 + aSeed * 62.83);
+                            shimmer = smoothstep(0.96, 1.0, s);
+                        }
+                        vColor = mix(uSeatColor, vec3(1.0, 1.0, 1.0), shimmer * 0.7);
+                        vAlpha = clamp(uSeatAlpha + shimmer * 0.25, 0.0, 0.6) * horizonFade;
+                        gl_PointSize = (1.8 + shimmer * 1.2) * uPixelRatio;
+                    }
+                    gl_Position = clipPos;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                varying float vAlpha;
+                void main() {
+                    vec2 coord = gl_PointCoord - vec2(0.5);
+                    if (length(coord) > 0.5) discard;
+                    gl_FragColor = vec4(vColor, vAlpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            uniforms: {
+                uTime: { value: 0 },
+                uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 1.5) },
+                uCrowdShimmer: { value: 0.0 },
+                uFloodlightFlash: { value: 0.0 },
+                uSeatColor: { value: new THREE.Color(themeColors.stadiumSeats[0], themeColors.stadiumSeats[1], themeColors.stadiumSeats[2]) },
+                uFloodlightColor: { value: new THREE.Color(themeColors.stadiumFloodlights[0], themeColors.stadiumFloodlights[1], themeColors.stadiumFloodlights[2]) },
+                uSeatAlpha: { value: themeColors.stadiumSeatsOpacity },
+            },
+        });
+        stadiumPointsMesh = new THREE.Points(stadiumPointsGeom, stadiumPointsMat);
+        scene.add(stadiumPointsMesh);
+
+        // Draw Call 3: Mesh (translucent annular roof membrane)
+        stadiumRoofGeom = new THREE.BufferGeometry();
+        stadiumRoofGeom.setAttribute(
+            'position',
+            new THREE.BufferAttribute(stadiumData.roofMesh.positions, 3)
+        );
+        stadiumRoofGeom.setIndex(
+            new THREE.BufferAttribute(stadiumData.roofMesh.indices, 1)
+        );
+
+        stadiumRoofMat = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying float vAlpha;
+                void main() {
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    vec4 clipPos = projectionMatrix * mv;
+                    float normY = ((clipPos.y / clipPos.w) + 1.0) * 0.5;
+                    float fade = 1.0 - smoothstep(0.88, 1.0, normY);
+                    vAlpha = fade;
+                    gl_Position = clipPos;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uColor;
+                uniform float uAlpha;
+                varying float vAlpha;
+                void main() {
+                    gl_FragColor = vec4(uColor, uAlpha * vAlpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            uniforms: {
+                uColor: { value: new THREE.Color(themeColors.stadiumRoof[0], themeColors.stadiumRoof[1], themeColors.stadiumRoof[2]) },
+                uAlpha: { value: themeColors.stadiumRoofOpacity },
+            },
+        });
+        stadiumRoofMesh = new THREE.Mesh(stadiumRoofGeom, stadiumRoofMat);
+        scene.add(stadiumRoofMesh);
+    }
+
     // 6. 3D Rugby Ball & Arc Kick (~1.2m long, 3x life size)
     const ballGeom = new THREE.SphereGeometry(0.32, 16, 12);
     ballGeom.scale(1.0, 0.55, 0.55); // Ellipsoid length ~1.2m
@@ -704,6 +882,37 @@ export function mountPitchBackgroundScene(
         postPadMat.color.setRGB(themeColors.tryLine[0], themeColors.tryLine[1], themeColors.tryLine[2]);
         benchMat.color.setRGB(themeColors.markings[0], themeColors.markings[1], themeColors.markings[2]);
         ballMat.color.setHex(themeColors.isDark ? 0xF0F4F8 : 0x0047AB);
+
+        // Stadium updates
+        if (stadiumLinesMat) {
+            stadiumLinesMat.uniforms.uColor.value.setRGB(
+                themeColors.stadiumLines[0],
+                themeColors.stadiumLines[1],
+                themeColors.stadiumLines[2]
+            );
+            stadiumLinesMat.uniforms.uAlpha.value = themeColors.stadiumLinesOpacity;
+        }
+        if (stadiumPointsMat) {
+            stadiumPointsMat.uniforms.uSeatColor.value.setRGB(
+                themeColors.stadiumSeats[0],
+                themeColors.stadiumSeats[1],
+                themeColors.stadiumSeats[2]
+            );
+            stadiumPointsMat.uniforms.uSeatAlpha.value = themeColors.stadiumSeatsOpacity;
+            stadiumPointsMat.uniforms.uFloodlightColor.value.setRGB(
+                themeColors.stadiumFloodlights[0],
+                themeColors.stadiumFloodlights[1],
+                themeColors.stadiumFloodlights[2]
+            );
+        }
+        if (stadiumRoofMat) {
+            stadiumRoofMat.uniforms.uColor.value.setRGB(
+                themeColors.stadiumRoof[0],
+                themeColors.stadiumRoof[1],
+                themeColors.stadiumRoof[2]
+            );
+            stadiumRoofMat.uniforms.uAlpha.value = themeColors.stadiumRoofOpacity;
+        }
     }
 
     // 11. Render Frame
@@ -802,6 +1011,21 @@ export function mountPitchBackgroundScene(
             sparkAlphaAttr.needsUpdate = true;
         }
 
+        // 4b. Stadium Points Update (Slow Desktop Crowd Shimmer <= 2% + Floodlight Score Glow)
+        if (stadiumPointsMat) {
+            stadiumPointsMat.uniforms.uTime.value = timeSec;
+            const isFinePointer = typeof window !== 'undefined' ? window.matchMedia('(pointer: fine)').matches : false;
+            const allowShimmer = !isSettle && isFinePointer && !isDesktopPaused;
+            stadiumPointsMat.uniforms.uCrowdShimmer.value = allowShimmer ? 1.0 : 0.0;
+
+            if (now - postFlashTime < 600) {
+                const flashDecay = 1.0 - (now - postFlashTime) / 600;
+                stadiumPointsMat.uniforms.uFloodlightFlash.value = flashDecay;
+            } else {
+                stadiumPointsMat.uniforms.uFloodlightFlash.value = 0.0;
+            }
+        }
+
         // 5. Post Flash Animation (on score)
         if (now - postFlashTime < 600) {
             const flashDecay = 1.0 - (now - postFlashTime) / 600;
@@ -839,8 +1063,8 @@ export function mountPitchBackgroundScene(
         const nextPreset: BgCameraPreset = isAuthPanel
             ? 'authPanel'
             : width >= 1024
-              ? 'bgSideline'
-              : 'bgBehindPosts';
+              ? 'bgStadiumSideline'
+              : 'bgStadiumEnd';
 
         if (nextPreset !== currentPreset) {
             currentPreset = nextPreset;
@@ -854,6 +1078,9 @@ export function mountPitchBackgroundScene(
         const pRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         markingsMaterial.uniforms.uPixelRatio.value = pRatio;
         sparkMat.uniforms.uPixelRatio.value = pRatio;
+        if (stadiumPointsMat) {
+            stadiumPointsMat.uniforms.uPixelRatio.value = pRatio;
+        }
     }
 
     // Initial resize
@@ -886,6 +1113,13 @@ export function mountPitchBackgroundScene(
         benchMat.dispose();
         postUprightMat.dispose();
         postPadMat.dispose();
+
+        stadiumLinesGeom?.dispose();
+        stadiumLinesMat?.dispose();
+        stadiumPointsGeom?.dispose();
+        stadiumPointsMat?.dispose();
+        stadiumRoofGeom?.dispose();
+        stadiumRoofMat?.dispose();
 
         engine.dispose();
     }

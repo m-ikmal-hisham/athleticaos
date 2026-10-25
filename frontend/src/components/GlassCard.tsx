@@ -1,24 +1,29 @@
 import { HTMLAttributes, forwardRef } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
+export interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
     hover?: boolean;
     variant?: 'default' | 'subtle' | 'high-contrast';
+    surface?: 'solid' | 'glass';
 }
 
 /**
- * Card Component (formerly GlassCard, now solid per STYLE_GUIDE)
- * Uses surface-card, line-subtle border, radius-lg (14px). No backdrop blur.
+ * Card Component
+ * Solid by default (bg-surface-card border-line-subtle).
+ * Public pages pass surface="glass" to activate .glass-card-surface styling.
  */
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
-    ({ className, hover = false, variant: _variant = 'default', children, ...props }, ref) => {
+    ({ className, hover = false, variant: _variant = 'default', surface = 'solid', children, ...props }, ref) => {
+        const isGlass = surface === 'glass';
         return (
             <div
                 ref={ref}
                 data-no-kick
                 className={twMerge(
-                    'bg-surface-card border border-line-subtle rounded-[14px] text-content-primary transition-colors',
-                    hover && 'hover:bg-black/4 dark:hover:bg-white/6 cursor-pointer',
+                    isGlass
+                        ? 'glass-card-surface text-content-primary'
+                        : 'bg-surface-card border border-line-subtle rounded-[14px] text-content-primary transition-colors',
+                    hover && (isGlass ? 'glass-card-interactive cursor-pointer' : 'hover:bg-black/4 dark:hover:bg-white/6 cursor-pointer'),
                     className
                 )}
                 {...props}

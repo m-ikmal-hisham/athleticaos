@@ -22,6 +22,10 @@ import {
     isNavItemActive,
     getDetailParent,
 } from '@/config/navigation';
+import {
+    isAnimatedBackgroundFlagEnabled,
+    isMotionAllowed,
+} from '@/config/animatedBackground';
 
 const focusRing =
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint';
@@ -191,6 +195,8 @@ export default function PublicLayout() {
     };
 
     const isAccessoryLive = useIsPublicAccessoryLive();
+    // Probe once per mount: isMotionAllowed() creates a WebGL context to test support
+    const [isAnimatedBgOn] = useState(() => isAnimatedBackgroundFlagEnabled() && isMotionAllowed());
 
     // < lg: bottom padding clears the floating tab bar + accessory + safe area + 16px clearance
     // so the footer stays fully visible.
@@ -200,6 +206,7 @@ export default function PublicLayout() {
 
     return (
         <div
+            data-animated-bg={isAnimatedBgOn ? 'on' : 'off'}
             className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[var(--public-bottom-chrome)] lg:pb-0"
             style={{ '--public-bottom-chrome': bottomChrome } as React.CSSProperties}
         >

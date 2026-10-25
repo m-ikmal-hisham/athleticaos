@@ -101,12 +101,12 @@ export default function Home() {
                         {[1, 2, 3].map(i => (
                             <div
                                 key={i}
-                                className="h-48 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl animate-pulse"
+                                className="h-48 rounded-[14px] glass-card-surface animate-pulse"
                             />
                         ))}
                     </div>
                 ) : tournaments.length === 0 ? (
-                    <div className="text-center py-12 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="text-center py-12 rounded-[14px] glass-card-surface">
                         <Trophy className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-4" />
                         <p className="text-slate-600 dark:text-slate-400">
                             {t('home:empty.noActive')}
@@ -120,7 +120,7 @@ export default function Home() {
                                 to={`/tournaments/${tournament.slug || tournament.id}`}
                                 className="block group"
                             >
-                                <GlassCard className="h-full relative overflow-hidden transition-all hover:shadow-xl hover:shadow-[var(--highlight-glow)] hover:border-[var(--highlight-color)]">
+                                <GlassCard surface="glass" hover className="h-full relative overflow-hidden">
                                     <div className="p-6 space-y-4 relative z-10">
                                         {/* Status Badge */}
                                         {tournament.live && (

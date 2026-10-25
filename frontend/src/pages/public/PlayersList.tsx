@@ -12,7 +12,7 @@ function PlayerCardSkeleton({ className }: { className?: string }) {
     return (
         <div
             className={clsx(
-                'h-64 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-5 flex flex-col justify-between space-y-4 animate-pulse',
+                'h-64 rounded-[14px] glass-card-surface p-5 flex flex-col justify-between space-y-4 animate-pulse',
                 className
             )}
         >
@@ -298,7 +298,7 @@ export default function PlayersList() {
                                 to={`/players/${player.slug || player.id}`}
                                 className="block group"
                             >
-                                <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10 p-5 flex flex-col justify-between space-y-4">
+                                <GlassCard surface="glass" hover className="h-full relative overflow-hidden p-5 flex flex-col justify-between space-y-4">
                                     <div className="space-y-3.5">
                                         {/* Avatar & Jersey Number */}
                                         <div className="flex items-center justify-between">

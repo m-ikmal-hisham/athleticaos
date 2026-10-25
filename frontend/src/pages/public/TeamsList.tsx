@@ -12,7 +12,7 @@ function TeamCardSkeleton({ className }: { className?: string }) {
     return (
         <div
             className={clsx(
-                'h-48 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-6 flex flex-col justify-between space-y-4 animate-pulse',
+                'h-48 rounded-[14px] glass-card-surface p-6 flex flex-col justify-between space-y-4 animate-pulse',
                 className
             )}
         >
@@ -315,7 +315,7 @@ export default function TeamsList() {
                                 to={`/teams/${team.slug || team.id}`}
                                 className="block group"
                             >
-                                <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10 p-6 flex flex-col justify-between space-y-4">
+                                <GlassCard surface="glass" hover className="h-full relative overflow-hidden p-6 flex flex-col justify-between space-y-4">
                                     <div className="space-y-4">
                                         <div className="flex items-start gap-4">
                                             {/* Logo */}

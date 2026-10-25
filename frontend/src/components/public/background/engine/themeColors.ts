@@ -18,6 +18,13 @@ export function readThemeColors(): ThemeColors {
             grass: [0.2, 0.35, 0.55],
             markingsOpacity: 0.32,
             grassOpacity: 0.10,
+            stadiumLines: [0, 71 / 255, 171 / 255],
+            stadiumRoof: [0.75, 0.82, 0.92],
+            stadiumSeats: [0.20, 0.35, 0.55],
+            stadiumFloodlights: [1.0, 1.0, 1.0],
+            stadiumLinesOpacity: 0.15,
+            stadiumRoofOpacity: 0.20,
+            stadiumSeatsOpacity: 0.08,
         };
     }
 
@@ -35,6 +42,12 @@ export function readThemeColors(): ThemeColors {
     const tryLine = accentTriplet;
     const grass: [number, number, number] = isDark ? [0.15, 0.25, 0.4] : [0.2, 0.35, 0.55];
 
+    // Stadium look: stands ~15% light / 22% dark; roof membrane ~20% light / 28% dark
+    const stadiumLines = isDark ? brandTextTriplet : brandTriplet;
+    const stadiumRoof: [number, number, number] = isDark ? [0.12, 0.22, 0.38] : [0.65, 0.75, 0.88];
+    const stadiumSeats: [number, number, number] = isDark ? [0.70, 0.80, 0.95] : [0.10, 0.25, 0.45];
+    const stadiumFloodlights: [number, number, number] = [1.0, 1.0, 1.0];
+
     return {
         isDark,
         markings,
@@ -42,6 +55,13 @@ export function readThemeColors(): ThemeColors {
         grass,
         markingsOpacity: 0.32,
         grassOpacity: isDark ? 0.16 : 0.10,
+        stadiumLines,
+        stadiumRoof,
+        stadiumSeats,
+        stadiumFloodlights,
+        stadiumLinesOpacity: isDark ? 0.22 : 0.15,
+        stadiumRoofOpacity: isDark ? 0.28 : 0.20,
+        stadiumSeatsOpacity: isDark ? 0.10 : 0.08,
     };
 }
 
