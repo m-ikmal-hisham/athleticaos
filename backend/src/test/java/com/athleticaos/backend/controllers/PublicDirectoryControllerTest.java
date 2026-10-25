@@ -79,6 +79,9 @@ public class PublicDirectoryControllerTest {
     private PlayerRepository playerRepository;
 
     @MockBean
+    private OrganisationRepository organisationRepository;
+
+    @MockBean
     private AuditLogger auditLogger;
 
     @MockBean

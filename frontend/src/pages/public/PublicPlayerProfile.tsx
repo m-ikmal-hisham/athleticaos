@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
 import { ArrowLeft, User, MapPin, Pulse, Shield, Calendar, Hash, Trophy, Lightning, Target, Clock, Football } from '@phosphor-icons/react';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
@@ -140,9 +140,16 @@ export function PublicPlayerProfile() {
                                                 <Shield className="w-4 h-4" /> {player.currentTeamName}
                                             </div>
                                         )}
-                                        {player.organisationName && (
+                                        {player.organisation ? (
+                                            <Link
+                                                to={`/organisations/${player.organisation.slug || player.organisation.id}`}
+                                                className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors"
+                                            >
+                                                • {player.organisation.name}
+                                            </Link>
+                                        ) : player.organisationName ? (
                                             <span className="inline-flex items-center gap-1.5 text-slate-400 dark:text-slate-500">• {player.organisationName}</span>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>

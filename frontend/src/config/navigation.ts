@@ -1,5 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
-import { House, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple } from '@phosphor-icons/react';
+import { House, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple, TreeStructure } from '@phosphor-icons/react';
 
 /**
  * Public navigation: single source of truth for the public shell
@@ -26,6 +26,7 @@ export const PUBLIC_PRIMARY_NAV: PublicNavItem[] = [
 ];
 
 export const PUBLIC_MORE_NAV: PublicNavItem[] = [
+    { key: 'organisations', labelKey: 'nav.organisations', to: '/organisations', icon: TreeStructure },
     { key: 'how-it-works', labelKey: 'nav.howItWorks', to: '/how-it-works', icon: Info },
     { key: 'partners', labelKey: 'nav.partners', to: '/partners', icon: Handshake },
     { key: 'contact', labelKey: 'nav.contact', to: '/contact', icon: EnvelopeSimple },
@@ -45,6 +46,7 @@ export const PUBLIC_NAV_KEY_MAP = {
 
 /** Detail routes that get the phone Back row: pattern prefix → parent */
 export const PUBLIC_DETAIL_PARENTS: { prefix: string; labelKey: string; to: string }[] = [
+    { prefix: '/organisations/', labelKey: 'nav.organisations', to: '/organisations' },
     { prefix: '/tournaments/', labelKey: 'nav.tournaments', to: '/tournaments' },
     { prefix: '/teams/', labelKey: 'nav.teams', to: '/teams' },
     { prefix: '/players/', labelKey: 'nav.players', to: '/players' },

@@ -23,6 +23,8 @@ public class PublicTeamDetailResponse {
     private String division;
     private String state;
     private String organisationName;
+    private PublicOrganisationRef organisation;
+    private List<PublicOrganisationRef> affiliation;
     private List<PublicPlayerSummary> players;
 
     @Data
