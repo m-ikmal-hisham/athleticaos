@@ -1,0 +1,87 @@
+{
+  "title": "Organisations",
+  "subtitle": "Explore the governing bodies, unions, clubs and schools of Malaysian rugby",
+  "searchPlaceholder": "Search organisations and teams...",
+  "expandAll": "Expand all",
+  "collapseAll": "Collapse all",
+  "showingCounts": "Showing {{orgCount}} organisations and {{teamCount}} teams",
+  "noResults": "No organisations found",
+  "noResultsDesc": "Try adjusting your search terms or filters.",
+  "clearFilters": "Clear filters",
+  "errorTitle": "Failed to load organisations",
+  "retry": "Retry",
+  "levelFilter": {
+    "all": "All",
+    "state": "State unions",
+    "club": "Clubs",
+    "school": "Schools"
+  },
+  "howOrganised": {
+    "title": "How rugby is organised",
+    "national": "National union (Malaysia Rugby)",
+    "state": "State unions & associations",
+    "division": "Divisions & districts",
+    "clubSchool": "Clubs & schools",
+    "teams": "Teams & squads",
+    "explainer": "Rugby in Malaysia is structured hierarchically from the national governing body down to individual clubs, schools, and teams.",
+    "nationalDesc": "National governing union",
+    "stateDesc": "State governing bodies",
+    "divisionDesc": "Districts and zones",
+    "clubSchoolDesc": "Affiliated clubs and institutions",
+    "teamsDesc": "Registered teams and squads"
+  },
+  "detail": {
+    "affiliatedTo": "Affiliated to {{name}}",
+    "stats": {
+      "affiliatedOrgs": "Affiliated orgs",
+      "teams": "Teams",
+      "players": "Registered players",
+      "tournaments": "Tournaments organised"
+    },
+    "sections": {
+      "affiliatedOrgs": "Affiliated organisations",
+      "noAffiliatedOrgs": "No affiliated organisations",
+      "teams": "Teams",
+      "noTeams": "No teams registered",
+      "tournaments": "Tournaments organised",
+      "noTournaments": "No tournaments organised yet"
+    },
+    "transparencyNote": "Public page shows name, logo, colours, level, state, affiliations, teams and tournaments only.",
+    "notFoundTitle": "Organisation Not Found",
+    "notFoundDesc": "The organisation you are looking for does not exist or is not public.",
+    "backToOrganisations": "Back to organisations",
+    "viewTeam": "View team",
+    "roster": "Squad"
+  },
+  "levels": {
+    "WORLD": "World",
+    "CONTINENTAL": "Continental",
+    "REGIONAL": "Regional",
+    "COUNTRY": "National",
+    "STATE": "State union",
+    "DIVISION": "Division",
+    "DISTRICT": "District",
+    "CLUB": "Club",
+    "SCHOOL": "School"
+  },
+  "pills": {
+    "team": "TEAM"
+  },
+  "tree": {
+    "expand": "Expand {{name}}",
+    "collapse": "Collapse {{name}}",
+    "teamsCount_one": "{{count}} team",
+    "teamsCount_other": "{{count}} teams",
+    "divisionsCount_one": "{{count}} division",
+    "divisionsCount_other": "{{count}} divisions",
+    "clubsCount_one": "{{count}} club",
+    "clubsCount_other": "{{count}} clubs",
+    "playersCount": "{{count}} players",
+    "orgsCount_one": "{{count}} organisation",
+    "orgsCount_other": "{{count}} organisations"
+  },
+  "profileLink": {
+    "belongsTo": "Belongs to",
+    "affiliatedTo": "affiliated to"
+  }
+}

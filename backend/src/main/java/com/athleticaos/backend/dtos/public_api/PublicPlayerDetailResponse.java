@@ -25,6 +25,8 @@ public class PublicPlayerDetailResponse {
     private String position2;
     private Integer jerseyNumber;
     private String organisationName;
+    private PublicOrganisationRef organisation;
+    private java.util.List<PublicOrganisationRef> affiliation;
     private String profilePictureUrl;
     private String currentTeamName;
     private UUID currentTeamId;

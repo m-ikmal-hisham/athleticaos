@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { publicProfileApi, PublicTeamDetailResponse } from '../../api/public.api';
 import { ArrowLeft, Users, Trophy, Shield, Hash, TrendUp, Target, Lightning, Football, Boot, Crosshair, X } from '@phosphor-icons/react';
 import { RosterList } from '../../components/RosterList';
@@ -122,7 +122,30 @@ export function PublicTeamProfile() {
                                     </div>
                                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-1 leading-tight">{team.name}</h1>
                                     <p className="text-base text-slate-500 dark:text-slate-400 font-medium">
-                                        {team.organisationName || team.shortName || 'Independent Team'}
+                                        {team.organisation ? (
+                                            <>
+                                                Belongs to{' '}
+                                                <Link
+                                                    to={`/organisations/${team.organisation.slug || team.organisation.id}`}
+                                                    className="text-slate-700 dark:text-slate-200 hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors"
+                                                >
+                                                    {team.organisation.name}
+                                                </Link>
+                                                {team.affiliation && team.affiliation.length > 0 && (
+                                                    <>
+                                                        {' '}· affiliated to{' '}
+                                                        <Link
+                                                            to={`/organisations/${team.affiliation[team.affiliation.length - 1].slug || team.affiliation[team.affiliation.length - 1].id}`}
+                                                            className="text-slate-700 dark:text-slate-200 hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors"
+                                                        >
+                                                            {team.affiliation[team.affiliation.length - 1].name}
+                                                        </Link>
+                                                    </>
+                                                )}
+                                            </>
+                                        ) : (
+                                            team.organisationName || team.shortName || 'Independent Team'
+                                        )}
                                         {team.state && ` • ${team.state}`}
                                     </p>
                                 </div>

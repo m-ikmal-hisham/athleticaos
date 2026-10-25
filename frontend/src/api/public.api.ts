@@ -331,6 +331,16 @@ export interface PublicPlayerSummary {
     appearances?: number;
 }
 
+export interface PublicOrganisationRef {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+}
+
 export interface PublicTeamDetailResponse {
     id: string;
     name: string;
@@ -342,6 +352,8 @@ export interface PublicTeamDetailResponse {
     division?: string;
     state?: string;
     organisationName?: string;
+    organisation?: PublicOrganisationRef | null;
+    affiliation?: PublicOrganisationRef[];
     players: PublicPlayerSummary[];
     tournaments?: { id: string; name: string; status?: string }[];
 }
@@ -360,6 +372,8 @@ export interface PublicPlayerDetailResponse {
     position2?: string;
     jerseyNumber?: number;
     organisationName?: string;
+    organisation?: PublicOrganisationRef | null;
+    affiliation?: PublicOrganisationRef[];
     profilePictureUrl?: string;
     currentTeamName?: string;
     currentTeamId?: string;
@@ -544,4 +558,96 @@ export const getPublicStatsSummary = async (): Promise<PublicStatsSummary> => {
     const response = await publicApi.get<PublicStatsSummary>('/stats/summary');
     return response.data;
 };
+
+// ─── Organisations Directory & Detail ────────────────────────────────────────
+
+export interface PublicOrganisationTreeNode {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    state?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    parentId?: string | null;
+    teamCount: number;
+    childCount: number;
+}
+
+export interface PublicOrganisationTreeTeam {
+    id: string;
+    slug?: string | null;
+    name: string;
+    organisationId: string;
+    category?: string | null;
+    ageGroup?: string | null;
+    division?: string | null;
+    playerCount: number;
+    logoUrl?: string | null;
+}
+
+export interface PublicOrganisationTreeResponse {
+    organisations: PublicOrganisationTreeNode[];
+    teams: PublicOrganisationTreeTeam[];
+}
+
+export interface PublicOrganisationChildRef {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    teamCount: number;
+    childCount: number;
+}
+
+export interface PublicOrganisationTournamentItem {
+    id: string;
+    slug?: string | null;
+    name: string;
+    status?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    logoUrl?: string | null;
+}
+
+export interface PublicOrganisationCounts {
+    affiliatedOrganisations: number;
+    teams: number;
+    players: number;
+    tournaments: number;
+}
+
+export interface PublicOrganisationDetailResponse {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    state?: string | null;
+    logoUrl?: string | null;
+    coverImageUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    accentColor?: string | null;
+    parentChain: PublicOrganisationRef[];
+    children: PublicOrganisationChildRef[];
+    teams: PublicOrganisationTreeTeam[];
+    tournaments: PublicOrganisationTournamentItem[];
+    counts: PublicOrganisationCounts;
+}
+
+export const publicOrganisationApi = {
+    getTree: async (): Promise<PublicOrganisationTreeResponse> => {
+        const response = await publicApi.get<PublicOrganisationTreeResponse>('/organisations/tree');
+        return response.data;
+    },
+    getOrganisation: async (idOrSlug: string): Promise<PublicOrganisationDetailResponse> => {
+        const response = await publicApi.get<PublicOrganisationDetailResponse>(`/organisations/${idOrSlug}`);
+        return response.data;
+    },
+};
+
 

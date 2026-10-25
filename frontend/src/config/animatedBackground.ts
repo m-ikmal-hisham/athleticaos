@@ -139,6 +139,8 @@ export function getRouteBackgroundType(pathname: string): RouteBackgroundType {
         /^\/tournaments\/[^/]+$/.test(pathname) ||
         pathname === '/teams' ||
         /^\/teams\/[^/]+$/.test(pathname) ||
+        pathname === '/organisations' ||
+        /^\/organisations\/[^/]+$/.test(pathname) ||
         pathname === '/players' ||
         /^\/players\/[^/]+$/.test(pathname)
     ) {
