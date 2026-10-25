@@ -228,6 +228,7 @@ The public site and sign-in pages use a calm 3D rugby pitch inside a stylized st
    - **Development & Staging:** Switch is ON by default by environment.
    - **Rollback / Override:** Staging is always on by environment; use `?bg=off` per browser for debugging, or revert the branch.
    - **Fallbacks:** Reduced motion (`prefers-reduced-motion: reduce`), Save-Data (`navigator.connection.saveData`), missing WebGL, or `?bg=off` render the zero-JS-animation static SVG pitch (`PitchBackdropSvg`).
+4. **Admin background:** one static abstract SVG (Ascent) in brand colours; light/dark; no animation; cards stay solid; off in print and high-contrast.
 
 
 **Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
