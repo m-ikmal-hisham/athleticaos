@@ -7,6 +7,7 @@ import { Input } from '@/components/Input';
 import { authApi } from '@/api/auth.api';
 import { passwordProblem, PASSWORD_MIN_LENGTH } from '@/utils/password';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
+import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 
 export const ResetPassword = () => {
     const navigate = useNavigate();
@@ -273,13 +274,7 @@ export const ResetPassword = () => {
             </div>
 
             {/* Right Side graphic */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-deep-navy overflow-hidden items-center justify-center p-12">
-                <img
-                    src="/athleticaos-bg-light-new.png"
-                    alt="AthleticaOS Rugby"
-                    className="absolute inset-0 w-full h-full object-cover opacity-100 dark:opacity-[0.08]"
-                />
-            </div>
+            <AuthPanelBackground />
         </div>
     );
 };

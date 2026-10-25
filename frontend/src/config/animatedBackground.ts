@@ -2,10 +2,12 @@ import { isFeatureEnabled } from '@/config/features';
 
 export type AnimatedBgMode = 'off' | 'calm' | 'full';
 
+export type RouteBackgroundType = 'calm' | 'static' | 'journey';
+
 /**
  * Checks whether WebGL rendering context is supported in the current environment.
  */
-function isWebGLAvailable(): boolean {
+export function isWebGLAvailable(): boolean {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
         return false;
     }
@@ -23,27 +25,30 @@ function isWebGLAvailable(): boolean {
 }
 
 /**
- * Resolves whether the animated background pilot should run on /journey
- * and which mode ('off' | 'calm' | 'full') should be used.
+ * Checks if the animated background is enabled by environment/flag.
+ * Development and staging are always on. Production is on only when VITE_FEATURES contains animatedBackground.
  */
-export function getAnimatedBackgroundMode(): AnimatedBgMode {
+export function isAnimatedBackgroundFlagEnabled(): boolean {
     if (typeof window === 'undefined') {
-        return 'off';
+        return false;
     }
-
-    // 1. Environment & Feature flag switch (checked first, so production never probes WebGL)
     const isDev = Boolean(import.meta.env.DEV);
     const env = import.meta.env.VITE_ENV;
     const isDevOrStaging = isDev || env === 'development' || env === 'staging';
-    const enabled = isDevOrStaging || isFeatureEnabled('animatedBackground');
-    if (!enabled) {
-        return 'off';
+    return isDevOrStaging || isFeatureEnabled('animatedBackground');
+}
+
+/**
+ * Checks if device/user allows motion and WebGL (no reduced motion, no saveData, WebGL available, no ?bg=off).
+ */
+export function isMotionAllowed(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
     }
 
-    // 2. Accessibility & Network Data-Saver fallbacks
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) {
-        return 'off';
+        return false;
     }
 
     interface NavigatorWithConnection extends Navigator {
@@ -53,15 +58,47 @@ export function getAnimatedBackgroundMode(): AnimatedBgMode {
     }
     const nav = navigator as NavigatorWithConnection;
     if (nav.connection?.saveData === true) {
-        return 'off';
+        return false;
     }
 
-    // 3. WebGL support check
     if (!isWebGLAvailable()) {
+        return false;
+    }
+
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const bg = params.get('bg');
+        if (bg === 'off') {
+            return false;
+        }
+    } catch {
+        // Ignore URL parsing errors
+    }
+
+    return true;
+}
+
+/**
+ * Resolves whether the animated background pilot should run on /journey
+ * and which mode ('off' | 'calm' | 'full') should be used.
+ */
+export function getAnimatedBackgroundMode(): AnimatedBgMode {
+    if (typeof window === 'undefined') {
         return 'off';
     }
 
-    // 4. Query param override ?bg=off|calm|full (evaluated only when VITE_ENV !== 'production')
+    // 1. Environment & Feature flag switch (checked first, so production never probes WebGL)
+    if (!isAnimatedBackgroundFlagEnabled()) {
+        return 'off';
+    }
+
+    // 2. Accessibility & Network Data-Saver & WebGL fallbacks
+    if (!isMotionAllowed()) {
+        return 'off';
+    }
+
+    // 3. Query param override ?bg=off|calm|full (evaluated only when VITE_ENV !== 'production')
+    const env = import.meta.env.VITE_ENV;
     if (env !== 'production') {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -75,4 +112,38 @@ export function getAnimatedBackgroundMode(): AnimatedBgMode {
     }
 
     return 'full';
+}
+
+/**
+ * Determines whether a route uses the calm 3D pitch, static SVG, or journey canvas.
+ * Calm pitch routes:
+ *   /, /tournaments, /tournaments/:id, /teams, /teams/:id, /players, /players/:id, /partners, /sponsors, /how-it-works
+ * Static SVG routes:
+ *   /matches/:matchId, /media/matches/:matchId, /contact, /privacy, /terms, /data-requests
+ * Journey route:
+ *   /journey (journey has its own WebGL canvas; global background is disposed)
+ * Unknown routes:
+ *   static SVG
+ */
+export function getRouteBackgroundType(pathname: string): RouteBackgroundType {
+    if (pathname === '/journey' || pathname.startsWith('/journey/')) {
+        return 'journey';
+    }
+
+    if (
+        pathname === '/' ||
+        pathname === '/how-it-works' ||
+        pathname === '/partners' ||
+        pathname === '/sponsors' ||
+        pathname === '/tournaments' ||
+        /^\/tournaments\/[^/]+$/.test(pathname) ||
+        pathname === '/teams' ||
+        /^\/teams\/[^/]+$/.test(pathname) ||
+        pathname === '/players' ||
+        /^\/players\/[^/]+$/.test(pathname)
+    ) {
+        return 'calm';
+    }
+
+    return 'static';
 }

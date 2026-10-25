@@ -10,6 +10,7 @@ import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { PageLoader } from '@/components/PageLoader';
 import { Button } from '@/components/Button';
 import { LanguageSwitch } from '@/components/common/LanguageSwitch';
+import { PublicThemeToggle } from '@/components/public/PublicThemeToggle';
 import { changeLanguage } from '@/i18n';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
@@ -264,6 +265,7 @@ export default function PublicLayout() {
                                 </ul>
                             </nav>
                             <LanguageSwitch />
+                            <PublicThemeToggle />
                             <Button variant="secondary" size="sm" onClick={() => navigate(auth.to)}>
                                 {auth.label}
                             </Button>

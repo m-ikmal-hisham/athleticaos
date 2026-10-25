@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { ForcedPasswordChange } from '@/components/auth/ForcedPasswordChange';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { authApi } from '@/api/auth.api';
+import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 import { useEffect } from 'react';
 
 const loginSchema = z.object({
@@ -252,14 +253,8 @@ export const Login = () => {
                 </div>
             </div>
 
-            {/* Right Side - Solid Deep Navy in dark, subtle graphic */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-deep-navy overflow-hidden items-center justify-center p-12">
-                <img
-                    src="/athleticaos-bg-light-new.png"
-                    alt="AthleticaOS Background"
-                    className="absolute inset-0 w-full h-full object-cover opacity-100 dark:opacity-[0.08]"
-                />
-
+            {/* Right Side - Background with headline */}
+            <AuthPanelBackground>
                 <div className="relative z-20 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
                         Run your competitions<br />
@@ -271,7 +266,7 @@ export const Login = () => {
                         Fixtures, scoring, rosters and results for Malaysian rugby.
                     </p>
                 </div>
-            </div>
+            </AuthPanelBackground>
         </div>
     );
 };

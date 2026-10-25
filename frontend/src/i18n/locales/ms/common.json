@@ -26,6 +26,13 @@
     "en": "English",
     "ms": "Bahasa Melayu"
   },
+  "theme": {
+    "label": "Paparan",
+    "light": "Cerah",
+    "dark": "Gelap",
+    "switchToLight": "Tukar ke mod cerah",
+    "switchToDark": "Tukar ke mod gelap"
+  },
   "footer": {
     "ownedBy": "Dimiliki dan dikendalikan oleh {{name}}",
     "inPartnershipWith": "Dengan kerjasama {{partners}}",

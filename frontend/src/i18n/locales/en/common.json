@@ -26,6 +26,13 @@
     "en": "English",
     "ms": "Bahasa Melayu"
   },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
   "footer": {
     "ownedBy": "Owned and operated by {{name}}",
     "inPartnershipWith": "In partnership with {{partners}}",
