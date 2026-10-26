@@ -1,18 +1,42 @@
 {
   "title": "AthleticaOS Rugby",
-  "hero": {
-    "badge": "Pertandingan Ragbi Malaysia",
-    "titleLine1": "Skor Langsung, Jadual Perlawanan",
-    "titleLine2": "& Keputusan",
-    "subtitle": "Ikuti semua pertandingan ragbi di seluruh Malaysia secara langsung. Dikuasakan oleh AthleticaOS Rugby.",
-    "cta": "Lihat Semua Kejohanan"
+  "masthead": {
+    "title": "Hari Perlawanan",
+    "tagline": "Skor langsung, jadual perlawanan dan keputusan daripada ragbi Malaysia."
+  },
+  "liveNow": {
+    "title": "Langsung sekarang",
+    "seeAllLive": "Lihat semua langsung"
+  },
+  "tabs": {
+    "live": "Langsung",
+    "today": "Hari ini",
+    "results": "Keputusan",
+    "upcoming": "Akan datang"
+  },
+  "updated": "Dikemas kini {{time}}",
+  "empty": {
+    "noActive": "Tiada kejohanan aktif pada masa ini",
+    "live": "Tiada perlawanan yang sedang langsung pada masa ini.",
+    "today": "Tiada perlawanan dijadualkan untuk hari ini.",
+    "results": "Tiada keputusan terkini.",
+    "upcoming": "Tiada perlawanan akan datang yang dijadualkan.",
+    "goToToday": "Pergi ke hari ini",
+    "goToUpcoming": "Pergi ke akan datang"
+  },
+  "error": {
+    "failed": "Gagal memuatkan perlawanan.",
+    "tryAgain": "Cuba lagi"
+  },
+  "calendarStrip": {
+    "heading": "Bulan ini",
+    "openCalendar": "Buka kalendar"
   },
   "section": {
     "featured": "Kejohanan pilihan",
     "liveAndUpcoming": "Kejohanan langsung dan akan datang",
     "viewAll": "Lihat semua →"
   },
-  "empty": {
-    "noActive": "Tiada kejohanan aktif pada masa ini"
-  }
+  "organisersLink": "Penganjur: daftar minat anda",
+  "showMore": "Tunjukkan lagi"
 }

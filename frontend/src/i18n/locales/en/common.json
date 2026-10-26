@@ -1,6 +1,8 @@
 {
   "nav": {
     "home": "Home",
+    "matchday": "Matchday",
+    "matchdayShort": "Matchday",
     "tournaments": "Tournaments",
     "tournamentsShort": "Tours",
     "teams": "Teams",
@@ -43,7 +45,11 @@
     "live": "LIVE",
     "liveNow": "LIVE NOW",
     "upcoming": "UPCOMING",
-    "completed": "COMPLETED"
+    "completed": "COMPLETED",
+    "cancelled": "Cancelled",
+    "fullTime": "FT",
+    "walkover": "W/O",
+    "bye": "Bye"
   },
   "accessory": {
     "liveNow": "Live now: {{name}}",

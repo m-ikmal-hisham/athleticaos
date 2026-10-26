@@ -1,5 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
-import { House, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple, TreeStructure } from '@phosphor-icons/react';
+import { Lightning, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple, TreeStructure } from '@phosphor-icons/react';
 
 /**
  * Public navigation: single source of truth for the public shell
@@ -18,8 +18,7 @@ export interface PublicNavItem {
 }
 
 export const PUBLIC_PRIMARY_NAV: PublicNavItem[] = [
-    // D10 (Matchday home) renames this to Matchday / Lightning
-    { key: 'home', labelKey: 'nav.home', to: '/', icon: House, exact: true },
+    { key: 'matchday', labelKey: 'nav.matchday', tabLabelKey: 'nav.matchdayShort', to: '/', icon: Lightning, exact: true },
     { key: 'tournaments', labelKey: 'nav.tournaments', tabLabelKey: 'nav.tournamentsShort', to: '/tournaments', icon: Trophy },
     { key: 'teams', labelKey: 'nav.teams', to: '/teams', icon: UsersThree },
     { key: 'players', labelKey: 'nav.players', to: '/players', icon: User },
@@ -63,7 +62,7 @@ export const PUBLIC_DETAIL_PARENTS: { prefix: string; labelKey: string; to: stri
     { prefix: '/tournaments/', labelKey: 'nav.tournaments', to: '/tournaments' },
     { prefix: '/teams/', labelKey: 'nav.teams', to: '/teams' },
     { prefix: '/players/', labelKey: 'nav.players', to: '/players' },
-    { prefix: '/matches/', labelKey: 'nav.home', to: '/' },
+    { prefix: '/matches/', labelKey: 'nav.matchday', to: '/' },
 ];
 
 const matchesPath = (pathname: string, to: string) =>

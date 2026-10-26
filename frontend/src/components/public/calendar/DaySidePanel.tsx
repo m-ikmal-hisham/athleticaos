@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, CalendarPlus, Trophy, Clock, MapPin, CaretRight, ArrowSquareOut } from '@phosphor-icons/react';
+import { X, CalendarPlus, Trophy, Clock, ArrowSquareOut } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { PublicTournamentSummary, PublicMatchFeedItem } from '@/api/public.api';
 import { usePublicMatchFeed } from '@/hooks/public/usePublicMatchFeed';
@@ -11,6 +11,7 @@ import { useUIStore } from '@/store/ui.store';
 import { BottomSheet } from '@/components/public/BottomSheet';
 import { getDateLocale } from '@/utils/malaysiaDate';
 import { format } from 'date-fns';
+import { MatchCard } from '@/components/public/match';
 
 interface DaySidePanelProps {
     isOpen: boolean;
@@ -235,54 +236,9 @@ export function DaySidePanel({ isOpen, onClose, date, isoDate, tournaments }: Da
                         {t('calendar:noMatchesDay')}
                     </p>
                 ) : (
-                    <div className="space-y-2.5">
+                    <div className="space-y-2">
                         {accumulatedMatches.map(match => (
-                            <Link
-                                key={match.id}
-                                to={`/matches/${match.id}`}
-                                className="block p-3 rounded-[12px] bg-surface-card border border-line-subtle hover:border-brand/40 shadow-xs transition-colors group"
-                            >
-                                <div className="flex items-center justify-between text-[11px] text-content-tertiary mb-1.5">
-                                    <span className="flex items-center gap-1 font-medium">
-                                        <Clock size={12} />
-                                        {match.matchTime || t('calendar:venueTbc')}
-                                    </span>
-                                    {match.status && ['LIVE', 'ONGOING'].includes(match.status) ? (
-                                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-crimson text-white uppercase tracking-wider animate-pulse">
-                                            {t('calendar:status.live')}
-                                        </span>
-                                    ) : (
-                                        <span className="truncate max-w-[130px]">{match.tournamentName}</span>
-                                    )}
-                                </div>
-
-                                {/* Teams & Scores */}
-                                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-content-primary">
-                                    <div className="flex-1 truncate">
-                                        <span>{match.homeTeamName}</span>
-                                    </div>
-                                    <div className="px-2 py-0.5 rounded bg-surface-sunken font-mono font-bold text-xs shrink-0">
-                                        {match.homeScore !== undefined && match.awayScore !== undefined
-                                            ? `${match.homeScore} - ${match.awayScore}`
-                                            : t('calendar:vs')}
-                                    </div>
-                                    <div className="flex-1 text-right truncate">
-                                        <span>{match.awayTeamName}</span>
-                                    </div>
-                                </div>
-
-                                {match.venue && (
-                                    <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-line-subtle/50 text-[11px] text-content-tertiary">
-                                        <span className="flex items-center gap-1 truncate">
-                                            <MapPin size={12} />
-                                            <span className="truncate">{match.venue}</span>
-                                        </span>
-                                        <span className="group-hover:text-brand flex items-center gap-0.5 shrink-0 font-medium">
-                                            <CaretRight size={12} />
-                                        </span>
-                                    </div>
-                                )}
-                            </Link>
+                            <MatchCard key={match.id} match={match} compact />
                         ))}
 
                         {feedData?.hasNext && (

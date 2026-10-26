@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PublicTournamentSummary, PublicMatchDay } from '@/api/public.api';
-import { CalendarGridDay, parseCalendarDate } from '@/utils/malaysiaDate';
+import { CalendarGridDay } from '@/utils/malaysiaDate';
 import { TournamentBar } from './TournamentBar';
+import { computeWeekTournamentLayout } from './calendarLayout';
 
 interface MonthGridProps {
     days: CalendarGridDay[]; // 35 or 42 cells
@@ -11,13 +12,6 @@ interface MonthGridProps {
     onSelectDay: (day: CalendarGridDay) => void;
     onPrevMonth: () => void;
     onNextMonth: () => void;
-}
-
-interface WeekTournamentSegment {
-    tournament: PublicTournamentSummary;
-    startCol: number; // 1 to 7
-    span: number;     // 1 to 7
-    lane: number;     // 0, 1, 2, ...
 }
 
 export function MonthGrid({
@@ -44,107 +38,11 @@ export function MonthGrid({
         return map;
     }, [matchDays]);
 
-    // Split days into weeks (chunks of 7)
-    const weeks = useMemo(() => {
-        const result: CalendarGridDay[][] = [];
-        for (let i = 0; i < days.length; i += 7) {
-            result.push(days.slice(i, i + 7));
-        }
-        return result;
-    }, [days]);
-
-    // Compute tournament bars and lanes for each week
+    // Compute tournament bars and lanes for each week using pure helper
     const weekData = useMemo(() => {
-        return weeks.map(weekDays => {
-            const weekStart = weekDays[0].date.getTime();
-            const weekEnd = weekDays[6].date.getTime();
+        return computeWeekTournamentLayout(days, tournaments, { maxLanes: 3 });
+    }, [days, tournaments]);
 
-            // Find tournaments overlapping this week
-            const overlapping = tournaments.filter(tr => {
-                const s = parseCalendarDate(tr.startDate);
-                const e = parseCalendarDate(tr.endDate);
-                if (!s || !e) return false;
-                return s.getTime() <= weekEnd && e.getTime() >= weekStart;
-            });
-
-            // Sort tournaments: live first, then earlier start, then longer duration
-            overlapping.sort((a, b) => {
-                if (a.live !== b.live) return a.live ? -1 : 1;
-                const aStart = parseCalendarDate(a.startDate)?.getTime() ?? 0;
-                const bStart = parseCalendarDate(b.startDate)?.getTime() ?? 0;
-                if (aStart !== bStart) return aStart - bStart;
-                const aEnd = parseCalendarDate(a.endDate)?.getTime() ?? 0;
-                const bEnd = parseCalendarDate(b.endDate)?.getTime() ?? 0;
-                return bEnd - aEnd;
-            });
-
-            // Assign lanes (0, 1, 2)
-            const laneOccupied: boolean[][] = []; // laneOccupied[lane][colIndex 0..6]
-            const segments: WeekTournamentSegment[] = [];
-            const dayOverflow = [0, 0, 0, 0, 0, 0, 0];
-
-            overlapping.forEach(tr => {
-                const s = parseCalendarDate(tr.startDate);
-                const e = parseCalendarDate(tr.endDate);
-                if (!s || !e) return;
-
-                // Determine start and end col in this week (0-indexed)
-                let startColIdx = 0;
-                while (startColIdx < 7 && weekDays[startColIdx].date.getTime() < s.getTime()) {
-                    startColIdx++;
-                }
-                let endColIdx = 6;
-                while (endColIdx >= 0 && weekDays[endColIdx].date.getTime() > e.getTime()) {
-                    endColIdx--;
-                }
-
-                if (startColIdx > endColIdx) return;
-                const span = endColIdx - startColIdx + 1;
-
-                // Find lowest lane that is free for all columns in [startColIdx, endColIdx]
-                let lane = 0;
-                let assigned = false;
-                while (!assigned) {
-                    if (!laneOccupied[lane]) laneOccupied[lane] = [false, false, false, false, false, false, false];
-                    let fits = true;
-                    for (let c = startColIdx; c <= endColIdx; c++) {
-                        if (laneOccupied[lane][c]) {
-                            fits = false;
-                            break;
-                        }
-                    }
-                    if (fits) {
-                        for (let c = startColIdx; c <= endColIdx; c++) {
-                            laneOccupied[lane][c] = true;
-                        }
-                        assigned = true;
-                        break;
-                    }
-                    lane++;
-                }
-
-                if (lane < 3) {
-                    segments.push({
-                        tournament: tr,
-                        startCol: startColIdx + 1, // 1-indexed for CSS grid
-                        span,
-                        lane,
-                    });
-                } else {
-                    // Overflows max visible lanes
-                    for (let c = startColIdx; c <= endColIdx; c++) {
-                        dayOverflow[c]++;
-                    }
-                }
-            });
-
-            return {
-                weekDays,
-                segments,
-                dayOverflow,
-            };
-        });
-    }, [weeks, tournaments]);
 
     // Handle keyboard navigation for role="grid"
     const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
