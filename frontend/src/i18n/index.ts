@@ -9,6 +9,7 @@ import enAdmin from './locales/en/admin.json';
 import enJourney from './locales/en/journey.json';
 import enOrganisations from './locales/en/organisations.json';
 import enProfile from './locales/en/profile.json';
+import enCalendar from './locales/en/calendar.json';
 
 export type AppLanguage = 'en' | 'ms';
 
@@ -38,10 +39,10 @@ export function getDetectedLanguage(): AppLanguage {
 
 let msResourcesLoaded = false;
 
-type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests' | 'admin' | 'journey' | 'organisations' | 'profile', Record<string, unknown>>;
+type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests' | 'admin' | 'journey' | 'organisations' | 'profile' | 'calendar', Record<string, unknown>>;
 
 async function importMsResources(): Promise<Namespaces> {
-    const [msCommon, msHome, msLegal, msDataRequests, msAdmin, msJourney, msOrganisations, msProfile] = await Promise.all([
+    const [msCommon, msHome, msLegal, msDataRequests, msAdmin, msJourney, msOrganisations, msProfile, msCalendar] = await Promise.all([
         import('./locales/ms/common.json'),
         import('./locales/ms/home.json'),
         import('./locales/ms/legal.json'),
@@ -50,6 +51,7 @@ async function importMsResources(): Promise<Namespaces> {
         import('./locales/ms/journey.json'),
         import('./locales/ms/organisations.json'),
         import('./locales/ms/profile.json'),
+        import('./locales/ms/calendar.json'),
     ]);
     return {
         common: msCommon.default,
@@ -60,6 +62,7 @@ async function importMsResources(): Promise<Namespaces> {
         journey: msJourney.default,
         organisations: msOrganisations.default,
         profile: msProfile.default,
+        calendar: msCalendar.default,
     };
 }
 
@@ -100,7 +103,7 @@ export async function initI18n(): Promise<typeof i18n> {
         supportedLngs: ['en', 'ms'],
         load: 'languageOnly',
         defaultNS: 'common',
-        ns: ['common', 'home', 'legal', 'dataRequests', 'admin', 'journey', 'organisations', 'profile'],
+        ns: ['common', 'home', 'legal', 'dataRequests', 'admin', 'journey', 'organisations', 'profile', 'calendar'],
         resources: {
             en: {
                 common: enCommon,
@@ -111,6 +114,7 @@ export async function initI18n(): Promise<typeof i18n> {
                 journey: enJourney,
                 organisations: enOrganisations,
                 profile: enProfile,
+                calendar: enCalendar,
             },
             ...(msInitial ? { ms: msInitial } : {}),
         },

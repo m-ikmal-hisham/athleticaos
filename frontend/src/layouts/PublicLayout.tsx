@@ -194,6 +194,23 @@ export default function PublicLayout() {
         }
     };
 
+    // < lg: hide the top bar while scrolling down, show it again on any scroll up
+    const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+    useEffect(() => {
+        let lastY = window.scrollY;
+        const onScroll = () => {
+            const y = window.scrollY;
+            if (y < 64) setIsHeaderHidden(false);
+            else if (y - lastY > 8) setIsHeaderHidden(true);
+            else if (lastY - y > 8) setIsHeaderHidden(false);
+            else return;
+            lastY = y;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+    useEffect(() => setIsHeaderHidden(false), [location.pathname]);
+
     const isAccessoryLive = useIsPublicAccessoryLive();
     // Probe once per mount: isMotionAllowed() creates a WebGL context to test support
     const [isAnimatedBgOn] = useState(() => isAnimatedBackgroundFlagEnabled() && isMotionAllowed());
@@ -215,8 +232,13 @@ export default function PublicLayout() {
 
             <EnvironmentRibbon />
 
-            {/* Top bar: sticky on every size */}
-            <header className="print:hidden glass sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
+            {/* Top bar: sticky on every size; on phones it slides away while scrolling down */}
+            <header
+                className={clsx(
+                    'print:hidden glass sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)] motion-safe:transition-transform motion-safe:duration-200 lg:translate-y-0 focus-within:translate-y-0',
+                    isHeaderHidden && '-translate-y-full'
+                )}
+            >
                 <a
                     href="#main-content"
                     className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-[10px] focus:bg-navy focus:text-white focus:text-sm focus:font-medium focus:outline-none focus:ring-2 focus:ring-navy-tint"
