@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Clock, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
+import { Calendar, CalendarPlus, MapPin, Trophy, Clock, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { downloadTournamentIcs } from '@/utils/ics';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { GlassCard } from '@/components/GlassCard';
 import { Badge } from '@/components/Badge';
@@ -112,6 +114,7 @@ interface TabDef {
 }
 
 export default function TournamentDetail() {
+    const { t } = useTranslation(['calendar', 'common']);
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const [tournament, setTournament] = useState<PublicTournamentDetail | null>(null);
@@ -470,9 +473,19 @@ export default function TournamentDetail() {
                                 <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-lg mb-1.5 md:mb-2 leading-tight">
                                     {tournament.name}
                                 </h1>
-                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1 text-slate-200 text-xs md:text-sm font-medium drop-shadow-md">
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 text-slate-200 text-xs md:text-sm font-medium drop-shadow-md">
                                     <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-navy dark:text-navy-tint" /> {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}</span>
                                     <span className="flex items-center gap-1"><MapPin className="w-4 h-4 text-crimson dark:text-crimson-tint" /> {tournament.venue}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => downloadTournamentIcs(tournament)}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-xs border border-white/20 transition-colors shadow-xs"
+                                        title={t('calendar:addToCalendar')}
+                                        aria-label={t('calendar:addToCalendar')}
+                                    >
+                                        <CalendarPlus className="w-3.5 h-3.5" />
+                                        <span>{t('calendar:addToCalendar')}</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
