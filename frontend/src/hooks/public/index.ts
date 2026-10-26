@@ -6,4 +6,5 @@ export * from './usePublicMatchFeed';
 export * from './usePublicMatchDays';
 export * from './usePublicOrganisationTree';
 export * from './usePublicOrganisation';
+export * from './usePublicTournaments';
 

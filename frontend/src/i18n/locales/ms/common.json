@@ -1,6 +1,8 @@
 {
   "nav": {
     "home": "Utama",
+    "matchday": "Hari Perlawanan",
+    "matchdayShort": "Perlawanan",
     "tournaments": "Kejohanan",
     "tournamentsShort": "Kejohanan",
     "teams": "Pasukan",
@@ -43,7 +45,11 @@
     "live": "LANGSUNG",
     "liveNow": "LANGSUNG SEKARANG",
     "upcoming": "AKAN DATANG",
-    "completed": "TAMAT"
+    "completed": "TAMAT",
+    "cancelled": "Dibatalkan",
+    "fullTime": "FT",
+    "walkover": "W/O",
+    "bye": "Bye"
   },
   "accessory": {
     "liveNow": "Langsung sekarang: {{name}}",

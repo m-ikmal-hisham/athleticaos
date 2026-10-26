@@ -1,18 +1,42 @@
 {
   "title": "AthleticaOS Rugby",
-  "hero": {
-    "badge": "Malaysia Rugby Competitions",
-    "titleLine1": "Live Scores, Fixtures",
-    "titleLine2": "& Results",
-    "subtitle": "Follow all rugby competitions across Malaysia in real-time. Powered by AthleticaOS Rugby.",
-    "cta": "View All Tournaments"
+  "masthead": {
+    "title": "Matchday",
+    "tagline": "Live scores, fixtures and results from Malaysian rugby."
+  },
+  "liveNow": {
+    "title": "Live now",
+    "seeAllLive": "See all live"
+  },
+  "tabs": {
+    "live": "Live",
+    "today": "Today",
+    "results": "Results",
+    "upcoming": "Upcoming"
+  },
+  "updated": "Updated {{time}}",
+  "empty": {
+    "noActive": "No active tournaments at the moment",
+    "live": "No matches are live right now.",
+    "today": "No matches scheduled for today.",
+    "results": "No recent results.",
+    "upcoming": "No upcoming matches scheduled.",
+    "goToToday": "Go to today",
+    "goToUpcoming": "Go to upcoming"
+  },
+  "error": {
+    "failed": "Failed to load matches.",
+    "tryAgain": "Try again"
+  },
+  "calendarStrip": {
+    "heading": "This month",
+    "openCalendar": "Open calendar"
   },
   "section": {
-    "featured": "Featured Tournaments",
+    "featured": "Featured tournaments",
     "liveAndUpcoming": "Live and upcoming tournaments",
     "viewAll": "View all →"
   },
-  "empty": {
-    "noActive": "No active tournaments at the moment"
-  }
+  "organisersLink": "Organisers: register your interest",
+  "showMore": "Show more"
 }

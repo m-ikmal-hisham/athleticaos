@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CaretLeft, CaretRight, CaretDown, CaretUp, CalendarBlank, Trophy, Clock, MapPin, CalendarPlus, ArrowSquareOut } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, CaretDown, CaretUp, CalendarBlank, Trophy, Clock, CalendarPlus, ArrowSquareOut } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { PublicTournamentSummary, PublicMatchDay, PublicMatchFeedItem } from '@/api/public.api';
 import { usePublicMatchFeed } from '@/hooks/public/usePublicMatchFeed';
@@ -8,6 +8,7 @@ import { CalendarGridDay, getDateLocale, formatIsoDate } from '@/utils/malaysiaD
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { downloadTournamentIcs } from '@/utils/ics';
 import { format } from 'date-fns';
+import { MatchCard } from '@/components/public/match';
 
 interface PhoneWeekAgendaProps {
     weekDays: CalendarGridDay[]; // 7 days Mon-Sun
@@ -77,40 +78,7 @@ function DayMatchesSection({ isoDate, isExpanded, totalMatches }: DayMatchesSect
     return (
         <div className="space-y-2">
             {accumulated.map(match => (
-                <Link
-                    key={match.id}
-                    to={`/matches/${match.id}`}
-                    className="block p-3 rounded-[10px] bg-surface-card border border-line-subtle shadow-2xs hover:border-brand/40 transition-colors"
-                >
-                    <div className="flex items-center justify-between text-[11px] text-content-tertiary mb-1.5">
-                        <span className="flex items-center gap-1 font-medium">
-                            <Clock size={12} />
-                            {match.matchTime || t('calendar:venueTbc')}
-                        </span>
-                        {match.status && ['LIVE', 'ONGOING'].includes(match.status) && (
-                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-crimson text-white uppercase tracking-wider animate-pulse">
-                                {t('calendar:status.live')}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 text-xs font-semibold text-content-primary">
-                        <span className="truncate flex-1">{match.homeTeamName}</span>
-                        <span className="px-2 py-0.5 rounded bg-surface-sunken font-mono text-[11px] shrink-0 font-bold">
-                            {match.homeScore !== undefined && match.awayScore !== undefined
-                                ? `${match.homeScore} - ${match.awayScore}`
-                                : t('calendar:vs')}
-                        </span>
-                        <span className="truncate flex-1 text-right">{match.awayTeamName}</span>
-                    </div>
-
-                    {match.venue && (
-                        <div className="flex items-center gap-1 text-[11px] text-content-tertiary mt-1.5 truncate">
-                            <MapPin size={11} className="shrink-0" />
-                            <span className="truncate">{match.venue}</span>
-                        </div>
-                    )}
-                </Link>
+                <MatchCard key={match.id} match={match} compact />
             ))}
 
             {feed?.hasNext && (

@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { SITE_NAME } from '@/config/site';
 
 interface SEOProps {
     title?: string;
@@ -18,7 +19,7 @@ export const SEO = ({
     // Ensure absolute URL for image
     const fullImage = image.startsWith('http') ? image : `${window.location.origin}${image}`;
     const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
-    const siteTitle = title === 'AthleticaOS' ? title : `${title} | AthleticaOS`;
+    const siteTitle = title === 'AthleticaOS' || title === SITE_NAME ? title : `${title} | AthleticaOS`;
 
     return (
         <Helmet>

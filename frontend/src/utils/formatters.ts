@@ -236,4 +236,42 @@ export const formatDisplayDate = (date: string | Date | undefined | null, lang?:
     }).format(d);
 };
 
+/**
+ * Formats a kick-off / match time in Malaysia time (Asia/Kuala_Lumpur).
+ * Handles ISO strings ('2026-10-26T15:30:00Z'), Date objects, or time strings ('15:30:00', '15:30').
+ * Output example: '3:30 PM' (or '3:30 ptg' in ms).
+ */
+export const formatKickOff = (timeOrDate: string | Date | undefined | null, lang?: string): string => {
+    if (!timeOrDate) return '';
+    const locale = (lang && lang.toLowerCase().startsWith('ms')) ? 'ms-MY' : 'en-MY';
+
+    if (typeof timeOrDate === 'string') {
+        const trimmed = timeOrDate.trim();
+        // If it's already HH:mm or HH:mm:ss without date
+        if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(trimmed)) {
+            // matchTime is already Malaysia wall-clock time: format it as UTC so the viewer's zone never shifts it
+            const [hours, minutes] = trimmed.split(':').map(Number);
+            const d = new Date(Date.UTC(1970, 0, 1, hours, minutes));
+            return new Intl.DateTimeFormat(locale, {
+                timeZone: 'UTC',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            }).format(d);
+        }
+    }
+
+    const d = typeof timeOrDate === 'string' ? new Date(timeOrDate) : timeOrDate;
+    if (isNaN(d.getTime())) {
+        return typeof timeOrDate === 'string' ? timeOrDate : '';
+    }
+
+    return new Intl.DateTimeFormat(locale, {
+        timeZone: 'Asia/Kuala_Lumpur',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    }).format(d);
+};
+
 

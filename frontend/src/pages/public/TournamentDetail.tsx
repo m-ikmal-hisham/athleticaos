@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, CalendarPlus, MapPin, Trophy, Clock, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Calendar, CalendarPlus, MapPin, Trophy, ShareNetwork, CaretRight, CaretDown, Star, Table, Users, UserCircle, MagnifyingGlass, type Icon } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { downloadTournamentIcs } from '@/utils/ics';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -22,8 +22,9 @@ import {
 import { PublicTournamentPools } from './components/PublicTournamentPools';
 import { PublicTournamentBracket } from './components/PublicTournamentBracket';
 import { PublicStats } from './components/PublicStats';
-import { formatTournamentLevel, formatTeamShortName } from '@/utils/formatters';
+import { formatTournamentLevel } from '@/utils/formatters';
 import { getImageUrl } from '@/utils/image';
+import { MatchCard } from '@/components/public/match';
 
 interface PublicVenueGroup {
     venueName: string;
@@ -295,105 +296,30 @@ export default function TournamentDetail() {
         { id: 'players', label: 'Players', icon: UserCircle, count: null },
     ];
 
-    const renderPublicMatchCard = (match: PublicMatchSummary) => (
-        <Link
-            key={match.id}
-            to={`/matches/${match.id}`}
-            className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-navy dark:hover:border-navy-tint rounded-2xl p-5 transition-all hover:shadow-xl hover:-translate-y-1 block overflow-hidden"
-        >
-            {/* Status Indicator */}
-            {['LIVE', 'ONGOING'].includes(match.status) && (
-                <div className="absolute top-0 right-0 px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded-bl-xl shadow-lg animate-pulse">
-                    Live
-                </div>
-            )}
-
-            <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Clock className="w-4 h-4" />
-                    {match.matchTime}
-                    <span className={`ml-1 ${match.venue?.trim() ? 'text-slate-500' : 'text-slate-400 italic'}`}>
-                        • {match.venue?.trim() ? match.venue.trim() : 'Venue TBC'}
-                    </span>
-                </div>
-                <div className="text-xs text-slate-500 font-medium group-hover:text-navy dark:group-hover:text-navy-tint transition-colors flex items-center gap-1">
-                    Match Center <CaretRight className="w-4 h-4" />
-                </div>
+    const renderPublicMatchCard = (match: PublicMatchSummary) => {
+        const officialsFooter = match.officials && match.officials.length > 0 ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+                {match.officials.map((official, idx) => (
+                    <div key={official.id || idx} className="flex flex-col flex-1 min-w-[100px] bg-surface-sunken rounded py-1.5 px-2 border border-line-subtle">
+                        <span className="text-[10px] uppercase font-bold text-content-tertiary mb-0.5">
+                            {(official.officialRoleName || official.assignedRole || '').replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs font-semibold text-content-primary truncate w-full" title={official.officialName}>
+                            {official.officialName}
+                        </span>
+                    </div>
+                ))}
             </div>
+        ) : undefined;
 
-            {/* Score Block */}
-            <div className="flex items-center justify-between gap-4">
-                {/* Home */}
-                <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
-                        {match.homeTeamLogoUrl ? (
-                            <img src={getImageUrl(match.homeTeamLogoUrl)} alt={match.homeTeamName} className="w-full h-full object-contain p-0.5" />
-                        ) : (
-                            <span className="text-[10px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
-                        )}
-                    </div>
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
-                            {formatTeamShortName(match.homeTeamShortName, match.homeTeamName)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Home</span>
-                    </div>
-                </div>
-
-                {/* Score */}
-                <div className="flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 min-w-[3.5rem] py-2 rounded-lg font-mono font-black text-xl text-slate-800 dark:text-white shrink-0">
-                    {(match.homeScore !== undefined && match.awayScore !== undefined) ? (
-                        <div className="flex gap-1">
-                            <span>{match.homeScore}</span>
-                            <span className="text-slate-400 opacity-50">:</span>
-                            <span>{match.awayScore}</span>
-                        </div>
-                    ) : (
-                        <span className="text-slate-400 text-sm">VS</span>
-                    )}
-                    {/* Marks an awarded 28-0 so it does not read as a played result. */}
-                    {match.resultType && match.resultType !== 'NORMAL' && (
-                        <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                            {match.resultType === 'BYE' ? 'Bye' : 'W/O'}
-                        </span>
-                    )}
-                </div>
-
-                {/* Away */}
-                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                    <div className="flex flex-col items-end gap-0.5 min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white text-base leading-tight group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate text-right">
-                            {formatTeamShortName(match.awayTeamShortName, match.awayTeamName)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Away</span>
-                    </div>
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
-                        {match.awayTeamLogoUrl ? (
-                            <img src={getImageUrl(match.awayTeamLogoUrl)} alt={match.awayTeamName} className="w-full h-full object-contain p-0.5" />
-                        ) : (
-                            <span className="text-[10px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Match Officials */}
-            {match.officials && match.officials.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap gap-2">
-                    {match.officials.map((official, idx) => (
-                        <div key={official.id || idx} className="flex flex-col flex-1 min-w-[100px] bg-slate-50 dark:bg-slate-800/80 rounded py-1.5 px-2 border border-slate-200 dark:border-slate-700/50">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-0.5">
-                                {(official.officialRoleName || official.assignedRole || '').replace(/_/g, ' ')}
-                            </span>
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate w-full" title={official.officialName}>
-                                {official.officialName}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </Link>
-    );
+        return (
+            <MatchCard
+                key={match.id}
+                match={match}
+                footer={officialsFooter}
+            />
+        );
+    };
 
     // Tournament banner first, then the organiser's cover image; the plain gradient is the fallback
     const heroImageUrl = tournament?.bannerUrl || tournament?.organiserBranding?.coverImageUrl;
