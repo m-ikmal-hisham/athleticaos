@@ -2,7 +2,7 @@ import { isFeatureEnabled } from '@/config/features';
 
 export type AnimatedBgMode = 'off' | 'calm' | 'full';
 
-export type RouteBackgroundType = 'calm' | 'static' | 'journey';
+export type RouteBackgroundType = 'calm' | 'static';
 
 /**
  * Checks whether WebGL rendering context is supported in the current environment.
@@ -115,23 +115,19 @@ export function getAnimatedBackgroundMode(): AnimatedBgMode {
 }
 
 /**
- * Determines whether a route uses the calm 3D pitch, static SVG, or journey canvas.
+ * Determines whether a route uses the calm 3D pitch or static SVG.
  * Calm pitch routes:
- *   /, /tournaments, /tournaments/:id, /teams, /teams/:id, /players, /players/:id, /partners, /sponsors, /how-it-works
+ *   /, /journey, /tournaments, /tournaments/:id, /teams, /teams/:id, /players, /players/:id, /partners, /sponsors, /how-it-works
  * Static SVG routes:
  *   /matches/:matchId, /media/matches/:matchId, /contact, /privacy, /terms, /data-requests
- * Journey route:
- *   /journey (journey has its own WebGL canvas; global background is disposed)
  * Unknown routes:
  *   static SVG
  */
 export function getRouteBackgroundType(pathname: string): RouteBackgroundType {
-    if (pathname === '/journey' || pathname.startsWith('/journey/')) {
-        return 'journey';
-    }
-
     if (
         pathname === '/' ||
+        pathname === '/journey' ||
+        pathname.startsWith('/journey/') ||
         pathname === '/how-it-works' ||
         pathname === '/partners' ||
         pathname === '/sponsors' ||

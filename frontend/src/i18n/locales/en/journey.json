@@ -10,6 +10,15 @@
     "ballAria": "Rugby ball showing current milestone: {{title}}",
     "milestoneAria": "{{setPiece}} · {{date}} · {{title}}"
   },
+  "status": {
+    "done": "Done",
+    "upcoming": "Upcoming",
+    "live": "LIVE"
+  },
+  "card": {
+    "readMore": "Read more",
+    "showLess": "Show less"
+  },
   "legend": {
     "title": "Set pieces",
     "subtitle": "How rugby moments tell our development story",

@@ -208,12 +208,12 @@ All three exceptions switch off under `prefers-reduced-motion` (state switches i
 The public site and sign-in pages use a calm 3D rugby pitch inside a stylized stadium bowl made of lines, points, and membranes built on the shared WebGL engine (`components/public/background/engine/`).
 
 1. **Scenes per route:**
-   - **Calm pitch + stadium framing (persistent WebGL canvas):** `/`, `/tournaments`, `/tournaments/:id`, `/teams`, `/teams/:id`, `/players`, `/players/:id`, `/partners`, `/sponsors`, `/how-it-works`.
+   - **Calm pitch + stadium framing (persistent WebGL canvas):** `/`, `/journey`, `/tournaments`, `/tournaments/:id`, `/teams`, `/teams/:id`, `/players`, `/players/:id`, `/partners`, `/sponsors`, `/how-it-works`.
      - Presets: `bgStadiumSideline` at $\ge 1024\text{px}$ (main stand at halfway, ~25m up, ~45m back from near touchline, looking across pitch); `bgStadiumEnd` below $1024\text{px}$ (end stand behind posts).
      - Geometry: merged into $\le 3$ extra draw calls (`LineSegments` for 400m 8-lane track, tier rims, vomitory aisles, roof rims/cables; `Points` for seats + inner roof floodlights; `Mesh` for translucent roof membrane).
    - **Static SVG pitch + stadium (canvas paused, faded out, render loop stopped):** `/matches/:matchId`, `/media/matches/:matchId`, `/contact`, `/privacy`, `/terms`, `/data-requests`, and unknown routes.
      - `PitchBackdropSvg` renders simplified track ring, tier boundaries, and roof rings matching the 3D projection, updating preset on crossing 1024px.
-   - **/journey:** Global background canvas is completely disposed (static SVG backdrop remains), allowing Journey's dedicated milestone canvas to be the sole active WebGL context. Global canvas is re-created upon navigating away. If the initial page load is a static route, WebGL is deferred until a calm route is visited.
+   - **/journey:** Uses the calm stadium background as its field (`routeType = 'calm'`). Milestones sit directly on the pitch between the H-posts via a fixed overlay, with click-to-kick disabled so interaction is reserved for milestone navigation.
    - **Sign-in pages:** The right-hand desktop panel (`hidden lg:flex`) renders `AuthPanelBackground` (tall behind-the-posts framing, pitch-only scene without stadium, opacity ≤ 35%, disposed on unmount, desktop hover wake active, no click kick). Mobile loads nothing in this panel.
 2. **Distraction & Performance budgets:**
    - Opacities: pitch markings ~22% light / ~30% dark; grass ~13% light / ~19% dark; stands ~15% light / ~22% dark; roof membrane ~20% light / ~28% dark; seats ~8–10%; H-posts ~45% with crimson post pads; auth panel ≤ 35%. Crimson try lines accent marks.
