@@ -11,7 +11,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:ci": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 189 && node scripts/check-i18n.mjs",
+    "lint:ci": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 188 && node scripts/check-i18n.mjs",
     "i18n:check": "node scripts/check-i18n.mjs",
     "geo:build": "node scripts/build-geo-data.mjs"
   },
