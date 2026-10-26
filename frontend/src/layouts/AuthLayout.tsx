@@ -2,10 +2,12 @@ import { Suspense } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { PageLoader } from '@/components/PageLoader';
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
+import { BrandBackground } from '@/components/admin/AdminBrandBackground';
 
 export const AuthLayout = () => {
     return (
-        <div className="min-h-[100dvh] w-full flex flex-col pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="min-h-[100dvh] w-full flex flex-col relative pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+            <BrandBackground />
             <EnvironmentRibbon />
             <div className="flex-1 w-full flex flex-col items-center justify-between p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] relative overflow-hidden">
                 {/* Spacer to balance vertical centering */}

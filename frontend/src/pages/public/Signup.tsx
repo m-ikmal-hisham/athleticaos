@@ -9,7 +9,6 @@ import { Input } from '@/components/Input';
 import { authApi } from '@/api/auth.api';
 import { SocialButtons } from '@/components/SocialButtons';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
-import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 
 const registerSchema = z.object({
     firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -65,14 +64,11 @@ export const Signup = () => {
 
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
-    const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
-
-
 
     return (
-        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
+        <div className="min-h-screen w-full flex">
             {/* Left Side - Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10 transition-all duration-300">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 relative z-10 transition-all duration-300">
                 <div className="w-full max-w-sm space-y-6">
                     {/* Header Section - Side by Side Centered */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -96,13 +92,11 @@ export const Signup = () => {
                         <SocialButtons />
                     </div>
 
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">Or register with email</span>
-                        </div>
+                    {/* Lines either side of the label (no fill), so the brand background shows through */}
+                    <div className="my-6 flex items-center gap-3 text-xs uppercase">
+                        <span className="flex-1 border-t border-gray-200 dark:border-gray-800" />
+                        <span className="text-gray-500 dark:text-gray-400">Or register with email</span>
+                        <span className="flex-1 border-t border-gray-200 dark:border-gray-800" />
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -179,13 +173,9 @@ export const Signup = () => {
                 </div>
             </div>
 
-            {/* Right Side - Background with headline */}
-            <AuthPanelBackground
-                legacyImageSrc={bgSrc}
-                legacyImageClassName="opacity-100"
-                className="lg:w-1/2"
-            >
-                <div className="relative z-20 max-w-lg text-right">
+            {/* Right Side - Headline over brand background */}
+            <div className="hidden lg:flex flex-1 relative items-center justify-end p-12 xl:p-24 bg-transparent">
+                <div className="relative z-10 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
                         Join the<br />
                         <span className="text-navy dark:text-navy-tint">
@@ -197,7 +187,7 @@ export const Signup = () => {
                         Your journey starts here.
                     </p>
                 </div>
-            </AuthPanelBackground>
+            </div>
         </div>
     );
 };

@@ -11,7 +11,6 @@ import { useAuthStore } from '@/store/auth.store';
 import { ForcedPasswordChange } from '@/components/auth/ForcedPasswordChange';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { authApi } from '@/api/auth.api';
-import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 import { useEffect } from 'react';
 
 const loginSchema = z.object({
@@ -111,9 +110,9 @@ export const Login = () => {
 
     // ─── Login Form (shown after access gate is passed) ───────────────
     return (
-        <div className="min-h-screen w-full flex bg-surface-page">
+        <div className="min-h-screen w-full flex">
             {/* Left Side - Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-surface-page relative z-10">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 relative z-10">
                 <div className="w-full max-w-sm space-y-8">
                     {/* Header Section - Side by Side Centered */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -253,9 +252,9 @@ export const Login = () => {
                 </div>
             </div>
 
-            {/* Right Side - Background with headline */}
-            <AuthPanelBackground>
-                <div className="relative z-20 max-w-lg text-right">
+            {/* Right Side - Headline over brand background */}
+            <div className="hidden lg:flex flex-1 relative items-center justify-end p-12 xl:p-24 bg-transparent">
+                <div className="relative z-10 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
                         Run your competitions<br />
                         <span className="text-navy dark:text-navy-tint">
@@ -266,7 +265,7 @@ export const Login = () => {
                         Fixtures, scoring, rosters and results for Malaysian rugby.
                     </p>
                 </div>
-            </AuthPanelBackground>
+            </div>
         </div>
     );
 };

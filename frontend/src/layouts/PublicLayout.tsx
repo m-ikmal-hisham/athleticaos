@@ -17,8 +17,8 @@ import { useAuthStore } from '@/store/auth.store';
 import { SITE_NAME, COPYRIGHT_HOLDER, OWNER_NAME, SHOW_OWNER } from '@/config/site';
 import { PARTNERS } from '@/config/partners';
 import {
-    PUBLIC_PRIMARY_NAV,
-    PUBLIC_MORE_NAV,
+    PUBLIC_DESKTOP_PRIMARY_NAV,
+    PUBLIC_DESKTOP_MORE_NAV,
     isNavItemActive,
     getDetailParent,
 } from '@/config/navigation';
@@ -41,7 +41,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
     const [open, setOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLUListElement>(null);
-    const moreActive = PUBLIC_MORE_NAV.some((item) => isNavItemActive(item, pathname));
+    const moreActive = PUBLIC_DESKTOP_MORE_NAV.some((item) => isNavItemActive(item, pathname));
 
     // Close when the route changes
     useEffect(() => {
@@ -133,7 +133,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
                     onKeyDown={handleMenuKeyDown}
                     className="absolute right-0 top-full mt-1 min-w-[200px] p-1 bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 rounded-[10px] shadow-md motion-safe:animate-fade-in"
                 >
-                    {PUBLIC_MORE_NAV.map((item) => {
+                    {PUBLIC_DESKTOP_MORE_NAV.map((item) => {
                         const active = isNavItemActive(item, pathname);
                         const Icon = item.icon;
                         return (
@@ -246,7 +246,7 @@ export default function PublicLayout() {
                         <div className="hidden lg:flex items-center gap-6 h-full">
                             <nav aria-label={t('nav.primaryNav')} className="h-full">
                                 <ul className="flex items-center gap-6 h-full">
-                                    {PUBLIC_PRIMARY_NAV.map((item) => {
+                                    {PUBLIC_DESKTOP_PRIMARY_NAV.map((item) => {
                                         const active = isNavItemActive(item, location.pathname);
                                         return (
                                             <li key={item.key} className="h-full">

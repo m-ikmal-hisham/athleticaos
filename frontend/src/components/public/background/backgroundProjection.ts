@@ -14,8 +14,7 @@ export type BgCameraPreset =
     | 'bgStadiumSideline'
     | 'bgStadiumEnd'
     | 'bgSideline'
-    | 'bgBehindPosts'
-    | 'authPanel';
+    | 'bgBehindPosts';
 
 export interface BgCameraParameters {
     preset: BgCameraPreset;
@@ -79,17 +78,6 @@ export const BG_CAMERA_PRESETS: Record<BgCameraPreset, BgCameraParameters> = {
         fullWidth: 390,
         fullHeight: 844,
         viewBox: '0 0 390 844',
-    },
-    // Auth right-hand panel (desktop portrait column): tall behind-the-posts framing
-    authPanel: {
-        preset: 'authPanel',
-        worldPosition: { x: -18, y: 72, z: -35 },
-        worldTarget: { x: 75, y: 8, z: -35 },
-        worldUp: { x: 0, y: 1, z: 0 },
-        verticalFov: 68,
-        fullWidth: 600,
-        fullHeight: 900,
-        viewBox: '0 0 600 900',
     },
 };
 

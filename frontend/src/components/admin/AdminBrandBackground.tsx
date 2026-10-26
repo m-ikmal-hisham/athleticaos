@@ -4,8 +4,8 @@ export function AdminBrandBackground() {
     const theme = useEffectiveTheme();
     const src =
         theme === 'dark'
-            ? '/brand/admin-bg-ascent-dark.svg'
-            : '/brand/admin-bg-ascent-light.svg';
+            ? '/brand/admin-bg-ascent2-dark.svg'
+            : '/brand/admin-bg-ascent2-light.svg';
 
     return (
         <img
@@ -18,4 +18,6 @@ export function AdminBrandBackground() {
     );
 }
 
+export const BrandBackground = AdminBrandBackground;
 export default AdminBrandBackground;
+

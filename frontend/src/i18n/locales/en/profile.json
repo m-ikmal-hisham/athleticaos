@@ -1,0 +1,75 @@
+{
+  "squad": "Squad",
+  "tournaments": "Tournaments",
+  "clubAndAffiliation": "Club and affiliation",
+  "byPosition": "By position",
+  "statsView": "Player stats",
+  "cardsView": "Cards view",
+  "activeRoster": "Active squad",
+  "playersCount": "{{count}} players",
+  "searchPlayerPlaceholder": "Search squad by name, position or jersey...",
+  "noPlayersFound": "No players matching \"{{search}}\"",
+  "noRosterData": "No squad data available for this team.",
+  "positionGroups": {
+    "frontRow": "Front row",
+    "locks": "Locks",
+    "backRow": "Back row",
+    "halfBacks": "Half-backs",
+    "centres": "Centres",
+    "backThree": "Back three",
+    "extendedSquad": "Extended squad"
+  },
+  "stats": {
+    "squad": "Squad",
+    "tournaments": "Tournaments",
+    "tries": "Tries",
+    "triesScored": "Tries scored",
+    "appearances": "Appearances",
+    "conversions": "Conversions",
+    "penalties": "Penalties",
+    "dropGoals": "Drop goals",
+    "points": "Points",
+    "yellowCards": "Yellow cards",
+    "redCards": "Red cards",
+    "minutes": "Minutes"
+  },
+  "liveBadge": "{{count}} LIVE",
+  "team": {
+    "belongsTo": "Belongs to",
+    "affiliatedTo": "affiliated to",
+    "ladder": "Club and affiliation",
+    "teamInfo": "Team info",
+    "division": "Division",
+    "ageGroup": "Age group",
+    "shortName": "Short name",
+    "governingBody": "Governing body"
+  },
+  "player": {
+    "detailsTitle": "Player details",
+    "detailsNote": "Only details the player's organisation has made public are shown.",
+    "careerByTournament": "Career by tournament",
+    "allTimeCareer": "All-time career",
+    "recentMatches": "Recent matches",
+    "viewPublicPage": "View public page",
+    "utility": "Utility",
+    "position": "Position",
+    "gender": "Gender",
+    "age": "Age",
+    "ageGroup": "Age group",
+    "country": "Country",
+    "state": "State",
+    "city": "City",
+    "jersey": "Jersey",
+    "team": "Team"
+  },
+  "breadcrumb": {
+    "organisations": "Organisations",
+    "teams": "Teams",
+    "players": "Players"
+  },
+  "tabs": {
+    "squad": "Squad",
+    "tournaments": "Tournaments",
+    "club": "Club"
+  }
+}

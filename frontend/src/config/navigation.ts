@@ -25,8 +25,21 @@ export const PUBLIC_PRIMARY_NAV: PublicNavItem[] = [
     { key: 'players', labelKey: 'nav.players', to: '/players', icon: User },
 ];
 
+/** Desktop (>= lg) includes Organisations as a main nav item after Players */
+export const PUBLIC_DESKTOP_PRIMARY_NAV: PublicNavItem[] = [
+    ...PUBLIC_PRIMARY_NAV,
+    { key: 'organisations', labelKey: 'nav.organisations', to: '/organisations', icon: TreeStructure },
+];
+
 export const PUBLIC_MORE_NAV: PublicNavItem[] = [
     { key: 'organisations', labelKey: 'nav.organisations', to: '/organisations', icon: TreeStructure },
+    { key: 'how-it-works', labelKey: 'nav.howItWorks', to: '/how-it-works', icon: Info },
+    { key: 'partners', labelKey: 'nav.partners', to: '/partners', icon: Handshake },
+    { key: 'contact', labelKey: 'nav.contact', to: '/contact', icon: EnvelopeSimple },
+];
+
+/** Desktop More menu contains How it works, Partners, and Contact */
+export const PUBLIC_DESKTOP_MORE_NAV: PublicNavItem[] = [
     { key: 'how-it-works', labelKey: 'nav.howItWorks', to: '/how-it-works', icon: Info },
     { key: 'partners', labelKey: 'nav.partners', to: '/partners', icon: Handshake },
     { key: 'contact', labelKey: 'nav.contact', to: '/contact', icon: EnvelopeSimple },

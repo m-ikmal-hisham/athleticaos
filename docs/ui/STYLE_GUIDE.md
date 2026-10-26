@@ -434,3 +434,39 @@ Keep `darkMode: 'class'` **and** `[data-theme]`; both are set by the boot script
 5. Pages: admin pages adopt `PageHeader`/`Table`/`EmptyState`; public pages adopt
    tokens. One area per PR (e.g. Players + Teams, then Tournaments + Matches).
 6. Remove retired tokens/classes, enable CI guardrails.
+
+---
+
+## 11. Profile Heroes & Brand Backgrounds
+
+### 11.1 Brand Background v2 (`BrandBackground`)
+- **Assets**: `admin-bg-ascent2-light.svg` and `admin-bg-ascent2-dark.svg` in `/brand/`.
+- **Usage**:
+  - Admin shell (`AppLayout`): full viewport behind content (`-z-10`, `print:hidden`, `contrast-more:hidden`).
+  - Sign-in shell (`AuthLayout`): rendered once at the root layout level behind Login, Forgot password, Reset password, Accept invite, and Sign-up.
+  - Auth page roots and right-hand panels are transparent (`bg-transparent`), letting the background show through.
+  - Right-hand headline text uses `text-black dark:text-white` with `text-navy dark:text-navy-tint` accents to maintain AA contrast in both themes.
+
+### 11.2 Unified Hero System (`ProfileHero`)
+One shared hero component for Team, Player, and Organisation profiles across public and admin interfaces:
+- **Surface**: Deep Navy (`#0D1B2A`) base with subtle horizontal jersey hoops (`JerseyHoops`) tinted with the organisation's primary and secondary colours, and an ambient diagonal wash.
+- **Variants**:
+  - `variant="team"`: rounded square crest tile with primary colour glow ring. Watermark uses team `shortName`, falling back to 2–3 uppercase initials (no truncated words).
+  - `variant="player"`: circular avatar with crimson jersey number badge. Watermark uses jersey number (omitted if unavailable). Supports half-pitch `PositionPitch` aside.
+  - `variant="organisation"`: circular logo tile with 4px primary colour ring (`boxShadow: 0 0 0 4px ${primary}`). Watermark uses organisation initials.
+- **Breadcrumbs & Back Link Placement**:
+  - Placed in the top row inside the hero for consistent alignment across all 5 profile views.
+  - **Public pages**: Breadcrumbs appear on desktop (`>= lg`). On mobile (`< lg`), hero breadcrumbs are hidden because `PublicLayout` provides the dedicated phone Back row (`PUBLIC_DETAIL_PARENTS`).
+  - **Admin pages**: Full breadcrumbs on desktop (`>= lg`); mobile (`< lg`) renders the hero's single Back link.
+  - **Contrast on dark**: Links use `text-white/75 hover:text-white underline-offset-2 hover:underline decoration-white/40`, active item uses `text-white font-semibold`, and carets use `text-white/40`.
+- **Contrast & Legibility Standards**:
+  - All text and chips inside the hero must meet $\ge$ 4.5:1 WCAG AA contrast against `#0D1B2A`.
+  - Stats band: numbers use `text-white font-bold` (17.4:1); stat labels use `text-white/70 uppercase tracking-wider text-[10px] sm:text-[11px]` (12.2:1).
+  - Level pills with primary colour background compute text colour dynamically via `readableOn(primary)` (`#0D1B2A` or `#FFFFFF`).
+- **Consistent Vocabulary (EN & BM)**:
+  - Player appearances: always "Appearances" / "Penampilan" (never "Matches").
+  - Player tries: always "Tries" / "Try".
+  - Team tries: always "Tries scored" / "Try dijaringkan".
+  - Team squad count: always "Squad" / "Skuad".
+  - Tournaments: always "Tournaments" / "Kejohanan".
+

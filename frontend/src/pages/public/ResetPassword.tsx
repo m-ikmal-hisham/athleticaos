@@ -7,7 +7,6 @@ import { Input } from '@/components/Input';
 import { authApi } from '@/api/auth.api';
 import { passwordProblem, PASSWORD_MIN_LENGTH } from '@/utils/password';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
-import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 
 export const ResetPassword = () => {
     const navigate = useNavigate();
@@ -77,7 +76,7 @@ export const ResetPassword = () => {
 
     if (!token && !isSuccess) {
         return (
-            <div className="min-h-screen w-full flex items-center justify-center p-8 bg-surface-page">
+            <div className="min-h-screen w-full flex items-center justify-center p-8">
                 <div className="w-full max-w-sm p-6 rounded-2xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 text-center space-y-4">
                     <div className="flex justify-center text-crimson dark:text-crimson-tint">
                         <X size={44} weight="bold" />
@@ -102,8 +101,8 @@ export const ResetPassword = () => {
     }
 
     return (
-        <div className="min-h-screen w-full flex bg-surface-page">
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-surface-page relative z-10">
+        <div className="min-h-screen w-full flex">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 relative z-10">
                 <div className="w-full max-w-sm space-y-8">
                     {/* Header */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -274,7 +273,7 @@ export const ResetPassword = () => {
             </div>
 
             {/* Right Side graphic */}
-            <AuthPanelBackground />
+            <div className="hidden lg:flex flex-1 relative items-center justify-center p-12 bg-transparent" />
         </div>
     );
 };

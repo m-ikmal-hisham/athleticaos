@@ -1,0 +1,75 @@
+{
+  "squad": "Skuad",
+  "tournaments": "Kejohanan",
+  "clubAndAffiliation": "Kelab dan gabungan",
+  "byPosition": "Mengikut posisi",
+  "statsView": "Statistik pemain",
+  "cardsView": "Paparan kad",
+  "activeRoster": "Skuad aktif",
+  "playersCount": "{{count}} pemain",
+  "searchPlayerPlaceholder": "Cari skuad mengikut nama, posisi atau jersi...",
+  "noPlayersFound": "Tiada pemain sepadan dengan \"{{search}}\"",
+  "noRosterData": "Tiada data skuad tersedia untuk pasukan ini.",
+  "positionGroups": {
+    "frontRow": "Barisan hadapan",
+    "locks": "Locks",
+    "backRow": "Barisan belakang",
+    "halfBacks": "Half-backs",
+    "centres": "Centres",
+    "backThree": "Back three",
+    "extendedSquad": "Skuad lanjutan"
+  },
+  "stats": {
+    "squad": "Skuad",
+    "tournaments": "Kejohanan",
+    "tries": "Try",
+    "triesScored": "Try dijaringkan",
+    "appearances": "Penampilan",
+    "conversions": "Conversion",
+    "penalties": "Penalti",
+    "dropGoals": "Drop goal",
+    "points": "Mata",
+    "yellowCards": "Kad kuning",
+    "redCards": "Kad merah",
+    "minutes": "Minit"
+  },
+  "liveBadge": "{{count}} LANGSUNG",
+  "team": {
+    "belongsTo": "Milik",
+    "affiliatedTo": "bergabung dengan",
+    "ladder": "Kelab dan gabungan",
+    "teamInfo": "Maklumat pasukan",
+    "division": "Bahagian",
+    "ageGroup": "Kumpulan umur",
+    "shortName": "Nama pendek",
+    "governingBody": "Badan induk"
+  },
+  "player": {
+    "detailsTitle": "Butiran pemain",
+    "detailsNote": "Hanya butiran yang didedahkan oleh organisasi pemain kepada umum dipaparkan.",
+    "careerByTournament": "Kerjaya mengikut kejohanan",
+    "allTimeCareer": "Kerjaya sepanjang zaman",
+    "recentMatches": "Perlawanan terkini",
+    "viewPublicPage": "Lihat halaman awam",
+    "utility": "Utiliti",
+    "position": "Posisi",
+    "gender": "Jantina",
+    "age": "Umur",
+    "ageGroup": "Kumpulan umur",
+    "country": "Negara",
+    "state": "Negeri",
+    "city": "Bandar",
+    "jersey": "Jersi",
+    "team": "Pasukan"
+  },
+  "breadcrumb": {
+    "organisations": "Organisasi",
+    "teams": "Pasukan",
+    "players": "Pemain"
+  },
+  "tabs": {
+    "squad": "Skuad",
+    "tournaments": "Kejohanan",
+    "club": "Kelab"
+  }
+}

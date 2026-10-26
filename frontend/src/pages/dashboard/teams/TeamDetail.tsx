@@ -1,13 +1,15 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { RosterList } from '../../../components/RosterList';
 import { fetchTeamBySlug, fetchTeamById, fetchTeamStats, fetchTeamMatches, fetchTeamPlayers } from '../../../api/teams.api';
+import { getOrganisationById } from '@/api/organisations.api';
 import { removePlayersFromTeam } from '../../../api/playerTeams.api';
 import { usePlayersStore } from '../../../store/players.store';
-import { Users, Trophy, Target, CaretDown, CaretUp, MagnifyingGlass, Trash } from '@phosphor-icons/react';
+import { Users, Trophy, Target, CaretDown, CaretUp, MagnifyingGlass, Trash, ArrowSquareOut } from '@phosphor-icons/react';
 import { RecentActivityWidget } from '@/components/RecentActivityWidget';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
@@ -17,9 +19,12 @@ import { useAuthStore } from '../../../store/auth.store';
 import { BulkPasteRosterModal } from '@/components/modals/BulkPasteRosterModal';
 import ConfirmDeleteModal from '../../../components/modals/ConfirmDeleteModal';
 import { CompetitionFilterBar } from '@/components/common/CompetitionFilterBar';
+import { ProfileHero } from '@/components/profile/ProfileHero';
 
 interface TeamDetail {
     id: string;
+    slug?: string;
+    shortName?: string;
     name: string;
     category: string;
     ageGroup: string;
@@ -95,6 +100,13 @@ export default function TeamDetail() {
         if (!selectedTournamentId) return 'Global';
         return team?.tournaments?.find(t => t.id === selectedTournamentId)?.name || '';
     }, [selectedTournamentId, team?.tournaments]);
+
+    const { data: orgData } = useQuery({
+        queryKey: ['organisation', team?.organisationId],
+        queryFn: () => getOrganisationById(team!.organisationId),
+        enabled: Boolean(team?.organisationId),
+        staleTime: 5 * 60 * 1000,
+    });
 
     useEffect(() => {
         if (!slug) return;
@@ -232,29 +244,56 @@ export default function TeamDetail() {
 
     return (
         <div className="container mx-auto max-w-[1400px]">
-            {/* Header */}
+            {/* Profile Hero (compact admin header) */}
             <div className="mb-8">
-                <Breadcrumbs
-                    items={[
-                        { label: 'Teams', path: '/dashboard/teams' },
-                        { label: team.name }
+                <ProfileHero
+                    variant="team"
+                    size="compact"
+                    primary={orgData?.primaryColor}
+                    secondary={orgData?.secondaryColor}
+                    watermark={team.shortName || team.name.split(/\s+/).map(n => n.charAt(0)).slice(0, 3).join('').toUpperCase()}
+                    avatar={team.logoUrl ? getImageUrl(team.logoUrl) : null}
+                    initials={team.shortName || team.name.split(/\s+/).map(n => n.charAt(0)).slice(0, 3).join('').toUpperCase()}
+                    title={team.name}
+                    chips={[
+                        formatTeamCategory(team.category),
+                        formatAgeGroup(team.ageGroup),
+                        team.division,
+                        team.state,
+                    ].filter(Boolean) as string[]}
+                    subtitleLinks={
+                        team.organisationName
+                            ? [{ prefix: 'Organisation', label: team.organisationName }]
+                            : []
+                    }
+                    breadcrumbs={
+                        <Breadcrumbs
+                            items={[
+                                { label: 'Teams', path: '/dashboard/teams' },
+                                { label: team.name }
+                            ]}
+                            variant="on-dark"
+                            showMobileBack={true}
+                        />
+                    }
+                    actions={
+                        <a
+                            href={`/teams/${team.slug ?? team.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs border border-white/20 backdrop-blur-sm transition-colors"
+                        >
+                            <ArrowSquareOut className="w-3.5 h-3.5" />
+                            <span>View public page</span>
+                        </a>
+                    }
+                    stats={[
+                        { label: 'Squad', value: teamPlayers.length },
+                        { label: 'Appearances', value: stats?.matchesPlayed },
+                        { label: 'Wins', value: stats?.wins },
+                        { label: 'Tries scored', value: stats?.triesScored },
                     ]}
-                    className="mb-4"
                 />
-
-                {team.logoUrl && (
-                    <img
-                        src={getImageUrl(team.logoUrl)}
-                        alt={`${team.name} logo`}
-                        className="w-20 h-20 mb-4 object-contain"
-                    />
-                )}
-                <h1 className="text-4xl font-bold text-foreground mb-2">
-                    {team.name}
-                </h1>
-                <p className="text-muted-foreground">
-                    {formatTeamCategory(team.category)} • {formatAgeGroup(team.ageGroup)} • {team.division} • {team.state}
-                </p>
             </div>
 
             {/* Desktop 2-column layout, Mobile stacked */}
