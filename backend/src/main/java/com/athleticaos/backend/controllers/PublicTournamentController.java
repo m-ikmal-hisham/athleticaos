@@ -13,6 +13,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -222,6 +223,15 @@ public class PublicTournamentController {
                                     .role(e.getRole() != null ? e.getRole().name() : "STARTER")
                                     .orderIndex(e.getOrderIndex())
                                     .positionDisplay(e.getPositionDisplay())
+                                    .played(e.isPlayed())
+                                    .substitutions(e.getSubstitutions() != null ? e.getSubstitutions().stream()
+                                            .map(s -> PublicMatchLineupsResponse.PublicSubstitutionEntry.builder()
+                                                    .minute(s.getMinute())
+                                                    .direction(s.getDirection())
+                                                    .otherPlayerName(s.getOtherPlayerName())
+                                                    .otherJerseyNumber(s.getOtherJerseyNumber())
+                                                    .build())
+                                            .collect(Collectors.toList()) : Collections.emptyList())
                                     .build())
                             .collect(Collectors.toList()))
                     .awayLineup(awayEntries.stream()
@@ -232,6 +242,15 @@ public class PublicTournamentController {
                                     .role(e.getRole() != null ? e.getRole().name() : "STARTER")
                                     .orderIndex(e.getOrderIndex())
                                     .positionDisplay(e.getPositionDisplay())
+                                    .played(e.isPlayed())
+                                    .substitutions(e.getSubstitutions() != null ? e.getSubstitutions().stream()
+                                            .map(s -> PublicMatchLineupsResponse.PublicSubstitutionEntry.builder()
+                                                    .minute(s.getMinute())
+                                                    .direction(s.getDirection())
+                                                    .otherPlayerName(s.getOtherPlayerName())
+                                                    .otherJerseyNumber(s.getOtherJerseyNumber())
+                                                    .build())
+                                            .collect(Collectors.toList()) : Collections.emptyList())
                                     .build())
                             .collect(Collectors.toList()))
                     .build();

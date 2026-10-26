@@ -638,6 +638,14 @@ export enum LineupRole {
     NOT_SELECTED = 'NOT_SELECTED'
 }
 
+export interface MatchLineupSubstitution {
+    minute: number;
+    direction: 'OFF' | 'ON';
+    otherPlayerId?: string;
+    otherPlayerName?: string;
+    otherJerseyNumber?: number;
+}
+
 export interface MatchLineupEntry {
     playerId: string;
     playerName: string;
@@ -647,6 +655,8 @@ export interface MatchLineupEntry {
     orderIndex?: number;
     isStarter?: boolean;
     positionDisplay?: string;
+    played?: boolean;
+    substitutions?: MatchLineupSubstitution[];
 }
 
 export interface MatchRenumberRequest {

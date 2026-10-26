@@ -12,6 +12,12 @@ public interface MatchEventRepository extends JpaRepository<MatchEvent, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e LEFT JOIN FETCH e.team LEFT JOIN FETCH e.player p LEFT JOIN FETCH p.person WHERE e.match.id = :matchId")
         List<MatchEvent> findByMatchId(@org.springframework.data.repository.query.Param("matchId") UUID matchId);
 
+        @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e LEFT JOIN FETCH e.team LEFT JOIN FETCH e.player p LEFT JOIN FETCH p.person LEFT JOIN FETCH e.relatedPlayer rp LEFT JOIN FETCH rp.person WHERE e.match.id = :matchId AND e.team.id = :teamId AND e.eventType = :eventType")
+        List<MatchEvent> findByMatchIdAndTeamIdAndEventType(
+                @org.springframework.data.repository.query.Param("matchId") UUID matchId,
+                @org.springframework.data.repository.query.Param("teamId") UUID teamId,
+                @org.springframework.data.repository.query.Param("eventType") com.athleticaos.backend.enums.MatchEventType eventType);
+
         @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e WHERE e.match.tournament.id = :tournamentId AND e.match.deleted = false")
         List<MatchEvent> findByMatch_Tournament_Id(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 

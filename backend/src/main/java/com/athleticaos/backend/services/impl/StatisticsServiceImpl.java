@@ -550,47 +550,13 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 }
                                         }
 
-                                        // Determine original starting state from events, not from
-                                        // (potentially mutated) lineup role.
-                                        // If ANY substitution event has this player as relatedPlayer
-                                        // (i.e. they were subbed IN), they originally started on bench.
-                                        boolean wasSubbedIn = allMatchEvents.stream()
-                                                        .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
-                                                                        && e.getRelatedPlayer() != null
-                                                                        && e.getRelatedPlayer().getId()
-                                                                                        .equals(playerId));
-
-                                        // If the player was subbed in, their original role was BENCH
-                                        // If they were NOT subbed in and are in the lineup, they were a
-                                        // STARTER
-                                        // (unless they're bench and never entered = DNP)
-                                        boolean wasOriginallyStarter;
-                                        if (wasSubbedIn) {
-                                                wasOriginallyStarter = false; // They came off the bench
-                                        } else {
-                                                // Check if they were subbed OUT (meaning they were a
-                                                // starter who got replaced)
-                                                boolean wasSubbedOut = allMatchEvents.stream()
-                                                                .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
-                                                                                && e.getPlayer() != null
-                                                                                && e.getPlayer().getId()
-                                                                                                .equals(playerId));
-                                                if (wasSubbedOut) {
-                                                        wasOriginallyStarter = true; // Started and got subbed
-                                                                                     // out
-                                                } else {
-                                                        // No substitution events involving this player at all
-                                                        // Use lineup role but prefer original intention:
-                                                        // STARTER = played full match, BENCH = DNP
-                                                        wasOriginallyStarter = lineup
-                                                                        .getRole() == com.athleticaos.backend.enums.LineupRole.STARTER
-                                                                        || lineup.isStarter();
-                                                }
-                                        }
-
-                                        com.athleticaos.backend.enums.LineupRole effectiveRole = wasOriginallyStarter
-                                                        ? com.athleticaos.backend.enums.LineupRole.STARTER
-                                                        : com.athleticaos.backend.enums.LineupRole.BENCH;
+                                        // Original role comes directly from the lineup (restored by V171)
+                                        com.athleticaos.backend.enums.LineupRole effectiveRole = lineup.getRole() != null
+                                                        ? lineup.getRole()
+                                                        : (lineup.isStarter()
+                                                                        ? com.athleticaos.backend.enums.LineupRole.STARTER
+                                                                        : com.athleticaos.backend.enums.LineupRole.BENCH);
+                                        boolean wasOriginallyStarter = effectiveRole == com.athleticaos.backend.enums.LineupRole.STARTER;
 
                                         int minutesPlayedVal = calculateMinutesPlayed(match, playerId,
                                                         effectiveRole, allMatchEvents, duration);
@@ -793,33 +759,13 @@ public class StatisticsServiceImpl implements StatisticsService {
                                                 }
                                         }
 
-                                        boolean wasSubbedIn = allMatchEvents.stream()
-                                                        .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
-                                                                        && e.getRelatedPlayer() != null
-                                                                        && e.getRelatedPlayer().getId()
-                                                                                        .equals(playerId));
-
-                                        boolean wasOriginallyStarter;
-                                        if (wasSubbedIn) {
-                                                wasOriginallyStarter = false;
-                                        } else {
-                                                boolean wasSubbedOut = allMatchEvents.stream()
-                                                                .anyMatch(e -> e.getEventType() == MatchEventType.SUBSTITUTION
-                                                                                && e.getPlayer() != null
-                                                                                && e.getPlayer().getId()
-                                                                                                .equals(playerId));
-                                                if (wasSubbedOut) {
-                                                        wasOriginallyStarter = true;
-                                                } else {
-                                                        wasOriginallyStarter = lineup
-                                                                        .getRole() == com.athleticaos.backend.enums.LineupRole.STARTER
-                                                                        || lineup.isStarter();
-                                                }
-                                        }
-
-                                        com.athleticaos.backend.enums.LineupRole effectiveRole = wasOriginallyStarter
-                                                        ? com.athleticaos.backend.enums.LineupRole.STARTER
-                                                        : com.athleticaos.backend.enums.LineupRole.BENCH;
+                                        // Original role comes directly from the lineup (restored by V171)
+                                        com.athleticaos.backend.enums.LineupRole effectiveRole = lineup.getRole() != null
+                                                        ? lineup.getRole()
+                                                        : (lineup.isStarter()
+                                                                        ? com.athleticaos.backend.enums.LineupRole.STARTER
+                                                                        : com.athleticaos.backend.enums.LineupRole.BENCH);
+                                        boolean wasOriginallyStarter = effectiveRole == com.athleticaos.backend.enums.LineupRole.STARTER;
 
                                         int minutesPlayedVal = calculateMinutesPlayed(match, playerId,
                                                         effectiveRole, allMatchEvents, duration);

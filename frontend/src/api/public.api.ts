@@ -299,6 +299,13 @@ export const publicMatchApi = {
     },
 };
 
+export interface PublicSubstitutionEntry {
+    minute: number;
+    direction: 'OFF' | 'ON';
+    otherPlayerName?: string;
+    otherJerseyNumber?: number;
+}
+
 export interface PublicLineupEntry {
     playerName: string;
     jerseyNumber?: number;
@@ -306,6 +313,8 @@ export interface PublicLineupEntry {
     role: string; // 'STARTER' | 'BENCH' | 'RESERVE'
     orderIndex?: number;
     positionDisplay?: string;
+    played?: boolean;
+    substitutions?: PublicSubstitutionEntry[];
 }
 
 export interface PublicMatchLineups {
