@@ -1,10 +1,8 @@
-import React, { useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     CaretRight,
     CaretDown,
-    MapPin,
     Trophy,
     Shield,
     TreeStructure,
@@ -12,32 +10,12 @@ import {
     Info,
     Calendar,
 } from '@phosphor-icons/react';
-import { clsx } from 'clsx';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/Button';
 import { usePublicOrganisation } from '@/hooks/public';
 import { PublicOrganisationChildRef, PublicOrganisationTreeTeam } from '@/api/public.api';
-
-function getContrastTextColor(hex: string | null | undefined): string {
-    if (!hex) return '#FFFFFF';
-    const cleanHex = hex.replace('#', '');
-    if (cleanHex.length !== 6 && cleanHex.length !== 3) return '#FFFFFF';
-
-    let r: number, g: number, b: number;
-    if (cleanHex.length === 3) {
-        r = parseInt(cleanHex[0] + cleanHex[0], 16);
-        g = parseInt(cleanHex[1] + cleanHex[1], 16);
-        b = parseInt(cleanHex[2] + cleanHex[2], 16);
-    } else {
-        r = parseInt(cleanHex.substring(0, 2), 16);
-        g = parseInt(cleanHex.substring(2, 4), 16);
-        b = parseInt(cleanHex.substring(4, 6), 16);
-    }
-
-    // Relative luminance
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 128 ? '#0D1B2A' : '#FFFFFF';
-}
+import { ProfileHero } from '@/components/profile';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 function getInitials(name: string): string {
     const words = name.trim().split(/\s+/);
@@ -54,7 +32,6 @@ export function OrganisationDetail() {
 
     const primaryColor = org?.primaryColor || '#0047AB';
     const secondaryColor = org?.secondaryColor || '#C1121F';
-    const levelTextColor = useMemo(() => getContrastTextColor(primaryColor), [primaryColor]);
 
     if (isLoading) {
         return (
@@ -100,158 +77,66 @@ export function OrganisationDetail() {
     // Breadcrumb chain in display order: [topParent, ..., immediateParent, current]
     const breadcrumbChain = org.parentChain ? [...org.parentChain].reverse() : [];
 
+    const breadcrumbItems = [
+        { label: t('organisations:title'), path: '/organisations' },
+        ...breadcrumbChain.map((ancestor) => ({
+            label: ancestor.name,
+            path: `/organisations/${ancestor.slug || ancestor.id}`,
+        })),
+        { label: org.name },
+    ];
+
+    const chips = [
+        { label: t(`organisations:levels.${org.level}`, org.level), variant: 'primary' as const },
+        ...(org.state ? [{ label: org.state }] : []),
+    ];
+
+    const subtitleLinks = immediateParent
+        ? [
+            {
+                prefix: t('organisations:detail.affiliatedTo', { name: '' }).trim(),
+                label: immediateParent.name,
+                to: `/organisations/${immediateParent.slug || immediateParent.id}`,
+            },
+        ]
+        : [];
+
+    const stats = [
+        { label: t('organisations:detail.stats.affiliatedOrgs'), value: org.counts.affiliatedOrganisations },
+        { label: t('organisations:detail.stats.teams'), value: org.counts.teams },
+        { label: t('organisations:detail.stats.players'), value: org.counts.players },
+        { label: t('organisations:detail.stats.tournaments'), value: org.counts.tournaments },
+    ];
+
     return (
         <div className="min-h-screen bg-surface-page pb-16">
-            {/* Breadcrumb row */}
-            <div className="bg-surface-card border-b border-line-subtle">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-content-secondary flex-wrap">
-                        <Link to="/organisations" className="hover:text-content-primary transition-colors">
-                            {t('organisations:title')}
-                        </Link>
-                        {breadcrumbChain.map((ancestor) => (
-                            <React.Fragment key={ancestor.id}>
-                                <CaretRight size={12} className="text-content-secondary shrink-0" />
-                                <Link
-                                    to={`/organisations/${ancestor.slug || ancestor.id}`}
-                                    className="hover:text-content-primary transition-colors truncate max-w-[150px]"
-                                >
-                                    {ancestor.name}
-                                </Link>
-                            </React.Fragment>
-                        ))}
-                        <CaretRight size={12} className="text-content-secondary shrink-0" />
-                        <span className="font-semibold text-content-primary truncate max-w-[200px]" aria-current="page">
-                            {org.name}
-                        </span>
-                    </nav>
-                </div>
-            </div>
-
-            {/* Hero Header with Diagonal Brand Bands */}
-            <div className="relative overflow-hidden bg-deep-navy text-white pt-10 pb-8 sm:pt-14 sm:pb-12 border-b border-line-subtle">
-                {/* Diagonal Brand Stripes */}
-                <div
-                    aria-hidden="true"
-                    className="absolute inset-0 pointer-events-none opacity-25 overflow-hidden"
-                >
-                    <div
-                        className="absolute -top-32 -right-24 w-96 h-[600px] -rotate-45"
-                        style={{
-                            background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                        }}
-                    />
-                    <div
-                        className="absolute top-1/4 -right-12 w-32 h-[400px] -rotate-45 opacity-60"
-                        style={{ backgroundColor: secondaryColor }}
-                    />
-                </div>
-
-                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
-                        {/* Round Logo Tile with Primary Colour Ring */}
-                        <div
-                            className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-surface-card shrink-0 flex items-center justify-center p-2 shadow-xl overflow-hidden"
-                            style={{ boxShadow: `0 0 0 4px ${primaryColor}` }}
-                        >
-                            {org.logoUrl ? (
-                                <img
-                                    src={org.logoUrl}
-                                    alt={org.name}
-                                    className="w-full h-full object-contain"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                    }}
-                                />
-                            ) : null}
-                            <div className={clsx('w-full h-full rounded-full flex items-center justify-center font-bold text-2xl text-deep-navy', org.logoUrl ? 'hidden' : '')}>
-                                {getInitials(org.name)}
-                            </div>
-                        </div>
-
-                        {/* Org Information */}
-                        <div className="flex-1 space-y-2">
-                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                {/* Level Pill with Primary Colour */}
-                                <span
-                                    className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-xs"
-                                    style={{
-                                        backgroundColor: primaryColor,
-                                        color: levelTextColor,
-                                    }}
-                                >
-                                    {t(`organisations:levels.${org.level}`, org.level)}
-                                </span>
-
-                                {/* State Pill */}
-                                {org.state && (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/20">
-                                        <MapPin size={12} weight="fill" />
-                                        <span>{org.state}</span>
-                                    </span>
-                                )}
-                            </div>
-
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
-                                {org.name}
-                            </h1>
-
-                            {/* "Affiliated to <parent>" */}
-                            {immediateParent && (
-                                <p className="text-sm text-white/80">
-                                    {t('organisations:detail.affiliatedTo', { name: '' })}
-                                    <Link
-                                        to={`/organisations/${immediateParent.slug || immediateParent.id}`}
-                                        className="font-semibold text-white underline hover:text-white/80 transition-colors ml-1"
-                                    >
-                                        {immediateParent.name}
-                                    </Link>
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Stats Strip */}
-                    <div className="mt-8 pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center sm:text-left">
-                        <div className="space-y-0.5">
-                            <div className="text-2xl sm:text-3xl font-black text-white">
-                                {org.counts.affiliatedOrganisations}
-                            </div>
-                            <div className="text-xs text-white/70">
-                                {t('organisations:detail.stats.affiliatedOrgs')}
-                            </div>
-                        </div>
-                        <div className="space-y-0.5">
-                            <div className="text-2xl sm:text-3xl font-black text-white">
-                                {org.counts.teams}
-                            </div>
-                            <div className="text-xs text-white/70">
-                                {t('organisations:detail.stats.teams')}
-                            </div>
-                        </div>
-                        <div className="space-y-0.5">
-                            <div className="text-2xl sm:text-3xl font-black text-white">
-                                {org.counts.players}
-                            </div>
-                            <div className="text-xs text-white/70">
-                                {t('organisations:detail.stats.players')}
-                            </div>
-                        </div>
-                        <div className="space-y-0.5">
-                            <div className="text-2xl sm:text-3xl font-black text-white">
-                                {org.counts.tournaments}
-                            </div>
-                            <div className="text-xs text-white/70">
-                                {t('organisations:detail.stats.tournaments')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {/* Profile Hero with variant="organisation" */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 mb-8">
+                <ProfileHero
+                    variant="organisation"
+                    size="public"
+                    primary={primaryColor}
+                    secondary={secondaryColor}
+                    watermark={getInitials(org.name)}
+                    avatar={org.logoUrl}
+                    initials={getInitials(org.name)}
+                    ringColour={primaryColor}
+                    chips={chips}
+                    title={org.name}
+                    subtitleLinks={subtitleLinks}
+                    breadcrumbs={
+                        <Breadcrumbs
+                            items={breadcrumbItems}
+                            variant="on-dark"
+                            showMobileBack={false}
+                        />
+                    }
+                    stats={stats}
+                />
             </div>
 
             {/* Main Content Layout */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     {/* Main Column: Affiliated organisations + Teams */}
                     <div className="lg:col-span-2 space-y-8">

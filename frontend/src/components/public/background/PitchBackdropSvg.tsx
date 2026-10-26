@@ -13,7 +13,6 @@ import clsx from 'clsx';
 
 export interface PitchBackdropSvgProps {
     preset?: BgCameraPreset;
-    isAuthPanel?: boolean;
     visible?: boolean;
     /** Static routes behind long text/forms: much fainter backdrop */
     quiet?: boolean;
@@ -38,7 +37,6 @@ function pointsToSvgPath(
 
 export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
     preset,
-    isAuthPanel = false,
     visible = true,
     quiet = false,
     className,
@@ -57,14 +55,12 @@ export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
         return () => mql.removeEventListener('change', handler);
     }, []);
 
-    // Determine preset based on prop, auth panel, or breakpoint
+    // Determine preset based on prop or breakpoint
     const activePreset: BgCameraPreset = preset
         ? preset
-        : isAuthPanel
-          ? 'authPanel'
-          : isDesktop
-            ? 'bgStadiumSideline'
-            : 'bgStadiumEnd';
+        : isDesktop
+          ? 'bgStadiumSideline'
+          : 'bgStadiumEnd';
 
     const camParam = BG_CAMERA_PRESETS[activePreset];
     const lines = useMemo(() => getPitchMarkingLines(), []);
@@ -122,7 +118,6 @@ export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
 
     // Project Stadium outlines (track ring, lower/upper tiers, roof ring)
     const stadiumPaths = useMemo(() => {
-        if (isAuthPanel) return null;
         return {
             trackInner: pointsToSvgPath(stadiumOutlines.trackInner, activePreset, true),
             trackOuter: pointsToSvgPath(stadiumOutlines.trackOuter, activePreset, true),
@@ -132,15 +127,13 @@ export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
             roofOuter: pointsToSvgPath(stadiumOutlines.roofOuter, activePreset, true),
             roofInner: pointsToSvgPath(stadiumOutlines.roofInner, activePreset, true),
         };
-    }, [stadiumOutlines, activePreset, isAuthPanel]);
+    }, [stadiumOutlines, activePreset]);
 
     // Opacity classes based on budget:
-    // Markings: ~22% light / ~30% dark; Auth panel: ~35%
-    const baseOpacityClass = isAuthPanel
-        ? 'opacity-[0.32] dark:opacity-[0.38]'
-        : quiet
-          ? 'opacity-[0.08] dark:opacity-[0.12]'
-          : 'opacity-[0.22] dark:opacity-[0.30]';
+    // Markings: ~22% light / ~30% dark
+    const baseOpacityClass = quiet
+        ? 'opacity-[0.08] dark:opacity-[0.12]'
+        : 'opacity-[0.22] dark:opacity-[0.30]';
 
     return (
         <svg

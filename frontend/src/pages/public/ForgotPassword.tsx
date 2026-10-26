@@ -9,7 +9,6 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { authApi } from '@/api/auth.api';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
-import { AuthPanelBackground } from '@/components/auth/AuthPanelBackground';
 
 const forgotPasswordSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -53,8 +52,8 @@ export const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex bg-surface-page">
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-surface-page relative z-10">
+        <div className="min-h-screen w-full flex">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 relative z-10">
                 <div className="w-full max-w-sm space-y-8">
                     {/* Header */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -151,7 +150,7 @@ export const ForgotPassword = () => {
             </div>
 
             {/* Right Side graphic */}
-            <AuthPanelBackground />
+            <div className="hidden lg:flex flex-1 relative items-center justify-center p-12 bg-transparent" />
         </div>
     );
 };

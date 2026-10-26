@@ -10,9 +10,16 @@ export interface BreadcrumbItem {
 interface BreadcrumbsProps {
     items: BreadcrumbItem[];
     className?: string;
+    variant?: 'default' | 'on-dark';
+    showMobileBack?: boolean;
 }
 
-export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
+export const Breadcrumbs = ({
+    items,
+    className,
+    variant = 'default',
+    showMobileBack = true,
+}: BreadcrumbsProps) => {
     const location = useLocation();
     const isDashboard = location.pathname.startsWith('/dashboard');
     const homePath = isDashboard ? '/dashboard' : '/';
@@ -26,25 +33,39 @@ export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
     const backPath = parentItem?.path || homePath;
     const backLabel = parentItem?.label || 'Home';
 
+    const isOnDark = variant === 'on-dark';
+
     return (
         <nav aria-label="Breadcrumb" className={cn("w-full", className)}>
-            {/* Mobile View: Simple Back Link */}
-            <div className="flex md:hidden">
-                <Link
-                    to={backPath}
-                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>{backLabel}</span>
-                </Link>
-            </div>
+            {/* Mobile View: Simple Back Link (Admin only below lg; Public uses PublicLayout Back row) */}
+            {showMobileBack && (
+                <div className="flex lg:hidden">
+                    <Link
+                        to={backPath}
+                        className={cn(
+                            "flex items-center gap-2 text-sm font-medium transition-colors",
+                            isOnDark
+                                ? "text-white/80 hover:text-white"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>{backLabel}</span>
+                    </Link>
+                </div>
+            )}
 
-            {/* Desktop View: Full Breadcrumbs */}
-            <ol className="hidden md:flex items-center space-x-2">
+            {/* Desktop View (lg up): Full Breadcrumbs */}
+            <ol className="hidden lg:flex items-center space-x-2">
                 <li>
                     <Link
                         to={homePath}
-                        className="text-muted-foreground hover:text-foreground transition-colors flex items-center"
+                        className={cn(
+                            "transition-colors flex items-center",
+                            isOnDark
+                                ? "text-white/75 hover:text-white"
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
                     >
                         <House className="w-4 h-4" />
                     </Link>
@@ -55,15 +76,30 @@ export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
 
                     return (
                         <li key={index} className="flex items-center space-x-2">
-                            <CaretRight className="w-4 h-4 text-muted-foreground/50" />
+                            <CaretRight
+                                className={cn(
+                                    "w-4 h-4",
+                                    isOnDark ? "text-white/40" : "text-muted-foreground/50"
+                                )}
+                            />
                             {isLast ? (
-                                <span className="text-sm font-medium text-foreground">
+                                <span
+                                    className={cn(
+                                        "text-sm font-semibold",
+                                        isOnDark ? "text-white" : "text-foreground font-medium"
+                                    )}
+                                >
                                     {item.label}
                                 </span>
                             ) : (
                                 <Link
                                     to={item.path || '#'}
-                                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                    className={cn(
+                                        "text-sm transition-colors",
+                                        isOnDark
+                                            ? "text-white/75 hover:text-white underline-offset-2 hover:underline decoration-white/40"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    )}
                                 >
                                     {item.label}
                                 </Link>

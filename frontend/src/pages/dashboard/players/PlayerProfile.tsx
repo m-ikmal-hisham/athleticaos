@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/Button';
 import { GlassCard } from '@/components/GlassCard';
-import { PageHeader } from '@/components/PageHeader';
-import { ArrowLeft, Target, TrendUp, Medal, Trash, PencilSimple } from '@phosphor-icons/react';
+import { Target, TrendUp, Medal, Trash, PencilSimple, ArrowSquareOut } from '@phosphor-icons/react';
 import { fetchPlayerById, fetchPlayerStats, deletePlayer } from '@/api/players.api';
+import { getOrganisationById } from '@/api/organisations.api';
 import { useAuthStore } from '@/store/auth.store';
 import { calculateAge } from '@/utils/date';
 import { showToast } from '@/lib/customToast';
 import { getImageUrl } from '@/utils/image';
 import { formatGender } from '@/utils/formatters';
 import { CompetitionFilterBar, TournamentFilterOption } from '@/components/common/CompetitionFilterBar';
+import { ProfileHero, PositionPitch, getUnitCategory } from '@/components/profile';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 interface PlayerStats {
     matchesPlayed: number;
@@ -41,11 +44,13 @@ interface PlayerStats {
 
 interface PlayerDetail {
     id: string;
+    slug?: string;
     firstName: string;
     lastName: string;
     email: string;
     status: string;
     role: string;
+    organisationId?: string;
     organisationName?: string;
     teamNames?: string[];
     position?: string;
@@ -79,6 +84,13 @@ export const PlayerProfile = () => {
         const param = searchParams.get('tournamentId');
         setSelectedTournamentId(param || null);
     }, [searchParams]);
+
+    const { data: orgData } = useQuery({
+        queryKey: ['organisation', player?.organisationId],
+        queryFn: () => getOrganisationById(player!.organisationId!),
+        enabled: Boolean(player?.organisationId),
+        staleTime: 5 * 60 * 1000,
+    });
 
     const handleTournamentSelect = (tournamentId: string | null) => {
         setSelectedTournamentId(tournamentId);
@@ -165,31 +177,83 @@ export const PlayerProfile = () => {
 
     const dobValue = player.dob || player.dateOfBirth;
 
+    const positionUnit = player.position ? getUnitCategory(player.position, player.jerseyNumber) : null;
+    const positionLabel = player.position
+        ? (positionUnit ? `${player.position.toUpperCase()} · ${positionUnit}` : player.position.toUpperCase())
+        : null;
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/players')}>
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <PageHeader
-                        title={`${player.firstName} ${player.lastName}`}
-                        description="Player Profile & Stats"
+            {/* Profile Hero (compact admin header) */}
+            <ProfileHero
+                variant="player"
+                size="compact"
+                primary={orgData?.primaryColor}
+                secondary={orgData?.secondaryColor}
+                watermark={player.jerseyNumber ? String(player.jerseyNumber) : undefined}
+                avatar={player.photoUrl ? getImageUrl(player.photoUrl) : null}
+                initials={getInitials(player.firstName, player.lastName)}
+                badgeText={player.jerseyNumber}
+                title={`${player.firstName} ${player.lastName}`}
+                chips={[positionLabel, player.status || 'ACTIVE'].filter(Boolean) as string[]}
+                subtitleLinks={[
+                    player.organisationName
+                        ? { prefix: 'Organisation', label: player.organisationName }
+                        : null,
+                    player.teamNames && player.teamNames.length > 0
+                        ? { prefix: 'Team', label: player.teamNames[0] }
+                        : null,
+                ].filter(Boolean) as any}
+                breadcrumbs={
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Players', path: '/dashboard/players' },
+                            { label: `${player.firstName} ${player.lastName}` }
+                        ]}
+                        variant="on-dark"
+                        showMobileBack={true}
                     />
-                </div>
-                {isAdmin && (
-                    <div className="flex gap-2">
-                        <Button onClick={() => navigate(`/dashboard/players/${id}/edit`)}>
-                            <PencilSimple className="w-4 h-4 mr-2" />
-                            Edit Profile
-                        </Button>
-                        <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
-                            <Trash className="w-4 h-4 mr-2" />
-                            Delete
-                        </Button>
-                    </div>
-                )}
-            </div>
+                }
+                aside={
+                    <PositionPitch
+                        position={player.position}
+                        jerseyNumber={player.jerseyNumber}
+                        primaryColour={orgData?.primaryColor || undefined}
+                        secondaryColour={orgData?.secondaryColor || undefined}
+                    />
+                }
+                actions={
+                    <>
+                        <a
+                            href={`/players/${player.slug ?? player.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs border border-white/20 backdrop-blur-sm transition-colors"
+                        >
+                            <ArrowSquareOut className="w-3.5 h-3.5" />
+                            <span>View public page</span>
+                        </a>
+                        {isAdmin && (
+                            <>
+                                <Button size="sm" onClick={() => navigate(`/dashboard/players/${id}/edit`)}>
+                                    <PencilSimple className="w-4 h-4 mr-1.5" />
+                                    Edit Profile
+                                </Button>
+                                <Button size="sm" variant="danger" onClick={() => setShowDeleteConfirm(true)}>
+                                    <Trash className="w-4 h-4 mr-1.5" />
+                                    Delete
+                                </Button>
+                            </>
+                        )}
+                    </>
+                }
+                stats={[
+                    { label: 'Appearances', value: stats?.matchesPlayed },
+                    { label: 'Points', value: stats?.totalPoints },
+                    { label: 'Tries', value: stats?.tries },
+                    { label: 'Minutes', value: stats?.totalMinutesPlayed },
+                ]}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Profile Card */}

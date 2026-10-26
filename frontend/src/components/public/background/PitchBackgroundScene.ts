@@ -22,7 +22,6 @@ export interface PitchBackgroundController {
 
 export interface MountPitchBackgroundOptions {
     container: HTMLElement;
-    isAuthPanel?: boolean;
     onReady?: () => void;
     onContextLost?: () => void;
 }
@@ -59,17 +58,16 @@ function checkIsSettleDevice(): boolean {
 export function mountPitchBackgroundScene(
     options: MountPitchBackgroundOptions
 ): PitchBackgroundController {
-    const { container, isAuthPanel = false, onReady, onContextLost } = options;
+    const { container, onReady, onContextLost } = options;
 
     let isDisposed = false;
     let isCalmRoute = true;
     let hasRenderedFirstFrame = false;
 
-    let currentPreset: BgCameraPreset = isAuthPanel
-        ? 'authPanel'
-        : window.innerWidth >= 1024
-          ? 'bgStadiumSideline'
-          : 'bgStadiumEnd';
+    let currentPreset: BgCameraPreset =
+        window.innerWidth >= 1024
+            ? 'bgStadiumSideline'
+            : 'bgStadiumEnd';
 
     // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
@@ -104,12 +102,8 @@ export function mountPitchBackgroundScene(
 
     let themeColors = readThemeColors();
 
-    const markingsOpacity = isAuthPanel
-        ? 0.35
-        : themeColors.isDark ? 0.30 : 0.22;
-    const tryLineOpacity = isAuthPanel
-        ? 0.45
-        : themeColors.isDark ? 0.38 : 0.28;
+    const markingsOpacity = themeColors.isDark ? 0.30 : 0.22;
+    const tryLineOpacity = themeColors.isDark ? 0.38 : 0.28;
 
     for (const line of lines) {
         const dx = line.x2 - line.x1;
@@ -201,9 +195,7 @@ export function mountPitchBackgroundScene(
     const markingsMesh = new THREE.Points(markingsGeom, markingsMaterial);
     scene.add(markingsMesh);
 
-    // 3. Dense interactive grass (~16,000 short blades, owner 25 Oct: denser, shorter, finer like real turf)
-    // Blades are 0.45-0.75 m tall with a slight random lean; tips bend up to ~0.6 m in the wake.
-    const grassBladeCount = isAuthPanel ? 6000 : 16000;
+    const grassBladeCount = 16000;
     const grassPositions = new Float32Array(grassBladeCount * 2 * 3);
     const grassIsTip = new Float32Array(grassBladeCount * 2);
     const grassBladeSeed = new Float32Array(grassBladeCount * 2);
@@ -445,9 +437,7 @@ export function mountPitchBackgroundScene(
     let stadiumPointsMat: THREE.ShaderMaterial | null = null;
     let stadiumRoofGeom: THREE.BufferGeometry | null = null;
     let stadiumRoofMat: THREE.ShaderMaterial | null = null;
-
-    if (!isAuthPanel) {
-        const stadiumData = buildStadiumGeometry();
+    const stadiumData = buildStadiumGeometry();
 
         // Draw Call 1: LineSegments (track lanes, bowl tier rims, vomitory stairs, roof compression/tension rims, radial cables)
         stadiumLinesGeom = new THREE.BufferGeometry();
@@ -605,7 +595,6 @@ export function mountPitchBackgroundScene(
         });
         stadiumRoofMesh = new THREE.Mesh(stadiumRoofGeom, stadiumRoofMat);
         scene.add(stadiumRoofMesh);
-    }
 
     // 6. 3D Rugby Ball & Arc Kick (~1.2m long, 3x life size)
     const ballGeom = new THREE.SphereGeometry(0.32, 16, 12);
@@ -781,7 +770,7 @@ export function mountPitchBackgroundScene(
 
     function onClick(e: MouseEvent) {
         onUserActivity();
-        if (isAuthPanel || !isCalmRoute) return;
+        if (!isCalmRoute) return;
         const isFine = window.matchMedia('(pointer: fine)').matches;
         if (!isFine) return;
 
@@ -849,12 +838,8 @@ export function mountPitchBackgroundScene(
         const colors = markColAttr.array as Float32Array;
         const alphas = markAlphaAttr.array as Float32Array;
 
-        const curMarkingsOpacity = isAuthPanel
-            ? 0.35
-            : themeColors.isDark ? 0.30 : 0.22;
-        const curTryLineOpacity = isAuthPanel
-            ? 0.45
-            : themeColors.isDark ? 0.38 : 0.28;
+        const curMarkingsOpacity = themeColors.isDark ? 0.30 : 0.22;
+        const curTryLineOpacity = themeColors.isDark ? 0.38 : 0.28;
 
         for (let i = 0; i < markingsTypes.length; i++) {
             const isTry = markingsTypes[i] === 1;
@@ -1060,11 +1045,10 @@ export function mountPitchBackgroundScene(
     function handleResize(width: number, height: number) {
         if (isDisposed || width <= 0 || height <= 0) return;
 
-        const nextPreset: BgCameraPreset = isAuthPanel
-            ? 'authPanel'
-            : width >= 1024
-              ? 'bgStadiumSideline'
-              : 'bgStadiumEnd';
+        const nextPreset: BgCameraPreset =
+            width >= 1024
+                ? 'bgStadiumSideline'
+                : 'bgStadiumEnd';
 
         if (nextPreset !== currentPreset) {
             currentPreset = nextPreset;

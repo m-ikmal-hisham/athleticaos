@@ -6,13 +6,11 @@ import clsx from 'clsx';
 
 export interface PitchBackgroundCanvasProps {
     onSceneReadyChange?: (isReady: boolean) => void;
-    isAuthPanel?: boolean;
     className?: string;
 }
 
 export const PitchBackgroundCanvas: React.FC<PitchBackgroundCanvasProps> = ({
     onSceneReadyChange,
-    isAuthPanel = false,
     className,
 }) => {
     const location = useLocation();
@@ -22,9 +20,7 @@ export const PitchBackgroundCanvas: React.FC<PitchBackgroundCanvasProps> = ({
     const [isSceneReady, setIsSceneReady] = useState(false);
     const [hasVisitedCalmRoute, setHasVisitedCalmRoute] = useState(false);
 
-    const currentRouteType: RouteBackgroundType = isAuthPanel
-        ? 'calm'
-        : getRouteBackgroundType(location.pathname);
+    const currentRouteType: RouteBackgroundType = getRouteBackgroundType(location.pathname);
 
     // Track if user has visited a calm route (don't load Three.js if initial route is static)
     useEffect(() => {
@@ -43,7 +39,6 @@ export const PitchBackgroundCanvas: React.FC<PitchBackgroundCanvasProps> = ({
 
                 controllerRef.current = mountPitchBackgroundScene({
                     container: containerRef.current,
-                    isAuthPanel,
                     onReady: () => {
                         setIsSceneReady(true);
                         onSceneReadyChange?.(true);
@@ -63,7 +58,7 @@ export const PitchBackgroundCanvas: React.FC<PitchBackgroundCanvasProps> = ({
                     console.warn('[PitchBackgroundCanvas] Failed to load background scene:', err);
                 }
             });
-    }, [isAuthPanel, onSceneReadyChange]);
+    }, [onSceneReadyChange]);
 
     const disposeScene = useCallback(() => {
         if (controllerRef.current) {
