@@ -137,6 +137,7 @@ export const PitchBackdropSvg: React.FC<PitchBackdropSvgProps> = ({
 
     return (
         <svg
+            id="pitch-backdrop-svg"
             viewBox={camParam.viewBox}
             preserveAspectRatio="xMidYMid slice"
             style={{

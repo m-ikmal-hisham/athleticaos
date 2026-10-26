@@ -42,6 +42,11 @@ export const PitchBackgroundCanvas: React.FC<PitchBackgroundCanvasProps> = ({
                     onReady: () => {
                         setIsSceneReady(true);
                         onSceneReadyChange?.(true);
+                        const isJourneyNow = window.location.pathname === '/journey' || window.location.pathname.startsWith('/journey/');
+                        const routeTypeNow = getRouteBackgroundType(window.location.pathname);
+                        controllerRef.current?.setRouteMode(routeTypeNow === 'calm' ? 'calm' : 'static', {
+                            enableKick: !isJourneyNow,
+                        });
                     },
                     onContextLost: () => {
                         setIsSceneReady(false);
@@ -69,27 +74,25 @@ export const PitchBackgroundCanvas: React.FC<PitchBackgroundCanvasProps> = ({
         onSceneReadyChange?.(false);
     }, [onSceneReadyChange]);
 
-    // Mount / dispose based on route:
-    // On /journey: dispose the scene completely so journey's canvas is the only WebGL context
+    const isJourney = location.pathname === '/journey' || location.pathname.startsWith('/journey/');
+
+    // Mount / update mode based on route:
     // If not visited calm route yet: do not initialize Three.js
     useEffect(() => {
-        if (currentRouteType === 'journey') {
-            disposeScene();
-            return;
-        }
-
         if (hasVisitedCalmRoute) {
             if (!controllerRef.current) {
                 initScene();
             } else {
-                controllerRef.current.setRouteMode(currentRouteType === 'calm' ? 'calm' : 'static');
+                controllerRef.current.setRouteMode(currentRouteType === 'calm' ? 'calm' : 'static', {
+                    enableKick: !isJourney,
+                });
                 if (currentRouteType === 'calm') {
                     controllerRef.current.triggerSettleReplay();
                 }
                 controllerRef.current.updateQuietRect();
             }
         }
-    }, [currentRouteType, hasVisitedCalmRoute, initScene, disposeScene]);
+    }, [currentRouteType, hasVisitedCalmRoute, isJourney, initScene]);
 
     // Update quiet zone rect on route change
     useEffect(() => {

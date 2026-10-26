@@ -10,6 +10,15 @@
     "ballAria": "Bola ragbi menandakan pencapaian semasa: {{title}}",
     "milestoneAria": "{{setPiece}} · {{date}} · {{title}}"
   },
+  "status": {
+    "done": "Selesai",
+    "upcoming": "Akan datang",
+    "live": "LIVE"
+  },
+  "card": {
+    "readMore": "Baca lagi",
+    "showLess": "Tunjukkan kurang"
+  },
   "legend": {
     "title": "Set piece",
     "subtitle": "Bagaimana peristiwa ragbi menceritakan kisah pembangunan kami",

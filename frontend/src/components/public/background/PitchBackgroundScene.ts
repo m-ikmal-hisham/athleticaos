@@ -15,7 +15,7 @@ import type { ThemeColors } from './engine/types';
 export interface PitchBackgroundController {
     resize: (width: number, height: number) => void;
     updateQuietRect: () => void;
-    setRouteMode: (mode: 'calm' | 'static') => void;
+    setRouteMode: (mode: 'calm' | 'static', options?: { enableKick?: boolean }) => void;
     triggerSettleReplay: () => void;
     dispose: () => void;
 }
@@ -62,6 +62,7 @@ export function mountPitchBackgroundScene(
 
     let isDisposed = false;
     let isCalmRoute = true;
+    let isKickEnabled = true;
     let hasRenderedFirstFrame = false;
 
     let currentPreset: BgCameraPreset =
@@ -770,7 +771,7 @@ export function mountPitchBackgroundScene(
 
     function onClick(e: MouseEvent) {
         onUserActivity();
-        if (!isCalmRoute) return;
+        if (!isCalmRoute || !isKickEnabled) return;
         const isFine = window.matchMedia('(pointer: fine)').matches;
         if (!isFine) return;
 
@@ -1108,8 +1109,13 @@ export function mountPitchBackgroundScene(
         engine.dispose();
     }
 
-    function setRouteMode(mode: 'calm' | 'static') {
+    function setRouteMode(mode: 'calm' | 'static', options?: { enableKick?: boolean }) {
         isCalmRoute = mode === 'calm';
+        if (options && typeof options.enableKick === 'boolean') {
+            isKickEnabled = options.enableKick;
+        } else {
+            isKickEnabled = true;
+        }
         if (mode === 'static') {
             engine.pause();
         } else {
