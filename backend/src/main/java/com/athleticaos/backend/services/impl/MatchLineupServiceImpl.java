@@ -33,13 +33,81 @@ public class MatchLineupServiceImpl implements MatchLineupService {
         private final TeamRepository teamRepository;
         private final PlayerRepository playerRepository;
         private final TournamentPlayerRepository tournamentPlayerRepository;
+        private final com.athleticaos.backend.repositories.MatchEventRepository matchEventRepository;
         private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
         @Override
         @Transactional(readOnly = true)
         public List<MatchLineupEntryDTO> getLineup(UUID matchId, UUID teamId) {
-                return matchLineupRepository.findByMatchIdAndTeamId(matchId, teamId).stream()
-                                .map(this::mapToDTO)
+                List<MatchLineup> lineups = matchLineupRepository.findByMatchIdAndTeamId(matchId, teamId);
+                List<com.athleticaos.backend.entities.MatchEvent> subEvents = matchEventRepository.findByMatchIdAndTeamIdAndEventType(
+                                matchId, teamId, com.athleticaos.backend.enums.MatchEventType.SUBSTITUTION);
+
+                List<com.athleticaos.backend.services.lineup.SubstitutionTimeline.LineupInput> lineupInputs = lineups.stream()
+                                .map(l -> new com.athleticaos.backend.services.lineup.SubstitutionTimeline.LineupInput(
+                                                l.getPlayer().getId(),
+                                                l.getPlayer().getPerson() != null
+                                                                ? l.getPlayer().getPerson().getFirstName() + " "
+                                                                                + l.getPlayer().getPerson().getLastName()
+                                                                : "Unknown Player",
+                                                l.getJerseyNumber(),
+                                                l.getRole(),
+                                                l.isStarter(),
+                                                l.isCaptain(),
+                                                l.getOrderIndex(),
+                                                l.getPositionDisplay()))
+                                .collect(Collectors.toList());
+
+                List<com.athleticaos.backend.services.lineup.SubstitutionTimeline.EventInput> eventInputs = subEvents.stream()
+                                .map(e -> new com.athleticaos.backend.services.lineup.SubstitutionTimeline.EventInput(
+                                                e.getPlayer() != null ? e.getPlayer().getId() : null,
+                                                e.getPlayer() != null && e.getPlayer().getPerson() != null
+                                                                ? e.getPlayer().getPerson().getFirstName() + " "
+                                                                                + e.getPlayer().getPerson().getLastName()
+                                                                : null,
+                                                null,
+                                                e.getRelatedPlayer() != null ? e.getRelatedPlayer().getId() : null,
+                                                e.getRelatedPlayer() != null && e.getRelatedPlayer().getPerson() != null
+                                                                ? e.getRelatedPlayer().getPerson().getFirstName() + " "
+                                                                                + e.getRelatedPlayer().getPerson().getLastName()
+                                                                : substitutedOnNameFromNotes(e.getNotes()),
+                                                null,
+                                                e.getMinute(),
+                                                e.getCreatedAt()))
+                                .collect(Collectors.toList());
+
+                List<com.athleticaos.backend.services.lineup.SubstitutionTimeline.PlayerTimeline> timelines =
+                                com.athleticaos.backend.services.lineup.SubstitutionTimeline.computeTimeline(lineupInputs, eventInputs);
+
+                // Only the saved team sheet: players who appear in a substitution but not in the lineup
+                // keep their place in the other players' history, but are not returned as lineup rows
+                // (the editor saves what it loads).
+                java.util.Set<UUID> lineupPlayerIds = lineupInputs.stream()
+                                .map(com.athleticaos.backend.services.lineup.SubstitutionTimeline.LineupInput::playerId)
+                                .collect(Collectors.toSet());
+
+                return timelines.stream()
+                                .filter(t -> lineupPlayerIds.contains(t.playerId()))
+                                .map(t -> MatchLineupEntryDTO.builder()
+                                                .playerId(t.playerId())
+                                                .playerName(t.playerName())
+                                                .jerseyNumber(t.jerseyNumber())
+                                                .isCaptain(t.isCaptain())
+                                                .role(t.originalRole())
+                                                .orderIndex(t.orderIndex())
+                                                .isStarter(t.isStarter())
+                                                .positionDisplay(t.positionDisplay())
+                                                .played(t.played())
+                                                .substitutions(t.substitutions().stream()
+                                                                .map(s -> MatchLineupEntryDTO.MatchLineupSubstitutionDTO.builder()
+                                                                                .minute(s.minute())
+                                                                                .direction(s.direction())
+                                                                                .otherPlayerId(s.otherPlayerId())
+                                                                                .otherPlayerName(s.otherPlayerName())
+                                                                                .otherJerseyNumber(s.otherJerseyNumber())
+                                                                                .build())
+                                                                .collect(Collectors.toList()))
+                                                .build())
                                 .collect(Collectors.toList());
         }
 
@@ -216,6 +284,19 @@ public class MatchLineupServiceImpl implements MatchLineupService {
                 boolean isHome = match.getHomeTeam() != null && match.getHomeTeam().getId().equals(teamId);
                 boolean isAway = match.getAwayTeam() != null && match.getAwayTeam().getId().equals(teamId);
                 return isHome || isAway;
+        }
+
+        /** Older substitutions name the player coming on only in the notes ("OUT: A | IN: B"). */
+        private static String substitutedOnNameFromNotes(String notes) {
+                if (notes == null) {
+                        return null;
+                }
+                int idx = notes.indexOf(" | IN: ");
+                if (idx < 0) {
+                        return null;
+                }
+                String name = notes.substring(idx + " | IN: ".length()).trim();
+                return name.isEmpty() ? null : name;
         }
 
         private MatchLineupEntryDTO mapToDTO(MatchLineup entity) {

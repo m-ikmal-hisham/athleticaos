@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, Shield, TShirt } from '@phosphor-icons/react';
+import { Users, Shield, TShirt, ArrowDown, ArrowUp } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, PublicMatchLineups, PublicLineupEntry, publicTournamentApi } from '../../../api/public.api';
 import { getPositionName, getPositionGroup, RugbyFormat } from '@/utils/rugbyPositions';
@@ -9,9 +10,12 @@ interface MatchLineupsProps {
 }
 
 export const MatchLineups = ({ match }: MatchLineupsProps) => {
+    const { t } = useTranslation('common');
     const [lineups, setLineups] = useState<PublicMatchLineups | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTeam, setActiveTeam] = useState<'home' | 'away'>('home');
+
+    const isCompleted = match.status?.toUpperCase() === 'COMPLETED';
 
     // Detect format from match duration (heuristic)
     const detectFormat = (): RugbyFormat => {
@@ -101,7 +105,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
 
                 {/* Player Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                         <span className={`font-semibold truncate ${isStarter ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                             {player.playerName}
                         </span>
@@ -111,6 +115,38 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                                 C
                             </span>
                         )}
+
+                        {/* Substitution markers in chronological order */}
+                        {player.substitutions && player.substitutions.length > 0 ? (
+                            player.substitutions.map((sub, sIdx) => {
+                                const isOff = sub.direction === 'OFF';
+                                const subText = isOff
+                                    ? t('lineup.off', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
+                                        ? t('lineup.replacedByWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
+                                        : t('lineup.replacedBy', { name: sub.otherPlayerName || '' }))
+                                    : t('lineup.on', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
+                                        ? t('lineup.forPlayerWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
+                                        : t('lineup.forPlayer', { name: sub.otherPlayerName || '' }));
+
+                                return (
+                                    <span
+                                        key={sIdx}
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10"
+                                    >
+                                        {isOff ? (
+                                            <ArrowDown className="w-3 h-3 text-slate-500 dark:text-slate-400 shrink-0" weight="bold" />
+                                        ) : (
+                                            <ArrowUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" weight="bold" />
+                                        )}
+                                        <span>{subText}</span>
+                                    </span>
+                                );
+                            })
+                        ) : !isStarter && isCompleted && !player.played ? (
+                            <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">
+                                {t('lineup.didNotPlay')}
+                            </span>
+                        ) : null}
                     </div>
                     {positionName && (
                         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">

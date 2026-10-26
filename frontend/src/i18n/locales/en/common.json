@@ -63,5 +63,14 @@
   },
   "dialog": {
     "close": "Close"
+  },
+  "lineup": {
+    "off": "Off {{minute}}'",
+    "replacedBy": "replaced by {{name}}",
+    "replacedByWithNumber": "replaced by {{name}} ({{number}})",
+    "on": "On {{minute}}'",
+    "forPlayer": "for {{name}}",
+    "forPlayerWithNumber": "for {{name}} ({{number}})",
+    "didNotPlay": "Did not play"
   }
 }

@@ -63,5 +63,14 @@
   },
   "dialog": {
     "close": "Tutup"
+  },
+  "lineup": {
+    "off": "Keluar {{minute}}'",
+    "replacedBy": "digantikan oleh {{name}}",
+    "replacedByWithNumber": "digantikan oleh {{name}} ({{number}})",
+    "on": "Masuk {{minute}}'",
+    "forPlayer": "menggantikan {{name}}",
+    "forPlayerWithNumber": "menggantikan {{name}} ({{number}})",
+    "didNotPlay": "Tidak beraksi"
   }
 }
