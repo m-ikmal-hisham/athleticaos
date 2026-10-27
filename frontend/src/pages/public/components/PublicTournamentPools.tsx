@@ -1,23 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PublicStanding } from '../../../api/public.api';
 import { CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react';
-import { getImageUrl } from '../../../utils/image';
 import { Link } from 'react-router-dom';
 import { useCollapsibleGroups } from '@/hooks/useCollapsibleGroups';
 import { ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
+import { LogoImage } from '@/components/public/LogoImage';
 
 interface PublicTournamentPoolsProps {
     standings: PublicStanding[];
 }
 
-type SortField = 'played' | 'won' | 'drawn' | 'lost' | 'pointsFor' | 'pointsAgainst' | 'pointsDiff' | 'points' | 'teamName';
+type SortField = 'played' | 'won' | 'drawn' | 'lost' | 'pointsFor' | 'pointsAgainst' | 'pointsDiff' | 'bonusPoints' | 'points' | 'teamName';
 type SortDirection = 'asc' | 'desc';
 
 export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps) {
+    const { t } = useTranslation(['tournament', 'common']);
     const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
         field: 'points',
         direction: 'desc'
     });
+    const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
     const handleSort = (field: SortField) => {
         setSortConfig(current => ({
@@ -38,19 +41,21 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
             if (field === 'teamName') {
                 comparison = a.teamName.localeCompare(b.teamName);
             } else {
-                comparison = (a[field] as number) - (b[field] as number);
+                const valA = (a[field] ?? 0) as number;
+                const valB = (b[field] ?? 0) as number;
+                comparison = valA - valB;
             }
 
             return sortConfig.direction === 'asc' ? comparison : -comparison;
         });
 
         sortedStandings.forEach(s => {
-            const poolName = s.poolName || 'Unassigned';
+            const poolName = s.poolName || t('tournament:pools.unassigned');
             if (!groups[poolName]) groups[poolName] = [];
             groups[poolName].push(s);
         });
         return groups;
-    }, [standings, sortConfig]);
+    }, [standings, sortConfig, t]);
 
     const sortedPoolNames = useMemo(() => Object.keys(groupedStandings).sort(), [groupedStandings]);
     // The first pool starts open; the rest fold away so a long list of pools is quick to scan.
@@ -76,7 +81,7 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
     if (sortedPoolNames.length === 0) {
         return (
             <div className="text-center py-12 text-slate-500 glass-panel bg-white/50 backdrop-blur-sm rounded-xl border border-dashed border-slate-300 dark:border-white/10">
-                No pool standings available.
+                {t('tournament:pools.noStandings')}
             </div>
         );
     }
@@ -85,11 +90,12 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
         <div className="space-y-4 md:space-y-6">
             {sortedPoolNames.length > 1 && (
                 <div className="flex justify-end">
-                    <ExpandAllToggle allOpen={pools.allOpen} onChange={pools.setAll} noun="pools" />
+                    <ExpandAllToggle allOpen={pools.allOpen} onChange={pools.setAll} noun={t('tournament:pools.title').toLowerCase()} />
                 </div>
             )}
             {sortedPoolNames.map(poolName => {
                 const poolStandings = groupedStandings[poolName];
+                const hasBonusPoints = poolStandings.some(s => s.bonusPointsEnabled);
                 return (
                     <div key={poolName} className="glass-panel overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl shadow-xl shadow-slate-200/20 dark:shadow-none">
                         {/* Pool header folds the table away, like the match days on the schedule */}
@@ -104,87 +110,136 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                                 <span className="truncate">{poolName}</span>
                             </h3>
                             <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                {poolStandings.length} {poolStandings.length === 1 ? 'team' : 'teams'}
+                                {t('tournament:pools.teamCount', { count: poolStandings.length })}
                             </span>
                             <CaretDown
                                 className={`shrink-0 w-4 h-4 text-black/60 dark:text-white/60 transition-transform duration-200 ${pools.isOpen(poolName) ? 'rotate-180' : ''}`}
- />
+                            />
                         </button>
                         <div className="overflow-x-auto" hidden={!pools.isOpen(poolName)}>
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-100/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                                     <tr>
-                                        <th className="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">Pos</th>
-                                        <SortableHeader field="teamName" label="Team" align="left" />
-                                        <SortableHeader field="played" label="PLD" />
-                                        <SortableHeader field="won" label="W" />
-                                        <SortableHeader field="drawn" label="D" hiddenOnMobile />
-                                        <SortableHeader field="lost" label="L" hiddenOnMobile />
-                                        <SortableHeader field="pointsFor" label="PF" hiddenOnMobile />
-                                        <SortableHeader field="pointsAgainst" label="PA" hiddenOnMobile />
-                                        <SortableHeader field="pointsDiff" label="+/-" hiddenOnMobile />
-                                        <SortableHeader field="points" label="Pts" />
+                                        <th className="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">{t('tournament:pools.pos')}</th>
+                                        <SortableHeader field="teamName" label={t('tournament:pools.team')} align="left" />
+                                        <SortableHeader field="played" label={t('tournament:pools.pld')} />
+                                        <SortableHeader field="won" label={t('tournament:pools.won')} hiddenOnMobile />
+                                        <SortableHeader field="drawn" label={t('tournament:pools.drawn')} hiddenOnMobile />
+                                        <SortableHeader field="lost" label={t('tournament:pools.lost')} hiddenOnMobile />
+                                        <SortableHeader field="pointsFor" label={t('tournament:pools.pointsFor')} hiddenOnMobile />
+                                        <SortableHeader field="pointsAgainst" label={t('tournament:pools.pointsAgainst')} hiddenOnMobile />
+                                        <SortableHeader field="pointsDiff" label={t('tournament:pools.diff')} hiddenOnMobile />
+                                        {hasBonusPoints && <SortableHeader field="bonusPoints" label={t('tournament:pools.bonusPoints')} hiddenOnMobile />}
+                                        <SortableHeader field="points" label={t('tournament:pools.points')} />
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                                    {poolStandings.map((team, idx) => (
-                                        <tr key={team.teamName} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors group">
-                                            <td className="px-2 sm:px-4 py-2.5 sm:py-4 font-mono font-bold text-slate-400 dark:text-slate-500">
-                                                {idx + 1}
-                                            </td>
-                                            {/* max-w-0 + w-full: the team cell takes the spare width and truncates,
-                                                so PLD, W and Pts always fit on a phone */}
-                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 max-w-0 w-full">
-                                                <Link 
-                                                    to={`/teams/${team.teamId}`} 
-                                                    className="flex items-center gap-2 sm:gap-4 group/link min-w-0"
+                                    {poolStandings.map((team, idx) => {
+                                        const isExpanded = expandedTeam === team.teamName;
+                                        return (
+                                            <Fragment key={team.teamName}>
+                                                <tr
+                                                    onClick={() => setExpandedTeam(prev => prev === team.teamName ? null : team.teamName)}
+                                                    className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors group cursor-pointer sm:cursor-default"
                                                 >
-                                                    {/* Transparent Logo Placeholder */}
-                                                    <div className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center">
-                                                        {team.teamLogoUrl ? (
-                                                            <img
-                                                                src={getImageUrl(team.teamLogoUrl)}
-                                                                alt={team.teamName}
-                                                                className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                                                <span className="text-sm font-bold text-slate-400">{team.teamName.charAt(0)}</span>
+                                                    <td className="px-2 sm:px-4 py-2.5 sm:py-4 font-mono font-bold text-slate-400 dark:text-slate-500">
+                                                        {idx + 1}
+                                                    </td>
+                                                    {/* max-w-0 + w-full: the team cell takes the spare width and truncates,
+                                                        so PLD and Pts always fit on a phone */}
+                                                    <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 max-w-0 w-full">
+                                                        <Link 
+                                                            to={`/teams/${team.teamId}`} 
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="flex items-center gap-2 sm:gap-4 group/link min-w-0"
+                                                        >
+                                                            <div className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center">
+                                                                <LogoImage
+                                                                    src={team.teamLogoUrl}
+                                                                    name={team.teamShortName || team.teamName}
+                                                                    size="md"
+                                                                    className="w-full h-full object-contain filter drop-shadow-md group-hover/link:scale-110 transition-transform duration-300"
+                                                                />
                                                             </div>
-                                                        )}
-                                                    </div>
 
-                                                    {/* Text Logic: Priority Short Name, Small Full Name */}
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight truncate group-hover/link:text-navy dark:group-hover/link:text-navy-tint transition-colors">
-                                                            {team.teamShortName || team.teamName}
+                                                            {/* Text Logic: Priority Short Name, Small Full Name */}
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="text-sm sm:text-lg font-black text-slate-800 dark:text-white leading-tight truncate group-hover/link:text-navy dark:group-hover/link:text-navy-tint transition-colors">
+                                                                    {team.teamShortName || team.teamName}
+                                                                </span>
+                                                                {team.teamShortName && (
+                                                                    <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                                        {team.teamName}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </Link>
+                                                    </td>
+                                                    <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center text-slate-600 dark:text-slate-400 font-medium">{team.played}</td>
+                                                    <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.won}</td>
+                                                    <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.drawn}</td>
+                                                    <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.lost}</td>
+                                                    <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsFor}</td>
+                                                    <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsAgainst}</td>
+                                                    <td className="px-3 py-4 text-center hidden sm:table-cell font-medium">
+                                                        <span className={`${team.pointsDiff > 0 ? "text-green-600 dark:text-green-400" : (team.pointsDiff < 0 ? "text-red-500 dark:text-red-400" : "text-slate-500")}`}>
+                                                            {team.pointsDiff > 0 ? `+${team.pointsDiff}` : team.pointsDiff}
                                                         </span>
-                                                        {team.teamShortName && (
-                                                            <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                                {team.teamName}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </Link>
-                                            </td>
-                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center text-slate-600 dark:text-slate-400 font-medium">{team.played}</td>
-                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center text-slate-600 dark:text-slate-400">{team.won}</td>
-                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.drawn}</td>
-                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-600 dark:text-slate-400">{team.lost}</td>
-                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsFor}</td>
-                                            <td className="px-3 py-4 text-center hidden sm:table-cell text-slate-500">{team.pointsAgainst}</td>
-                                            <td className="px-3 py-4 text-center hidden sm:table-cell font-medium">
-                                                <span className={`${team.pointsDiff > 0 ? "text-green-600 dark:text-green-400" : (team.pointsDiff < 0 ? "text-red-500 dark:text-red-400" : "text-slate-500")}`}>
-                                                    {team.pointsDiff > 0 ? `+${team.pointsDiff}` : team.pointsDiff}
-                                                </span>
-                                            </td>
-                                            <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center">
-                                                <span className="inline-block min-w-[2rem] py-1 px-2 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black">
-                                                    {team.points}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                    </td>
+                                                    {hasBonusPoints && (
+                                                        <td className="px-3 py-4 text-center hidden sm:table-cell font-medium text-slate-700 dark:text-slate-300">
+                                                            {team.bonusPoints ?? 0}
+                                                        </td>
+                                                    )}
+                                                    <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center">
+                                                        <span className="inline-block min-w-[2rem] py-1 px-2 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black">
+                                                            {team.points}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {isExpanded && (
+                                                    <tr className="sm:hidden bg-slate-50/90 dark:bg-slate-800/60 border-b border-slate-200/50 dark:border-white/5 animate-fade-in">
+                                                        <td colSpan={4} className="px-3 py-2.5">
+                                                            <div className="grid grid-cols-4 gap-2 text-center text-xs py-1">
+                                                                <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                    <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.won')}</span>
+                                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{team.won}</span>
+                                                                </div>
+                                                                <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                    <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.drawn')}</span>
+                                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{team.drawn}</span>
+                                                                </div>
+                                                                <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                    <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.lost')}</span>
+                                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{team.lost}</span>
+                                                                </div>
+                                                                <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                    <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.diff')}</span>
+                                                                    <span className={`font-semibold ${team.pointsDiff > 0 ? "text-green-600 dark:text-green-400" : (team.pointsDiff < 0 ? "text-red-500 dark:text-red-400" : "text-slate-500")}`}>
+                                                                        {team.pointsDiff > 0 ? `+${team.pointsDiff}` : team.pointsDiff}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                    <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.pointsFor')}</span>
+                                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{team.pointsFor}</span>
+                                                                </div>
+                                                                <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                    <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.pointsAgainst')}</span>
+                                                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{team.pointsAgainst}</span>
+                                                                </div>
+                                                                {hasBonusPoints && (
+                                                                    <div className="bg-white/70 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                                                        <span className="block text-[11px] uppercase font-bold text-slate-400">{t('tournament:pools.bonusPoints')}</span>
+                                                                        <span className="font-semibold text-slate-700 dark:text-slate-300">{team.bonusPoints ?? 0}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

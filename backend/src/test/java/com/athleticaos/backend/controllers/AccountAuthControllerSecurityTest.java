@@ -149,4 +149,16 @@ class AccountAuthControllerSecurityTest {
         verify(authService).resetPasswordWithToken(any(ResetPasswordWithTokenRequest.class), any());
         verify(userService, never()).getCurrentUser();
     }
+
+    @Test
+    @DisplayName("GET /reset-password checks the link: public, Cache-Control: no-store, never touches getCurrentUser")
+    void checkResetLinkPublicAndNoStore() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/reset-password").param("token", "token-789"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.valid").value(true));
+
+        verify(authService).checkResetToken(eq("token-789"), any());
+        verify(userService, never()).getCurrentUser();
+    }
 }

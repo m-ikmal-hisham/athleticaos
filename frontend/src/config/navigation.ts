@@ -1,5 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
-import { House, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple } from '@phosphor-icons/react';
+import { Lightning, Trophy, UsersThree, User, Info, Handshake, EnvelopeSimple, TreeStructure } from '@phosphor-icons/react';
 
 /**
  * Public navigation: single source of truth for the public shell
@@ -18,14 +18,27 @@ export interface PublicNavItem {
 }
 
 export const PUBLIC_PRIMARY_NAV: PublicNavItem[] = [
-    // D10 (Matchday home) renames this to Matchday / Lightning
-    { key: 'home', labelKey: 'nav.home', to: '/', icon: House, exact: true },
+    { key: 'matchday', labelKey: 'nav.matchday', tabLabelKey: 'nav.matchdayShort', to: '/', icon: Lightning, exact: true },
     { key: 'tournaments', labelKey: 'nav.tournaments', tabLabelKey: 'nav.tournamentsShort', to: '/tournaments', icon: Trophy },
     { key: 'teams', labelKey: 'nav.teams', to: '/teams', icon: UsersThree },
     { key: 'players', labelKey: 'nav.players', to: '/players', icon: User },
 ];
 
+/** Desktop (>= lg) includes Organisations as a main nav item after Players */
+export const PUBLIC_DESKTOP_PRIMARY_NAV: PublicNavItem[] = [
+    ...PUBLIC_PRIMARY_NAV,
+    { key: 'organisations', labelKey: 'nav.organisations', to: '/organisations', icon: TreeStructure },
+];
+
 export const PUBLIC_MORE_NAV: PublicNavItem[] = [
+    { key: 'organisations', labelKey: 'nav.organisations', to: '/organisations', icon: TreeStructure },
+    { key: 'how-it-works', labelKey: 'nav.howItWorks', to: '/how-it-works', icon: Info },
+    { key: 'partners', labelKey: 'nav.partners', to: '/partners', icon: Handshake },
+    { key: 'contact', labelKey: 'nav.contact', to: '/contact', icon: EnvelopeSimple },
+];
+
+/** Desktop More menu contains How it works, Partners, and Contact */
+export const PUBLIC_DESKTOP_MORE_NAV: PublicNavItem[] = [
     { key: 'how-it-works', labelKey: 'nav.howItWorks', to: '/how-it-works', icon: Info },
     { key: 'partners', labelKey: 'nav.partners', to: '/partners', icon: Handshake },
     { key: 'contact', labelKey: 'nav.contact', to: '/contact', icon: EnvelopeSimple },
@@ -45,10 +58,11 @@ export const PUBLIC_NAV_KEY_MAP = {
 
 /** Detail routes that get the phone Back row: pattern prefix → parent */
 export const PUBLIC_DETAIL_PARENTS: { prefix: string; labelKey: string; to: string }[] = [
+    { prefix: '/organisations/', labelKey: 'nav.organisations', to: '/organisations' },
     { prefix: '/tournaments/', labelKey: 'nav.tournaments', to: '/tournaments' },
     { prefix: '/teams/', labelKey: 'nav.teams', to: '/teams' },
     { prefix: '/players/', labelKey: 'nav.players', to: '/players' },
-    { prefix: '/matches/', labelKey: 'nav.home', to: '/' },
+    { prefix: '/matches/', labelKey: 'nav.matchday', to: '/' },
 ];
 
 const matchesPath = (pathname: string, to: string) =>

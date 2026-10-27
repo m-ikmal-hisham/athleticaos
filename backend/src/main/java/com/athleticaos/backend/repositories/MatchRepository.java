@@ -232,4 +232,210 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
                         "AND m.tournamentVenue IS NOT NULL")
         long countDistinctVenuesByTournamentId(
                         @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+    // -------------------------------------------------------------------------
+    // Public Match Feed queries
+    // -------------------------------------------------------------------------
+
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT m FROM Match m " +
+                "JOIN FETCH m.tournament t " +
+                "LEFT JOIN FETCH m.homeTeam ht " +
+                "LEFT JOIN FETCH ht.organisation hto " +
+                "LEFT JOIN FETCH m.awayTeam at " +
+                "LEFT JOIN FETCH at.organisation ato " +
+                "LEFT JOIN FETCH m.stage s " +
+                "LEFT JOIN FETCH s.category sc " +
+                "LEFT JOIN FETCH m.category c " +
+                "LEFT JOIN FETCH m.tournamentVenue tv " +
+                "WHERE m.deleted = false " +
+                "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                "AND m.status IN (com.athleticaos.backend.enums.MatchStatus.LIVE, com.athleticaos.backend.enums.MatchStatus.ONGOING) " +
+                // Only today or yesterday: a match left on LIVE by mistake drops out after a day
+                "AND m.matchDate >= :liveFrom " +
+                "ORDER BY m.matchDate ASC, m.kickOffTime ASC NULLS LAST, m.id ASC",
+        countQuery = "SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                     "WHERE m.deleted = false " +
+                     "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                     "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                     "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                     "AND m.status IN (com.athleticaos.backend.enums.MatchStatus.LIVE, com.athleticaos.backend.enums.MatchStatus.ONGOING) " +
+                     "AND m.matchDate >= :liveFrom"
+    )
+    org.springframework.data.domain.Page<Match> findFeedLive(
+            @org.springframework.data.repository.query.Param("liveFrom") java.time.LocalDate liveFrom,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+            org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT m FROM Match m " +
+                "JOIN FETCH m.tournament t " +
+                "LEFT JOIN FETCH m.homeTeam ht " +
+                "LEFT JOIN FETCH ht.organisation hto " +
+                "LEFT JOIN FETCH m.awayTeam at " +
+                "LEFT JOIN FETCH at.organisation ato " +
+                "LEFT JOIN FETCH m.stage s " +
+                "LEFT JOIN FETCH s.category sc " +
+                "LEFT JOIN FETCH m.category c " +
+                "LEFT JOIN FETCH m.tournamentVenue tv " +
+                "WHERE m.deleted = false " +
+                "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                "AND m.matchDate = :today " +
+                "AND m.status <> com.athleticaos.backend.enums.MatchStatus.CANCELLED " +
+                "ORDER BY m.matchDate ASC, m.kickOffTime ASC NULLS LAST, m.id ASC",
+        countQuery = "SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                     "WHERE m.deleted = false " +
+                     "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                     "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                     "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                     "AND m.matchDate = :today " +
+                     "AND m.status <> com.athleticaos.backend.enums.MatchStatus.CANCELLED"
+    )
+    org.springframework.data.domain.Page<Match> findFeedToday(
+            @org.springframework.data.repository.query.Param("today") java.time.LocalDate today,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+            org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT m FROM Match m " +
+                "JOIN FETCH m.tournament t " +
+                "LEFT JOIN FETCH m.homeTeam ht " +
+                "LEFT JOIN FETCH ht.organisation hto " +
+                "LEFT JOIN FETCH m.awayTeam at " +
+                "LEFT JOIN FETCH at.organisation ato " +
+                "LEFT JOIN FETCH m.stage s " +
+                "LEFT JOIN FETCH s.category sc " +
+                "LEFT JOIN FETCH m.category c " +
+                "LEFT JOIN FETCH m.tournamentVenue tv " +
+                "WHERE m.deleted = false " +
+                "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                "AND m.status = com.athleticaos.backend.enums.MatchStatus.COMPLETED " +
+                "AND m.matchDate BETWEEN :from AND :today " +
+                "ORDER BY m.matchDate DESC, m.kickOffTime DESC NULLS LAST, m.id DESC",
+        countQuery = "SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                     "WHERE m.deleted = false " +
+                     "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                     "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                     "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                     "AND m.status = com.athleticaos.backend.enums.MatchStatus.COMPLETED " +
+                     "AND m.matchDate BETWEEN :from AND :today"
+    )
+    org.springframework.data.domain.Page<Match> findFeedResults(
+            @org.springframework.data.repository.query.Param("from") java.time.LocalDate from,
+            @org.springframework.data.repository.query.Param("today") java.time.LocalDate today,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+            org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT m FROM Match m " +
+                "JOIN FETCH m.tournament t " +
+                "LEFT JOIN FETCH m.homeTeam ht " +
+                "LEFT JOIN FETCH ht.organisation hto " +
+                "LEFT JOIN FETCH m.awayTeam at " +
+                "LEFT JOIN FETCH at.organisation ato " +
+                "LEFT JOIN FETCH m.stage s " +
+                "LEFT JOIN FETCH s.category sc " +
+                "LEFT JOIN FETCH m.category c " +
+                "LEFT JOIN FETCH m.tournamentVenue tv " +
+                "WHERE m.deleted = false " +
+                "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                "AND m.status = com.athleticaos.backend.enums.MatchStatus.SCHEDULED " +
+                "AND m.matchDate <= :to " +
+                "AND (m.matchDate > :today OR (m.matchDate = :today AND (m.kickOffTime IS NULL OR m.kickOffTime >= :nowTime))) " +
+                "ORDER BY m.matchDate ASC, m.kickOffTime ASC NULLS LAST, m.id ASC",
+        countQuery = "SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                     "WHERE m.deleted = false " +
+                     "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                     "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                     "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                     "AND m.status = com.athleticaos.backend.enums.MatchStatus.SCHEDULED " +
+                     "AND m.matchDate <= :to " +
+                     "AND (m.matchDate > :today OR (m.matchDate = :today AND (m.kickOffTime IS NULL OR m.kickOffTime >= :nowTime)))"
+    )
+    org.springframework.data.domain.Page<Match> findFeedUpcoming(
+            @org.springframework.data.repository.query.Param("today") java.time.LocalDate today,
+            @org.springframework.data.repository.query.Param("nowTime") java.time.LocalTime nowTime,
+            @org.springframework.data.repository.query.Param("to") java.time.LocalDate to,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+            org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT m FROM Match m " +
+                "JOIN FETCH m.tournament t " +
+                "LEFT JOIN FETCH m.homeTeam ht " +
+                "LEFT JOIN FETCH ht.organisation hto " +
+                "LEFT JOIN FETCH m.awayTeam at " +
+                "LEFT JOIN FETCH at.organisation ato " +
+                "LEFT JOIN FETCH m.stage s " +
+                "LEFT JOIN FETCH s.category sc " +
+                "LEFT JOIN FETCH m.category c " +
+                "LEFT JOIN FETCH m.tournamentVenue tv " +
+                "WHERE m.deleted = false " +
+                "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                "AND m.matchDate BETWEEN :from AND :to " +
+                "ORDER BY m.matchDate ASC, m.kickOffTime ASC NULLS LAST, m.id ASC",
+        countQuery = "SELECT COUNT(m) FROM Match m JOIN m.tournament t " +
+                     "WHERE m.deleted = false " +
+                     "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+                     "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+                     "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+                     "AND m.matchDate BETWEEN :from AND :to"
+    )
+    org.springframework.data.domain.Page<Match> findFeedRange(
+            @org.springframework.data.repository.query.Param("from") java.time.LocalDate from,
+            @org.springframework.data.repository.query.Param("to") java.time.LocalDate to,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+            org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT new com.athleticaos.backend.dtos.public_api.PublicMatchFeedCounts(" +
+        "  COALESCE(SUM(CASE WHEN m.status IN (com.athleticaos.backend.enums.MatchStatus.LIVE, com.athleticaos.backend.enums.MatchStatus.ONGOING) AND m.matchDate >= :liveFrom THEN 1L ELSE 0L END), 0L), " +
+        "  COALESCE(SUM(CASE WHEN m.matchDate = :today AND m.status <> com.athleticaos.backend.enums.MatchStatus.CANCELLED THEN 1L ELSE 0L END), 0L), " +
+        "  COALESCE(SUM(CASE WHEN m.status = com.athleticaos.backend.enums.MatchStatus.COMPLETED AND m.matchDate BETWEEN :resultsFrom AND :today THEN 1L ELSE 0L END), 0L), " +
+        "  COALESCE(SUM(CASE WHEN m.status = com.athleticaos.backend.enums.MatchStatus.SCHEDULED AND m.matchDate <= :upcomingTo AND (m.matchDate > :today OR (m.matchDate = :today AND (m.kickOffTime IS NULL OR m.kickOffTime >= :nowTime))) THEN 1L ELSE 0L END), 0L)" +
+        ") FROM Match m JOIN m.tournament t " +
+        "WHERE m.deleted = false " +
+        "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+        "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+        "AND (:tournamentId IS NULL OR t.id = :tournamentId)"
+    )
+    com.athleticaos.backend.dtos.public_api.PublicMatchFeedCounts countFeed(
+            @org.springframework.data.repository.query.Param("liveFrom") java.time.LocalDate liveFrom,
+            @org.springframework.data.repository.query.Param("today") java.time.LocalDate today,
+            @org.springframework.data.repository.query.Param("nowTime") java.time.LocalTime nowTime,
+            @org.springframework.data.repository.query.Param("resultsFrom") java.time.LocalDate resultsFrom,
+            @org.springframework.data.repository.query.Param("upcomingTo") java.time.LocalDate upcomingTo,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT new com.athleticaos.backend.dtos.public_api.PublicMatchDayResponse(" +
+        "  m.matchDate, " +
+        "  COUNT(m), " +
+        "  COALESCE(SUM(CASE WHEN m.status IN (com.athleticaos.backend.enums.MatchStatus.LIVE, com.athleticaos.backend.enums.MatchStatus.ONGOING) AND m.matchDate >= :liveFrom THEN 1L ELSE 0L END), 0L), " +
+        "  COALESCE(SUM(CASE WHEN m.status = com.athleticaos.backend.enums.MatchStatus.COMPLETED THEN 1L ELSE 0L END), 0L), " +
+        "  COALESCE(SUM(CASE WHEN m.status = com.athleticaos.backend.enums.MatchStatus.CANCELLED THEN 1L ELSE 0L END), 0L)" +
+        ") FROM Match m JOIN m.tournament t " +
+        "WHERE m.deleted = false " +
+        "AND t.isPublished = true AND (t.deleted IS NULL OR t.deleted = false) " +
+        "AND (m.resultType IS NULL OR m.resultType <> com.athleticaos.backend.enums.MatchResultType.BYE) " +
+        "AND m.matchDate BETWEEN :from AND :to " +
+        "AND (:tournamentId IS NULL OR t.id = :tournamentId) " +
+        "GROUP BY m.matchDate " +
+        "ORDER BY m.matchDate ASC"
+    )
+    java.util.List<com.athleticaos.backend.dtos.public_api.PublicMatchDayResponse> findMatchDays(
+            @org.springframework.data.repository.query.Param("liveFrom") java.time.LocalDate liveFrom,
+            @org.springframework.data.repository.query.Param("from") java.time.LocalDate from,
+            @org.springframework.data.repository.query.Param("to") java.time.LocalDate to,
+            @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 }

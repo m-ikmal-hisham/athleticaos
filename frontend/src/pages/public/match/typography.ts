@@ -12,5 +12,5 @@ export const matchText = {
     /** Pills and badges (tournament, status, event type). */
     chip: 'text-[11px] md:text-xs font-semibold uppercase tracking-wide',
     /** Small captions next to a value (role, position). */
-    caption: 'text-[10px] md:text-[11px] font-bold uppercase tracking-wider',
+    caption: 'text-[11px] font-bold uppercase tracking-wider',
 } as const;

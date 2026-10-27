@@ -7,6 +7,16 @@ import enLegal from './locales/en/legal.json';
 import enDataRequests from './locales/en/dataRequests.json';
 import enAdmin from './locales/en/admin.json';
 import enJourney from './locales/en/journey.json';
+import enOrganisations from './locales/en/organisations.json';
+import enProfile from './locales/en/profile.json';
+import enCalendar from './locales/en/calendar.json';
+import enAuth from './locales/en/auth.json';
+import enTournament from './locales/en/tournament.json';
+import enMatch from './locales/en/match.json';
+import enTeams from './locales/en/teams.json';
+import enPlayers from './locales/en/players.json';
+import enContact from './locales/en/contact.json';
+import enMedia from './locales/en/media.json';
 
 export type AppLanguage = 'en' | 'ms';
 
@@ -36,16 +46,61 @@ export function getDetectedLanguage(): AppLanguage {
 
 let msResourcesLoaded = false;
 
-type Namespaces = Record<'common' | 'home' | 'legal' | 'dataRequests' | 'admin' | 'journey', Record<string, unknown>>;
+type Namespaces = Record<
+    | 'common'
+    | 'home'
+    | 'legal'
+    | 'dataRequests'
+    | 'admin'
+    | 'journey'
+    | 'organisations'
+    | 'profile'
+    | 'calendar'
+    | 'auth'
+    | 'tournament'
+    | 'match'
+    | 'teams'
+    | 'players'
+    | 'contact'
+    | 'media',
+    Record<string, unknown>
+>;
 
 async function importMsResources(): Promise<Namespaces> {
-    const [msCommon, msHome, msLegal, msDataRequests, msAdmin, msJourney] = await Promise.all([
+    const [
+        msCommon,
+        msHome,
+        msLegal,
+        msDataRequests,
+        msAdmin,
+        msJourney,
+        msOrganisations,
+        msProfile,
+        msCalendar,
+        msAuth,
+        msTournament,
+        msMatch,
+        msTeams,
+        msPlayers,
+        msContact,
+        msMedia,
+    ] = await Promise.all([
         import('./locales/ms/common.json'),
         import('./locales/ms/home.json'),
         import('./locales/ms/legal.json'),
         import('./locales/ms/dataRequests.json'),
         import('./locales/ms/admin.json'),
         import('./locales/ms/journey.json'),
+        import('./locales/ms/organisations.json'),
+        import('./locales/ms/profile.json'),
+        import('./locales/ms/calendar.json'),
+        import('./locales/ms/auth.json'),
+        import('./locales/ms/tournament.json'),
+        import('./locales/ms/match.json'),
+        import('./locales/ms/teams.json'),
+        import('./locales/ms/players.json'),
+        import('./locales/ms/contact.json'),
+        import('./locales/ms/media.json'),
     ]);
     return {
         common: msCommon.default,
@@ -54,6 +109,16 @@ async function importMsResources(): Promise<Namespaces> {
         dataRequests: msDataRequests.default,
         admin: msAdmin.default,
         journey: msJourney.default,
+        organisations: msOrganisations.default,
+        profile: msProfile.default,
+        calendar: msCalendar.default,
+        auth: msAuth.default,
+        tournament: msTournament.default,
+        match: msMatch.default,
+        teams: msTeams.default,
+        players: msPlayers.default,
+        contact: msContact.default,
+        media: msMedia.default,
     };
 }
 
@@ -94,7 +159,24 @@ export async function initI18n(): Promise<typeof i18n> {
         supportedLngs: ['en', 'ms'],
         load: 'languageOnly',
         defaultNS: 'common',
-        ns: ['common', 'home', 'legal', 'dataRequests', 'admin', 'journey'],
+        ns: [
+            'common',
+            'home',
+            'legal',
+            'dataRequests',
+            'admin',
+            'journey',
+            'organisations',
+            'profile',
+            'calendar',
+            'auth',
+            'tournament',
+            'match',
+            'teams',
+            'players',
+            'contact',
+            'media',
+        ],
         resources: {
             en: {
                 common: enCommon,
@@ -103,6 +185,16 @@ export async function initI18n(): Promise<typeof i18n> {
                 dataRequests: enDataRequests,
                 admin: enAdmin,
                 journey: enJourney,
+                organisations: enOrganisations,
+                profile: enProfile,
+                calendar: enCalendar,
+                auth: enAuth,
+                tournament: enTournament,
+                match: enMatch,
+                teams: enTeams,
+                players: enPlayers,
+                contact: enContact,
+                media: enMedia,
             },
             ...(msInitial ? { ms: msInitial } : {}),
         },

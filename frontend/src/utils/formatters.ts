@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 
 /**
  * Formatting utilities for displaying enum values and other data types user-friendly.
@@ -9,8 +10,14 @@ import { TournamentLevel } from "@/types";
  * Formats a competition type enum string into a user-friendly label.
  * Example: 'GROUP_KNOCKOUT' -> 'Group + Knockout'
  */
-export const formatCompetitionType = (type: string | undefined | null): string => {
+export const formatCompetitionType = (type: string | undefined | null, t?: TFunction): string => {
     if (!type) return '';
+    // A missing key comes back without its namespace, so ask for an empty default instead of
+    // comparing prefixes (that let "competitionType.TENS" through).
+    if (t) {
+        const translated = t(`common:competitionType.${type}`, { defaultValue: '' }) as string;
+        if (translated) return translated;
+    }
     switch (type) {
         case 'GROUP_KNOCKOUT':
             return 'Group + Knockout';
@@ -30,10 +37,14 @@ export const formatCompetitionType = (type: string | undefined | null): string =
  * Formats a tournament level enum string into Title Case.
  * Example: 'NATIONAL' -> 'National', 'STATE' -> 'State'
  */
-export const formatTournamentLevel = (level: string | TournamentLevel | undefined | null): string => {
+export const formatTournamentLevel = (level: string | TournamentLevel | undefined | null, t?: TFunction): string => {
     if (!level) return '';
-    return level
-        .toString()
+    const key = level.toString();
+    if (t) {
+        const translated = t(`common:level.${key}`, { defaultValue: '' }) as string;
+        if (translated) return translated;
+    }
+    return key
         .replace(/_/g, ' ')
         .toLowerCase()
         .replace(/\b\w/g, c => c.toUpperCase());
@@ -43,8 +54,12 @@ export const formatTournamentLevel = (level: string | TournamentLevel | undefine
  * Formats an event type enum string into Sentence Case.
  * Example: 'YELLOW_CARD' -> 'Yellow Card'
  */
-export const formatEventType = (type: string | undefined | null): string => {
+export const formatEventType = (type: string | undefined | null, t?: (key: string, opts?: Record<string, unknown>) => string): string => {
     if (!type) return '';
+    if (t) {
+        const translated = t(`common:eventType.${type}`, { defaultValue: '' });
+        if (translated) return translated;
+    }
     return type
         .replace(/_/g, ' ')
         .toLowerCase()
@@ -233,6 +248,44 @@ export const formatDisplayDate = (date: string | Date | undefined | null, lang?:
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+    }).format(d);
+};
+
+/**
+ * Formats a kick-off / match time in Malaysia time (Asia/Kuala_Lumpur).
+ * Handles ISO strings ('2026-10-26T15:30:00Z'), Date objects, or time strings ('15:30:00', '15:30').
+ * Output example: '3:30 PM' (or '3:30 ptg' in ms).
+ */
+export const formatKickOff = (timeOrDate: string | Date | undefined | null, lang?: string): string => {
+    if (!timeOrDate) return '';
+    const locale = (lang && lang.toLowerCase().startsWith('ms')) ? 'ms-MY' : 'en-MY';
+
+    if (typeof timeOrDate === 'string') {
+        const trimmed = timeOrDate.trim();
+        // If it's already HH:mm or HH:mm:ss without date
+        if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(trimmed)) {
+            // matchTime is already Malaysia wall-clock time: format it as UTC so the viewer's zone never shifts it
+            const [hours, minutes] = trimmed.split(':').map(Number);
+            const d = new Date(Date.UTC(1970, 0, 1, hours, minutes));
+            return new Intl.DateTimeFormat(locale, {
+                timeZone: 'UTC',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            }).format(d);
+        }
+    }
+
+    const d = typeof timeOrDate === 'string' ? new Date(timeOrDate) : timeOrDate;
+    if (isNaN(d.getTime())) {
+        return typeof timeOrDate === 'string' ? timeOrDate : '';
+    }
+
+    return new Intl.DateTimeFormat(locale, {
+        timeZone: 'Asia/Kuala_Lumpur',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
     }).format(d);
 };
 

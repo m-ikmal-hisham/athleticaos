@@ -15,12 +15,18 @@ import org.springframework.http.ResponseEntity;
 public final class PublicHttpCache {
 
     public static final String CACHE_CONTROL = "public, max-age=30, stale-while-revalidate=120";
+    public static final String CACHE_CONTROL_5MIN = "public, max-age=300, stale-while-revalidate=600";
 
     private PublicHttpCache() {
     }
 
-    /** 200 OK with the public cache policy. */
+    /** 200 OK with the public cache policy (30 s). */
     public static <T> ResponseEntity<T> ok(T body) {
         return ResponseEntity.ok().header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL).body(body);
+    }
+
+    /** 200 OK with 5-minute cache policy for slow-moving directory hierarchies. */
+    public static <T> ResponseEntity<T> okWith5MinCache(T body) {
+        return ResponseEntity.ok().header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_5MIN).body(body);
     }
 }

@@ -28,6 +28,7 @@ import com.athleticaos.backend.services.OrganisationService;
 import com.athleticaos.backend.services.PersonDuplicateService;
 import com.athleticaos.backend.services.UserService;
 import com.athleticaos.backend.utils.EmailUtil;
+import com.athleticaos.backend.utils.SlugGenerator;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -120,7 +121,7 @@ public class OrganisationServiceImpl implements OrganisationService {
                     .orElseThrow(() -> new EntityNotFoundException("Parent organisation not found"));
         }
 
-        String slug = generateSlug(request.getName());
+        String slug = generateUniqueSlug(request.getName(), null);
 
         String orgState = request.getState();
         if (orgState == null && parent != null) {
@@ -190,6 +191,9 @@ public class OrganisationServiceImpl implements OrganisationService {
 
         if (request.getName() != null) {
             org.setName(request.getName());
+        }
+        if (org.getSlug() == null || org.getSlug().trim().isEmpty()) {
+            org.setSlug(generateUniqueSlug(org.getName(), org.getId()));
         }
         if (request.getOrgType() != null) {
             org.setOrgType(request.getOrgType());
@@ -467,20 +471,28 @@ public class OrganisationServiceImpl implements OrganisationService {
         }
     }
 
-    private String generateSlug(String name) {
-        if (name == null)
-            return null;
-        String slug = name.toLowerCase()
-                .replaceAll("[^a-z0-9\\s-]", "")
-                .replaceAll("\\s+", "-");
-
-        // Ensure uniqueness
-        if (organisationRepository.findBySlug(slug).isPresent()) {
-            int suffix = 1;
-            while (organisationRepository.findBySlug(slug + "-" + suffix).isPresent()) {
-                suffix++;
+    String generateUniqueSlug(String name, UUID id) {
+        String baseSlug = "";
+        try {
+            if (name != null && !name.trim().isEmpty()) {
+                baseSlug = SlugGenerator.generateSlug(name);
             }
-            slug = slug + "-" + suffix;
+        } catch (IllegalArgumentException ignored) {
+            baseSlug = "";
+        }
+
+        if (baseSlug.isEmpty()) {
+            if (id != null) {
+                baseSlug = "org-" + id.toString().substring(0, Math.min(8, id.toString().length()));
+            } else {
+                baseSlug = "org";
+            }
+        }
+
+        String slug = baseSlug;
+        int counter = 1;
+        while (organisationRepository.findBySlug(slug).isPresent()) {
+            slug = baseSlug + "-" + counter++;
         }
         return slug;
     }

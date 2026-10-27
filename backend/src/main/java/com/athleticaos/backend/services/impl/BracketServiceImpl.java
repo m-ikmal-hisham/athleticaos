@@ -7,6 +7,9 @@ import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.enums.TournamentStageType;
 import com.athleticaos.backend.repositories.*;
 import com.athleticaos.backend.services.BracketService;
+import com.athleticaos.backend.services.standings.MatchPointsCalculator;
+import com.athleticaos.backend.services.standings.MatchPointsResult;
+import com.athleticaos.backend.services.standings.ScoringRules;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -1462,13 +1465,23 @@ public class BracketServiceImpl implements BracketService {
         // Match the scoring the public standings table uses, so the bracket cannot disagree
         // with the table an organiser is looking at.
         TournamentFormatConfig config = tournament.getFormatConfig(categoryId);
-        int pointsWin = config != null && config.getPointsWin() != null ? config.getPointsWin() : 4;
-        int pointsDraw = config != null && config.getPointsDraw() != null ? config.getPointsDraw() : 2;
-        int pointsLoss = config != null && config.getPointsLoss() != null ? config.getPointsLoss() : 0;
+        ScoringRules rules = ScoringRules.from(config);
+
+        List<Object[]> scoringStats = matchEventRepository.findScoringEventCountsByTournamentId(tournament.getId());
+        Map<UUID, Long> matchScoringEventCounts = new HashMap<>();
+        Map<UUID, Map<UUID, Integer>> matchTeamTryCounts = new HashMap<>();
+        for (Object[] row : scoringStats) {
+            UUID mId = (UUID) row[0];
+            UUID tId = (UUID) row[1];
+            int tries = row[2] != null ? ((Number) row[2]).intValue() : 0;
+            long scoringEvents = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            matchScoringEventCounts.merge(mId, scoringEvents, Long::sum);
+            matchTeamTryCounts.computeIfAbsent(mId, k -> new HashMap<>()).put(tId, tries);
+        }
 
         List<PoolStanding> ranked = new ArrayList<>();
         for (TournamentStage poolStage : poolStages) {
-            List<PoolStanding> table = calculatePoolStandings(poolStage, pointsWin, pointsDraw, pointsLoss);
+            List<PoolStanding> table = calculatePoolStandings(poolStage, rules, matchScoringEventCounts, matchTeamTryCounts);
             for (int position = 0; position < table.size(); position++) {
                 PoolStanding standing = table.get(position);
                 standing.poolPosition = position + 1;
@@ -1736,14 +1749,12 @@ public class BracketServiceImpl implements BracketService {
     /**
      * Builds one pool's table, ordered best-first.
      *
-     * Scoring is passed in from the tournament's format config rather than hardcoded. It used to
-     * assume 4/2/0 plus a bonus point for any score of 28 or more — a stand-in for the four-try
-     * bonus that no configuration controlled. That could rank a pool differently from the public
-     * standings table, meaning the bracket and the table disagreed about who had qualified. The
-     * fabricated bonus is gone; try counts are not recorded, so it cannot be derived.
+     * Scoring rules (win/draw/loss and optional bonus points) are passed in from the tournament's
+     * format config rather than hardcoded, using the shared {@link MatchPointsCalculator} so the
+     * bracket seeding and the standings table always agree.
      */
-    private List<PoolStanding> calculatePoolStandings(TournamentStage poolStage, int pointsWin, int pointsDraw,
-            int pointsLoss) {
+    private List<PoolStanding> calculatePoolStandings(TournamentStage poolStage, ScoringRules rules,
+            Map<UUID, Long> matchScoringEventCounts, Map<UUID, Map<UUID, Integer>> matchTeamTryCounts) {
         List<Match> poolMatches = matchRepository.findByStageId(poolStage.getId());
         Map<UUID, PoolStanding> standingsMap = new HashMap<>();
 
@@ -1766,48 +1777,44 @@ public class BracketServiceImpl implements BracketService {
                 continue;
             }
 
-            // Walkovers now carry the awarded scoreline, so they flow through the normal path
-            // below. This branch only catches ones recorded before that change, which have a
-            // winner but no scores.
-            if (match.getResultType() == com.athleticaos.backend.enums.MatchResultType.WALKOVER
-                    && match.getWinnerTeam() != null
-                    && (match.getHomeScore() == null || match.getAwayScore() == null)) {
-                PoolStanding winner = standingsMap.get(match.getWinnerTeam().getId());
-                UUID loserId = match.getWinnerTeam().getId().equals(match.getHomeTeam().getId())
-                        ? match.getAwayTeam().getId()
-                        : match.getHomeTeam().getId();
-                PoolStanding loser = standingsMap.get(loserId);
-                if (winner != null) {
-                    winner.points += pointsWin;
-                }
-                if (loser != null) {
-                    loser.points += pointsLoss;
-                }
+            UUID homeId = match.getHomeTeam().getId();
+            UUID awayId = match.getAwayTeam().getId();
+            PoolStanding homeStanding = standingsMap.get(homeId);
+            PoolStanding awayStanding = standingsMap.get(awayId);
+            if (homeStanding == null || awayStanding == null) {
                 continue;
             }
 
-            if (match.getHomeScore() == null || match.getAwayScore() == null) {
-                continue;
+            long totalScoringEvents = matchScoringEventCounts.getOrDefault(match.getId(), 0L);
+            boolean isZeroZero = match.getHomeScore() != null && match.getHomeScore() == 0
+                    && match.getAwayScore() != null && match.getAwayScore() == 0;
+            boolean triesKnown = (totalScoringEvents > 0) || isZeroZero;
+
+            int homeTries = matchTeamTryCounts.getOrDefault(match.getId(), Collections.emptyMap()).getOrDefault(homeId, 0);
+            int awayTries = matchTeamTryCounts.getOrDefault(match.getId(), Collections.emptyMap()).getOrDefault(awayId, 0);
+
+            MatchPointsResult result = MatchPointsCalculator.calculate(
+                    rules,
+                    match.getHomeScore(),
+                    match.getAwayScore(),
+                    match.getResultType(),
+                    match.getWinnerTeam() != null ? match.getWinnerTeam().getId() : null,
+                    homeId,
+                    awayId,
+                    homeTries,
+                    awayTries,
+                    triesKnown
+            );
+
+            if (match.getHomeScore() != null && match.getAwayScore() != null) {
+                homeStanding.pointsFor += match.getHomeScore();
+                homeStanding.pointsAgainst += match.getAwayScore();
+                awayStanding.pointsFor += match.getAwayScore();
+                awayStanding.pointsAgainst += match.getHomeScore();
             }
 
-            PoolStanding homeStanding = standingsMap.get(match.getHomeTeam().getId());
-            PoolStanding awayStanding = standingsMap.get(match.getAwayTeam().getId());
-
-            homeStanding.pointsFor += match.getHomeScore();
-            homeStanding.pointsAgainst += match.getAwayScore();
-            awayStanding.pointsFor += match.getAwayScore();
-            awayStanding.pointsAgainst += match.getHomeScore();
-
-            if (match.getHomeScore() > match.getAwayScore()) {
-                homeStanding.points += pointsWin;
-                awayStanding.points += pointsLoss;
-            } else if (match.getAwayScore() > match.getHomeScore()) {
-                awayStanding.points += pointsWin;
-                homeStanding.points += pointsLoss;
-            } else {
-                homeStanding.points += pointsDraw;
-                awayStanding.points += pointsDraw;
-            }
+            homeStanding.points += result.home().tablePoints();
+            awayStanding.points += result.away().tablePoints();
         }
 
         // Sort by points, then point differential — same order as the standings table.

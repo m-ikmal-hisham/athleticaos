@@ -10,12 +10,12 @@ export default function HowItWorks() {
         <div className="max-w-4xl mx-auto py-12 px-4 space-y-16">
             {/* Header */}
             <div className="text-center space-y-6">
-                <span className="text-navy dark:text-navy-tint font-bold tracking-wider uppercase text-sm">AthleticaOS Guide</span>
+                <span className="text-navy dark:text-navy-tint font-bold tracking-wider uppercase text-sm">{t('howItWorks.tag')}</span>
                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Experience Rugby Like Never Before
+                    {t('howItWorks.title')}
                 </h1>
                 <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                    Follow your favourite tournaments, catch live scores, and stay updated with real-time statistics.
+                    {t('howItWorks.subtitle')}
                 </p>
             </div>
 
@@ -23,38 +23,38 @@ export default function HowItWorks() {
             <div className="grid md:grid-cols-3 gap-8">
                 <StepCard
                     icon={<Trophy className="w-8 h-8" />}
-                    title="1. Browse Tournaments"
-                    description="Explore active and upcoming tournaments across Malaysia. Find your team's schedule and standings."
+                    title={t('howItWorks.step1Title')}
+                    description={t('howItWorks.step1Desc')}
                 />
                 <StepCard
                     icon={<MonitorPlay className="w-8 h-8 text-crimson dark:text-crimson-tint" />}
-                    title="2. Follow Live Matches"
-                    description="Watch the action unfold with our live match center. Real-time scores, commentary, and statistics."
+                    title={t('howItWorks.step2Title')}
+                    description={t('howItWorks.step2Desc')}
                 />
                 <StepCard
                     icon={<ShareNetwork className="w-8 h-8 text-navy dark:text-navy-tint" />}
-                    title="3. Share the Excitement"
-                    description="Share match results and highlights with friends and family instantly on social media."
+                    title={t('howItWorks.step3Title')}
+                    description={t('howItWorks.step3Desc')}
                 />
             </div>
 
             {/* FAQ Section */}
             <div className="max-w-2xl mx-auto space-y-8">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Frequently Asked Questions</h2>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('howItWorks.faqTitle')}</h2>
                 </div>
                 <div className="space-y-4">
                     <FAQItem
-                        question="Is AthleticaOS free to use?"
-                        answer="Yes! AthleticaOS is completely free for fans to browse tournaments, view scores, and follow matches."
+                        question={t('howItWorks.faq1Q')}
+                        answer={t('howItWorks.faq1A')}
                     />
                     <FAQItem
-                        question="How do I register my team?"
-                        answer="Team registration is handled by tournament organisers. Contact the specific tournament organiser through the Contact page to inquire."
+                        question={t('howItWorks.faq2Q')}
+                        answer={t('howItWorks.faq2A')}
                     />
                     <FAQItem
-                        question="Can I watch match replays?"
-                        answer="Live streams and replays are available for select tournaments. Look for the 'Live' badge on match cards."
+                        question={t('howItWorks.faq3Q')}
+                        answer={t('howItWorks.faq3A')}
                     />
                 </div>
             </div>
@@ -77,7 +77,7 @@ export default function HowItWorks() {
 
 function StepCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
     return (
-        <GlassCard className="p-8 text-center space-y-4 h-full hover:scale-105 transition-transform duration-300">
+        <GlassCard surface="glass" hover className="p-8 text-center space-y-4 h-full">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
                 {icon}
             </div>
@@ -95,7 +95,7 @@ function FAQItem({ question, answer }: { question: string, answer: string }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <GlassCard className="overflow-hidden transition-all">
+        <GlassCard surface="glass" className="overflow-hidden">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between p-6 text-left"

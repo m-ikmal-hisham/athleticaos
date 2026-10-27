@@ -53,6 +53,8 @@ class PublicProfilePrivacyTest {
     private TeamRepository teamRepository;
     @Mock
     private PlayerRepository playerRepository;
+    @Mock
+    private OrganisationRepository organisationRepository;
 
     private PublicProfileController controller;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -69,7 +71,8 @@ class PublicProfilePrivacyTest {
                 playerTeamService,
                 tournamentPlayerRepository,
                 teamRepository,
-                playerRepository
+                playerRepository,
+                organisationRepository
         );
     }
 

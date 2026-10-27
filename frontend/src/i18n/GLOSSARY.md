@@ -82,4 +82,38 @@
 | Maul | Maul | Maul | no | World Rugby standard term; stays English in technical/match context |
 | Try | Try | Try | no | World Rugby standard term; stays English in technical/match context |
 | Conversion | Conversion | Conversion | no | World Rugby standard term; stays English in technical/match context |
+| Penalty Try | Penalty try | Penalty try | no | World Rugby standard term; stays English |
+| Drop Goal | Drop goal | Drop goal | no | World Rugby standard term; stays English |
+| Yellow Card | Kad kuning | Kad kuning | no | Disciplinary card |
+| Red Card | Kad merah | Kad merah | no | Disciplinary card |
+| Sin bin | Sin bin | Sin bin | no | World Rugby standard term; stays English |
+| National (level) | Kebangsaan | Kebangsaan | no | Tournament & organisation level |
+| State (level) | Negeri | Negeri | no | Tournament & organisation level |
+| District (level) | Daerah | Daerah | no | Tournament & organisation level |
+| Club (level) | Kelab | Kelab | no | Tournament & organisation level |
+| School (level) | Sekolah | Sekolah | no | Tournament & organisation level |
+| International (level) | Antarabangsa | Antarabangsa | no | Tournament level |
+| Group + knockout | Kumpulan + kalah mati | Kumpulan + kalah mati | no | Competition format |
+| Knockout | Kalah mati | Kalah mati | no | Tournament elimination format |
+| League | Liga | Liga | no | Competition format |
+| Pool | Kumpulan | Kumpulan | no | Group stage pool |
+| Quarter-final | Suku akhir | Suku akhir | no | Tournament knockout round |
+| Semi-final | Separuh akhir | Separuh akhir | no | Tournament knockout round |
+| Final | Akhir | Akhir | no | Championship match |
+| 3rd place playoff | Penentuan tempat ke-3 | Penentuan tempat ke-3 | no | Bronze medal playoff |
+| Today | Hari ini | Hari ini | no | Calendar filter |
+| Venue TBC | Tempat akan ditentukan | Tempat akan ditentukan | no | Match schedule venue placeholder |
+| Head Coach | Ketua jurulatih | Ketua jurulatih | no | Official role |
+| Assistant Coach | Penolong jurulatih | Penolong jurulatih | no | Official role |
+| Team Manager | Pengurus pasukan | Pengurus pasukan | no | Official role |
+| Medic / Physio | Pegawai perubatan / Fisioterapi | Pegawai perubatan / Fisioterapi | no | Official role |
+| Match Commissioner | Pesuruhjaya perlawanan | Pesuruhjaya perlawanan | no | Match official role |
+| Referee | Pengadil | Pengadil | no | Match referee |
+| Assistant Referee | Penolong pengadil | Penolong pengadil | no | Match line official |
+| Scoring breakdown | Pecahan jaringan | Pecahan jaringan | no | Match score analysis |
+| Discipline impact | Kesan disiplin | Kesan disiplin | no | Card impact analysis |
+| Media portal | Portal media | Portal media | no | Press & media portal |
+| Affiliated organisations | Organisasi gabungan | Organisasi gabungan | no | Hierarchy affiliation |
+| Sub-affiliations | Sub-gabungan | Sub-gabungan | no | Secondary affiliations |
+| Direct affiliate | Gabungan langsung | Gabungan langsung | no | Immediate affiliate |
 

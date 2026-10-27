@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, ArrowLeft } from '@phosphor-icons/react';
 
 import { Button } from '@/components/Button';
@@ -17,6 +18,7 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export const ForgotPassword = () => {
+    const { t } = useTranslation(['auth', 'common']);
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -42,9 +44,9 @@ export const ForgotPassword = () => {
         } catch (err: unknown) {
             const axiosErr = err as { response?: { status?: number; data?: { message?: string } } };
             if (axiosErr.response?.status === 429) {
-                setErrorMessage('Too many requests. Please wait a few minutes before trying again.');
+                setErrorMessage(t('forgotPassword.rateLimitError'));
             } else {
-                setErrorMessage(axiosErr.response?.data?.message || 'Unable to request password reset. Please try again.');
+                setErrorMessage(axiosErr.response?.data?.message || t('forgotPassword.genericError'));
             }
         } finally {
             setIsLoading(false);
@@ -52,8 +54,8 @@ export const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex bg-surface-page">
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-surface-page relative z-10">
+        <div className="min-h-screen w-full flex">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 relative z-10">
                 <div className="w-full max-w-sm space-y-8">
                     {/* Header */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -64,10 +66,10 @@ export const ForgotPassword = () => {
                         />
                         <div className="flex flex-col items-start text-left">
                             <h2 className="text-3xl font-bold tracking-tight text-black dark:text-white leading-none">
-                                {isSubmitted ? 'Check email' : 'Reset password'}
+                                {isSubmitted ? t('forgotPassword.checkEmailTitle') : t('forgotPassword.title')}
                             </h2>
                             <p className="mt-1.5 text-sm text-black/72 dark:text-white/72 font-medium">
-                                AthleticaOS Rugby account access
+                                {t('forgotPassword.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -79,10 +81,10 @@ export const ForgotPassword = () => {
                                     <CheckCircle size={48} weight="duotone" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-black dark:text-white">
-                                    Password reset link sent
+                                    {t('forgotPassword.sentTitle')}
                                 </h3>
                                 <p className="text-sm text-black/72 dark:text-white/72 leading-relaxed">
-                                    If an account exists for that email, we&apos;ve sent a password reset link. Links are valid for 60 minutes.
+                                    {t('forgotPassword.sentDescription')}
                                 </p>
                             </div>
 
@@ -92,7 +94,7 @@ export const ForgotPassword = () => {
                                 className="w-full py-3"
                                 onClick={() => navigate('/login')}
                             >
-                                Back to Sign in
+                                {t('forgotPassword.backToSignIn')}
                             </Button>
                         </div>
                     ) : (
@@ -106,7 +108,7 @@ export const ForgotPassword = () => {
                             <div className="space-y-1">
                                 <Input
                                     type="email"
-                                    placeholder="Account email"
+                                    placeholder={t('forgotPassword.emailPlaceholder')}
                                     error={errors.email?.message}
                                     {...register('email')}
                                     className="bg-black/4 dark:bg-white/6 border-black/24 dark:border-white/28 text-black/90 dark:text-white/92 placeholder:text-black/60 dark:placeholder:text-white/60 focus:bg-white dark:focus:bg-deep-navy focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint rounded-[10px] min-h-[44px] text-base sm:text-sm p-3"
@@ -114,7 +116,7 @@ export const ForgotPassword = () => {
                             </div>
 
                             <p className="text-xs text-black/60 dark:text-white/60">
-                                Enter the email associated with your account and we&apos;ll send instructions to reset your password.
+                                {t('forgotPassword.instruction')}
                             </p>
 
                             <div className="flex gap-3">
@@ -124,7 +126,7 @@ export const ForgotPassword = () => {
                                     className="w-1/3 py-3"
                                     onClick={() => navigate('/login')}
                                 >
-                                    Cancel
+                                    {t('login.cancel')}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -132,7 +134,7 @@ export const ForgotPassword = () => {
                                     className="flex-1 py-3"
                                     isLoading={isLoading}
                                 >
-                                    Send link
+                                    {t('forgotPassword.sendLink')}
                                 </Button>
                             </div>
 
@@ -141,7 +143,7 @@ export const ForgotPassword = () => {
                                     to="/login"
                                     className="inline-flex items-center gap-1.5 text-xs text-navy dark:text-navy-tint hover:underline font-medium"
                                 >
-                                    <ArrowLeft size={14} /> Back to Sign in
+                                    <ArrowLeft size={14} /> {t('forgotPassword.backToSignIn')}
                                 </Link>
                             </div>
                         </form>
@@ -150,13 +152,7 @@ export const ForgotPassword = () => {
             </div>
 
             {/* Right Side graphic */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-deep-navy overflow-hidden items-center justify-center p-12">
-                <img
-                    src="/athleticaos-bg-light-new.png"
-                    alt="AthleticaOS Rugby"
-                    className="absolute inset-0 w-full h-full object-cover opacity-100 dark:opacity-[0.08]"
-                />
-            </div>
+            <div className="hidden lg:flex flex-1 relative items-center justify-center p-12 bg-transparent" />
         </div>
     );
 };

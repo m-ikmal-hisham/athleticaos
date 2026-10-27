@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Football, Target, Lightning, ArrowsLeftRight, Notebook, ShieldWarning, Play, Pause, Rewind, ArrowUp, ArrowDown, CaretDown, CaretUp, Star } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/Button';
@@ -14,6 +15,7 @@ interface MatchMomentsProps {
 }
 
 export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: MatchMomentsProps) => {
+    const { t } = useTranslation(['match', 'common']);
     const [isExpanded, setIsExpanded] = useState(true);
     const [lineups, setLineups] = useState<PublicMatchLineups | null>(null);
 
@@ -140,8 +142,8 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
     if (!match.events || match.events.length === 0) {
         return (
             <GlassCard className="p-8 text-center">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Match Moments</h3>
-                <p className="text-slate-500 dark:text-slate-400">No events recorded yet.</p>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t('match:moments.title')}</h3>
+                <p className="text-slate-500 dark:text-slate-400">{t('match:moments.noEvents')}</p>
             </GlassCard>
         );
     }
@@ -247,19 +249,19 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
             <div className={`min-w-0 ${matchText.body} ${alignEnd ? 'text-right' : 'text-left'}`}>
                 <div className={`flex items-start gap-1.5 min-w-0 ${alignEnd ? 'justify-end' : ''} ${tone}`}>
                     {icon}
-                    <span className="font-semibold min-w-0 [overflow-wrap:anywhere]">{name || 'Unknown'}</span>
+                    <span className="font-semibold min-w-0 [overflow-wrap:anywhere]">{name || t('match:moments.unknownPlayer')}</span>
                 </div>
                 {entry && (
                     <div className={`flex flex-wrap items-center gap-1 mt-0.5 ${alignEnd ? 'justify-end' : ''}`}>
                         <span className={`
-                            inline-flex items-center justify-center px-1.5 rounded text-[10px] font-bold leading-4 border
+                            inline-flex items-center justify-center px-1.5 rounded text-[11px] font-bold leading-4 border
                             ${hasNumber
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'}
                         `}>
                             #{hasNumber ? entry.jerseyNumber : '—'}
                         </span>
-                        <span className="text-[10px] md:text-[11px] text-slate-400 dark:text-slate-500 [overflow-wrap:anywhere]">
+                        <span className="text-xs text-slate-400 dark:text-slate-500 [overflow-wrap:anywhere]">
                             {entry.positionDisplay || getPositionName(entry.orderIndex, format)}
                         </span>
                     </div>
@@ -276,14 +278,14 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                         className="flex items-center gap-2 cursor-pointer select-none group" 
                         onClick={() => setIsExpanded(!isExpanded)}
                     >
-                        <h3 className={`${matchText.title} text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors`}>Match Moments</h3>
+                        <h3 className={`${matchText.title} text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors`}>{t('match:moments.title')}</h3>
                         <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors">
                             {isExpanded ? <CaretUp className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint" /> : <CaretDown className="w-4 h-4 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint" />}
                         </div>
                     </div>
                     {replayMode && (
                         <div className="text-xs font-bold text-navy dark:text-navy-tint uppercase tracking-widest mt-1 animate-pulse">
-                            Replay Mode • {currentMinute}'
+                            {t('match:moments.replayMode', { minute: currentMinute })}
                         </div>
                     )}
                 </div>
@@ -294,7 +296,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                     onClick={() => setReplayMode(!replayMode)}
                     className="shrink-0 rounded-full font-bold"
                 >
-                    {replayMode ? 'Exit replay' : 'Replay moments'}
+                    {replayMode ? t('match:moments.exitReplay') : t('match:moments.replayMoments')}
                 </Button>
             </div>
 
@@ -331,8 +333,8 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                 setCurrentMinute(0);
                                 setIsPlaying(false);
                             }}
-                            aria-label="Restart Replay"
-                            title="Restart Replay"
+                            aria-label={t('match:moments.restartReplay')}
+                            title={t('match:moments.restartReplay')}
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-300 transition"
                         >
                             <Rewind className="w-5 h-5" />
@@ -347,14 +349,14 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                 onChange={(e) => {
                                     setCurrentMinute(Number(e.target.value));
                                 }}
-                                aria-label="Replay Timeline"
-                                title="Replay Timeline"
+                                aria-label={t('match:moments.replayTimeline')}
+                                title={t('match:moments.replayTimeline')}
                                 className="w-full accent-navy h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                                <span>Kick Off</span>
-                                {!isOneWay && fullTimeMinutes > 0 && <span>Half Time ({Math.floor(fullTimeMinutes / 2)}')</span>}
-                                <span>Full Time ({fullTimeMinutes}')</span>
+                            <div className="flex justify-between text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
+                                <span>{t('match:moments.kickOff')}</span>
+                                {!isOneWay && fullTimeMinutes > 0 && <span>{t('match:moments.halfTime')} ({Math.floor(fullTimeMinutes / 2)}')</span>}
+                                <span>{t('match:moments.fullTime')} ({fullTimeMinutes}')</span>
                             </div>
                         </div>
                     </div>
@@ -366,7 +368,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 <div className="relative space-y-0">
                     <div className="grid grid-cols-[minmax(0,1fr)_2.5rem_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-2 md:gap-5 pb-3 md:pb-5 mb-2 border-b border-slate-200 dark:border-white/5">
                         <div className={`${matchText.body} text-right font-bold text-navy dark:text-navy-tint truncate`} title={match.homeTeamName}>{match.homeTeamName}</div>
-                        <div className={`${matchText.caption} text-center text-slate-400`}>Min</div>
+                        <div className={`${matchText.caption} text-center text-slate-400`}>{t('match:moments.min')}</div>
                         <div className={`${matchText.body} text-left font-bold text-red-600 dark:text-red-400 truncate`} title={match.awayTeamName}>{match.awayTeamName}</div>
                     </div>
                     {/* Vertical Timeline Line */}
@@ -374,7 +376,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
 
                 {sortedEvents.length === 0 && replayMode && (
                     <div className="py-12 text-center text-slate-400 italic">
-                        No moments yet at this point in the match...
+                        {t('match:moments.noMomentsYet')}
                     </div>
                 )}
 
@@ -418,11 +420,11 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                 <span className="sr-only">{event.teamName}</span>
                                 <div className={`flex items-center gap-1.5 flex-wrap ${isHomeEvent ? 'flex-row-reverse' : ''}`}>
                                     <span className={`${matchText.caption} px-1.5 py-0.5 rounded-full border ${style.text} border-current opacity-80 whitespace-nowrap`}>
-                                        {formatEventType(event.eventType)}
+                                        {formatEventType(event.eventType, t)}
                                     </span>
                                     {event.eventType === 'RED_CARD' && event.notes?.includes('Automatic red card') && (
-                                        <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold whitespace-nowrap">
-                                            2nd YC
+                                        <span className="text-[11px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold whitespace-nowrap">
+                                            {t('match:moments.secondYellow')}
                                         </span>
                                     )}
                                     {isScore && (

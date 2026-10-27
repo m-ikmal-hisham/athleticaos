@@ -21,7 +21,8 @@ class PublicTournamentCategoryTest {
         var officials = mock(MatchOfficialRepository.class);
         var stages = mock(TournamentStageRepository.class);
         var controller = new PublicTournamentController(tournaments, matches, standings,
-                null, null, null, null, null, null, officials, stages, null);
+                null, null, null, null, null, null, officials, stages, null,
+                new com.athleticaos.backend.mappers.PublicMatchMapper());
         UUID tournamentId = UUID.randomUUID();
         UUID men = UUID.randomUUID();
         UUID women = UUID.randomUUID();
@@ -56,7 +57,8 @@ class PublicTournamentCategoryTest {
         var officials = mock(MatchOfficialRepository.class);
         var stages = mock(TournamentStageRepository.class);
         var controller = new PublicTournamentController(tournaments, matches, standings,
-                null, null, null, null, null, null, officials, stages, null);
+                null, null, null, null, null, null, officials, stages, null,
+                new com.athleticaos.backend.mappers.PublicMatchMapper());
 
         UUID unknownId = UUID.randomUUID();
         when(tournaments.getTournamentById(unknownId)).thenThrow(new jakarta.persistence.EntityNotFoundException("Tournament not found"));

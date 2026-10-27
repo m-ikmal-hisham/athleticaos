@@ -43,6 +43,17 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --glass-shadow: var(--shadow-md);
 
+  /* Glass Card System (Public pages under [data-animated-bg="on"]) */
+  --glass-card-bg: rgb(255 255 255 / 0.78);
+  --glass-card-bg-mobile: rgb(255 255 255 / 0.88);
+  --glass-card-gradient: linear-gradient(135deg, rgb(255 255 255 / 0.82) 0%, rgb(240 245 255 / 0.75) 100%);
+  --glass-card-gradient-mobile: linear-gradient(135deg, rgb(255 255 255 / 0.90) 0%, rgb(240 245 255 / 0.86) 100%);
+  --glass-card-edge: rgb(255 255 255 / 0.55);
+  --glass-card-outline: rgb(0 71 171 / 0.08);
+  --glass-card-hover-border: rgb(0 71 171 / 0.22);
+  --glass-card-hover-bg: rgb(255 255 255 / 0.85);
+  --glass-card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+
   /* Locked Glassmorphism System */
   --glass-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
   --glass-shadow-md: var(--shadow-md);
@@ -99,6 +110,17 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.40);
   --glass-shadow: var(--shadow-md);
 
+  /* Glass Card System (Public pages under [data-animated-bg="on"]) */
+  --glass-card-bg: rgb(13 27 42 / 0.72);
+  --glass-card-bg-mobile: rgb(13 27 42 / 0.88);
+  --glass-card-gradient: linear-gradient(135deg, rgb(18 36 56 / 0.76) 0%, rgb(13 27 42 / 0.70) 100%);
+  --glass-card-gradient-mobile: linear-gradient(135deg, rgb(18 36 56 / 0.90) 0%, rgb(13 27 42 / 0.86) 100%);
+  --glass-card-edge: rgb(255 255 255 / 0.10);
+  --glass-card-outline: rgb(0 0 0 / 0.40);
+  --glass-card-hover-border: rgb(140 172 217 / 0.25);
+  --glass-card-hover-bg: rgb(18 36 56 / 0.80);
+  --glass-card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.30);
+
   --text-color: var(--content-primary);
   --text-muted: var(--content-secondary);
   --bg-base: var(--surface-page);
@@ -112,4 +134,45 @@ body {
   background: var(--bg-base);
   color: var(--text-color);
   transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Default / Solid Fallback for .glass-card-surface:
+   Used when not inside [data-animated-bg="on"], or when reduced transparency is requested,
+   or when backdrop-filter is unsupported */
+.glass-card-surface {
+  background-color: var(--surface-card);
+  border: 1px solid var(--line-subtle);
+  border-radius: 14px;
+  color: var(--content-primary);
+  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+  transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1),
+              border-color 150ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Glass Card styling: active ONLY inside public [data-animated-bg="on"] */
+@supports (backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)) {
+  @media not (prefers-reduced-transparency: reduce) {
+    [data-animated-bg="on"] .glass-card-surface {
+      background: var(--glass-card-gradient-mobile, var(--glass-card-bg-mobile));
+      border: 1px solid var(--glass-card-edge);
+      box-shadow: 0 0 0 1px var(--glass-card-outline), var(--glass-card-shadow);
+    }
+
+    @media (min-width: 1024px) {
+      [data-animated-bg="on"] .glass-card-surface {
+        background: var(--glass-card-gradient, var(--glass-card-bg));
+        backdrop-filter: blur(12px) saturate(140%);
+        -webkit-backdrop-filter: blur(12px) saturate(140%);
+      }
+    }
+
+    [data-animated-bg="on"] .glass-card-surface.glass-card-interactive:hover,
+    [data-animated-bg="on"] a.glass-card-surface:hover,
+    [data-animated-bg="on"] a:hover > .glass-card-surface,
+    [data-animated-bg="on"] a.group:hover .glass-card-surface {
+      border-color: var(--glass-card-hover-border);
+      box-shadow: 0 0 0 1px var(--glass-card-hover-border), var(--shadow-md);
+    }
+  }
 }

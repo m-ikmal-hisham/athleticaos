@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { publicTournamentApi, PublicTournamentStats, PublicPlayerStatEntry } from '../../../api/public.api';
 import { CircleNotch, Trophy, Medal, Warning, Shield, Target, Lightning, MagnifyingGlass, CaretDown, CaretUp, Football } from '@phosphor-icons/react';
 
@@ -21,9 +22,10 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
     players,
     renderRow,
     emptyIcon,
-    emptyMessage = 'No data yet.',
+    emptyMessage,
     defaultVisible = 5,
 }) => {
+    const { t } = useTranslation('tournament');
     const [search, setSearch] = useState('');
     const [expanded, setExpanded] = useState(false);
 
@@ -45,7 +47,7 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
         return (
             <div className="h-32 flex flex-col items-center justify-center text-skin-muted opacity-60">
                 {emptyIcon || <Shield className="w-8 h-8 mb-2" />}
-                <span className="text-sm">{emptyMessage}</span>
+                <span className="text-sm">{emptyMessage || t('stats.noData')}</span>
             </div>
         );
     }
@@ -59,7 +61,7 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search player or team..."
+                    placeholder={t('stats.searchPlaceholder')}
                     className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 text-skin-base placeholder:text-skin-muted/60 focus:outline-none focus:ring-2 focus:ring-blue-400/40 dark:focus:ring-cyan-400/40 transition-all"
                 />
             </div>
@@ -82,12 +84,12 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
                     {expanded ? (
                         <>
                             <CaretUp className="w-3 h-3" weight="bold" />
-                            Show Less
+                            {t('stats.showLess')}
                         </>
                     ) : (
                         <>
                             <CaretDown className="w-3 h-3" weight="bold" />
-                            Show All ({filtered.length})
+                            {t('stats.showAll', { count: filtered.length })}
                         </>
                     )}
                 </button>
@@ -96,7 +98,7 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
             {/* No results from search */}
             {isSearchActive && filtered.length === 0 && (
                 <div className="text-center text-sm text-skin-muted py-4 opacity-60">
-                    No players match "{search}"
+                    {t('stats.noMatchSearch', { search })}
                 </div>
             )}
         </div>
@@ -105,6 +107,7 @@ const PlayerListSection: React.FC<PlayerListSectionProps> = ({
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, categoryId }) => {
+    const { t } = useTranslation('tournament');
     const navigate = useNavigate();
     const [stats, setStats] = useState<PublicTournamentStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -122,7 +125,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
             } catch (err) {
                 if (!active) return;
                 console.error("Failed to load stats", err);
-                setError("Failed to load statistics.");
+                setError(t('stats.loadError'));
             } finally {
                 if (active) setLoading(false);
             }
@@ -132,7 +135,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
             fetchStats();
         }
         return () => { active = false; };
-    }, [tournamentId, categoryId]);
+    }, [tournamentId, categoryId, t]);
 
     if (loading) {
         return (
@@ -145,7 +148,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
     if (error || !stats) {
         return (
             <div className="text-center py-12 text-skin-muted">
-                {error || "No statistics available."}
+                {error || t('stats.noStatsRecorded')}
             </div>
         );
     }
@@ -166,7 +169,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
     if (!hasData) {
         return (
             <div className="text-center py-12 text-skin-muted">
-                No statistics recorded yet for this category.
+                {t('stats.noStatsRecorded')}
             </div>
         );
     }
@@ -178,22 +181,22 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
                     <Medal className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalTries ?? 0}</div>
-                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Tries</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">{t('stats.tries')}</div>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
                     <Trophy className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalPoints ?? 0}</div>
-                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Points</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">{t('stats.points')}</div>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
                     <Target className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalConversions ?? 0}</div>
-                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Conversions</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">{t('stats.conversions')}</div>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md shadow-sm flex flex-col items-center justify-center text-center">
                     <Lightning className="w-6 h-6 text-navy dark:text-navy-tint mb-2" />
                     <div className="text-2xl font-black text-skin-base">{stats.totalPenalties ?? 0}</div>
-                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">Penalties</div>
+                    <div className="text-xs font-semibold text-skin-muted uppercase tracking-wider">{t('stats.penalties')}</div>
                 </div>
             </div>
 
@@ -203,12 +206,12 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                 <div className="p-6">
                     <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
                         <Medal className="w-5 h-5" />
-                        Top Point Scorers
+                        {t('stats.topPointScorers')}
                     </h3>
 
                     <PlayerListSection
                         players={stats.topScorers}
-                        emptyMessage="No scoring data yet."
+                        emptyMessage={t('stats.noScoringData')}
                         renderRow={(player) => (
                             <div
                                 className="flex items-center gap-4 p-3 rounded-xl bg-white/30 dark:bg-white/5 border border-white/10 hover:bg-white/40 dark:hover:bg-white/10 transition-colors cursor-pointer group"
@@ -217,7 +220,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-skin-base truncate">{player.name}</div>
                                     <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
-                                    <div className="flex gap-3 mt-1.5 text-[10px] uppercase font-medium text-skin-muted">
+                                    <div className="flex gap-3 mt-1.5 text-[11px] uppercase font-bold text-skin-muted">
                                         <span>{player.tries} T</span>
                                         <span className="text-green-500 dark:text-green-400">{player.conversions} C</span>
                                         <span className="text-orange-500 dark:text-orange-400">{player.penalties} P</span>
@@ -228,7 +231,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 </div>
                                 <div className="text-right">
                                     <div className="text-lg font-bold text-skin-base">{player.totalPoints}</div>
-                                    <div className="text-[10px] uppercase text-skin-muted font-medium">pts</div>
+                                    <div className="text-[11px] uppercase text-skin-muted font-bold">{t('stats.pts')}</div>
                                 </div>
                             </div>
                         )}
@@ -243,32 +246,32 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                     <div className="p-6 h-full">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
                             <Warning className="w-5 h-5 text-crimson dark:text-crimson-tint" />
-                            Discipline
+                            {t('stats.discipline')}
                         </h3>
 
-                        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-4" aria-label="Tournament discipline summary">
+                        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-4" aria-label={t('stats.disciplineSummary')}>
                             <div className="rounded-xl border border-yellow-300/50 dark:border-yellow-500/20 bg-yellow-50/70 dark:bg-yellow-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-yellow-700 dark:text-yellow-400">{totalYellowCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-yellow-700/70 dark:text-yellow-400/70">Yellow</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-yellow-700/70 dark:text-yellow-400/70">{t('stats.yellow')}</div>
                             </div>
                             <div className="rounded-xl border border-amber-300/50 dark:border-amber-500/20 bg-amber-50/70 dark:bg-amber-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-amber-700 dark:text-amber-400">{totalDoubleYellowRedCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">2 Yellow + Red</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">{t('stats.doubleYellow')}</div>
                             </div>
                             <div className="rounded-xl border border-red-300/50 dark:border-red-500/20 bg-red-50/70 dark:bg-red-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-red-700 dark:text-red-400">{totalStraightRedCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-red-700/70 dark:text-red-400/70">Straight Red</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-red-700/70 dark:text-red-400/70">{t('stats.straightRed')}</div>
                             </div>
                             <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/40 dark:bg-white/5 p-3 text-center">
                                 <div className="text-xl font-black text-skin-base">{disciplinedPlayers}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-skin-muted">Players</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-skin-muted">{t('stats.players')}</div>
                             </div>
                         </div>
 
                         <PlayerListSection
                             players={stats.topOffenders}
                             emptyIcon={<Shield className="w-8 h-8 mb-2" />}
-                            emptyMessage="Clean Play! No cards yet."
+                            emptyMessage={t('stats.cleanPlay')}
                             renderRow={(player) => (
                                 <div
                                     className="flex items-center justify-between text-sm p-2.5 rounded-xl bg-white/20 dark:bg-white/5 border border-white/10 hover:bg-white/30 dark:hover:bg-white/10 transition-colors cursor-pointer group"
@@ -280,12 +283,12 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                     </div>
                                     <div className="flex gap-2 shrink-0">
                                         {player.redCards > 0 && (
-                                            <span className="flex items-center justify-center w-6 h-8 bg-red-600 text-white text-xs font-bold rounded-sm shadow-sm" title="Red Cards">
+                                            <span className="flex items-center justify-center w-6 h-8 bg-red-600 text-white text-xs font-bold rounded-sm shadow-sm" title={t('stats.redCards')}>
                                                 {player.redCards}
                                             </span>
                                         )}
                                         {player.yellowCards > 0 && (
-                                            <span className="flex items-center justify-center w-6 h-8 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-sm shadow-sm" title="Yellow Cards">
+                                            <span className="flex items-center justify-center w-6 h-8 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-sm shadow-sm" title={t('stats.yellowCards')}>
                                                 {player.yellowCards}
                                             </span>
                                         )}
@@ -302,12 +305,12 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                     <div className="p-6 h-full">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-skin-base">
                             <Football className="w-6 h-6" />
-                            Top Try Scorers
+                            {t('stats.topTryScorers')}
                         </h3>
 
                         <PlayerListSection
                             players={tryScorers}
-                            emptyMessage="No tries scored yet."
+                            emptyMessage={t('stats.noTriesScored')}
                             renderRow={(player) => (
                                 <div
                                     className="flex items-center justify-between text-sm p-2.5 rounded-xl bg-white/20 dark:bg-white/5 border border-white/10 hover:bg-white/30 dark:hover:bg-white/10 transition-colors cursor-pointer group"

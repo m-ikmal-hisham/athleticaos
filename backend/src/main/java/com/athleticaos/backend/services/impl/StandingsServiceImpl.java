@@ -1,16 +1,20 @@
 package com.athleticaos.backend.services.impl;
 
-import com.athleticaos.backend.util.UrlSanitizer;
-
 import com.athleticaos.backend.dtos.standing.StandingsResponse;
 import com.athleticaos.backend.entities.Match;
-import com.athleticaos.backend.entities.TournamentFormatConfig;
 import com.athleticaos.backend.entities.TournamentTeam;
+import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
+import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TournamentFormatConfigRepository;
 import com.athleticaos.backend.repositories.TournamentTeamRepository;
 import com.athleticaos.backend.services.StandingsService;
+import com.athleticaos.backend.services.standings.MatchPointsCalculator;
+import com.athleticaos.backend.services.standings.MatchPointsResult;
+import com.athleticaos.backend.services.standings.ScoringRules;
+import com.athleticaos.backend.services.standings.TeamMatchPoints;
+import com.athleticaos.backend.util.UrlSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +31,7 @@ public class StandingsServiceImpl implements StandingsService {
     private final MatchRepository matchRepository;
     private final TournamentTeamRepository tournamentTeamRepository;
     private final TournamentFormatConfigRepository formatConfigRepository;
+    private final MatchEventRepository matchEventRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -34,22 +39,14 @@ public class StandingsServiceImpl implements StandingsService {
         log.info("Calculating standings for tournament {}", tournamentId);
 
         // Load scoring rules from tournament format config (global = category is null)
-        int pointsWin = 4; // defaults
-        int pointsDraw = 2;
-        int pointsLoss = 0;
-
-        TournamentFormatConfig formatConfig = formatConfigRepository
+        ScoringRules globalRules = formatConfigRepository
                 .findByTournamentIdAndCategoryIsNull(tournamentId)
-                .orElse(null);
-        if (formatConfig != null) {
-            pointsWin = formatConfig.getPointsWin() != null ? formatConfig.getPointsWin() : 4;
-            pointsDraw = formatConfig.getPointsDraw() != null ? formatConfig.getPointsDraw() : 2;
-            pointsLoss = formatConfig.getPointsLoss() != null ? formatConfig.getPointsLoss() : 0;
-            log.info("Using configured scoring rules: Win={}, Draw={}, Loss={}", pointsWin, pointsDraw, pointsLoss);
-        } else {
-            log.info("No format config found, using default scoring rules: Win={}, Draw={}, Loss={}", pointsWin,
-                    pointsDraw, pointsLoss);
-        }
+                .map(ScoringRules::from)
+                .orElseGet(ScoringRules::defaults);
+
+        log.info("Using global scoring rules: Win={}, Draw={}, Loss={}, BonusEnabled={}",
+                globalRules.pointsWin(), globalRules.pointsDraw(), globalRules.pointsLoss(),
+                globalRules.bonusPointsEnabled());
 
         // 1. Get all teams in the tournament
         List<TournamentTeam> teams = tournamentTeamRepository.findByTournamentId(tournamentId);
@@ -78,6 +75,8 @@ public class StandingsServiceImpl implements StandingsService {
                             .pointsFor(0)
                             .pointsAgainst(0)
                             .pointsDiff(0)
+                            .bonusPoints(0)
+                            .triesFor(0)
                             .points(0)
                             .categoryId(tt.getCategory() != null ? tt.getCategory().getId() : null)
                             .build());
@@ -92,14 +91,29 @@ public class StandingsServiceImpl implements StandingsService {
         }
 
         log.info("Initialized standings map with {} teams", standingsMap.size());
-        int[] globalRules = { pointsWin, pointsDraw, pointsLoss };
-        Map<UUID, int[]> rulesByCategory = new HashMap<>();
+        Map<UUID, ScoringRules> rulesByCategory = new HashMap<>();
 
-        // 2. Get all matches (eager load stage)
+        // 2. Load try counts and scoring events in one query per tournament
+        List<Object[]> scoringStats = matchEventRepository.findScoringEventCountsByTournamentId(tournamentId);
+        Map<UUID, Long> matchScoringEventCounts = new HashMap<>();
+        Map<UUID, Map<UUID, Integer>> matchTeamTryCounts = new HashMap<>();
+        for (Object[] row : scoringStats) {
+            UUID mId = (UUID) row[0];
+            UUID tId = (UUID) row[1];
+            int tries = row[2] != null ? ((Number) row[2]).intValue() : 0;
+            long scoringEvents = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            matchScoringEventCounts.merge(mId, scoringEvents, Long::sum);
+            matchTeamTryCounts.computeIfAbsent(mId, k -> new HashMap<>()).put(tId, tries);
+        }
+
+        // Score-only matches per category (null = no category), so a category's note lists only its own matches
+        Map<UUID, Set<String>> unrecordedBonusMatchCodes = new HashMap<>();
+
+        // 3. Get all matches (eager load stage)
         List<Match> matches = matchRepository.findByTournamentIdWithTeams(tournamentId);
         log.info("Found {} matches", matches.size());
 
-        // 3. Process matches
+        // 4. Process matches
         for (Match match : matches) {
             // Only consider Group/Pool stage matches
             if (match.getStage() == null || !Boolean.TRUE.equals(match.getStage().getIsGroupStage())) {
@@ -133,19 +147,53 @@ public class StandingsServiceImpl implements StandingsService {
             int aScore = match.getAwayScore() != null ? match.getAwayScore() : 0;
 
             // Score with the match's own category rules, falling back to the tournament-wide ones.
-            // Seeding (BracketServiceImpl.rankTeamsAcrossPools) reads the category config first,
-            // so reading only the global row here let the table and the bracket disagree.
-            int[] rules = rulesByCategory.computeIfAbsent(categoryOf(match),
+            ScoringRules rules = rulesByCategory.computeIfAbsent(categoryOf(match),
                     categoryId -> categoryRules(tournamentId, categoryId, globalRules));
 
+            long totalScoringEvents = matchScoringEventCounts.getOrDefault(match.getId(), 0L);
+            boolean isZeroZero = match.getHomeScore() != null && match.getHomeScore() == 0
+                    && match.getAwayScore() != null && match.getAwayScore() == 0;
+            boolean triesKnown = (totalScoringEvents > 0) || isZeroZero;
+
+            if (rules.bonusPointsEnabled() && !triesKnown && match.getResultType() != MatchResultType.WALKOVER && match.getResultType() != MatchResultType.BYE) {
+                String code = match.getMatchCode() != null && !match.getMatchCode().isBlank()
+                        ? match.getMatchCode()
+                        : (match.getMatchNumber() != null ? "M" + match.getMatchNumber() : match.getId().toString().substring(0, 8));
+                unrecordedBonusMatchCodes.computeIfAbsent(categoryOf(match), k -> new LinkedHashSet<>()).add(code);
+            }
+
+            int homeTries = matchTeamTryCounts.getOrDefault(match.getId(), Collections.emptyMap()).getOrDefault(homeId, 0);
+            int awayTries = matchTeamTryCounts.getOrDefault(match.getId(), Collections.emptyMap()).getOrDefault(awayId, 0);
+
+            MatchPointsResult result = MatchPointsCalculator.calculate(
+                    rules,
+                    match.getHomeScore(),
+                    match.getAwayScore(),
+                    match.getResultType(),
+                    match.getWinnerTeam() != null ? match.getWinnerTeam().getId() : null,
+                    homeId,
+                    awayId,
+                    homeTries,
+                    awayTries,
+                    triesKnown
+            );
+
             // Update Home
-            updateStats(homeStats, hScore, aScore, rules[0], rules[1], rules[2]);
+            updateStats(homeStats, hScore, aScore, homeTries, result.home());
 
             // Update Away
-            updateStats(awayStats, aScore, hScore, rules[0], rules[1], rules[2]);
+            updateStats(awayStats, aScore, hScore, awayTries, result.away());
         }
 
-        // 4. Return sorted list
+        for (StandingsResponse response : standingsMap.values()) {
+            ScoringRules rules = rulesByCategory.computeIfAbsent(response.getCategoryId(),
+                    categoryId -> categoryRules(tournamentId, categoryId, globalRules));
+            response.setBonusPointsEnabled(rules.bonusPointsEnabled());
+            response.setUnrecordedBonusMatchCodes(new ArrayList<>(
+                    unrecordedBonusMatchCodes.getOrDefault(response.getCategoryId(), Collections.emptySet())));
+        }
+
+        // 5. Return sorted list
         return standingsMap.values().stream()
                 .sorted(Comparator.comparing((StandingsResponse s) -> s.getPoolName()) // Group by Pool
                         .thenComparing(s -> s.getPoints(), Comparator.reverseOrder()) // High Points
@@ -162,35 +210,32 @@ public class StandingsServiceImpl implements StandingsService {
         return match.getCategory() != null ? match.getCategory().getId() : null;
     }
 
-    /** Win/draw/loss points for a category: its own config when it has one, otherwise the global rules. */
-    private int[] categoryRules(UUID tournamentId, UUID categoryId, int[] globalRules) {
+    /** Scoring rules for a category: its own config when it has one, otherwise the global rules. */
+    private ScoringRules categoryRules(UUID tournamentId, UUID categoryId, ScoringRules globalRules) {
         if (categoryId == null) {
             return globalRules;
         }
         return formatConfigRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId)
-                .map(c -> new int[] {
-                        c.getPointsWin() != null ? c.getPointsWin() : globalRules[0],
-                        c.getPointsDraw() != null ? c.getPointsDraw() : globalRules[1],
-                        c.getPointsLoss() != null ? c.getPointsLoss() : globalRules[2] })
+                .map(ScoringRules::from)
                 .orElse(globalRules);
     }
 
     private void updateStats(StandingsResponse stats, int scoreFor, int scoreAgainst,
-            int pointsWin, int pointsDraw, int pointsLoss) {
+                            int tries, TeamMatchPoints matchPoints) {
         stats.setPlayed(stats.getPlayed() + 1);
         stats.setPointsFor(stats.getPointsFor() + scoreFor);
         stats.setPointsAgainst(stats.getPointsAgainst() + scoreAgainst);
         stats.setPointsDiff(stats.getPointsFor() - stats.getPointsAgainst());
+        stats.setTriesFor(stats.getTriesFor() + tries);
+        stats.setBonusPoints(stats.getBonusPoints() + matchPoints.bonusPoints());
+        stats.setPoints(stats.getPoints() + matchPoints.tablePoints());
 
         if (scoreFor > scoreAgainst) {
             stats.setWon(stats.getWon() + 1);
-            stats.setPoints(stats.getPoints() + pointsWin);
         } else if (scoreFor == scoreAgainst) {
             stats.setDrawn(stats.getDrawn() + 1);
-            stats.setPoints(stats.getPoints() + pointsDraw);
         } else {
             stats.setLost(stats.getLost() + 1);
-            stats.setPoints(stats.getPoints() + pointsLoss);
         }
     }
 }

@@ -32,6 +32,7 @@ interface Props {
     matchId: string;
     teamId: string;
     homeTeamId: string; // Added to distinguish between home and away hints
+    matchStatus?: string;
     isLocked?: boolean;
     maxStarters?: number;
     maxBench?: number;
@@ -44,10 +45,13 @@ import {
     ArrowLeft,
     X,
     CheckSquare,
-    Square
+    Square,
+    ArrowDown,
+    ArrowUp
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
-export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = false, maxStarters = 15, maxBench = 10, onLineupUpdate }: Props) {
+export function MatchLineupEditor({ matchId, teamId, homeTeamId, matchStatus, isLocked = false, maxStarters = 15, maxBench = 10, onLineupUpdate }: Props) {
     const detectFormat = (): RugbyFormat => {
         if (maxStarters === 7) return 'SEVENS';
         if (maxStarters === 10) return 'TENS';
@@ -424,6 +428,7 @@ export function MatchLineupEditor({ matchId, teamId, homeTeamId, isLocked = fals
                 index={idx}
                 onUpdateNumber={handleUpdateNumber} // Only passed if needed (logic inside SortableItem can handle it)
                 positionName={positionName}
+                isCompleted={matchStatus?.toUpperCase() === 'COMPLETED'}
             />
         );
     };
@@ -594,7 +599,8 @@ function SortableItem({
     onToggleSelection,
     onMove,
     onUpdateNumber,
-    positionName
+    positionName,
+    isCompleted
 }: {
     id: string,
     item: MatchLineupEntry,
@@ -605,8 +611,10 @@ function SortableItem({
     onToggleSelection?: () => void,
     onMove?: (id: string, target: LineupRole) => void,
     onUpdateNumber?: (id: string, num: number) => void,
-    positionName?: string
+    positionName?: string,
+    isCompleted?: boolean
 }) {
+    const { t } = useTranslation('common');
     const {
         attributes,
         listeners,
@@ -678,13 +686,44 @@ function SortableItem({
             </div>
 
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium truncate">{item.playerName}</p>
                     {isStarter && (
                         <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
                             #{index}
                         </span>
                     )}
+                    {/* Substitution markers in chronological order */}
+                    {item.substitutions && item.substitutions.length > 0 ? (
+                        item.substitutions.map((sub, sIdx) => {
+                            const isOff = sub.direction === 'OFF';
+                            const subText = isOff
+                                ? t('lineup.off', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
+                                    ? t('lineup.replacedByWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
+                                    : t('lineup.replacedBy', { name: sub.otherPlayerName || '' }))
+                                : t('lineup.on', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
+                                    ? t('lineup.forPlayerWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
+                                    : t('lineup.forPlayer', { name: sub.otherPlayerName || '' }));
+
+                            return (
+                                <span
+                                    key={sIdx}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                                >
+                                    {isOff ? (
+                                        <ArrowDown className="w-3 h-3 text-slate-500 dark:text-slate-400 shrink-0" weight="bold" />
+                                    ) : (
+                                        <ArrowUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" weight="bold" />
+                                    )}
+                                    <span>{subText}</span>
+                                </span>
+                            );
+                        })
+                    ) : isBench && isCompleted && !item.played ? (
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">
+                            {t('lineup.didNotPlay')}
+                        </span>
+                    ) : null}
                 </div>
                 {isStarter && positionName ? (
                     <p className="text-xs text-navy dark:text-navy-tint font-semibold truncate">

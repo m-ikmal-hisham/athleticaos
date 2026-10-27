@@ -28,5 +28,18 @@ public class PublicMatchLineupsResponse {
         private String role; // STARTER, BENCH, RESERVE
         private Integer orderIndex;
         private String positionDisplay;
+        private boolean played;
+        private List<PublicSubstitutionEntry> substitutions;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PublicSubstitutionEntry {
+        private Integer minute;
+        private String direction; // "OFF" | "ON"
+        private String otherPlayerName;
+        private Integer otherJerseyNumber;
     }
 }

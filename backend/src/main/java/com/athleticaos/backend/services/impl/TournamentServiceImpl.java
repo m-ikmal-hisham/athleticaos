@@ -1210,6 +1210,20 @@ public class TournamentServiceImpl implements TournamentService {
             }
         }
 
+        // Validate bonus points rules
+        if (configDTO.getBonusTryThreshold() != null && (configDTO.getBonusTryThreshold() < 1 || configDTO.getBonusTryThreshold() > 20)) {
+            throw new IllegalArgumentException("Bonus try threshold must be between 1 and 20");
+        }
+        if (configDTO.getBonusLosingMargin() != null && (configDTO.getBonusLosingMargin() < 0 || configDTO.getBonusLosingMargin() > 50)) {
+            throw new IllegalArgumentException("Bonus losing margin must be between 0 and 50");
+        }
+        if (configDTO.getPointsBonusTry() != null && (configDTO.getPointsBonusTry() < 0 || configDTO.getPointsBonusTry() > 5)) {
+            throw new IllegalArgumentException("Try bonus points must be between 0 and 5");
+        }
+        if (configDTO.getPointsBonusLoss() != null && (configDTO.getPointsBonusLoss() < 0 || configDTO.getPointsBonusLoss() > 5)) {
+            throw new IllegalArgumentException("Losing bonus points must be between 0 and 5");
+        }
+
         // Apply updates
         config.setFormatType(configDTO.getFormatType());
         config.setRugbyFormat(configDTO.getRugbyFormat());
@@ -1219,8 +1233,11 @@ public class TournamentServiceImpl implements TournamentService {
         config.setPointsWin(configDTO.getPointsWin());
         config.setPointsDraw(configDTO.getPointsDraw());
         config.setPointsLoss(configDTO.getPointsLoss());
-        config.setPointsBonusTry(configDTO.getPointsBonusTry());
-        config.setPointsBonusLoss(configDTO.getPointsBonusLoss());
+        config.setPointsBonusTry(configDTO.getPointsBonusTry() != null ? configDTO.getPointsBonusTry() : 1);
+        config.setPointsBonusLoss(configDTO.getPointsBonusLoss() != null ? configDTO.getPointsBonusLoss() : 1);
+        config.setBonusPointsEnabled(Boolean.TRUE.equals(configDTO.getBonusPointsEnabled()));
+        config.setBonusTryThreshold(configDTO.getBonusTryThreshold() != null ? configDTO.getBonusTryThreshold() : 4);
+        config.setBonusLosingMargin(configDTO.getBonusLosingMargin() != null ? configDTO.getBonusLosingMargin() : 7);
         config.setStartersCount(configDTO.getStartersCount());
         config.setMaxBenchCount(configDTO.getMaxBenchCount());
         config.setBufferTimeMinutes(configDTO.getBufferTimeMinutes());
@@ -1272,6 +1289,9 @@ public class TournamentServiceImpl implements TournamentService {
                 .pointsLoss(config.getPointsLoss())
                 .pointsBonusTry(config.getPointsBonusTry())
                 .pointsBonusLoss(config.getPointsBonusLoss())
+                .bonusPointsEnabled(config.getBonusPointsEnabled())
+                .bonusTryThreshold(config.getBonusTryThreshold())
+                .bonusLosingMargin(config.getBonusLosingMargin())
                 .startersCount(config.getStartersCount())
                 .maxBenchCount(config.getMaxBenchCount())
                 .build();

@@ -1,18 +1,23 @@
 import { HTMLAttributes, forwardRef } from 'react';
 import { clsx } from 'clsx';
 
-interface CardProps extends HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
     hover?: boolean;
+    surface?: 'solid' | 'glass';
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-    ({ className, hover = false, children, ...props }, ref) => {
+    ({ className, hover = false, surface = 'solid', children, ...props }, ref) => {
+        const isGlass = surface === 'glass';
         return (
             <div
                 ref={ref}
+                data-no-kick
                 className={clsx(
-                    'bg-surface-card border border-line-subtle rounded-[14px] p-6 text-content-primary',
-                    hover && 'hover:bg-black/4 dark:hover:bg-white/6 transition-colors cursor-pointer',
+                    isGlass
+                        ? 'glass-card-surface p-6 text-content-primary'
+                        : 'bg-surface-card border border-line-subtle rounded-[14px] p-6 text-content-primary',
+                    hover && (isGlass ? 'glass-card-interactive cursor-pointer' : 'hover:bg-black/4 dark:hover:bg-white/6 transition-colors cursor-pointer'),
                     className
                 )}
                 {...props}

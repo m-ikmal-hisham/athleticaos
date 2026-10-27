@@ -1,8 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Shield, Users, Trophy, MapPin, MagnifyingGlass, X, WarningCircle } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/GlassCard';
+import { LogoImage } from '@/components/public/LogoImage';
+import { ListRow } from '@/components/public/ListRow';
+import { FilterSheetButton } from '@/components/public/FilterSheetButton';
 import { Select } from '@/components/Select';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
@@ -12,7 +16,7 @@ function TeamCardSkeleton({ className }: { className?: string }) {
     return (
         <div
             className={clsx(
-                'h-48 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-6 flex flex-col justify-between space-y-4 animate-pulse',
+                'h-48 rounded-[14px] glass-card-surface p-6 flex flex-col justify-between space-y-4 animate-pulse',
                 className
             )}
         >
@@ -34,8 +38,12 @@ function TeamCardSkeleton({ className }: { className?: string }) {
     );
 }
 
-function formatCategory(cat: string): string {
-    switch (cat.toUpperCase()) {
+function formatCategory(cat: string, t?: (k: string, opts?: Record<string, unknown>) => string): string {
+    const key = cat.toUpperCase();
+    if (t) {
+        return t(`common:category.${key}`, { defaultValue: cat });
+    }
+    switch (key) {
         case 'MENS':
             return "Men's";
         case 'WOMENS':
@@ -52,6 +60,7 @@ function formatCategory(cat: string): string {
 }
 
 export default function TeamsList() {
+    const { t } = useTranslation(['teams', 'common']);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlSearch = searchParams.get('search') || '';
@@ -94,20 +103,20 @@ export default function TeamsList() {
 
     const categoryOptions = useMemo(() => {
         const availableCategories = filtersData?.categories ?? [];
-        const list = [{ value: 'all', label: 'All Categories' }];
+        const list = [{ value: 'all', label: t('teams:list.categoryFilter', 'All Categories') }];
         const set = new Set(availableCategories.map((c) => c.toUpperCase()));
         if (urlCategory && urlCategory !== 'all' && !set.has(urlCategory.toUpperCase())) {
-            list.push({ value: urlCategory, label: formatCategory(urlCategory) });
+            list.push({ value: urlCategory, label: formatCategory(urlCategory, t) });
         }
         availableCategories.forEach((cat) => {
-            list.push({ value: cat, label: formatCategory(cat) });
+            list.push({ value: cat, label: formatCategory(cat, t) });
         });
         return list;
-    }, [filtersData?.categories, urlCategory]);
+    }, [filtersData?.categories, urlCategory, t]);
 
     const stateOptions = useMemo(() => {
         const availableStates = filtersData?.states ?? [];
-        const list = [{ value: 'all', label: 'All States' }];
+        const list = [{ value: 'all', label: t('teams:list.stateFilter', 'All States') }];
         const set = new Set(availableStates);
         if (urlState && urlState !== 'all' && !set.has(urlState)) {
             list.push({ value: urlState, label: urlState });
@@ -116,7 +125,7 @@ export default function TeamsList() {
             list.push({ value: st, label: st });
         });
         return list;
-    }, [filtersData?.states, urlState]);
+    }, [filtersData?.states, urlState, t]);
 
     const queryParams = useMemo(
         () => ({
@@ -127,6 +136,50 @@ export default function TeamsList() {
         }),
         [urlSearch, urlCategory, urlState]
     );
+
+    // Mobile sheet draft filter state
+    const [draftCategory, setDraftCategory] = useState(urlCategory || 'all');
+    const [draftState, setDraftState] = useState(urlState || 'all');
+
+    useEffect(() => {
+        setDraftCategory(urlCategory || 'all');
+    }, [urlCategory]);
+
+    useEffect(() => {
+        setDraftState(urlState || 'all');
+    }, [urlState]);
+
+    const activeFilterCount =
+        (urlCategory && urlCategory !== 'all' ? 1 : 0) +
+        (urlState && urlState !== 'all' ? 1 : 0);
+
+    const applyDraftFilters = () => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (draftCategory && draftCategory !== 'all') {
+                next.set('category', draftCategory);
+            } else {
+                next.delete('category');
+            }
+            if (draftState && draftState !== 'all') {
+                next.set('state', draftState);
+            } else {
+                next.delete('state');
+            }
+            return next;
+        });
+    };
+
+    const clearDraftFilters = () => {
+        setDraftCategory('all');
+        setDraftState('all');
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('category');
+            next.delete('state');
+            return next;
+        });
+    };
 
     const {
         data,
@@ -204,53 +257,85 @@ export default function TeamsList() {
             {/* Header */}
             <div className="space-y-2">
                 <h1 className="font-score text-3xl font-bold text-slate-900 dark:text-white">
-                    Teams & Clubs
+                    {t('teams:list.title', { defaultValue: 'Teams & Clubs' })}
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                    Explore rugby teams, clubs, and academies across Malaysia
+                    {t('teams:list.subtitle', { defaultValue: 'Explore rugby teams, clubs, and academies across Malaysia' })}
                 </p>
             </div>
 
             {/* Search & Filters */}
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
                 {/* Search Input */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60 pointer-events-none" />
                     <input
                         type="text"
-                        placeholder="Search teams by name, short name, club, or state..."
+                        placeholder={t('teams:list.searchPlaceholder', { defaultValue: 'Search teams by name, short name, club, or state...' })}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400 text-sm"
+                        className="w-full min-h-[44px] pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint text-slate-900 dark:text-white placeholder-slate-400 text-sm"
                     />
                     {searchInput && (
                         <button
                             type="button"
-                            aria-label="Clear search"
+                            aria-label={t('teams:list.clearSearch', { defaultValue: 'Clear search' })}
                             onClick={handleClearSearch}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
 
-                {/* Category Dropdown */}
-                <div className="relative w-full md:w-48">
+                {/* Mobile Filter Sheet Button (< md) */}
+                <div className="md:hidden shrink-0">
+                    <FilterSheetButton
+                        activeCount={activeFilterCount}
+                        onApply={applyDraftFilters}
+                        onClear={clearDraftFilters}
+                    >
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-1.5 uppercase tracking-wider">
+                                    {t('common:filter.category')}
+                                </label>
+                                <Select
+                                    value={draftCategory}
+                                    onChange={(val) => setDraftCategory(String(val))}
+                                    options={categoryOptions}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-1.5 uppercase tracking-wider">
+                                    {t('common:filter.state')}
+                                </label>
+                                <Select
+                                    value={draftState}
+                                    onChange={(val) => setDraftState(String(val))}
+                                    options={stateOptions}
+                                />
+                            </div>
+                        </div>
+                    </FilterSheetButton>
+                </div>
+
+                {/* Category Dropdown (>= md) */}
+                <div className="hidden md:block relative w-48">
                     <Select
                         value={urlCategory || 'all'}
                         onChange={(val) => handleCategoryChange(String(val))}
-                        aria-label="Filter by category"
+                        aria-label={t('teams:list.categoryFilter', { defaultValue: 'All Categories' })}
                         options={categoryOptions}
                     />
                 </div>
 
-                {/* State Dropdown */}
-                <div className="relative w-full md:w-44">
+                {/* State Dropdown (>= md) */}
+                <div className="hidden md:block relative w-44">
                     <Select
                         value={urlState || 'all'}
                         onChange={(val) => handleStateChange(String(val))}
-                        aria-label="Filter by state"
+                        aria-label={t('teams:list.stateFilter', { defaultValue: 'All States' })}
                         options={stateOptions}
                     />
                 </div>
@@ -259,16 +344,20 @@ export default function TeamsList() {
             {/* Results Count & Subtle Updating Indicator */}
             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-h-[24px]">
                 {isLoading ? (
-                    <span>Loading teams…</span>
+                    <span>{t('teams:list.loading', { defaultValue: 'Loading teams…' })}</span>
                 ) : (
                     <span>
-                        Showing {allTeams.length.toLocaleString()} of {totalTeams.toLocaleString()} teams
+                        {t('teams:list.showingCount', {
+                            shown: allTeams.length.toLocaleString(),
+                            total: totalTeams.toLocaleString(),
+                            defaultValue: `Showing ${allTeams.length.toLocaleString()} of ${totalTeams.toLocaleString()} teams`,
+                        })}
                     </span>
                 )}
                 {isFetching && !isLoading && (
                     <span className="inline-flex items-center gap-1.5 text-xs text-navy dark:text-navy-tint font-medium animate-pulse ml-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-navy dark:bg-navy-tint animate-ping" />
-                        Updating…
+                        {t('teams:list.updating', { defaultValue: 'Updating…' })}
                     </span>
                 )}
             </div>
@@ -276,7 +365,18 @@ export default function TeamsList() {
             {/* Content Area: Skeletons / Error / Empty / Grid */}
             {isLoading ? (
                 <div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Phone Skeletons (< md) */}
+                    <div className="md:hidden space-y-2">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="min-h-[52px] h-[52px] rounded-xl bg-slate-200/60 dark:bg-slate-800/60 animate-pulse"
+                            />
+                        ))}
+                    </div>
+
+                    {/* Tablet/Desktop Skeletons (>= md) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Array.from({ length: 12 }).map((_, i) => (
                             <TeamCardSkeleton
                                 key={i}
@@ -286,70 +386,81 @@ export default function TeamsList() {
                     </div>
                     {showSlowLoading && (
                         <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6 animate-pulse">
-                            Still loading…
+                            {t('teams:list.stillLoading', { defaultValue: 'Still loading…' })}
                         </p>
                     )}
                 </div>
             ) : isError ? (
                 <EmptyState
                     icon={WarningCircle}
-                    title="Couldn't load teams"
-                    description="Check your connection and try again."
-                    actionLabel="Try again"
+                    title={t('teams:list.errorTitle', { defaultValue: "Couldn't load teams" })}
+                    description={t('teams:list.errorDesc', { defaultValue: 'Check your connection and try again.' })}
+                    actionLabel={t('teams:list.tryAgain', { defaultValue: 'Try again' })}
                     onAction={() => refetch()}
                 />
             ) : allTeams.length === 0 ? (
                 <EmptyState
                     icon={Shield}
-                    title="No teams match your search."
-                    description="Try adjusting your search query or filters"
-                    actionLabel="Clear filters"
+                    title={t('teams:list.empty', { defaultValue: 'No teams match your search.' })}
+                    description={t('teams:list.emptyHint', { defaultValue: 'Try adjusting your search query or filters' })}
+                    actionLabel={t('teams:list.clearFilters', { defaultValue: 'Clear filters' })}
                     onAction={clearFilters}
                 />
             ) : (
                 <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Phone List (< md) */}
+                    <div className="md:hidden space-y-2">
+                        {allTeams.map((team) => {
+                            const metaParts = [
+                                team.category ? formatCategory(team.category, t) : '',
+                                team.division || team.ageGroup,
+                                team.state,
+                            ].filter(Boolean);
+
+                            return (
+                                <ListRow
+                                    key={team.id}
+                                    to={`/teams/${team.slug || team.id}`}
+                                    title={team.name}
+                                    logoUrl={team.logoUrl}
+                                    icon={<Shield className="w-5 h-5 text-slate-400" />}
+                                    meta={metaParts.join(' · ')}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Tablet & Desktop Grid (>= md: 2-col on 768-1023, 3-col on >= 1024) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {allTeams.map((team) => (
                             <Link
                                 key={team.id}
                                 to={`/teams/${team.slug || team.id}`}
                                 className="block group"
                             >
-                                <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10 p-6 flex flex-col justify-between space-y-4">
+                                <GlassCard surface="glass" hover className="h-full relative overflow-hidden p-6 flex flex-col justify-between space-y-4">
                                     <div className="space-y-4">
                                         <div className="flex items-start gap-4">
                                             {/* Logo */}
                                             <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 p-2 shadow-md border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                                {team.logoUrl ? (
-                                                    <img
-                                                        src={team.logoUrl}
-                                                        alt={team.name}
-                                                        className="w-full h-full object-contain"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).style.display = 'none';
-                                                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                                        }}
-                                                    />
-                                                ) : null}
-                                                <div
-                                                    className={`w-full h-full flex items-center justify-center text-slate-400 ${
-                                                        team.logoUrl ? 'hidden' : ''
-                                                    }`}
-                                                >
-                                                    <Shield className="w-8 h-8" />
-                                                </div>
+                                                <LogoImage
+                                                    src={team.logoUrl}
+                                                    name={team.name}
+                                                    className="w-full h-full object-contain"
+                                                    icon={<Shield className="w-8 h-8 text-slate-400" />}
+                                                />
                                             </div>
 
                                             {/* Name & Badges */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                                     {team.category && (
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
-                                                            {team.category}
+                                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
+                                                            {formatCategory(team.category, t)}
                                                         </span>
                                                     )}
                                                     {team.division && (
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-violet-500/10 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
+                                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-violet-500/10 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
                                                             {team.division}
                                                         </span>
                                                     )}
@@ -358,7 +469,7 @@ export default function TeamsList() {
                                                     {team.name}
                                                 </h3>
                                                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                    {team.organisationName || team.shortName || 'Independent Team'}
+                                                    {team.organisationName || team.shortName || t('teams:list.independent', { defaultValue: 'Independent Team' })}
                                                 </p>
                                             </div>
                                         </div>
@@ -366,18 +477,18 @@ export default function TeamsList() {
                                         {/* Tournaments Tags */}
                                         {team.tournaments && team.tournaments.length > 0 && (
                                             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                                {team.tournaments.slice(0, 2).map((t) => (
+                                                {team.tournaments.slice(0, 2).map((tr) => (
                                                     <span
-                                                        key={t.id}
+                                                        key={tr.id}
                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 truncate max-w-[200px]"
                                                     >
                                                         <Trophy className="w-3 h-3 shrink-0" weight="bold" />
-                                                        <span className="truncate">{t.name}</span>
+                                                        <span className="truncate">{tr.name}</span>
                                                     </span>
                                                 ))}
                                                 {team.tournaments.length > 2 && (
-                                                    <span className="text-[11px] text-slate-400 font-medium self-center">
-                                                        +{team.tournaments.length - 2} more
+                                                    <span className="text-xs text-slate-400 font-medium self-center">
+                                                        {t('teams:list.moreTournaments', { count: team.tournaments.length - 2, defaultValue: `+${team.tournaments.length - 2} more` })}
                                                     </span>
                                                 )}
                                             </div>
@@ -388,7 +499,9 @@ export default function TeamsList() {
                                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                         <div className="flex items-center gap-1.5">
                                             <Users className="w-4 h-4 text-navy dark:text-navy-tint" />
-                                            <span>{team.playerCount} Players</span>
+                                            <span>
+                                                {t('teams:list.playersCount', { count: team.playerCount, defaultValue: `${team.playerCount} Players` })}
+                                            </span>
                                         </div>
                                         {team.state && (
                                             <div className="flex items-center gap-1">
@@ -410,7 +523,7 @@ export default function TeamsList() {
                                 onClick={() => fetchNextPage()}
                                 isLoading={isFetchingNextPage}
                             >
-                                Show more
+                                {t('teams:list.showMore', { defaultValue: 'Show more' })}
                             </Button>
                         </div>
                     )}

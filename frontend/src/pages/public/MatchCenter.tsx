@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Clock, Users, ChartBar, FilmStrip } from '@phosphor-icons/react';
 import { publicTournamentApi, PublicMatchDetail } from '../../api/public.api';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -11,16 +12,12 @@ import { DisciplineImpactCard } from './match/DisciplineImpactCard';
 import { ScoringBreakdown } from './match/ScoringBreakdown';
 import { MatchLineups } from './match/MatchLineups';
 import { PartnersSection } from '@/components/public/PartnersSection';
+import { ScrollableTabStrip } from '@/components/public/ScrollableTabStrip';
 
 type MatchTab = 'lineups' | 'stats' | 'moments';
 
-const TAB_CONFIG: { key: MatchTab; label: string; icon: typeof Users }[] = [
-    { key: 'lineups', label: 'Lineups', icon: Users },
-    { key: 'stats', label: 'Match Stats', icon: ChartBar },
-    { key: 'moments', label: 'Moments', icon: FilmStrip },
-];
-
 export default function MatchCenter() {
+    const { t } = useTranslation(['match', 'nav', 'tournament', 'common']);
     const { matchId } = useParams<{ matchId: string }>();
     const [match, setMatch] = useState<PublicMatchDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -28,6 +25,12 @@ export default function MatchCenter() {
     const [tournamentName, setTournamentName] = useState<string>('');
     const [activeTab, setActiveTab] = useState<MatchTab>('lineups');
     const intervalRef = useRef<number | null>(null);
+
+    const TAB_CONFIG: { key: MatchTab; label: string; icon: typeof Users }[] = [
+        { key: 'lineups', label: t('match:center.lineups'), icon: Users },
+        { key: 'stats', label: t('match:center.stats'), icon: ChartBar },
+        { key: 'moments', label: t('match:moments.title'), icon: FilmStrip },
+    ];
 
     useEffect(() => {
         if (matchId) {
@@ -65,7 +68,6 @@ export default function MatchCenter() {
             };
         }
     }, [match]);
-
 
     const loadMatch = async (silent = false) => {
         if (!matchId) return;
@@ -111,10 +113,10 @@ export default function MatchCenter() {
         return (
             <div className="text-center py-24">
                 <Clock className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Match Not Found</h2>
-                <p className="text-slate-500 mb-8">The match you are looking for does not exist or has been removed.</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t('match:center.notFound')}</h2>
+                <p className="text-slate-500 mb-8">{t('match:center.notFoundHint')}</p>
                 <Link to="/tournaments" className="px-6 py-2 bg-navy text-white rounded-full hover:bg-deep-navy dark:hover:bg-[#1F5BB3] transition">
-                    Browse Matches
+                    {t('match:center.browseMatches')}
                 </Link>
             </div>
         );
@@ -126,18 +128,17 @@ export default function MatchCenter() {
             <div className="hidden lg:flex items-center justify-between">
                 <Breadcrumbs
                     items={[
-                        { label: 'Tournaments', path: '/tournaments' },
+                        { label: t('common:nav.tournaments'), path: '/tournaments' },
                         ...(match.tournamentSlug ? [{
-                            label: tournamentName || 'Tournament',
+                            label: tournamentName || t('match:hero.tournamentMatch'),
                             path: `/tournaments/${match.tournamentSlug}`
                         }] : []),
-                        { label: 'Match Center' }
+                        { label: t('match:center.title') }
                     ]}
                 />
             </div>
 
-            {/* Match Hero — Always Visible. The compact sponsor strip that sat under it listed
-                placeholder partners and cost a full row (three on phones); sponsors stay in the footer. */}
+            {/* Match Hero — Always Visible */}
             <MatchHeroCard
                 match={match}
                 lastUpdated={lastUpdated}
@@ -145,26 +146,30 @@ export default function MatchCenter() {
             />
 
             {/* Tab Navigation */}
-            <div className="flex justify-center">
-                <div className="flex w-full sm:w-auto p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
-                    {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
-                        <button
-                            key={key}
-                            id={`tab-${key}`}
-                            onClick={() => setActiveTab(key)}
-                            className={`
-                                relative flex-1 sm:flex-none justify-center px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all duration-300
-                                ${activeTab === key
-                                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-md ring-1 ring-slate-200/50 dark:ring-white/10'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
-                            `}
-                        >
-                            <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-navy dark:text-navy-tint' : ''}`} weight={activeTab === key ? 'fill' : 'duotone'} />
-                            <span>{label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <ScrollableTabStrip
+                activeTab={activeTab}
+                className="flex justify-center"
+                navClassName="w-full sm:w-auto p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm justify-start sm:justify-center"
+            >
+                {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
+                    <button
+                        key={key}
+                        id={`tab-${key}`}
+                        role="tab"
+                        aria-selected={activeTab === key}
+                        onClick={() => setActiveTab(key)}
+                        className={`
+                            relative flex-1 sm:flex-none justify-center min-h-[44px] px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all duration-300
+                            ${activeTab === key
+                                ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-md ring-1 ring-slate-200/50 dark:ring-white/10'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
+                        `}
+                    >
+                        <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-navy dark:text-navy-tint' : ''}`} weight={activeTab === key ? 'fill' : 'duotone'} />
+                        <span>{label}</span>
+                    </button>
+                ))}
+            </ScrollableTabStrip>
 
             {/* Tab Content */}
             <div className="animate-fade-in">

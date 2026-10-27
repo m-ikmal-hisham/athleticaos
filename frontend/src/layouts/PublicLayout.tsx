@@ -10,17 +10,22 @@ import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { PageLoader } from '@/components/PageLoader';
 import { Button } from '@/components/Button';
 import { LanguageSwitch } from '@/components/common/LanguageSwitch';
+import { PublicThemeToggle } from '@/components/public/PublicThemeToggle';
 import { changeLanguage } from '@/i18n';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { SITE_NAME, COPYRIGHT_HOLDER, OWNER_NAME, SHOW_OWNER } from '@/config/site';
 import { PARTNERS } from '@/config/partners';
 import {
-    PUBLIC_PRIMARY_NAV,
-    PUBLIC_MORE_NAV,
+    PUBLIC_DESKTOP_PRIMARY_NAV,
+    PUBLIC_DESKTOP_MORE_NAV,
     isNavItemActive,
     getDetailParent,
 } from '@/config/navigation';
+import {
+    isAnimatedBackgroundFlagEnabled,
+    isMotionAllowed,
+} from '@/config/animatedBackground';
 
 const focusRing =
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint';
@@ -36,7 +41,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
     const [open, setOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLUListElement>(null);
-    const moreActive = PUBLIC_MORE_NAV.some((item) => isNavItemActive(item, pathname));
+    const moreActive = PUBLIC_DESKTOP_MORE_NAV.some((item) => isNavItemActive(item, pathname));
 
     // Close when the route changes
     useEffect(() => {
@@ -128,7 +133,7 @@ function DesktopMoreMenu({ pathname }: { pathname: string }) {
                     onKeyDown={handleMenuKeyDown}
                     className="absolute right-0 top-full mt-1 min-w-[200px] p-1 bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 rounded-[10px] shadow-md motion-safe:animate-fade-in"
                 >
-                    {PUBLIC_MORE_NAV.map((item) => {
+                    {PUBLIC_DESKTOP_MORE_NAV.map((item) => {
                         const active = isNavItemActive(item, pathname);
                         const Icon = item.icon;
                         return (
@@ -189,7 +194,26 @@ export default function PublicLayout() {
         }
     };
 
+    // < lg: hide the top bar while scrolling down, show it again on any scroll up
+    const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+    useEffect(() => {
+        let lastY = window.scrollY;
+        const onScroll = () => {
+            const y = window.scrollY;
+            if (y < 64) setIsHeaderHidden(false);
+            else if (y - lastY > 8) setIsHeaderHidden(true);
+            else if (lastY - y > 8) setIsHeaderHidden(false);
+            else return;
+            lastY = y;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+    useEffect(() => setIsHeaderHidden(false), [location.pathname]);
+
     const isAccessoryLive = useIsPublicAccessoryLive();
+    // Probe once per mount: isMotionAllowed() creates a WebGL context to test support
+    const [isAnimatedBgOn] = useState(() => isAnimatedBackgroundFlagEnabled() && isMotionAllowed());
 
     // < lg: bottom padding clears the floating tab bar + accessory + safe area + 16px clearance
     // so the footer stays fully visible.
@@ -197,18 +221,33 @@ export default function PublicLayout() {
         ? 'calc(140px + max(12px, env(safe-area-inset-bottom, 0px)))'
         : 'calc(80px + max(12px, env(safe-area-inset-bottom, 0px)))';
 
+    // The phone top bar hides on scroll (< lg). Downstream sticky strips track this offset
+    // (bar height: 4rem + 1px top and bottom border + safe area).
+    const headerOffset = isHeaderHidden
+        ? '0px'
+        : 'calc(4rem + 2px + env(safe-area-inset-top, 0px))';
+
     return (
         <div
+            data-animated-bg={isAnimatedBgOn ? 'on' : 'off'}
             className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[var(--public-bottom-chrome)] lg:pb-0"
-            style={{ '--public-bottom-chrome': bottomChrome } as React.CSSProperties}
+            style={{
+                '--public-bottom-chrome': bottomChrome,
+                '--public-header-offset': headerOffset,
+            } as React.CSSProperties}
         >
             {/* Global Background */}
             <AppBackground />
 
             <EnvironmentRibbon />
 
-            {/* Top bar: sticky on every size */}
-            <header className="print:hidden glass sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
+            {/* Top bar: sticky on every size; on phones it slides away while scrolling down */}
+            <header
+                className={clsx(
+                    'print:hidden glass sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)] motion-safe:transition-transform motion-safe:duration-200 lg:translate-y-0 focus-within:translate-y-0',
+                    isHeaderHidden && '-translate-y-full'
+                )}
+            >
                 <a
                     href="#main-content"
                     className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-[10px] focus:bg-navy focus:text-white focus:text-sm focus:font-medium focus:outline-none focus:ring-2 focus:ring-navy-tint"
@@ -235,10 +274,10 @@ export default function PublicLayout() {
                         </Link>
 
                         {/* Desktop / large tablet (≥ lg) */}
-                        <div className="hidden lg:flex items-center gap-6 h-full">
+                        <div className="hidden lg:flex items-center gap-3 xl:gap-6 h-full">
                             <nav aria-label={t('nav.primaryNav')} className="h-full">
-                                <ul className="flex items-center gap-6 h-full">
-                                    {PUBLIC_PRIMARY_NAV.map((item) => {
+                                <ul className="flex items-center gap-4 xl:gap-6 h-full">
+                                    {PUBLIC_DESKTOP_PRIMARY_NAV.map((item) => {
                                         const active = isNavItemActive(item, location.pathname);
                                         return (
                                             <li key={item.key} className="h-full">
@@ -246,14 +285,21 @@ export default function PublicLayout() {
                                                     to={item.to}
                                                     aria-current={active ? 'page' : undefined}
                                                     className={clsx(
-                                                        'inline-flex items-center h-full px-1 text-sm font-medium border-b-2 motion-safe:transition-colors',
+                                                        'inline-flex items-center h-full px-1 text-sm font-medium border-b-2 motion-safe:transition-colors whitespace-nowrap',
                                                         focusRing,
                                                         active
                                                             ? 'text-navy dark:text-navy-tint border-navy dark:border-navy-tint'
                                                             : 'text-black/72 dark:text-white/72 border-transparent hover:text-navy dark:hover:text-navy-tint'
                                                     )}
                                                 >
-                                                    {t(item.labelKey)}
+                                                    {item.tabLabelKey ? (
+                                                        <>
+                                                            <span className="hidden xl:inline">{t(item.labelKey)}</span>
+                                                            <span className="xl:hidden">{t(item.tabLabelKey)}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span>{t(item.labelKey)}</span>
+                                                    )}
                                                 </Link>
                                             </li>
                                         );
@@ -264,6 +310,7 @@ export default function PublicLayout() {
                                 </ul>
                             </nav>
                             <LanguageSwitch />
+                            <PublicThemeToggle />
                             <Button variant="secondary" size="sm" onClick={() => navigate(auth.to)}>
                                 {auth.label}
                             </Button>
@@ -348,7 +395,7 @@ export default function PublicLayout() {
 
                         <div className="text-xs text-black/72 dark:text-white/72 flex flex-col items-center md:items-end gap-2">
                             {/* Language link pair */}
-                            <div className="flex items-center gap-1.5 text-xs text-black/72 dark:text-white/72" aria-label="Language selection">
+                            <div className="flex items-center gap-1.5 text-xs text-black/72 dark:text-white/72" aria-label={t('language.label')}>
                                 <button
                                     type="button"
                                     onClick={() => void changeLanguage('en')}

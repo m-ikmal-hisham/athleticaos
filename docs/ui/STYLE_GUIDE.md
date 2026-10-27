@@ -33,7 +33,7 @@ If code and this guide disagree, the guide wins and the code is a migration item
 - [ ] No placeholder people ("John Doe"), companies, or numbers
 - [ ] No "Loading..." strings; use `Skeleton` or `Spinner`
 - [ ] Icons from Phosphor only, `duotone` by default (set once in IconContext); `fill` only for active/selected state and small solid status marks; `bold` only below 16px
-- [ ] Animated backgrounds only through the shared journey/background engine
+- [ ] Animated backgrounds only through the shared engine, within the budget
 
 ---
 
@@ -173,13 +173,20 @@ Card padding: 16px mobile, 24px ≥768px. Page gutter: 16px mobile, 24px tablet,
 
 Retire the current 18px and 24px card radii.
 
-**Glass material:** one material, used only by: the public and admin floating glass tab bars, their accessories, and the public/admin sticky top bars. Never on cards, tables or content.
-Tokens (CSS variables in `frontend/src/styles/theme.css`, light / dark):
-- `--glass-bg`: `rgb(255 255 255 / 0.72)` / `rgb(13 27 42 / 0.72)` (deep navy `#0D1B2A`)
-- `--glass-border`: `rgb(255 255 255 / 0.55)` / `rgb(255 255 255 / 0.12)` (1px inner hairline, "glass edge")
-- `--glass-outline`: `rgb(0 0 0 / 0.08)` / `rgb(0 0 0 / 0.40)` (1px outer line so it separates from white pages)
-- `--glass-blur`: `20px`, saturate `180%`
-- `--glass-shadow`: the existing `--shadow-md` (no new shadow level, no coloured glow)
+**Glass materials:**
+1. **Chrome glass:** used by the public and admin floating glass tab bars, their accessories, and the public/admin sticky top bars.
+   - Tokens (CSS variables in `frontend/src/styles/theme.css`, light / dark):
+     - `--glass-bg`: `rgb(255 255 255 / 0.72)` / `rgb(13 27 42 / 0.72)` (deep navy `#0D1B2A`)
+     - `--glass-border`: `rgb(255 255 255 / 0.55)` / `rgb(255 255 255 / 0.12)` (1px inner hairline, "glass edge")
+     - `--glass-outline`: `rgb(0 0 0 / 0.08)` / `rgb(0 0 0 / 0.40)` (1px outer line so it separates from white pages)
+     - `--glass-blur`: `20px`, saturate `180%`
+     - `--glass-shadow`: the existing `--shadow-md` (no new shadow level, no coloured glow)
+2. **Public glass cards (`surface="glass"`):** owner request 25 Oct. Public pages only (admin pages, tables, forms, bottom sheets/dialogs, dense match lists, and legal pages keep solid cards).
+   - Light: background white ~78% with faint navy tint gradient (`--glass-card-bg`, `--glass-card-gradient`), 1px glass edge (white ~55%, `--glass-card-edge`) + 1px navy ~8% outline (`--glass-card-outline`), `shadow-sm`.
+   - Dark: deep navy ~72% with navy-tint 6–8% (`--glass-card-bg`, `--glass-card-gradient`), 1px white ~10% edge (`--glass-card-edge`) + 1px black ~40% outline (`--glass-card-outline`).
+   - Blur: `backdrop-filter: blur(12px) saturate(140%)` strictly at $\ge$ lg; below lg tint at ~88% opacity, no blur. Hover on links: border and tint slightly stronger, no scale.
+   - Solid fallback (today's `--surface-card`): triggers under `prefers-reduced-transparency: reduce`, unsupported `backdrop-filter`, `?bg=off` / motion disallowed, and when the animated background flag is off in production (keeps today's solid look).
+
 Fallbacks: `@supports not (backdrop-filter or -webkit-backdrop-filter)` AND `@media (prefers-reduced-transparency: reduce)` → solid `--surface-card` with the same border. Must stay readable (contrast AA) on the busiest background (hero image, dark mode red dots).
 Note on top inset: the sticky top bar and the EnvironmentRibbon above it both receive `padding-top: env(safe-area-inset-top)`. This ensures nothing sits under the status bar when edge-to-edge; in dev/staging where the ribbon renders, both elements having the inset is intended and safe.
 
@@ -193,8 +200,36 @@ easing `cubic-bezier(0.2, 0, 0, 1)`. Wrap all non-essential animation in
 shimmer. Two named exceptions only:
 1. **tab press:** scale to `0.96` for 150ms on tab-bar items only.
 2. **tab bar minimise:** the bar/accessory morph on scroll, 300ms, standard easing.
-3. **animated background (pilot: /journey only):** particle pitch background with strict opacity caps (markings ≤ 35%, grass ≤ 12% light / 18% dark), idle drift ≤ 4 px/s screen, subtle camera sway ≤ 1°, DPR ≤ 1.5, pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion` or `saveData`.
+3. **animated background:** calm 3D rugby pitch inside a stylized stadium bowl framing the pitch (inspired by National Stadium Bukit Jalil; generic naming, no stadium name or logo anywhere in UI). Markings ~22% light / ~30% dark, grass ~13% light / ~19% dark, stands ~15% light / ~22% dark, roof membrane ~20% light / ~28% dark, seats faint (~8–10%), posts ~45% with crimson pads, subtle sideline benches, ≤ 35% in auth panel. Dense stylized interactive grass (~16,000 fine blades, 0.45–0.75m tall, tips bend up to ~0.6m in the wake with white/deep-navy brightening, wind gust sweeping every 8–12s), click to kick (parabolic arc ≤ 1.2s, 1.2m 3× life size ball, crimson spark trail, goal post flash on score + inner roof floodlight glow for ~600ms), desktop slow crowd shimmer (≤ 2% of seats at a time; stops with desktop idle pause and settle mode), settle mode on touch/standalone PWA (6s initial sway + gust, then pauses loop on last frame; replays on calm navigation and tab visibility), desktop idle pause (stops render loop after 30s of inactivity; resumes on input), default cursor (no custom cursor), pausing when off-screen or tab hidden, completely disabled under `prefers-reduced-motion`, `saveData`, missing WebGL, or `?bg=off` (fading back to static SVG with stadium outline).
 All three exceptions switch off under `prefers-reduced-motion` (state switches instantly). Nothing else animates.
+
+### 4.1 Background system
+
+The public site and sign-in pages use a calm 3D rugby pitch inside a stylized stadium bowl made of lines, points, and membranes built on the shared WebGL engine (`components/public/background/engine/`).
+
+1. **Scenes per route:**
+   - **Calm pitch + stadium framing (persistent WebGL canvas):** `/`, `/journey`, `/tournaments`, `/tournaments/:id`, `/teams`, `/teams/:id`, `/players`, `/players/:id`, `/partners`, `/sponsors`, `/how-it-works`.
+     - Presets: `bgStadiumSideline` at $\ge 1024\text{px}$ (main stand at halfway, ~25m up, ~45m back from near touchline, looking across pitch); `bgStadiumEnd` below $1024\text{px}$ (end stand behind posts).
+     - Geometry: merged into $\le 3$ extra draw calls (`LineSegments` for 400m 8-lane track, tier rims, vomitory aisles, roof rims/cables; `Points` for seats + inner roof floodlights; `Mesh` for translucent roof membrane).
+   - **Static SVG pitch + stadium (canvas paused, faded out, render loop stopped):** `/matches/:matchId`, `/media/matches/:matchId`, `/contact`, `/privacy`, `/terms`, `/data-requests`, and unknown routes.
+     - `PitchBackdropSvg` renders simplified track ring, tier boundaries, and roof rings matching the 3D projection, updating preset on crossing 1024px.
+   - **/journey:** Uses the calm stadium background as its field (`routeType = 'calm'`). Milestones sit directly on the pitch between the H-posts via a fixed overlay, with click-to-kick disabled so interaction is reserved for milestone navigation.
+   - **Sign-in pages:** The right-hand desktop panel (`hidden lg:flex`) renders `AuthPanelBackground` (tall behind-the-posts framing, pitch-only scene without stadium, opacity ≤ 35%, disposed on unmount, desktop hover wake active, no click kick). Mobile loads nothing in this panel.
+2. **Distraction & Performance budgets:**
+   - Opacities: pitch markings ~22% light / ~30% dark; grass ~13% light / ~19% dark; stands ~15% light / ~22% dark; roof membrane ~20% light / ~28% dark; seats ~8–10%; H-posts ~45% with crimson post pads; auth panel ≤ 35%. Crimson try lines accent marks.
+   - Real 400m athletics track: 8 lanes × 1.22m, 84.39m straights, 36.5m inner radius, centred around the 120 × 70m pitch. Lower stand starts ~3m outside lane 8 (approx 91m × 49.5m from centre).
+   - Click to kick (desktop fine pointer on calm routes): window click launches a 1.2 m 3D rugby ball (3× life size) on a parabolic arc (≤ 1.2 s) with crimson spark trail and grass ripple at kick point. Uprights and roof floodlights flash/glow if ball passes between uprights above crossbar. Single ball at a time. Verified against interactive elements, `[data-no-kick]`, text selections, and non-transparent backgrounds between click target and `<main>`.
+   - Settle mode: touch devices (`pointer: coarse`) and installed PWA (`display-mode: standalone`) run idle sway + 1 wind gust for ~6 s on arriving at a calm route, then stop the render loop and keep the last frame (no continuous rendering). Replays on route change to a calm route and tab visibility. Crowd shimmer is disabled.
+   - Desktop idle pause: stops render loop after 30 s without pointermove, scroll, wheel, or keydown; resumes on input. Frame remains visible while paused. Crowd shimmer freezes with pause.
+   - Pure SVG & projection: `backgroundProjection.ts`, `stadiumGeometry.ts`, and `PitchBackdropSvg` remain pure with zero Three.js imports for native app reusability.
+   - Purely decorative: `aria-hidden="true"`, pointer-events none on canvas, zero text/interactive elements, no new i18n keys.
+3. **Environment switch & Fallbacks:**
+   - **Production:** Switch stays OFF by default (renders legacy PNG background + overlay gradient exactly as before). Enabled only when `VITE_FEATURES` contains `animatedBackground`.
+   - **Development & Staging:** Switch is ON by default by environment.
+   - **Rollback / Override:** Staging is always on by environment; use `?bg=off` per browser for debugging, or revert the branch.
+   - **Fallbacks:** Reduced motion (`prefers-reduced-motion: reduce`), Save-Data (`navigator.connection.saveData`), missing WebGL, or `?bg=off` render the zero-JS-animation static SVG pitch (`PitchBackdropSvg`).
+4. **Admin background:** one static abstract SVG (Ascent) in brand colours; light/dark; no animation; cards stay solid; off in print and high-contrast.
+
 
 **Z-index scale:** `base 0` · `sticky 20` · `nav 30` (floating tab bar) · `pill 35` (live accessory, tournament accessory) · `drawer 40` · `modal 50` · `toast 60`. Sheets and modals (40/50) always cover both tab bar and accessory. No arbitrary `z-[999]`.
 
@@ -234,6 +269,23 @@ Every admin page uses `PageHeader`. Max one primary button per page header.
 - No hover-only affordances: anything revealed on hover must also be reachable by tap/focus.
 - Data fetching lives in `api/` + hooks, not inside page components, so screens can
   be re-skinned for a native shell without rewriting logic.
+
+### 5.4 Public page patterns
+
+| Pattern / Surface | Phone (<768px) | Tablet (768–1023px) | Desktop (≥1024px) |
+|---|---|---|---|
+| **Lists** | `ListRow` link rows (40px logo/initials, ≥44px target) | 2-column cards | 3-column (or 4-column) grid |
+| **Filters** | Search inline + `FilterSheetButton` ("Penapis (n)") | Inline filters | Inline filters |
+| **Standings** | Compact columns (Pos, Team, P, Pts) with tap for full row | Full table | Full table |
+| **Brackets** | Single-line stage header, "Knockout stage" subtitle | Full horizontal tree | Full horizontal tree |
+| **Detail tabs** | Sticky `ScrollableTabStrip` (≥44px, edge fades, active centered) | Sticky tab strip | Horizontal tab bar / sidebar nav |
+| **Dialogs** | `BottomSheet` (`max-h-[80dvh]`, portalled, rounded-t-[20px]) | Centered `Modal` or `BottomSheet` | Centered `Modal` |
+
+**Target-size & minimum text rules (Rule E):**
+- **Interactive targets:** All controls, buttons, toggles, filter buttons, search inputs, and popover actions ≥ 44×44px hit area.
+- **Inline links:** ≥ 24px hit area with adequate surrounding spacing.
+- **Minimum text size:** Public body and meta text must be at least 12px (`text-xs`). 11px is strictly reserved for bold uppercase badges and micro-labels inside calendar grid cells, bracket match cards, standings rows, and `MatchCard`.
+- **Sideways scrolling:** No horizontal viewport blowout down to 320px viewport width (decorative shapes clipped with `overflow-hidden`).
 
 ---
 
@@ -399,3 +451,39 @@ Keep `darkMode: 'class'` **and** `[data-theme]`; both are set by the boot script
 5. Pages: admin pages adopt `PageHeader`/`Table`/`EmptyState`; public pages adopt
    tokens. One area per PR (e.g. Players + Teams, then Tournaments + Matches).
 6. Remove retired tokens/classes, enable CI guardrails.
+
+---
+
+## 11. Profile Heroes & Brand Backgrounds
+
+### 11.1 Brand Background v2 (`BrandBackground`)
+- **Assets**: `admin-bg-ascent2-light.svg` and `admin-bg-ascent2-dark.svg` in `/brand/`.
+- **Usage**:
+  - Admin shell (`AppLayout`): full viewport behind content (`-z-10`, `print:hidden`, `contrast-more:hidden`).
+  - Sign-in shell (`AuthLayout`): rendered once at the root layout level behind Login, Forgot password, Reset password, Accept invite, and Sign-up.
+  - Auth page roots and right-hand panels are transparent (`bg-transparent`), letting the background show through.
+  - Right-hand headline text uses `text-black dark:text-white` with `text-navy dark:text-navy-tint` accents to maintain AA contrast in both themes.
+
+### 11.2 Unified Hero System (`ProfileHero`)
+One shared hero component for Team, Player, and Organisation profiles across public and admin interfaces:
+- **Surface**: Deep Navy (`#0D1B2A`) base with subtle horizontal jersey hoops (`JerseyHoops`) tinted with the organisation's primary and secondary colours, and an ambient diagonal wash.
+- **Variants**:
+  - `variant="team"`: rounded square crest tile with primary colour glow ring. Watermark uses team `shortName`, falling back to 2–3 uppercase initials (no truncated words).
+  - `variant="player"`: circular avatar with crimson jersey number badge. Watermark uses jersey number (omitted if unavailable). Supports half-pitch `PositionPitch` aside.
+  - `variant="organisation"`: circular logo tile with 4px primary colour ring (`boxShadow: 0 0 0 4px ${primary}`). Watermark uses organisation initials.
+- **Breadcrumbs & Back Link Placement**:
+  - Placed in the top row inside the hero for consistent alignment across all 5 profile views.
+  - **Public pages**: Breadcrumbs appear on desktop (`>= lg`). On mobile (`< lg`), hero breadcrumbs are hidden because `PublicLayout` provides the dedicated phone Back row (`PUBLIC_DETAIL_PARENTS`).
+  - **Admin pages**: Full breadcrumbs on desktop (`>= lg`); mobile (`< lg`) renders the hero's single Back link.
+  - **Contrast on dark**: Links use `text-white/75 hover:text-white underline-offset-2 hover:underline decoration-white/40`, active item uses `text-white font-semibold`, and carets use `text-white/40`.
+- **Contrast & Legibility Standards**:
+  - All text and chips inside the hero must meet $\ge$ 4.5:1 WCAG AA contrast against `#0D1B2A`.
+  - Stats band: numbers use `text-white font-bold` (17.4:1); stat labels use `text-white/70 uppercase tracking-wider text-[10px] sm:text-[11px]` (12.2:1).
+  - Level pills with primary colour background compute text colour dynamically via `readableOn(primary)` (`#0D1B2A` or `#FFFFFF`).
+- **Consistent Vocabulary (EN & BM)**:
+  - Player appearances: always "Appearances" / "Penampilan" (never "Matches").
+  - Player tries: always "Tries" / "Try".
+  - Team tries: always "Tries scored" / "Try dijaringkan".
+  - Team squad count: always "Squad" / "Skuad".
+  - Tournaments: always "Tournaments" / "Kejohanan".
+

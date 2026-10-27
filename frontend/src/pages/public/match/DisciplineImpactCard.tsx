@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Warning } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail } from '../../../api/public.api';
@@ -9,6 +10,8 @@ interface DisciplineImpactCardProps {
 }
 
 export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
+    const { t } = useTranslation(['match', 'common']);
+
     // Calculate Discipline Impact
     const impact = useMemo(() => {
         if (!match.events) return { home: { minutes: 0, pointsConceded: 0 }, away: { minutes: 0, pointsConceded: 0 } };
@@ -99,11 +102,11 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-1">
                     <div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 block">Time w/ 14 men</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block">{t('match:discipline.disadvantageTime')}</span>
                         <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{data.minutes}'</span>
                     </div>
                     <div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 block">Points Conceded</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block">{t('match:discipline.pointsConceded')}</span>
                         <span className="text-lg font-bold text-red-500 flex items-center gap-1">
                             -{data.pointsConceded}
                         </span>
@@ -120,7 +123,7 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
         <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <Warning className="w-5 h-5" />
-                Discipline Impact
+                {t('match:discipline.title')}
             </h3>
 
             <div className="space-y-4">
@@ -128,7 +131,7 @@ export const DisciplineImpactCard = ({ match }: DisciplineImpactCardProps) => {
                 {renderTeamSection(match.awayTeamName, impact.away, awayColor)}
 
                 <div className="text-xs text-slate-400 mt-2 text-center italic">
-                    Impact tracks points lost while players were in the sin bin.
+                    {t('match:discipline.impactHint')}
                 </div>
             </div>
         </GlassCard>

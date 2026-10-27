@@ -87,6 +87,60 @@ export interface PublicMatchSummary {
     hasMultipleVenues?: boolean;
 }
 
+export type PublicMatchFeedItem = PublicMatchSummary & {
+    tournamentId: string;
+    tournamentName: string;
+    tournamentSlug?: string;
+    tournamentLogoUrl?: string;
+    tournamentStatus: string;
+    categoryName?: string | null;
+    homeTeamSlug?: string | null;
+    awayTeamSlug?: string | null;
+    livestreamUrl?: string | null;
+    updatedAt?: string | null;
+};
+
+export interface PublicMatchFeedCounts {
+    live: number;
+    today: number;
+    results: number;
+    upcoming: number;
+}
+
+export interface PublicMatchFeed {
+    items: PublicMatchFeedItem[];
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    counts?: PublicMatchFeedCounts | null;
+    lastUpdated?: string | null;
+}
+
+export interface PublicMatchDay {
+    date: string;
+    total: number;
+    live: number;
+    completed: number;
+    cancelled: number;
+}
+
+export interface GetPublicMatchFeedParams {
+    view: 'live' | 'today' | 'results' | 'upcoming' | 'range';
+    tournamentId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    size?: number;
+}
+
+export interface GetPublicMatchDaysParams {
+    from: string;
+    to: string;
+    tournamentId?: string;
+}
+
 export interface PublicMatchDetail extends PublicMatchSummary {
     events: PublicMatchEvent[];
     homeStats?: PublicTeamStats;
@@ -138,7 +192,10 @@ export interface PublicStanding {
     pointsFor: number;
     pointsAgainst: number;
     pointsDiff: number;
+    bonusPoints?: number;
+    triesFor?: number;
     points: number;
+    bonusPointsEnabled?: boolean;
 }
 
 export interface PublicPlayerStatEntry {
@@ -233,6 +290,25 @@ export const publicTournamentApi = {
     },
 };
 
+export const publicMatchApi = {
+    getFeed: async (params: GetPublicMatchFeedParams): Promise<PublicMatchFeed> => {
+        const response = await publicApi.get('/matches', { params });
+        return response.data;
+    },
+
+    getDays: async (params: GetPublicMatchDaysParams): Promise<PublicMatchDay[]> => {
+        const response = await publicApi.get('/matches/days', { params });
+        return response.data;
+    },
+};
+
+export interface PublicSubstitutionEntry {
+    minute: number;
+    direction: 'OFF' | 'ON';
+    otherPlayerName?: string;
+    otherJerseyNumber?: number;
+}
+
 export interface PublicLineupEntry {
     playerName: string;
     jerseyNumber?: number;
@@ -240,6 +316,8 @@ export interface PublicLineupEntry {
     role: string; // 'STARTER' | 'BENCH' | 'RESERVE'
     orderIndex?: number;
     positionDisplay?: string;
+    played?: boolean;
+    substitutions?: PublicSubstitutionEntry[];
 }
 
 export interface PublicMatchLineups {
@@ -265,6 +343,16 @@ export interface PublicPlayerSummary {
     appearances?: number;
 }
 
+export interface PublicOrganisationRef {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+}
+
 export interface PublicTeamDetailResponse {
     id: string;
     name: string;
@@ -276,6 +364,8 @@ export interface PublicTeamDetailResponse {
     division?: string;
     state?: string;
     organisationName?: string;
+    organisation?: PublicOrganisationRef | null;
+    affiliation?: PublicOrganisationRef[];
     players: PublicPlayerSummary[];
     tournaments?: { id: string; name: string; status?: string }[];
 }
@@ -294,6 +384,8 @@ export interface PublicPlayerDetailResponse {
     position2?: string;
     jerseyNumber?: number;
     organisationName?: string;
+    organisation?: PublicOrganisationRef | null;
+    affiliation?: PublicOrganisationRef[];
     profilePictureUrl?: string;
     currentTeamName?: string;
     currentTeamId?: string;
@@ -478,4 +570,96 @@ export const getPublicStatsSummary = async (): Promise<PublicStatsSummary> => {
     const response = await publicApi.get<PublicStatsSummary>('/stats/summary');
     return response.data;
 };
+
+// ─── Organisations Directory & Detail ────────────────────────────────────────
+
+export interface PublicOrganisationTreeNode {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    state?: string | null;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    parentId?: string | null;
+    teamCount: number;
+    childCount: number;
+}
+
+export interface PublicOrganisationTreeTeam {
+    id: string;
+    slug?: string | null;
+    name: string;
+    organisationId: string;
+    category?: string | null;
+    ageGroup?: string | null;
+    division?: string | null;
+    playerCount: number;
+    logoUrl?: string | null;
+}
+
+export interface PublicOrganisationTreeResponse {
+    organisations: PublicOrganisationTreeNode[];
+    teams: PublicOrganisationTreeTeam[];
+}
+
+export interface PublicOrganisationChildRef {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    teamCount: number;
+    childCount: number;
+}
+
+export interface PublicOrganisationTournamentItem {
+    id: string;
+    slug?: string | null;
+    name: string;
+    status?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    logoUrl?: string | null;
+}
+
+export interface PublicOrganisationCounts {
+    affiliatedOrganisations: number;
+    teams: number;
+    players: number;
+    tournaments: number;
+}
+
+export interface PublicOrganisationDetailResponse {
+    id: string;
+    slug?: string | null;
+    name: string;
+    level: string;
+    state?: string | null;
+    logoUrl?: string | null;
+    coverImageUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    accentColor?: string | null;
+    parentChain: PublicOrganisationRef[];
+    children: PublicOrganisationChildRef[];
+    teams: PublicOrganisationTreeTeam[];
+    tournaments: PublicOrganisationTournamentItem[];
+    counts: PublicOrganisationCounts;
+}
+
+export const publicOrganisationApi = {
+    getTree: async (): Promise<PublicOrganisationTreeResponse> => {
+        const response = await publicApi.get<PublicOrganisationTreeResponse>('/organisations/tree');
+        return response.data;
+    },
+    getOrganisation: async (idOrSlug: string): Promise<PublicOrganisationDetailResponse> => {
+        const response = await publicApi.get<PublicOrganisationDetailResponse>(`/organisations/${idOrSlug}`);
+        return response.data;
+    },
+};
+
 
