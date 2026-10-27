@@ -22,6 +22,7 @@ import {
     PublicOrganisationTreeNode,
     PublicOrganisationTreeTeam,
 } from '@/api/public.api';
+import { LogoImage } from '@/components/public/LogoImage';
 
 interface OrgHierarchyNode {
     org: PublicOrganisationTreeNode;
@@ -50,12 +51,6 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
             )}
         </>
     );
-}
-
-function getInitials(name: string): string {
-    const words = name.trim().split(/\s+/);
-    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 export function Organisations() {
@@ -481,18 +476,12 @@ export function Organisations() {
                                 : undefined
                         }
                     >
-                        {org.logoUrl ? (
-                            <img
-                                src={org.logoUrl}
-                                alt={org.name}
-                                className="w-full h-full object-contain p-1"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                }}
-                            />
-                        ) : null}
-                        <span className={clsx(org.logoUrl ? 'hidden' : '')}>{getInitials(org.name)}</span>
+                        <LogoImage
+                            src={org.logoUrl}
+                            name={org.name}
+                            className="w-full h-full object-contain p-1"
+                            fallbackClassName="text-xs"
+                        />
                     </div>
 
                     {/* Info */}
@@ -566,11 +555,12 @@ export function Organisations() {
                 </div>
 
                 <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center bg-surface-sunken border border-line-subtle text-content-secondary overflow-hidden">
-                    {team.logoUrl ? (
-                        <img src={team.logoUrl} alt={team.name} className="w-full h-full object-contain p-1" />
-                    ) : (
-                        <Shield size={16} weight="duotone" />
-                    )}
+                    <LogoImage
+                        src={team.logoUrl}
+                        name={team.name}
+                        className="w-full h-full object-contain p-1"
+                        icon={<Shield size={16} weight="duotone" />}
+                    />
                 </div>
 
                 <div className="flex-1 min-w-0">

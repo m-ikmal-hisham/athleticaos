@@ -33,7 +33,8 @@
         "state": "State",
         "district": "District",
         "school": "School",
-        "club": "Club"
+        "club": "Club",
+        "international": "International"
     },
     "competitionType": {
         "group_knockout": "Group + Knockout",
@@ -53,5 +54,7 @@
     "showMore": "Show more",
     "close": "Close",
     "venueTbc": "Venue TBC",
-    "vs": "VS"
+    "vs": "VS",
+    "calendarStripAria": "3-week rugby calendar strip",
+    "monthGridAria": "Tournament calendar month grid"
 }

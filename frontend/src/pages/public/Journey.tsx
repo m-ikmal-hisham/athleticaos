@@ -298,7 +298,7 @@ export default function Journey() {
                                                 className="w-1.5 h-1.5 rounded-full bg-white motion-safe:animate-pulse"
                                                 aria-hidden="true"
                                             />
-                                            LIVE
+                                            {t('common:status.live')}
                                         </span>
                                     )}
                                     {selectedMilestone.status === 'done' && (

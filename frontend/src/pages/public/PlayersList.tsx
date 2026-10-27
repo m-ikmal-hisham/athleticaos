@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { User, Shield, Trophy, MapPin, MagnifyingGlass, X, WarningCircle } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/GlassCard';
@@ -35,6 +36,7 @@ function PlayerCardSkeleton({ className }: { className?: string }) {
 }
 
 export default function PlayersList() {
+    const { t } = useTranslation(['players', 'common']);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlSearch = searchParams.get('search') || '';
@@ -77,7 +79,7 @@ export default function PlayersList() {
 
     const positionOptions = useMemo(() => {
         const availablePositions = filtersData?.positions ?? [];
-        const list = [{ value: 'all', label: 'All Positions' }];
+        const list = [{ value: 'all', label: t('players:list.positionFilter', { defaultValue: 'All Positions' }) }];
         const set = new Set(availablePositions);
         if (urlPosition && urlPosition !== 'all' && !set.has(urlPosition)) {
             list.push({ value: urlPosition, label: urlPosition });
@@ -86,11 +88,11 @@ export default function PlayersList() {
             list.push({ value: pos, label: pos });
         });
         return list;
-    }, [filtersData?.positions, urlPosition]);
+    }, [filtersData?.positions, urlPosition, t]);
 
     const stateOptions = useMemo(() => {
         const availableStates = filtersData?.states ?? [];
-        const list = [{ value: 'all', label: 'All States' }];
+        const list = [{ value: 'all', label: t('players:list.stateFilter', { defaultValue: 'All States' }) }];
         const set = new Set(availableStates);
         if (urlState && urlState !== 'all' && !set.has(urlState)) {
             list.push({ value: urlState, label: urlState });
@@ -99,7 +101,7 @@ export default function PlayersList() {
             list.push({ value: st, label: st });
         });
         return list;
-    }, [filtersData?.states, urlState]);
+    }, [filtersData?.states, urlState, t]);
 
     const queryParams = useMemo(
         () => ({
@@ -187,10 +189,10 @@ export default function PlayersList() {
             {/* Header */}
             <div className="space-y-2">
                 <h1 className="font-score text-3xl font-bold text-slate-900 dark:text-white">
-                    Players Directory
+                    {t('players:list.title', { defaultValue: 'Players Directory' })}
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                    Discover rugby players, squad members, and athlete profiles
+                    {t('players:list.subtitle', { defaultValue: 'Discover rugby players, squad members, and athlete profiles' })}
                 </p>
             </div>
 
@@ -201,7 +203,7 @@ export default function PlayersList() {
                     <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
                     <input
                         type="text"
-                        placeholder="Search players by name, team, or position..."
+                        placeholder={t('players:list.searchPlaceholder', { defaultValue: 'Search players by name, team, or position...' })}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400 text-sm"
@@ -209,7 +211,7 @@ export default function PlayersList() {
                     {searchInput && (
                         <button
                             type="button"
-                            aria-label="Clear search"
+                            aria-label={t('players:list.clearSearch', { defaultValue: 'Clear search' })}
                             onClick={handleClearSearch}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
@@ -223,7 +225,7 @@ export default function PlayersList() {
                     <Select
                         value={urlPosition || 'all'}
                         onChange={(val) => handlePositionChange(String(val))}
-                        aria-label="Filter by position"
+                        aria-label={t('players:list.positionFilter', { defaultValue: 'Filter by position' })}
                         options={positionOptions}
                     />
                 </div>
@@ -233,7 +235,7 @@ export default function PlayersList() {
                     <Select
                         value={urlState || 'all'}
                         onChange={(val) => handleStateChange(String(val))}
-                        aria-label="Filter by state"
+                        aria-label={t('players:list.stateFilter', { defaultValue: 'Filter by state' })}
                         options={stateOptions}
                     />
                 </div>
@@ -242,16 +244,20 @@ export default function PlayersList() {
             {/* Results Count & Subtle Updating Indicator */}
             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-h-[24px]">
                 {isLoading ? (
-                    <span>Loading players…</span>
+                    <span>{t('players:list.loading', { defaultValue: 'Loading players…' })}</span>
                 ) : (
                     <span>
-                        Showing {allPlayers.length.toLocaleString()} of {totalPlayers.toLocaleString()} players
+                        {t('players:list.showingCount', {
+                            shown: allPlayers.length.toLocaleString(),
+                            total: totalPlayers.toLocaleString(),
+                            defaultValue: `Showing ${allPlayers.length.toLocaleString()} of ${totalPlayers.toLocaleString()} players`,
+                        })}
                     </span>
                 )}
                 {isFetching && !isLoading && (
                     <span className="inline-flex items-center gap-1.5 text-xs text-navy dark:text-navy-tint font-medium animate-pulse ml-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-navy dark:bg-navy-tint animate-ping" />
-                        Updating…
+                        {t('players:list.updating', { defaultValue: 'Updating…' })}
                     </span>
                 )}
             </div>
@@ -269,24 +275,24 @@ export default function PlayersList() {
                     </div>
                     {showSlowLoading && (
                         <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6 animate-pulse">
-                            Still loading…
+                            {t('players:list.stillLoading', { defaultValue: 'Still loading…' })}
                         </p>
                     )}
                 </div>
             ) : isError ? (
                 <EmptyState
                     icon={WarningCircle}
-                    title="Couldn't load players"
-                    description="Check your connection and try again."
-                    actionLabel="Try again"
+                    title={t('players:list.errorTitle', { defaultValue: "Couldn't load players" })}
+                    description={t('players:list.errorDesc', { defaultValue: 'Check your connection and try again.' })}
+                    actionLabel={t('players:list.tryAgain', { defaultValue: 'Try again' })}
                     onAction={() => refetch()}
                 />
             ) : allPlayers.length === 0 ? (
                 <EmptyState
                     icon={User}
-                    title="No players match your search."
-                    description="Try adjusting your search query or filters"
-                    actionLabel="Clear filters"
+                    title={t('players:list.empty', { defaultValue: 'No players match your search.' })}
+                    description={t('players:list.emptyHint', { defaultValue: 'Try adjusting your search query or filters' })}
+                    actionLabel={t('players:list.clearFilters', { defaultValue: 'Clear filters' })}
                     onAction={clearFilters}
                 />
             ) : (
@@ -331,7 +337,7 @@ export default function PlayersList() {
                                                 )}
                                             </div>
 
-                                            {/* Position Badge */}
+                                            {/* Position Badge - omitted completely if player has no position */}
                                             {player.position && (
                                                 <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
                                                     {player.position}
@@ -355,7 +361,7 @@ export default function PlayersList() {
                                                 </div>
                                             ) : (
                                                 <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                                                    Independent Player
+                                                    {t('players:list.independent', { defaultValue: 'Independent Player' })}
                                                 </div>
                                             )}
                                         </div>
@@ -367,8 +373,10 @@ export default function PlayersList() {
                                             <div className="flex items-center gap-1">
                                                 <Trophy className="w-4 h-4" />
                                                 <span>
-                                                    {player.tournamentCount}{' '}
-                                                    {player.tournamentCount === 1 ? 'Tournament' : 'Tournaments'}
+                                                    {t('players:list.tournamentCount', {
+                                                        count: player.tournamentCount,
+                                                        defaultValue: `${player.tournamentCount} ${player.tournamentCount === 1 ? 'Tournament' : 'Tournaments'}`,
+                                                    })}
                                                 </span>
                                             </div>
                                         ) : (
@@ -394,7 +402,7 @@ export default function PlayersList() {
                                 onClick={() => fetchNextPage()}
                                 isLoading={isFetchingNextPage}
                             >
-                                Show more
+                                {t('players:list.showMore', { defaultValue: 'Show more' })}
                             </Button>
                         </div>
                     )}

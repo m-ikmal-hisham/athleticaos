@@ -1,0 +1,12 @@
+{
+  "title": "Media Portal",
+  "subtitle": "Secure access for authorized media partners",
+  "partnerAccess": "Partner Access",
+  "loading": "Loading media assets...",
+  "selectMatch": "Select a match to view media",
+  "emptyTitle": "No Media Available",
+  "emptyDescription": "No assets have been uploaded for this match yet.",
+  "download": "Download",
+  "untitledAsset": "Untitled Asset",
+  "loadError": "Failed to load media assets"
+}

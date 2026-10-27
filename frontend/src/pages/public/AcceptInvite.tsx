@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Eye, EyeSlash, CheckCircle, Check, X, ArrowLeft, Spinner } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -15,6 +16,7 @@ interface InviteDetails {
 }
 
 export const AcceptInvite = () => {
+    const { t } = useTranslation('auth');
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [token, setToken] = useState<string | null>(null);
@@ -48,16 +50,16 @@ export const AcceptInvite = () => {
                 })
                 .catch(err => {
                     const axiosErr = err as { response?: { data?: { message?: string } } };
-                    setFetchError(axiosErr.response?.data?.message || 'This invitation link is invalid or has expired.');
+                    setFetchError(axiosErr.response?.data?.message || t('acceptInvite.invalidOrExpired'));
                 })
                 .finally(() => {
                     setIsFetchingDetails(false);
                 });
         } else {
             setIsFetchingDetails(false);
-            setFetchError('Missing invitation link. Please check your invitation email.');
+            setFetchError(t('acceptInvite.missingLink'));
         }
-    }, [searchParams]);
+    }, [searchParams, t]);
 
     // Validation checks
     const hasMinLength = newPassword.length >= PASSWORD_MIN_LENGTH;
@@ -101,7 +103,7 @@ export const AcceptInvite = () => {
             <div className="min-h-screen w-full flex items-center justify-center p-8">
                 <div className="flex flex-col items-center gap-3">
                     <Spinner size={32} className="animate-spin text-navy dark:text-navy-tint" />
-                    <p className="text-sm text-black/72 dark:text-white/72">Validating invitation...</p>
+                    <p className="text-sm text-black/72 dark:text-white/72">{t('acceptInvite.validating')}</p>
                 </div>
             </div>
         );
@@ -115,12 +117,12 @@ export const AcceptInvite = () => {
                         <X size={44} weight="bold" />
                     </div>
                     {/* Covers expired, already used and replaced (resent) links alike. */}
-                    <h2 className="text-xl font-bold text-black dark:text-white">This invitation link can't be used</h2>
+                    <h2 className="text-xl font-bold text-black dark:text-white">{t('acceptInvite.invalidTitle')}</h2>
                     <p className="text-sm text-black/72 dark:text-white/72 leading-relaxed">
-                        {fetchError || 'This link is invalid or has expired.'}
+                        {fetchError || t('acceptInvite.invalidOrExpired')}
                     </p>
                     <p className="text-sm text-black/72 dark:text-white/72 leading-relaxed">
-                        Ask your administrator to send a new invite.
+                        {t('acceptInvite.askAdmin')}
                     </p>
                     <div className="pt-2">
                         <Button
@@ -129,7 +131,7 @@ export const AcceptInvite = () => {
                             className="w-full py-3"
                             onClick={() => navigate('/login')}
                         >
-                            Back to Sign in
+                            {t('acceptInvite.backToSignIn')}
                         </Button>
                     </div>
                 </div>
@@ -150,10 +152,10 @@ export const AcceptInvite = () => {
                         />
                         <div className="flex flex-col items-start text-left">
                             <h2 className="text-3xl font-bold tracking-tight text-black dark:text-white leading-none">
-                                {isSuccess ? 'Welcome' : 'Join'}
+                                {isSuccess ? t('acceptInvite.welcome') : t('acceptInvite.join')}
                             </h2>
                             <p className="mt-1.5 text-sm text-black/72 dark:text-white/72 font-medium">
-                                AthleticaOS Rugby
+                                {t('acceptInvite.rugbySubtitle')}
                             </p>
                         </div>
                     </div>
@@ -165,10 +167,10 @@ export const AcceptInvite = () => {
                                     <CheckCircle size={48} weight="duotone" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-black dark:text-white">
-                                    Account Activated
+                                    {t('acceptInvite.accountActivated')}
                                 </h3>
                                 <p className="text-sm text-black/72 dark:text-white/72 leading-relaxed">
-                                    Your password has been set. You can now sign in to AthleticaOS Rugby.
+                                    {t('acceptInvite.activatedDescription')}
                                 </p>
                             </div>
 
@@ -178,7 +180,7 @@ export const AcceptInvite = () => {
                                 className="w-full py-3"
                                 onClick={() => navigate('/login')}
                             >
-                                Sign in
+                                {t('login.submit')}
                             </Button>
                         </div>
                     ) : (
@@ -186,17 +188,17 @@ export const AcceptInvite = () => {
                             {/* Personalised greeting */}
                             <div className="p-3.5 rounded-xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 space-y-1">
                                 <p className="text-sm font-semibold text-black dark:text-white">
-                                    Welcome, {inviteDetails?.firstName || 'there'}!
+                                    {t('acceptInvite.welcomeGreeting', { name: inviteDetails?.firstName || t('acceptInvite.welcomeGreetingFallback') })}
                                 </p>
                                 <p className="text-xs text-black/72 dark:text-white/72">
-                                    Set your password to activate your account for{' '}
+                                    {t('acceptInvite.setPasswordNotice')}
                                     <span className="font-semibold text-black dark:text-white">
                                         {inviteDetails?.organisationName || 'AthleticaOS Rugby'}
                                     </span>.
                                 </p>
                                 {inviteDetails?.email && (
                                     <p className="text-xs text-black/60 dark:text-white/60 pt-1">
-                                        Account email: <span className="font-mono">{inviteDetails.email}</span>
+                                        {t('acceptInvite.accountEmail')}<span className="font-mono">{inviteDetails.email}</span>
                                     </p>
                                 )}
                             </div>
@@ -209,12 +211,12 @@ export const AcceptInvite = () => {
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-semibold text-black/72 dark:text-white/72">
-                                    Create password
+                                    {t('acceptInvite.createPasswordLabel')}
                                 </label>
                                 <div className="relative">
                                     <Input
                                         type={showPassword ? 'text' : 'password'}
-                                        placeholder="Choose a strong password"
+                                        placeholder={t('acceptInvite.chooseStrongPassword')}
                                         autoComplete="new-password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
@@ -224,7 +226,7 @@ export const AcceptInvite = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(v => !v)}
-                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        aria-label={showPassword ? t('acceptInvite.hidePassword') : t('acceptInvite.showPassword')}
                                         className="absolute inset-y-0 right-0 flex items-center px-3 text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/92"
                                     >
                                         {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -234,12 +236,12 @@ export const AcceptInvite = () => {
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-semibold text-black/72 dark:text-white/72">
-                                    Confirm password
+                                    {t('acceptInvite.confirmPasswordLabel')}
                                 </label>
                                 <div className="relative">
                                     <Input
                                         type={showConfirmPassword ? 'text' : 'password'}
-                                        placeholder="Re-type password"
+                                        placeholder={t('acceptInvite.retypePassword')}
                                         autoComplete="new-password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -249,7 +251,7 @@ export const AcceptInvite = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(v => !v)}
-                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                        aria-label={showConfirmPassword ? t('acceptInvite.hidePassword') : t('acceptInvite.showPassword')}
                                         className="absolute inset-y-0 right-0 flex items-center px-3 text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/92"
                                     >
                                         {showConfirmPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -259,7 +261,7 @@ export const AcceptInvite = () => {
 
                             {/* Checklist */}
                             <div className="p-3.5 rounded-xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 space-y-2 text-xs">
-                                <p className="font-semibold text-black/80 dark:text-white/80">Password requirements:</p>
+                                <p className="font-semibold text-black/80 dark:text-white/80">{t('acceptInvite.passwordRequirements')}</p>
                                 <div className="space-y-1.5">
                                     <div className="flex items-center gap-2">
                                         {hasMinLength ? (
@@ -268,7 +270,7 @@ export const AcceptInvite = () => {
                                             <span className="w-3.5 h-3.5 rounded-full border border-black/30 dark:border-white/30 shrink-0" />
                                         )}
                                         <span className={hasMinLength ? 'text-black dark:text-white' : 'text-black/60 dark:text-white/60'}>
-                                            At least {PASSWORD_MIN_LENGTH} characters
+                                            {t('acceptInvite.minCharacters', { count: PASSWORD_MIN_LENGTH })}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -278,7 +280,7 @@ export const AcceptInvite = () => {
                                             <span className="w-3.5 h-3.5 rounded-full border border-black/30 dark:border-white/30 shrink-0" />
                                         )}
                                         <span className={newPassword.length > 0 && hasNoCommonWords ? 'text-black dark:text-white' : 'text-black/60 dark:text-white/60'}>
-                                            Avoid common words or repetitive phrases
+                                            {t('acceptInvite.avoidCommon')}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -288,7 +290,7 @@ export const AcceptInvite = () => {
                                             <span className="w-3.5 h-3.5 rounded-full border border-black/30 dark:border-white/30 shrink-0" />
                                         )}
                                         <span className={passwordsMatch ? 'text-black dark:text-white' : 'text-black/60 dark:text-white/60'}>
-                                            Passwords match
+                                            {t('acceptInvite.passwordsMatch')}
                                         </span>
                                     </div>
                                 </div>
@@ -301,7 +303,7 @@ export const AcceptInvite = () => {
                                     className="w-1/3 py-3"
                                     onClick={() => navigate('/login')}
                                 >
-                                    Cancel
+                                    {t('acceptInvite.cancel')}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -310,18 +312,18 @@ export const AcceptInvite = () => {
                                     isLoading={isLoading}
                                     disabled={!hasMinLength || !passwordsMatch}
                                 >
-                                    Set password
+                                    {t('acceptInvite.setPassword')}
                                 </Button>
                             </div>
 
                             <p className="text-center text-xs text-black/60 dark:text-white/60 pt-1">
-                                By setting your password you agree to the{' '}
+                                {t('acceptInvite.termsNoticeBefore')}
                                 <Link to="/terms" className="text-navy dark:text-navy-tint hover:underline font-medium">
-                                    Terms of use
+                                    {t('acceptInvite.termsOfUse')}
                                 </Link>
-                                . See our{' '}
+                                {t('acceptInvite.termsNoticeBetween')}
                                 <Link to="/privacy" className="text-navy dark:text-navy-tint hover:underline font-medium">
-                                    Privacy notice
+                                    {t('acceptInvite.privacyNotice')}
                                 </Link>
                                 .
                             </p>
@@ -331,7 +333,7 @@ export const AcceptInvite = () => {
                                     to="/login"
                                     className="inline-flex items-center gap-1.5 text-xs text-navy dark:text-navy-tint hover:underline font-medium"
                                 >
-                                    <ArrowLeft size={14} /> Already have a password? Sign in
+                                    <ArrowLeft size={14} /> {t('acceptInvite.alreadyHavePassword')}
                                 </Link>
                             </div>
                         </form>
@@ -346,3 +348,4 @@ export const AcceptInvite = () => {
 };
 
 export default AcceptInvite;
+

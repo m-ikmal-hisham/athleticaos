@@ -10,22 +10,36 @@ interface MatchLineupsProps {
 }
 
 export const MatchLineups = ({ match }: MatchLineupsProps) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation(['match', 'common']);
     const [lineups, setLineups] = useState<PublicMatchLineups | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTeam, setActiveTeam] = useState<'home' | 'away'>('home');
 
     const isCompleted = match.status?.toUpperCase() === 'COMPLETED';
 
-    // Detect format from match duration (heuristic)
-    const detectFormat = (): RugbyFormat => {
+    // Heuristic fallback format from match duration
+    const getFallbackFormat = (): RugbyFormat => {
         const duration = match.matchDuration || 80;
         if (duration <= 16) return 'SEVENS';
         if (duration <= 30) return 'TENS';
         return 'XV';
     };
 
-    const format = detectFormat();
+    const getFormatForTeam = (startersCount: number): RugbyFormat => {
+        if (startersCount === 7) return 'SEVENS';
+        if (startersCount === 10) return 'TENS';
+        if (startersCount === 15) return 'XV';
+        return getFallbackFormat();
+    };
+
+    const getStartingTitle = (format: RugbyFormat) => {
+        switch (format) {
+            case 'SEVENS': return t('match:lineup.startingSevens');
+            case 'TENS': return t('match:lineup.startingTens');
+            case 'XV': return t('match:lineup.startingXv');
+            default: return t('match:lineup.startingLineup');
+        }
+    };
 
     useEffect(() => {
         const loadLineups = async () => {
@@ -73,14 +87,14 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
         return (
             <GlassCard className="p-8 text-center">
                 <Users className="w-12 h-12 mx-auto text-black/60 dark:text-white/60 mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Lineups Not Available</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Team sheets have not been submitted for this match yet.</p>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{t('match:lineup.notAvailable')}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('match:lineup.notAvailableHint')}</p>
             </GlassCard>
         );
     }
 
-    const renderPlayerRow = (player: PublicLineupEntry, index: number, isStarter: boolean) => {
-        const positionName = isStarter ? getPositionName(player.orderIndex, format) : '';
+    const renderPlayerRow = (player: PublicLineupEntry, index: number, isStarter: boolean, teamFormat: RugbyFormat) => {
+        const positionName = isStarter ? getPositionName(player.orderIndex, teamFormat) : '';
         const hasJersey = player.jerseyNumber != null && player.jerseyNumber > 0;
 
         return (
@@ -112,7 +126,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         {player.captain && (
                             <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">
                                 <Shield className="w-3 h-3" weight="fill" />
-                                C
+                                {t('match:lineup.captain')}
                             </span>
                         )}
 
@@ -121,12 +135,12 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             player.substitutions.map((sub, sIdx) => {
                                 const isOff = sub.direction === 'OFF';
                                 const subText = isOff
-                                    ? t('lineup.off', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
-                                        ? t('lineup.replacedByWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
-                                        : t('lineup.replacedBy', { name: sub.otherPlayerName || '' }))
-                                    : t('lineup.on', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
-                                        ? t('lineup.forPlayerWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
-                                        : t('lineup.forPlayer', { name: sub.otherPlayerName || '' }));
+                                    ? t('common:lineup.off', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
+                                        ? t('common:lineup.replacedByWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
+                                        : t('common:lineup.replacedBy', { name: sub.otherPlayerName || '' }))
+                                    : t('common:lineup.on', { minute: sub.minute }) + ' ' + (sub.otherJerseyNumber != null
+                                        ? t('common:lineup.forPlayerWithNumber', { name: sub.otherPlayerName || '', number: sub.otherJerseyNumber })
+                                        : t('common:lineup.forPlayer', { name: sub.otherPlayerName || '' }));
 
                                 return (
                                     <span
@@ -144,13 +158,14 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             })
                         ) : !isStarter && isCompleted && !player.played ? (
                             <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">
-                                {t('lineup.didNotPlay')}
+                                {t('common:lineup.didNotPlay')}
                             </span>
                         ) : null}
                     </div>
+                    {/* Starters: position from the format and number (stored text can be from another format) */}
                     {positionName && (
                         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                            {player.positionDisplay || positionName}
+                            {positionName}
                         </span>
                     )}
                 </div>
@@ -180,10 +195,12 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
             .filter(p => p.role === 'BENCH' || p.role === 'RESERVE')
             .sort((a, b) => (a.orderIndex || 999) - (b.orderIndex || 999));
 
+        const teamFormat = getFormatForTeam(starters.length);
+
         // Group starters by position group
-        const forwards = starters.filter(p => getPositionGroup(p.orderIndex, format) === 'Forwards');
-        const backs = starters.filter(p => getPositionGroup(p.orderIndex, format) === 'Backs');
-        const ungrouped = starters.filter(p => getPositionGroup(p.orderIndex, format) === '');
+        const forwards = starters.filter(p => getPositionGroup(p.orderIndex, teamFormat) === 'Forwards');
+        const backs = starters.filter(p => getPositionGroup(p.orderIndex, teamFormat) === 'Backs');
+        const ungrouped = starters.filter(p => getPositionGroup(p.orderIndex, teamFormat) === '');
 
         return (
             <div className="space-y-6">
@@ -192,10 +209,10 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     <div className="flex items-center gap-2 mb-3">
                         <div className={`w-1 h-5 rounded-full ${accentColor}`} />
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                            Starting XV
+                            {getStartingTitle(teamFormat)}
                         </h4>
                         <span className="text-xs text-slate-400 font-medium">
-                            {starters.length} players
+                            {t('match:lineup.playersCount', { count: starters.length })}
                         </span>
                     </div>
 
@@ -203,10 +220,10 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     {forwards.length > 0 && (
                         <div className="mb-4">
                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
-                                Forwards
+                                {t('match:lineup.forwards')}
                             </div>
                             <div className="space-y-1.5">
-                                {forwards.map((p, i) => renderPlayerRow(p, i, true))}
+                                {forwards.map((p, i) => renderPlayerRow(p, i, true, teamFormat))}
                             </div>
                         </div>
                     )}
@@ -215,10 +232,10 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     {backs.length > 0 && (
                         <div className="mb-4">
                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
-                                Backs
+                                {t('match:lineup.backs')}
                             </div>
                             <div className="space-y-1.5">
-                                {backs.map((p, i) => renderPlayerRow(p, i, true))}
+                                {backs.map((p, i) => renderPlayerRow(p, i, true, teamFormat))}
                             </div>
                         </div>
                     )}
@@ -226,7 +243,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     {/* Ungrouped (fallback) */}
                     {ungrouped.length > 0 && forwards.length === 0 && backs.length === 0 && (
                         <div className="space-y-1.5">
-                            {ungrouped.map((p, i) => renderPlayerRow(p, i, true))}
+                            {ungrouped.map((p, i) => renderPlayerRow(p, i, true, teamFormat))}
                         </div>
                     )}
                 </div>
@@ -237,14 +254,14 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                         <div className="flex items-center gap-2 mb-3">
                             <div className="w-1 h-5 rounded-full bg-slate-300 dark:bg-slate-600" />
                             <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                                Replacements
+                                {t('match:lineup.replacements')}
                             </h4>
                             <span className="text-xs text-slate-400 font-medium">
-                                {bench.length} players
+                                {t('match:lineup.playersCount', { count: bench.length })}
                             </span>
                         </div>
                         <div className="space-y-1.5">
-                            {bench.map((p, i) => renderPlayerRow(p, i, false))}
+                            {bench.map((p, i) => renderPlayerRow(p, i, false, teamFormat))}
                         </div>
                     </div>
                 )}
@@ -299,14 +316,14 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                                     {match.homeTeamName}
                                 </h3>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-                                    Home
+                                    {t('match:lineup.home')}
                                 </span>
                             </div>
                         </div>
                         {homeLineup.length > 0 ? (
                             renderTeamLineup(homeLineup, 'bg-navy')
                         ) : (
-                            <p className="text-sm text-slate-400 text-center py-8">Lineup not submitted</p>
+                            <p className="text-sm text-slate-400 text-center py-8">{t('match:lineup.notSubmitted')}</p>
                         )}
                     </GlassCard>
                 </div>
@@ -321,14 +338,14 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                                     {match.awayTeamName}
                                 </h3>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-                                    Away
+                                    {t('match:lineup.away')}
                                 </span>
                             </div>
                         </div>
                         {awayLineup.length > 0 ? (
                             renderTeamLineup(awayLineup, 'bg-red-500')
                         ) : (
-                            <p className="text-sm text-slate-400 text-center py-8">Lineup not submitted</p>
+                            <p className="text-sm text-slate-400 text-center py-8">{t('match:lineup.notSubmitted')}</p>
                         )}
                     </GlassCard>
                 </div>

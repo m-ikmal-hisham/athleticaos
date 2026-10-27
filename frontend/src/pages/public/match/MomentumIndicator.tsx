@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip } from 'recharts';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, PublicMatchEvent } from '../../../api/public.api';
@@ -15,6 +16,7 @@ interface MomentumDataPoint {
 }
 
 export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
+    const { t } = useTranslation('match');
 
     // Calculate momentum data
     // Group events into 5-minute buckets
@@ -118,7 +120,7 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
                     <TrendUp className="w-4 h-4 text-navy dark:text-navy-tint" />
-                    Match Momentum
+                    {t('momentum.title')}
                 </h3>
                 {/* ... Legend ... */}
                 <div className="flex items-center gap-3 text-xs font-medium">
@@ -152,11 +154,12 @@ export const MomentumIndicator = ({ match }: MomentumIndicatorProps) => {
                                 if (active && payload && payload.length) {
                                     const val = payload[0].value as number;
                                     const min = payload[0].payload.minute;
-                                    const team = val > 0 ? match.homeTeamName : (val < 0 ? match.awayTeamName : 'Neutral');
+                                    const team = val > 0 ? match.homeTeamName : (val < 0 ? match.awayTeamName : t('momentum.neutral'));
+                                    const dominanceText = val === 0 ? t('momentum.neutral') : t('momentum.dominance', { team });
                                     return (
                                         <div className="bg-slate-900/90 text-white text-xs px-2 py-1 rounded shadow-lg backdrop-blur-sm border border-white/10">
                                             <p className="font-bold">{min}' - {min + bucketSize}'</p>
-                                            <p>{team} Dominance</p>
+                                            <p>{dominanceText}</p>
                                         </div>
                                     );
                                 }

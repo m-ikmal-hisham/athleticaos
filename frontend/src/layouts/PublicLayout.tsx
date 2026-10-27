@@ -276,14 +276,21 @@ export default function PublicLayout() {
                                                     to={item.to}
                                                     aria-current={active ? 'page' : undefined}
                                                     className={clsx(
-                                                        'inline-flex items-center h-full px-1 text-sm font-medium border-b-2 motion-safe:transition-colors',
+                                                        'inline-flex items-center h-full px-1 text-sm font-medium border-b-2 motion-safe:transition-colors whitespace-nowrap',
                                                         focusRing,
                                                         active
                                                             ? 'text-navy dark:text-navy-tint border-navy dark:border-navy-tint'
                                                             : 'text-black/72 dark:text-white/72 border-transparent hover:text-navy dark:hover:text-navy-tint'
                                                     )}
                                                 >
-                                                    {t(item.labelKey)}
+                                                    {item.tabLabelKey ? (
+                                                        <>
+                                                            <span className="hidden xl:inline">{t(item.labelKey)}</span>
+                                                            <span className="xl:hidden">{t(item.tabLabelKey)}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span>{t(item.labelKey)}</span>
+                                                    )}
                                                 </Link>
                                             </li>
                                         );
@@ -379,7 +386,7 @@ export default function PublicLayout() {
 
                         <div className="text-xs text-black/72 dark:text-white/72 flex flex-col items-center md:items-end gap-2">
                             {/* Language link pair */}
-                            <div className="flex items-center gap-1.5 text-xs text-black/72 dark:text-white/72" aria-label="Language selection">
+                            <div className="flex items-center gap-1.5 text-xs text-black/72 dark:text-white/72" aria-label={t('language.label')}>
                                 <button
                                     type="button"
                                     onClick={() => void changeLanguage('en')}

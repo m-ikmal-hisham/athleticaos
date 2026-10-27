@@ -1,0 +1,123 @@
+{
+  "center": {
+    "title": "Match centre",
+    "overview": "Overview",
+    "timeline": "Timeline",
+    "lineups": "Lineups",
+    "stats": "Stats",
+    "breakdown": "Scoring breakdown",
+    "discipline": "Discipline & impact",
+    "backToMatchday": "Back to Matchday",
+    "liveNow": "LIVE NOW",
+    "refreshing": "Updating...",
+    "shareMatch": "Share match",
+    "notFound": "Match not found",
+    "notFoundHint": "The match you are looking for does not exist or has been removed.",
+    "browseMatches": "Browse matches",
+    "matchResult": "Match Result"
+  },
+  "hero": {
+    "tournamentMatch": "Tournament match",
+    "match": "Match {{number}}",
+    "watchLive": "Watch live",
+    "watchReplay": "Watch replay",
+    "shareTitle": "{{home}} vs {{away}}",
+    "shareText": "Follow the match {{home}} vs {{away}} on AthleticaOS!"
+  },
+  "lineup": {
+    "title": "Lineups",
+    "notAvailable": "Lineups not available",
+    "notAvailableHint": "Team sheets have not been submitted for this match yet.",
+    "startingLineup": "Starting lineup",
+    "startingXv": "Starting XV",
+    "startingSevens": "Starting 7",
+    "startingTens": "Starting 10",
+    "starters": "Starters",
+    "forwards": "Forwards",
+    "backs": "Backs",
+    "replacements": "Replacements",
+    "captain": "C",
+    "playersCount": "{{count}} player",
+    "playersCount_other": "{{count}} players",
+    "notSubmitted": "Lineup not submitted",
+    "home": "Home",
+    "away": "Away"
+  },
+  "moments": {
+    "title": "Match timeline",
+    "noEvents": "No match events recorded yet.",
+    "halfTime": "Half time",
+    "fullTime": "Full time",
+    "replayMode": "Replay Mode • {{minute}}'",
+    "exitReplay": "Exit replay",
+    "replayMoments": "Replay moments",
+    "kickOff": "Kick off",
+    "noMomentsYet": "No moments yet at this point in the match...",
+    "min": "Min",
+    "unknownPlayer": "Unknown",
+    "secondYellow": "2nd YC",
+    "restartReplay": "Restart replay",
+    "replayTimeline": "Replay timeline"
+  },
+  "stats": {
+    "title": "Match stats",
+    "possession": "Possession",
+    "territory": "Territory",
+    "scrumsWon": "Scrums won",
+    "lineoutsWon": "Lineouts won",
+    "penaltiesConceded": "Penalties conceded",
+    "handlingErrors": "Handling errors",
+    "showMore": "Show more stats"
+  },
+  "momentum": {
+    "title": "Match momentum",
+    "neutral": "Neutral",
+    "dominance": "{{team}} Dominance"
+  },
+  "scoring": {
+    "title": "Scoring breakdown",
+    "tries": "Tries",
+    "conversions": "Conversions",
+    "penalties": "Penalty goals",
+    "dropGoals": "Drop goals",
+    "pointsSource": "Points source",
+    "halfPerformance": "Half-by-half performance",
+    "kicks": "Kicks",
+    "firstHalf": "1st Half",
+    "secondHalf": "2nd Half",
+    "fullMatch": "Full match"
+  },
+  "discipline": {
+    "title": "Discipline & impact",
+    "yellowCards": "Yellow cards",
+    "redCards": "Red cards",
+    "sinBin": "Sin bin",
+    "advantage": "Numerical advantage",
+    "disadvantageTime": "Time with player down",
+    "pointsConceded": "Points conceded",
+    "impactHint": "Impact tracks points lost while players were in the sin bin."
+  },
+  "card": {
+    "versus": "vs",
+    "details": "Match details",
+    "venue": "Venue"
+  },
+  "officialRole": {
+    "REFEREE": "Referee",
+    "ASSISTANT_REFEREE_1": "Assistant Referee 1",
+    "ASSISTANT_REFEREE_2": "Assistant Referee 2",
+    "ASSISTANT_REFEREE": "Assistant Referee",
+    "TMO": "TMO",
+    "FOURTH_OFFICIAL": "Fourth Official",
+    "IN_GOAL_JUDGE_1": "In-goal Judge 1",
+    "IN_GOAL_JUDGE_2": "In-goal Judge 2",
+    "MATCH_COMMISSIONER": "Match Commissioner",
+    "TIMEKEEPER": "Timekeeper"
+  },
+  "share": {
+    "title": "Share match",
+    "matchUrl": "Match URL",
+    "copy": "Copy link",
+    "copied": "Copied"
+  }
+}

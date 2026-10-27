@@ -26,12 +26,12 @@ const XV_POSITIONS: Record<number, string> = {
 
 // World Rugby standard Sevens positions
 const SEVENS_POSITIONS: Record<number, string> = {
-    1: 'Prop',
+    1: 'Loosehead Prop',
     2: 'Hooker',
-    3: 'Prop',
-    4: 'Flyhalf',
-    5: 'Scrumhalf',
-    6: 'Wing',
+    3: 'Tighthead Prop',
+    4: 'Scrumhalf',
+    5: 'Flyhalf',
+    6: 'Centre',
     7: 'Wing',
 };
 
@@ -112,8 +112,14 @@ export function getStartersCount(format: RugbyFormat = 'XV'): number {
  *        "REFEREE" -> "Referee"
  * Also handles already-formatted names gracefully.
  */
-export function formatOfficialRole(role: string | undefined | null): string {
+export function formatOfficialRole(role: string | undefined | null, t?: (key: string, opts?: Record<string, unknown>) => string): string {
     if (!role) return '';
+
+    if (t) {
+        const normalized = role.toUpperCase().replace(/\s+/g, '_');
+        const translated = t(`match:officialRole.${normalized}`, { defaultValue: '' });
+        if (translated) return translated;
+    }
 
     // If it contains underscores, it's a raw enum — format it
     if (role.includes('_')) {

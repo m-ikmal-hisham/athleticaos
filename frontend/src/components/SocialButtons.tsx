@@ -1,6 +1,8 @@
 import { AppleLogo } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 export const SocialButtons = () => {
+    const { t } = useTranslation('auth');
     return (
         <div className="flex flex-col gap-3">
             <div className="relative group">
@@ -16,7 +18,7 @@ export const SocialButtons = () => {
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.05l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                         </svg>
                     </div>
-                    Sign in with Google <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-500 font-normal ml-auto">Coming Soon</span>
+                    {t('social.google')} <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-500 font-normal ml-auto">{t('social.comingSoon')}</span>
                 </button>
             </div>
 
@@ -26,7 +28,7 @@ export const SocialButtons = () => {
                     className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-gray-900/10 text-gray-400 border border-transparent rounded-lg text-sm font-medium cursor-not-allowed opacity-75 transition-all shadow-sm"
                 >
                     <AppleLogo className="w-5 h-5 opacity-60" />
-                    Sign in with Apple <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-500 font-normal ml-auto">Coming Soon</span>
+                    {t('social.apple')} <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-500 font-normal ml-auto">{t('social.comingSoon')}</span>
                 </button>
             </div>
         </div>

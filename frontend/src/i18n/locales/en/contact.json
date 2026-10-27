@@ -1,0 +1,39 @@
+{
+  "title": "Contact us",
+  "subtitle": "Questions, partnership enquiries, or registering your organisation's interest. We reply by email.",
+  "emailAlternative": "Or email us at <emailLink>{{email}}</emailLink>",
+  "fullName": "Full name",
+  "email": "Email",
+  "organisation": "Organisation",
+  "optional": "(optional)",
+  "subject": "Subject",
+  "subjects": {
+    "GENERAL": "General enquiry",
+    "PARTNERSHIP": "Partnership",
+    "ORGANISATION_REGISTRATION": "Register my organisation",
+    "MEDIA": "Media & press",
+    "TOURNAMENT_SUPPORT": "Tournament organiser support",
+    "PRIVACY_REQUEST": "Privacy / data request"
+  },
+  "message": "Message",
+  "submit": "Send message",
+  "submitting": "Sending...",
+  "privacyNotice": "We use your details only to reply. See our <privacyLink>Privacy notice</privacyLink>.",
+  "sentTitle": "Message sent",
+  "sentDescription": "Thanks for reaching out. We have received your message and will reply by email.",
+  "sendAnother": "Send another message",
+  "errorGeneric": "Message not sent. Please try again later.",
+  "errorWithEmail": "Message not sent. Please try again later or email us at {{email}}.",
+  "errorRateLimit": "Too many messages. Please try again later.",
+  "validation": {
+    "nameMin": "Full name must be at least 2 characters",
+    "nameMax": "Full name must not exceed 120 characters",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Please enter a valid email address",
+    "emailMax": "Email must not exceed 254 characters",
+    "organisationMax": "Organisation must not exceed 160 characters",
+    "subjectRequired": "Please select a subject",
+    "messageMin": "Message must be at least 10 characters",
+    "messageMax": "Message must not exceed 4000 characters"
+  }
+}

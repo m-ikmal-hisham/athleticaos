@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeSlash, CheckCircle, Check, X, ArrowLeft } from '@phosphor-icons/react';
 
 import { Button } from '@/components/Button';
@@ -9,6 +10,7 @@ import { passwordProblem, PASSWORD_MIN_LENGTH } from '@/utils/password';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 
 export const ResetPassword = () => {
+    const { t } = useTranslation(['auth', 'common']);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [token, setToken] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export const ResetPassword = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) {
-            setErrorMessage('Missing password reset link. Please request a new link.');
+            setErrorMessage(t('resetPassword.missingLink'));
             return;
         }
 
@@ -53,7 +55,7 @@ export const ResetPassword = () => {
         }
 
         if (newPassword !== confirmPassword) {
-            setErrorMessage('Passwords do not match.');
+            setErrorMessage(t('resetPassword.passwordsDoNotMatch'));
             return;
         }
 
@@ -65,9 +67,9 @@ export const ResetPassword = () => {
         } catch (err: unknown) {
             const axiosErr = err as { response?: { status?: number; data?: { message?: string } } };
             if (axiosErr.response?.status === 429) {
-                setErrorMessage('Too many attempts. Please try again later.');
+                setErrorMessage(t('resetPassword.tooManyAttempts'));
             } else {
-                setErrorMessage(axiosErr.response?.data?.message || 'This reset link is invalid or has expired.');
+                setErrorMessage(axiosErr.response?.data?.message || t('resetPassword.invalidOrExpired'));
             }
         } finally {
             setIsLoading(false);
@@ -81,9 +83,9 @@ export const ResetPassword = () => {
                     <div className="flex justify-center text-crimson dark:text-crimson-tint">
                         <X size={44} weight="bold" />
                     </div>
-                    <h2 className="text-xl font-bold text-black dark:text-white">This reset link can't be used</h2>
+                    <h2 className="text-xl font-bold text-black dark:text-white">{t('resetPassword.invalidLinkTitle')}</h2>
                     <p className="text-sm text-black/72 dark:text-white/72 leading-relaxed">
-                        This password reset link is invalid or missing. Please request a new link from the forgot password page.
+                        {t('resetPassword.invalidLinkDescription')}
                     </p>
                     <div className="pt-2">
                         <Button
@@ -92,7 +94,7 @@ export const ResetPassword = () => {
                             className="w-full py-3"
                             onClick={() => navigate('/forgot-password')}
                         >
-                            Request new link
+                            {t('resetPassword.requestNewLink')}
                         </Button>
                     </div>
                 </div>
@@ -113,10 +115,10 @@ export const ResetPassword = () => {
                         />
                         <div className="flex flex-col items-start text-left">
                             <h2 className="text-3xl font-bold tracking-tight text-black dark:text-white leading-none">
-                                {isSuccess ? 'Success' : 'New password'}
+                                {isSuccess ? t('resetPassword.successTitle') : t('resetPassword.title')}
                             </h2>
                             <p className="mt-1.5 text-sm text-black/72 dark:text-white/72 font-medium">
-                                AthleticaOS Rugby
+                                {t('forgotPassword.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -128,10 +130,10 @@ export const ResetPassword = () => {
                                     <CheckCircle size={48} weight="duotone" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-black dark:text-white">
-                                    Password reset successful
+                                    {t('resetPassword.successTitle')}
                                 </h3>
                                 <p className="text-sm text-black/72 dark:text-white/72 leading-relaxed">
-                                    Your password has been updated. You can now sign in with your new password.
+                                    {t('resetPassword.successDescription')}
                                 </p>
                             </div>
 
@@ -141,7 +143,7 @@ export const ResetPassword = () => {
                                 className="w-full py-3"
                                 onClick={() => navigate('/login')}
                             >
-                                Sign in
+                                {t('login.submit')}
                             </Button>
                         </div>
                     ) : (
@@ -154,12 +156,12 @@ export const ResetPassword = () => {
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-semibold text-black/72 dark:text-white/72">
-                                    New password
+                                    {t('resetPassword.newPasswordLabel')}
                                 </label>
                                 <div className="relative">
                                     <Input
                                         type={showPassword ? 'text' : 'password'}
-                                        placeholder="New password"
+                                        placeholder={t('resetPassword.newPasswordPlaceholder')}
                                         autoComplete="new-password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
@@ -169,7 +171,7 @@ export const ResetPassword = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(v => !v)}
-                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                                         className="absolute inset-y-0 right-0 flex items-center px-3 text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/92"
                                     >
                                         {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -179,12 +181,12 @@ export const ResetPassword = () => {
 
                             <div className="space-y-1">
                                 <label className="block text-xs font-semibold text-black/72 dark:text-white/72">
-                                    Confirm new password
+                                    {t('resetPassword.confirmPasswordLabel')}
                                 </label>
                                 <div className="relative">
                                     <Input
                                         type={showConfirmPassword ? 'text' : 'password'}
-                                        placeholder="Confirm new password"
+                                        placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                                         autoComplete="new-password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -194,7 +196,7 @@ export const ResetPassword = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(v => !v)}
-                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                        aria-label={showConfirmPassword ? t('login.hidePassword') : t('login.showPassword')}
                                         className="absolute inset-y-0 right-0 flex items-center px-3 text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/92"
                                     >
                                         {showConfirmPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -204,7 +206,7 @@ export const ResetPassword = () => {
 
                             {/* Checklist */}
                             <div className="p-3.5 rounded-xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 space-y-2 text-xs">
-                                <p className="font-semibold text-black/80 dark:text-white/80">Password requirements:</p>
+                                <p className="font-semibold text-black/80 dark:text-white/80">{t('resetPassword.requirementsTitle')}</p>
                                 <div className="space-y-1.5">
                                     <div className="flex items-center gap-2">
                                         {hasMinLength ? (
@@ -213,7 +215,7 @@ export const ResetPassword = () => {
                                             <span className="w-3.5 h-3.5 rounded-full border border-black/30 dark:border-white/30 shrink-0" />
                                         )}
                                         <span className={hasMinLength ? 'text-black dark:text-white' : 'text-black/60 dark:text-white/60'}>
-                                            At least {PASSWORD_MIN_LENGTH} characters
+                                            {t('resetPassword.minCharacters', { min: PASSWORD_MIN_LENGTH })}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -223,7 +225,7 @@ export const ResetPassword = () => {
                                             <span className="w-3.5 h-3.5 rounded-full border border-black/30 dark:border-white/30 shrink-0" />
                                         )}
                                         <span className={newPassword.length > 0 && hasNoCommonWords ? 'text-black dark:text-white' : 'text-black/60 dark:text-white/60'}>
-                                            Avoid common words or repetitive phrases
+                                            {t('resetPassword.avoidCommon')}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -233,7 +235,7 @@ export const ResetPassword = () => {
                                             <span className="w-3.5 h-3.5 rounded-full border border-black/30 dark:border-white/30 shrink-0" />
                                         )}
                                         <span className={passwordsMatch ? 'text-black dark:text-white' : 'text-black/60 dark:text-white/60'}>
-                                            Passwords match
+                                            {t('resetPassword.passwordsMatch')}
                                         </span>
                                     </div>
                                 </div>
@@ -246,7 +248,7 @@ export const ResetPassword = () => {
                                     className="w-1/3 py-3"
                                     onClick={() => navigate('/login')}
                                 >
-                                    Cancel
+                                    {t('login.cancel')}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -255,7 +257,7 @@ export const ResetPassword = () => {
                                     isLoading={isLoading}
                                     disabled={!hasMinLength || !passwordsMatch}
                                 >
-                                    Reset password
+                                    {t('resetPassword.submit')}
                                 </Button>
                             </div>
 
@@ -264,7 +266,7 @@ export const ResetPassword = () => {
                                     to="/login"
                                     className="inline-flex items-center gap-1.5 text-xs text-navy dark:text-navy-tint hover:underline font-medium"
                                 >
-                                    <ArrowLeft size={14} /> Back to Sign in
+                                    <ArrowLeft size={14} /> {t('forgotPassword.backToSignIn')}
                                 </Link>
                             </div>
                         </form>

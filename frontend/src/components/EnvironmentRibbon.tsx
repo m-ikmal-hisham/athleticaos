@@ -15,12 +15,8 @@ export function EnvironmentRibbon() {
     const location = useLocation();
     const env = import.meta.env.VITE_ENV;
 
-    // Use fixed English on admin and auth routes
-    const isFixedEnglishRoute =
-        location.pathname.startsWith('/dashboard') ||
-        ['/login', '/forgot-password', '/reset-password', '/accept-invite', '/signup'].some(
-            (p) => location.pathname === p || location.pathname.startsWith(p + '/')
-        );
+    // Use fixed English on admin routes only (dashboard); auth routes follow current language
+    const isFixedEnglishRoute = location.pathname.startsWith('/dashboard');
 
     const resolveT = isFixedEnglishRoute ? i18n.getFixedT('en', 'common') : t;
 

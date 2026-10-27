@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { getDateLocale } from '@/utils/malaysiaDate';
 import {
     publicProfileApi,
     PublicPlayerDetailResponse,
@@ -81,7 +83,7 @@ function getUnitCategory(position?: string | null, jerseyNumber?: number | null)
 export function PublicPlayerProfile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { t } = useTranslation(['profile', 'common']);
+    const { t, i18n } = useTranslation(['profile', 'players', 'common']);
     const [player, setPlayer] = useState<PublicPlayerDetailResponse | null>(null);
     const [stats, setStats] = useState<PlayerStatsData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -150,7 +152,7 @@ export function PublicPlayerProfile() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
+            <div className="min-h-[60vh] flex items-center justify-center p-6">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
             </div>
         );
@@ -158,15 +160,19 @@ export function PublicPlayerProfile() {
 
     if (error || !player) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6">
+            <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-2xl max-w-lg text-center border border-red-200 dark:border-red-800/40">
-                    <h2 className="text-xl font-bold mb-2">Player Not Found</h2>
-                    <p className="text-sm mb-4">{error || 'This player profile could not be found or is not public.'}</p>
+                    <h2 className="text-xl font-bold mb-2">
+                        {t('players:profile.notFound', { defaultValue: 'Player Not Found' })}
+                    </h2>
+                    <p className="text-sm mb-4">
+                        {error || t('players:profile.notFoundDesc', { defaultValue: 'This player profile could not be found or is not public.' })}
+                    </p>
                     <button
                         onClick={() => navigate('/players')}
                         className="px-4 py-2 bg-red-100 dark:bg-red-800/30 text-red-700 dark:text-red-300 rounded-xl font-semibold text-sm hover:bg-red-200 transition-colors"
                     >
-                        Back to Players
+                        {t('players:profile.backToPlayers', { defaultValue: 'Back to Players' })}
                     </button>
                 </div>
             </div>
@@ -230,9 +236,9 @@ export function PublicPlayerProfile() {
         ];
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-16">
+        <div className="pb-16">
             {/* Profile Hero with PositionPitch in the aside */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 mb-8">
+            <div className="mb-8">
                 <ProfileHero
                     variant="player"
                     size="public"
@@ -273,14 +279,14 @@ export function PublicPlayerProfile() {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div>
                 {/* Competition Filter Bar */}
                 {player.tournaments && player.tournaments.length > 0 && (
                     <div className="mb-8">
                         <GlassCard surface="glass" className="p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white shrink-0">
                                 <Trophy className="w-4 h-4 text-navy dark:text-navy-tint" />
-                                <span>Filter by tournament:</span>
+                                <span>{t('players:profile.filterByTournament', { defaultValue: 'Filter by tournament:' })}</span>
                             </div>
                             <CompetitionFilterBar
                                 tournaments={player.tournaments.map(tItem => ({
@@ -290,7 +296,7 @@ export function PublicPlayerProfile() {
                                 }))}
                                 selectedTournamentId={selectedTournamentId}
                                 onSelect={handleTournamentSelect}
-                                allLabel={t('player.allTimeCareer', 'All-Time Career (Global)')}
+                                allLabel={t('players:profile.allTimeCareer', { defaultValue: 'All-Time Career (Global)' })}
                                 variant="public"
                             />
                         </GlassCard>
@@ -312,7 +318,7 @@ export function PublicPlayerProfile() {
                                         onClick={() => handleTournamentSelect(null)}
                                         className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
                                     >
-                                        <span>View all-time career</span>
+                                        <span>{t('players:profile.viewAllTimeCareer', { defaultValue: 'View all-time career' })}</span>
                                     </button>
                                 )}
                             </div>
@@ -323,13 +329,13 @@ export function PublicPlayerProfile() {
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="border-b border-slate-200 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                                                <th className="py-3 px-3 text-left font-semibold">Date</th>
-                                                <th className="py-3 px-3 text-left font-semibold">Team</th>
-                                                <th className="py-3 px-3 text-left font-semibold">Opponent</th>
-                                                <th className="py-3 px-3 text-center font-semibold">Result</th>
-                                                <th className="py-3 px-3 text-center font-semibold">Tries</th>
-                                                <th className="py-3 px-3 text-center font-semibold">Pts</th>
-                                                <th className="py-3 px-3 text-center font-semibold">Mins</th>
+                                                <th className="py-3 px-3 text-left font-semibold">{t('players:profile.table.date', { defaultValue: 'Date' })}</th>
+                                                <th className="py-3 px-3 text-left font-semibold">{t('players:profile.table.team', { defaultValue: 'Team' })}</th>
+                                                <th className="py-3 px-3 text-left font-semibold">{t('players:profile.table.opponent', { defaultValue: 'Opponent' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.result', { defaultValue: 'Result' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.tries', { defaultValue: 'Tries' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.pts', { defaultValue: 'Pts' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.mins', { defaultValue: 'Mins' })}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
@@ -337,7 +343,7 @@ export function PublicPlayerProfile() {
                                                 <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                                                     <td className="py-3 px-3 text-slate-500 text-xs whitespace-nowrap">
                                                         {match.matchDate
-                                                            ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                                                            ? format(new Date(match.matchDate), 'd MMM', { locale: getDateLocale(i18n.language) })
                                                             : '—'}
                                                     </td>
                                                     <td className="py-3 px-3">
@@ -386,7 +392,7 @@ export function PublicPlayerProfile() {
                                 </div>
                             ) : (
                                 <div className="text-center py-12 text-slate-500 text-sm">
-                                    No matches recorded for this tournament.
+                                    {t('players:profile.noMatches', { defaultValue: 'No matches recorded for this tournament.' })}
                                 </div>
                             )}
                         </GlassCard>
@@ -432,7 +438,7 @@ export function PublicPlayerProfile() {
                                             {player.ageGroup ? t('player.ageGroup', 'Age group') : t('player.age', 'Age')}
                                         </span>
                                         <span className="font-semibold text-slate-900 dark:text-white text-xs">
-                                            {player.ageGroup || `${age} yrs`}
+                                            {player.ageGroup || (age !== null ? t('players:profile.years', { age, defaultValue: `${age} yrs` }) : '—')}
                                         </span>
                                     </div>
                                 )}

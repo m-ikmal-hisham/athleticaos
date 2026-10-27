@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PublicStanding } from '../../../api/public.api';
 import { CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react';
-import { getImageUrl } from '../../../utils/image';
 import { Link } from 'react-router-dom';
 import { useCollapsibleGroups } from '@/hooks/useCollapsibleGroups';
 import { ExpandAllToggle } from '@/components/common/CollapsibleDateGroup';
+import { LogoImage } from '@/components/public/LogoImage';
 
 interface PublicTournamentPoolsProps {
     standings: PublicStanding[];
@@ -14,6 +15,7 @@ type SortField = 'played' | 'won' | 'drawn' | 'lost' | 'pointsFor' | 'pointsAgai
 type SortDirection = 'asc' | 'desc';
 
 export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps) {
+    const { t } = useTranslation(['tournament', 'common']);
     const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
         field: 'points',
         direction: 'desc'
@@ -47,12 +49,12 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
         });
 
         sortedStandings.forEach(s => {
-            const poolName = s.poolName || 'Unassigned';
+            const poolName = s.poolName || t('tournament:pools.unassigned');
             if (!groups[poolName]) groups[poolName] = [];
             groups[poolName].push(s);
         });
         return groups;
-    }, [standings, sortConfig]);
+    }, [standings, sortConfig, t]);
 
     const sortedPoolNames = useMemo(() => Object.keys(groupedStandings).sort(), [groupedStandings]);
     // The first pool starts open; the rest fold away so a long list of pools is quick to scan.
@@ -78,7 +80,7 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
     if (sortedPoolNames.length === 0) {
         return (
             <div className="text-center py-12 text-slate-500 glass-panel bg-white/50 backdrop-blur-sm rounded-xl border border-dashed border-slate-300 dark:border-white/10">
-                No pool standings available.
+                {t('tournament:pools.noStandings')}
             </div>
         );
     }
@@ -87,7 +89,7 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
         <div className="space-y-4 md:space-y-6">
             {sortedPoolNames.length > 1 && (
                 <div className="flex justify-end">
-                    <ExpandAllToggle allOpen={pools.allOpen} onChange={pools.setAll} noun="pools" />
+                    <ExpandAllToggle allOpen={pools.allOpen} onChange={pools.setAll} noun={t('tournament:pools.title').toLowerCase()} />
                 </div>
             )}
             {sortedPoolNames.map(poolName => {
@@ -107,27 +109,27 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                                 <span className="truncate">{poolName}</span>
                             </h3>
                             <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                {poolStandings.length} {poolStandings.length === 1 ? 'team' : 'teams'}
+                                {t('tournament:pools.teamCount', { count: poolStandings.length })}
                             </span>
                             <CaretDown
                                 className={`shrink-0 w-4 h-4 text-black/60 dark:text-white/60 transition-transform duration-200 ${pools.isOpen(poolName) ? 'rotate-180' : ''}`}
- />
+                            />
                         </button>
                         <div className="overflow-x-auto" hidden={!pools.isOpen(poolName)}>
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-100/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                                     <tr>
-                                        <th className="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">Pos</th>
-                                        <SortableHeader field="teamName" label="Team" align="left" />
-                                        <SortableHeader field="played" label="PLD" />
-                                        <SortableHeader field="won" label="W" />
-                                        <SortableHeader field="drawn" label="D" hiddenOnMobile />
-                                        <SortableHeader field="lost" label="L" hiddenOnMobile />
-                                        <SortableHeader field="pointsFor" label="PF" hiddenOnMobile />
-                                        <SortableHeader field="pointsAgainst" label="PA" hiddenOnMobile />
-                                        <SortableHeader field="pointsDiff" label="+/-" hiddenOnMobile />
-                                        {hasBonusPoints && <SortableHeader field="bonusPoints" label="BP" hiddenOnMobile />}
-                                        <SortableHeader field="points" label="Pts" />
+                                        <th className="px-2 sm:px-4 py-3 text-left w-8 sm:w-12">{t('tournament:pools.pos')}</th>
+                                        <SortableHeader field="teamName" label={t('tournament:pools.team')} align="left" />
+                                        <SortableHeader field="played" label={t('tournament:pools.pld')} />
+                                        <SortableHeader field="won" label={t('tournament:pools.won')} />
+                                        <SortableHeader field="drawn" label={t('tournament:pools.drawn')} hiddenOnMobile />
+                                        <SortableHeader field="lost" label={t('tournament:pools.lost')} hiddenOnMobile />
+                                        <SortableHeader field="pointsFor" label={t('tournament:pools.pointsFor')} hiddenOnMobile />
+                                        <SortableHeader field="pointsAgainst" label={t('tournament:pools.pointsAgainst')} hiddenOnMobile />
+                                        <SortableHeader field="pointsDiff" label={t('tournament:pools.diff')} hiddenOnMobile />
+                                        {hasBonusPoints && <SortableHeader field="bonusPoints" label={t('tournament:pools.bonusPoints')} hiddenOnMobile />}
+                                        <SortableHeader field="points" label={t('tournament:pools.points')} />
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -143,19 +145,13 @@ export function PublicTournamentPools({ standings }: PublicTournamentPoolsProps)
                                                     to={`/teams/${team.teamId}`} 
                                                     className="flex items-center gap-2 sm:gap-4 group/link min-w-0"
                                                 >
-                                                    {/* Transparent Logo Placeholder */}
                                                     <div className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center">
-                                                        {team.teamLogoUrl ? (
-                                                            <img
-                                                                src={getImageUrl(team.teamLogoUrl)}
-                                                                alt={team.teamName}
-                                                                className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                                                <span className="text-sm font-bold text-slate-400">{team.teamName.charAt(0)}</span>
-                                                            </div>
-                                                        )}
+                                                        <LogoImage
+                                                            src={team.teamLogoUrl}
+                                                            name={team.teamShortName || team.teamName}
+                                                            size="md"
+                                                            className="w-full h-full object-contain filter drop-shadow-md group-hover/link:scale-110 transition-transform duration-300"
+                                                        />
                                                     </div>
 
                                                     {/* Text Logic: Priority Short Name, Small Full Name */}

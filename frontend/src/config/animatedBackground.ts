@@ -130,6 +130,7 @@ export function getRouteBackgroundType(pathname: string): RouteBackgroundType {
         pathname.startsWith('/journey/') ||
         pathname === '/how-it-works' ||
         pathname === '/partners' ||
+        pathname === '/contact' ||
         pathname === '/sponsors' ||
         pathname === '/tournaments' ||
         /^\/tournaments\/[^/]+$/.test(pathname) ||

@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShareNetwork, Copy, XLogo, FacebookLogo, WhatsappLogo, Check } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
-import { formatMatchStatus } from '@/utils/formatters';
 import { PublicMatchDetail } from '../../../api/public.api';
+import { enumLabel } from '@/utils/enumLabel';
 
 interface ShareMatchCardProps {
     match: PublicMatchDetail;
@@ -10,9 +11,10 @@ interface ShareMatchCardProps {
 }
 
 export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) => {
+    const { t } = useTranslation(['match', 'share', 'common']);
     const [copied, setCopied] = useState(false);
     const url = window.location.href;
-    const text = `Follow the match ${match.homeTeamName} vs ${match.awayTeamName} on AthleticaOS!`;
+    const text = t('match:hero.shareText', { home: match.homeTeamName, away: match.awayTeamName });
 
     const handleCopy = () => {
         navigator.clipboard.writeText(url);
@@ -45,7 +47,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
         <GlassCard className="p-6">
             <div className="flex items-center gap-2 mb-4 text-slate-900 dark:text-white font-bold">
                 <ShareNetwork className="w-5 h-5 text-navy dark:text-navy-tint" />
-                <span>Share Match</span>
+                <span>{t('match:center.shareMatch')}</span>
             </div>
 
             {/* Mini Match Preview (Designed to look like the potential OG Image) */}
@@ -55,7 +57,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
 
                 <div className="relative p-6 flex flex-col items-center justify-center gap-4 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
                     <div className="text-xs font-bold text-slate-400 tracking-widest uppercase">
-                        {tournamentName || match.stage || 'Match Result'}
+                        {tournamentName || (match.stage ? enumLabel(t, 'stage', match.stage) : t('match:center.matchResult'))}
                     </div>
 
                     <div className="w-full flex items-center justify-between gap-4">
@@ -72,7 +74,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                                 <span>{match.awayScore ?? 0}</span>
                             </div>
                             <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-navy dark:text-navy-tint uppercase tracking-wide">
-                                {formatMatchStatus(match.status) || 'Full Time'}
+                                {match.status ? enumLabel(t, 'status', match.status) : t('common:status.fullTime')}
                             </div>
                         </div>
 
@@ -103,6 +105,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                 <button
                     onClick={handleCopy}
                     className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+                    aria-label={copied ? t('match:share.copied') : t('match:share.copy')}
                 >
                     {copied ? <Check className="w-5 h-5 text-navy dark:text-navy-tint" /> : <Copy className="w-5 h-5" />}
                 </button>
@@ -113,12 +116,13 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                     type="text"
                     value={url}
                     readOnly
-                    aria-label="Match URL"
+                    aria-label={t('match:share.matchUrl')}
                     className="w-full pl-3 pr-10 py-2 text-xs rounded-lg bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 outline-none"
                 />
                 <button
                     onClick={handleCopy}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-navy dark:hover:text-navy-tint transition-colors"
+                    aria-label={copied ? t('match:share.copied') : t('match:share.copy')}
                 >
                     {copied ? <Check className="w-4 h-4 text-navy dark:text-navy-tint" /> : <Copy className="w-4 h-4" />}
                 </button>

@@ -1,5 +1,7 @@
+import { format } from 'date-fns';
 import { enGB, ms } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
+export { formatKickOff } from './formatters';
 
 export interface CalendarGridDay {
     date: Date;
@@ -193,4 +195,17 @@ export function addMonthsToDate(date: Date, delta: number): Date {
  */
 export function addWeeksToDate(date: Date, delta: number): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta * 7);
+}
+
+/**
+ * Format calendar date safely, returning an empty string if null/undefined.
+ */
+export function formatCalendarDate(
+    dateStr: string | Date | undefined | null,
+    formatStr: string,
+    options?: { locale?: Locale }
+): string {
+    const d = parseCalendarDate(dateStr);
+    if (!d) return '';
+    return format(d, formatStr, options);
 }

@@ -1,0 +1,39 @@
+{
+  "title": "Hubungi kami",
+  "subtitle": "Pertanyaan, pertanyaan perkongsian, atau mendaftarkan minat organisasi anda. Kami membalas melalui e-mel.",
+  "emailAlternative": "Atau e-mel kepada kami di <emailLink>{{email}}</emailLink>",
+  "fullName": "Nama penuh",
+  "email": "E-mel",
+  "organisation": "Organisasi",
+  "optional": "(pilihan)",
+  "subject": "Subjek",
+  "subjects": {
+    "GENERAL": "Pertanyaan umum",
+    "PARTNERSHIP": "Rakan kongsi",
+    "ORGANISATION_REGISTRATION": "Daftar organisasi saya",
+    "MEDIA": "Media & akhbar",
+    "TOURNAMENT_SUPPORT": "Sokongan penganjur kejohanan",
+    "PRIVACY_REQUEST": "Permintaan privasi / data"
+  },
+  "message": "Mesej",
+  "submit": "Hantar mesej",
+  "submitting": "Menghantar...",
+  "privacyNotice": "Kami menggunakan butiran anda hanya untuk membalas. Lihat <privacyLink>Notis privasi</privacyLink> kami.",
+  "sentTitle": "Mesej dihantar",
+  "sentDescription": "Terima kasih kerana menghubungi kami. Kami telah menerima mesej anda dan akan membalas melalui e-mel.",
+  "sendAnother": "Hantar mesej lain",
+  "errorGeneric": "Mesej tidak dihantar. Sila cuba sebentar lagi.",
+  "errorWithEmail": "Mesej tidak dihantar. Sila cuba sebentar lagi atau e-mel kepada kami di {{email}}.",
+  "errorRateLimit": "Terlalu banyak mesej. Sila cuba sebentar lagi.",
+  "validation": {
+    "nameMin": "Nama penuh mestilah sekurang-kurangnya 2 aksara",
+    "nameMax": "Nama penuh tidak boleh melebihi 120 aksara",
+    "emailRequired": "E-mel diperlukan",
+    "emailInvalid": "Sila masukkan alamat e-mel yang sah",
+    "emailMax": "E-mel tidak boleh melebihi 254 aksara",
+    "organisationMax": "Organisasi tidak boleh melebihi 160 aksara",
+    "subjectRequired": "Sila pilih subjek",
+    "messageMin": "Mesej mestilah sekurang-kurangnya 10 aksara",
+    "messageMax": "Mesej tidak boleh melebihi 4000 aksara"
+  }
+}

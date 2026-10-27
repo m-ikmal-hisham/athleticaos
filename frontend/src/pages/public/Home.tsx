@@ -469,8 +469,8 @@ export default function Home() {
                                                     {tournament.name}
                                                 </h3>
                                                 <p className="text-xs text-content-secondary mt-0.5 line-clamp-1">
-                                                    {formatTournamentLevel(tournament.level)}
-                                                    {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType)}`}
+                                                    {formatTournamentLevel(tournament.level, t)}
+                                                    {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType, t)}`}
                                                 </p>
                                             </div>
                                         </div>

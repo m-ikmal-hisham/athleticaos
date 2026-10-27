@@ -1,7 +1,7 @@
 {
     "viewList": "Senarai",
     "viewCalendar": "Kalendar",
-    "today": "Hari Ini",
+    "today": "Hari ini",
     "previousMonth": "Bulan sebelumnya",
     "nextMonth": "Bulan seterusnya",
     "previousWeek": "Minggu sebelumnya",
@@ -33,11 +33,12 @@
         "state": "Negeri",
         "district": "Daerah",
         "school": "Sekolah",
-        "club": "Kelab"
+        "club": "Kelab",
+        "international": "Antarabangsa"
     },
     "competitionType": {
-        "group_knockout": "Kumpulan + Kalah Mati",
-        "knockout": "Kalah Mati",
+        "group_knockout": "Kumpulan + kalah mati",
+        "knockout": "Kalah mati",
         "league": "Liga"
     },
     "addToCalendar": "Tambah ke kalendar",
@@ -52,6 +53,8 @@
     "liveCount": "{{count}} langsung",
     "showMore": "Papar lagi",
     "close": "Tutup",
-    "venueTbc": "Tempat akan disahkan",
-    "vs": "Lwn"
+    "venueTbc": "Tempat akan ditentukan",
+    "vs": "Lwn",
+    "calendarStripAria": "Jalur kalendar ragbi 3 minggu",
+    "monthGridAria": "Grid bulan kalendar kejohanan"
 }

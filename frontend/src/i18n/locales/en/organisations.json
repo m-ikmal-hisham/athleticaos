@@ -51,7 +51,10 @@
     "notFoundDesc": "The organisation you are looking for does not exist or is not public.",
     "backToOrganisations": "Back to organisations",
     "viewTeam": "View team",
-    "roster": "Squad"
+    "roster": "Squad",
+    "subAffiliations": "{{count}} sub-affiliations",
+    "directAffiliate": "Direct affiliate",
+    "viewPage": "View page"
   },
   "levels": {
     "WORLD": "World",
