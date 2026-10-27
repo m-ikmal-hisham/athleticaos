@@ -113,7 +113,7 @@ export const TeamAnalyticsDashboard = () => {
                                     <YAxis />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151' }}
-                                        labelFormatter={(val) => new Date(val).toLocaleDateString()}
+                                        labelFormatter={(val) => new Date(String(val)).toLocaleDateString()}
                                     />
                                     <Legend />
                                     <Line type="monotone" dataKey="pointsScored" stroke="#8884d8" name="Points Scored" />

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -24,6 +25,10 @@ public class StandingsResponse {
     private int pointsFor;
     private int pointsAgainst;
     private int pointsDiff;
+    private int bonusPoints;
+    private int triesFor;
     private int points; // Tournament Points
     private UUID categoryId;
+    private boolean bonusPointsEnabled;
+    private List<String> unrecordedBonusMatchCodes;
 }

@@ -453,6 +453,9 @@ export interface TournamentFormatConfig {
     pointsLoss?: number;
     pointsBonusTry?: number;
     pointsBonusLoss?: number;
+    bonusPointsEnabled?: boolean;
+    bonusTryThreshold?: number;
+    bonusLosingMargin?: number;
     startersCount: number;
     maxBenchCount: number;
     includePlacementStages?: boolean;
@@ -606,8 +609,12 @@ export interface Standings {
     pointsFor: number;
     pointsAgainst: number;
     pointsDiff: number;
+    bonusPoints?: number;
+    triesFor?: number;
     points: number;
     categoryId?: string;
+    bonusPointsEnabled?: boolean;
+    unrecordedBonusMatchCodes?: string[];
 }
 
 export type StandingsResponse = Standings;
@@ -638,6 +645,14 @@ export enum LineupRole {
     NOT_SELECTED = 'NOT_SELECTED'
 }
 
+export interface MatchLineupSubstitution {
+    minute: number;
+    direction: 'OFF' | 'ON';
+    otherPlayerId?: string;
+    otherPlayerName?: string;
+    otherJerseyNumber?: number;
+}
+
 export interface MatchLineupEntry {
     playerId: string;
     playerName: string;
@@ -647,6 +662,8 @@ export interface MatchLineupEntry {
     orderIndex?: number;
     isStarter?: boolean;
     positionDisplay?: string;
+    played?: boolean;
+    substitutions?: MatchLineupSubstitution[];
 }
 
 export interface MatchRenumberRequest {

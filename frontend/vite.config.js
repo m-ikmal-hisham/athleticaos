@@ -60,6 +60,7 @@ export default defineConfig({
                     'vendor-charts': ['recharts'],
                     'vendor-icons': ['@phosphor-icons/react'],
                     'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+                    'vendor-three': ['three'],
                 }
             }
         }

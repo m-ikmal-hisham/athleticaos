@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -24,6 +25,7 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export const Signup = () => {
+    const { t } = useTranslation('auth');
     const navigate = useNavigate();
     const [error, setError] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
@@ -64,14 +66,11 @@ export const Signup = () => {
 
     const effectiveTheme = useEffectiveTheme();
     const logoSrc = effectiveTheme === 'dark' ? '/athleticaos-logo-dark-x2.png' : '/athleticaos-logo-primary-x2.png';
-    const bgSrc = effectiveTheme === 'dark' ? '/athleticaos-bg-dark-new.png' : '/athleticaos-bg-light-new.png';
-
-
 
     return (
-        <div className="min-h-screen w-full flex bg-white dark:bg-gray-950">
+        <div className="min-h-screen w-full flex">
             {/* Left Side - Form */}
-            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 bg-white dark:bg-gray-950 relative z-10 transition-all duration-300">
+            <div className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-24 relative z-10 transition-all duration-300">
                 <div className="w-full max-w-sm space-y-6">
                     {/* Header Section - Side by Side Centered */}
                     <div className="flex flex-row items-center justify-center gap-5">
@@ -82,10 +81,10 @@ export const Signup = () => {
                         />
                         <div className="flex flex-col items-start text-left">
                             <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
-                                Create Account
+                                {t('signup.title')}
                             </h2>
                             <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                Join the future of rugby management
+                                {t('signup.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -95,13 +94,11 @@ export const Signup = () => {
                         <SocialButtons />
                     </div>
 
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-200 dark:border-gray-800" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">Or register with email</span>
-                        </div>
+                    {/* Lines either side of the label (no fill), so the brand background shows through */}
+                    <div className="my-6 flex items-center gap-3 text-xs uppercase">
+                        <span className="flex-1 border-t border-gray-200 dark:border-gray-800" />
+                        <span className="text-gray-500 dark:text-gray-400">{t('signup.orRegisterWithEmail')}</span>
+                        <span className="flex-1 border-t border-gray-200 dark:border-gray-800" />
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -113,7 +110,7 @@ export const Signup = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <Input
-                                placeholder="First Name"
+                                placeholder={t('signup.firstNamePlaceholder')}
                                 error={errors.firstName?.message}
                                 {...register('firstName')}
                                 className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
@@ -121,7 +118,7 @@ export const Signup = () => {
                             />
 
                             <Input
-                                placeholder="Last Name"
+                                placeholder={t('signup.lastNamePlaceholder')}
                                 error={errors.lastName?.message}
                                 {...register('lastName')}
                                 className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
@@ -131,7 +128,7 @@ export const Signup = () => {
 
                         <Input
                             type="email"
-                            placeholder="Email"
+                            placeholder={t('signup.emailPlaceholder')}
                             error={errors.email?.message}
                             {...register('email')}
                             className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
@@ -140,7 +137,7 @@ export const Signup = () => {
 
                         <Input
                             type="password"
-                            placeholder="Password"
+                            placeholder={t('signup.passwordPlaceholder')}
                             error={errors.password?.message}
                             {...register('password')}
                             className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
@@ -149,7 +146,7 @@ export const Signup = () => {
 
                         <Input
                             type="password"
-                            placeholder="Confirm Password"
+                            placeholder={t('signup.confirmPasswordPlaceholder')}
                             error={errors.confirmPassword?.message}
                             {...register('confirmPassword')}
                             className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-900 focus:border-navy focus:ring-navy dark:focus:border-navy-tint dark:focus:ring-navy-tint rounded-lg p-3"
@@ -162,46 +159,37 @@ export const Signup = () => {
                             isLoading={isLoading}
                             disabled={true}
                         >
-                            Registration Closed
+                            {t('signup.registrationClosed')}
                         </Button>
                         <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                            New registrations are currently invite-only.
+                            {t('signup.inviteOnlyNotice')}
                         </p>
                     </form>
 
                     <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                        Already have an account?{' '}
+                        {t('signup.alreadyHaveAccount')}{' '}
                         <Link to="/login" className="text-navy dark:text-navy-tint font-semibold hover:underline">
-                            Sign in
+                            {t('signup.signIn')}
                         </Link>
                     </div>
                 </div>
             </div>
 
-            {/* Right Side - Abstract Art (Reused from Login) */}
-            <div className="hidden lg:flex flex-1 relative bg-white dark:bg-gray-950 overflow-hidden items-center justify-center p-12 lg:w-1/2">
-                <img
-                    src={bgSrc}
-                    alt="AthleticaOS Background"
-                    className="absolute inset-0 w-full h-full object-cover"
-                />
-
-                <div className="relative z-20 max-w-lg text-right">
+            {/* Right Side - Headline over brand background */}
+            <div className="hidden lg:flex flex-1 relative items-center justify-end p-12 xl:p-24 bg-transparent">
+                <div className="relative z-10 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
-                        Join the<br />
+                        {t('signup.heroTitle')}<br />
                         <span className="text-navy dark:text-navy-tint">
-                            Revolution
+                            {t('signup.heroTitleAccent')}
                         </span>
                     </h2>
                     <p className="mt-6 text-lg text-black/72 dark:text-white/72 leading-relaxed max-w-md ml-auto">
-                        Create your profile, manage teams, and compete at the highest level.
-                        Your journey starts here.
+                        {t('signup.heroDescription')}
                     </p>
-
-                    <div className="absolute top-[-40px] right-[-20px] w-24 h-24 opacity-20 bg-dot-pattern dark:bg-dot-pattern-white">
-                    </div>
                 </div>
             </div>
         </div>
     );
 };
+

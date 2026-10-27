@@ -1,21 +1,99 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { publicProfileApi, PublicPlayerDetailResponse } from '../../api/public.api';
-import { ArrowLeft, User, MapPin, Pulse, Shield, Calendar, Hash, Trophy, Lightning, Target, Clock, Football } from '@phosphor-icons/react';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { getDateLocale } from '@/utils/malaysiaDate';
+import {
+    publicProfileApi,
+    PublicPlayerDetailResponse,
+    PublicOrganisationRef,
+} from '../../api/public.api';
+import { ProfileHero } from '../../components/profile/ProfileHero';
+import { PositionPitch } from '../../components/profile/PositionPitch';
+import { pickOrgColours } from '../../components/profile/colours';
+import { GlassCard } from '../../components/GlassCard';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import {
+    Shield,
+    Pulse,
+    Hash,
+    Calendar,
+    MapPin,
+    Trophy,
+    Info,
+} from '@phosphor-icons/react';
+
+interface RecentMatchStat {
+    matchDate?: string;
+    teamName?: string;
+    tournamentName?: string;
+    opponentName?: string;
+    result?: string;
+    tries?: number;
+    points?: number;
+    minutesPlayed?: string | number;
+}
+
+interface PlayerStatsData {
+    matchesPlayed?: number;
+    totalMinutesPlayed?: number;
+    totalPoints?: number;
+    tries?: number;
+    conversions?: number;
+    penalties?: number;
+    dropGoals?: number;
+    yellowCards?: number;
+    redCards?: number;
+    recentMatches?: RecentMatchStat[];
+}
+
+function getUnitCategory(position?: string | null, jerseyNumber?: number | null): 'FORWARDS' | 'BACKS' | null {
+    if (jerseyNumber !== undefined && jerseyNumber !== null) {
+        if (jerseyNumber >= 1 && jerseyNumber <= 8) return 'FORWARDS';
+        if (jerseyNumber >= 9 && jerseyNumber <= 15) return 'BACKS';
+    }
+    if (!position) return null;
+    const p = position.toLowerCase();
+    if (
+        p.includes('prop') ||
+        p.includes('hooker') ||
+        p.includes('lock') ||
+        p.includes('flanker') ||
+        p.includes('eight') ||
+        p.includes('forward')
+    ) {
+        return 'FORWARDS';
+    }
+    if (
+        p.includes('scrum') ||
+        p.includes('fly') ||
+        p.includes('half') ||
+        p.includes('centre') ||
+        p.includes('center') ||
+        p.includes('wing') ||
+        p.includes('fullback') ||
+        p.includes('back')
+    ) {
+        return 'BACKS';
+    }
+    return null;
+}
 
 export function PublicPlayerProfile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation(['profile', 'players', 'common']);
     const [player, setPlayer] = useState<PublicPlayerDetailResponse | null>(null);
-    const [stats, setStats] = useState<any>(null);
+    const [stats, setStats] = useState<PlayerStatsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
     const [searchParams, setSearchParams] = useSearchParams();
     const initialTournamentId = searchParams.get('tournamentId') || null;
     const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(initialTournamentId);
 
-    // Keep state in sync with URL search params (e.g. browser back/forward)
+    // Synchronise state with URL search params
     useEffect(() => {
         const param = searchParams.get('tournamentId');
         setSelectedTournamentId(param || null);
@@ -35,15 +113,17 @@ export function PublicPlayerProfile() {
             if (!id) return;
             try {
                 setLoading(true);
+                setError(null);
                 const [data, statsData] = await Promise.all([
                     publicProfileApi.getPlayer(id, selectedTournamentId || undefined),
                     publicProfileApi.getPlayerStats(id, selectedTournamentId || undefined).catch(() => null),
                 ]);
                 setPlayer(data);
                 setStats(statsData);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('Error fetching player:', err);
-                setError(err.response?.data?.message || 'Failed to load player details');
+                const errorObj = err as { response?: { data?: { message?: string } } };
+                setError(errorObj.response?.data?.message || 'Failed to load player details');
             } finally {
                 setLoading(false);
             }
@@ -52,372 +132,386 @@ export function PublicPlayerProfile() {
         fetchPlayer();
     }, [id, selectedTournamentId]);
 
+    const orgColours = useMemo(() => {
+        return pickOrgColours(player?.organisation);
+    }, [player?.organisation]);
+
+    // Breadcrumbs chain
+    const breadcrumbChain = useMemo(() => {
+        if (!player?.organisation) return [];
+        const chain: PublicOrganisationRef[] = [];
+        if (player.affiliation && player.affiliation.length > 0) {
+            const reversed = [...player.affiliation].reverse();
+            chain.push(...reversed);
+        }
+        if (!chain.some(o => o.id === player.organisation!.id)) {
+            chain.push(player.organisation);
+        }
+        return chain;
+    }, [player?.organisation, player?.affiliation]);
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="min-h-[60vh] flex items-center justify-center p-6">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
             </div>
         );
     }
 
     if (error || !player) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6">
-                <div className="bg-red-50 text-red-500 p-4 rounded-xl max-w-lg text-center">
-                    <h2 className="text-xl font-bold mb-2">Player Not Found</h2>
-                    <p>{error}</p>
-                    <button 
-                        onClick={() => navigate(-1)}
-                        className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
+            <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-2xl max-w-lg text-center border border-red-200 dark:border-red-800/40">
+                    <h2 className="text-xl font-bold mb-2">
+                        {t('players:profile.notFound', { defaultValue: 'Player Not Found' })}
+                    </h2>
+                    <p className="text-sm mb-4">
+                        {error || t('players:profile.notFoundDesc', { defaultValue: 'This player profile could not be found or is not public.' })}
+                    </p>
+                    <button
+                        onClick={() => navigate('/players')}
+                        className="px-4 py-2 bg-red-100 dark:bg-red-800/30 text-red-700 dark:text-red-300 rounded-xl font-semibold text-sm hover:bg-red-200 transition-colors"
                     >
-                        Go Back
+                        {t('players:profile.backToPlayers', { defaultValue: 'Back to Players' })}
                     </button>
                 </div>
             </div>
         );
     }
 
+    const fullName = `${player.firstName} ${player.lastName}`;
     const age = player.age ?? null;
-    const hasStats = stats && (stats.matchesPlayed > 0 || stats.totalPoints > 0 || stats.tries > 0);
+
+    // Subtitle links: current team · organisation · state
+    const subtitleLinks = [];
+    if (player.currentTeamName) {
+        subtitleLinks.push({
+            prefix: t('player.team', 'Team'),
+            label: player.currentTeamName,
+            to: player.currentTeamId ? `/teams/${player.currentTeamId}` : undefined,
+        });
+    }
+    if (player.organisation) {
+        subtitleLinks.push({
+            label: player.organisation.name,
+            to: `/organisations/${player.organisation.slug || player.organisation.id}`,
+        });
+    } else if (player.organisationName) {
+        subtitleLinks.push({
+            label: player.organisationName,
+        });
+    }
+    if (player.state) {
+        subtitleLinks.push({
+            label: player.state,
+        });
+    }
+
+    // Position Chip ("FLY HALF · BACKS")
+    const chips: string[] = [];
+    if (player.position) {
+        const unit = getUnitCategory(player.position, player.jerseyNumber);
+        const positionLabel = unit
+            ? `${player.position.toUpperCase()} · ${unit}`
+            : player.position.toUpperCase();
+        chips.push(positionLabel);
+    }
+    if (player.position2) {
+        chips.push(player.position2.toUpperCase());
+    }
+
+    // Breadcrumb items
+    const breadcrumbItems = breadcrumbChain.length > 0
+        ? [
+            { label: t('breadcrumb.organisations', 'Organisations'), path: '/organisations' },
+            ...breadcrumbChain.map(org => ({ label: org.name, path: `/organisations/${org.slug || org.id}` })),
+            ...(player.currentTeamName
+                ? [{ label: player.currentTeamName, path: player.currentTeamId ? `/teams/${player.currentTeamId}` : undefined }]
+                : []),
+            { label: fullName }
+        ]
+        : [
+            { label: t('breadcrumb.players', 'Players'), path: '/players' },
+            { label: fullName }
+        ];
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12">
-            {/* Header Banner */}
-            <div className="relative pt-20 pb-0 min-h-[16rem] sm:h-72 overflow-hidden bg-gradient-to-br from-slate-200 via-blue-100 to-indigo-100 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 flex flex-col justify-end">
-                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-300 via-transparent to-transparent dark:from-blue-600 dark:via-transparent dark:to-transparent"></div>
-                <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-blue-200/30 dark:bg-blue-500/10 blur-2xl"></div>
-                <div className="absolute -bottom-24 -left-12 w-48 h-48 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-2xl"></div>
-
-                <button 
-                    onClick={() => navigate(-1)}
-                    className="absolute top-6 left-6 z-20 hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 text-slate-700 dark:text-white backdrop-blur-md transition-colors text-sm font-medium border border-white/30 dark:border-white/10"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Back
-                </button>
-
-                {/* Glassmorphism card inside banner */}
-                <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 mt-auto">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="bg-white/50 dark:bg-slate-800/40 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-t-2xl p-6 sm:p-8 shadow-lg">
-                            <div className="flex flex-col md:flex-row gap-6 items-center md:items-center">
-                                {/* Photo */}
-                                <div className="relative flex-shrink-0">
-                                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white dark:bg-slate-800 p-1 shadow-xl ring-4 ring-white/80 dark:ring-slate-700 overflow-hidden">
-                                        {player.profilePictureUrl ? (
-                                            <img src={player.profilePictureUrl} alt={player.firstName} className="w-full h-full object-cover rounded-full" />
-                                        ) : (
-                                            <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-700 flex flex-col items-center justify-center">
-                                                <User className="w-12 h-12 text-black/40 dark:text-white/40" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    {player.jerseyNumber && (
-                                        <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-xs font-black shadow-md ring-2 ring-white dark:ring-slate-800">
-                                            {player.jerseyNumber}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Basic Info */}
-                                <div className="flex-1 text-center md:text-left">
-                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
-                                        {player.position && (
-                                            <span className="px-3 py-1 bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint rounded-full text-xs font-bold uppercase tracking-wider">{player.position}</span>
-                                        )}
-                                        {player.position2 && (
-                                            <span className="px-3 py-1 bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-xs font-bold uppercase tracking-wider">{player.position2}</span>
-                                        )}
-                                    </div>
-                                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-1 leading-tight">
-                                        {player.firstName} {player.lastName}
-                                    </h1>
-                                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-slate-500 dark:text-slate-400">
-                                        {player.currentTeamName && (
-                                            <div 
-                                                onClick={() => player.currentTeamId ? navigate(`/teams/${player.currentTeamId}`) : null}
-                                                className={`inline-flex items-center gap-1.5 font-medium ${player.currentTeamId ? 'hover:text-navy dark:hover:text-navy-tint cursor-pointer transition-colors' : ''}`}
-                                            >
-                                                <Shield className="w-4 h-4" /> {player.currentTeamName}
-                                            </div>
-                                        )}
-                                        {player.organisationName && (
-                                            <span className="inline-flex items-center gap-1.5 text-slate-400 dark:text-slate-500">• {player.organisationName}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div className="pb-16">
+            {/* Profile Hero with PositionPitch in the aside */}
+            <div className="mb-8">
+                <ProfileHero
+                    variant="player"
+                    size="public"
+                    primary={player.organisation?.primaryColor}
+                    secondary={player.organisation?.secondaryColor}
+                    watermark={player.jerseyNumber ? String(player.jerseyNumber) : undefined}
+                    avatar={player.profilePictureUrl}
+                    initials={`${player.firstName.charAt(0)}${player.lastName.charAt(0)}`.toUpperCase()}
+                    ringColour={orgColours.primary}
+                    badgeText={player.jerseyNumber}
+                    chips={chips}
+                    title={fullName}
+                    subtitleLinks={subtitleLinks}
+                    breadcrumbs={
+                        <Breadcrumbs
+                            items={breadcrumbItems}
+                            variant="on-dark"
+                            showMobileBack={false}
+                        />
+                    }
+                    aside={
+                        <PositionPitch
+                            position={player.position}
+                            jerseyNumber={player.jerseyNumber}
+                            primaryColour={orgColours.primary}
+                            secondaryColour={orgColours.secondary}
+                        />
+                    }
+                    stats={[
+                        { label: t('stats.appearances', 'Appearances'), value: stats?.matchesPlayed },
+                        { label: t('stats.tries', 'Tries'), value: stats?.tries },
+                        { label: t('stats.conversions', 'Conversions'), value: stats?.conversions },
+                        { label: t('stats.penalties', 'Penalties'), value: stats?.penalties },
+                        { label: t('stats.yellowCards', 'Yellow cards'), value: stats?.yellowCards },
+                        { label: t('stats.redCards', 'Red cards'), value: stats?.redCards },
+                    ]}
+                />
             </div>
 
-            {/* Content */}
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+            {/* Main Content */}
+            <div>
                 {/* Competition Filter Bar */}
                 {player.tournaments && player.tournaments.length > 0 && (
-                    <div className="mb-8 bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white shrink-0">
-                            <Trophy className="w-4 h-4" />
-                            <span>Filter by Tournament:</span>
-                        </div>
-                        <CompetitionFilterBar
-                            tournaments={player.tournaments.map(t => ({
-                                id: t.id,
-                                name: t.name,
-                                status: t.status,
-                            }))}
-                            selectedTournamentId={selectedTournamentId}
-                            onSelect={handleTournamentSelect}
-                            allLabel="All-Time Career (Global)"
-                            variant="public"
-                        />
+                    <div className="mb-8">
+                        <GlassCard surface="glass" className="p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white shrink-0">
+                                <Trophy className="w-4 h-4 text-navy dark:text-navy-tint" />
+                                <span>{t('players:profile.filterByTournament', { defaultValue: 'Filter by tournament:' })}</span>
+                            </div>
+                            <CompetitionFilterBar
+                                tournaments={player.tournaments.map(tItem => ({
+                                    id: tItem.id,
+                                    name: tItem.name,
+                                    status: tItem.status,
+                                }))}
+                                selectedTournamentId={selectedTournamentId}
+                                onSelect={handleTournamentSelect}
+                                allLabel={t('players:profile.allTimeCareer', { defaultValue: 'All-Time Career (Global)' })}
+                                variant="public"
+                            />
+                        </GlassCard>
                     </div>
                 )}
 
-                {/* Quick Stats Row */}
-                {(player.ageGroup || age || player.gender || player.country || player.jerseyNumber) && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-                        {(player.ageGroup || age) && (
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 text-center">
-                                <div className="text-2xl font-black text-slate-900 dark:text-white">
-                                    {player.ageGroup || age}
-                                </div>
-                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">
-                                    {player.ageGroup ? 'Age group' : 'Age'}
-                                </div>
-                            </div>
-                        )}
-                        {player.gender && (
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 text-center">
-                                <div className="text-lg font-bold text-slate-900 dark:text-white capitalize">{player.gender?.toLowerCase()}</div>
-                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Gender</div>
-                            </div>
-                        )}
-                        {player.country && (
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 text-center">
-                                <div className="text-lg font-bold text-slate-900 dark:text-white">{player.country}</div>
-                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Country</div>
-                            </div>
-                        )}
-                        {player.jerseyNumber && (
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700/50 text-center">
-                                <div className="text-2xl font-black text-navy dark:text-navy-tint">#{player.jerseyNumber}</div>
-                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Jersey</div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Content Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    {/* Bio & Details */}
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700/50">
-                        <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                            <Pulse className="w-5 h-5" /> Player Details
-                        </h2>
-                        <div className="space-y-4">
-                            {player.position && (
-                                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
-                                    <span className="text-slate-500 text-sm flex items-center gap-1.5"><Hash className="w-4 h-4" /> Position</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">{player.position}{player.position2 ? ` / ${player.position2}` : ''}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
-                                <span className="text-slate-500 text-sm">Gender</span>
-                                <span className="font-medium text-slate-900 dark:text-white capitalize">{player.gender?.toLowerCase() || '-'}</span>
-                            </div>
-                            {(player.ageGroup || age !== null) && (
-                                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
-                                    <span className="text-slate-500 text-sm flex items-center gap-1.5">
-                                        <Calendar className="w-4 h-4" /> {player.ageGroup ? 'Age group' : 'Age'}
-                                    </span>
-                                    <span className="font-medium text-slate-900 dark:text-white">
-                                        {player.ageGroup ? player.ageGroup : `${age} yrs`}
-                                    </span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700/50">
-                                <span className="text-slate-500 text-sm flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Country</span>
-                                <span className="font-medium text-slate-900 dark:text-white">{player.country || '-'}</span>
-                            </div>
-                            <div className={`flex justify-between items-center py-2 ${player.city ? 'border-b border-slate-100 dark:border-slate-700/50' : ''}`}>
-                                <span className="text-slate-500 text-sm flex items-center gap-1.5"><MapPin className="w-4 h-4" /> State</span>
-                                <span className="font-medium text-slate-900 dark:text-white">{player.state || '-'}</span>
-                            </div>
-                            {player.city && (
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="text-slate-500 text-sm">City</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">{player.city}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Team Info Card */}
-                    {player.currentTeamName && (
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700/50">
-                            <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
-                                <Shield className="w-5 h-5" /> Team
-                            </h2>
-                            <div 
-                                onClick={() => player.currentTeamId ? navigate(`/teams/${player.currentTeamId}${selectedTournamentId ? `?tournamentId=${selectedTournamentId}` : ''}`) : null}
-                                className={`flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 ${player.currentTeamId ? 'hover:border-blue-300 dark:hover:border-navy hover:shadow-md cursor-pointer transition-all group' : ''}`}
-                            >
-                                <div className="w-14 h-14 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">
-                                    <Shield className="w-8 h-8 text-black/60 dark:text-white/60 group-hover:text-navy dark:group-hover:text-navy-tint transition-colors" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-slate-900 dark:text-white text-lg group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
-                                        {player.currentTeamName}
-                                    </div>
-                                    {player.organisationName && (
-                                        <div className="text-sm text-slate-500 truncate">{player.organisationName}</div>
-                                    )}
-                                </div>
-                            </div>
-                            {player.jerseyNumber && (
-                                <div className="mt-4 flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
-                                    <span className="text-slate-500 text-sm">Jersey Number</span>
-                                    <span className="font-bold text-navy dark:text-navy-tint text-lg">#{player.jerseyNumber}</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Career Statistics / Tournament Statistics Section */}
-                {hasStats && (
-                    <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700/50">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                            <h2 className="text-xl font-bold flex flex-wrap items-center gap-2 text-slate-900 dark:text-white">
-                                <span className="flex items-center gap-2">
-                                    <Trophy className="w-5 h-5" />
-                                    {selectedTournamentId ? 'Tournament Performance' : 'Career Statistics'}
-                                </span>
+                {/* 2-Column Grid: Career by tournament on left / Details on right */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Career by Tournament Table (2 Cols) */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <GlassCard surface="glass" className="p-6 sm:p-8 rounded-3xl">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+                                <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-navy dark:text-navy-tint" />
+                                    <span>{t('player.careerByTournament', 'Career by tournament')}</span>
+                                </h2>
                                 {selectedTournamentId && (
-                                    <span className="text-xs font-semibold text-navy dark:text-navy-tint bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                                        {player?.tournaments?.find(t => t.id === selectedTournamentId)?.name || 'Tournament Filtered'}
-                                    </span>
+                                    <button
+                                        onClick={() => handleTournamentSelect(null)}
+                                        className="min-h-[44px] inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
+                                    >
+                                        <span>{t('players:profile.viewAllTimeCareer', { defaultValue: 'View all-time career' })}</span>
+                                    </button>
                                 )}
-                            </h2>
-                            {selectedTournamentId && (
-                                <button
-                                    onClick={() => handleTournamentSelect(null)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-navy dark:text-navy-tint border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                                >
-                                    <Trophy className="w-4 h-4" />
-                                    View All-Time Career
-                                </button>
-                            )}
-                        </div>
+                            </div>
 
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
-                            <StatCard label="Matches" value={stats.matchesPlayed} icon={<Pulse className="w-4 h-4" />} />
-                            <StatCard label="Total Minutes" value={stats.totalMinutesPlayed || 0} icon={<Clock className="w-4 h-4" />} />
-                            <StatCard label="Tries" value={stats.tries} icon={<Football className="w-4 h-4" />} highlight />
-                            <StatCard label="Conversions" value={stats.conversions} icon={<Target className="w-4 h-4" />} />
-                            <StatCard label="Penalties" value={stats.penalties} icon={<Lightning className="w-4 h-4" />} />
-                            <StatCard label="Total Points" value={stats.totalPoints} icon={<Trophy className="w-4 h-4" />} highlight />
-                            <StatCard label="Drop Goals" value={stats.dropGoals} icon={<Target className="w-4 h-4" />} />
-                            <StatCard label="Yellow Cards" value={stats.yellowCards} color="yellow" icon={<div className="w-3 h-4 bg-card-yellow rounded-[2px]" />} />
-                            <StatCard label="Red Cards" value={stats.redCards} color="red" icon={<div className="w-3 h-4 bg-crimson rounded-[2px]" />} />
-                        </div>
-
-                        {/* Recent Matches */}
-                        {stats.recentMatches && stats.recentMatches.length > 0 && (
-                            <div>
-                                <h3 className="text-base font-bold mb-4 text-slate-700 dark:text-slate-300">Recent Matches</h3>
-                                <div className="overflow-x-auto">
+                            {/* Recent Matches Table */}
+                            {stats?.recentMatches && stats.recentMatches.length > 0 ? (
+                                <div className="overflow-x-auto -mx-6 sm:mx-0">
                                     <table className="w-full text-sm">
                                         <thead>
-                                            <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 text-xs uppercase tracking-wider">
-                                                <th className="py-3 px-3 text-left font-medium">Date</th>
-                                                <th className="py-3 px-3 text-left font-medium">Team</th>
-                                                <th className="py-3 px-3 text-left font-medium">Opponent</th>
-                                                <th className="py-3 px-3 text-center font-medium">Result</th>
-                                                <th className="py-3 px-3 text-center font-medium">Tries</th>
-                                                <th className="py-3 px-3 text-center font-medium">Pts</th>
-                                                <th className="py-3 px-3 text-center font-medium">Min</th>
+                                            <tr className="border-b border-slate-200 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                                                <th className="py-3 px-3 text-left font-semibold">{t('players:profile.table.date', { defaultValue: 'Date' })}</th>
+                                                <th className="py-3 px-3 text-left font-semibold">{t('players:profile.table.team', { defaultValue: 'Team' })}</th>
+                                                <th className="py-3 px-3 text-left font-semibold">{t('players:profile.table.opponent', { defaultValue: 'Opponent' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.result', { defaultValue: 'Result' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.tries', { defaultValue: 'Tries' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.pts', { defaultValue: 'Pts' })}</th>
+                                                <th className="py-3 px-3 text-center font-semibold">{t('players:profile.table.mins', { defaultValue: 'Mins' })}</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                            {stats.recentMatches.slice(0, 10).map((match: any, idx: number) => (
-                                                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                                                    <td className="py-2.5 px-3 text-slate-500 text-xs whitespace-nowrap">
-                                                        {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+                                            {stats.recentMatches.slice(0, 10).map((match, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                                    <td className="py-3 px-3 text-slate-500 text-xs whitespace-nowrap">
+                                                        {match.matchDate
+                                                            ? format(new Date(match.matchDate), 'd MMM', { locale: getDateLocale(i18n.language) })
+                                                            : '—'}
                                                     </td>
-                                                    <td className="py-2.5 px-3">
+                                                    <td className="py-3 px-3">
                                                         <div className="flex flex-col">
-                                                            <span className="font-medium text-slate-900 dark:text-white text-xs">{match.teamName || '—'}</span>
+                                                            <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                                                                {match.teamName || '—'}
+                                                            </span>
                                                             {match.tournamentName && (
-                                                                <span className="text-slate-400 dark:text-slate-500 text-[10px] truncate max-w-[120px]">{match.tournamentName}</span>
+                                                                <span className="text-slate-400 text-xs truncate max-w-[130px]">
+                                                                    {match.tournamentName}
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white truncate max-w-[150px]">{match.opponentName}</td>
-                                                    <td className="py-2.5 px-3 text-center">
-                                                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
-                                                            match.result?.startsWith('W') ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                            match.result?.startsWith('L') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                            match.result?.startsWith('D') ? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' :
-                                                            'text-slate-500'
-                                                        }`}>
-                                                            {match.result || '-'}
+                                                    <td className="py-3 px-3 font-medium text-slate-900 dark:text-white text-xs truncate max-w-[150px]">
+                                                        {match.opponentName || '—'}
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span
+                                                            className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
+                                                                match.result?.startsWith('W')
+                                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                                    : match.result?.startsWith('L')
+                                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                    : match.result?.startsWith('D')
+                                                                    ? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                                                                    : 'text-slate-500'
+                                                            }`}
+                                                        >
+                                                            {match.result || '—'}
                                                         </span>
                                                     </td>
-                                                    <td className="py-2.5 px-3 text-center font-medium text-emerald-600 dark:text-emerald-400">{match.tries || 0}</td>
-                                                    <td className="py-2.5 px-3 text-center font-bold text-navy dark:text-navy-tint">{match.points || 0}</td>
-                                                    <td className="py-2.5 px-3 text-center text-slate-500 text-xs">{match.minutesPlayed || '-'}</td>
+                                                    <td className="py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                                                        {match.tries || 0}
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center font-black text-navy dark:text-navy-tint text-xs">
+                                                        {match.points || 0}
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center text-slate-500 text-xs">
+                                                        {match.minutesPlayed || '—'}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
+                            ) : (
+                                <div className="text-center py-12 text-slate-500 text-sm">
+                                    {t('players:profile.noMatches', { defaultValue: 'No matches recorded for this tournament.' })}
+                                </div>
+                            )}
+                        </GlassCard>
+                    </div>
+
+                    {/* Player Details Panel (Exactly the fields shown publicly today) */}
+                    <div className="space-y-6">
+                        <GlassCard surface="glass" className="p-6 rounded-3xl">
+                            <h2 className="text-base font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Pulse className="w-4 h-4 text-navy dark:text-navy-tint" />
+                                <span>{t('player.detailsTitle', 'Player details')}</span>
+                            </h2>
+
+                            <div className="space-y-3.5 text-sm divide-y divide-slate-100 dark:divide-slate-800">
+                                {player.position && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-xs">
+                                            <Hash className="w-3.5 h-3.5 text-slate-400" />
+                                            {t('player.position', 'Position')}
+                                        </span>
+                                        <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                                            {player.position}
+                                            {player.position2 ? ` / ${player.position2}` : ''}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {player.gender && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 text-xs">
+                                            {t('player.gender', 'Gender')}
+                                        </span>
+                                        <span className="font-semibold text-slate-900 dark:text-white capitalize text-xs">
+                                            {player.gender.toLowerCase()}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {(player.ageGroup || age !== null) && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-xs">
+                                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                            {player.ageGroup ? t('player.ageGroup', 'Age group') : t('player.age', 'Age')}
+                                        </span>
+                                        <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                                            {player.ageGroup || (age !== null ? t('players:profile.years', { age, defaultValue: `${age} yrs` }) : '—')}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {player.country && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-xs">
+                                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                            {t('player.country', 'Country')}
+                                        </span>
+                                        <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                                            {player.country}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {player.state && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-xs">
+                                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                            {t('player.state', 'State')}
+                                        </span>
+                                        <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                                            {player.state}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {player.city && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-xs">
+                                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                            {t('player.city', 'City')}
+                                        </span>
+                                        <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                                            {player.city}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {player.currentTeamName && (
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-xs">
+                                            <Shield className="w-3.5 h-3.5 text-slate-400" />
+                                            {t('player.team', 'Team')}
+                                        </span>
+                                        {player.currentTeamId ? (
+                                            <Link
+                                                to={`/teams/${player.currentTeamId}`}
+                                                className="font-semibold text-navy dark:text-navy-tint hover:underline text-xs truncate max-w-[160px] inline-flex items-center min-h-[24px]"
+                                            >
+                                                {player.currentTeamName}
+                                            </Link>
+                                        ) : (
+                                            <span className="font-semibold text-slate-900 dark:text-white text-xs truncate max-w-[160px]">
+                                                {player.currentTeamName}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                )}
 
-                {/* Empty State when selected tournament has no match appearances */}
-                {selectedTournamentId && !hasStats && (
-                    <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl p-8 text-center shadow-sm border border-slate-200 dark:border-slate-700/50">
-                        <Trophy className="w-12 h-12 mx-auto text-black/40 dark:text-white/40 mb-3" />
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No Matches Recorded</h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
-                            No match appearances or scoring statistics recorded in this tournament yet.
-                        </p>
-                        <button
-                            onClick={() => handleTournamentSelect(null)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy hover:bg-deep-navy dark:hover:bg-[#1F5BB3] text-white font-medium text-sm transition-colors shadow-sm"
-                        >
-                            <Trophy className="w-4 h-4" />
-                            View All-Time Career
-                        </button>
+                            {/* Public transparency note */}
+                            <div className="mt-5 p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 flex items-start gap-2.5">
+                                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-medium">
+                                    {t('player.detailsNote', "Only details the player's organisation has made public are shown.")}
+                                </p>
+                            </div>
+                        </GlassCard>
                     </div>
-                )}
+                </div>
             </div>
-        </div>
-    );
-}
-
-function StatCard({ label, value, icon, highlight, color }: { label: string; value: number; icon?: React.ReactNode; highlight?: boolean; color?: string }) {
-    return (
-        <div className={`rounded-2xl p-4 text-center border transition-colors ${
-            color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800/30' :
-            color === 'red' ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30' :
-            highlight ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/30' :
-            'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50'
-        }`}>
-            {icon && <div className="flex justify-center mb-1.5">{icon}</div>}
-            <div className={`text-2xl font-black ${
-                color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
-                color === 'red' ? 'text-red-600 dark:text-red-400' :
-                highlight ? 'text-navy dark:text-navy-tint' :
-                'text-slate-900 dark:text-white'
-            }`}>{value}</div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-1">{label}</div>
         </div>
     );
 }

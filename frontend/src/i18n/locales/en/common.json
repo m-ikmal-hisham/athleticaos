@@ -1,10 +1,13 @@
 {
   "nav": {
     "home": "Home",
+    "matchday": "Matchday",
+    "matchdayShort": "Matchday",
     "tournaments": "Tournaments",
     "tournamentsShort": "Tours",
     "teams": "Teams",
     "players": "Players",
+    "organisations": "Organisations",
     "more": "More",
     "howItWorks": "How it works",
     "partners": "Partners",
@@ -26,6 +29,13 @@
     "en": "English",
     "ms": "Bahasa Melayu"
   },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
   "footer": {
     "ownedBy": "Owned and operated by {{name}}",
     "inPartnershipWith": "In partnership with {{partners}}",
@@ -35,7 +45,15 @@
     "live": "LIVE",
     "liveNow": "LIVE NOW",
     "upcoming": "UPCOMING",
-    "completed": "COMPLETED"
+    "completed": "COMPLETED",
+    "cancelled": "Cancelled",
+    "fullTime": "FT",
+    "walkover": "W/O",
+    "bye": "Bye",
+    "scheduled": "Scheduled",
+    "postponed": "Postponed",
+    "delayed": "Delayed",
+    "inProgress": "In progress"
   },
   "accessory": {
     "liveNow": "Live now: {{name}}",
@@ -49,5 +67,164 @@
   },
   "dialog": {
     "close": "Close"
+  },
+  "actions": {
+    "showMore": "Show more",
+    "tryAgain": "Try again",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "back": "Back",
+    "share": "Share",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "viewAll": "View all",
+    "search": "Search",
+    "filter": "Filter",
+    "filterButton": "Filters",
+    "filterWithCount": "Filters ({{count}})",
+    "clear": "Clear",
+    "clearFilters": "Clear filters",
+    "apply": "Apply",
+    "dateTbd": "Date TBD",
+    "collapseAllDays": "Collapse all days",
+    "expandAllDays": "Expand all days",
+    "collapseAll": "Collapse all {{noun}}",
+    "expandAll": "Expand all {{noun}}"
+  },
+  "counts": {
+    "matchCount_one": "{{count}} match",
+    "matchCount_other": "{{count}} matches",
+    "playerCount_one": "{{count}} player",
+    "playerCount_other": "{{count}} players",
+    "teamCount_one": "{{count}} team",
+    "teamCount_other": "{{count}} teams",
+    "tournamentCount_one": "{{count}} tournament",
+    "tournamentCount_other": "{{count}} tournaments"
+  },
+  "empty": {
+    "title": "No data available",
+    "description": "Nothing to show right now."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "description": "We couldn't load this content. Please try again."
+  },
+  "level": {
+    "NATIONAL": "National",
+    "STATE": "State",
+    "DISTRICT": "District",
+    "CLUB": "Club",
+    "SCHOOL": "School",
+    "INTERNATIONAL": "International"
+  },
+  "competitionType": {
+    "GROUP_KNOCKOUT": "Group + knockout",
+    "KNOCKOUT": "Knockout",
+    "LEAGUE": "League",
+    "CUP": "Cup",
+    "ROUND_ROBIN": "Round robin",
+    "FRIENDLY": "Friendly",
+    "SEVENS": "Sevens",
+    "TENS": "Tens",
+    "FIFTEENS": "Fifteens"
+  },
+  "stage": {
+    "POOL": "Pool",
+    "ROUND_ROBIN": "Round robin",
+    "QUARTER_FINAL": "Quarter-final",
+    "SEMI_FINAL": "Semi-final",
+    "FINAL": "Final",
+    "BRONZE": "3rd place playoff",
+    "CUP": "Cup",
+    "PLATE": "Plate",
+    "BOWL": "Bowl",
+    "SHIELD": "Shield",
+    "SPOON": "Spoon",
+    "ROUND_OF_16": "Round of 16",
+    "THIRD_PLACE": "Third place",
+    "CLASSIFICATION": "Classification",
+    "FORK": "Fork",
+    "SAUCER": "Saucer",
+    "CHOPSTICK": "Chopstick",
+    "WOODEN_SPOON": "Wooden spoon",
+    "WOODEN_FORK": "Wooden fork"
+  },
+  "category": {
+    "MENS": "Men's",
+    "WOMENS": "Women's",
+    "MIXED": "Mixed",
+    "BOYS": "Boys",
+    "GIRLS": "Girls",
+    "OPEN": "Open",
+    "CLUB": "Club",
+    "MEN": "Men",
+    "WOMEN": "Women"
+  },
+  "tier": {
+    "PREMIER": "Premier",
+    "CHAMPIONSHIP": "Championship",
+    "CONFERENCE": "Conference",
+    "SHOWCASE": "Showcase",
+    "DEVELOPMENT": "Development",
+    "COMMUNITY": "Community"
+  },
+  "stats": {
+    "squad": "Squad",
+    "tournaments": "Tournaments",
+    "appearances": "Appearances",
+    "tries": "Tries",
+    "triesScored": "Tries scored",
+    "conversions": "Conversions",
+    "penaltyGoals": "Penalty goals",
+    "dropGoals": "Drop goals",
+    "points": "Points",
+    "yellowCards": "Yellow cards",
+    "redCards": "Red cards"
+  },
+  "units": {
+    "forwards": "Forwards",
+    "backs": "Backs"
+  },
+  "lineup": {
+    "off": "Off {{minute}}'",
+    "replacedBy": "replaced by {{name}}",
+    "replacedByWithNumber": "replaced by {{name}} ({{number}})",
+    "on": "On {{minute}}'",
+    "forPlayer": "for {{name}}",
+    "forPlayerWithNumber": "for {{name}} ({{number}})",
+    "didNotPlay": "Did not play"
+  },
+  "eventType": {
+    "TRY": "Try",
+    "SUPER_TRY": "Super Try",
+    "PENALTY_TRY": "Penalty Try",
+    "CONVERSION": "Conversion",
+    "PENALTY": "Penalty",
+    "DROP_GOAL": "Drop Goal",
+    "YELLOW_CARD": "Yellow Card",
+    "RED_CARD": "Red Card",
+    "SUBSTITUTION": "Substitution"
+  },
+  "partners": {
+    "title": "Partners",
+    "subtitle": "The organisations working with us to build and run AthleticaOS.",
+    "ourPartners": "Our partners",
+    "partnerWithUs": "Partner with us",
+    "partnerWithUsDesc": "Organisations and companies interested in working with AthleticaOS can register their interest.",
+    "getInTouch": "Get in touch"
+  },
+  "ageGroup": {
+    "SENIOR": "Senior",
+    "OPEN": "Open",
+    "JUNIOR": "Junior",
+    "YOUTH": "Youth",
+    "VETERANS": "Veterans"
+  },
+  "filter": {
+    "all": "All",
+    "category": "Category",
+    "state": "State",
+    "position": "Position"
   }
 }

@@ -1,6 +1,7 @@
 package com.athleticaos.backend.services.impl;
 
 import com.athleticaos.backend.audit.AuditLogger;
+import com.athleticaos.backend.dtos.org.OrganisationUpdateRequest;
 import com.athleticaos.backend.dtos.person.RegisterPersonRequest;
 import com.athleticaos.backend.entities.Organisation;
 import com.athleticaos.backend.exceptions.DuplicateEmailException;
@@ -200,5 +201,100 @@ class OrganisationServiceImplTest {
         assertThat(options.get(0).getId()).isEqualTo(accessibleOrgId);
         assertThat(options.get(0).getName()).isEqualTo("My Org");
         verify(organisationRepository).findAllByIdInWithParentOrg(java.util.Set.of(accessibleOrgId));
+    }
+
+    @Test
+    void updateOrganisation_whenSlugIsMissing_generatesUniqueSlugFromUpdatedName() {
+        UUID orgId = UUID.randomUUID();
+        Organisation org = Organisation.builder()
+                .id(orgId)
+                .name("Old Org")
+                .slug(null)
+                .build();
+
+        when(organisationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findBySlug("updated-org")).thenReturn(Optional.empty());
+        when(organisationRepository.save(any(Organisation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrganisationUpdateRequest request = OrganisationUpdateRequest.builder()
+                .name("Updated Org")
+                .build();
+
+        var response = organisationService.updateOrganisation(orgId, request);
+
+        assertThat(response.getName()).isEqualTo("Updated Org");
+        assertThat(response.getSlug()).isEqualTo("updated-org");
+        verify(organisationRepository).findBySlug("updated-org");
+    }
+
+    @Test
+    void updateOrganisation_whenSlugIsBlank_generatesUniqueSlug() {
+        UUID orgId = UUID.randomUUID();
+        Organisation org = Organisation.builder()
+                .id(orgId)
+                .name("Old Org")
+                .slug("   ")
+                .build();
+
+        when(organisationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.findBySlug("old-org")).thenReturn(Optional.empty());
+        when(organisationRepository.save(any(Organisation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrganisationUpdateRequest request = OrganisationUpdateRequest.builder().build();
+
+        var response = organisationService.updateOrganisation(orgId, request);
+
+        assertThat(response.getSlug()).isEqualTo("old-org");
+        verify(organisationRepository).findBySlug("old-org");
+    }
+
+    @Test
+    void updateOrganisation_whenSlugAlreadyExists_retainsExistingSlugEvenOnRename() {
+        UUID orgId = UUID.randomUUID();
+        Organisation org = Organisation.builder()
+                .id(orgId)
+                .name("Old Name")
+                .slug("original-slug")
+                .build();
+
+        when(organisationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(organisationRepository.save(any(Organisation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrganisationUpdateRequest request = OrganisationUpdateRequest.builder()
+                .name("Brand New Name")
+                .build();
+
+        var response = organisationService.updateOrganisation(orgId, request);
+
+        assertThat(response.getName()).isEqualTo("Brand New Name");
+        assertThat(response.getSlug()).isEqualTo("original-slug");
+        verify(organisationRepository, never()).findBySlug(any());
+    }
+
+    @Test
+    void generateUniqueSlug_whenNameIsSymbolsOnly_fallsBackToOrgAndIdPrefix() {
+        UUID orgId = UUID.fromString("12345678-1111-2222-3333-444455556666");
+
+        // 1. With ID and available slug
+        when(organisationRepository.findBySlug("org-12345678")).thenReturn(Optional.empty());
+        String slug1 = organisationService.generateUniqueSlug("!@#$%", orgId);
+        assertThat(slug1).isEqualTo("org-12345678");
+
+        // 2. With ID and clashing slug
+        when(organisationRepository.findBySlug("org-12345678")).thenReturn(Optional.of(new Organisation()));
+        when(organisationRepository.findBySlug("org-12345678-1")).thenReturn(Optional.empty());
+        String slug2 = organisationService.generateUniqueSlug("!@#$%", orgId);
+        assertThat(slug2).isEqualTo("org-12345678-1");
+
+        // 3. Without ID and available slug
+        when(organisationRepository.findBySlug("org")).thenReturn(Optional.empty());
+        String slug3 = organisationService.generateUniqueSlug("---", null);
+        assertThat(slug3).isEqualTo("org");
+
+        // 4. Without ID and clashing slug
+        when(organisationRepository.findBySlug("org")).thenReturn(Optional.of(new Organisation()));
+        when(organisationRepository.findBySlug("org-1")).thenReturn(Optional.empty());
+        String slug4 = organisationService.generateUniqueSlug("---", null);
+        assertThat(slug4).isEqualTo("org-1");
     }
 }

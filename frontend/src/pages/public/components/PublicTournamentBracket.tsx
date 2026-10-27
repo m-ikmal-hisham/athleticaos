@@ -1,15 +1,21 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PublicMatchSummary } from '../../../api/public.api';
 import { Trophy, CaretRight } from '@phosphor-icons/react';
-import { formatEnum, formatPoolPositionPlaceholder } from '@/utils/formatters';
+import { formatPoolPositionPlaceholder } from '@/utils/formatters';
 import { groupMatchesIntoBrackets } from '@/utils/bracketUtils';
-import { getImageUrl } from '@/utils/image';
+import { formatOfficialRole } from '@/utils/rugbyPositions';
+import { formatCalendarDate, getDateLocale, formatKickOff } from '@/utils/malaysiaDate';
+import { LogoImage } from '@/components/public/LogoImage';
+import { enumLabel } from '@/utils/enumLabel';
 
 interface PublicTournamentBracketProps {
     matches: PublicMatchSummary[];
 }
 
 export function PublicTournamentBracket({ matches }: PublicTournamentBracketProps) {
+    const { t, i18n } = useTranslation(['tournament', 'common', 'match']);
+
     const bracketGroups = useMemo(() => {
         return groupMatchesIntoBrackets(matches);
     }, [matches]);
@@ -17,7 +23,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
     if (bracketGroups.length === 0) {
         return (
             <div className="text-center py-12 text-slate-500 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                No knockout stages found.
+                {t('tournament:bracket.empty')}
             </div>
         );
     }
@@ -37,16 +43,16 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                             </div>
                             <div>
                                 <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                                    {bracket.title}
+                                    {enumLabel(t, 'stage', bracket.title)}
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                    Knockout Stage Progression
+                                    {t('tournament:bracket.progression')}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
-                            <span>Knockout Stage</span>
+                        <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full shrink-0">
+                            <span>{t('tournament:bracket.stageBadge')}</span>
                         </div>
                     </div>
 
@@ -57,7 +63,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                 <div key={round.id} className="flex flex-col min-w-[280px] max-w-[320px]">
                                     {/* Round Header */}
                                     <div className="text-center font-black uppercase text-xs tracking-wider text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-950/50 border border-blue-200/50 dark:border-blue-900/50 py-2 rounded-xl mb-6 shadow-sm flex items-center justify-center gap-2">
-                                        <span>{formatEnum(round.name)}</span>
+                                        <span>{enumLabel(t, 'stage', round.name)}</span>
                                         {roundIdx < bracket.rounds.length - 1 && (
                                             <CaretRight className="w-4 h-4 opacity-60" />
                                         )}
@@ -79,17 +85,20 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                     `}
                                                 >
                                                     {/* Match Code & Date Header */}
-                                                    <div className="flex justify-between items-center mb-2.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                    <div className="flex justify-between items-center mb-2.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                                         <span className="bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-md font-mono text-slate-700 dark:text-slate-300">
-                                                            {match.code && match.code.length < 12 ? match.code : 'Match'}
+                                                            {match.code && match.code.length < 12 ? match.code : t('tournament:bracket.match')}
                                                         </span>
                                                         {/* An awarded result must read as one publicly too, not as an ordinary 28-0. */}
                                                         {match.resultType && match.resultType !== 'NORMAL' ? (
                                                             <span className="text-amber-600 dark:text-amber-400">
-                                                                {match.resultType === 'BYE' ? 'Bye' : 'Walkover'}
+                                                                {match.resultType === 'BYE' ? t('tournament:bracket.bye') : t('tournament:bracket.walkover')}
                                                             </span>
                                                         ) : (
-                                                            <span>{new Date(match.matchDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} {match.matchTime ? `• ${match.matchTime}` : ''}</span>
+                                                            <span>
+                                                                {formatCalendarDate(match.matchDate, 'd MMM', { locale: getDateLocale(i18n.language) })}
+                                                                {match.matchTime ? ` • ${formatKickOff(match.matchTime, i18n.language)}` : ''}
+                                                            </span>
                                                         )}
                                                     </div>
 
@@ -99,14 +108,15 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                         <div className={`flex items-center justify-between p-2 rounded-xl transition-colors ${isHomeWinner ? 'bg-emerald-500/10 dark:bg-emerald-500/20 font-bold' : 'bg-white/60 dark:bg-slate-900/40'}`}>
                                                             <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                 <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-                                                                    {match.homeTeamLogoUrl ? (
-                                                                        <img src={getImageUrl(match.homeTeamLogoUrl)} alt="" className="w-full h-full object-contain p-0.5" />
-                                                                    ) : (
-                                                                        <span className="text-[8px] font-bold text-slate-400">{match.homeTeamName?.slice(0, 2)?.toUpperCase()}</span>
-                                                                    )}
+                                                                    <LogoImage
+                                                                        src={match.homeTeamLogoUrl}
+                                                                        name={match.homeTeamName || ''}
+                                                                        size="sm"
+                                                                        className="w-full h-full object-contain p-0.5"
+                                                                    />
                                                                 </div>
                                                                 <span className={`text-xs truncate ${isHomeWinner ? 'text-slate-900 dark:text-white font-extrabold' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                    {match.homeTeamName ? formatPoolPositionPlaceholder(match.homeTeamName) : 'TBD'}
+                                                                    {match.homeTeamName ? formatPoolPositionPlaceholder(match.homeTeamName) : t('tournament:bracket.tbd')}
                                                                 </span>
                                                             </div>
                                                             <span className={`font-mono text-xs px-2 py-0.5 rounded-md ${isHomeWinner ? 'bg-emerald-500 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold'}`}>
@@ -118,14 +128,15 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                         <div className={`flex items-center justify-between p-2 rounded-xl transition-colors ${isAwayWinner ? 'bg-emerald-500/10 dark:bg-emerald-500/20 font-bold' : 'bg-white/60 dark:bg-slate-900/40'}`}>
                                                             <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                 <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-                                                                    {match.awayTeamLogoUrl ? (
-                                                                        <img src={getImageUrl(match.awayTeamLogoUrl)} alt="" className="w-full h-full object-contain p-0.5" />
-                                                                    ) : (
-                                                                        <span className="text-[8px] font-bold text-slate-400">{match.awayTeamName?.slice(0, 2)?.toUpperCase()}</span>
-                                                                    )}
+                                                                    <LogoImage
+                                                                        src={match.awayTeamLogoUrl}
+                                                                        name={match.awayTeamName || ''}
+                                                                        size="sm"
+                                                                        className="w-full h-full object-contain p-0.5"
+                                                                    />
                                                                 </div>
                                                                 <span className={`text-xs truncate ${isAwayWinner ? 'text-slate-900 dark:text-white font-extrabold' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                    {match.awayTeamName ? formatPoolPositionPlaceholder(match.awayTeamName) : 'TBD'}
+                                                                    {match.awayTeamName ? formatPoolPositionPlaceholder(match.awayTeamName) : t('tournament:bracket.tbd')}
                                                                 </span>
                                                             </div>
                                                             <span className={`font-mono text-xs px-2 py-0.5 rounded-md ${isAwayWinner ? 'bg-emerald-500 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold'}`}>
@@ -138,9 +149,9 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                     {match.officials && match.officials.length > 0 && (
                                                         <div className="mt-2.5 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-wrap gap-1">
                                                             {match.officials.map((o, idx) => (
-                                                                <div key={idx} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 px-1.5 py-0.5 rounded">
-                                                                    <span className="font-semibold text-slate-400 uppercase text-[8px]">
-                                                                        {(o.assignedRole || 'OFF').replace(/_/g, ' ')}:
+                                                                <div key={idx} className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 px-1.5 py-0.5 rounded">
+                                                                    <span className="font-semibold text-slate-400 uppercase text-[11px]">
+                                                                        {formatOfficialRole(o.assignedRole, t)}:
                                                                     </span>
                                                                     <span className="truncate max-w-[100px] font-medium">{o.officialName}</span>
                                                                 </div>
@@ -167,3 +178,4 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
         </div>
     );
 }
+

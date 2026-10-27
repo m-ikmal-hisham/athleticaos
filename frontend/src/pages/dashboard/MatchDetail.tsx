@@ -27,12 +27,13 @@ import { MatchMoments } from '@/pages/public/match/MatchMoments';
 // Rugby scoring rules
 import { tournamentService } from '@/services/tournamentService';
 import { matchLineupService } from '@/services/matchLineupService';
-import { MatchLineupEntry, LineupRole, TournamentFormatConfig } from '@/types';
+import { MatchLineupEntry, TournamentFormatConfig } from '@/types';
 import { Breadcrumbs, BreadcrumbItem } from '@/components/Breadcrumbs';
 import { getImageUrl } from '@/utils/image';
 import { getPositionName, RugbyFormat } from '@/utils/rugbyPositions';
 import { formatMatchVenueLabel } from '@/utils/venue';
 import { SCORING_RULES } from '@/constants/scoring';
+import { computeSubstitutionTimeline } from '@/utils/substitutions';
 
 
 // Helper for event icons
@@ -412,39 +413,6 @@ export const MatchDetail = () => {
             // The event is saved from here on. Follow-up steps report their own problems instead
             // of "Failed to add event", which made scorers re-enter events that were already saved.
 
-            // --- Handle Automatic Lineup Adjustment for Substitution ---
-            // The backend refuses lineup changes once a match is completed, so a substitution
-            // added afterwards (a correction) is recorded as an event only.
-            if (action.type === 'SUBSTITUTION' && action.sub_in_playerId && action.teamId
-                && selectedMatch!.status !== 'COMPLETED') {
-                const isHome = action.teamId === selectedMatch!.homeTeamId;
-                const currentLineup = isHome ? matchLineups.home : matchLineups.away;
-
-                // We need to clone to avoid mutating state directly, though we'll fetch fresh anyway
-                const updatedLineup = currentLineup.map(entry => {
-                    // OUT player -> Go to BENCH
-                    if (entry.playerId === action.playerId) {
-                        return { ...entry, role: LineupRole.BENCH, isStarter: false };
-                    }
-                    // IN player -> Go to STARTER
-                    if (entry.playerId === action.sub_in_playerId) {
-                        return { ...entry, role: LineupRole.STARTER, isStarter: true };
-                    }
-                    return entry;
-                });
-
-                try {
-                    await matchLineupService.updateLineup(selectedMatch!.id, action.teamId, updatedLineup);
-                    // Refresh lineups to reflect changes in UI (e.g. picker)
-                    await fetchLineups();
-                } catch (error) {
-                    console.error('Substitution saved, but the lineup update failed', error);
-                    showToast.error('Substitution recorded, but the lineup could not be updated. Update it in Lineups.');
-                    await loadMatchDetail(selectedMatch!.id);
-                    return;
-                }
-            }
-
             await loadMatchDetail(selectedMatch!.id);
 
             // Check if a 2nd yellow triggered an automatic red card
@@ -640,7 +608,46 @@ export const MatchDetail = () => {
         matchLineups.home.some(p => p.playerId && p.playerId.trim().length > 0) &&
         matchLineups.away.some(p => p.playerId && p.playerId.trim().length > 0);
 
-    const getPlayersForPicker = () => getPlayersForTeam(draftAction?.teamId);
+    const getPlayersForPicker = () => {
+        const teamId = draftAction?.teamId;
+        if (!teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
+
+        const isHome = teamId === selectedMatch.homeTeamId;
+        const currentLineup = isHome ? matchLineups.home : matchLineups.away;
+
+        if (!currentLineup || currentLineup.length === 0) {
+            return { starters: [], bench: [], other: teamSquads[teamId] ?? [] };
+        }
+
+        const formatP = (l: { playerId: string; playerName: string; jerseyNumber?: number }) => ({
+            id: l.playerId,
+            name: l.playerName,
+            number: l.jerseyNumber || 0
+        });
+
+        if (draftAction?.type === 'SUBSTITUTION') {
+            const teamSubs = events.filter(e => e.eventType === 'SUBSTITUTION' && e.teamId === teamId);
+            const timeline = computeSubstitutionTimeline(currentLineup, teamSubs);
+
+            if (subStep === 'OUT') {
+                // Players on the field now
+                const onFieldPlayers = timeline
+                    .filter(p => p.onFieldAtEnd)
+                    .map(formatP)
+                    .sort((a, b) => (a.number || 999) - (b.number || 999));
+                return { starters: onFieldPlayers, bench: [], other: [] };
+            } else {
+                // Players not on the field now (bench and previously replaced players)
+                const offFieldPlayers = timeline
+                    .filter(p => !p.onFieldAtEnd)
+                    .map(formatP)
+                    .sort((a, b) => (a.number || 999) - (b.number || 999));
+                return { starters: [], bench: offFieldPlayers, other: [] };
+            }
+        }
+
+        return getPlayersForTeam(teamId);
+    };
 
     const getPlayersForTeam = (teamId?: string) => {
         if (!teamId || !selectedMatch) return { starters: [], bench: [], other: [] };
@@ -656,13 +663,17 @@ export const MatchDetail = () => {
         });
 
         if (currentLineup && currentLineup.length > 0) {
-            const starters = currentLineup
-                .filter(l => l.role === 'STARTER' || l.isStarter)
+            // The saved lineup is the team sheet; who is on the field now comes from the substitutions
+            const teamSubs = events.filter(e => e.eventType === 'SUBSTITUTION' && e.teamId === teamId);
+            const timeline = computeSubstitutionTimeline(currentLineup, teamSubs);
+
+            const starters = timeline
+                .filter(p => p.onFieldAtEnd)
                 .map(formatP)
                 .sort((a, b) => (a.number || 999) - (b.number || 999));
 
-            const bench = currentLineup
-                .filter(l => l.role === 'BENCH')
+            const bench = timeline
+                .filter(p => !p.onFieldAtEnd && (p.role === 'BENCH' || p.played))
                 .map(formatP)
                 .sort((a, b) => (a.number || 999) - (b.number || 999));
 
@@ -1233,6 +1244,7 @@ export const MatchDetail = () => {
                                     matchId={selectedMatch.id}
                                     teamId={selectedMatch.homeTeamId}
                                     homeTeamId={selectedMatch.homeTeamId}
+                                    matchStatus={selectedMatch.status}
                                     isLocked={!isAdmin}
                                     maxStarters={selectedMatch.startersCount || 15}
                                     maxBench={selectedMatch.maxBenchCount || 10}
@@ -1248,6 +1260,7 @@ export const MatchDetail = () => {
                                     matchId={selectedMatch.id}
                                     teamId={selectedMatch.awayTeamId}
                                     homeTeamId={selectedMatch.homeTeamId} // Always pass home team ID to identifying logic
+                                    matchStatus={selectedMatch.status}
                                     isLocked={!isAdmin}
                                     maxStarters={selectedMatch.startersCount || 15}
                                     maxBench={selectedMatch.maxBenchCount || 10}

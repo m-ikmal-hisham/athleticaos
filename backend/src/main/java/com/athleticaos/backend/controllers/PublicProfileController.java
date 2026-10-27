@@ -45,6 +45,7 @@ public class PublicProfileController {
     private final com.athleticaos.backend.repositories.TournamentPlayerRepository tournamentPlayerRepository;
     private final com.athleticaos.backend.repositories.TeamRepository teamRepository;
     private final com.athleticaos.backend.repositories.PlayerRepository playerRepository;
+    private final com.athleticaos.backend.repositories.OrganisationRepository organisationRepository;
 
     private static final int DEFAULT_PAGE_SIZE = 24;
     private static final int MAX_PAGE_SIZE = 100;
@@ -433,7 +434,18 @@ public class PublicProfileController {
                     .status(t.getStatus() != null ? t.getStatus().name() : null)
                     .build())
                 .collect(Collectors.toList());
-                
+
+            PublicOrganisationRef orgRef = null;
+            List<PublicOrganisationRef> affiliation = List.of();
+            if (team.getOrganisationId() != null) {
+                var orgOpt = organisationRepository.findByIdWithParentOrg(team.getOrganisationId());
+                if (orgOpt.isPresent() && PublicOrganisationController.isOrganisationPublic(orgOpt.get())) {
+                    orgRef = PublicOrganisationController.toRef(orgOpt.get());
+                    affiliation = PublicOrganisationController.buildParentChain(orgOpt.get(),
+                            PublicOrganisationController.loadPublicOrgsById(organisationRepository));
+                }
+            }
+
             PublicTeamDetailResponse response = PublicTeamDetailResponse.builder()
                     .id(team.getId())
                     .name(team.getName())
@@ -445,6 +457,8 @@ public class PublicProfileController {
                     .division(team.getDivision())
                     .state(team.getState())
                     .organisationName(team.getOrganisationName())
+                    .organisation(orgRef)
+                    .affiliation(affiliation)
                     .players(players)
                     .tournaments(tournamentsList)
                     .build();
@@ -648,6 +662,28 @@ public class PublicProfileController {
                 }
             }
 
+            PublicOrganisationRef playerOrgRef = null;
+            List<PublicOrganisationRef> playerAffiliation = List.of();
+            UUID resolvedOrgId = null;
+            if (currentTeamId != null) {
+                var teamOpt = teamRepository.findById(currentTeamId);
+                if (teamOpt.isPresent() && teamOpt.get().getOrganisation() != null) {
+                    resolvedOrgId = teamOpt.get().getOrganisation().getId();
+                }
+            }
+            if (resolvedOrgId == null && player.organisationId() != null) {
+                resolvedOrgId = player.organisationId();
+            }
+
+            if (resolvedOrgId != null) {
+                var orgOpt = organisationRepository.findByIdWithParentOrg(resolvedOrgId);
+                if (orgOpt.isPresent() && PublicOrganisationController.isOrganisationPublic(orgOpt.get())) {
+                    playerOrgRef = PublicOrganisationController.toRef(orgOpt.get());
+                    playerAffiliation = PublicOrganisationController.buildParentChain(orgOpt.get(),
+                            PublicOrganisationController.loadPublicOrgsById(organisationRepository));
+                }
+            }
+
             PublicPlayerDetailResponse response = PublicPlayerDetailResponse.builder()
                     .id(player.id())
                     .firstName(player.firstName())
@@ -662,6 +698,8 @@ public class PublicProfileController {
                     .position2(position2)
                     .jerseyNumber(jerseyNumber)
                     .organisationName(organisationName)
+                    .organisation(playerOrgRef)
+                    .affiliation(playerAffiliation)
                     .profilePictureUrl(com.athleticaos.backend.utils.URLUtils.makeAbsolute(player.photoUrl()))
                     .currentTeamName(currentTeamName)
                     .currentTeamId(currentTeamId)

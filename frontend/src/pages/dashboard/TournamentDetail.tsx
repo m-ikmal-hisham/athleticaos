@@ -444,22 +444,31 @@ export default function TournamentDetail() {
                     <TournamentMatches tournamentId={tournament.id} tournamentSlug={tournament.slug} canManage={canManageTournament} />
                 )}
 
-                {activeTab === 'standings' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-end">
-                            <div className="w-64">
-                                <SearchableSelect
-                                    options={[{ value: '', label: 'All Categories' }, ...(tournament?.categories?.map(c => ({ value: c.id, label: c.name })) || [])]}
-                                    value={selectedCategoryId || ''}
-                                    onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
-                                    placeholder="Filter by Category"
-                                    className="bg-white dark:bg-slate-800"
-                                />
+                {activeTab === 'standings' && (() => {
+                    const filteredStandings = standings.filter(s => !selectedCategoryId || s.categoryId === selectedCategoryId);
+                    const unrecordedCodes = Array.from(new Set(filteredStandings.flatMap(s => s.unrecordedBonusMatchCodes || [])));
+                    return (
+                        <div className="space-y-6">
+                            <div className="flex justify-end">
+                                <div className="w-64">
+                                    <SearchableSelect
+                                        options={[{ value: '', label: 'All Categories' }, ...(tournament?.categories?.map(c => ({ value: c.id, label: c.name })) || [])]}
+                                        value={selectedCategoryId || ''}
+                                        onChange={(val) => setSelectedCategoryId(val ? String(val) : null)}
+                                        placeholder="Filter by Category"
+                                        className="bg-white dark:bg-slate-800"
+                                    />
+                                </div>
                             </div>
+                            {unrecordedCodes.length > 0 && (
+                                <div className="p-3 text-xs rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200">
+                                    Try bonus can't be worked out for {unrecordedCodes.length} {unrecordedCodes.length === 1 ? 'match' : 'matches'} entered as a score only ({unrecordedCodes.join(', ')}).
+                                </div>
+                            )}
+                            <StandingsTable standings={filteredStandings} />
                         </div>
-                        <StandingsTable standings={standings.filter(s => !selectedCategoryId || s.categoryId === selectedCategoryId)} />
-                    </div>
-                )}
+                    );
+                })()}
 
                 {activeTab === 'bracket' && bracket && (
                     <div className="space-y-6">

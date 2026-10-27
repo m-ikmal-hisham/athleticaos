@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { DotsThreeOutline, Globe, SignIn, SquaresFour } from '@phosphor-icons/react';
+import { DotsThreeOutline, Globe, Moon, SignIn, SquaresFour, Sun } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
 import { changeLanguage } from '@/i18n';
@@ -12,6 +12,7 @@ import {
     isMoreActive,
 } from '@/config/navigation';
 import { BottomSheet } from './BottomSheet';
+import { usePublicThemeToggle } from '@/hooks/usePublicThemeToggle';
 import { GlassTabBar, GlassTabBarItem } from '@/components/navigation/GlassTabBar';
 import { PublicNowAccessory, useIsPublicAccessoryLive } from './PublicNowAccessory';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
@@ -36,6 +37,8 @@ export function PublicTabBar() {
     const { liveTournaments } = useSpotlightTournament({ isAdmin: false });
 
     const currentLang = i18n.language && i18n.language.startsWith('ms') ? 'ms' : 'en';
+    const { effectiveTheme, toggleTheme } = usePublicThemeToggle();
+    const ThemeIcon = effectiveTheme === 'dark' ? Moon : Sun;
 
     // "24–25 Oct" (or "24 Oct – 5 Dec") in the page language, for the live list
     const dateRange = (start?: string, end?: string) => {
@@ -196,6 +199,24 @@ export function PublicTabBar() {
                             </span>
                             <span className="text-xs font-semibold px-2 py-1 rounded-md bg-surface-sunken border border-line-subtle text-content-secondary">
                                 {currentLang === 'ms' ? 'BM' : 'EN'}
+                            </span>
+                        </button>
+                    </li>
+
+                    {/* Theme row: shows current, toggles light/dark */}
+                    <li>
+                        <button
+                            type="button"
+                            onClick={toggleTheme}
+                            className={clsx(sheetRow, 'text-content-primary hover:bg-surface-sunken justify-between')}
+                            aria-label={effectiveTheme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
+                        >
+                            <span className="flex items-center gap-3">
+                                <ThemeIcon size={20} weight="duotone" aria-hidden="true" />
+                                <span>{t('theme.label')}</span>
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-1 rounded-md bg-surface-sunken border border-line-subtle text-content-secondary">
+                                {effectiveTheme === 'dark' ? t('theme.dark') : t('theme.light')}
                             </span>
                         </button>
                     </li>

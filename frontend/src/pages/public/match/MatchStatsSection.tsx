@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, PublicTeamStats } from '../../../api/public.api';
@@ -8,6 +9,7 @@ interface MatchStatsSectionProps {
 }
 
 export const MatchStatsSection = ({ match }: MatchStatsSectionProps) => {
+    const { t } = useTranslation(['match', 'tournament', 'common']);
     const [expanded, setExpanded] = useState(false);
 
     if (!match.homeStats && !match.awayStats) return null;
@@ -47,21 +49,21 @@ export const MatchStatsSection = ({ match }: MatchStatsSectionProps) => {
     return (
         <GlassCard className="p-6 md:p-8">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                Match Statistics
+                {t('match:stats.title')}
             </h3>
 
             <div className="space-y-6">
                 {/* Tier 1 - Primary Stats */}
                 <div className="space-y-6">
-                    {renderStatBar('Tries', 'tries')}
-                    {renderStatBar('Penalties', 'penalties')}
-                    {renderStatBar('Yellow Cards', 'yellowCards')}
+                    {renderStatBar(t('tournament:stats.tries'), 'tries')}
+                    {renderStatBar(t('tournament:stats.penalties'), 'penalties')}
+                    {renderStatBar(t('tournament:stats.yellowCards'), 'yellowCards')}
                 </div>
 
                 {/* Tier 2 - Secondary Stats (Collapsible) */}
                 <div className={`space-y-6 overflow-hidden transition-all duration-500 ${expanded ? 'max-h-[500px] opacity-100 pt-4 border-t border-slate-200/50 dark:border-white/5' : 'max-h-0 opacity-0'}`}>
-                    {renderStatBar('Conversions', 'conversions')}
-                    {renderStatBar('Red Cards', 'redCards')}
+                    {renderStatBar(t('tournament:stats.conversions'), 'conversions')}
+                    {renderStatBar(t('tournament:stats.redCards'), 'redCards')}
                 </div>
             </div>
 
@@ -73,11 +75,11 @@ export const MatchStatsSection = ({ match }: MatchStatsSectionProps) => {
                 >
                     {expanded ? (
                         <>
-                            Show Less <CaretUp className="w-4 h-4" />
+                            {t('tournament:stats.showLess')} <CaretUp className="w-4 h-4" />
                         </>
                     ) : (
                         <>
-                            Show More Stats <CaretDown className="w-4 h-4" />
+                            {t('match:stats.showMore')} <CaretDown className="w-4 h-4" />
                         </>
                     )}
                 </button>

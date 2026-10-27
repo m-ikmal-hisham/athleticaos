@@ -9,7 +9,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.athleticaos.backend.utils.SlugGenerator;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Configuration
 @RequiredArgsConstructor
@@ -29,10 +34,12 @@ public class OrganisationSeedConfig {
             }
 
             log.info("Seeding Malaysia hierarchy...");
+            Set<String> usedSlugs = new HashSet<>();
 
             // Country
             Organisation malaysia = Organisation.builder()
                     .name("Malaysia")
+                    .slug(generateUniqueSlug("Malaysia", null, usedSlugs))
                     .orgType("UNION")
                     .orgLevel(OrganisationLevel.COUNTRY)
                     .status("Active")
@@ -48,6 +55,7 @@ public class OrganisationSeedConfig {
             for (String stateName : states) {
                 Organisation state = Organisation.builder()
                         .name(stateName)
+                        .slug(generateUniqueSlug(stateName, null, usedSlugs))
                         .orgType("STATE_UNION")
                         .orgLevel(OrganisationLevel.STATE)
                         .parentOrg(malaysia)
@@ -66,6 +74,7 @@ public class OrganisationSeedConfig {
                 // Division
                 Organisation mukahDiv = Organisation.builder()
                         .name("Mukah Division")
+                        .slug(generateUniqueSlug("Mukah Division", null, usedSlugs))
                         .orgType("DIVISION")
                         .orgLevel(OrganisationLevel.DIVISION)
                         .parentOrg(sarawak)
@@ -76,6 +85,7 @@ public class OrganisationSeedConfig {
                 // District
                 Organisation mukahDist = Organisation.builder()
                         .name("Mukah District")
+                        .slug(generateUniqueSlug("Mukah District", null, usedSlugs))
                         .orgType("DISTRICT")
                         .orgLevel(OrganisationLevel.DISTRICT)
                         .parentOrg(mukahDiv)
@@ -86,6 +96,7 @@ public class OrganisationSeedConfig {
                 // Club
                 Organisation club = Organisation.builder()
                         .name("Mukah Rugby Club")
+                        .slug(generateUniqueSlug("Mukah Rugby Club", null, usedSlugs))
                         .orgType("CLUB")
                         .orgLevel(OrganisationLevel.CLUB)
                         .parentOrg(mukahDist)
@@ -96,6 +107,7 @@ public class OrganisationSeedConfig {
                 // School
                 Organisation school = Organisation.builder()
                         .name("SMK Mukah Rugby")
+                        .slug(generateUniqueSlug("SMK Mukah Rugby", null, usedSlugs))
                         .orgType("SCHOOL")
                         .orgLevel(OrganisationLevel.SCHOOL)
                         .parentOrg(mukahDist)
@@ -104,6 +116,33 @@ public class OrganisationSeedConfig {
                 organisationRepository.save(school);
             }
         };
+    }
+
+    String generateUniqueSlug(String name, UUID id, Set<String> usedSlugs) {
+        String baseSlug = "";
+        try {
+            if (name != null && !name.trim().isEmpty()) {
+                baseSlug = SlugGenerator.generateSlug(name);
+            }
+        } catch (IllegalArgumentException ignored) {
+            baseSlug = "";
+        }
+
+        if (baseSlug.isEmpty()) {
+            if (id != null) {
+                baseSlug = "org-" + id.toString().substring(0, Math.min(8, id.toString().length()));
+            } else {
+                baseSlug = "org";
+            }
+        }
+
+        String slug = baseSlug;
+        int counter = 1;
+        while (usedSlugs.contains(slug) || organisationRepository.findBySlug(slug).isPresent()) {
+            slug = baseSlug + "-" + counter++;
+        }
+        usedSlugs.add(slug);
+        return slug;
     }
 
     private String getCodeForState(String name) {

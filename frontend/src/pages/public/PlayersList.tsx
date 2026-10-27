@@ -1,8 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { User, Shield, Trophy, MapPin, MagnifyingGlass, X, WarningCircle } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/GlassCard';
+import { ListRow } from '@/components/public/ListRow';
+import { FilterSheetButton } from '@/components/public/FilterSheetButton';
 import { Select } from '@/components/Select';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
@@ -12,7 +15,7 @@ function PlayerCardSkeleton({ className }: { className?: string }) {
     return (
         <div
             className={clsx(
-                'h-64 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 p-5 flex flex-col justify-between space-y-4 animate-pulse',
+                'h-64 rounded-[14px] glass-card-surface p-5 flex flex-col justify-between space-y-4 animate-pulse',
                 className
             )}
         >
@@ -35,6 +38,7 @@ function PlayerCardSkeleton({ className }: { className?: string }) {
 }
 
 export default function PlayersList() {
+    const { t } = useTranslation(['players', 'common']);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const urlSearch = searchParams.get('search') || '';
@@ -77,7 +81,7 @@ export default function PlayersList() {
 
     const positionOptions = useMemo(() => {
         const availablePositions = filtersData?.positions ?? [];
-        const list = [{ value: 'all', label: 'All Positions' }];
+        const list = [{ value: 'all', label: t('players:list.positionFilter', { defaultValue: 'All Positions' }) }];
         const set = new Set(availablePositions);
         if (urlPosition && urlPosition !== 'all' && !set.has(urlPosition)) {
             list.push({ value: urlPosition, label: urlPosition });
@@ -86,11 +90,11 @@ export default function PlayersList() {
             list.push({ value: pos, label: pos });
         });
         return list;
-    }, [filtersData?.positions, urlPosition]);
+    }, [filtersData?.positions, urlPosition, t]);
 
     const stateOptions = useMemo(() => {
         const availableStates = filtersData?.states ?? [];
-        const list = [{ value: 'all', label: 'All States' }];
+        const list = [{ value: 'all', label: t('players:list.stateFilter', { defaultValue: 'All States' }) }];
         const set = new Set(availableStates);
         if (urlState && urlState !== 'all' && !set.has(urlState)) {
             list.push({ value: urlState, label: urlState });
@@ -99,7 +103,7 @@ export default function PlayersList() {
             list.push({ value: st, label: st });
         });
         return list;
-    }, [filtersData?.states, urlState]);
+    }, [filtersData?.states, urlState, t]);
 
     const queryParams = useMemo(
         () => ({
@@ -110,6 +114,50 @@ export default function PlayersList() {
         }),
         [urlSearch, urlPosition, urlState]
     );
+
+    // Mobile sheet draft filter state
+    const [draftPosition, setDraftPosition] = useState(urlPosition || 'all');
+    const [draftState, setDraftState] = useState(urlState || 'all');
+
+    useEffect(() => {
+        setDraftPosition(urlPosition || 'all');
+    }, [urlPosition]);
+
+    useEffect(() => {
+        setDraftState(urlState || 'all');
+    }, [urlState]);
+
+    const activeFilterCount =
+        (urlPosition && urlPosition !== 'all' ? 1 : 0) +
+        (urlState && urlState !== 'all' ? 1 : 0);
+
+    const applyDraftFilters = () => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (draftPosition && draftPosition !== 'all') {
+                next.set('position', draftPosition);
+            } else {
+                next.delete('position');
+            }
+            if (draftState && draftState !== 'all') {
+                next.set('state', draftState);
+            } else {
+                next.delete('state');
+            }
+            return next;
+        });
+    };
+
+    const clearDraftFilters = () => {
+        setDraftPosition('all');
+        setDraftState('all');
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('position');
+            next.delete('state');
+            return next;
+        });
+    };
 
     const {
         data,
@@ -187,53 +235,85 @@ export default function PlayersList() {
             {/* Header */}
             <div className="space-y-2">
                 <h1 className="font-score text-3xl font-bold text-slate-900 dark:text-white">
-                    Players Directory
+                    {t('players:list.title', { defaultValue: 'Players Directory' })}
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                    Discover rugby players, squad members, and athlete profiles
+                    {t('players:list.subtitle', { defaultValue: 'Discover rugby players, squad members, and athlete profiles' })}
                 </p>
             </div>
 
             {/* Search & Filters */}
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
                 {/* Search Input */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60 pointer-events-none" />
                     <input
                         type="text"
-                        placeholder="Search players by name, team, or position..."
+                        placeholder={t('players:list.searchPlaceholder', { defaultValue: 'Search players by name, team, or position...' })}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400 text-sm"
+                        className="w-full min-h-[44px] pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint text-slate-900 dark:text-white placeholder-slate-400 text-sm"
                     />
                     {searchInput && (
                         <button
                             type="button"
-                            aria-label="Clear search"
+                            aria-label={t('players:list.clearSearch', { defaultValue: 'Clear search' })}
                             onClick={handleClearSearch}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
 
-                {/* Position Dropdown */}
-                <div className="relative w-full md:w-48">
+                {/* Mobile Filter Sheet Button (< md) */}
+                <div className="md:hidden shrink-0">
+                    <FilterSheetButton
+                        activeCount={activeFilterCount}
+                        onApply={applyDraftFilters}
+                        onClear={clearDraftFilters}
+                    >
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-1.5 uppercase tracking-wider">
+                                    {t('common:filter.position')}
+                                </label>
+                                <Select
+                                    value={draftPosition}
+                                    onChange={(val) => setDraftPosition(String(val))}
+                                    options={positionOptions}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-1.5 uppercase tracking-wider">
+                                    {t('common:filter.state')}
+                                </label>
+                                <Select
+                                    value={draftState}
+                                    onChange={(val) => setDraftState(String(val))}
+                                    options={stateOptions}
+                                />
+                            </div>
+                        </div>
+                    </FilterSheetButton>
+                </div>
+
+                {/* Position Dropdown (>= md) */}
+                <div className="hidden md:block relative w-48">
                     <Select
                         value={urlPosition || 'all'}
                         onChange={(val) => handlePositionChange(String(val))}
-                        aria-label="Filter by position"
+                        aria-label={t('players:list.positionFilter', { defaultValue: 'Filter by position' })}
                         options={positionOptions}
                     />
                 </div>
 
-                {/* State Dropdown */}
-                <div className="relative w-full md:w-44">
+                {/* State Dropdown (>= md) */}
+                <div className="hidden md:block relative w-44">
                     <Select
                         value={urlState || 'all'}
                         onChange={(val) => handleStateChange(String(val))}
-                        aria-label="Filter by state"
+                        aria-label={t('players:list.stateFilter', { defaultValue: 'Filter by state' })}
                         options={stateOptions}
                     />
                 </div>
@@ -242,16 +322,20 @@ export default function PlayersList() {
             {/* Results Count & Subtle Updating Indicator */}
             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-h-[24px]">
                 {isLoading ? (
-                    <span>Loading players…</span>
+                    <span>{t('players:list.loading', { defaultValue: 'Loading players…' })}</span>
                 ) : (
                     <span>
-                        Showing {allPlayers.length.toLocaleString()} of {totalPlayers.toLocaleString()} players
+                        {t('players:list.showingCount', {
+                            shown: allPlayers.length.toLocaleString(),
+                            total: totalPlayers.toLocaleString(),
+                            defaultValue: `Showing ${allPlayers.length.toLocaleString()} of ${totalPlayers.toLocaleString()} players`,
+                        })}
                     </span>
                 )}
                 {isFetching && !isLoading && (
                     <span className="inline-flex items-center gap-1.5 text-xs text-navy dark:text-navy-tint font-medium animate-pulse ml-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-navy dark:bg-navy-tint animate-ping" />
-                        Updating…
+                        {t('players:list.updating', { defaultValue: 'Updating…' })}
                     </span>
                 )}
             </div>
@@ -259,7 +343,18 @@ export default function PlayersList() {
             {/* Content Area: Skeletons / Error / Empty / Grid */}
             {isLoading ? (
                 <div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {/* Phone Skeletons (< md) */}
+                    <div className="md:hidden space-y-2">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="min-h-[52px] h-[52px] rounded-xl bg-slate-200/60 dark:bg-slate-800/60 animate-pulse"
+                            />
+                        ))}
+                    </div>
+
+                    {/* Tablet/Desktop Skeletons (>= md) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {Array.from({ length: 12 }).map((_, i) => (
                             <PlayerCardSkeleton
                                 key={i}
@@ -269,36 +364,58 @@ export default function PlayersList() {
                     </div>
                     {showSlowLoading && (
                         <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6 animate-pulse">
-                            Still loading…
+                            {t('players:list.stillLoading', { defaultValue: 'Still loading…' })}
                         </p>
                     )}
                 </div>
             ) : isError ? (
                 <EmptyState
                     icon={WarningCircle}
-                    title="Couldn't load players"
-                    description="Check your connection and try again."
-                    actionLabel="Try again"
+                    title={t('players:list.errorTitle', { defaultValue: "Couldn't load players" })}
+                    description={t('players:list.errorDesc', { defaultValue: 'Check your connection and try again.' })}
+                    actionLabel={t('players:list.tryAgain', { defaultValue: 'Try again' })}
                     onAction={() => refetch()}
                 />
             ) : allPlayers.length === 0 ? (
                 <EmptyState
                     icon={User}
-                    title="No players match your search."
-                    description="Try adjusting your search query or filters"
-                    actionLabel="Clear filters"
+                    title={t('players:list.empty', { defaultValue: 'No players match your search.' })}
+                    description={t('players:list.emptyHint', { defaultValue: 'Try adjusting your search query or filters' })}
+                    actionLabel={t('players:list.clearFilters', { defaultValue: 'Clear filters' })}
                     onAction={clearFilters}
                 />
             ) : (
                 <div className="space-y-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {/* Phone List (< md) */}
+                    <div className="md:hidden space-y-2">
+                        {allPlayers.map((player) => {
+                            const metaParts = [
+                                player.position,
+                                player.currentTeamName || player.organisationName,
+                            ].filter(Boolean);
+
+                            return (
+                                <ListRow
+                                    key={player.id}
+                                    to={`/players/${player.slug || player.id}`}
+                                    title={`${player.firstName} ${player.lastName}`}
+                                    logoUrl={player.profilePictureUrl}
+                                    initials={`${player.firstName.charAt(0)}${player.lastName.charAt(0)}`}
+                                    meta={metaParts.join(' · ')}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Tablet & Desktop Grid (>= md: 2-col on 768-1023, 4-col on >= 1024) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {allPlayers.map((player) => (
                             <Link
                                 key={player.id}
                                 to={`/players/${player.slug || player.id}`}
                                 className="block group"
                             >
-                                <GlassCard className="h-full relative overflow-hidden hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10 p-5 flex flex-col justify-between space-y-4">
+                                <GlassCard surface="glass" hover className="h-full relative overflow-hidden p-5 flex flex-col justify-between space-y-4">
                                     <div className="space-y-3.5">
                                         {/* Avatar & Jersey Number */}
                                         <div className="flex items-center justify-between">
@@ -331,7 +448,7 @@ export default function PlayersList() {
                                                 )}
                                             </div>
 
-                                            {/* Position Badge */}
+                                            {/* Position Badge - omitted completely if player has no position */}
                                             {player.position && (
                                                 <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
                                                     {player.position}
@@ -355,7 +472,7 @@ export default function PlayersList() {
                                                 </div>
                                             ) : (
                                                 <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                                                    Independent Player
+                                                    {t('players:list.independent', { defaultValue: 'Independent Player' })}
                                                 </div>
                                             )}
                                         </div>
@@ -367,8 +484,10 @@ export default function PlayersList() {
                                             <div className="flex items-center gap-1">
                                                 <Trophy className="w-4 h-4" />
                                                 <span>
-                                                    {player.tournamentCount}{' '}
-                                                    {player.tournamentCount === 1 ? 'Tournament' : 'Tournaments'}
+                                                    {t('players:list.tournamentCount', {
+                                                        count: player.tournamentCount,
+                                                        defaultValue: `${player.tournamentCount} ${player.tournamentCount === 1 ? 'Tournament' : 'Tournaments'}`,
+                                                    })}
                                                 </span>
                                             </div>
                                         ) : (
@@ -394,7 +513,7 @@ export default function PlayersList() {
                                 onClick={() => fetchNextPage()}
                                 isLoading={isFetchingNextPage}
                             >
-                                Show more
+                                {t('players:list.showMore', { defaultValue: 'Show more' })}
                             </Button>
                         </div>
                     )}

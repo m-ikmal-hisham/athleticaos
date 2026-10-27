@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -20,4 +21,18 @@ public class MatchLineupEntryDTO {
     private com.athleticaos.backend.enums.LineupRole role;
     private Integer orderIndex;
     private String positionDisplay;
+    private boolean played;
+    private List<MatchLineupSubstitutionDTO> substitutions;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MatchLineupSubstitutionDTO {
+        private Integer minute;
+        private String direction; // "OFF" | "ON"
+        private UUID otherPlayerId;
+        private String otherPlayerName;
+        private Integer otherJerseyNumber;
+    }
 }

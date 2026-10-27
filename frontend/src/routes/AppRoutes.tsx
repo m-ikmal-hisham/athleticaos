@@ -20,6 +20,8 @@ const TournamentsList = lazy(() => import('@/pages/public/TournamentsList'));
 const TournamentDetail = lazy(() => import('@/pages/public/TournamentDetail'));
 const TeamsList = lazy(() => import('@/pages/public/TeamsList'));
 const PlayersList = lazy(() => import('@/pages/public/PlayersList'));
+const PublicOrganisations = lazyNamed(() => import('@/pages/public/Organisations'), 'Organisations');
+const PublicOrganisationDetail = lazyNamed(() => import('@/pages/public/OrganisationDetail'), 'OrganisationDetail');
 const MatchCenter = lazy(() => import('@/pages/public/MatchCenter'));
 const Contact = lazy(() => import('@/pages/public/Contact'));
 const HowItWorks = lazy(() => import('@/pages/public/HowItWorks'));
@@ -172,6 +174,14 @@ export const router = createBrowserRouter([
             {
                 path: '/players/:id',
                 element: <PublicPlayerProfile />,
+            },
+            {
+                path: '/organisations',
+                element: <PublicOrganisations />,
+            },
+            {
+                path: '/organisations/:slug',
+                element: <PublicOrganisationDetail />,
             },
             {
                 path: '/privacy',

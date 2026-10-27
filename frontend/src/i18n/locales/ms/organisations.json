@@ -1,0 +1,91 @@
+{
+  "title": "Organisasi",
+  "subtitle": "Terokai badan pentadbir, kesatuan, kelab dan sekolah ragbi Malaysia",
+  "searchPlaceholder": "Cari organisasi dan pasukan...",
+  "expandAll": "Kembangkan semua",
+  "collapseAll": "Runtuhkan semua",
+  "showingCounts": "Menunjukkan {{orgCount}} organisasi dan {{teamCount}} pasukan",
+  "noResults": "Tiada organisasi dijumpai",
+  "noResultsDesc": "Cuba laraskan carian atau penapis anda.",
+  "clearFilters": "Kosongkan penapis",
+  "errorTitle": "Gagal memuatkan organisasi",
+  "retry": "Cuba lagi",
+  "levelFilter": {
+    "label": "Jenis organisasi",
+    "all": "Semua",
+    "state": "Kesatuan negeri",
+    "club": "Kelab",
+    "school": "Sekolah"
+  },
+  "howOrganised": {
+    "title": "Struktur organisasi ragbi",
+    "national": "Kesatuan kebangsaan (Kesatuan Ragbi Malaysia)",
+    "state": "Kesatuan & persatuan negeri",
+    "division": "Bahagian & daerah",
+    "clubSchool": "Kelab & sekolah",
+    "teams": "Pasukan & skuad",
+    "explainer": "Ragbi di Malaysia disusun secara berperingkat daripada badan induk kebangsaan sehingga kelab, sekolah, dan pasukan individu.",
+    "nationalDesc": "Badan induk kebangsaan",
+    "stateDesc": "Badan induk negeri",
+    "divisionDesc": "Bahagian dan zon",
+    "clubSchoolDesc": "Kelab dan institusi bergabung",
+    "teamsDesc": "Pasukan dan skuad berdaftar"
+  },
+  "detail": {
+    "affiliatedTo": "Gabungan kepada {{name}}",
+    "stats": {
+      "affiliatedOrgs": "Organisasi gabungan",
+      "teams": "Pasukan",
+      "players": "Pemain berdaftar",
+      "tournaments": "Kejohanan dianjurkan"
+    },
+    "sections": {
+      "affiliatedOrgs": "Organisasi gabungan",
+      "noAffiliatedOrgs": "Tiada organisasi gabungan",
+      "teams": "Pasukan",
+      "noTeams": "Tiada pasukan berdaftar",
+      "tournaments": "Kejohanan dianjurkan",
+      "noTournaments": "Belum ada kejohanan dianjurkan"
+    },
+    "transparencyNote": "Halaman awam hanya memaparkan nama, logo, warna, peringkat, negeri, gabungan, pasukan dan kejohanan.",
+    "notFoundTitle": "Organisasi tidak dijumpai",
+    "notFoundDesc": "Organisasi yang anda cari tidak wujud atau tidak dibuka untuk paparan umum.",
+    "backToOrganisations": "Kembali ke organisasi",
+    "viewTeam": "Lihat pasukan",
+    "roster": "Skuad",
+    "subAffiliations": "{{count}} sub-gabungan",
+    "directAffiliate": "Gabungan langsung",
+    "viewPage": "Lihat halaman"
+  },
+  "levels": {
+    "WORLD": "Dunia",
+    "CONTINENTAL": "Benua",
+    "REGIONAL": "Wilayah",
+    "COUNTRY": "Kebangsaan",
+    "STATE": "Kesatuan negeri",
+    "DIVISION": "Bahagian",
+    "DISTRICT": "Daerah",
+    "CLUB": "Kelab",
+    "SCHOOL": "Sekolah"
+  },
+  "pills": {
+    "team": "PASUKAN"
+  },
+  "tree": {
+    "expand": "Kembangkan {{name}}",
+    "collapse": "Runtuhkan {{name}}",
+    "teamsCount_one": "{{count}} pasukan",
+    "teamsCount_other": "{{count}} pasukan",
+    "divisionsCount_one": "{{count}} bahagian",
+    "divisionsCount_other": "{{count}} bahagian",
+    "clubsCount_one": "{{count}} kelab",
+    "clubsCount_other": "{{count}} kelab",
+    "playersCount": "{{count}} pemain",
+    "orgsCount_one": "{{count}} organisasi",
+    "orgsCount_other": "{{count}} organisasi"
+  },
+  "profileLink": {
+    "belongsTo": "Di bawah",
+    "affiliatedTo": "bergabung dengan"
+  }
+}

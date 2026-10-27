@@ -10,6 +10,15 @@
     "ballAria": "Bola ragbi menandakan pencapaian semasa: {{title}}",
     "milestoneAria": "{{setPiece}} · {{date}} · {{title}}"
   },
+  "status": {
+    "done": "Selesai",
+    "upcoming": "Akan datang",
+    "live": "LIVE"
+  },
+  "card": {
+    "readMore": "Baca lagi",
+    "showLess": "Tunjukkan kurang"
+  },
   "legend": {
     "title": "Set piece",
     "subtitle": "Bagaimana peristiwa ragbi menceritakan kisah pembangunan kami",
@@ -40,6 +49,22 @@
     "cta": "Daftarkan organisasi anda"
   },
   "howItWorks": {
+    "tag": "Panduan AthleticaOS",
+    "title": "Alami ragbi seperti tidak pernah sebelum ini",
+    "subtitle": "Ikuti kejohanan kegemaran anda, dapatkan skor langsung dan kekal terkini dengan statistik masa nyata.",
+    "step1Title": "1. Layari kejohanan",
+    "step1Desc": "Terokai kejohanan aktif dan akan datang di seluruh Malaysia. Cari jadual dan kedudukan pasukan anda.",
+    "step2Title": "2. Ikuti perlawanan secara langsung",
+    "step2Desc": "Saksikan aksi berlangsung dengan pusat perlawanan langsung kami. Skor masa nyata, ulasan dan statistik.",
+    "step3Title": "3. Kongsi keterujaan",
+    "step3Desc": "Kongsi keputusan perlawanan dan sorotan bersama rakan serta keluarga serta-merta di media sosial.",
+    "faqTitle": "Soalan lazim",
+    "faq1Q": "Adakah AthleticaOS percuma untuk digunakan?",
+    "faq1A": "Ya! AthleticaOS adalah percuma sepenuhnya untuk peminat melayari kejohanan, melihat skor dan mengikuti perlawanan.",
+    "faq2Q": "Bagaimanakah cara untuk mendaftar pasukan saya?",
+    "faq2A": "Pendaftaran pasukan diuruskan oleh penganjur kejohanan. Hubungi penganjur kejohanan berkaitan melalui halaman Hubungi untuk maklumat lanjut.",
+    "faq3Q": "Bolehkah saya menonton siaran ulangan perlawanan?",
+    "faq3A": "Penstriman langsung dan siaran ulangan tersedia untuk kejohanan terpilih. Cari lencana 'Langsung' pada kad perlawanan.",
     "journeyPrompt": "Ingin lihat bagaimana AthleticaOS dibina?",
     "journeyLink": "Ikuti perjalanan kami →"
   }

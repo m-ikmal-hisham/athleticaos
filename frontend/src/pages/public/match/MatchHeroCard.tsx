@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
     Clock,
     MapPin,
@@ -8,10 +9,12 @@ import {
 import { PublicMatchDetail, PublicMatchEvent } from '../../../api/public.api';
 import { ShareButton } from '@/components/common/ShareButton';
 import { WatchLiveLinks } from '@/components/public/WatchLiveLinks';
-import { getImageUrl } from '@/utils/image';
+import { LogoImage } from '@/components/public/LogoImage';
 import { formatOfficialRole } from '@/utils/rugbyPositions';
 import { formatEnum, formatTeamShortName } from '@/utils/formatters';
+import { formatCalendarDate, getDateLocale, formatKickOff } from '@/utils/malaysiaDate';
 import { matchText } from './typography';
+import { enumLabel } from '@/utils/enumLabel';
 
 interface MatchHeroCardProps {
     match: PublicMatchDetail;
@@ -20,6 +23,7 @@ interface MatchHeroCardProps {
 }
 
 export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroCardProps) => {
+    const { t, i18n } = useTranslation(['match', 'common']);
     const isLive = match.status === 'LIVE' || match.status === 'ONGOING';
     const isCompleted = match.status === 'COMPLETED' || match.status === 'FULL_TIME';
 
@@ -75,19 +79,21 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
     // withVenue: the phone footer already lists the venue on its own line, so it passes false.
     const formatMatchCode = (code?: string, withVenue = true) => {
         if (match.matchNumber) {
+            const matchStr = t('match:hero.match', { number: match.matchNumber });
             if (withVenue && match.hasMultipleVenues && match.venue?.trim()) {
-                return `Match ${match.matchNumber} · ${match.venue.trim()}`;
+                return `${matchStr} · ${match.venue.trim()}`;
             }
-            return `Match ${match.matchNumber}`;
+            return matchStr;
         }
         if (!code) return null;
         if (code.length < 10) return code;
         const matchNumber = code.match(/-M(\d+)$/);
         if (matchNumber) {
+            const matchStr = t('match:hero.match', { number: matchNumber[1] });
             if (withVenue && match.hasMultipleVenues && match.venue?.trim()) {
-                return `Match ${matchNumber[1]} · ${match.venue.trim()}`;
+                return `${matchStr} · ${match.venue.trim()}`;
             }
-            return `Match ${matchNumber[1]}`;
+            return matchStr;
         }
         return null;
     };
@@ -127,7 +133,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md flex items-center gap-1.5 md:gap-2 min-w-0">
                             <Trophy className="w-4 h-4 shrink-0" />
                             <span className={`${matchText.chip} text-slate-700 dark:text-slate-200 truncate`}>
-                                {tournamentName || 'Tournament Match'}
+                                {tournamentName || t('match:hero.tournamentMatch')}
                             </span>
                         </div>
 
@@ -136,8 +142,8 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                             <div className={`hidden md:flex min-w-0 px-3 py-1.5 rounded-full bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm ${matchText.chip} normal-case tracking-normal font-medium text-slate-500 dark:text-slate-400`}>
                                 <span className="truncate">
                                 {[
-                                    formatEnum(match.stage),
-                                    formatEnum(match.round),
+                                    match.stage ? enumLabel(t, 'stage', match.stage) : null,
+                                    match.round ? enumLabel(t, 'stage', match.round) : null,
                                     formatMatchCode(match.code)
                                 ].filter(Boolean).join(' • ')}
                                 </span>
@@ -150,18 +156,18 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         {isLive && (
                             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-crimson text-white text-xs font-bold uppercase tracking-wider whitespace-nowrap shadow-sm">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                LIVE
+                                {t('common:status.live')}
                             </div>
                         )}
                         {isCompleted && (
                             <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-slate-200 dark:border-white/10">
-                                FULL TIME
+                                {t('common:status.fullTime')}
                             </div>
                         )}
                         {!isLive && !isCompleted && (
                             <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint text-[11px] md:text-xs font-bold uppercase tracking-wide whitespace-nowrap border border-blue-500/20">
                                 <CalendarBlank className="w-4 h-4" />
-                                SCHEDULED
+                                {t('common:status.scheduled')}
                             </div>
                         )}
 
@@ -181,17 +187,12 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     <div className="flex flex-col items-center md:items-end text-center md:text-right space-y-1.5 md:space-y-2 group min-w-0">
                         {/* Logo: one element, sized per breakpoint */}
                         <div className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
-                            {match.homeTeamLogoUrl ? (
-                                <img
-                                    src={getImageUrl(match.homeTeamLogoUrl)}
-                                    alt={match.homeTeamName}
-                                    className="w-full h-full object-contain filter drop-shadow-lg"
-                                />
-                            ) : (
-                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-md flex items-center justify-center">
-                                    <span className="text-lg md:text-2xl font-bold text-slate-400">{match.homeTeamName.charAt(0)}</span>
-                                </div>
-                            )}
+                            <LogoImage
+                                src={match.homeTeamLogoUrl}
+                                name={match.homeTeamName}
+                                size="xl"
+                                className="w-full h-full object-contain filter drop-shadow-lg"
+                            />
                         </div>
 
                         <div className="w-full">
@@ -214,7 +215,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         </div>
                         <div className="flex flex-col items-center gap-0.5 md:gap-2">
                             <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
-                            <span className={`${matchText.caption} text-slate-400`}>VS</span>
+                            <span className={`${matchText.caption} text-slate-400`}>{t('match:card.versus')}</span>
                             <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
                         </div>
                         <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
@@ -226,17 +227,12 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-1.5 md:space-y-2 group min-w-0">
                         {/* Logo: one element, sized per breakpoint */}
                         <div className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-300">
-                            {match.awayTeamLogoUrl ? (
-                                <img
-                                    src={getImageUrl(match.awayTeamLogoUrl)}
-                                    alt={match.awayTeamName}
-                                    className="w-full h-full object-contain filter drop-shadow-lg"
-                                />
-                            ) : (
-                                <div className="w-full h-full rounded-2xl bg-white dark:bg-slate-800 shadow-md flex items-center justify-center">
-                                    <span className="text-lg md:text-2xl font-bold text-slate-400">{match.awayTeamName.charAt(0)}</span>
-                                </div>
-                            )}
+                            <LogoImage
+                                src={match.awayTeamLogoUrl}
+                                name={match.awayTeamName}
+                                size="xl"
+                                className="w-full h-full object-contain filter drop-shadow-lg"
+                            />
                         </div>
 
                         <div className="w-full">
@@ -271,7 +267,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         <div className="max-w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-1.5 px-4 py-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
                             {match.officials.map((official, idx) => {
                                 // Some officials only carry assignedRole (e.g. REFEREE); without it the chip read ": Name".
-                                const role = formatOfficialRole(official.officialRoleName || official.assignedRole);
+                                const role = formatOfficialRole(official.officialRoleName || official.assignedRole, t);
                                 return (
                                     <div key={idx} className="flex items-center gap-2 min-w-0">
                                         {role && <span className={`${matchText.caption} text-slate-400 shrink-0`}>{role}</span>}
@@ -286,7 +282,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 {/* Streams: the match's own link, or the tournament's when it has none */}
                 <WatchLiveLinks
                     links={match.livestreams}
-                    title={isCompleted ? 'Watch replay' : 'Watch live'}
+                    title={isCompleted ? t('match:hero.watchReplay') : t('match:hero.watchLive')}
                     className="justify-center"
                 />
 
@@ -296,16 +292,19 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                         {/* Stage and match number: in the top row on desktop, here on phones */}
                         {(match.stage || match.code) && (
                             <span className="md:hidden font-semibold text-slate-600 dark:text-slate-300">
-                                {[formatEnum(match.stage), formatMatchCode(match.code, false)].filter(Boolean).join(' • ')}
+                                {[
+                                    match.stage ? enumLabel(t, 'stage', match.stage) : null,
+                                    formatMatchCode(match.code, false)
+                                ].filter(Boolean).join(' • ')}
                             </span>
                         )}
                         <div className="flex items-center gap-1.5">
                             <CalendarBlank className="w-4 h-4 md:w-4 md:h-4 text-navy dark:text-navy-tint" />
-                            <span>{new Date(match.matchDate).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                            <span>{formatCalendarDate(match.matchDate, 'EEE, d MMM', { locale: getDateLocale(i18n.language) })}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 md:w-4 md:h-4 text-navy dark:text-navy-tint" />
-                            <span>{match.matchTime}</span>
+                            <span>{formatKickOff(match.matchTime, i18n.language)}</span>
                         </div>
                         {match.venue && (
                             <div className="flex items-center gap-2 min-w-0">
@@ -317,8 +316,8 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
                     {/* Share Action */}
                     <ShareButton
-                        title={`${match.homeTeamName} vs ${match.awayTeamName}`}
-                        text={`Follow the match ${match.homeTeamName} vs ${match.awayTeamName} on AthleticaOS!`}
+                        title={t('match:hero.shareTitle', { home: match.homeTeamName, away: match.awayTeamName })}
+                        text={t('match:hero.shareText', { home: match.homeTeamName, away: match.awayTeamName })}
                         url={window.location.href}
                         variant="ghost"
                         className="shrink-0 text-slate-500 hover:text-navy dark:hover:text-navy-tint dark:text-slate-400"
@@ -328,3 +327,4 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
         </div>
     );
 };
+
