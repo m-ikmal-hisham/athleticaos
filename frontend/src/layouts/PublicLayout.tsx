@@ -221,11 +221,20 @@ export default function PublicLayout() {
         ? 'calc(140px + max(12px, env(safe-area-inset-bottom, 0px)))'
         : 'calc(80px + max(12px, env(safe-area-inset-bottom, 0px)))';
 
+    // The phone top bar hides on scroll (< lg). Downstream sticky strips track this offset
+    // (bar height: 4rem + 1px top and bottom border + safe area).
+    const headerOffset = isHeaderHidden
+        ? '0px'
+        : 'calc(4rem + 2px + env(safe-area-inset-top, 0px))';
+
     return (
         <div
             data-animated-bg={isAnimatedBgOn ? 'on' : 'off'}
             className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[var(--public-bottom-chrome)] lg:pb-0"
-            style={{ '--public-bottom-chrome': bottomChrome } as React.CSSProperties}
+            style={{
+                '--public-bottom-chrome': bottomChrome,
+                '--public-header-offset': headerOffset,
+            } as React.CSSProperties}
         >
             {/* Global Background */}
             <AppBackground />
@@ -265,9 +274,9 @@ export default function PublicLayout() {
                         </Link>
 
                         {/* Desktop / large tablet (≥ lg) */}
-                        <div className="hidden lg:flex items-center gap-6 h-full">
+                        <div className="hidden lg:flex items-center gap-3 xl:gap-6 h-full">
                             <nav aria-label={t('nav.primaryNav')} className="h-full">
-                                <ul className="flex items-center gap-6 h-full">
+                                <ul className="flex items-center gap-4 xl:gap-6 h-full">
                                     {PUBLIC_DESKTOP_PRIMARY_NAV.map((item) => {
                                         const active = isNavItemActive(item, location.pathname);
                                         return (

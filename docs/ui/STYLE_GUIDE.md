@@ -270,6 +270,23 @@ Every admin page uses `PageHeader`. Max one primary button per page header.
 - Data fetching lives in `api/` + hooks, not inside page components, so screens can
   be re-skinned for a native shell without rewriting logic.
 
+### 5.4 Public page patterns
+
+| Pattern / Surface | Phone (<768px) | Tablet (768–1023px) | Desktop (≥1024px) |
+|---|---|---|---|
+| **Lists** | `ListRow` link rows (40px logo/initials, ≥44px target) | 2-column cards | 3-column (or 4-column) grid |
+| **Filters** | Search inline + `FilterSheetButton` ("Penapis (n)") | Inline filters | Inline filters |
+| **Standings** | Compact columns (Pos, Team, P, Pts) with tap for full row | Full table | Full table |
+| **Brackets** | Single-line stage header, "Knockout stage" subtitle | Full horizontal tree | Full horizontal tree |
+| **Detail tabs** | Sticky `ScrollableTabStrip` (≥44px, edge fades, active centered) | Sticky tab strip | Horizontal tab bar / sidebar nav |
+| **Dialogs** | `BottomSheet` (`max-h-[80dvh]`, portalled, rounded-t-[20px]) | Centered `Modal` or `BottomSheet` | Centered `Modal` |
+
+**Target-size & minimum text rules (Rule E):**
+- **Interactive targets:** All controls, buttons, toggles, filter buttons, search inputs, and popover actions ≥ 44×44px hit area.
+- **Inline links:** ≥ 24px hit area with adequate surrounding spacing.
+- **Minimum text size:** Public body and meta text must be at least 12px (`text-xs`). 11px is strictly reserved for bold uppercase badges and micro-labels inside calendar grid cells, bracket match cards, standings rows, and `MatchCard`.
+- **Sideways scrolling:** No horizontal viewport blowout down to 320px viewport width (decorative shapes clipped with `overflow-hidden`).
+
 ---
 
 ## 6. Components (the only allowed versions)

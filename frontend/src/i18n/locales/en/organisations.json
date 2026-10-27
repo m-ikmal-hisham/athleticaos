@@ -11,6 +11,7 @@
   "errorTitle": "Failed to load organisations",
   "retry": "Retry",
   "levelFilter": {
+    "label": "Type of organisation",
     "all": "All",
     "state": "State unions",
     "club": "Clubs",

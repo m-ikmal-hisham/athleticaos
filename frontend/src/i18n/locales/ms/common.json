@@ -81,9 +81,11 @@
     "viewAll": "Lihat semua",
     "search": "Cari",
     "filter": "Tapis",
+    "filterButton": "Penapis",
+    "filterWithCount": "Penapis ({{count}})",
     "clear": "Kosongkan",
     "clearFilters": "Kosongkan penapis",
-    "apply": "Gunakan",
+    "apply": "Guna",
     "dateTbd": "Tarikh akan ditentukan",
     "collapseAllDays": "Runtuhkan semua hari",
     "expandAllDays": "Kembangkan semua hari",
@@ -220,6 +222,9 @@
     "VETERANS": "Veteran"
   },
   "filter": {
-    "all": "Semua"
+    "all": "Semua",
+    "category": "Kategori",
+    "state": "Negeri",
+    "position": "Posisi"
   }
 }

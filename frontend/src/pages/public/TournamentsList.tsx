@@ -144,7 +144,7 @@ export default function TournamentsList() {
                         aria-selected={activeView === 'list'}
                         aria-controls="view-list-panel"
                         onClick={() => handleViewChange('list')}
-                        className={`min-h-[36px] px-3.5 rounded-[8px] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                        className={`min-h-[44px] px-3.5 rounded-[8px] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
                             activeView === 'list'
                                 ? 'bg-surface-card text-content-primary shadow-xs'
                                 : 'text-content-secondary hover:text-content-primary'
@@ -160,7 +160,7 @@ export default function TournamentsList() {
                         aria-selected={activeView === 'calendar'}
                         aria-controls="view-calendar-panel"
                         onClick={() => handleViewChange('calendar')}
-                        className={`min-h-[36px] px-3.5 rounded-[8px] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                        className={`min-h-[44px] px-3.5 rounded-[8px] text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
                             activeView === 'calendar'
                                 ? 'bg-surface-card text-content-primary shadow-xs'
                                 : 'text-content-secondary hover:text-content-primary'
@@ -185,13 +185,13 @@ export default function TournamentsList() {
                     <div className="flex flex-col md:flex-row gap-4">
                         {/* Search */}
                         <div className="flex-1 relative">
-                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60 pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder={t('tournament:list.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400"
+                                className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint text-slate-900 dark:text-white placeholder-slate-400 text-sm"
                             />
                         </div>
 

@@ -51,7 +51,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+                        <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full shrink-0">
                             <span>{t('tournament:bracket.stageBadge')}</span>
                         </div>
                     </div>
@@ -85,7 +85,7 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                     `}
                                                 >
                                                     {/* Match Code & Date Header */}
-                                                    <div className="flex justify-between items-center mb-2.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                    <div className="flex justify-between items-center mb-2.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                                         <span className="bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-md font-mono text-slate-700 dark:text-slate-300">
                                                             {match.code && match.code.length < 12 ? match.code : t('tournament:bracket.match')}
                                                         </span>
@@ -149,8 +149,8 @@ export function PublicTournamentBracket({ matches }: PublicTournamentBracketProp
                                                     {match.officials && match.officials.length > 0 && (
                                                         <div className="mt-2.5 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-wrap gap-1">
                                                             {match.officials.map((o, idx) => (
-                                                                <div key={idx} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 px-1.5 py-0.5 rounded">
-                                                                    <span className="font-semibold text-slate-400 uppercase text-[8px]">
+                                                                <div key={idx} className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 px-1.5 py-0.5 rounded">
+                                                                    <span className="font-semibold text-slate-400 uppercase text-[11px]">
                                                                         {formatOfficialRole(o.assignedRole, t)}:
                                                                     </span>
                                                                     <span className="truncate max-w-[100px] font-medium">{o.officialName}</span>

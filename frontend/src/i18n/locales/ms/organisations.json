@@ -11,6 +11,7 @@
   "errorTitle": "Gagal memuatkan organisasi",
   "retry": "Cuba lagi",
   "levelFilter": {
+    "label": "Jenis organisasi",
     "all": "Semua",
     "state": "Kesatuan negeri",
     "club": "Kelab",

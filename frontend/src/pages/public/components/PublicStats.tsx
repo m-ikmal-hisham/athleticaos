@@ -220,7 +220,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-skin-base truncate">{player.name}</div>
                                     <div className="text-xs text-skin-muted truncate">{player.teamName}</div>
-                                    <div className="flex gap-3 mt-1.5 text-[10px] uppercase font-medium text-skin-muted">
+                                    <div className="flex gap-3 mt-1.5 text-[11px] uppercase font-bold text-skin-muted">
                                         <span>{player.tries} T</span>
                                         <span className="text-green-500 dark:text-green-400">{player.conversions} C</span>
                                         <span className="text-orange-500 dark:text-orange-400">{player.penalties} P</span>
@@ -231,7 +231,7 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                                 </div>
                                 <div className="text-right">
                                     <div className="text-lg font-bold text-skin-base">{player.totalPoints}</div>
-                                    <div className="text-[10px] uppercase text-skin-muted font-medium">{t('stats.pts')}</div>
+                                    <div className="text-[11px] uppercase text-skin-muted font-bold">{t('stats.pts')}</div>
                                 </div>
                             </div>
                         )}
@@ -252,19 +252,19 @@ export const PublicStats: React.FC<PublicStatsProps> = ({ tournamentId, category
                         <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-4" aria-label={t('stats.disciplineSummary')}>
                             <div className="rounded-xl border border-yellow-300/50 dark:border-yellow-500/20 bg-yellow-50/70 dark:bg-yellow-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-yellow-700 dark:text-yellow-400">{totalYellowCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-yellow-700/70 dark:text-yellow-400/70">{t('stats.yellow')}</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-yellow-700/70 dark:text-yellow-400/70">{t('stats.yellow')}</div>
                             </div>
                             <div className="rounded-xl border border-amber-300/50 dark:border-amber-500/20 bg-amber-50/70 dark:bg-amber-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-amber-700 dark:text-amber-400">{totalDoubleYellowRedCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">{t('stats.doubleYellow')}</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-400/70">{t('stats.doubleYellow')}</div>
                             </div>
                             <div className="rounded-xl border border-red-300/50 dark:border-red-500/20 bg-red-50/70 dark:bg-red-500/10 p-3 text-center">
                                 <div className="text-xl font-black text-red-700 dark:text-red-400">{totalStraightRedCards}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-red-700/70 dark:text-red-400/70">{t('stats.straightRed')}</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-red-700/70 dark:text-red-400/70">{t('stats.straightRed')}</div>
                             </div>
                             <div className="rounded-xl border border-slate-200/70 dark:border-white/10 bg-white/40 dark:bg-white/5 p-3 text-center">
                                 <div className="text-xl font-black text-skin-base">{disciplinedPlayers}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-skin-muted">{t('stats.players')}</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-skin-muted">{t('stats.players')}</div>
                             </div>
                         </div>
 

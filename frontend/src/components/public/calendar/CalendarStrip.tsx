@@ -310,7 +310,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                                                 liveMatches > 0 ? 'bg-crimson animate-pulse' : 'bg-brand'
                                                             }`}
                                                         />
-                                                        <span className="text-[10px] font-bold font-mono text-content-secondary leading-none">
+                                                        <span className="text-[11px] font-bold font-mono text-content-secondary leading-none">
                                                             {totalMatches}
                                                         </span>
                                                     </div>
@@ -329,7 +329,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                                             e.stopPropagation();
                                                             setSelectedDayForPanel(day);
                                                         }}
-                                                        className="text-[10px] font-semibold text-brand hover:underline px-1 py-0.5 rounded hover:bg-brand/10 transition-colors"
+                                                        className="text-[11px] font-semibold text-brand hover:underline px-1 py-0.5 rounded hover:bg-brand/10 transition-colors"
                                                     >
                                                         {t('calendar:moreTournaments', { count: overflow })}
                                                     </button>
@@ -421,7 +421,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                             : 'bg-surface-sunken hover:bg-line-subtle text-content-primary'
                                     }`}
                                 >
-                                    <span className="text-[10px] font-semibold uppercase leading-none opacity-80">
+                                    <span className="text-[11px] font-bold uppercase leading-none opacity-80">
                                         {format(day.date, 'EEE', { locale })}
                                     </span>
                                     <span className="text-sm font-bold leading-none">
@@ -468,7 +468,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                     >
                                         <span className="truncate pr-2">{tr.name}</span>
                                         {tr.live && (
-                                            <span className="text-[10px] font-bold text-crimson uppercase flex items-center gap-1 shrink-0">
+                                            <span className="text-[11px] font-bold text-crimson uppercase flex items-center gap-1 shrink-0">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-crimson animate-pulse" />
                                                 {t('common:status.live')}
                                             </span>

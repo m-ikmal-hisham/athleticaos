@@ -254,14 +254,14 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                 {entry && (
                     <div className={`flex flex-wrap items-center gap-1 mt-0.5 ${alignEnd ? 'justify-end' : ''}`}>
                         <span className={`
-                            inline-flex items-center justify-center px-1.5 rounded text-[10px] font-bold leading-4 border
+                            inline-flex items-center justify-center px-1.5 rounded text-[11px] font-bold leading-4 border
                             ${hasNumber
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'}
                         `}>
                             #{hasNumber ? entry.jerseyNumber : '—'}
                         </span>
-                        <span className="text-[10px] md:text-[11px] text-slate-400 dark:text-slate-500 [overflow-wrap:anywhere]">
+                        <span className="text-xs text-slate-400 dark:text-slate-500 [overflow-wrap:anywhere]">
                             {entry.positionDisplay || getPositionName(entry.orderIndex, format)}
                         </span>
                     </div>
@@ -353,7 +353,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                 title={t('match:moments.replayTimeline')}
                                 className="w-full accent-navy h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
+                            <div className="flex justify-between text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
                                 <span>{t('match:moments.kickOff')}</span>
                                 {!isOneWay && fullTimeMinutes > 0 && <span>{t('match:moments.halfTime')} ({Math.floor(fullTimeMinutes / 2)}')</span>}
                                 <span>{t('match:moments.fullTime')} ({fullTimeMinutes}')</span>
@@ -423,7 +423,7 @@ export const MatchMoments = ({ match, fullTimeMinutes = 80, isOneWay = false }: 
                                         {formatEventType(event.eventType, t)}
                                     </span>
                                     {event.eventType === 'RED_CARD' && event.notes?.includes('Automatic red card') && (
-                                        <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold whitespace-nowrap">
+                                        <span className="text-[11px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 font-bold whitespace-nowrap">
                                             {t('match:moments.secondYellow')}
                                         </span>
                                     )}

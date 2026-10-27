@@ -73,7 +73,7 @@ export const ShareMatchCard = ({ match, tournamentName }: ShareMatchCardProps) =
                                 <span className="text-slate-300 dark:text-slate-600 text-xl">-</span>
                                 <span>{match.awayScore ?? 0}</span>
                             </div>
-                            <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-navy dark:text-navy-tint uppercase tracking-wide">
+                            <div className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 dark:bg-blue-900/30 text-navy dark:text-navy-tint uppercase tracking-wide">
                                 {match.status ? enumLabel(t, 'status', match.status) : t('common:status.fullTime')}
                             </div>
                         </div>

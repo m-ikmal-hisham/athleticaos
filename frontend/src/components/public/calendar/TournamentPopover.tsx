@@ -113,10 +113,10 @@ export function TournamentPopover({ tournament, onClose, anchorRect }: Tournamen
                 <button
                     type="button"
                     onClick={onClose}
-                    className="w-7 h-7 -mr-1 -mt-1 inline-flex items-center justify-center rounded-md text-content-tertiary hover:text-content-primary hover:bg-surface-sunken"
+                    className="min-w-[44px] min-h-[44px] -mr-2 -mt-2 inline-flex items-center justify-center rounded-md text-content-tertiary hover:text-content-primary hover:bg-surface-sunken"
                     aria-label={t('calendar:close')}
                 >
-                    <X size={16} />
+                    <X size={18} />
                 </button>
             </div>
 
@@ -128,11 +128,11 @@ export function TournamentPopover({ tournament, onClose, anchorRect }: Tournamen
                         {t('calendar:status.live')}
                     </span>
                 ) : tournament.completed ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-sunken text-content-secondary border border-line-subtle">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-sunken text-content-secondary border border-line-subtle">
                         {t('calendar:status.completed')}
                     </span>
                 ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-brand/10 text-brand dark:text-navy-tint border border-brand/20">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand/10 text-brand dark:text-navy-tint border border-brand/20">
                         {t('calendar:status.upcoming')}
                     </span>
                 )}
@@ -164,19 +164,19 @@ export function TournamentPopover({ tournament, onClose, anchorRect }: Tournamen
             <div className="flex items-center gap-2 pt-2 border-t border-line-subtle">
                 <Link
                     to={`/tournaments/${tournament.slug || tournament.id}`}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-brand text-white text-xs font-semibold hover:bg-brand-hover transition-colors"
+                    className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-brand text-white text-xs font-semibold hover:bg-brand-hover transition-colors"
                 >
-                    <ArrowSquareOut size={14} />
+                    <ArrowSquareOut size={16} />
                     <span>{t('calendar:openTournament')}</span>
                 </Link>
                 <button
                     type="button"
                     onClick={() => downloadTournamentIcs(tournament)}
-                    className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-surface-sunken text-content-primary hover:bg-line-subtle border border-line-subtle text-xs font-semibold transition-colors"
+                    className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-surface-sunken text-content-primary hover:bg-line-subtle border border-line-subtle text-xs font-semibold transition-colors"
                     title={t('calendar:addToCalendar')}
                     aria-label={t('calendar:addToCalendar')}
                 >
-                    <CalendarPlus size={14} />
+                    <CalendarPlus size={16} />
                     <span className="hidden sm:inline">{t('calendar:addToCalendar')}</span>
                 </button>
             </div>

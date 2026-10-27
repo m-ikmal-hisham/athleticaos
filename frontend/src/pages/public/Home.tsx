@@ -271,7 +271,7 @@ export default function Home() {
                                     <span>{t(`home:tabs.${tab}`, { defaultValue: tab.charAt(0).toUpperCase() + tab.slice(1) })}</span>
                                     {count !== undefined && count > 0 && (
                                         <span
-                                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                                            className={`text-[11px] font-bold font-mono px-1.5 py-0.5 rounded-full ${
                                                 isActive ? 'bg-white/20 text-white' : 'bg-surface-sunken text-content-secondary'
                                             }`}
                                         >
@@ -285,7 +285,7 @@ export default function Home() {
 
                     {/* Updated Time (Live / Today) */}
                     {(currentView === 'live' || currentView === 'today') && updatedTimeStr && (
-                        <div className="text-[11px] text-content-tertiary">
+                        <div className="text-xs text-content-tertiary">
                             {t('home:updated', { time: updatedTimeStr, defaultValue: `Updated ${updatedTimeStr}` })}
                         </div>
                     )}

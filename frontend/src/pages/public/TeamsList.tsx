@@ -5,6 +5,8 @@ import { Shield, Users, Trophy, MapPin, MagnifyingGlass, X, WarningCircle } from
 import { clsx } from 'clsx';
 import { GlassCard } from '@/components/GlassCard';
 import { LogoImage } from '@/components/public/LogoImage';
+import { ListRow } from '@/components/public/ListRow';
+import { FilterSheetButton } from '@/components/public/FilterSheetButton';
 import { Select } from '@/components/Select';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
@@ -135,6 +137,50 @@ export default function TeamsList() {
         [urlSearch, urlCategory, urlState]
     );
 
+    // Mobile sheet draft filter state
+    const [draftCategory, setDraftCategory] = useState(urlCategory || 'all');
+    const [draftState, setDraftState] = useState(urlState || 'all');
+
+    useEffect(() => {
+        setDraftCategory(urlCategory || 'all');
+    }, [urlCategory]);
+
+    useEffect(() => {
+        setDraftState(urlState || 'all');
+    }, [urlState]);
+
+    const activeFilterCount =
+        (urlCategory && urlCategory !== 'all' ? 1 : 0) +
+        (urlState && urlState !== 'all' ? 1 : 0);
+
+    const applyDraftFilters = () => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (draftCategory && draftCategory !== 'all') {
+                next.set('category', draftCategory);
+            } else {
+                next.delete('category');
+            }
+            if (draftState && draftState !== 'all') {
+                next.set('state', draftState);
+            } else {
+                next.delete('state');
+            }
+            return next;
+        });
+    };
+
+    const clearDraftFilters = () => {
+        setDraftCategory('all');
+        setDraftState('all');
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('category');
+            next.delete('state');
+            return next;
+        });
+    };
+
     const {
         data,
         isLoading,
@@ -219,31 +265,63 @@ export default function TeamsList() {
             </div>
 
             {/* Search & Filters */}
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
                 {/* Search Input */}
                 <div className="flex-1 relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60 pointer-events-none" />
                     <input
                         type="text"
                         placeholder={t('teams:list.searchPlaceholder', { defaultValue: 'Search teams by name, short name, club, or state...' })}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400 text-sm"
+                        className="w-full min-h-[44px] pl-10 pr-10 py-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint text-slate-900 dark:text-white placeholder-slate-400 text-sm"
                     />
                     {searchInput && (
                         <button
                             type="button"
                             aria-label={t('teams:list.clearSearch', { defaultValue: 'Clear search' })}
                             onClick={handleClearSearch}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
 
-                {/* Category Dropdown */}
-                <div className="relative w-full md:w-48">
+                {/* Mobile Filter Sheet Button (< md) */}
+                <div className="md:hidden shrink-0">
+                    <FilterSheetButton
+                        activeCount={activeFilterCount}
+                        onApply={applyDraftFilters}
+                        onClear={clearDraftFilters}
+                    >
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-1.5 uppercase tracking-wider">
+                                    {t('common:filter.category')}
+                                </label>
+                                <Select
+                                    value={draftCategory}
+                                    onChange={(val) => setDraftCategory(String(val))}
+                                    options={categoryOptions}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-1.5 uppercase tracking-wider">
+                                    {t('common:filter.state')}
+                                </label>
+                                <Select
+                                    value={draftState}
+                                    onChange={(val) => setDraftState(String(val))}
+                                    options={stateOptions}
+                                />
+                            </div>
+                        </div>
+                    </FilterSheetButton>
+                </div>
+
+                {/* Category Dropdown (>= md) */}
+                <div className="hidden md:block relative w-48">
                     <Select
                         value={urlCategory || 'all'}
                         onChange={(val) => handleCategoryChange(String(val))}
@@ -252,8 +330,8 @@ export default function TeamsList() {
                     />
                 </div>
 
-                {/* State Dropdown */}
-                <div className="relative w-full md:w-44">
+                {/* State Dropdown (>= md) */}
+                <div className="hidden md:block relative w-44">
                     <Select
                         value={urlState || 'all'}
                         onChange={(val) => handleStateChange(String(val))}
@@ -287,7 +365,18 @@ export default function TeamsList() {
             {/* Content Area: Skeletons / Error / Empty / Grid */}
             {isLoading ? (
                 <div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Phone Skeletons (< md) */}
+                    <div className="md:hidden space-y-2">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="min-h-[52px] h-[52px] rounded-xl bg-slate-200/60 dark:bg-slate-800/60 animate-pulse"
+                            />
+                        ))}
+                    </div>
+
+                    {/* Tablet/Desktop Skeletons (>= md) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {Array.from({ length: 12 }).map((_, i) => (
                             <TeamCardSkeleton
                                 key={i}
@@ -319,7 +408,30 @@ export default function TeamsList() {
                 />
             ) : (
                 <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Phone List (< md) */}
+                    <div className="md:hidden space-y-2">
+                        {allTeams.map((team) => {
+                            const metaParts = [
+                                team.category ? formatCategory(team.category, t) : '',
+                                team.division || team.ageGroup,
+                                team.state,
+                            ].filter(Boolean);
+
+                            return (
+                                <ListRow
+                                    key={team.id}
+                                    to={`/teams/${team.slug || team.id}`}
+                                    title={team.name}
+                                    logoUrl={team.logoUrl}
+                                    icon={<Shield className="w-5 h-5 text-slate-400" />}
+                                    meta={metaParts.join(' · ')}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Tablet & Desktop Grid (>= md: 2-col on 768-1023, 3-col on >= 1024) */}
+                    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {allTeams.map((team) => (
                             <Link
                                 key={team.id}
@@ -343,12 +455,12 @@ export default function TeamsList() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
                                                     {team.category && (
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
+                                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-blue-500/10 dark:bg-blue-500/20 text-navy dark:text-navy-tint">
                                                             {formatCategory(team.category, t)}
                                                         </span>
                                                     )}
                                                     {team.division && (
-                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-violet-500/10 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
+                                                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold uppercase bg-violet-500/10 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
                                                             {team.division}
                                                         </span>
                                                     )}
@@ -375,7 +487,7 @@ export default function TeamsList() {
                                                     </span>
                                                 ))}
                                                 {team.tournaments.length > 2 && (
-                                                    <span className="text-[11px] text-slate-400 font-medium self-center">
+                                                    <span className="text-xs text-slate-400 font-medium self-center">
                                                         {t('teams:list.moreTournaments', { count: team.tournaments.length - 2, defaultValue: `+${team.tournaments.length - 2} more` })}
                                                     </span>
                                                 )}

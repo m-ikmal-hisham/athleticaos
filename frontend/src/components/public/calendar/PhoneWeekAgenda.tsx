@@ -247,7 +247,7 @@ export function PhoneWeekAgenda({
                                         : 'bg-surface-sunken/50 text-content-secondary border-transparent hover:bg-surface-sunken'
                                 }`}
                             >
-                                <span className="text-[10px] font-semibold uppercase leading-none">
+                                <span className="text-[11px] font-bold uppercase leading-none">
                                     {weekdayShort[day.dayOfWeek]}
                                 </span>
                                 <span className="text-sm font-bold leading-tight">
@@ -319,7 +319,7 @@ export function PhoneWeekAgenda({
                                         {dayTitle}
                                     </h3>
                                     {day.isToday && (
-                                        <span className="px-1.5 py-0.5 rounded-full bg-brand/10 text-brand dark:text-navy-tint text-[10px] font-bold">
+                                        <span className="px-1.5 py-0.5 rounded-full bg-brand/10 text-brand dark:text-navy-tint text-[11px] font-bold uppercase">
                                             {t('calendar:today')}
                                         </span>
                                     )}
@@ -378,7 +378,7 @@ export function PhoneWeekAgenda({
                                                                     {tr.name}
                                                                 </h5>
                                                                 {tr.live && (
-                                                                    <span className="text-[10px] font-bold text-accent-text uppercase flex items-center gap-1">
+                                                                    <span className="text-[11px] font-bold text-accent-text uppercase flex items-center gap-1">
                                                                         <span className="w-1.5 h-1.5 rounded-full bg-crimson animate-pulse" />
                                                                         {t('calendar:status.live')}
                                                                     </span>

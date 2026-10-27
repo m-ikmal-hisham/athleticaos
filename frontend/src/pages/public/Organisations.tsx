@@ -23,6 +23,8 @@ import {
     PublicOrganisationTreeTeam,
 } from '@/api/public.api';
 import { LogoImage } from '@/components/public/LogoImage';
+import { FilterSheetButton } from '@/components/public/FilterSheetButton';
+import { enumLabel } from '@/utils/enumLabel';
 
 interface OrgHierarchyNode {
     org: PublicOrganisationTreeNode;
@@ -62,21 +64,34 @@ export function Organisations() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [levelFilter, setLevelFilter] = useState<LevelFilterOption>('ALL');
+    const [draftLevelFilter, setDraftLevelFilter] = useState<LevelFilterOption>('ALL');
+
+    useEffect(() => {
+        setDraftLevelFilter(levelFilter);
+    }, [levelFilter]);
+
+    const activeOrgFilterCount = levelFilter !== 'ALL' ? 1 : 0;
 
     const openParam = searchParams.get('open');
     const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
     const [hasInitializedOpen, setHasInitializedOpen] = useState(false);
 
     // Build hierarchy
-    const { hierarchy, allKeys, topLevelKeys } = useMemo(() => {
+    const { hierarchy, allKeys, topLevelKeys, orgNameById } = useMemo(() => {
         if (!data) {
-            return { hierarchy: [] as OrgHierarchyNode[], allKeys: new Set<string>(), topLevelKeys: new Set<string>() };
+            return {
+                hierarchy: [] as OrgHierarchyNode[],
+                allKeys: new Set<string>(),
+                topLevelKeys: new Set<string>(),
+                orgNameById: new Map<string, string>(),
+            };
         }
 
         const orgs = data.organisations;
         const teams = data.teams;
 
         const orgMap = new Map<string, OrgHierarchyNode>();
+        const orgNameMap = new Map<string, string>();
         const allKeySet = new Set<string>();
         const topKeySet = new Set<string>();
 
@@ -92,6 +107,7 @@ export function Organisations() {
         for (const org of orgs) {
             const key = org.slug || org.id;
             allKeySet.add(key);
+            orgNameMap.set(org.id, org.name);
             orgMap.set(org.id, {
                 org,
                 key,
@@ -127,7 +143,7 @@ export function Organisations() {
         }
         setDepths(roots, 0);
 
-        return { hierarchy: roots, allKeys: allKeySet, topLevelKeys: topKeySet };
+        return { hierarchy: roots, allKeys: allKeySet, topLevelKeys: topKeySet, orgNameById: orgNameMap };
     }, [data]);
 
     // Initialise open keys from URL parameter, or default to top-level organisations
@@ -389,9 +405,14 @@ export function Organisations() {
         const hasChildren = node.children.length > 0 || node.teams.length > 0;
         const org = node.org;
 
-        // Meta string: e.g. "Sarawak · 2 teams · 1 division"
+        // Meta string: parent (or state) · counts; the level shows as the pill beside the name
+        const parentName = org.parentId ? orgNameById.get(org.parentId) : undefined;
         const metaParts: string[] = [];
-        if (org.state) metaParts.push(org.state);
+        if (parentName) {
+            metaParts.push(parentName);
+        } else if (org.state) {
+            metaParts.push(org.state);
+        }
         if (org.teamCount > 0) {
             metaParts.push(
                 org.teamCount === 1
@@ -437,11 +458,11 @@ export function Organisations() {
                     }
                     style={{ paddingLeft: `${node.depth * 28 + 12}px` }}
                     className={clsx(
-                        'group flex items-center gap-3 py-3 pr-4 rounded-[12px] border border-transparent hover:border-line-subtle hover:bg-surface-sunken transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy'
+                        'group flex items-center gap-3 min-h-[52px] py-2.5 pr-4 rounded-[12px] border border-transparent hover:border-line-subtle hover:bg-surface-sunken transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy'
                     )}
                 >
                     {/* Expand/Collapse Chevron Button */}
-                    <div className="w-6 flex items-center justify-center shrink-0">
+                    <div className="w-8 flex items-center justify-center shrink-0">
                         {hasChildren ? (
                             <button
                                 type="button"
@@ -453,19 +474,19 @@ export function Organisations() {
                                     isOpen ? 'organisations:tree.collapse' : 'organisations:tree.expand',
                                     { name: org.name }
                                 )}
-                                className="p-1 rounded-md text-content-secondary hover:text-content-primary hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                                className="min-w-[44px] min-h-[44px] -ml-2 inline-flex items-center justify-center rounded-md text-content-secondary hover:text-content-primary hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                             >
-                                {isOpen ? <CaretDown size={16} weight="bold" /> : <CaretRight size={16} weight="bold" />}
+                                {isOpen ? <CaretDown size={18} weight="bold" /> : <CaretRight size={18} weight="bold" />}
                             </button>
                         ) : (
                             <span className="w-2 h-2 rounded-full bg-line-subtle" />
                         )}
                     </div>
 
-                    {/* Logo / Badge */}
+                    {/* Logo / Badge (40px) */}
                     <div
                         className={clsx(
-                            'w-9 h-9 rounded-lg shrink-0 flex items-center justify-center overflow-hidden font-bold text-xs',
+                            'w-10 h-10 rounded-lg shrink-0 flex items-center justify-center overflow-hidden font-bold text-xs shadow-2xs',
                             isTopLevel
                                 ? 'bg-navy text-white ring-2 ring-navy/20'
                                 : 'bg-surface-sunken text-content-primary border border-line-subtle'
@@ -486,17 +507,17 @@ export function Organisations() {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0">
                             <Link
                                 to={`/organisations/${org.slug || org.id}`}
-                                className="font-semibold text-content-primary hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors truncate text-sm sm:text-base"
+                                className="min-w-0 font-semibold text-content-primary hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors line-clamp-2 md:truncate text-sm sm:text-base"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <HighlightMatch text={org.name} query={searchQuery} />
                             </Link>
 
                             {/* Level Pill */}
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-surface-sunken text-content-secondary border border-line-subtle">
+                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-surface-sunken text-content-secondary border border-line-subtle">
                                 {t(`organisations:levels.${org.level}`, org.level)}
                             </span>
                         </div>
@@ -523,8 +544,8 @@ export function Organisations() {
     const renderTeamRow = (team: PublicOrganisationTreeTeam, depth: number) => {
         const teamKey = team.slug || team.id;
         const metaParts: string[] = [];
-        if (team.category) metaParts.push(team.category);
-        if (team.ageGroup) metaParts.push(team.ageGroup);
+        if (team.category) metaParts.push(enumLabel(t, 'category', team.category));
+        if (team.ageGroup) metaParts.push(enumLabel(t, 'ageGroup', team.ageGroup));
         if (team.playerCount > 0) {
             metaParts.push(t('organisations:tree.playersCount', { count: team.playerCount }));
         }
@@ -564,15 +585,15 @@ export function Organisations() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
                         <Link
                             to={`/teams/${team.slug || team.id}`}
-                            className="font-medium text-content-primary hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors truncate text-sm"
+                            className="min-w-0 font-medium text-content-primary hover:text-navy dark:hover:text-navy-tint hover:underline transition-colors line-clamp-2 md:truncate text-sm"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <HighlightMatch text={team.name} query={searchQuery} />
                         </Link>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-navy/10 text-navy dark:text-navy-tint">
+                        <span className="hidden md:inline shrink-0 px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase bg-navy/10 text-navy dark:text-navy-tint">
                             {t('organisations:pills.team')}
                         </span>
                     </div>
@@ -599,34 +620,74 @@ export function Organisations() {
             </div>
 
             {/* Controls Bar */}
-            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
-                {/* Search Box */}
-                <div className="relative flex-1 max-w-md">
-                    <MagnifyingGlass
-                        size={18}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-content-secondary pointer-events-none"
-                    />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={t('organisations:searchPlaceholder')}
-                        className="w-full pl-10 pr-9 py-2 rounded-[10px] border border-line-subtle bg-surface-card text-content-primary placeholder:text-content-secondary text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                    />
-                    {searchQuery && (
-                        <button
-                            type="button"
-                            onClick={() => setSearchQuery('')}
-                            aria-label={t('organisations:clearFilters')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-content-secondary hover:text-content-primary p-0.5 rounded"
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between">
+                {/* Search Box + Mobile Filter Button */}
+                <div className="flex items-center gap-2 flex-1 max-w-md">
+                    <div className="relative flex-1">
+                        <MagnifyingGlass
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-content-secondary pointer-events-none"
+                        />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder={t('organisations:searchPlaceholder')}
+                            className="w-full min-h-[44px] pl-10 pr-9 py-2.5 rounded-[10px] border border-line-subtle bg-surface-card text-content-primary placeholder:text-content-secondary text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                        />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                aria-label={t('organisations:clearFilters')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[36px] min-h-[36px] flex items-center justify-center text-content-secondary hover:text-content-primary rounded"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* FilterSheetButton on Mobile (< md) */}
+                    <div className="md:hidden shrink-0">
+                        <FilterSheetButton
+                            activeCount={activeOrgFilterCount}
+                            onApply={() => setLevelFilter(draftLevelFilter)}
+                            onClear={() => {
+                                setDraftLevelFilter('ALL');
+                                setLevelFilter('ALL');
+                            }}
                         >
-                            <X size={14} />
-                        </button>
-                    )}
+                            <div>
+                                <label className="block text-xs font-semibold text-content-secondary mb-2 uppercase tracking-wider">
+                                    {t('organisations:levelFilter.label')}
+                                </label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {(['ALL', 'STATE', 'CLUB', 'SCHOOL'] as const).map((lvl) => {
+                                        const active = draftLevelFilter === lvl;
+                                        return (
+                                            <button
+                                                key={lvl}
+                                                type="button"
+                                                onClick={() => setDraftLevelFilter(lvl)}
+                                                className={clsx(
+                                                    'min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors border',
+                                                    active
+                                                        ? 'bg-navy text-white border-navy'
+                                                        : 'bg-surface-card border-line-subtle text-content-secondary hover:text-content-primary hover:bg-surface-sunken'
+                                                )}
+                                            >
+                                                {t(`organisations:levelFilter.${lvl.toLowerCase()}`)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </FilterSheetButton>
+                    </div>
                 </div>
 
-                {/* Level Filter Chips */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {/* Level Filter Chips (>= md) */}
+                <div className="hidden md:flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                     {(['ALL', 'STATE', 'CLUB', 'SCHOOL'] as const).map((lvl) => {
                         const active = levelFilter === lvl;
                         return (
@@ -635,7 +696,7 @@ export function Organisations() {
                                 type="button"
                                 onClick={() => setLevelFilter(lvl)}
                                 className={clsx(
-                                    'px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors',
+                                    'min-h-[44px] px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors',
                                     active
                                         ? 'bg-navy text-white'
                                         : 'bg-surface-card border border-line-subtle text-content-secondary hover:text-content-primary hover:bg-surface-sunken'
@@ -652,17 +713,17 @@ export function Organisations() {
                     <button
                         type="button"
                         onClick={handleExpandAll}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line-subtle text-xs font-medium text-content-secondary hover:text-content-primary hover:bg-surface-sunken transition-colors"
+                        className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-line-subtle text-xs font-medium text-content-secondary hover:text-content-primary hover:bg-surface-sunken transition-colors"
                     >
-                        <ArrowsOut size={14} />
+                        <ArrowsOut size={16} />
                         <span>{t('organisations:expandAll')}</span>
                     </button>
                     <button
                         type="button"
                         onClick={handleCollapseAll}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line-subtle text-xs font-medium text-content-secondary hover:text-content-primary hover:bg-surface-sunken transition-colors"
+                        className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-line-subtle text-xs font-medium text-content-secondary hover:text-content-primary hover:bg-surface-sunken transition-colors"
                     >
-                        <ArrowsIn size={14} />
+                        <ArrowsIn size={16} />
                         <span>{t('organisations:collapseAll')}</span>
                     </button>
                 </div>
@@ -757,7 +818,7 @@ export function Organisations() {
                                         <div className="text-xs font-semibold text-content-primary">
                                             {step.title}
                                         </div>
-                                        <div className="text-[11px] text-content-secondary">
+                                        <div className="text-xs text-content-secondary">
                                             {step.desc}
                                         </div>
                                     </div>

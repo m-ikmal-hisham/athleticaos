@@ -124,7 +124,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                             {player.playerName}
                         </span>
                         {player.captain && (
-                            <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">
+                            <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[11px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">
                                 <Shield className="w-3 h-3" weight="fill" />
                                 {t('match:lineup.captain')}
                             </span>
@@ -145,7 +145,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                                 return (
                                     <span
                                         key={sIdx}
-                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10"
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10"
                                     >
                                         {isOff ? (
                                             <ArrowDown className="w-3 h-3 text-slate-500 dark:text-slate-400 shrink-0" weight="bold" />
@@ -219,7 +219,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     {/* Forwards */}
                     {forwards.length > 0 && (
                         <div className="mb-4">
-                            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
+                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
                                 {t('match:lineup.forwards')}
                             </div>
                             <div className="space-y-1.5">
@@ -231,7 +231,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     {/* Backs */}
                     {backs.length > 0 && (
                         <div className="mb-4">
-                            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
+                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
                                 {t('match:lineup.backs')}
                             </div>
                             <div className="space-y-1.5">
@@ -280,7 +280,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     <button
                         onClick={() => setActiveTeam('home')}
                         className={`
-                            flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
+                            flex-1 min-h-[44px] px-4 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center justify-center
                             ${activeTeam === 'home'
                                 ? 'bg-white dark:bg-white/10 text-navy dark:text-navy-tint shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}
@@ -292,7 +292,7 @@ export const MatchLineups = ({ match }: MatchLineupsProps) => {
                     <button
                         onClick={() => setActiveTeam('away')}
                         className={`
-                            flex-1 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all
+                            flex-1 min-h-[44px] px-4 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center justify-center
                             ${activeTeam === 'away'
                                 ? 'bg-white dark:bg-white/10 text-red-600 dark:text-red-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}
