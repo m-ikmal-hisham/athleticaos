@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeSlash, CheckCircle, Check, X, ArrowLeft } from '@phosphor-icons/react';
+import { Eye, EyeSlash, CheckCircle, Check, X, ArrowLeft, Spinner } from '@phosphor-icons/react';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -14,6 +14,9 @@ export const ResetPassword = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [token, setToken] = useState<string | null>(null);
+    // The link is checked with the server on open, so a used or expired link never shows the form
+    const [isCheckingLink, setIsCheckingLink] = useState(true);
+    const [isLinkInvalid, setIsLinkInvalid] = useState(false);
 
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,6 +36,12 @@ export const ResetPassword = () => {
             setToken(queryToken);
             // Clean token from address bar immediately to avoid leaking via bookmarks/history
             window.history.replaceState({}, document.title, window.location.pathname);
+
+            authApi.checkResetLink(queryToken)
+                .catch(() => setIsLinkInvalid(true))
+                .finally(() => setIsCheckingLink(false));
+        } else {
+            setIsCheckingLink(false);
         }
     }, [searchParams]);
 
@@ -76,7 +85,18 @@ export const ResetPassword = () => {
         }
     };
 
-    if (!token && !isSuccess) {
+    if (isCheckingLink) {
+        return (
+            <div className="min-h-screen w-full flex items-center justify-center p-8">
+                <div className="flex flex-col items-center gap-3">
+                    <Spinner size={32} className="animate-spin text-navy dark:text-navy-tint" />
+                    <p className="text-sm text-black/72 dark:text-white/72">{t('resetPassword.validating')}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if ((!token || isLinkInvalid) && !isSuccess) {
         return (
             <div className="min-h-screen w-full flex items-center justify-center p-8">
                 <div className="w-full max-w-sm p-6 rounded-2xl bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 text-center space-y-4">
