@@ -210,6 +210,12 @@ public class AccountEmailsIntegrationTest {
                         .content(objectMapper.writeValueAsString(weakReset)))
                 .andExpect(status().isBadRequest());
 
+        // The page's link check accepts an unused token and does not consume it
+        mockMvc.perform(get("/api/v1/auth/reset-password").param("token", rawResetToken))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.valid").value(true));
+
         // Reset password with valid password succeeds
         ResetPasswordWithTokenRequest validReset = new ResetPasswordWithTokenRequest(rawResetToken, newPassword);
         mockMvc.perform(post("/api/v1/auth/reset-password")
@@ -225,6 +231,22 @@ public class AccountEmailsIntegrationTest {
                         .content(objectMapper.writeValueAsString(newLoginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isString());
+
+        // 10. The reset link works once: the link check and a second reset are both refused,
+        // and the password from the first reset stays in place
+        mockMvc.perform(get("/api/v1/auth/reset-password").param("token", rawResetToken))
+                .andExpect(status().isBadRequest());
+
+        ResetPasswordWithTokenRequest reusedReset = new ResetPasswordWithTokenRequest(rawResetToken, "Another-Strong-Passw0rd!");
+        mockMvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reusedReset)))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newLoginRequest)))
+                .andExpect(status().isOk());
     }
 
     @Test

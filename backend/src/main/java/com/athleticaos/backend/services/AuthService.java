@@ -264,6 +264,20 @@ public class AuthService {
         }
 
         /**
+         * Unauthenticated: checks a reset token without consuming it, so the page can refuse a used or expired
+         * link before the user types a new password. Invalid tokens count as failure against IP brute-force protection.
+         */
+        @Transactional(readOnly = true)
+        public void checkResetToken(String rawToken, HttpServletRequest httpRequest) {
+                try {
+                        accountTokenService.findValidToken(rawToken, AccountTokenPurpose.RESET);
+                } catch (IllegalArgumentException ex) {
+                        loginAttemptService.recordFailure(ClientIpUtils.getClientIp(httpRequest));
+                        throw ex;
+                }
+        }
+
+        /**
          * Unauthenticated: validates password first (A1), then consumes the reset token, revokes earlier sessions,
          * and records success in LoginAttemptService. Invalid tokens count as failure against IP brute-force protection.
          */
