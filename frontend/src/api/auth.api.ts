@@ -60,6 +60,13 @@ export const authApi = {
         return response;
     },
 
+    checkResetLink: async (token: string) => {
+        const response = await api.get<{ valid: boolean }>('/auth/reset-password', {
+            params: { token },
+        });
+        return response;
+    },
+
     resetPassword: async (data: { token: string; newPassword: string }) => {
         const response = await api.post<{ message: string }>('/auth/reset-password', data);
         return response;

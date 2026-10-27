@@ -202,6 +202,15 @@ public class AuthenticationController {
                 .body(java.util.Map.of("message", "If an account exists for that email, we've sent a reset link."));
     }
 
+    @GetMapping("/reset-password")
+    public ResponseEntity<?> checkResetLink(@RequestParam String token,
+                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        authService.checkResetToken(token, httpRequest);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(java.util.Map.of("valid", true));
+    }
+
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordWithTokenRequest request,
                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
