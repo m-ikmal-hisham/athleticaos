@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 
 /**
  * Formatting utilities for displaying enum values and other data types user-friendly.
@@ -9,8 +10,14 @@ import { TournamentLevel } from "@/types";
  * Formats a competition type enum string into a user-friendly label.
  * Example: 'GROUP_KNOCKOUT' -> 'Group + Knockout'
  */
-export const formatCompetitionType = (type: string | undefined | null): string => {
+export const formatCompetitionType = (type: string | undefined | null, t?: TFunction): string => {
     if (!type) return '';
+    // A missing key comes back without its namespace, so ask for an empty default instead of
+    // comparing prefixes (that let "competitionType.TENS" through).
+    if (t) {
+        const translated = t(`common:competitionType.${type}`, { defaultValue: '' }) as string;
+        if (translated) return translated;
+    }
     switch (type) {
         case 'GROUP_KNOCKOUT':
             return 'Group + Knockout';
@@ -30,10 +37,14 @@ export const formatCompetitionType = (type: string | undefined | null): string =
  * Formats a tournament level enum string into Title Case.
  * Example: 'NATIONAL' -> 'National', 'STATE' -> 'State'
  */
-export const formatTournamentLevel = (level: string | TournamentLevel | undefined | null): string => {
+export const formatTournamentLevel = (level: string | TournamentLevel | undefined | null, t?: TFunction): string => {
     if (!level) return '';
-    return level
-        .toString()
+    const key = level.toString();
+    if (t) {
+        const translated = t(`common:level.${key}`, { defaultValue: '' }) as string;
+        if (translated) return translated;
+    }
+    return key
         .replace(/_/g, ' ')
         .toLowerCase()
         .replace(/\b\w/g, c => c.toUpperCase());
@@ -43,8 +54,12 @@ export const formatTournamentLevel = (level: string | TournamentLevel | undefine
  * Formats an event type enum string into Sentence Case.
  * Example: 'YELLOW_CARD' -> 'Yellow Card'
  */
-export const formatEventType = (type: string | undefined | null): string => {
+export const formatEventType = (type: string | undefined | null, t?: (key: string, opts?: Record<string, unknown>) => string): string => {
     if (!type) return '';
+    if (t) {
+        const translated = t(`common:eventType.${type}`, { defaultValue: '' });
+        if (translated) return translated;
+    }
     return type
         .replace(/_/g, ' ')
         .toLowerCase()

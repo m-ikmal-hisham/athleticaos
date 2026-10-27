@@ -1,0 +1,123 @@
+{
+  "center": {
+    "title": "Pusat perlawanan",
+    "overview": "Gambaran keseluruhan",
+    "timeline": "Garis masa",
+    "lineups": "Barisan pemain",
+    "stats": "Statistik",
+    "breakdown": "Pecahan pungutan mata",
+    "discipline": "Disiplin & impak",
+    "backToMatchday": "Kembali ke Hari Perlawanan",
+    "liveNow": "LANGSUNG SEKARANG",
+    "refreshing": "Mengemas kini...",
+    "shareMatch": "Kongsi perlawanan",
+    "notFound": "Perlawanan tidak dijumpai",
+    "notFoundHint": "Perlawanan yang anda cari tidak wujud atau telah dikeluarkan.",
+    "browseMatches": "Lihat perlawanan",
+    "matchResult": "Keputusan perlawanan"
+  },
+  "hero": {
+    "tournamentMatch": "Perlawanan kejohanan",
+    "match": "Perlawanan {{number}}",
+    "watchLive": "Tonton siaran langsung",
+    "watchReplay": "Tonton siaran ulangan",
+    "shareTitle": "{{home}} lwn {{away}}",
+    "shareText": "Ikuti perlawanan {{home}} lwn {{away}} di AthleticaOS!"
+  },
+  "lineup": {
+    "title": "Barisan pemain",
+    "notAvailable": "Barisan pemain belum tersedia",
+    "notAvailableHint": "Borang pasukan belum dihantar untuk perlawanan ini.",
+    "startingLineup": "Barisan utama",
+    "startingXv": "Barisan utama XV",
+    "startingSevens": "7 utama",
+    "startingTens": "10 utama",
+    "starters": "Pemain utama",
+    "forwards": "Forwards",
+    "backs": "Backs",
+    "replacements": "Pemain gantian",
+    "captain": "C",
+    "playersCount": "{{count}} pemain",
+    "playersCount_other": "{{count}} pemain",
+    "notSubmitted": "Barisan pemain belum dihantar",
+    "home": "Tuan rumah",
+    "away": "Pelawat"
+  },
+  "moments": {
+    "title": "Garis masa perlawanan",
+    "noEvents": "Tiada peristiwa perlawanan direkodkan lagi.",
+    "halfTime": "Separuh masa",
+    "fullTime": "Masa penuh",
+    "replayMode": "Mod ulang tayang • {{minute}}'",
+    "exitReplay": "Keluar ulang tayang",
+    "replayMoments": "Ulang tayang detik",
+    "kickOff": "Sepak mula",
+    "noMomentsYet": "Tiada detik perlawanan setakat ini...",
+    "min": "Min",
+    "unknownPlayer": "Tidak diketahui",
+    "secondYellow": "KK ke-2",
+    "restartReplay": "Mula semula siaran ulangan",
+    "replayTimeline": "Garis masa siaran ulangan"
+  },
+  "stats": {
+    "title": "Statistik perlawanan",
+    "possession": "Penguasaan bola",
+    "territory": "Wilayah",
+    "scrumsWon": "Scrum dimenangi",
+    "lineoutsWon": "Lineout dimenangi",
+    "penaltiesConceded": "Penalti dilepaskan",
+    "handlingErrors": "Kesilapan kawalan bola",
+    "showMore": "Papar statistik lanjut"
+  },
+  "momentum": {
+    "title": "Momentum perlawanan",
+    "neutral": "Berkecuali",
+    "dominance": "Penguasaan {{team}}"
+  },
+  "scoring": {
+    "title": "Pecahan pungutan mata",
+    "tries": "Try",
+    "conversions": "Conversion",
+    "penalties": "Gol penalti",
+    "dropGoals": "Drop goal",
+    "pointsSource": "Sumber mata",
+    "halfPerformance": "Prestasi mengikut separuh masa",
+    "kicks": "Tendangan",
+    "firstHalf": "Separuh masa ke-1",
+    "secondHalf": "Separuh masa ke-2",
+    "fullMatch": "Perlawanan penuh"
+  },
+  "discipline": {
+    "title": "Disiplin & impak",
+    "yellowCards": "Kad kuning",
+    "redCards": "Kad merah",
+    "sinBin": "Sin bin",
+    "advantage": "Kelebihan bilangan pemain",
+    "disadvantageTime": "Masa kekurangan pemain",
+    "pointsConceded": "Mata dilepaskan",
+    "impactHint": "Impak mengira mata yang bolos semasa pemain berada di sin bin."
+  },
+  "card": {
+    "versus": "lwn",
+    "details": "Butiran perlawanan",
+    "venue": "Tempat"
+  },
+  "officialRole": {
+    "REFEREE": "Pengadil",
+    "ASSISTANT_REFEREE_1": "Penolong pengadil 1",
+    "ASSISTANT_REFEREE_2": "Penolong pengadil 2",
+    "ASSISTANT_REFEREE": "Penolong pengadil",
+    "TMO": "TMO",
+    "FOURTH_OFFICIAL": "Pegawai ke-4",
+    "IN_GOAL_JUDGE_1": "Hakim kawasan gol 1",
+    "IN_GOAL_JUDGE_2": "Hakim kawasan gol 2",
+    "MATCH_COMMISSIONER": "Pesuruhjaya perlawanan",
+    "TIMEKEEPER": "Penjaga masa"
+  },
+  "share": {
+    "title": "Kongsi perlawanan",
+    "matchUrl": "URL perlawanan",
+    "copy": "Salin pautan",
+    "copied": "Disalin"
+  }
+}

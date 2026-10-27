@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { GlassCard } from '@/components/GlassCard';
 import { PublicMatchDetail, PublicMatchEvent } from '../../../api/public.api';
@@ -10,6 +11,7 @@ interface ScoringBreakdownProps {
 }
 
 export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
+    const { t } = useTranslation(['match', 'common']);
 
     const data = useMemo(() => {
         if (!match.events) return { typeData: [], halfData: [] };
@@ -55,17 +57,20 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
             }
         });
 
+        const triesKey = t('match:scoring.tries');
+        const kicksKey = t('match:scoring.kicks');
+
         // Shape for Stacked Bar (Type Breakdown)
         const typeData = [
             {
                 name: match.homeTeamName,
-                Tries: stats.home.tries,
-                Kicks: stats.home.pens + stats.home.cons,
+                [triesKey]: stats.home.tries,
+                [kicksKey]: stats.home.pens + stats.home.cons,
             },
             {
                 name: match.awayTeamName,
-                Tries: stats.away.tries,
-                Kicks: stats.away.pens + stats.away.cons,
+                [triesKey]: stats.away.tries,
+                [kicksKey]: stats.away.pens + stats.away.cons,
             }
         ];
 
@@ -74,27 +79,27 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
 
         if (isOneWay) {
             halfData.push({
-                name: 'Full Match',
+                name: t('match:scoring.fullMatch'),
                 [match.homeTeamName]: stats.home.p1,
                 [match.awayTeamName]: stats.away.p1,
             });
         } else {
             halfData.push(
                 {
-                    name: '1st Half',
+                    name: t('match:scoring.firstHalf'),
                     [match.homeTeamName]: stats.home.p1,
                     [match.awayTeamName]: stats.away.p1,
                 },
                 {
-                    name: '2nd Half',
+                    name: t('match:scoring.secondHalf'),
                     [match.homeTeamName]: stats.home.p2,
                     [match.awayTeamName]: stats.away.p2,
                 }
             );
         }
 
-        return { typeData, halfData };
-    }, [match.events, match.homeTeamName, match.awayTeamName, match.matchDuration, match.isOneWayMatch]);
+        return { typeData, halfData, triesKey, kicksKey };
+    }, [match.events, match.homeTeamName, match.awayTeamName, match.matchDuration, match.isOneWayMatch, t]);
 
     if (!match.events || match.events.length === 0) return null;
 
@@ -105,13 +110,13 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
         <GlassCard className="p-6">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                 <ChartPieSlice className="w-5 h-5 text-navy dark:text-navy-tint" />
-                Scoring Breakdown
+                {t('match:scoring.title')}
             </h3>
 
             <div className="space-y-8">
                 {/* Scoring Source (Tries vs Kicks) */}
                 <div>
-                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Points Source</h4>
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">{t('match:scoring.pointsSource')}</h4>
                     <div className="h-[180px] w-full text-xs min-w-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
@@ -133,8 +138,8 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
                                     cursor={{ fill: 'transparent' }}
                                 />
                                 <Legend />
-                                <Bar dataKey="Tries" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                                <Bar dataKey="Kicks" stackId="a" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey={data.triesKey} stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                                <Bar dataKey={data.kicksKey} stackId="a" fill="#f59e0b" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -142,7 +147,7 @@ export const ScoringBreakdown = ({ match }: ScoringBreakdownProps) => {
 
                 {/* Half Breakdown */}
                 <div>
-                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Half-by-Half Performance</h4>
+                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">{t('match:scoring.halfPerformance')}</h4>
                     <div className="h-[180px] w-full text-xs min-w-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart

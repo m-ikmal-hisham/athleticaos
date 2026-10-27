@@ -16,6 +16,10 @@ import { usePublicOrganisation } from '@/hooks/public';
 import { PublicOrganisationChildRef, PublicOrganisationTreeTeam } from '@/api/public.api';
 import { ProfileHero } from '@/components/profile';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LogoImage } from '@/components/public/LogoImage';
+import { enumLabel } from '@/utils/enumLabel';
+import { parseCalendarDate, getDateLocale } from '@/utils/malaysiaDate';
+import { format } from 'date-fns';
 
 function getInitials(name: string): string {
     const words = name.trim().split(/\s+/);
@@ -25,7 +29,12 @@ function getInitials(name: string): string {
 
 export function OrganisationDetail() {
     const { slug } = useParams<{ slug: string }>();
-    const { t } = useTranslation(['organisations', 'common']);
+    const { t, i18n } = useTranslation(['organisations', 'common']);
+    // API dates are calendar dates (YYYY-MM-DD): parse without a UTC shift, show in the chosen language
+    const formatOrgDate = (iso: string) => {
+        const d = parseCalendarDate(iso);
+        return d ? format(d, 'd MMM yyyy', { locale: getDateLocale(i18n.language) }) : iso;
+    };
     const navigate = useNavigate();
 
     const { data: org, isLoading, isError } = usePublicOrganisation(slug);
@@ -35,10 +44,10 @@ export function OrganisationDetail() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-surface-page pb-12">
+            <div className="pb-12">
                 {/* Hero Skeleton */}
                 <div className="h-72 bg-deep-navy animate-pulse" />
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+                <div className="space-y-6">
                     <div className="h-24 rounded-[14px] bg-surface-card border border-line-subtle animate-pulse" />
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-4">
@@ -109,9 +118,9 @@ export function OrganisationDetail() {
     ];
 
     return (
-        <div className="min-h-screen bg-surface-page pb-16">
+        <div className="pb-16">
             {/* Profile Hero with variant="organisation" */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 mb-8">
+            <div className="mb-8">
                 <ProfileHero
                     variant="organisation"
                     size="public"
@@ -136,7 +145,7 @@ export function OrganisationDetail() {
             </div>
 
             {/* Main Content Layout */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     {/* Main Column: Affiliated organisations + Teams */}
                     <div className="lg:col-span-2 space-y-8">
@@ -167,15 +176,12 @@ export function OrganisationDetail() {
                                                                 : undefined
                                                         }
                                                     >
-                                                        {child.logoUrl ? (
-                                                            <img
-                                                                src={child.logoUrl}
-                                                                alt={child.name}
-                                                                className="w-full h-full object-contain p-1"
-                                                            />
-                                                        ) : (
-                                                            getInitials(child.name)
-                                                        )}
+                                                        <LogoImage
+                                                            src={child.logoUrl}
+                                                            name={child.name}
+                                                            className="w-full h-full object-contain p-1"
+                                                            fallbackClassName="text-xs"
+                                                        />
                                                     </div>
                                                     <div className="min-w-0">
                                                         <Link
@@ -199,14 +205,14 @@ export function OrganisationDetail() {
                                             <div className="mt-3 pt-3 border-t border-line-subtle flex items-center justify-between text-xs">
                                                 <span className="text-content-secondary">
                                                     {child.childCount > 0
-                                                        ? `${child.childCount} sub-affiliations`
-                                                        : 'Direct affiliate'}
+                                                        ? t('organisations:detail.subAffiliations', { count: child.childCount })
+                                                        : t('organisations:detail.directAffiliate')}
                                                 </span>
                                                 <Link
                                                     to={`/organisations/${child.slug || child.id}`}
                                                     className="font-semibold text-navy dark:text-navy-tint hover:underline flex items-center gap-1"
                                                 >
-                                                    <span>View page</span>
+                                                    <span>{t('organisations:detail.viewPage')}</span>
                                                     <CaretRight size={12} />
                                                 </Link>
                                             </div>
@@ -249,22 +255,23 @@ export function OrganisationDetail() {
 
                                             <div className="flex items-start gap-3 pt-1">
                                                 <div className="w-10 h-10 rounded-xl bg-surface-sunken border border-line-subtle flex items-center justify-center shrink-0 overflow-hidden text-content-secondary">
-                                                    {team.logoUrl ? (
-                                                        <img
-                                                            src={team.logoUrl}
-                                                            alt={team.name}
-                                                            className="w-full h-full object-contain p-1"
-                                                        />
-                                                    ) : (
-                                                        <Shield size={20} weight="duotone" />
-                                                    )}
+                                                    <LogoImage
+                                                        src={team.logoUrl}
+                                                        name={team.name}
+                                                        className="w-full h-full object-contain p-1"
+                                                        icon={<Shield size={20} weight="duotone" />}
+                                                    />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <h3 className="font-semibold text-content-primary group-hover:text-navy dark:group-hover:text-navy-tint transition-colors text-sm truncate">
                                                         {team.name}
                                                     </h3>
                                                     <div className="text-xs text-content-secondary mt-0.5 truncate">
-                                                        {[team.category, team.ageGroup, team.division]
+                                                        {[
+                                                            enumLabel(t, 'category', team.category),
+                                                            enumLabel(t, 'ageGroup', team.ageGroup),
+                                                            enumLabel(t, 'tier', team.division),
+                                                        ]
                                                             .filter(Boolean)
                                                             .join(' · ')}
                                                     </div>
@@ -316,15 +323,12 @@ export function OrganisationDetail() {
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-surface-card border border-line-subtle flex items-center justify-center shrink-0 overflow-hidden text-content-secondary">
-                                                    {tItem.logoUrl ? (
-                                                        <img
-                                                            src={tItem.logoUrl}
-                                                            alt={tItem.name}
-                                                            className="w-full h-full object-contain p-1"
-                                                        />
-                                                    ) : (
-                                                        <Trophy size={16} weight="duotone" />
-                                                    )}
+                                                    <LogoImage
+                                                        src={tItem.logoUrl}
+                                                        name={tItem.name}
+                                                        className="w-full h-full object-contain p-1"
+                                                        icon={<Trophy size={16} weight="duotone" />}
+                                                    />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="font-semibold text-xs text-content-primary group-hover:text-navy dark:group-hover:text-navy-tint truncate transition-colors">
@@ -333,7 +337,7 @@ export function OrganisationDetail() {
                                                     {tItem.startDate && (
                                                         <div className="text-[11px] text-content-secondary mt-0.5 flex items-center gap-1">
                                                             <Calendar size={12} />
-                                                            <span>{tItem.startDate}</span>
+                                                            <span>{formatOrgDate(tItem.startDate)}</span>
                                                         </div>
                                                     )}
                                                 </div>

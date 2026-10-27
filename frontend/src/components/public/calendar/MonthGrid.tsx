@@ -122,7 +122,7 @@ export function MonthGrid({
         <div
             ref={gridRef}
             role="grid"
-            aria-label="Tournament Calendar Month Grid"
+            aria-label={t('monthGridAria')}
             className="rounded-[14px] overflow-hidden border border-line-subtle bg-line-subtle shadow-xs select-none"
         >
             {/* Weekday Header Row */}

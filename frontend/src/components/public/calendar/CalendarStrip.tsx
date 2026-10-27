@@ -242,7 +242,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                 <div
                     ref={gridRef}
                     role="grid"
-                    aria-label="3-week rugby calendar strip"
+                    aria-label={t('calendar:calendarStripAria')}
                     className="rounded-[14px] overflow-hidden border border-line-subtle bg-line-subtle shadow-xs select-none"
                 >
                     {/* Weekday Header Row */}
@@ -331,7 +331,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                                         }}
                                                         className="text-[10px] font-semibold text-brand hover:underline px-1 py-0.5 rounded hover:bg-brand/10 transition-colors"
                                                     >
-                                                        +{overflow} more
+                                                        {t('calendar:moreTournaments', { count: overflow })}
                                                     </button>
                                                 </div>
                                             )}
@@ -470,7 +470,7 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                         {tr.live && (
                                             <span className="text-[10px] font-bold text-crimson uppercase flex items-center gap-1 shrink-0">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-crimson animate-pulse" />
-                                                LIVE
+                                                {t('common:status.live')}
                                             </span>
                                         )}
                                     </Link>

@@ -49,7 +49,11 @@
     "cancelled": "Dibatalkan",
     "fullTime": "FT",
     "walkover": "W/O",
-    "bye": "Bye"
+    "bye": "Bye",
+    "scheduled": "Dijadualkan",
+    "postponed": "Ditangguhkan",
+    "delayed": "Tertangguh",
+    "inProgress": "Sedang berlangsung"
   },
   "accessory": {
     "liveNow": "Langsung sekarang: {{name}}",
@@ -64,6 +68,122 @@
   "dialog": {
     "close": "Tutup"
   },
+  "actions": {
+    "showMore": "Lihat lagi",
+    "tryAgain": "Cuba lagi",
+    "retry": "Cuba semula",
+    "loading": "Memuatkan...",
+    "back": "Kembali",
+    "share": "Kongsi",
+    "close": "Tutup",
+    "cancel": "Batal",
+    "save": "Simpan",
+    "viewAll": "Lihat semua",
+    "search": "Cari",
+    "filter": "Tapis",
+    "clear": "Kosongkan",
+    "clearFilters": "Kosongkan penapis",
+    "apply": "Gunakan",
+    "dateTbd": "Tarikh akan ditentukan",
+    "collapseAllDays": "Runtuhkan semua hari",
+    "expandAllDays": "Kembangkan semua hari",
+    "collapseAll": "Runtuhkan semua {{noun}}",
+    "expandAll": "Kembangkan semua {{noun}}"
+  },
+  "counts": {
+    "matchCount_one": "{{count}} perlawanan",
+    "matchCount_other": "{{count}} perlawanan",
+    "playerCount_one": "{{count}} pemain",
+    "playerCount_other": "{{count}} pemain",
+    "teamCount_one": "{{count}} pasukan",
+    "teamCount_other": "{{count}} pasukan",
+    "tournamentCount_one": "{{count}} kejohanan",
+    "tournamentCount_other": "{{count}} kejohanan"
+  },
+  "empty": {
+    "title": "Tiada data",
+    "description": "Tiada apa untuk dipaparkan sekarang."
+  },
+  "error": {
+    "title": "Ralat berlaku",
+    "description": "Kami tidak dapat memuatkan kandungan ini. Sila cuba lagi."
+  },
+  "level": {
+    "NATIONAL": "Kebangsaan",
+    "STATE": "Negeri",
+    "DISTRICT": "Daerah",
+    "CLUB": "Kelab",
+    "SCHOOL": "Sekolah",
+    "INTERNATIONAL": "Antarabangsa"
+  },
+  "competitionType": {
+    "GROUP_KNOCKOUT": "Kumpulan + kalah mati",
+    "KNOCKOUT": "Kalah mati",
+    "LEAGUE": "Liga",
+    "CUP": "Cup",
+    "ROUND_ROBIN": "Round robin",
+    "FRIENDLY": "Persahabatan",
+    "SEVENS": "Sevens",
+    "TENS": "Tens",
+    "FIFTEENS": "Fifteens"
+  },
+  "stage": {
+    "POOL": "Kumpulan",
+    "ROUND_ROBIN": "Round robin",
+    "QUARTER_FINAL": "Suku akhir",
+    "SEMI_FINAL": "Separuh akhir",
+    "FINAL": "Akhir",
+    "BRONZE": "Penentuan tempat ke-3",
+    "CUP": "Cup",
+    "PLATE": "Plate",
+    "BOWL": "Bowl",
+    "SHIELD": "Shield",
+    "SPOON": "Spoon",
+    "ROUND_OF_16": "Pusingan 16",
+    "THIRD_PLACE": "Tempat ketiga",
+    "CLASSIFICATION": "Klasifikasi",
+    "FORK": "Fork",
+    "SAUCER": "Saucer",
+    "CHOPSTICK": "Chopstick",
+    "WOODEN_SPOON": "Wooden spoon",
+    "WOODEN_FORK": "Wooden fork"
+  },
+  "category": {
+    "MENS": "Lelaki",
+    "WOMENS": "Wanita",
+    "MIXED": "Campuran",
+    "BOYS": "Lelaki bawah umur",
+    "GIRLS": "Perempuan bawah umur",
+    "OPEN": "Terbuka",
+    "CLUB": "Kelab",
+    "MEN": "Lelaki",
+    "WOMEN": "Wanita"
+  },
+  "tier": {
+    "PREMIER": "Premier",
+    "CHAMPIONSHIP": "Kejuaraan",
+    "CONFERENCE": "Persidangan",
+    "SHOWCASE": "Pameran",
+    "DEVELOPMENT": "Pembangunan",
+    "COMMUNITY": "Komuniti"
+  },
+  "stats": {
+    "squad": "Skuad",
+    "tournaments": "Kejohanan",
+    "appearances": "Penampilan",
+    "tries": "Try",
+    "triesScored": "Try dijaringkan",
+    "conversions": "Conversion",
+    "penaltyGoals": "Gol penalti",
+    "dropGoals": "Drop goal",
+    "points": "Mata",
+    "yellowCards": "Kad kuning",
+    "redCards": "Kad merah"
+  },
+  "units": {
+    "forwards": "Forwards",
+    "backs": "Backs"
+  },
   "lineup": {
     "off": "Keluar {{minute}}'",
     "replacedBy": "digantikan oleh {{name}}",
@@ -72,5 +192,34 @@
     "forPlayer": "menggantikan {{name}}",
     "forPlayerWithNumber": "menggantikan {{name}} ({{number}})",
     "didNotPlay": "Tidak beraksi"
+  },
+  "eventType": {
+    "TRY": "Try",
+    "SUPER_TRY": "Super Try",
+    "PENALTY_TRY": "Penalty Try",
+    "CONVERSION": "Conversion",
+    "PENALTY": "Penalti",
+    "DROP_GOAL": "Drop Goal",
+    "YELLOW_CARD": "Kad kuning",
+    "RED_CARD": "Kad merah",
+    "SUBSTITUTION": "Pertukaran pemain"
+  },
+  "partners": {
+    "title": "Rakan kongsi",
+    "subtitle": "Organisasi yang bekerjasama dengan kami untuk membina dan mengendalikan AthleticaOS.",
+    "ourPartners": "Rakan kongsi kami",
+    "partnerWithUs": "Bekerjasama dengan kami",
+    "partnerWithUsDesc": "Organisasi dan syarikat yang berminat untuk bekerjasama dengan AthleticaOS boleh mendaftarkan minat mereka.",
+    "getInTouch": "Hubungi kami"
+  },
+  "ageGroup": {
+    "SENIOR": "Senior",
+    "OPEN": "Terbuka",
+    "JUNIOR": "Junior",
+    "YOUTH": "Belia",
+    "VETERANS": "Veteran"
+  },
+  "filter": {
+    "all": "Semua"
   }
 }

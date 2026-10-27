@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeSlash, Info } from '@phosphor-icons/react';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuthStore } from '@/store/auth.store';
@@ -22,6 +23,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 // ─── Main Login Component ─────────────────────────────────────────────
 export const Login = () => {
+    const { t } = useTranslation(['auth', 'common']);
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuthStore();
@@ -81,7 +83,7 @@ export const Login = () => {
                     setPendingChange({ email: data.email, currentPassword: data.password });
                 } else if (axiosErr.response?.status === 423) {
                     const minutes = axiosErr.response.data?.remainingMinutes || 15;
-                    setLockoutMessage(`Too many failed attempts. Please try again in ${minutes} minute(s).`);
+                    setLockoutMessage(t('login.lockoutMinutes', { minutes }));
                 }
             }
             // Other errors are handled by toast in the store
@@ -123,10 +125,10 @@ export const Login = () => {
                         />
                         <div className="flex flex-col items-start text-left">
                             <h2 className="text-3xl font-bold tracking-tight text-black dark:text-white leading-none">
-                                Sign in
+                                {t('login.title')}
                             </h2>
                             <p className="mt-1.5 text-sm text-black/72 dark:text-white/72 font-medium">
-                                For organisers, officials and team managers.
+                                {t('login.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -138,7 +140,7 @@ export const Login = () => {
                                 <svg className="w-5 h-5 text-crimson" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
-                                <span className="text-sm font-semibold text-crimson dark:text-crimson-tint">Account Locked</span>
+                                <span className="text-sm font-semibold text-crimson dark:text-crimson-tint">{t('login.accountLocked')}</span>
                             </div>
                             <p className="text-sm text-crimson dark:text-crimson-tint">{lockoutMessage}</p>
                         </div>
@@ -147,7 +149,7 @@ export const Login = () => {
                     {isSignedOut && (
                         <div className="p-3 rounded-lg bg-black/4 dark:bg-white/6 border border-black/10 dark:border-white/12 flex items-center gap-2.5 text-sm text-black/72 dark:text-white/72">
                             <Info className="w-5 h-5 shrink-0" />
-                            <span>You have signed out.</span>
+                            <span>{t('login.signedOutNotice')}</span>
                         </div>
                     )}
 
@@ -155,7 +157,7 @@ export const Login = () => {
                         <div className="space-y-1">
                             <Input
                                 type="email"
-                                placeholder="Email"
+                                placeholder={t('login.emailPlaceholder')}
                                 error={errors.email?.message}
                                 {...register('email')}
                                 className="bg-black/4 dark:bg-white/6 border-black/24 dark:border-white/28 text-black/90 dark:text-white/92 placeholder:text-black/60 dark:placeholder:text-white/60 focus:bg-white dark:focus:bg-deep-navy focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint rounded-[10px] min-h-[44px] text-base sm:text-sm p-3"
@@ -168,7 +170,7 @@ export const Login = () => {
                             <div className="relative">
                                 <Input
                                     type={showPassword ? 'text' : 'password'}
-                                    placeholder="Password"
+                                    placeholder={t('login.passwordPlaceholder')}
                                     autoComplete="current-password"
                                     {...register('password')}
                                     aria-invalid={!!errors.password}
@@ -178,7 +180,7 @@ export const Login = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(v => !v)}
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                                     aria-pressed={showPassword}
                                     disabled={!!lockoutMessage}
                                     className="absolute inset-y-0 right-0 flex items-center px-3 text-black/60 hover:text-black/90 dark:text-white/60 dark:hover:text-white/92 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -195,17 +197,17 @@ export const Login = () => {
                             <div className="flex items-center justify-between">
                                 <label className="flex items-center gap-2 text-sm text-black/72 dark:text-white/72 cursor-pointer select-none">
                                     <input type="checkbox" className="w-4 h-4 rounded border-black/24 dark:border-white/28 accent-navy bg-white dark:bg-deep-navy cursor-pointer" />
-                                    Keep me logged in
+                                    {t('login.rememberMe')}
                                 </label>
                                 {accountEmailsEnabled && (
                                     <Link to="/forgot-password" className="text-sm text-navy dark:text-navy-tint hover:underline font-medium">
-                                        Forgot password?
+                                        {t('login.forgotPassword')}
                                     </Link>
                                 )}
                             </div>
                             {!accountEmailsEnabled && (
                                 <p className="text-sm text-black/60 dark:text-white/60">
-                                    Forgot your password? Ask your organisation's administrator to reset it.
+                                    {t('login.forgotPasswordDisabled')}
                                 </p>
                             )}
                         </div>
@@ -217,7 +219,7 @@ export const Login = () => {
                                 className="w-1/3 py-3"
                                 onClick={() => navigate('/')}
                             >
-                                Cancel
+                                {t('login.cancel')}
                             </Button>
                             <Button
                                 type="submit"
@@ -226,27 +228,27 @@ export const Login = () => {
                                 isLoading={isLoading}
                                 disabled={!!lockoutMessage}
                             >
-                                Sign in
+                                {t('login.submit')}
                             </Button>
                         </div>
                     </form>
 
                     <p className="mt-4 text-center text-xs text-black/60 dark:text-white/60">
-                        By signing in you agree to the{' '}
+                        {t('login.termsNoticeBefore')}
                         <Link to="/terms" className="text-navy dark:text-navy-tint hover:underline font-medium">
-                            Terms of use
+                            {t('login.termsOfUse')}
                         </Link>
-                        . See our{' '}
+                        {t('login.termsNoticeBetween')}
                         <Link to="/privacy" className="text-navy dark:text-navy-tint hover:underline font-medium">
-                            Privacy notice
+                            {t('login.privacyNotice')}
                         </Link>
                         .
                     </p>
 
                     <div className="mt-6 text-center text-xs text-black/60 dark:text-white/60">
-                        Need an account for your organisation?{' '}
+                        {t('login.registerInterestPrompt')}
                         <Link to="/contact?subject=ORGANISATION_REGISTRATION" className="text-navy dark:text-navy-tint hover:underline font-medium">
-                            Register your interest
+                            {t('login.registerInterest')}
                         </Link>
                     </div>
                 </div>
@@ -256,13 +258,13 @@ export const Login = () => {
             <div className="hidden lg:flex flex-1 relative items-center justify-end p-12 xl:p-24 bg-transparent">
                 <div className="relative z-10 max-w-lg text-right">
                     <h2 className="text-5xl font-bold tracking-tight text-black dark:text-white leading-[1.1]">
-                        Run your competitions<br />
+                        {t('login.heroTitle')}<br />
                         <span className="text-navy dark:text-navy-tint">
-                            in one place
+                            {t('login.heroTitleAccent')}
                         </span>
                     </h2>
                     <p className="mt-6 text-lg text-black/72 dark:text-white/72 leading-relaxed max-w-md ml-auto">
-                        Fixtures, scoring, rosters and results for Malaysian rugby.
+                        {t('login.heroSubtitle')}
                     </p>
                 </div>
             </div>

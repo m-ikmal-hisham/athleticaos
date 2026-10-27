@@ -47,11 +47,14 @@
       "noTournaments": "Belum ada kejohanan dianjurkan"
     },
     "transparencyNote": "Halaman awam hanya memaparkan nama, logo, warna, peringkat, negeri, gabungan, pasukan dan kejohanan.",
-    "notFoundTitle": "Organisasi Tidak Dijumpai",
+    "notFoundTitle": "Organisasi tidak dijumpai",
     "notFoundDesc": "Organisasi yang anda cari tidak wujud atau tidak dibuka untuk paparan umum.",
     "backToOrganisations": "Kembali ke organisasi",
     "viewTeam": "Lihat pasukan",
-    "roster": "Skuad"
+    "roster": "Skuad",
+    "subAffiliations": "{{count}} sub-gabungan",
+    "directAffiliate": "Gabungan langsung",
+    "viewPage": "Lihat halaman"
   },
   "levels": {
     "WORLD": "Dunia",

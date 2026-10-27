@@ -49,6 +49,22 @@
     "cta": "Register your organisation"
   },
   "howItWorks": {
+    "tag": "AthleticaOS Guide",
+    "title": "Experience Rugby Like Never Before",
+    "subtitle": "Follow your favourite tournaments, catch live scores, and stay updated with real-time statistics.",
+    "step1Title": "1. Browse Tournaments",
+    "step1Desc": "Explore active and upcoming tournaments across Malaysia. Find your team's schedule and standings.",
+    "step2Title": "2. Follow Live Matches",
+    "step2Desc": "Watch the action unfold with our live match center. Real-time scores, commentary, and statistics.",
+    "step3Title": "3. Share the Excitement",
+    "step3Desc": "Share match results and highlights with friends and family instantly on social media.",
+    "faqTitle": "Frequently Asked Questions",
+    "faq1Q": "Is AthleticaOS free to use?",
+    "faq1A": "Yes! AthleticaOS is completely free for fans to browse tournaments, view scores, and follow matches.",
+    "faq2Q": "How do I register my team?",
+    "faq2A": "Team registration is handled by tournament organisers. Contact the specific tournament organiser through the Contact page to inquire.",
+    "faq3Q": "Can I watch match replays?",
+    "faq3A": "Live streams and replays are available for select tournaments. Look for the 'Live' badge on match cards.",
     "journeyPrompt": "Want to see how AthleticaOS was built?",
     "journeyLink": "Follow our journey →"
   }

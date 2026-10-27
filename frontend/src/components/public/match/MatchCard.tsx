@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MapPin } from '@phosphor-icons/react';
 import { PublicMatchSummary } from '@/api/public.api';
 import { GlassCard } from '@/components/GlassCard';
-import { getImageUrl } from '@/utils/image';
+import { LogoImage } from '@/components/public/LogoImage';
 import { formatKickOff, formatTeamShortName } from '@/utils/formatters';
 import { MatchStatusBadge } from './MatchStatusBadge';
 
@@ -32,9 +32,6 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
     const homeDisplayName = formatTeamShortName(match.homeTeamShortName, match.homeTeamName);
     const awayDisplayName = formatTeamShortName(match.awayTeamShortName, match.awayTeamName);
 
-    const homeInitials = (homeDisplayName || 'H').slice(0, 2).toUpperCase();
-    const awayInitials = (awayDisplayName || 'A').slice(0, 2).toUpperCase();
-
     const formattedKickoff = formatKickOff(match.matchTime, i18n.language);
     // The centre cell already shows a scheduled match's kick-off, so the badge is only for live, FT, cancelled, W/O
     const showStatusBadge =
@@ -49,18 +46,12 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
                 {/* Home Team */}
                 <div className="flex-1 flex items-center gap-2 min-w-0">
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-sunken border border-line-subtle shrink-0 flex items-center justify-center overflow-hidden">
-                        {match.homeTeamLogoUrl ? (
-                            <img
-                                src={getImageUrl(match.homeTeamLogoUrl)}
-                                alt=""
-                                aria-hidden="true"
-                                className="w-full h-full object-contain p-0.5"
-                            />
-                        ) : (
-                            <span className="text-[11px] font-bold text-content-secondary select-none">
-                                {homeInitials}
-                            </span>
-                        )}
+                        <LogoImage
+                            src={match.homeTeamLogoUrl}
+                            name={homeDisplayName}
+                            className="p-0.5"
+                            fallbackClassName="text-[11px]"
+                        />
                     </div>
                     <div className="min-w-0 flex-1">
                         <span
@@ -106,18 +97,12 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
                         </span>
                     </div>
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-surface-sunken border border-line-subtle shrink-0 flex items-center justify-center overflow-hidden">
-                        {match.awayTeamLogoUrl ? (
-                            <img
-                                src={getImageUrl(match.awayTeamLogoUrl)}
-                                alt=""
-                                aria-hidden="true"
-                                className="w-full h-full object-contain p-0.5"
-                            />
-                        ) : (
-                            <span className="text-[11px] font-bold text-content-secondary select-none">
-                                {awayInitials}
-                            </span>
-                        )}
+                        <LogoImage
+                            src={match.awayTeamLogoUrl}
+                            name={awayDisplayName}
+                            className="p-0.5"
+                            fallbackClassName="text-[11px]"
+                        />
                     </div>
                 </div>
             </div>

@@ -10,6 +10,8 @@ import {
 import { ProfileHero } from '../../components/profile/ProfileHero';
 import { pickOrgColours } from '../../components/profile/colours';
 import { GlassCard } from '../../components/GlassCard';
+import { LogoImage } from '@/components/public/LogoImage';
+import { formatTournamentLevel } from '@/utils/formatters';
 import { RosterList } from '../../components/RosterList';
 import { CompetitionFilterBar } from '../../components/common/CompetitionFilterBar';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -21,6 +23,7 @@ import {
     X,
     BuildingOffice,
 } from '@phosphor-icons/react';
+import { enumLabel } from '@/utils/enumLabel';
 
 interface PositionGroup {
     key: string;
@@ -63,7 +66,7 @@ function classifyPlayer(player: PublicPlayerSummary): string {
 export function PublicTeamProfile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { t } = useTranslation(['profile', 'common']);
+    const { t } = useTranslation(['profile', 'teams', 'common']);
     const [team, setTeam] = useState<PublicTeamDetailResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -196,7 +199,7 @@ export function PublicTeamProfile() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
+            <div className="min-h-[60vh] flex items-center justify-center p-6">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
             </div>
         );
@@ -204,15 +207,19 @@ export function PublicTeamProfile() {
 
     if (error || !team) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6">
+            <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-2xl max-w-lg text-center border border-red-200 dark:border-red-800/40">
-                    <h2 className="text-xl font-bold mb-2">Team Not Found</h2>
-                    <p className="text-sm mb-4">{error || 'This team profile could not be found or is not public.'}</p>
+                    <h2 className="text-xl font-bold mb-2">
+                        {t('teams:profile.notFound', { defaultValue: 'Team Not Found' })}
+                    </h2>
+                    <p className="text-sm mb-4">
+                        {error || t('teams:profile.notFoundDesc', { defaultValue: 'This team profile could not be found or is not public.' })}
+                    </p>
                     <button
                         onClick={() => navigate('/teams')}
                         className="px-4 py-2 bg-red-100 dark:bg-red-800/30 text-red-700 dark:text-red-300 rounded-xl font-semibold text-sm hover:bg-red-200 transition-colors"
                     >
-                        Back to Teams
+                        {t('teams:profile.backToTeams', { defaultValue: 'Back to Teams' })}
                     </button>
                 </div>
             </div>
@@ -256,9 +263,9 @@ export function PublicTeamProfile() {
             variant: 'live',
         });
     }
-    if (team.category) chips.push({ label: team.category });
-    if (team.ageGroup) chips.push({ label: team.ageGroup });
-    if (team.division) chips.push({ label: team.division });
+    if (team.category) chips.push({ label: enumLabel(t, 'category', team.category) });
+    if (team.ageGroup) chips.push({ label: enumLabel(t, 'ageGroup', team.ageGroup) });
+    if (team.division) chips.push({ label: enumLabel(t, 'tier', team.division) });
 
     // Breadcrumb items
     const breadcrumbItems = breadcrumbChain.length > 0
@@ -273,9 +280,9 @@ export function PublicTeamProfile() {
         ];
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-16">
+        <div className="pb-16">
             {/* Profile Hero */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 mb-8">
+            <div className="mb-8">
                 <ProfileHero
                     variant="team"
                     size="public"
@@ -304,7 +311,7 @@ export function PublicTeamProfile() {
             </div>
 
             {/* Mobile Tab Selector (< lg) */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6 lg:hidden">
+            <div className="mb-6 lg:hidden">
                 <div className="grid grid-cols-3 gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-2xl">
                     <button
                         onClick={() => setMobileTab('squad')}
@@ -340,7 +347,7 @@ export function PublicTeamProfile() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left 2 Columns: Squad View */}
                     <div className={`lg:col-span-2 space-y-6 ${mobileTab !== 'squad' ? 'hidden lg:block' : ''}`}>
@@ -371,7 +378,7 @@ export function PublicTeamProfile() {
                                     />
                                     {playerSearch && (
                                         <button
-                                            aria-label="Clear search"
+                                            aria-label={t('teams:list.clearSearch', { defaultValue: 'Clear search' })}
                                             onClick={() => setPlayerSearch('')}
                                             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                         >
@@ -417,7 +424,7 @@ export function PublicTeamProfile() {
                                             }))}
                                             selectedTournamentId={selectedTournamentId || null}
                                             onSelect={handleTournamentSelect}
-                                            allLabel="All Tournaments (Global)"
+                                            allLabel={t('teams:profile.allTournamentsGlobal', { defaultValue: 'All Tournaments (Global)' })}
                                             variant="public"
                                         />
                                     </div>
@@ -540,18 +547,17 @@ export function PublicTeamProfile() {
                                                         {org.name}
                                                     </div>
                                                     <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
-                                                        {org.level}
+                                                        {formatTournamentLevel(org.level, t)}
                                                     </div>
                                                 </div>
-                                                {org.logoUrl ? (
-                                                    <img
+                                                <div className="w-6 h-6 rounded shrink-0 overflow-hidden flex items-center justify-center">
+                                                    <LogoImage
                                                         src={org.logoUrl}
-                                                        alt={org.name}
-                                                        className="w-6 h-6 object-contain rounded shrink-0"
+                                                        name={org.name}
+                                                        className="w-full h-full object-contain"
+                                                        icon={<Shield className="w-5 h-5 text-slate-400" />}
                                                     />
-                                                ) : (
-                                                    <Shield className="w-5 h-5 text-slate-400 shrink-0" />
-                                                )}
+                                                </div>
                                             </Link>
                                         </div>
                                     ))}
@@ -565,18 +571,17 @@ export function PublicTeamProfile() {
                                             <div className="min-w-0 pr-2">
                                                 <div className="text-xs font-black truncate">{team.name}</div>
                                                 <div className="text-[10px] uppercase font-bold tracking-wider text-white/60">
-                                                    THIS TEAM
+                                                    {t('teams:profile.thisTeam', { defaultValue: 'THIS TEAM' })}
                                                 </div>
                                             </div>
-                                            {team.logoUrl ? (
-                                                <img
+                                            <div className="w-7 h-7 rounded shrink-0 overflow-hidden flex items-center justify-center">
+                                                <LogoImage
                                                     src={team.logoUrl}
-                                                    alt={team.name}
-                                                    className="w-7 h-7 object-contain rounded shrink-0"
+                                                    name={team.name}
+                                                    className="w-full h-full object-contain"
+                                                    icon={<Shield className="w-5 h-5 text-white/70" />}
                                                 />
-                                            ) : (
-                                                <Shield className="w-5 h-5 text-white/70 shrink-0" />
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -610,15 +615,15 @@ export function PublicTeamProfile() {
                                                         {isLive ? (
                                                             <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#C1121F] text-white shadow-sm flex items-center gap-1">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                                                LIVE
+                                                                {t('common:status.live', { defaultValue: 'LIVE' })}
                                                             </span>
                                                         ) : isUpcoming ? (
                                                             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
-                                                                UPCOMING
+                                                                {t('common:status.upcoming', { defaultValue: 'UPCOMING' })}
                                                             </span>
                                                         ) : (
                                                             <span className="px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                                                {tourn.status || 'COMPLETED'}
+                                                                {tourn.status ? t(`common:status.${tourn.status.toLowerCase()}`, { defaultValue: tourn.status }) : t('common:status.completed', { defaultValue: 'COMPLETED' })}
                                                             </span>
                                                         )}
                                                     </div>
@@ -628,7 +633,7 @@ export function PublicTeamProfile() {
                                     </div>
                                 ) : (
                                     <p className="text-xs text-slate-500 py-4 text-center">
-                                        No tournament records for this team yet.
+                                        {t('teams:profile.noTournaments', { defaultValue: 'No tournament records for this team yet.' })}
                                     </p>
                                 )}
                             </GlassCard>

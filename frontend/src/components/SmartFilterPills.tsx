@@ -14,6 +14,8 @@ interface SmartFilterPillsProps {
     selectedId: string | null;
     onSelect: (id: string | null) => void;
     label?: string; // Optional label "Filter by status..."
+    /** Text of the clear/All pill; public pages pass the translated word. */
+    allLabel?: string;
     className?: string;
 }
 
@@ -26,6 +28,7 @@ export const SmartFilterPills = ({
     selectedId,
     onSelect,
     label,
+    allLabel = 'All',
     className
 }: SmartFilterPillsProps) => {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -82,7 +85,7 @@ export const SmartFilterPills = ({
                     {...{ "aria-selected": selectedId === null ? "true" : "false" }}
                     role="tab"
                 >
-                    All
+                    {allLabel}
                 </button>
 
                 {options.map((option) => {

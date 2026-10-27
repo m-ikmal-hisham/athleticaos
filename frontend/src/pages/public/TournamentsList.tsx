@@ -3,12 +3,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trophy, MagnifyingGlass, ListBullets } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { publicTournamentApi, PublicTournamentSummary } from '../../api/public.api';
-import { TournamentLogo } from '@/components/common/TournamentLogo';
+import { LogoImage } from '@/components/public/LogoImage';
 import { GlassCard } from '@/components/GlassCard';
 import { SmartFilterPills } from '@/components/SmartFilterPills';
 import { formatCompetitionType, formatTournamentLevel } from '@/utils/formatters';
 import { sortTournamentsForList } from '@/utils/tournamentSort';
-import { todayInMalaysia, formatIsoYearMonth } from '@/utils/malaysiaDate';
+import { todayInMalaysia, formatIsoYearMonth, formatCalendarDate, getDateLocale } from '@/utils/malaysiaDate';
 import { TournamentCalendarSkeleton } from '@/components/public/calendar/TournamentCalendarSkeleton';
 
 const TournamentCalendar = lazy(() => import('@/components/public/calendar/TournamentCalendar'));
@@ -16,7 +16,7 @@ const TournamentCalendar = lazy(() => import('@/components/public/calendar/Tourn
 const STORAGE_VIEW_KEY = 'athos_tournaments_view';
 
 export default function TournamentsList() {
-    const { t } = useTranslation(['calendar', 'common']);
+    const { t, i18n } = useTranslation(['tournament', 'calendar', 'common']);
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Determine initial view: URL ?view=... -> localStorage -> default 'list'
@@ -116,23 +116,25 @@ export default function TournamentsList() {
         }, { replace: true });
     };
 
+    const dateLocale = getDateLocale(i18n.language);
+
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="font-score text-3xl font-bold text-slate-900 dark:text-white">
-                        Tournaments
+                        {t('tournament:list.title')}
                     </h1>
                     <p className="text-slate-600 dark:text-slate-400">
-                        Browse rugby tournaments — live, upcoming and completed
+                        {t('tournament:list.subtitle')}
                     </p>
                 </div>
 
                 {/* View Switch Segmented Control */}
                 <div
                     role="tablist"
-                    aria-label="Tournament View"
+                    aria-label={t('tournament:list.viewAriaLabel')}
                     className="inline-flex p-1 rounded-[12px] bg-surface-sunken border border-line-subtle shadow-2xs self-start sm:self-auto"
                 >
                     <button
@@ -186,7 +188,7 @@ export default function TournamentsList() {
                             <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-black/60 dark:text-white/60" />
                             <input
                                 type="text"
-                                placeholder="Search tournaments..."
+                                placeholder={t('tournament:list.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-900 dark:text-white placeholder-slate-400"
@@ -196,10 +198,11 @@ export default function TournamentsList() {
                         {/* Status Filter */}
                         <SmartFilterPills
                             options={[
-                                { id: 'live', label: 'Live' },
-                                { id: 'upcoming', label: 'Upcoming' },
-                                { id: 'completed', label: 'Completed' },
+                                { id: 'live', label: t('tournament:list.filterLive') },
+                                { id: 'upcoming', label: t('tournament:list.filterUpcoming') },
+                                { id: 'completed', label: t('tournament:list.filterCompleted') },
                             ]}
+                            allLabel={t('common:filter.all')}
                             selectedId={statusFilter}
                             onSelect={(id) => setStatusFilter(id as 'live' | 'upcoming' | 'completed' | null)}
                         />
@@ -207,7 +210,7 @@ export default function TournamentsList() {
 
                     {/* Results Count */}
                     <div className="text-sm text-slate-600 dark:text-slate-400">
-                        Showing {filteredTournaments.length} of {tournaments.length} tournaments
+                        {t('tournament:list.showingCount', { count: filteredTournaments.length, total: tournaments.length })}
                     </div>
 
                     {/* Tournaments Grid */}
@@ -224,10 +227,10 @@ export default function TournamentsList() {
                         <div className="text-center py-16 rounded-[14px] glass-card-surface">
                             <Trophy className="w-16 h-16 mx-auto text-black/60 dark:text-white/60 mb-4" />
                             <p className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                                No tournaments found
+                                {t('tournament:list.emptyTitle')}
                             </p>
                             <p className="text-slate-600 dark:text-slate-400">
-                                Try adjusting your filters or search query
+                                {t('tournament:list.emptyDescription')}
                             </p>
                         </div>
                     ) : (
@@ -245,17 +248,17 @@ export default function TournamentsList() {
                                                 {tournament.live && (
                                                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-crimson text-white text-xs font-bold uppercase tracking-wider shadow-sm">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                                        LIVE
+                                                        {t('common:status.live')}
                                                     </div>
                                                 )}
                                                 {tournament.completed && (
                                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
-                                                        COMPLETED
+                                                        {t('common:status.completed')}
                                                     </div>
                                                 )}
                                                 {!tournament.live && !tournament.completed && (
                                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-glass-bg backdrop-blur-2xl border border-glass-border shadow-lg text-foreground text-xs font-medium">
-                                                        UPCOMING
+                                                        {t('common:status.upcoming')}
                                                     </div>
                                                 )}
                                             </div>
@@ -267,8 +270,8 @@ export default function TournamentsList() {
                                                         {tournament.name}
                                                     </h3>
                                                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                                        {formatTournamentLevel(tournament.level)}
-                                                        {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType)}`}
+                                                        {formatTournamentLevel(tournament.level, t)}
+                                                        {tournament.competitionType && ` • ${formatCompetitionType(tournament.competitionType, t)}`}
                                                     </p>
                                                     {tournament.seasonName && (
                                                         <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
@@ -278,9 +281,10 @@ export default function TournamentsList() {
                                                 </div>
                                                 {(tournament.logoUrl || tournament.organiserBranding?.logoUrl) && (
                                                     <div className="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700/50 rounded-lg p-1 border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                                        <TournamentLogo
-                                                            tournamentId={tournament.id}
-                                                            logoUrl={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
+                                                        <LogoImage
+                                                            src={tournament.logoUrl || tournament.organiserBranding?.logoUrl}
+                                                            name={tournament.name}
+                                                            size="md"
                                                             className="w-full h-full object-contain"
                                                         />
                                                     </div>
@@ -292,8 +296,8 @@ export default function TournamentsList() {
                                                 <div className="flex items-center gap-2">
                                                     <CalendarBlank className="w-4 h-4 flex-shrink-0" />
                                                     <span className="truncate">
-                                                        {new Date(tournament.startDate).toLocaleDateString()} -{' '}
-                                                        {new Date(tournament.endDate).toLocaleDateString()}
+                                                        {formatCalendarDate(tournament.startDate, 'd MMM yyyy', { locale: dateLocale })} -{' '}
+                                                        {formatCalendarDate(tournament.endDate, 'd MMM yyyy', { locale: dateLocale })}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2">

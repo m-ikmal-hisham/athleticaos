@@ -1,0 +1,12 @@
+{
+  "title": "Portal media",
+  "subtitle": "Akses selamat untuk rakan media yang diberi kuasa",
+  "partnerAccess": "Akses rakan kongsi",
+  "loading": "Memuatkan aset media...",
+  "selectMatch": "Pilih perlawanan untuk melihat media",
+  "emptyTitle": "Tiada media tersedia",
+  "emptyDescription": "Tiada aset dimuat naik untuk perlawanan ini lagi.",
+  "download": "Muat turun",
+  "untitledAsset": "Aset tanpa tajuk",
+  "loadError": "Gagal memuatkan aset media"
+}

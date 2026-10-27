@@ -68,10 +68,10 @@ export function TournamentPopover({ tournament, onClose, anchorRect }: Tournamen
     }
 
     const levelText = tournament.level
-        ? t(`calendar:level.${tournament.level.toLowerCase()}`, { defaultValue: formatTournamentLevel(tournament.level) })
+        ? t(`calendar:level.${tournament.level.toLowerCase()}`, { defaultValue: formatTournamentLevel(tournament.level, t) })
         : '';
     const compTypeText = tournament.competitionType
-        ? t(`calendar:competitionType.${tournament.competitionType.toLowerCase()}`, { defaultValue: formatCompetitionType(tournament.competitionType) })
+        ? t(`calendar:competitionType.${tournament.competitionType.toLowerCase()}`, { defaultValue: formatCompetitionType(tournament.competitionType, t) })
         : '';
 
     return (

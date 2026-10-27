@@ -72,11 +72,11 @@ export function CalendarFilters({
     };
 
     const getLevelLabel = (level: string) => {
-        return t(`calendar:level.${level.toLowerCase()}`, { defaultValue: formatTournamentLevel(level) });
+        return t(`calendar:level.${level.toLowerCase()}`, { defaultValue: formatTournamentLevel(level, t) });
     };
 
     const getCompTypeLabel = (type: string) => {
-        return t(`calendar:competitionType.${type.toLowerCase()}`, { defaultValue: formatCompetitionType(type) });
+        return t(`calendar:competitionType.${type.toLowerCase()}`, { defaultValue: formatCompetitionType(type, t) });
     };
 
     const renderFilterControls = (isMobile = false) => (

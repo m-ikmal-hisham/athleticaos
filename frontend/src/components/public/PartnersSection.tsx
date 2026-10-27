@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PARTNERS, Partner } from '@/config/partners';
 import { PartnerLogo } from '@/components/public/PartnerLogo';
 import { useSponsorTracker } from '@/hooks/useSponsorTracker';
@@ -39,11 +40,13 @@ export const PartnersSection = ({
     className = '',
     showHeading = true,
 }: PartnersSectionProps) => {
+    const { t } = useTranslation('common');
+
     if (variant === 'compact') {
         return (
             <div className={`py-4 flex flex-wrap items-center justify-center gap-4 ${className}`}>
                 <span className="text-xs font-semibold text-black/70 dark:text-white/70">
-                    Partners
+                    {t('partners.title')}
                 </span>
                 {PARTNERS.map((partner) => (
                     <TrackedPartner
@@ -63,7 +66,7 @@ export const PartnersSection = ({
             {showHeading && (
                 <div className="text-center mb-10">
                     <h2 className="text-2xl font-bold text-black dark:text-white">
-                        Our partners
+                        {t('partners.ourPartners')}
                     </h2>
                 </div>
             )}
@@ -88,17 +91,17 @@ export const PartnersSection = ({
 
             <div className="mt-8 max-w-2xl mx-auto bg-white dark:bg-deep-navy border border-black/10 dark:border-white/12 rounded-[14px] p-6 sm:p-8 text-center">
                 <h3 className="text-base sm:text-lg font-semibold text-black dark:text-white">
-                    Partner with us
+                    {t('partners.partnerWithUs')}
                 </h3>
                 <p className="text-sm text-black/70 dark:text-white/70 mt-2">
-                    Organisations and companies interested in working with AthleticaOS can register their interest.
+                    {t('partners.partnerWithUsDesc')}
                 </p>
                 <div className="mt-6 flex justify-center">
                     <Link
                         to="/contact?subject=PARTNERSHIP"
                         className="inline-flex items-center justify-center px-4 py-2 min-h-[44px] text-sm font-medium rounded-xl border border-black/10 dark:border-white/12 bg-white dark:bg-deep-navy text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     >
-                        Get in touch
+                        {t('partners.getInTouch')}
                     </Link>
                 </div>
             </div>
