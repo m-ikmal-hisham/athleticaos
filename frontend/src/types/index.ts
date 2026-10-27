@@ -453,6 +453,9 @@ export interface TournamentFormatConfig {
     pointsLoss?: number;
     pointsBonusTry?: number;
     pointsBonusLoss?: number;
+    bonusPointsEnabled?: boolean;
+    bonusTryThreshold?: number;
+    bonusLosingMargin?: number;
     startersCount: number;
     maxBenchCount: number;
     includePlacementStages?: boolean;
@@ -606,8 +609,12 @@ export interface Standings {
     pointsFor: number;
     pointsAgainst: number;
     pointsDiff: number;
+    bonusPoints?: number;
+    triesFor?: number;
     points: number;
     categoryId?: string;
+    bonusPointsEnabled?: boolean;
+    unrecordedBonusMatchCodes?: string[];
 }
 
 export type StandingsResponse = Standings;

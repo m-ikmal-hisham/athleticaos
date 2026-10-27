@@ -1,6 +1,7 @@
 package com.athleticaos.backend.dtos.tournament;
 
 import com.athleticaos.backend.enums.TournamentFormat;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -52,8 +53,24 @@ public class TournamentFormatConfigDTO {
     private Integer pointsWin;
     private Integer pointsDraw;
     private Integer pointsLoss;
+
+    @Min(0)
+    @Max(5)
     private Integer pointsBonusTry;
+
+    @Min(0)
+    @Max(5)
     private Integer pointsBonusLoss;
+
+    private Boolean bonusPointsEnabled;
+
+    @Min(1)
+    @Max(20)
+    private Integer bonusTryThreshold;
+
+    @Min(0)
+    @Max(50)
+    private Integer bonusLosingMargin;
 
     // Lineups
     @NotNull

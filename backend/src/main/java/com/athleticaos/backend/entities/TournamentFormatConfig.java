@@ -101,6 +101,18 @@ public class TournamentFormatConfig {
     @Builder.Default
     private Integer pointsBonusLoss = 1;
 
+    @Column(name = "bonus_points_enabled", nullable = false)
+    @Builder.Default
+    private Boolean bonusPointsEnabled = false;
+
+    @Column(name = "bonus_try_threshold", nullable = false)
+    @Builder.Default
+    private Integer bonusTryThreshold = 4;
+
+    @Column(name = "bonus_losing_margin", nullable = false)
+    @Builder.Default
+    private Integer bonusLosingMargin = 7;
+
     // Lineup Rules
     @Column(name = "starters_count", nullable = false)
     private Integer startersCount;
