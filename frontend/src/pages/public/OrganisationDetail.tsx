@@ -335,7 +335,7 @@ export function OrganisationDetail() {
                                                         {tItem.name}
                                                     </div>
                                                     {tItem.startDate && (
-                                                        <div className="text-[11px] text-content-secondary mt-0.5 flex items-center gap-1">
+                                                        <div className="text-xs text-content-secondary mt-0.5 flex items-center gap-1">
                                                             <Calendar size={12} />
                                                             <span>{formatOrgDate(tItem.startDate)}</span>
                                                         </div>

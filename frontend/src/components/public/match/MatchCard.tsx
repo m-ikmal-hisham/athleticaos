@@ -78,7 +78,7 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
                     )}
 
                     {match.resultType && match.resultType !== 'NORMAL' && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-accent-text mt-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-accent-text mt-0.5">
                             {match.resultType === 'BYE'
                                 ? t('common:status.bye', { defaultValue: 'Bye' })
                                 : t('common:status.walkover', { defaultValue: 'W/O' })}

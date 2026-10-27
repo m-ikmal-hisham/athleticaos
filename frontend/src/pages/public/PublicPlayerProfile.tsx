@@ -316,7 +316,7 @@ export function PublicPlayerProfile() {
                                 {selectedTournamentId && (
                                     <button
                                         onClick={() => handleTournamentSelect(null)}
-                                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
+                                        className="min-h-[44px] inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-navy dark:text-navy-tint bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
                                     >
                                         <span>{t('players:profile.viewAllTimeCareer', { defaultValue: 'View all-time career' })}</span>
                                     </button>
@@ -352,7 +352,7 @@ export function PublicPlayerProfile() {
                                                                 {match.teamName || '—'}
                                                             </span>
                                                             {match.tournamentName && (
-                                                                <span className="text-slate-400 text-[10px] truncate max-w-[130px]">
+                                                                <span className="text-slate-400 text-xs truncate max-w-[130px]">
                                                                     {match.tournamentName}
                                                                 </span>
                                                             )}
@@ -488,7 +488,7 @@ export function PublicPlayerProfile() {
                                         {player.currentTeamId ? (
                                             <Link
                                                 to={`/teams/${player.currentTeamId}`}
-                                                className="font-semibold text-navy dark:text-navy-tint hover:underline text-xs truncate max-w-[160px]"
+                                                className="font-semibold text-navy dark:text-navy-tint hover:underline text-xs truncate max-w-[160px] inline-flex items-center min-h-[24px]"
                                             >
                                                 {player.currentTeamName}
                                             </Link>
@@ -504,7 +504,7 @@ export function PublicPlayerProfile() {
                             {/* Public transparency note */}
                             <div className="mt-5 p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 flex items-start gap-2.5">
                                 <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                                <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 font-medium">
+                                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-medium">
                                     {t('player.detailsNote', "Only details the player's organisation has made public are shown.")}
                                 </p>
                             </div>

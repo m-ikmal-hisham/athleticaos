@@ -12,6 +12,7 @@ import { DisciplineImpactCard } from './match/DisciplineImpactCard';
 import { ScoringBreakdown } from './match/ScoringBreakdown';
 import { MatchLineups } from './match/MatchLineups';
 import { PartnersSection } from '@/components/public/PartnersSection';
+import { ScrollableTabStrip } from '@/components/public/ScrollableTabStrip';
 
 type MatchTab = 'lineups' | 'stats' | 'moments';
 
@@ -145,26 +146,30 @@ export default function MatchCenter() {
             />
 
             {/* Tab Navigation */}
-            <div className="flex justify-center">
-                <div className="flex w-full sm:w-auto p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm">
-                    {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
-                        <button
-                            key={key}
-                            id={`tab-${key}`}
-                            onClick={() => setActiveTab(key)}
-                            className={`
-                                relative flex-1 sm:flex-none justify-center px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all duration-300
-                                ${activeTab === key
-                                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-md ring-1 ring-slate-200/50 dark:ring-white/10'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
-                            `}
-                        >
-                            <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-navy dark:text-navy-tint' : ''}`} weight={activeTab === key ? 'fill' : 'duotone'} />
-                            <span>{label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <ScrollableTabStrip
+                activeTab={activeTab}
+                className="flex justify-center"
+                navClassName="w-full sm:w-auto p-1 bg-white/60 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/10 backdrop-blur-md shadow-sm justify-start sm:justify-center"
+            >
+                {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
+                    <button
+                        key={key}
+                        id={`tab-${key}`}
+                        role="tab"
+                        aria-selected={activeTab === key}
+                        onClick={() => setActiveTab(key)}
+                        className={`
+                            relative flex-1 sm:flex-none justify-center min-h-[44px] px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all duration-300
+                            ${activeTab === key
+                                ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-md ring-1 ring-slate-200/50 dark:ring-white/10'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-white/5'}
+                        `}
+                    >
+                        <Icon className={`w-4 h-4 transition-colors ${activeTab === key ? 'text-navy dark:text-navy-tint' : ''}`} weight={activeTab === key ? 'fill' : 'duotone'} />
+                        <span>{label}</span>
+                    </button>
+                ))}
+            </ScrollableTabStrip>
 
             {/* Tab Content */}
             <div className="animate-fade-in">

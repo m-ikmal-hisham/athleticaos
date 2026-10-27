@@ -431,7 +431,7 @@ export default function Journey() {
                                         <div>
                                             <span>{item.title[lang]}</span>
                                             {item.testing && (
-                                                <span className="ml-2 inline-block px-2 py-0.5 text-[11px] font-semibold rounded bg-surface-sunken text-navy dark:text-navy-tint border border-line-subtle">
+                                                <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded bg-surface-sunken text-navy dark:text-navy-tint border border-line-subtle">
                                                     {t('roadmap.testingOnStaging')}
                                                 </span>
                                             )}
@@ -459,7 +459,7 @@ export default function Journey() {
                                         <div>
                                             <span>{item.title[lang]}</span>
                                             {item.testing && (
-                                                <span className="ml-2 inline-block px-2 py-0.5 text-[11px] font-semibold rounded bg-surface-sunken text-navy dark:text-navy-tint border border-line-subtle">
+                                                <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded bg-surface-sunken text-navy dark:text-navy-tint border border-line-subtle">
                                                     {t('roadmap.testingOnStaging')}
                                                 </span>
                                             )}
@@ -487,7 +487,7 @@ export default function Journey() {
                                         <div>
                                             <span>{item.title[lang]}</span>
                                             {item.testing && (
-                                                <span className="ml-2 inline-block px-2 py-0.5 text-[11px] font-semibold rounded bg-surface-sunken text-navy dark:text-navy-tint border border-line-subtle">
+                                                <span className="ml-2 inline-block px-2 py-0.5 text-xs font-semibold rounded bg-surface-sunken text-navy dark:text-navy-tint border border-line-subtle">
                                                     {t('roadmap.testingOnStaging')}
                                                 </span>
                                             )}

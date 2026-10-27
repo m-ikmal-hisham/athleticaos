@@ -198,7 +198,7 @@ export function MonthGrid({
                                                             : 'bg-brand'
                                                     }`}
                                                 />
-                                                <span className="text-[10px] font-bold font-mono text-content-secondary leading-none">
+                                                <span className="text-[11px] font-bold font-mono text-content-secondary leading-none">
                                                     {totalMatches}
                                                 </span>
                                             </div>
@@ -217,7 +217,7 @@ export function MonthGrid({
                                                     e.stopPropagation();
                                                     onSelectDay(day);
                                                 }}
-                                                className="text-[10px] font-semibold text-brand hover:underline px-1 py-0.5 rounded hover:bg-brand/10 transition-colors"
+                                                className="text-[11px] font-semibold text-brand hover:underline px-1 py-0.5 rounded hover:bg-brand/10 transition-colors"
                                                 aria-label={t('calendar:moreTournaments', { count: overflow })}
                                             >
                                                 {t('calendar:moreTournaments', { count: overflow })}

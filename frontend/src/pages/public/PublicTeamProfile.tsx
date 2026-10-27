@@ -22,6 +22,7 @@ import {
     MagnifyingGlass,
     X,
     BuildingOffice,
+    CaretDown,
 } from '@phosphor-icons/react';
 import { enumLabel } from '@/utils/enumLabel';
 
@@ -74,6 +75,14 @@ export function PublicTeamProfile() {
     const [playerSearch, setPlayerSearch] = useState('');
     const [rosterView, setRosterView] = useState<'position' | 'stats'>('position');
     const [mobileTab, setMobileTab] = useState<'squad' | 'tournaments' | 'club'>('squad');
+    const [openPositionGroups, setOpenPositionGroups] = useState<Record<string, boolean>>({});
+
+    const togglePositionGroup = (key: string, defaultOpen: boolean) => {
+        setOpenPositionGroups(prev => ({
+            ...prev,
+            [key]: !(prev[key] ?? defaultOpen),
+        }));
+    };
 
     const [searchParams, setSearchParams] = useSearchParams();
     const initialTournamentId = searchParams.get('tournamentId') || '';
@@ -315,7 +324,7 @@ export function PublicTeamProfile() {
                 <div className="grid grid-cols-3 gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-2xl">
                     <button
                         onClick={() => setMobileTab('squad')}
-                        className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                        className={`min-h-[44px] flex items-center justify-center py-2 text-xs font-bold rounded-xl transition-all ${
                             mobileTab === 'squad'
                                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -325,7 +334,7 @@ export function PublicTeamProfile() {
                     </button>
                     <button
                         onClick={() => setMobileTab('tournaments')}
-                        className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                        className={`min-h-[44px] flex items-center justify-center py-2 text-xs font-bold rounded-xl transition-all ${
                             mobileTab === 'tournaments'
                                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -335,7 +344,7 @@ export function PublicTeamProfile() {
                     </button>
                     <button
                         onClick={() => setMobileTab('club')}
-                        className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                        className={`min-h-[44px] flex items-center justify-center py-2 text-xs font-bold rounded-xl transition-all ${
                             mobileTab === 'club'
                                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -374,13 +383,13 @@ export function PublicTeamProfile() {
                                         placeholder={t('searchPlayerPlaceholder', 'Search squad by name, position or jersey...')}
                                         value={playerSearch}
                                         onChange={(e) => setPlayerSearch(e.target.value)}
-                                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-navy transition-all"
+                                        className="w-full pl-10 pr-10 min-h-[44px] py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-navy transition-all"
                                     />
                                     {playerSearch && (
                                         <button
                                             aria-label={t('teams:list.clearSearch', { defaultValue: 'Clear search' })}
                                             onClick={() => setPlayerSearch('')}
-                                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
@@ -393,7 +402,7 @@ export function PublicTeamProfile() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setRosterView('position')}
-                                        className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
+                                        className={`min-h-[44px] inline-flex items-center pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
                                             rosterView === 'position'
                                                 ? 'border-navy text-navy dark:border-navy-tint dark:text-navy-tint'
                                                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
@@ -403,7 +412,7 @@ export function PublicTeamProfile() {
                                     </button>
                                     <button
                                         onClick={() => setRosterView('stats')}
-                                        className={`pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
+                                        className={`min-h-[44px] inline-flex items-center pb-2.5 px-4 font-bold text-sm transition-all border-b-2 ${
                                             rosterView === 'stats'
                                                 ? 'border-navy text-navy dark:border-navy-tint dark:text-navy-tint'
                                                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
@@ -436,58 +445,73 @@ export function PublicTeamProfile() {
                                 rosterView === 'position' ? (
                                     /* Grouped By Position */
                                     <div className="space-y-6">
-                                        {positionGroups.map(grp => (
-                                            <div key={grp.key}>
-                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
-                                                    <span>{t(grp.titleKey, grp.key)}</span>
-                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                        ({grp.players.length})
-                                                    </span>
-                                                </h3>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    {grp.players.map(player => (
-                                                        <div
-                                                            key={player.id}
-                                                            onClick={() =>
-                                                                navigate(
-                                                                    `/players/${player.id}${
-                                                                        selectedTournamentId
-                                                                            ? `?tournamentId=${selectedTournamentId}`
-                                                                            : ''
-                                                                    }`
-                                                                )
-                                                            }
-                                                            className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/60 hover:shadow-md transition-all cursor-pointer group"
-                                                        >
-                                                            {/* Navy jersey-number square with inset bottom colour bar */}
-                                                            <div className="w-11 h-11 rounded-xl bg-[#0D1B2A] text-white flex flex-col items-center justify-center relative overflow-hidden font-score shrink-0 shadow-sm">
-                                                                <span className="text-sm font-black">
-                                                                    {player.jerseyNumber !== undefined && player.jerseyNumber !== null
-                                                                        ? player.jerseyNumber
-                                                                        : '—'}
-                                                                </span>
-                                                                {/* Inset bottom bar in organisation primary colour */}
-                                                                <div
-                                                                    className="absolute bottom-0 inset-x-0 h-1.5"
-                                                                    style={{ backgroundColor: orgColours.primary }}
-                                                                />
-                                                            </div>
+                                        {positionGroups.map((grp, idx) => {
+                                            const defaultOpen = idx === 0;
+                                            const isOpen = openPositionGroups[grp.key] ?? defaultOpen;
+                                            return (
+                                                <div key={grp.key} className="border-b border-slate-100 dark:border-slate-800 md:border-b-0 pb-4 md:pb-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePositionGroup(grp.key, defaultOpen)}
+                                                        className="w-full min-h-[44px] flex items-center justify-between text-left mb-3 group/grp md:pointer-events-none"
+                                                        aria-expanded={isOpen}
+                                                    >
+                                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                            <span>{t(grp.titleKey, grp.key)}</span>
+                                                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                                                                ({grp.players.length})
+                                                            </span>
+                                                        </span>
+                                                        <CaretDown
+                                                            className={`w-4 h-4 text-slate-400 transition-transform duration-200 md:hidden ${isOpen ? 'rotate-180' : ''}`}
+                                                            weight="bold"
+                                                        />
+                                                    </button>
+                                                    <div className={`grid-cols-1 sm:grid-cols-2 gap-3 ${isOpen ? 'grid' : 'hidden md:grid'}`}>
+                                                        {grp.players.map(player => (
+                                                            <div
+                                                                key={player.id}
+                                                                onClick={() =>
+                                                                    navigate(
+                                                                        `/players/${player.id}${
+                                                                            selectedTournamentId
+                                                                                ? `?tournamentId=${selectedTournamentId}`
+                                                                                : ''
+                                                                        }`
+                                                                    )
+                                                                }
+                                                                className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/60 hover:shadow-md transition-all cursor-pointer group"
+                                                            >
+                                                                {/* Navy jersey-number square with inset bottom colour bar */}
+                                                                <div className="w-11 h-11 rounded-xl bg-[#0D1B2A] text-white flex flex-col items-center justify-center relative overflow-hidden font-score shrink-0 shadow-sm">
+                                                                    <span className="text-sm font-black">
+                                                                        {player.jerseyNumber !== undefined && player.jerseyNumber !== null
+                                                                            ? player.jerseyNumber
+                                                                            : '—'}
+                                                                    </span>
+                                                                    {/* Inset bottom bar in organisation primary colour */}
+                                                                    <div
+                                                                        className="absolute bottom-0 inset-x-0 h-1.5"
+                                                                        style={{ backgroundColor: orgColours.primary }}
+                                                                    />
+                                                                </div>
 
-                                                            {/* Player Name and Position */}
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="font-bold text-slate-900 dark:text-white text-sm truncate group-hover:text-navy dark:group-hover:text-navy-tint transition-colors">
-                                                                    {player.firstName} {player.lastName}
-                                                                </div>
-                                                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                                                                    {player.position || 'Player'}
-                                                                    {player.position2 ? ` · ${player.position2}` : ''}
+                                                                {/* Player Name and Position */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="font-bold text-slate-900 dark:text-white text-sm truncate group-hover:text-navy dark:group-hover:text-navy-tint transition-colors">
+                                                                        {player.firstName} {player.lastName}
+                                                                    </div>
+                                                                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                                                        {player.position || 'Player'}
+                                                                        {player.position2 ? ` · ${player.position2}` : ''}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     /* Standard Stats View */
@@ -540,13 +564,13 @@ export function PublicTeamProfile() {
                                             />
                                             <Link
                                                 to={`/organisations/${org.slug || org.id}`}
-                                                className="flex-1 p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 transition-all flex items-center justify-between group"
+                                                className="flex-1 min-h-[44px] p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 transition-all flex items-center justify-between group"
                                             >
                                                 <div className="min-w-0 pr-2">
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-navy dark:group-hover:text-navy-tint transition-colors">
                                                         {org.name}
                                                     </div>
-                                                    <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
+                                                    <div className="text-[11px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
                                                         {formatTournamentLevel(org.level, t)}
                                                     </div>
                                                 </div>
@@ -570,7 +594,7 @@ export function PublicTeamProfile() {
                                         <div className="flex-1 p-3 rounded-xl bg-[#0D1B2A] text-white border border-white/10 shadow-sm flex items-center justify-between">
                                             <div className="min-w-0 pr-2">
                                                 <div className="text-xs font-black truncate">{team.name}</div>
-                                                <div className="text-[10px] uppercase font-bold tracking-wider text-white/60">
+                                                <div className="text-[11px] uppercase font-bold tracking-wider text-white/60">
                                                     {t('teams:profile.thisTeam', { defaultValue: 'THIS TEAM' })}
                                                 </div>
                                             </div>
@@ -606,23 +630,23 @@ export function PublicTeamProfile() {
                                                 <Link
                                                     key={tourn.id}
                                                     to={`/tournaments/${tourn.id}`}
-                                                    className="p-3 rounded-2xl bg-white/60 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 transition-all flex items-center justify-between gap-3 group"
+                                                    className="min-h-[44px] p-3 rounded-2xl bg-white/60 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 transition-all flex items-center justify-between gap-3 group"
                                                 >
                                                     <div className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-navy dark:group-hover:text-navy-tint transition-colors truncate">
                                                         {tourn.name}
                                                     </div>
                                                     <div className="shrink-0">
                                                         {isLive ? (
-                                                            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#C1121F] text-white shadow-sm flex items-center gap-1">
+                                                            <span className="px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-[#C1121F] text-white shadow-sm flex items-center gap-1">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                                                 {t('common:status.live', { defaultValue: 'LIVE' })}
                                                             </span>
                                                         ) : isUpcoming ? (
-                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
+                                                            <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
                                                                 {t('common:status.upcoming', { defaultValue: 'UPCOMING' })}
                                                             </span>
                                                         ) : (
-                                                            <span className="px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                                            <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                                                                 {tourn.status ? t(`common:status.${tourn.status.toLowerCase()}`, { defaultValue: tourn.status }) : t('common:status.completed', { defaultValue: 'COMPLETED' })}
                                                             </span>
                                                         )}

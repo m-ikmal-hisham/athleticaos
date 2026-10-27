@@ -81,6 +81,8 @@
     "viewAll": "View all",
     "search": "Search",
     "filter": "Filter",
+    "filterButton": "Filters",
+    "filterWithCount": "Filters ({{count}})",
     "clear": "Clear",
     "clearFilters": "Clear filters",
     "apply": "Apply",
@@ -220,6 +222,9 @@
     "VETERANS": "Veterans"
   },
   "filter": {
-    "all": "All"
+    "all": "All",
+    "category": "Category",
+    "state": "State",
+    "position": "Position"
   }
 }
