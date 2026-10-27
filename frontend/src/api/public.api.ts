@@ -192,7 +192,10 @@ export interface PublicStanding {
     pointsFor: number;
     pointsAgainst: number;
     pointsDiff: number;
+    bonusPoints?: number;
+    triesFor?: number;
     points: number;
+    bonusPointsEnabled?: boolean;
 }
 
 export interface PublicPlayerStatEntry {

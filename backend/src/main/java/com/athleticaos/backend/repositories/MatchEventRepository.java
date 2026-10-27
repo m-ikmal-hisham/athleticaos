@@ -21,6 +21,15 @@ public interface MatchEventRepository extends JpaRepository<MatchEvent, UUID> {
         @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e WHERE e.match.tournament.id = :tournamentId AND e.match.deleted = false")
         List<MatchEvent> findByMatch_Tournament_Id(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
 
+        @org.springframework.data.jpa.repository.Query("SELECT e.match.id, e.team.id, " +
+                "SUM(CASE WHEN e.eventType IN (com.athleticaos.backend.enums.MatchEventType.TRY, com.athleticaos.backend.enums.MatchEventType.PENALTY_TRY, com.athleticaos.backend.enums.MatchEventType.SUPER_TRY) THEN 1L ELSE 0L END), " +
+                "COUNT(e) " +
+                "FROM MatchEvent e " +
+                "WHERE e.match.tournament.id = :tournamentId AND e.match.deleted = false " +
+                "AND e.eventType IN (com.athleticaos.backend.enums.MatchEventType.TRY, com.athleticaos.backend.enums.MatchEventType.PENALTY_TRY, com.athleticaos.backend.enums.MatchEventType.SUPER_TRY, com.athleticaos.backend.enums.MatchEventType.CONVERSION, com.athleticaos.backend.enums.MatchEventType.PENALTY, com.athleticaos.backend.enums.MatchEventType.DROP_GOAL) " +
+                "GROUP BY e.match.id, e.team.id")
+        List<Object[]> findScoringEventCountsByTournamentId(@org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId);
+
         @org.springframework.data.jpa.repository.Query("SELECT e FROM MatchEvent e WHERE e.player.id = :playerId AND e.match.deleted = false")
         List<MatchEvent> findByPlayer_Id(@org.springframework.data.repository.query.Param("playerId") UUID playerId);
 

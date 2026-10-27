@@ -10,7 +10,7 @@ interface StandingsTableProps {
     standings: StandingsResponse[];
 }
 
-type SortField = 'played' | 'won' | 'drawn' | 'lost' | 'pointsFor' | 'pointsAgainst' | 'pointsDiff' | 'points' | 'teamName';
+type SortField = 'played' | 'won' | 'drawn' | 'lost' | 'pointsFor' | 'pointsAgainst' | 'pointsDiff' | 'bonusPoints' | 'points' | 'teamName';
 type SortDirection = 'asc' | 'desc';
 
 const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
@@ -38,7 +38,9 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
             if (field === 'teamName') {
                 comparison = a.teamName.localeCompare(b.teamName);
             } else {
-                comparison = (a[field] as number) - (b[field] as number);
+                const valA = (a[field] ?? 0) as number;
+                const valB = (b[field] ?? 0) as number;
+                comparison = valA - valB;
             }
 
             return sortConfig.direction === 'asc' ? comparison : -comparison;
@@ -90,6 +92,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
             )}
             {sortedPoolNames.map(poolName => {
                 const poolStandings = groupedStandings[poolName];
+                const hasBonusPoints = poolStandings.some(s => s.bonusPointsEnabled);
                 return (
                     <div key={poolName} className="glass-panel overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl shadow-xl shadow-slate-200/20 dark:shadow-none">
                         {/* Pool header folds the table away, like the match days on the schedule */}
@@ -123,6 +126,7 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                         <SortableHeader field="pointsFor" label="PF" hiddenOnMobile />
                                         <SortableHeader field="pointsAgainst" label="PA" hiddenOnMobile />
                                         <SortableHeader field="pointsDiff" label="+/-" />
+                                        {hasBonusPoints && <SortableHeader field="bonusPoints" label="BP" hiddenOnMobile />}
                                         <SortableHeader field="points" label="Pts" />
                                     </tr>
                                 </thead>
@@ -176,6 +180,11 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ standings }) => {
                                                     {team.pointsDiff > 0 ? `+${team.pointsDiff}` : team.pointsDiff}
                                                 </span>
                                             </td>
+                                            {hasBonusPoints && (
+                                                <td className="px-3 py-4 text-center hidden sm:table-cell font-medium text-slate-700 dark:text-slate-300">
+                                                    {team.bonusPoints ?? 0}
+                                                </td>
+                                            )}
                                             <td className="px-1.5 sm:px-3 py-2.5 sm:py-4 text-center">
                                                 <span className="inline-block min-w-[2rem] py-1 px-2 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black">
                                                     {team.points}

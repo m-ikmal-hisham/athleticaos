@@ -13,11 +13,15 @@ import com.athleticaos.backend.entities.Team;
 import com.athleticaos.backend.entities.Tournament;
 import com.athleticaos.backend.entities.Player;
 import com.athleticaos.backend.enums.MatchEventType;
+import com.athleticaos.backend.enums.MatchResultType;
 import com.athleticaos.backend.enums.MatchStatus;
 import com.athleticaos.backend.repositories.MatchEventRepository;
 import com.athleticaos.backend.repositories.MatchRepository;
 import com.athleticaos.backend.repositories.TournamentRepository;
 import com.athleticaos.backend.services.StatisticsService;
+import com.athleticaos.backend.services.standings.MatchPointsCalculator;
+import com.athleticaos.backend.services.standings.MatchPointsResult;
+import com.athleticaos.backend.services.standings.ScoringRules;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -201,22 +205,23 @@ public class StatisticsServiceImpl implements StatisticsService {
                 java.util.Objects.requireNonNull(tournamentId, "Tournament ID must not be null");
                 List<Match> matches = matchRepository.findByTournamentId(tournamentId);
 
-                int pointsWin = 4;
-                int pointsDraw = 2;
-                int pointsLoss = 0;
+                ScoringRules globalRules = formatConfigRepository
+                                .findByTournamentIdAndCategoryIsNull(tournamentId)
+                                .map(ScoringRules::from)
+                                .orElseGet(ScoringRules::defaults);
 
-                com.athleticaos.backend.entities.TournamentFormatConfig formatConfig = null;
-                if (categoryId != null) {
-                        formatConfig = formatConfigRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId).orElse(null);
-                }
-                if (formatConfig == null) {
-                        formatConfig = formatConfigRepository.findByTournamentIdAndCategoryIsNull(tournamentId).orElse(null);
-                }
-                
-                if (formatConfig != null) {
-                        pointsWin = formatConfig.getPointsWin() != null ? formatConfig.getPointsWin() : 4;
-                        pointsDraw = formatConfig.getPointsDraw() != null ? formatConfig.getPointsDraw() : 2;
-                        pointsLoss = formatConfig.getPointsLoss() != null ? formatConfig.getPointsLoss() : 0;
+                Map<UUID, ScoringRules> rulesByCategory = new HashMap<>();
+
+                List<Object[]> scoringStats = matchEventRepository.findScoringEventCountsByTournamentId(tournamentId);
+                Map<UUID, Long> matchScoringEventCounts = new HashMap<>();
+                Map<UUID, Map<UUID, Integer>> matchTeamTryCounts = new HashMap<>();
+                for (Object[] row : scoringStats) {
+                        UUID mId = (UUID) row[0];
+                        UUID tId = (UUID) row[1];
+                        int tries = row[2] != null ? ((Number) row[2]).intValue() : 0;
+                        long scoringEvents = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+                        matchScoringEventCounts.merge(mId, scoringEvents, Long::sum);
+                        matchTeamTryCounts.computeIfAbsent(mId, k -> new HashMap<>()).put(tId, tries);
                 }
 
                 // Filter matches
@@ -265,24 +270,66 @@ public class StatisticsServiceImpl implements StatisticsService {
                         int losses = 0;
                         int pointsFor = 0;
                         int pointsAgainst = 0;
+                        int tablePoints = 0;
 
                         for (Match m : teamMatches) {
-                                if (m.getStatus() == MatchStatus.COMPLETED && m.getHomeScore() != null
-                                                && m.getAwayScore() != null) {
+                                if (m.getStatus() == MatchStatus.COMPLETED) {
                                         boolean isHome = m.getHomeTeam() != null
                                                         && m.getHomeTeam().getId().equals(teamId);
-                                        int scoreFor = isHome ? m.getHomeScore() : m.getAwayScore();
-                                        int scoreAgainst = isHome ? m.getAwayScore() : m.getHomeScore();
+                                        int scoreFor = m.getHomeScore() != null && m.getAwayScore() != null
+                                                        ? (isHome ? m.getHomeScore() : m.getAwayScore()) : 0;
+                                        int scoreAgainst = m.getHomeScore() != null && m.getAwayScore() != null
+                                                        ? (isHome ? m.getAwayScore() : m.getHomeScore()) : 0;
 
                                         pointsFor += scoreFor;
                                         pointsAgainst += scoreAgainst;
 
                                         if (scoreFor > scoreAgainst)
                                                 wins++;
-                                        else if (scoreFor == scoreAgainst)
+                                        else if (scoreFor == scoreAgainst && m.getHomeScore() != null)
                                                 draws++;
                                         else
                                                 losses++;
+
+                                        UUID homeId = m.getHomeTeam() != null ? m.getHomeTeam().getId() : null;
+                                        UUID awayId = m.getAwayTeam() != null ? m.getAwayTeam().getId() : null;
+
+                                        UUID catId = m.getStage() != null && m.getStage().getCategory() != null
+                                                        ? m.getStage().getCategory().getId()
+                                                        : (m.getCategory() != null ? m.getCategory().getId() : categoryId);
+
+                                        ScoringRules rules = rulesByCategory.computeIfAbsent(catId,
+                                                        cId -> cId == null ? globalRules
+                                                                        : formatConfigRepository.findByTournamentIdAndCategoryId(tournamentId, cId)
+                                                                                        .map(ScoringRules::from)
+                                                                                        .orElse(globalRules));
+
+                                        long totalScoringEvents = matchScoringEventCounts.getOrDefault(m.getId(), 0L);
+                                        boolean isZeroZero = m.getHomeScore() != null && m.getHomeScore() == 0
+                                                        && m.getAwayScore() != null && m.getAwayScore() == 0;
+                                        boolean triesKnown = (totalScoringEvents > 0) || isZeroZero;
+
+                                        int homeTries = matchTeamTryCounts.getOrDefault(m.getId(), Collections.emptyMap()).getOrDefault(homeId, 0);
+                                        int awayTries = matchTeamTryCounts.getOrDefault(m.getId(), Collections.emptyMap()).getOrDefault(awayId, 0);
+
+                                        MatchPointsResult result = MatchPointsCalculator.calculate(
+                                                        rules,
+                                                        m.getHomeScore(),
+                                                        m.getAwayScore(),
+                                                        m.getResultType(),
+                                                        m.getWinnerTeam() != null ? m.getWinnerTeam().getId() : null,
+                                                        homeId,
+                                                        awayId,
+                                                        homeTries,
+                                                        awayTries,
+                                                        triesKnown
+                                        );
+
+                                        if (teamId.equals(homeId)) {
+                                                tablePoints += result.home().tablePoints();
+                                        } else if (teamId.equals(awayId)) {
+                                                tablePoints += result.away().tablePoints();
+                                        }
                                 }
                         }
 
@@ -299,9 +346,6 @@ public class StatisticsServiceImpl implements StatisticsService {
                         int dropGoals = countEvents(teamEvents, MatchEventType.DROP_GOAL);
                         int yellowCards = countEvents(teamEvents, MatchEventType.YELLOW_CARD);
                         int redCards = countEvents(teamEvents, MatchEventType.RED_CARD);
-
-                        // Table points calculated dynamically based on format config
-                        int tablePoints = (wins * pointsWin) + (draws * pointsDraw) + (losses * pointsLoss);
 
                         stats.add(new TeamStatsResponse(
                                         teamId,

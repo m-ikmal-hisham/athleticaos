@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Gear, Play, FloppyDisk, Layout, Question, Trophy } from '@phosphor-icons/react';
+import { Gear, Play, FloppyDisk, Layout, Question, Trophy, SquaresFour } from '@phosphor-icons/react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tournamentService } from '@/services/tournamentService';
 import { Button } from '@/components/Button';
@@ -40,8 +40,11 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
         pointsWin: 4,
         pointsDraw: 2,
         pointsLoss: 0,
+        bonusPointsEnabled: false,
         pointsBonusTry: 1,
+        bonusTryThreshold: 4,
         pointsBonusLoss: 1,
+        bonusLosingMargin: 7,
         startersCount: 15,
         maxBenchCount: 10,
         // 4 gives Cup 1-4 / Plate 5-8 (no quarter-final); 8 gives Cup 1-8 / Plate 9-16
@@ -439,20 +442,6 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
                                 )}
                             </div>
                         )}
-                        <div className="space-y-2 flex items-end">
-                            <Button
-                                variant={selectedCategoryId ? "primary" : "secondary"}
-                                size="sm"
-                                className="w-full"
-                                onClick={handleSaveConfig}
-                                disabled={loading || readonly}
-                            >
-                                <FloppyDisk className="w-4 h-4 mr-2" />
-                                {selectedCategoryId && currentCategory
-                                    ? `Save ${currentCategory.name} Format`
-                                    : "Save Global Defaults"}
-                            </Button>
-                        </div>
                     </div>
 
                     {/* Match Timing Configuration */}
@@ -523,7 +512,7 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
                             <Trophy className="w-4 h-4" />
                             Scoring Rules
                         </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Win Points</label>
                                 <Input
@@ -551,27 +540,93 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
                                     onChange={(e) => setConfig({ ...config, pointsLoss: parseInt(e.target.value) || 0 })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Bonus (Try)</label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={config.pointsBonusTry !== undefined ? config.pointsBonusTry : 1}
-                                    onChange={(e) => setConfig({ ...config, pointsBonusTry: parseInt(e.target.value) || 0 })}
-                                />
-                                <p className="text-[10px] text-muted-foreground">e.g. 4+ tries</p>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Bonus (Loss)</label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={config.pointsBonusLoss !== undefined ? config.pointsBonusLoss : 1}
-                                    onChange={(e) => setConfig({ ...config, pointsBonusLoss: parseInt(e.target.value) || 0 })}
-                                />
-                                <p className="text-[10px] text-muted-foreground">e.g. within 7 pts</p>
-                            </div>
                         </div>
+
+                        <div className="pt-2 border-t border-border/50 space-y-3">
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="bonusPointsEnabled"
+                                    className="rounded border-gray-300 bg-background text-primary focus:ring-primary"
+                                    checked={config.bonusPointsEnabled || false}
+                                    onChange={(e) => setConfig({ ...config, bonusPointsEnabled: e.target.checked })}
+                                />
+                                <label htmlFor="bonusPointsEnabled" className="text-sm font-medium cursor-pointer select-none">
+                                    Use bonus points
+                                </label>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Award bonus points in pool standings for high try counts and narrow defeats.
+                            </p>
+
+                            {config.bonusPointsEnabled && (
+                                <div className="pt-3 border-t border-border/40 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Try bonus points</label>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={5}
+                                            value={config.pointsBonusTry !== undefined ? config.pointsBonusTry : 1}
+                                            onChange={(e) => setConfig({ ...config, pointsBonusTry: parseInt(e.target.value) || 0 })}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Points awarded when reaching threshold (default: 1).</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Try threshold</label>
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={20}
+                                            value={config.bonusTryThreshold !== undefined ? config.bonusTryThreshold : 4}
+                                            onChange={(e) => setConfig({ ...config, bonusTryThreshold: parseInt(e.target.value) || 4 })}
+                                        />
+                                        <p className="text-xs text-muted-foreground">For scoring N or more tries (default: 4).</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Losing bonus points</label>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={5}
+                                            value={config.pointsBonusLoss !== undefined ? config.pointsBonusLoss : 1}
+                                            onChange={(e) => setConfig({ ...config, pointsBonusLoss: parseInt(e.target.value) || 0 })}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Points awarded for a close defeat (default: 1).</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Losing margin</label>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={50}
+                                            value={config.bonusLosingMargin !== undefined ? config.bonusLosingMargin : 7}
+                                            onChange={(e) => setConfig({ ...config, bonusLosingMargin: parseInt(e.target.value) || 0 })}
+                                        />
+                                        <p className="text-xs text-muted-foreground">For losing by N or fewer points (default: 7).</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* One save for the three sections above (format, match timing, scoring rules) */}
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end border-t pt-4">
+                        <p className="text-xs text-muted-foreground sm:mr-auto">
+                            Saves the format, match timing and scoring rules
+                            {currentCategory ? ` for ${currentCategory.name}` : ' as the tournament-wide defaults'}.
+                        </p>
+                        <Button
+                            variant="primary"
+                            onClick={handleSaveConfig}
+                            disabled={loading || readonly}
+                            className="w-full sm:w-auto"
+                        >
+                            <FloppyDisk className="w-4 h-4" aria-hidden="true" />
+                            {selectedCategoryId && currentCategory
+                                ? `Save ${currentCategory.name} format`
+                                : 'Save global defaults'}
+                        </Button>
                     </div>
 
                     <div className="space-y-4">
@@ -582,12 +637,15 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
                             </h3>
                             <div className="flex gap-2">
                                 <Button
-                                    variant="outline"
-                                    size="sm"
+                                    variant="secondary"
                                     onClick={handleGenerateStructure}
-                                    disabled={structureLoading || generating || readonly}
+                                    isLoading={structureLoading}
+                                    disabled={generating || readonly}
                                 >
-                                    {structureLoading ? 'Building...' : `Build Pools ${currentCategory ? 'for ' + currentCategory.name : ''}`}
+                                    {!structureLoading && <SquaresFour className="w-4 h-4" aria-hidden="true" />}
+                                    {structureLoading
+                                        ? 'Building pools…'
+                                        : `Build pools${currentCategory ? ` for ${currentCategory.name}` : ''}`}
                                 </Button>
                             </div>
                         </div>
