@@ -20,6 +20,15 @@ const SIZE_CLASSES: Record<string, string> = {
     xl: 'w-20 h-20 text-xl',
 };
 
+const SIZE_DIMENSIONS: Record<string, number> = {
+    sm: 24,
+    md: 40,
+    lg: 64,
+    xl: 80,
+};
+
+const DEFAULT_DIMENSION = 40;
+
 function getInitials(name?: string | null): string {
     if (!name || !name.trim()) return '';
     const clean = name.trim();
@@ -58,6 +67,10 @@ export function LogoImage({
     const resolvedSrc = src ? getImageUrl(src) : '';
     const initials = getInitials(name);
     const sizeClass = typeof size === 'string' ? SIZE_CLASSES[size] || '' : '';
+    const resolvedDimension =
+        typeof size === 'number'
+            ? size
+            : (typeof size === 'string' && SIZE_DIMENSIONS[size]) || DEFAULT_DIMENSION;
 
     if (!resolvedSrc || hasError) {
         return (
@@ -78,6 +91,9 @@ export function LogoImage({
         <img
             src={resolvedSrc}
             alt={alt ?? (name || '')}
+            width={resolvedDimension}
+            height={resolvedDimension}
+            decoding="async"
             className={clsx(imgClassName, sizeClass, className)}
             onError={() => setHasError(true)}
             loading="lazy"

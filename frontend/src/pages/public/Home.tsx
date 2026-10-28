@@ -22,6 +22,8 @@ import { sortForHomeFallback } from '@/utils/tournamentSort';
 import { todayInMalaysia, getDateLocale, parseCalendarDate } from '@/utils/malaysiaDate';
 import { format } from 'date-fns';
 
+import { CalendarStripSkeleton } from '@/components/public/calendar/CalendarStripSkeleton';
+
 const CalendarStrip = lazy(() => import('@/components/public/calendar/CalendarStrip'));
 
 type MatchView = 'live' | 'today' | 'results' | 'upcoming';
@@ -391,11 +393,7 @@ export default function Home() {
             </section>
 
             {/* 4. This Month Calendar Strip (Lazy loaded, gets allTournaments) */}
-            <Suspense
-                fallback={
-                    <div className="h-48 rounded-[14px] glass-card-surface animate-pulse" />
-                }
-            >
+            <Suspense fallback={<CalendarStripSkeleton />}>
                 <CalendarStrip tournaments={allTournaments} />
             </Suspense>
 
