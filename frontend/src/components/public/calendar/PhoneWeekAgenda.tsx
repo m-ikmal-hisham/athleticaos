@@ -59,9 +59,11 @@ function DayMatchesSection({ isoDate, isExpanded, totalMatches }: DayMatchesSect
 
     if (totalMatches === 0) {
         return (
-            <p className="text-xs text-content-secondary p-3 rounded-[10px] bg-surface-sunken">
-                {t('calendar:noMatchesDay')}
-            </p>
+            <div className="min-h-[120px] flex items-center justify-center p-3 rounded-[10px] bg-surface-sunken">
+                <p className="text-xs text-content-secondary text-center">
+                    {t('calendar:noMatchesDay')}
+                </p>
+            </div>
         );
     }
 

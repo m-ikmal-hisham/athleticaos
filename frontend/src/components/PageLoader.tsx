@@ -3,7 +3,7 @@
  * Designed to be visually consistent with the app's glassmorphism design system.
  */
 export const PageLoader = () => (
-    <div className="flex items-center justify-center min-h-[60vh] w-full">
+    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] min-h-[calc(100dvh-8rem-env(safe-area-inset-top,0px))] w-full">
         <div className="flex flex-col items-center gap-4">
             <div className="relative w-10 h-10">
                 <div className="absolute inset-0 rounded-full border-2 border-blue-500/20" />

@@ -789,6 +789,7 @@ export function mountPitchBackgroundScene(
         });
 
         markingsMesh = new THREE.Points(markingsGeom, markingsMaterial);
+        markingsMesh.name = 'pitch-markings';
         scene.add(markingsMesh);
 
         if (import.meta.env.DEV) {
@@ -947,6 +948,7 @@ export function mountPitchBackgroundScene(
         });
 
         grassMesh = new THREE.LineSegments(grassGeom, grassMaterial);
+        grassMesh.name = 'pitch-grass';
         scene.add(grassMesh);
 
         if (import.meta.env.DEV) {
@@ -995,6 +997,7 @@ export function mountPitchBackgroundScene(
             },
         });
         stadiumLinesMesh = new THREE.LineSegments(stadiumLinesGeom, stadiumLinesMat);
+        stadiumLinesMesh.name = 'stadium-lines';
         scene.add(stadiumLinesMesh);
 
         stadiumPointsGeom = new THREE.BufferGeometry();
@@ -1071,6 +1074,7 @@ export function mountPitchBackgroundScene(
             },
         });
         stadiumPointsMesh = new THREE.Points(stadiumPointsGeom, stadiumPointsMat);
+        stadiumPointsMesh.name = 'stadium-points';
         scene.add(stadiumPointsMesh);
 
         stadiumRoofGeom = new THREE.BufferGeometry();
@@ -1111,6 +1115,7 @@ export function mountPitchBackgroundScene(
             },
         });
         stadiumRoofMesh = new THREE.Mesh(stadiumRoofGeom, stadiumRoofMat);
+        stadiumRoofMesh.name = 'stadium-roof';
         scene.add(stadiumRoofMesh);
 
         if (import.meta.env.DEV) {
@@ -1147,22 +1152,26 @@ export function mountPitchBackgroundScene(
                 const cyl = new THREE.CylinderGeometry(0.06, 0.06, length, 12);
                 cyl.rotateX(Math.PI / 2);
                 const mesh = new THREE.Mesh(cyl, postUprightMat);
+                mesh.name = 'goalpost-crossbar';
                 mesh.position.set(post.p1.x, post.p1.y, (post.p1.z + post.p2.z) * 0.5);
                 postsGroup.add(mesh);
             } else if (isPad) {
                 const height = Math.abs(post.p2.y - post.p1.y);
                 const cyl = new THREE.CylinderGeometry(0.20, 0.20, height, 12);
                 const mesh = new THREE.Mesh(cyl, postPadMat);
+                mesh.name = `goalpost-pad-${postStructures.indexOf(post)}`;
                 mesh.position.set(post.p1.x, (post.p1.y + post.p2.y) * 0.5, post.p1.z);
                 postsGroup.add(mesh);
             } else {
                 const height = Math.abs(post.p2.y - post.p1.y);
                 const cyl = new THREE.CylinderGeometry(0.06, 0.06, height, 12);
                 const mesh = new THREE.Mesh(cyl, postUprightMat);
+                mesh.name = `goalpost-upright-${postStructures.indexOf(post)}`;
                 mesh.position.set(post.p1.x, (post.p1.y + post.p2.y) * 0.5, post.p1.z);
                 postsGroup.add(mesh);
             }
         }
+        postsGroup.name = 'goalposts';
         scene.add(postsGroup);
 
         const benches = getBenchStructures();
@@ -1180,6 +1189,7 @@ export function mountPitchBackgroundScene(
             depthWrite: false,
         });
         benchLinesMesh = new THREE.LineSegments(benchGeom, benchMat);
+        benchLinesMesh.name = 'bench-lines';
         scene.add(benchLinesMesh);
 
         ballGeom = new THREE.SphereGeometry(0.32, 16, 12);
@@ -1190,6 +1200,7 @@ export function mountPitchBackgroundScene(
             opacity: 0.95,
         });
         ballMesh = new THREE.Mesh(ballGeom, ballMat);
+        ballMesh.name = 'ball';
         ballMesh.visible = false;
         scene.add(ballMesh);
 
@@ -1228,6 +1239,7 @@ export function mountPitchBackgroundScene(
             },
         });
         sparkPoints = new THREE.Points(sparkGeom, sparkMat);
+        sparkPoints.name = 'sparks';
         scene.add(sparkPoints);
 
         if (import.meta.env.DEV) {
@@ -1237,19 +1249,53 @@ export function mountPitchBackgroundScene(
         if (isDisposed) { cleanup(); return; }
 
         // -------------------------------------------------------------
-        // Step 5: Shader Precompilation & First Frame
+        // Step 5: Shader Precompilation & First Frame (one object at a time)
         // -------------------------------------------------------------
         const t5 = performance.now();
+        const compileables: THREE.Object3D[] = [];
+        scene.traverse((obj) => {
+            if (
+                ((obj as THREE.Mesh).isMesh ||
+                    (obj as THREE.Points).isPoints ||
+                    (obj as THREE.LineSegments).isLineSegments) &&
+                (obj as THREE.Mesh).material
+            ) {
+                compileables.push(obj);
+            }
+        });
+
         if (typeof engine.renderer.compileAsync === 'function') {
-            try {
-                await engine.renderer.compileAsync(scene, camera);
-            } catch (err) {
-                if (import.meta.env.DEV) {
-                    console.warn('[PitchBackgroundScene] compileAsync fallback:', err);
+            for (const obj of compileables) {
+                if (isDisposed) { cleanup(); return; }
+                const tObj = performance.now();
+                try {
+                    await engine.renderer.compileAsync(obj, camera, scene);
+                } catch (err) {
+                    if (import.meta.env.DEV) {
+                        console.warn('[PitchBackgroundScene] compileAsync fallback:', obj.name || obj.type, err);
+                    }
                 }
+                if (import.meta.env.DEV) {
+                    console.log(`[PitchBackgroundScene] Compiled ${obj.name || obj.type}: ${(performance.now() - tObj).toFixed(2)}ms`);
+                }
+                await yieldToMain();
             }
         } else if (typeof engine.renderer.compile === 'function') {
-            engine.renderer.compile(scene, camera);
+            for (const obj of compileables) {
+                if (isDisposed) { cleanup(); return; }
+                const tObj = performance.now();
+                try {
+                    engine.renderer.compile(obj, camera, scene);
+                } catch (err) {
+                    if (import.meta.env.DEV) {
+                        console.warn('[PitchBackgroundScene] compile fallback:', obj.name || obj.type, err);
+                    }
+                }
+                if (import.meta.env.DEV) {
+                    console.log(`[PitchBackgroundScene] Compiled ${obj.name || obj.type}: ${(performance.now() - tObj).toFixed(2)}ms`);
+                }
+                await yieldToMain();
+            }
         }
 
         if (isDisposed) { cleanup(); return; }
