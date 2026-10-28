@@ -19,7 +19,7 @@ export const AppBackground: React.FC = () => {
     // 1. Production / Flag Off: render today's exact PNG background + overlay
     if (!flagEnabled) {
         return (
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden [contain:strict]" aria-hidden="true">
                 {/* Core Background Image */}
                 <div className="absolute inset-0 bg-[url('/athleticaos-bg-light-new.png')] dark:bg-[url('/athleticaos-bg-dark-new.png')] bg-cover bg-center bg-no-repeat" />
 
@@ -49,7 +49,7 @@ export const AppBackground: React.FC = () => {
     // 2. Motion not allowed (reduced motion, saveData, WebGL missing, ?bg=off): static SVG only
     if (!motionAllowed) {
         return (
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden [contain:strict]" aria-hidden="true">
                 <PitchBackdropSvg quiet={quiet} />
             </div>
         );
@@ -59,12 +59,12 @@ export const AppBackground: React.FC = () => {
     const canvasActive = sceneReady && routeType === 'calm';
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden [contain:strict]" aria-hidden="true">
             {/* Static SVG pitch backdrop (fades out when WebGL is active, fades back in on static routes / context lost) */}
             <PitchBackdropSvg visible={!canvasActive} quiet={quiet} />
 
             {/* Persistent calm pitch canvas */}
-            <PitchBackgroundCanvas onSceneReadyChange={setSceneReady} />
+            <PitchBackgroundCanvas onSceneReadyChange={setSceneReady} motionAllowed={motionAllowed} />
         </div>
     );
 };
