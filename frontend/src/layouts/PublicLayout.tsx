@@ -354,6 +354,7 @@ export default function PublicLayout() {
                 tabIndex={-1}
                 className={clsx(
                     'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 outline-none',
+                    'min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))]',
                     detailParent && 'pt-2 lg:pt-8'
                 )}
             >

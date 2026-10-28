@@ -498,9 +498,11 @@ export function CalendarStrip({ tournaments }: CalendarStripProps) {
                                 ))}
                             </div>
                         ) : phoneAccumulatedMatches.length === 0 ? (
-                            <p className="text-xs text-content-secondary p-3 rounded-[10px] bg-surface-sunken">
-                                {t('calendar:noMatchesDay', { defaultValue: 'No matches scheduled' })}
-                            </p>
+                            <div className="min-h-[120px] flex items-center justify-center p-3 rounded-[10px] bg-surface-sunken">
+                                <p className="text-xs text-content-secondary text-center">
+                                    {t('calendar:noMatchesDay', { defaultValue: 'No matches scheduled' })}
+                                </p>
+                            </div>
                         ) : (
                             <div className="space-y-2">
                                 {phoneAccumulatedMatches.map(m => (
