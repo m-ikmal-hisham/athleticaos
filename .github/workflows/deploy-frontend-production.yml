@@ -74,7 +74,8 @@ jobs:
           VITE_API_URL: https://api.athleticaos.com
           VITE_ENV: production
           # Released modules only; federation, analytics, operations, monetization and signup stay off.
-          VITE_FEATURES: ''
+          # animatedBackground: 3D stadium background (approved 28 Oct 2026 after the staging performance check).
+          VITE_FEATURES: 'animatedBackground'
         run: npm run build -- --mode production
 
       - name: Check the build points at production
