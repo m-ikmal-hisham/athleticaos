@@ -48,30 +48,56 @@ export function MatchCardSkeleton({ className = '' }: { className?: string }) {
     );
 }
 
+function TournamentGroupHeaderSkeleton() {
+    return (
+        <div className="inline-flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-surface-sunken border border-line-subtle shrink-0 animate-pulse" />
+            <div className="h-4 w-40 rounded bg-surface-sunken animate-pulse" />
+        </div>
+    );
+}
+
 /**
  * Feed placeholder mirroring loaded match markup:
- * 1 tournament group header + 3 MatchCards in grid-cols-1 lg:grid-cols-2.
+ * Two tournament group headers, each followed by half the cards
+ * (phones 2 + 2, >= 768 px 3 + 3), plus the 44px button space,
+ * so a capped list spanning two tournaments is not taller than the reference.
  * Used both for the loading state and as the invisible min-height reference.
  */
 export function MatchFeedSkeleton() {
     return (
         <div aria-hidden="true" className="space-y-6">
+            {/* Tournament Group 1 */}
             <div className="space-y-2.5">
-                {/* Tournament Group Header */}
-                <div className="inline-flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-surface-sunken border border-line-subtle shrink-0 animate-pulse" />
-                    <div className="h-4 w-40 rounded bg-surface-sunken animate-pulse" />
-                </div>
-
-                {/* Match Cards in this Tournament (3 cards) */}
+                <TournamentGroupHeaderSkeleton />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
                     <MatchCardSkeleton />
                     <MatchCardSkeleton />
-                    <MatchCardSkeleton />
+                    <div className="hidden md:block">
+                        <MatchCardSkeleton />
+                    </div>
                 </div>
+            </div>
+
+            {/* Tournament Group 2 */}
+            <div className="space-y-2.5">
+                <TournamentGroupHeaderSkeleton />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+                    <MatchCardSkeleton />
+                    <MatchCardSkeleton />
+                    <div className="hidden md:block">
+                        <MatchCardSkeleton />
+                    </div>
+                </div>
+            </div>
+
+            {/* "Show all matches (n)" Button Space */}
+            <div className="pt-2 text-center">
+                <div className="inline-block h-[44px] w-52 rounded-[10px] bg-surface-card border border-line-subtle animate-pulse" />
             </div>
         </div>
     );
 }
 
 export default MatchFeedSkeleton;
+
