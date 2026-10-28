@@ -118,6 +118,7 @@ export function GlassTabBar({
     // Active item index for selection lozenge
     const activeIndex = items.findIndex((item) => item.key === activeKey);
     const numItems = items.length;
+    const activeItem = items.find((item) => item.key === activeKey) || items[0];
 
     // Handle tapping active button while minimised
     const handleMinimisedTap = (e: React.MouseEvent) => {
@@ -142,29 +143,22 @@ export function GlassTabBar({
         >
             <div
                 className={clsx(
-                    'relative w-full max-w-[480px] pointer-events-auto',
-                    'motion-safe:transition-all motion-safe:duration-300 motion-reduce:transition-none',
-                    hasAccessory
-                        ? isMinimised
-                            ? 'h-[52px]'
-                            : 'h-[124px]'
-                        : 'h-[64px]'
+                    'relative w-full max-w-[480px] pointer-events-none',
+                    hasAccessory ? 'h-[124px]' : 'h-[64px]'
                 )}
-                style={{
-                    transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
-                }}
             >
                 {/* Accessory Slot (z-index pill 35) */}
                 {hasAccessory && accessorySlot && (
                     <div
                         className={clsx(
-                            'absolute z-[35]',
-                            'motion-safe:transition-all motion-safe:duration-300 motion-reduce:transition-none',
-                            isMinimised
-                                ? 'bottom-0 left-[60px] w-[calc(100%-60px)] h-[52px]'
-                                : 'bottom-[72px] left-0 w-full h-[52px]'
+                            'absolute z-[35] bottom-[72px] left-0 w-[calc(100%-60px)] h-[52px] pointer-events-auto',
+                            'motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-reduce:transition-none',
+                            'motion-safe:animate-fade-in'
                         )}
                         style={{
+                            // Same width in both states (bar minus the 60px minimised button), so only
+                            // transform moves it: centred above the bar, or beside the minimised button.
+                            transform: isMinimised ? 'translate3d(60px, 72px, 0)' : 'translate3d(30px, 0, 0)',
                             transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
                         }}
                     >
@@ -172,20 +166,21 @@ export function GlassTabBar({
                     </div>
                 )}
 
-                {/* Tab Bar Capsule (z-index nav 30) */}
+                {/* Expanded Tab Bar Capsule (z-index nav 30) */}
                 <nav
                     aria-label={resolvedAriaLabel}
+                    aria-hidden={isMinimised ? true : undefined}
+                    {...(isMinimised ? { inert: '' } : {})}
                     className={clsx(
-                        'glass absolute z-30 bottom-0 left-0 overflow-hidden',
-                        'motion-safe:transition-all motion-safe:duration-300 motion-reduce:transition-none',
+                        'glass absolute z-30 bottom-0 left-0 w-full h-[64px] rounded-full overflow-hidden pointer-events-auto',
+                        'motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-reduce:transition-none',
                         isMinimised
-                            ? 'w-[52px] h-[52px] rounded-full cursor-pointer'
-                            : 'w-full h-[64px] rounded-full'
+                            ? 'opacity-0 scale-95 pointer-events-none'
+                            : 'opacity-100 scale-100 pointer-events-auto'
                     )}
                     style={{
                         transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
                     }}
-                    onClick={isMinimised ? handleMinimisedTap : undefined}
                 >
                     {/* Selection Lozenge */}
                     <div
@@ -197,16 +192,10 @@ export function GlassTabBar({
                         )}
                         style={{
                             transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
-                            ...(isMinimised
-                                ? {
-                                      inset: '4px',
-                                  }
-                                : {
-                                      top: '6px',
-                                      bottom: '6px',
-                                      width: `calc(${100 / numItems}% - 8px)`,
-                                      left: `calc(${activeIndex * (100 / numItems)}% + 4px)`,
-                                  }),
+                            top: '6px',
+                            bottom: '6px',
+                            width: `calc(${100 / numItems}% - 8px)`,
+                            left: `calc(${activeIndex * (100 / numItems)}% + 4px)`,
                         }}
                     />
 
@@ -215,36 +204,6 @@ export function GlassTabBar({
                         {items.map((item) => {
                             const isActive = item.key === activeKey;
 
-                            // When minimised, only the active item is shown
-                            if (isMinimised) {
-                                if (!isActive) return null;
-                                return (
-                                    <li key={item.key} className="flex-1 h-full w-full">
-                                        <button
-                                            type="button"
-                                            onClick={handleMinimisedTap}
-                                            aria-label={t('nav.expandTabBar', { label: item.label })}
-                                            className={clsx(
-                                                itemBase,
-                                                'w-full h-full p-0 flex items-center justify-center',
-                                                activeCls
-                                            )}
-                                        >
-                                            {item.renderIcon ? (
-                                                item.renderIcon(true)
-                                            ) : item.icon ? (
-                                                <item.icon
-                                                    size={24}
-                                                    weight="fill"
-                                                    aria-hidden="true"
-                                                />
-                                            ) : null}
-                                        </button>
-                                    </li>
-                                );
-                            }
-
-                            // Expanded state: show all items
                             const itemContent = (
                                 <>
                                     {item.renderIcon ? (
@@ -273,6 +232,7 @@ export function GlassTabBar({
                                             to={item.to}
                                             aria-current={isActive ? 'page' : undefined}
                                             onClick={item.onClick}
+                                            tabIndex={isMinimised ? -1 : 0}
                                             className={clsx(
                                                 itemBase,
                                                 'w-full',
@@ -287,6 +247,7 @@ export function GlassTabBar({
                                             onClick={item.onClick}
                                             aria-haspopup={item.ariaHasPopup}
                                             aria-expanded={item.ariaExpanded}
+                                            tabIndex={isMinimised ? -1 : 0}
                                             className={clsx(
                                                 itemBase,
                                                 'w-full',
@@ -301,7 +262,53 @@ export function GlassTabBar({
                         })}
                     </ul>
                 </nav>
+
+                {/* Minimised Tab Bar Active Icon Capsule (z-index nav 30) */}
+                <div
+                    aria-hidden={!isMinimised ? true : undefined}
+                    {...(!isMinimised ? { inert: '' } : {})}
+                    className={clsx(
+                        'glass absolute z-30 bottom-0 left-0 w-[52px] h-[52px] rounded-full overflow-hidden flex items-center justify-center pointer-events-auto',
+                        'motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-reduce:transition-none',
+                        isMinimised
+                            ? 'opacity-100 scale-100 pointer-events-auto cursor-pointer'
+                            : 'opacity-0 scale-75 pointer-events-none'
+                    )}
+                    style={{
+                        transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+                    }}
+                    onClick={isMinimised ? handleMinimisedTap : undefined}
+                >
+                    <div
+                        aria-hidden="true"
+                        className="absolute inset-1 rounded-full pointer-events-none bg-navy/10 dark:bg-white/12"
+                    />
+                    {activeItem && (
+                        <button
+                            type="button"
+                            onClick={handleMinimisedTap}
+                            tabIndex={isMinimised ? 0 : -1}
+                            aria-label={t('nav.expandTabBar', { label: activeItem.label })}
+                            className={clsx(
+                                itemBase,
+                                'w-full h-full p-0 flex items-center justify-center',
+                                activeCls
+                            )}
+                        >
+                            {activeItem.renderIcon ? (
+                                activeItem.renderIcon(true)
+                            ) : activeItem.icon ? (
+                                <activeItem.icon
+                                    size={24}
+                                    weight="fill"
+                                    aria-hidden="true"
+                                />
+                            ) : null}
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
 }
+

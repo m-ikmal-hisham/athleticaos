@@ -205,7 +205,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
                         </div>
 
                         {/* Text Details */}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 w-full sm:w-auto">
                             {/* Chips */}
                             {chips.length > 0 && (
                                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
@@ -252,34 +252,43 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
                             )}
 
                             {/* Title */}
-                            <h1 className={`${isPublic ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-xl sm:text-2xl md:text-3xl'} font-black text-white leading-tight mb-1.5 truncate`}>
+                            <h1
+                                title={title}
+                                className={`${isPublic ? 'text-2xl sm:text-3xl md:text-4xl' : 'text-xl sm:text-2xl md:text-3xl'} font-black text-white leading-tight mb-1.5 break-words [overflow-wrap:anywhere] [text-wrap:balance] line-clamp-3 sm:line-clamp-2`}
+                            >
                                 {title}
                             </h1>
 
                             {/* Subtitle / Affiliation Links */}
-                            {subtitleLinks.length > 0 && (
-                                <div className="text-xs sm:text-sm text-white/80 font-medium flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1">
-                                    {subtitleLinks.map((sub, idx) => (
-                                        <React.Fragment key={idx}>
-                                            {idx > 0 && <span className="text-white/30">·</span>}
-                                            <span>
-                                                {sub.prefix && <span className="text-white/60">{sub.prefix} </span>}
-                                                {sub.to ? (
-                                                    <Link
-                                                        to={sub.to}
-                                                        style={{ textDecorationColor: primary }}
-                                                        className="text-white hover:text-white underline underline-offset-2 transition-colors font-semibold"
-                                                    >
-                                                        {sub.label}
-                                                    </Link>
-                                                ) : (
-                                                    <span className="text-white font-semibold">{sub.label}</span>
-                                                )}
-                                            </span>
-                                        </React.Fragment>
-                                    ))}
-                                </div>
-                            )}
+                            {(() => {
+                                const deduplicatedSubtitleLinks = subtitleLinks.filter(
+                                    (sub, idx, arr) => idx === 0 || sub.label !== arr[idx - 1].label
+                                );
+                                if (deduplicatedSubtitleLinks.length === 0) return null;
+                                return (
+                                    <div className="text-xs sm:text-sm text-white/80 font-medium flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1">
+                                        {deduplicatedSubtitleLinks.map((sub, idx) => (
+                                            <React.Fragment key={idx}>
+                                                {idx > 0 && <span className="text-white/30">·</span>}
+                                                <span>
+                                                    {sub.prefix && <span className="text-white/60">{sub.prefix} </span>}
+                                                    {sub.to ? (
+                                                        <Link
+                                                            to={sub.to}
+                                                            style={{ textDecorationColor: primary }}
+                                                            className="text-white hover:text-white underline underline-offset-2 transition-colors font-semibold"
+                                                        >
+                                                            {sub.label}
+                                                        </Link>
+                                                    ) : (
+                                                        <span className="text-white font-semibold">{sub.label}</span>
+                                                    )}
+                                                </span>
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
