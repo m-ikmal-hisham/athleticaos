@@ -216,8 +216,11 @@ export default function PublicLayout() {
     const [isAnimatedBgOn] = useState(() => isAnimatedBackgroundFlagEnabled() && isMotionAllowed());
 
     // < lg: bottom padding clears the floating tab bar + accessory + safe area + 16px clearance
-    // so the footer stays fully visible.
-    const bottomChrome = isAccessoryLive
+    // so the footer stays fully visible. To prevent CLS on all public pages, --public-bottom-chrome
+    // reserves the constant 140px clearance. A separate --journey-bottom-chrome preserves the exact
+    // dynamic clearance for the JourneyOverlay phone phase card.
+    const staticBottomChrome = 'calc(140px + max(12px, env(safe-area-inset-bottom, 0px)))';
+    const journeyBottomChrome = isAccessoryLive
         ? 'calc(140px + max(12px, env(safe-area-inset-bottom, 0px)))'
         : 'calc(80px + max(12px, env(safe-area-inset-bottom, 0px)))';
 
@@ -232,7 +235,8 @@ export default function PublicLayout() {
             data-animated-bg={isAnimatedBgOn ? 'on' : 'off'}
             className="min-h-[100dvh] bg-background motion-safe:transition-colors motion-safe:duration-300 relative pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] pb-[var(--public-bottom-chrome)] lg:pb-0"
             style={{
-                '--public-bottom-chrome': bottomChrome,
+                '--public-bottom-chrome': staticBottomChrome,
+                '--journey-bottom-chrome': journeyBottomChrome,
                 '--public-header-offset': headerOffset,
             } as React.CSSProperties}
         >

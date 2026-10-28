@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,7 +15,7 @@ import { usePublicMatchFeed } from '@/hooks/public/usePublicMatchFeed';
 import { GlassCard } from '@/components/GlassCard';
 import { SEO } from '@/components/common/SEO';
 import { PartnersSection } from '@/components/public/PartnersSection';
-import { MatchCard } from '@/components/public/match';
+import { MatchCard, MatchFeedSkeleton } from '@/components/public/match';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
 import { formatTournamentLevel, formatCompetitionType, formatKickOff } from '@/utils/formatters';
 import { sortForHomeFallback } from '@/utils/tournamentSort';
@@ -51,12 +51,35 @@ export default function Home() {
 
     // 2. Matches View State (?view=live|today|results|upcoming)
     const rawView = searchParams.get('view') as MatchView | null;
-    const currentView: MatchView = VALID_VIEWS.includes(rawView as MatchView) ? (rawView as MatchView) : 'today';
-    const [hasExplicitView, setHasExplicitView] = useState(() => Boolean(rawView && VALID_VIEWS.includes(rawView as MatchView)));
+    const isUrlExplicit = Boolean(rawView && VALID_VIEWS.includes(rawView as MatchView));
+    const [resolvedView, setResolvedView] = useState<MatchView | null>(() => (isUrlExplicit ? (rawView as MatchView) : null));
+    const [isViewKnown, setIsViewKnown] = useState(() => isUrlExplicit);
+    const viewResolvedRef = useRef(isUrlExplicit);
+
+    // Keep state in sync with back/forward browser navigation
+    useEffect(() => {
+        if (rawView && VALID_VIEWS.includes(rawView as MatchView)) {
+            setResolvedView(rawView as MatchView);
+            setIsViewKnown(true);
+            viewResolvedRef.current = true;
+        }
+    }, [rawView]);
+
+    const currentView: MatchView = resolvedView || (isUrlExplicit ? (rawView as MatchView) : 'today');
+
+    // 1.5s cap for Live now coordination: after 1.5s, feed renders without waiting for live feed
+    const [liveNowCapExpired, setLiveNowCapExpired] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLiveNowCapExpired(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Matches pagination
     const [page, setPage] = useState(0);
     const [accumulatedMatches, setAccumulatedMatches] = useState<PublicMatchFeedItem[]>([]);
+    const liveNowEligibleRef = useRef<boolean | null>(null);
 
     // Reset page and accumulated list when view changes
     const prevViewRef = useRef(currentView);
@@ -65,6 +88,7 @@ export default function Home() {
             prevViewRef.current = currentView;
             setPage(0);
             setAccumulatedMatches([]);
+            liveNowEligibleRef.current = null;
         }
     }, [currentView]);
 
@@ -81,29 +105,55 @@ export default function Home() {
     });
 
     // Feed query specifically for Live (shares cache key with live tab when on page 0)
-    const { data: liveFeedData } = usePublicMatchFeed(
+    const {
+        data: liveFeedData,
+        isLoading: liveFeedLoading,
+    } = usePublicMatchFeed(
         { view: 'live', page: 0, size: 20 },
         { enabled: currentView !== 'live' }
     );
 
     // Counts source: from current feedData or liveFeedData
     const counts = feedData?.counts || liveFeedData?.counts;
+    const liveCount = counts?.live ?? 0;
 
-    // Accumulate matches on page change
-    useEffect(() => {
-        if (feedData?.items) {
-            setAccumulatedMatches(prev => {
-                if (page === 0) return feedData.items;
-                const existingIds = new Set(prev.map(m => m.id));
-                const newItems = feedData.items.filter(m => !existingIds.has(m.id));
-                return [...prev, ...newItems];
-            });
-        }
-    }, [feedData, page]);
+    // Resolve view helper: once resolved, never auto-switches again during this visit
+    const resolveView = useCallback(
+        (targetView: MatchView, updateUrl = true) => {
+            if (viewResolvedRef.current) return;
+            viewResolvedRef.current = true;
+            setResolvedView(targetView);
+            setIsViewKnown(true);
+            if (updateUrl) {
+                setSearchParams(
+                    prev => {
+                        const next = new URLSearchParams(prev);
+                        next.set('view', targetView);
+                        return next;
+                    },
+                    { replace: true }
+                );
+            }
+        },
+        [setSearchParams]
+    );
 
-    // Auto-pick default tab on initial load if no URL view was specified
+    // 1.5s timeout: if counts not answered, fallback to 'today' default
     useEffect(() => {
-        if (hasExplicitView || !counts) return;
+        if (viewResolvedRef.current) return;
+
+        const timer = setTimeout(() => {
+            if (!viewResolvedRef.current) {
+                resolveView('today', true);
+            }
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [resolveView]);
+
+    // Auto-pick default tab on initial load once counts are answered
+    useEffect(() => {
+        if (viewResolvedRef.current || !counts) return;
 
         let autoPick: MatchView = 'results';
         if (counts.live > 0) {
@@ -114,28 +164,34 @@ export default function Home() {
             autoPick = 'upcoming';
         }
 
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            next.set('view', autoPick);
-            return next;
-        }, { replace: true });
-        setHasExplicitView(true);
-    }, [counts, hasExplicitView, setSearchParams]);
+        resolveView(autoPick, true);
+    }, [counts, resolveView]);
 
-    const handleTabChange = (view: MatchView) => {
-        setHasExplicitView(true);
-        setPage(0);
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            next.set('view', view);
-            return next;
-        }, { replace: false });
-    };
+    // Accumulate matches on page change (only when view is known)
+    useEffect(() => {
+        if (feedData?.items && isViewKnown) {
+            setAccumulatedMatches(prev => {
+                if (page === 0) return feedData.items;
+                const existingIds = new Set(prev.map(m => m.id));
+                const newItems = feedData.items.filter(m => !existingIds.has(m.id));
+                return [...prev, ...newItems];
+            });
+        }
+    }, [feedData, page, isViewKnown]);
 
-    const handleSeeAllLive = () => {
-        handleTabChange('live');
-        matchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
+    // Live now coordination: feed and Live now render in the SAME pass
+    const isFeedQueryLoading = feedLoading && page === 0;
+    const isWaitingForLiveNow = currentView !== 'live' && liveCount > 0 && liveFeedLoading && !liveNowCapExpired;
+    const isListLoading = !isViewKnown || isFeedQueryLoading || isWaitingForLiveNow;
+
+    // Record whether Live Now was ready in the same pass the feed became ready
+    if (!isListLoading && liveNowEligibleRef.current === null) {
+        const liveNowReady =
+            currentView !== 'live' &&
+            liveCount > 0 &&
+            Boolean(liveFeedData?.items && liveFeedData.items.length > 0);
+        liveNowEligibleRef.current = liveNowReady;
+    }
 
     // Group accumulated matches by tournament
     const groupedMatches = useMemo(() => {
@@ -148,7 +204,7 @@ export default function Home() {
             matches: PublicMatchFeedItem[];
         }[] = [];
 
-        const groupMap = new Map<string, typeof groups[0]>();
+        const groupMap = new Map<string, (typeof groups)[0]>();
 
         accumulatedMatches.forEach(match => {
             const groupKey = `${match.tournamentId}-${match.categoryName || ''}`;
@@ -177,8 +233,33 @@ export default function Home() {
         return (items || []).slice(0, 4);
     }, [liveFeedData, currentView, feedData]);
 
-    const liveCount = counts?.live ?? 0;
-    const showLiveNowSection = currentView !== 'live' && liveCount > 0 && liveNowMatches.length > 0;
+    const showLiveNowSection =
+        currentView !== 'live' &&
+        liveCount > 0 &&
+        liveNowEligibleRef.current === true &&
+        liveNowMatches.length > 0;
+
+    const handleTabChange = (view: MatchView) => {
+        viewResolvedRef.current = true;
+        setIsViewKnown(true);
+        setResolvedView(view);
+        setPage(0);
+        setAccumulatedMatches([]);
+        liveNowEligibleRef.current = null;
+        setSearchParams(
+            prev => {
+                const next = new URLSearchParams(prev);
+                next.set('view', view);
+                return next;
+            },
+            { replace: false }
+        );
+    };
+
+    const handleSeeAllLive = () => {
+        handleTabChange('live');
+        matchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     // Date in Malaysia time for Masthead
     const today = useMemo(() => todayInMalaysia(), []);
@@ -250,7 +331,7 @@ export default function Home() {
                     <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none border-b border-line-subtle">
                         {(['live', 'today', 'results', 'upcoming'] as MatchView[]).map(tab => {
                             const count = counts ? counts[tab] : undefined;
-                            const isActive = currentView === tab;
+                            const isActive = isViewKnown && currentView === tab;
 
                             return (
                                 <button
@@ -286,110 +367,116 @@ export default function Home() {
                     </div>
 
                     {/* Updated Time (Live / Today) */}
-                    {(currentView === 'live' || currentView === 'today') && updatedTimeStr && (
+                    {isViewKnown && (currentView === 'live' || currentView === 'today') && updatedTimeStr && (
                         <div className="text-xs text-content-tertiary">
                             {t('home:updated', { time: updatedTimeStr, defaultValue: `Updated ${updatedTimeStr}` })}
                         </div>
                     )}
                 </div>
 
-                {/* Content States */}
-                {feedLoading && page === 0 ? (
-                    <div className="space-y-3">
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-24 rounded-[14px] glass-card-surface animate-pulse" />
-                        ))}
+                {/* Content States: CSS Grid stack with invisible reference skeleton establishing natural min-height */}
+                <div className="grid grid-cols-1">
+                    {/* Invisible reference skeleton */}
+                    <div className="col-start-1 row-start-1 invisible pointer-events-none select-none" aria-hidden="true">
+                        <MatchFeedSkeleton />
                     </div>
-                ) : feedError ? (
-                    <div className="text-center py-12 rounded-[14px] glass-card-surface space-y-3">
-                        <WarningCircle className="w-10 h-10 mx-auto text-accent-text" />
-                        <p className="text-sm font-semibold text-content-primary">
-                            {t('home:error.failed', { defaultValue: 'Failed to load matches.' })}
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => refetchFeed()}
-                            className="px-4 py-2 min-h-[44px] text-xs font-semibold rounded-[10px] bg-brand text-white hover:bg-brand-hover transition-colors"
-                        >
-                            {t('home:error.tryAgain', { defaultValue: 'Try again' })}
-                        </button>
-                    </div>
-                ) : accumulatedMatches.length === 0 ? (
-                    <div className="text-center py-12 rounded-[14px] glass-card-surface space-y-3 p-6">
-                        <Trophy className="w-10 h-10 mx-auto text-content-tertiary" />
-                        <p className="text-sm font-semibold text-content-secondary max-w-sm mx-auto">
-                            {t(`home:empty.${currentView}`, { defaultValue: 'No matches found.' })}
-                        </p>
-                        {currentView === 'live' && (
-                            <div className="flex items-center justify-center gap-3 pt-2">
+
+                    {/* Active Content: Skeleton / Error / Empty / Loaded list */}
+                    <div className="col-start-1 row-start-1 min-w-0">
+                        {isListLoading ? (
+                            <MatchFeedSkeleton />
+                        ) : feedError ? (
+                            <div className="h-full flex flex-col justify-center text-center py-12 rounded-[14px] glass-card-surface space-y-3 p-6">
+                                <WarningCircle className="w-10 h-10 mx-auto text-accent-text" />
+                                <p className="text-sm font-semibold text-content-primary">
+                                    {t('home:error.failed', { defaultValue: 'Failed to load matches.' })}
+                                </p>
                                 <button
                                     type="button"
-                                    onClick={() => handleTabChange('today')}
-                                    className="px-3 py-2 min-h-[44px] text-xs font-semibold rounded-[10px] bg-brand text-white hover:bg-brand-hover transition-colors"
+                                    onClick={() => refetchFeed()}
+                                    className="px-4 py-2 min-h-[44px] text-xs font-semibold rounded-[10px] bg-brand text-white hover:bg-brand-hover transition-colors inline-block mx-auto"
                                 >
-                                    {t('home:empty.goToToday', { defaultValue: 'Go to today' })}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleTabChange('upcoming')}
-                                    className="px-3 py-2 min-h-[44px] text-xs font-semibold rounded-[10px] bg-surface-sunken text-content-primary border border-line-subtle hover:bg-line-subtle transition-colors"
-                                >
-                                    {t('home:empty.goToUpcoming', { defaultValue: 'Go to upcoming' })}
+                                    {t('home:error.tryAgain', { defaultValue: 'Try again' })}
                                 </button>
                             </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {groupedMatches.map(group => (
-                            <div key={`${group.tournamentId}-${group.categoryName || ''}`} className="space-y-2.5">
-                                {/* Tournament Group Header */}
-                                <Link
-                                    to={`/tournaments/${group.tournamentSlug || group.tournamentId}`}
-                                    className="group inline-flex items-center gap-2 text-content-primary hover:text-brand transition-colors"
-                                >
-                                    <div className="w-6 h-6 rounded-md bg-surface-sunken border border-line-subtle shrink-0 flex items-center justify-center overflow-hidden">
-                                        {group.tournamentLogoUrl ? (
-                                            <TournamentLogo
-                                                tournamentId={group.tournamentId}
-                                                logoUrl={group.tournamentLogoUrl}
-                                                className="w-full h-full object-contain"
-                                            />
-                                        ) : (
-                                            <Trophy size={13} className="text-brand" />
-                                        )}
+                        ) : accumulatedMatches.length === 0 ? (
+                            <div className="h-full flex flex-col justify-center text-center py-12 rounded-[14px] glass-card-surface space-y-3 p-6">
+                                <Trophy className="w-10 h-10 mx-auto text-content-tertiary" />
+                                <p className="text-sm font-semibold text-content-secondary max-w-sm mx-auto">
+                                    {t(`home:empty.${currentView}`, { defaultValue: 'No matches found.' })}
+                                </p>
+                                {currentView === 'live' && (
+                                    <div className="flex items-center justify-center gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleTabChange('today')}
+                                            className="px-3 py-2 min-h-[44px] text-xs font-semibold rounded-[10px] bg-brand text-white hover:bg-brand-hover transition-colors"
+                                        >
+                                            {t('home:empty.goToToday', { defaultValue: 'Go to today' })}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleTabChange('upcoming')}
+                                            className="px-3 py-2 min-h-[44px] text-xs font-semibold rounded-[10px] bg-surface-sunken text-content-primary border border-line-subtle hover:bg-line-subtle transition-colors"
+                                        >
+                                            {t('home:empty.goToUpcoming', { defaultValue: 'Go to upcoming' })}
+                                        </button>
                                     </div>
-                                    <span className="text-xs md:text-sm font-bold truncate group-hover:underline">
-                                        {group.tournamentName}
-                                        {group.categoryName && ` • ${group.categoryName}`}
-                                    </span>
-                                    <ArrowSquareOut size={14} className="opacity-60 group-hover:opacity-100" />
-                                </Link>
-
-                                {/* Match Cards in this Tournament */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-                                    {group.matches.map(match => (
-                                        <MatchCard key={match.id} match={match} />
-                                    ))}
-                                </div>
+                                )}
                             </div>
-                        ))}
+                        ) : (
+                            <div className="space-y-6">
+                                {groupedMatches.map(group => (
+                                    <div key={`${group.tournamentId}-${group.categoryName || ''}`} className="space-y-2.5">
+                                        {/* Tournament Group Header */}
+                                        <Link
+                                            to={`/tournaments/${group.tournamentSlug || group.tournamentId}`}
+                                            className="group inline-flex items-center gap-2 text-content-primary hover:text-brand transition-colors"
+                                        >
+                                            <div className="w-6 h-6 rounded-md bg-surface-sunken border border-line-subtle shrink-0 flex items-center justify-center overflow-hidden">
+                                                {group.tournamentLogoUrl ? (
+                                                    <TournamentLogo
+                                                        tournamentId={group.tournamentId}
+                                                        logoUrl={group.tournamentLogoUrl}
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                ) : (
+                                                    <Trophy size={13} className="text-brand" />
+                                                )}
+                                            </div>
+                                            <span className="text-xs md:text-sm font-bold truncate group-hover:underline">
+                                                {group.tournamentName}
+                                                {group.categoryName && ` • ${group.categoryName}`}
+                                            </span>
+                                            <ArrowSquareOut size={14} className="opacity-60 group-hover:opacity-100" />
+                                        </Link>
 
-                        {/* Show More Pagination Button */}
-                        {feedData?.hasNext && (
-                            <div className="pt-2 text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => setPage(p => p + 1)}
-                                    disabled={feedLoading}
-                                    className="px-6 py-2.5 min-h-[44px] rounded-[10px] bg-surface-card border border-line-subtle text-content-primary hover:bg-surface-sunken text-xs font-semibold transition-colors disabled:opacity-50 shadow-xs"
-                                >
-                                    {feedLoading ? '...' : t('home:showMore', { defaultValue: 'Show more' })}
-                                </button>
+                                        {/* Match Cards in this Tournament */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+                                            {group.matches.map(match => (
+                                                <MatchCard key={match.id} match={match} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Show More Pagination Button */}
+                                {feedData?.hasNext && (
+                                    <div className="pt-2 text-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPage(p => p + 1)}
+                                            disabled={feedLoading}
+                                            className="px-6 py-2.5 min-h-[44px] rounded-[10px] bg-surface-card border border-line-subtle text-content-primary hover:bg-surface-sunken text-xs font-semibold transition-colors disabled:opacity-50 shadow-xs"
+                                        >
+                                            {feedLoading ? '...' : t('home:showMore', { defaultValue: 'Show more' })}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
-                )}
+                </div>
             </section>
 
             {/* 4. This Month Calendar Strip (Lazy loaded, gets allTournaments) */}
