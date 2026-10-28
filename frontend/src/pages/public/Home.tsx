@@ -76,9 +76,23 @@ export default function Home() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Matches pagination
+    // Synchronous 4/6 cap for phones (< 768px) and desktop (>= 768px)
+    const [isDesktop, setIsDesktop] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+    );
+    useEffect(() => {
+        const mql = window.matchMedia('(min-width: 768px)');
+        const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+        mql.addEventListener('change', onChange);
+        return () => mql.removeEventListener('change', onChange);
+    }, []);
+    const matchCap = isDesktop ? 6 : 4;
+
+    // Matches pagination and expansion
     const [page, setPage] = useState(0);
     const [accumulatedMatches, setAccumulatedMatches] = useState<PublicMatchFeedItem[]>([]);
+    const [isFeedExpanded, setIsFeedExpanded] = useState(false);
+    const [isLiveExpanded, setIsLiveExpanded] = useState(false);
     const liveNowEligibleRef = useRef<boolean | null>(null);
 
     // Reset page and accumulated list when view changes
@@ -89,6 +103,7 @@ export default function Home() {
             setPage(0);
             setAccumulatedMatches([]);
             liveNowEligibleRef.current = null;
+            setIsFeedExpanded(false);
         }
     }, [currentView]);
 
@@ -193,7 +208,16 @@ export default function Home() {
         liveNowEligibleRef.current = liveNowReady;
     }
 
-    // Group accumulated matches by tournament
+    // Feed capping on page 0
+    const isFeedCapped = page === 0 && !isFeedExpanded && accumulatedMatches.length > matchCap;
+    const displayedMatches = useMemo(() => {
+        if (isFeedCapped) {
+            return accumulatedMatches.slice(0, matchCap);
+        }
+        return accumulatedMatches;
+    }, [accumulatedMatches, isFeedCapped, matchCap]);
+
+    // Group displayed matches by tournament
     const groupedMatches = useMemo(() => {
         const groups: {
             tournamentId: string;
@@ -206,7 +230,7 @@ export default function Home() {
 
         const groupMap = new Map<string, (typeof groups)[0]>();
 
-        accumulatedMatches.forEach(match => {
+        displayedMatches.forEach(match => {
             const groupKey = `${match.tournamentId}-${match.categoryName || ''}`;
             let group = groupMap.get(groupKey);
             if (!group) {
@@ -225,13 +249,24 @@ export default function Home() {
         });
 
         return groups;
-    }, [accumulatedMatches]);
+    }, [displayedMatches]);
 
-    // Live Now matches for the Live Now section (first 4)
-    const liveNowMatches = useMemo(() => {
-        const items = liveFeedData?.items || (currentView === 'live' ? feedData?.items : []);
-        return (items || []).slice(0, 4);
+    // Total count for current feed view
+    const totalFeedCount = feedData?.totalItems ?? (counts ? counts[currentView] : accumulatedMatches.length);
+
+    // Live Now matches for the Live Now section (capped at 4/6 on initial render)
+    const allLiveItems = useMemo(() => {
+        return liveFeedData?.items || (currentView === 'live' ? feedData?.items : []);
     }, [liveFeedData, currentView, feedData]);
+    const totalLiveCount = liveCount > 0 ? liveCount : (liveFeedData?.totalItems ?? (allLiveItems?.length || 0));
+    const isLiveCapped = !isLiveExpanded && (allLiveItems?.length || 0) > matchCap;
+    const liveNowMatches = useMemo(() => {
+        const items = allLiveItems || [];
+        if (!isLiveExpanded) {
+            return items.slice(0, matchCap);
+        }
+        return items;
+    }, [allLiveItems, isLiveExpanded, matchCap]);
 
     const showLiveNowSection =
         currentView !== 'live' &&
@@ -246,6 +281,7 @@ export default function Home() {
         setPage(0);
         setAccumulatedMatches([]);
         liveNowEligibleRef.current = null;
+        setIsFeedExpanded(false);
         setSearchParams(
             prev => {
                 const next = new URLSearchParams(prev);
@@ -321,6 +357,18 @@ export default function Home() {
                             <MatchCard key={match.id} match={match} />
                         ))}
                     </div>
+
+                    {isLiveCapped && (
+                        <div className="pt-2 text-center">
+                            <button
+                                type="button"
+                                onClick={() => setIsLiveExpanded(true)}
+                                className="px-6 py-2.5 min-h-[44px] rounded-[10px] bg-surface-card border border-line-subtle text-content-primary hover:bg-surface-sunken text-xs font-semibold transition-colors shadow-xs"
+                            >
+                                {t('home:showAllMatches', { count: totalLiveCount })}
+                            </button>
+                        </div>
+                    )}
                 </section>
             )}
 
@@ -460,8 +508,21 @@ export default function Home() {
                                     </div>
                                 ))}
 
-                                {/* Show More Pagination Button */}
-                                {feedData?.hasNext && (
+                                {/* Show all matches (n) when capped on page 0 */}
+                                {isFeedCapped && (
+                                    <div className="pt-2 text-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsFeedExpanded(true)}
+                                            className="px-6 py-2.5 min-h-[44px] rounded-[10px] bg-surface-card border border-line-subtle text-content-primary hover:bg-surface-sunken text-xs font-semibold transition-colors shadow-xs"
+                                        >
+                                            {t('home:showAllMatches', { count: totalFeedCount })}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Show More Pagination Button beyond page 0 / when expanded */}
+                                {!isFeedCapped && feedData?.hasNext && (
                                     <div className="pt-2 text-center">
                                         <button
                                             type="button"

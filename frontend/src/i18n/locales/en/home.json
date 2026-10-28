@@ -38,5 +38,7 @@
     "viewAll": "View all →"
   },
   "organisersLink": "Organisers: register your interest",
-  "showMore": "Show more"
+  "showMore": "Show more",
+  "showAllMatches": "Show all matches ({{count}})"
 }
+
