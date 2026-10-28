@@ -82,22 +82,23 @@ export function JourneyOverlay({
         }
 
         const computed = window.getComputedStyle(rootEl);
-        const cssVar = computed.getPropertyValue('--public-bottom-chrome').trim();
+        const journeyVar = computed.getPropertyValue('--journey-bottom-chrome').trim();
+        const cssVar = journeyVar || computed.getPropertyValue('--public-bottom-chrome').trim();
 
-        // On mobile (< 1024px), rootEl has pb-[var(--public-bottom-chrome)], so computed.paddingBottom
-        // is resolved to real screen pixels by the browser engine
-        let px = parseFloat(computed.paddingBottom);
+        // On mobile (< 1024px), if --journey-bottom-chrome is defined, evaluate it via probe
+        // to preserve the dynamic clearance (80px vs 140px). Fallback to computed.paddingBottom.
+        let px = 0;
+        if (cssVar) {
+            const probe = document.createElement('div');
+            probe.style.position = 'absolute';
+            probe.style.visibility = 'hidden';
+            probe.style.height = cssVar;
+            rootEl.appendChild(probe);
+            px = parseFloat(window.getComputedStyle(probe).height);
+            rootEl.removeChild(probe);
+        }
         if (!Number.isFinite(px) || px <= 0) {
-            if (cssVar) {
-                // If paddingBottom is 0 for any reason, evaluate the CSS variable via a hidden probe
-                const probe = document.createElement('div');
-                probe.style.position = 'absolute';
-                probe.style.visibility = 'hidden';
-                probe.style.height = 'var(--public-bottom-chrome)';
-                rootEl.appendChild(probe);
-                px = parseFloat(window.getComputedStyle(probe).height);
-                rootEl.removeChild(probe);
-            }
+            px = parseFloat(computed.paddingBottom);
         }
 
         setBottomChrome(Number.isFinite(px) && px > 0 ? px : 0);

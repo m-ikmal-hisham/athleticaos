@@ -51,7 +51,7 @@ export function PublicNowAccessory({ tournament: propTournament, className, onSh
         'glass z-[35] flex items-center justify-between w-full h-[52px] px-3 rounded-full',
         'text-content-primary no-underline outline-none text-left',
         'focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint',
-        'active:scale-[0.98] motion-safe:transition-transform motion-safe:duration-150',
+        'active:scale-[0.98] motion-safe:transition-transform motion-safe:duration-150 motion-safe:animate-fade-in',
         className
     );
 
