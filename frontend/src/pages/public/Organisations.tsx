@@ -173,7 +173,7 @@ export function Organisations() {
                     }
                     return nextParams;
                 },
-                { replace: true }
+                { replace: true, preventScrollReset: true }
             );
         },
         [setSearchParams]

@@ -146,7 +146,7 @@ export default function Home() {
                         next.set('view', targetView);
                         return next;
                     },
-                    { replace: true }
+                    { replace: true, preventScrollReset: true }
                 );
             }
         },
@@ -288,7 +288,7 @@ export default function Home() {
                 next.set('view', view);
                 return next;
             },
-            { replace: false }
+            { replace: false, preventScrollReset: true }
         );
     };
 

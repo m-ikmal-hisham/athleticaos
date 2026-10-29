@@ -59,7 +59,7 @@ export default function TournamentCalendar({ tournaments }: TournamentCalendarPr
             next.set('view', 'calendar');
             next.set('month', nextMonthStr);
             return next;
-        }, { replace: true });
+        }, { replace: true, preventScrollReset: true });
     }, [setSearchParams]);
 
     // Sync filter changes into URL query
@@ -81,7 +81,7 @@ export default function TournamentCalendar({ tournaments }: TournamentCalendarPr
             else next.delete('type');
 
             return next;
-        }, { replace: true });
+        }, { replace: true, preventScrollReset: true });
     }, [setSearchParams]);
 
     // Initial check: if month is not in URL, set default month

@@ -101,7 +101,7 @@ export function TournamentReadinessCard({
     const handleNavigate = (tab: string) => {
         const searchParams = new URLSearchParams(location.search);
         searchParams.set('tab', tab);
-        navigate(`${location.pathname}?${searchParams.toString()}`);
+        navigate(`${location.pathname}?${searchParams.toString()}`, { preventScrollReset: true });
     };
 
     const errors = readiness?.issues?.filter(i => i.severity === 'ERROR') || [];

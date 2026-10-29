@@ -56,7 +56,7 @@ export default function Teams() {
                     }
                     return next;
                 },
-                { replace: true }
+                { replace: true, preventScrollReset: true }
             );
         }, 300);
 
@@ -173,7 +173,7 @@ export default function Teams() {
                 next.delete('search');
                 return next;
             },
-            { replace: true }
+            { replace: true, preventScrollReset: true }
         );
     };
 
@@ -186,7 +186,7 @@ export default function Teams() {
                 next.delete('category');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const handleOrgChange = (val: string | number) => {
@@ -198,7 +198,7 @@ export default function Teams() {
                 next.delete('organisationId');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const handleAgeGroupChange = (val: string | number) => {
@@ -210,7 +210,7 @@ export default function Teams() {
                 next.delete('ageGroup');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const handleStateChange = (val: string | number) => {
@@ -222,12 +222,12 @@ export default function Teams() {
                 next.delete('state');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const clearFilters = () => {
         setSearchInput('');
-        setSearchParams(new URLSearchParams());
+        setSearchParams(new URLSearchParams(), { preventScrollReset: true });
     };
 
     // Category options built from categoryCounts keys (excluding ALL), ordered MEN, WOMEN, MIXED, then alphabetical

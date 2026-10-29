@@ -96,7 +96,7 @@ export default function Journey() {
 
     // 2. Measure hero header block bottom for overlay clearance guard
     const heroHeaderRef = useRef<HTMLDivElement>(null);
-    const [headerBlockBottom, setHeaderBlockBottom] = useState(200);
+    const [headerBlockBottom, setHeaderBlockBottom] = useState<number | undefined>(undefined);
     useEffect(() => {
         const updateRect = () => {
             if (heroHeaderRef.current) {

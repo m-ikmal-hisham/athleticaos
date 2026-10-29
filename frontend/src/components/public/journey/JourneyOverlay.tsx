@@ -25,9 +25,17 @@ export interface JourneyOverlayProps {
     onSelectMilestone: (m: Milestone) => void;
     lang: 'en' | 'ms';
     visible: boolean;
+    /** Viewport y of the hero title/switch block at scrollY 0; undefined until measured. */
     headerBlockBottom?: number;
     onFallbackCardNeeded?: (needed: boolean) => void;
 }
+
+// Phone phase card: gap above the tab bar/live pill, and clearance between the card top
+// and the centre of the lowest milestone marker (22px half hit target + live ping ring + air).
+const PHONE_CARD_GAP = 12;
+const PHONE_MARKER_CLEARANCE = 30;
+// Used only for the first (hidden) layout pass, before the collapsed card has been measured
+const PHONE_CARD_ESTIMATE = 92;
 
 export function JourneyOverlay({
     journey,
@@ -35,11 +43,13 @@ export function JourneyOverlay({
     onSelectMilestone,
     lang,
     visible,
-    headerBlockBottom = 0,
+    headerBlockBottom: headerBlockBottomProp,
     onFallbackCardNeeded,
 }: JourneyOverlayProps) {
     const { t } = useTranslation('journey');
     const animId = useId();
+    const isHeaderMeasured = headerBlockBottomProp !== undefined;
+    const headerBlockBottom = headerBlockBottomProp ?? 0;
 
     // 1. Viewport & Breakpoint Tracking
     const [viewport, setViewport] = useState(() => ({
@@ -70,6 +80,7 @@ export function JourneyOverlay({
     // 1. Phone bottom clearance: read the existing CSS variable --public-bottom-chrome
     // from the PublicLayout root (getComputedStyle) and recompute when it changes (live accessory shown/hidden, resize).
     const [bottomChrome, setBottomChrome] = useState(0);
+    const [isBottomChromeMeasured, setIsBottomChromeMeasured] = useState(false);
     const updateBottomChrome = useCallback(() => {
         if (typeof document === 'undefined') return;
         const rootEl = document.querySelector('[data-animated-bg]') as HTMLElement | null;
@@ -78,6 +89,7 @@ export function JourneyOverlay({
         // Desktop (lg: >= 1024px) has no floating tab bar, bottom chrome is 0
         if (window.innerWidth >= 1024) {
             setBottomChrome(0);
+            setIsBottomChromeMeasured(true);
             return;
         }
 
@@ -102,6 +114,7 @@ export function JourneyOverlay({
         }
 
         setBottomChrome(Number.isFinite(px) && px > 0 ? px : 0);
+        setIsBottomChromeMeasured(true);
     }, []);
 
     useEffect(() => {
@@ -233,10 +246,24 @@ export function JourneyOverlay({
     // Single active label pill: hovered/focused else selected (Never both!)
     const activeLabelIndex = activeHoverIndex !== null ? activeHoverIndex : selectedMilestoneIndex;
 
+    // Phones: the phase card is anchored above --journey-bottom-chrome (tab bar + live pill +
+    // safe area). Its collapsed height is measured so the route fit can keep every milestone
+    // marker above it. The value is kept while the card is expanded.
+    const phoneCardRef = useRef<HTMLDivElement>(null);
+    const [collapsedCardH, setCollapsedCardH] = useState<number | null>(null);
+    const phoneSafeBottom = isDesktop
+        ? null
+        : viewport.h -
+          bottomChrome -
+          PHONE_CARD_GAP -
+          (collapsedCardH ?? PHONE_CARD_ESTIMATE) -
+          PHONE_MARKER_CLEARANCE;
+
     // Dense Route Generation & Equal Screen Arc-Length Placement
     const routeData = useMemo(() => {
         const SAMPLE_COUNT = 300;
         const EDGE_MARGIN = 32; // keep markers (44px hit target) fully on screen
+        const MIN_MARKER_SPACING = 44; // one hit target per milestone along the route
         const sampleRoute = (amp: number) => {
             const pts: { x: number; y: number }[] = [];
             for (let i = 0; i <= SAMPLE_COUNT; i++) {
@@ -265,13 +292,31 @@ export function JourneyOverlay({
 
         const totalCurveLength = cumDist[SAMPLE_COUNT];
 
+        // Phones: the route still starts at our posts, but milestones are placed only on the part
+        // of the route above the phase card (screen y falls steadily from our posts to the far posts).
+        // If that part is too short for one hit target per milestone, the card moves below the hero.
+        let firstIdx = 0;
+        let fitsAboveCard = true;
+        if (phoneSafeBottom !== null) {
+            const idx = samples.findIndex((s) => s.y <= phoneSafeBottom);
+            const usable = idx >= 0 ? totalCurveLength - cumDist[idx] : 0;
+            if (idx >= 0 && usable >= (milestoneCount - 1) * MIN_MARKER_SPACING) {
+                firstIdx = idx;
+            } else {
+                fitsAboveCard = false;
+            }
+        }
+        const startDist = cumDist[firstIdx];
+        const usableLength = totalCurveLength - startDist;
+
         // Place milestones at equal cumulative screen arc-length intervals
-        // m=0 at start post (try line centre 10, 35), m=count-1 at goal post (far try line centre 110, 35)
+        // m=0 at start post (try line centre 10, 35) unless trimmed above the phone card,
+        // m=count-1 at goal post (far try line centre 110, 35)
         const milestonePoints = [];
         for (let m = 0; m < milestoneCount; m++) {
-            const targetDist = (m / (milestoneCount - 1)) * totalCurveLength;
+            const targetDist = startDist + (m / (milestoneCount - 1)) * usableLength;
 
-            let idx = 0;
+            let idx = firstIdx;
             while (idx < SAMPLE_COUNT && cumDist[idx + 1] < targetDist) {
                 idx++;
             }
@@ -317,8 +362,9 @@ export function JourneyOverlay({
             goalPost,
             pathD,
             bbox: { minX, maxX, minY, maxY },
+            fitsAboveCard,
         };
-    }, [milestoneCount, projectToScreen, viewport.w]);
+    }, [milestoneCount, projectToScreen, viewport.w, phoneSafeBottom]);
 
     const coords = routeData.milestonePoints;
     const startPost = routeData.startPost;
@@ -328,6 +374,19 @@ export function JourneyOverlay({
     const pathSegments = useMemo(() => {
         const segments: { path: string; fromIdx: number; toIdx: number }[] = [];
         if (coords.length === 0) return segments;
+
+        // Phones: lead-in from our posts to the first milestone when the milestones were
+        // trimmed above the phase card (drawn as completed route; it runs behind the card)
+        if (coords[0].sampleIndex > 0) {
+            const lead = routeData.startPost;
+            let dLead = `M ${lead.x.toFixed(1)} ${lead.y.toFixed(1)}`;
+            for (let i = 1; i <= coords[0].sampleIndex; i++) {
+                const s = routeData.samples[i];
+                dLead += ` L ${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
+            }
+            dLead += ` L ${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+            segments.push({ path: dLead, fromIdx: -1, toIdx: 0 });
+        }
 
         // Consecutive milestones
         for (let m = 0; m < coords.length - 1; m++) {
@@ -370,17 +429,44 @@ export function JourneyOverlay({
         return { type: 'A' as const, ...bandA };
     }, [bandA, bandB]);
 
-    // Card variant based on clearance: standard (>= 120px), compact (70-120px), or below-hero (< 70px)
+    // Card variant. Desktop: standard / compact by band clearance, or below-hero when tight.
+    // Phones: always the bottom-anchored card, unless the route above it is too short.
     const cardVariant = useMemo(() => {
-        if (chosenBand.height >= (isDesktop ? 180 : 124)) return 'standard';
+        if (!isDesktop) return routeData.fitsAboveCard ? 'phone' : 'below-hero';
+        if (chosenBand.height >= 180) return 'standard';
         if (chosenBand.height >= 56) return 'compact';
         return 'below-hero';
-    }, [chosenBand.height, isDesktop]);
+    }, [chosenBand.height, isDesktop, routeData.fitsAboveCard]);
+
+    // Measure the collapsed phone card (before paint, and whenever its content or width changes)
+    useLayoutEffect(() => {
+        const el = phoneCardRef.current;
+        if (!el || cardVariant !== 'phone') return;
+        const measure = () => {
+            if (el.dataset.expanded === 'true') return;
+            const h = Math.ceil(el.getBoundingClientRect().height);
+            if (h > 0) setCollapsedCardH((prev) => (prev === h ? prev : h));
+        };
+        measure();
+        if (typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [cardVariant, selectedMilestone.id, lang]);
+
+    // Nothing is shown until the header block, bottom chrome and (phones) card height are known,
+    // so the card never flashes in a provisional spot (e.g. above the header).
+    const isPositioned =
+        isHeaderMeasured &&
+        isBottomChromeMeasured &&
+        (isDesktop || collapsedCardH !== null || cardVariant === 'below-hero');
+    const isShown = visible && isPositioned;
 
     // Notify parent if below-hero fallback is required
     useEffect(() => {
+        if (!isPositioned) return;
         onFallbackCardNeeded?.(cardVariant === 'below-hero');
-    }, [cardVariant, onFallbackCardNeeded]);
+    }, [cardVariant, isPositioned, onFallbackCardNeeded]);
 
     // Card expansion ("Read more" / "Show less")
     const [isExpanded, setIsExpanded] = useState(false);
@@ -555,6 +641,9 @@ export function JourneyOverlay({
 
     const goalPillY = Math.max(headerBlockBottom + 16, goalPost.y - (isDesktop ? 28 : 24));
     const startPillY = startPost.y + (isDesktop ? 26 : 28);
+    // Phones: when milestones were trimmed above the phase card, our posts sit behind the card /
+    // tab bar, so their label would only show through the glass; leave it out.
+    const showStartPill = (coords[0]?.sampleIndex ?? 0) === 0;
 
     // Active single label positioning calculation
     const activeCoord = coords[activeLabelIndex] || { x: viewport.w / 2, y: viewport.h / 2 };
@@ -562,6 +651,11 @@ export function JourneyOverlay({
 
     // Determine whether label goes above or below to avoid phase card & screen bounds
     const isLabelAbove = useMemo(() => {
+        if (!isDesktop) {
+            // Phones: the card is below every marker, so the label goes above unless it would
+            // run into the title/switch block (label is ~40px tall, centred 38px from the marker)
+            return activeCoord.y - 38 - 22 > headerBlockBottom + 4;
+        }
         if (chosenBand.type === 'A') {
             // Card is above route; place label below if marker is in upper third
             return activeCoord.y > chosenBand.bottom + 60;
@@ -569,17 +663,17 @@ export function JourneyOverlay({
             // Card is below route; place label above if marker is in lower third
             return activeCoord.y > viewport.h - 120 ? true : activeCoord.y > 100;
         }
-    }, [chosenBand, activeCoord.y, viewport.h]);
+    }, [isDesktop, headerBlockBottom, chosenBand, activeCoord.y, viewport.h]);
 
     const labelX = Math.max(140, Math.min(viewport.w - 140, activeCoord.x));
     const labelY = isLabelAbove ? activeCoord.y - 38 : activeCoord.y + 38;
 
     return (
         <div
-            aria-hidden={!visible}
+            aria-hidden={!isShown}
             className={clsx(
                 'fixed inset-0 z-10 pointer-events-none select-none transition-opacity duration-200',
-                visible ? 'opacity-100' : 'opacity-0'
+                isShown ? 'opacity-100' : 'opacity-0'
             )}
         >
             {/* SVG Layer for Dashed Route & Post Indicators */}
@@ -632,16 +726,18 @@ export function JourneyOverlay({
             </svg>
 
             {/* Start Post Label Pill */}
-            <div
-                style={{
-                    left: `${startPost.x}px`,
-                    top: `${startPillY}px`,
-                    transform: 'translate(-50%, -50%)',
-                }}
-                className="absolute pointer-events-none px-2.5 py-1 rounded-full bg-navy/90 dark:bg-navy-tint/90 text-white dark:text-black text-[11px] font-bold uppercase tracking-wider shadow-sm whitespace-nowrap"
-            >
-                {startText}
-            </div>
+            {showStartPill && (
+                <div
+                    style={{
+                        left: `${startPost.x}px`,
+                        top: `${startPillY}px`,
+                        transform: 'translate(-50%, -50%)',
+                    }}
+                    className="absolute pointer-events-none px-2.5 py-1 rounded-full bg-navy/90 dark:bg-navy-tint/90 text-white dark:text-black text-[11px] font-bold uppercase tracking-wider shadow-sm whitespace-nowrap"
+                >
+                    {startText}
+                </div>
+            )}
 
             {/* Goal Post Label Pill */}
             <div
@@ -788,21 +884,54 @@ export function JourneyOverlay({
                 <div
                     aria-live="polite"
                     style={
-                        isExpanded
-                            ? chosenBand.type === 'A'
-                                ? // Grow downwards from the top of the gap so it never covers the title/switch
-                                  { left: '50%', top: `${chosenBand.top}px`, transform: 'translateX(-50%)' }
-                                : // Grow upwards from the bottom of the gap so it stays above the phone chrome
-                                  { left: '50%', top: `${chosenBand.bottom}px`, transform: 'translate(-50%, -100%)' }
-                            : { left: '50%', top: `${chosenBand.centerY}px`, transform: 'translate(-50%, -50%)' }
+                        isDesktop
+                            ? isExpanded
+                                ? chosenBand.type === 'A'
+                                    ? { left: '50%', top: `${chosenBand.top}px`, transform: 'translateX(-50%)' }
+                                    : { left: '50%', top: `${chosenBand.bottom}px`, transform: 'translate(-50%, -100%)' }
+                                : { left: '50%', top: `${chosenBand.centerY}px`, transform: 'translate(-50%, -50%)' }
+                            : {
+                                  left: '50%',
+                                  bottom: 'calc(var(--journey-bottom-chrome) + 12px)',
+                                  transform: 'translateX(-50%)',
+                              }
                     }
                     className={clsx(
                         'absolute pointer-events-auto z-30 transition-all duration-200',
-                        isDesktop ? 'w-full max-w-[720px]' : 'w-[calc(100%-32px)]'
+                        isDesktop ? 'w-full max-w-[720px]' : 'w-[calc(100%-32px)] max-w-lg'
                     )}
                 >
-                    {cardVariant === 'standard' || isExpanded ? (
+                    {isDesktop && cardVariant === 'compact' && !isExpanded ? (
+                        /* Desktop compact 1-line form when space is tight */
+                        <button
+                            type="button"
+                            onClick={() => setIsExpanded(true)}
+                            aria-expanded={false}
+                            className="w-full text-left glass-card-surface rounded-full px-4 py-2.5 min-h-[44px] shadow-md flex items-center justify-between gap-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint"
+                        >
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="w-5 h-5 rounded-full bg-navy/10 dark:bg-navy-tint/20 text-navy dark:text-navy-tint flex items-center justify-center shrink-0">
+                                    <SetPieceIcon piece={selectedMilestone.setPiece} width={12} height={12} />
+                                </span>
+                                <span className="font-semibold text-navy dark:text-navy-tint shrink-0">
+                                    {selectedMilestone.date}
+                                </span>
+                                <span className="text-black/80 dark:text-white/80 font-medium truncate">
+                                    {selectedMilestone.title[lang]}
+                                </span>
+                            </div>
+                            <span className="shrink-0 text-[11px] font-bold text-navy dark:text-navy-tint">
+                                {selectedMilestone.status === 'current'
+                                    ? 'LIVE'
+                                    : selectedMilestone.status === 'done'
+                                      ? t('status.done')
+                                      : t('status.upcoming')}
+                            </span>
+                        </button>
+                    ) : (
                         <div
+                            ref={!isDesktop ? phoneCardRef : undefined}
+                            data-expanded={isExpanded ? 'true' : 'false'}
                             className={clsx(
                                 'rounded-2xl border transition-all duration-200',
                                 isDesktop ? 'p-5' : 'p-3.5',
@@ -862,57 +991,45 @@ export function JourneyOverlay({
                             </div>
 
                             <div className={clsx('space-y-1', isDesktop ? 'pt-3' : 'pt-2')}>
-                                <h3 className={clsx('font-bold text-black dark:text-white tracking-tight', isDesktop ? 'text-lg' : 'text-sm')}>
-                                    {selectedMilestone.title[lang]}
-                                </h3>
-                                <p
-                                    ref={descRef}
-                                    className={clsx(
-                                        'text-xs sm:text-sm text-black/85 dark:text-white/85 leading-relaxed',
-                                        !isExpanded && (isDesktop ? 'line-clamp-3' : 'line-clamp-2')
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <h3 className={clsx('font-bold text-black dark:text-white tracking-tight', isDesktop ? 'text-lg' : 'text-sm truncate')}>
+                                        {selectedMilestone.title[lang]}
+                                    </h3>
+                                    {!isDesktop && !isExpanded && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsExpanded(true)}
+                                            className="shrink-0 text-xs font-bold text-navy dark:text-navy-tint hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy"
+                                        >
+                                            {t('card.readMore')}
+                                        </button>
                                     )}
-                                >
-                                    {selectedMilestone.text[lang]}
-                                </p>
+                                </div>
+                                {(isDesktop || isExpanded) && (
+                                    <>
+                                        <p
+                                            ref={descRef}
+                                            className={clsx(
+                                                'text-xs sm:text-sm text-black/85 dark:text-white/85 leading-relaxed',
+                                                !isExpanded && (isDesktop ? 'line-clamp-3' : 'line-clamp-2')
+                                            )}
+                                        >
+                                            {selectedMilestone.text[lang]}
+                                        </p>
 
-                                {(hasOverflow || isExpanded) && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsExpanded((prev) => !prev)}
-                                        className="inline-flex items-center text-xs font-bold text-navy dark:text-navy-tint hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy pt-1"
-                                    >
-                                        {isExpanded ? t('card.showLess') : t('card.readMore')}
-                                    </button>
+                                        {(hasOverflow || isExpanded) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsExpanded((prev) => !prev)}
+                                                className="inline-flex items-center text-xs font-bold text-navy dark:text-navy-tint hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy pt-1"
+                                            >
+                                                {isExpanded ? t('card.showLess') : t('card.readMore')}
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
-                    ) : (
-                        /* Compact 1-line form when space is tight; tap opens the full card over the field */
-                        <button
-                            type="button"
-                            onClick={() => setIsExpanded(true)}
-                            aria-expanded={false}
-                            className="w-full text-left glass-card-surface rounded-full px-4 py-2.5 min-h-[44px] shadow-md flex items-center justify-between gap-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy dark:focus-visible:ring-navy-tint"
-                        >
-                            <div className="flex items-center gap-2 min-w-0">
-                                <span className="w-5 h-5 rounded-full bg-navy/10 dark:bg-navy-tint/20 text-navy dark:text-navy-tint flex items-center justify-center shrink-0">
-                                    <SetPieceIcon piece={selectedMilestone.setPiece} width={12} height={12} />
-                                </span>
-                                <span className="font-semibold text-navy dark:text-navy-tint shrink-0">
-                                    {selectedMilestone.date}
-                                </span>
-                                <span className="text-black/80 dark:text-white/80 font-medium truncate">
-                                    {selectedMilestone.title[lang]}
-                                </span>
-                            </div>
-                            <span className="shrink-0 text-[11px] font-bold text-navy dark:text-navy-tint">
-                                {selectedMilestone.status === 'current'
-                                    ? 'LIVE'
-                                    : selectedMilestone.status === 'done'
-                                      ? t('status.done')
-                                      : t('status.upcoming')}
-                            </span>
-                        </button>
                     )}
                 </div>
             )}
