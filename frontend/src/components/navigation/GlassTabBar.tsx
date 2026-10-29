@@ -26,10 +26,10 @@ export interface GlassTabBarProps {
 }
 
 const itemBase =
-    'relative z-10 flex flex-col items-center justify-center gap-0.5 min-h-[44px] h-full px-0 text-xs font-medium tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy dark:focus-visible:ring-navy-tint active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 select-none';
+    'relative z-10 flex flex-col items-center justify-center gap-0.5 min-h-[44px] h-full px-0 text-xs font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy dark:focus-visible:ring-navy-tint active:scale-[0.96] motion-safe:transition-transform motion-safe:duration-150 select-none';
 
 const activeCls = 'text-navy dark:text-navy-tint';
-const inactiveCls = 'text-black/72 dark:text-white/72 hover:text-navy dark:hover:text-navy-tint';
+const inactiveCls = 'text-black/80 dark:text-white/85 hover:text-navy dark:hover:text-navy-tint';
 
 /**
  * Generic floating glass tab bar.
@@ -172,7 +172,8 @@ export function GlassTabBar({
                     aria-hidden={isMinimised ? true : undefined}
                     {...(isMinimised ? { inert: '' } : {})}
                     className={clsx(
-                        'glass absolute z-30 bottom-0 left-0 w-full h-[64px] rounded-full overflow-hidden pointer-events-auto',
+                        'glass bg-white/88 dark:bg-deep-navy/90 shadow-[0_8px_32px_rgba(0,0,0,0.18)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]',
+                        'absolute z-30 bottom-0 left-0 w-full h-[64px] rounded-full overflow-hidden pointer-events-auto',
                         'motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-reduce:transition-none',
                         isMinimised
                             ? 'opacity-0 scale-95 pointer-events-none'
@@ -186,7 +187,7 @@ export function GlassTabBar({
                     <div
                         aria-hidden="true"
                         className={clsx(
-                            'absolute rounded-full pointer-events-none bg-navy/10 dark:bg-white/12',
+                            'absolute rounded-full pointer-events-none bg-navy/12 dark:bg-white/16',
                             'motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none',
                             activeIndex >= 0 ? 'opacity-100' : 'opacity-0'
                         )}
@@ -268,7 +269,8 @@ export function GlassTabBar({
                     aria-hidden={!isMinimised ? true : undefined}
                     {...(!isMinimised ? { inert: '' } : {})}
                     className={clsx(
-                        'glass absolute z-30 bottom-0 left-0 w-[52px] h-[52px] rounded-full overflow-hidden flex items-center justify-center pointer-events-auto',
+                        'glass bg-white/88 dark:bg-deep-navy/90 shadow-[0_8px_32px_rgba(0,0,0,0.18)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]',
+                        'absolute z-30 bottom-0 left-0 w-[52px] h-[52px] rounded-full overflow-hidden flex items-center justify-center pointer-events-auto',
                         'motion-safe:transition-[transform,opacity] motion-safe:duration-300 motion-reduce:transition-none',
                         isMinimised
                             ? 'opacity-100 scale-100 pointer-events-auto cursor-pointer'

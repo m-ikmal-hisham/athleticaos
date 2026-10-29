@@ -112,9 +112,9 @@ export function PublicTeamProfile() {
         const val = tournamentId || '';
         setSelectedTournamentId(val);
         if (val) {
-            setSearchParams({ tournamentId: val });
+            setSearchParams({ tournamentId: val }, { preventScrollReset: true });
         } else {
-            setSearchParams({});
+            setSearchParams({}, { preventScrollReset: true });
         }
     };
 
