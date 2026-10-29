@@ -1,5 +1,5 @@
 import { Suspense, useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, ScrollRestoration, useLocation } from 'react-router-dom';
 import { CaretDown, CaretLeft, CaretRight, CaretUpDown, Trophy } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -144,6 +144,9 @@ export const AppLayout = () => {
         >
             <AdminBrandBackground />
             <EnvironmentRibbon />
+            {/* New visits open at the top; Back/Forward restore the position saved for that
+                history entry. Same-page search-param changes opt out via preventScrollReset. */}
+            <ScrollRestoration />
             <div className="flex-1 flex min-h-0 relative">
                 {/* Sidebar - Desktop Only (≥ lg) */}
                 <aside

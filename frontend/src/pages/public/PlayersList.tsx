@@ -69,7 +69,7 @@ export default function PlayersList() {
                     }
                     return next;
                 },
-                { replace: true }
+                { replace: true, preventScrollReset: true }
             );
         }, 300);
 
@@ -145,7 +145,7 @@ export default function PlayersList() {
                 next.delete('state');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const clearDraftFilters = () => {
@@ -156,7 +156,7 @@ export default function PlayersList() {
             next.delete('position');
             next.delete('state');
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const {
@@ -197,7 +197,7 @@ export default function PlayersList() {
                 next.delete('search');
                 return next;
             },
-            { replace: true }
+            { replace: true, preventScrollReset: true }
         );
     };
 
@@ -210,7 +210,7 @@ export default function PlayersList() {
                 next.delete('position');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const handleStateChange = (st: string) => {
@@ -222,12 +222,12 @@ export default function PlayersList() {
                 next.delete('state');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const clearFilters = () => {
         setSearchInput('');
-        setSearchParams(new URLSearchParams());
+        setSearchParams(new URLSearchParams(), { preventScrollReset: true });
     };
 
     return (
