@@ -11,6 +11,7 @@ import { PageLoader } from '@/components/PageLoader';
 import { Button } from '@/components/Button';
 import { LanguageSwitch } from '@/components/common/LanguageSwitch';
 import { PublicThemeToggle } from '@/components/public/PublicThemeToggle';
+import { ScrollToTopOnNavigate } from '@/components/common/ScrollToTopOnNavigate';
 import { changeLanguage } from '@/i18n';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
@@ -246,6 +247,7 @@ export default function PublicLayout() {
             {/* New visits open at the top; Back/Forward restore the position saved for that
                 history entry. Same-page search-param changes opt out via preventScrollReset. */}
             <ScrollRestoration />
+            <ScrollToTopOnNavigate />
 
             <EnvironmentRibbon />
 

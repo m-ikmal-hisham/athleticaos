@@ -19,6 +19,7 @@ import { AdminBrandBackground } from '@/components/admin/AdminBrandBackground';
 import { TournamentSwitcher } from '@/components/admin/TournamentSwitcher';
 import { useSpotlightTournament } from '@/hooks/useSpotlightTournament';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
+import { ScrollToTopOnNavigate } from '@/components/common/ScrollToTopOnNavigate';
 
 function getAdminPageTitle(pathname: string, t: (key: string) => string): string {
     if (pathname === '/dashboard') return t('topBar.dashboard');
@@ -147,6 +148,7 @@ export const AppLayout = () => {
             {/* New visits open at the top; Back/Forward restore the position saved for that
                 history entry. Same-page search-param changes opt out via preventScrollReset. */}
             <ScrollRestoration />
+            <ScrollToTopOnNavigate />
             <div className="flex-1 flex min-h-0 relative">
                 {/* Sidebar - Desktop Only (≥ lg) */}
                 <aside
