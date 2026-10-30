@@ -193,8 +193,8 @@ export default function Contact() {
 
     return (
         // One screen on desktop: intro on the left, form on the right; compact on phones
-        <div className="max-w-6xl mx-auto grid gap-5 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-3 lg:items-start">
-            <div className="space-y-2 lg:col-start-1 lg:col-span-5 lg:pt-4">
+        <div className="max-w-6xl mx-auto grid gap-3 sm:gap-5 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-10 lg:gap-y-3 lg:items-start">
+            <div className="space-y-1 sm:space-y-2 lg:col-start-1 lg:col-span-5 lg:pt-4">
                 <h1 className="font-score text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
                     {t('title')}
                 </h1>
@@ -204,8 +204,8 @@ export default function Contact() {
             </div>
 
             {/* Contact form card */}
-            <div className="lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2 p-4 sm:p-6 rounded-2xl glass-card-surface border border-black/10 dark:border-white/12">
-                <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-3" noValidate>
+            <div className="lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2 p-3.5 sm:p-6 rounded-2xl glass-card-surface border border-black/10 dark:border-white/12">
+                <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-x-3 sm:gap-x-4 gap-y-2 sm:gap-y-3" noValidate>
                     {/* Honeypot field - visually hidden, tabIndex -1, autocomplete off, aria-hidden */}
                     <div
                         className="absolute -left-[9999px] opacity-0 h-0 w-0 pointer-events-none"
@@ -225,7 +225,7 @@ export default function Contact() {
                     {serverError && (
                         <div
                             role="alert"
-                            className="col-span-2 p-4 rounded-xl border border-crimson/30 bg-crimson/10 text-crimson dark:text-crimson-tint text-sm font-medium"
+                            className="col-span-2 p-3 sm:p-4 rounded-xl border border-crimson/30 bg-crimson/10 text-crimson dark:text-crimson-tint text-sm font-medium"
                         >
                             {serverError}
                         </div>
@@ -235,7 +235,7 @@ export default function Contact() {
                     <div className="col-span-2 sm:col-span-1">
                         <label
                             htmlFor="name"
-                            className="block text-sm font-medium text-black dark:text-white mb-1"
+                            className="block text-xs sm:text-sm font-medium text-black dark:text-white mb-0.5 sm:mb-1"
                         >
                             {t('fullName')}
                         </label>
@@ -243,7 +243,7 @@ export default function Contact() {
                             id="name"
                             type="text"
                             aria-invalid={!!errors.name}
-                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
+                            className={`w-full min-h-[44px] px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
                                 errors.name
                                     ? 'border-crimson dark:border-crimson-tint'
                                     : 'border-black/24 dark:border-white/28'
@@ -251,7 +251,7 @@ export default function Contact() {
                             {...register('name')}
                         />
                         {errors.name && (
-                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">
+                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1">
                                 {errors.name.message}
                             </p>
                         )}
@@ -261,7 +261,7 @@ export default function Contact() {
                     <div className="col-span-2 sm:col-span-1">
                         <label
                             htmlFor="email"
-                            className="block text-sm font-medium text-black dark:text-white mb-1"
+                            className="block text-xs sm:text-sm font-medium text-black dark:text-white mb-0.5 sm:mb-1"
                         >
                             {t('email')}
                         </label>
@@ -269,7 +269,7 @@ export default function Contact() {
                             id="email"
                             type="email"
                             aria-invalid={!!errors.email}
-                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
+                            className={`w-full min-h-[44px] px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
                                 errors.email
                                     ? 'border-crimson dark:border-crimson-tint'
                                     : 'border-black/24 dark:border-white/28'
@@ -277,7 +277,7 @@ export default function Contact() {
                             {...register('email')}
                         />
                         {errors.email && (
-                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">
+                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1">
                                 {errors.email.message}
                             </p>
                         )}
@@ -287,7 +287,7 @@ export default function Contact() {
                     <div>
                         <label
                             htmlFor="organisation"
-                            className="block text-sm font-medium text-black dark:text-white mb-1"
+                            className="block text-xs sm:text-sm font-medium text-black dark:text-white mb-0.5 sm:mb-1"
                         >
                             {t('organisation')}{' '}
                             <span className="text-xs text-black/60 dark:text-white/60 font-normal">
@@ -298,7 +298,7 @@ export default function Contact() {
                             id="organisation"
                             type="text"
                             aria-invalid={!!errors.organisation}
-                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
+                            className={`w-full min-h-[44px] px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors ${
                                 errors.organisation
                                     ? 'border-crimson dark:border-crimson-tint'
                                     : 'border-black/24 dark:border-white/28'
@@ -306,7 +306,7 @@ export default function Contact() {
                             {...register('organisation')}
                         />
                         {errors.organisation && (
-                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1.5">
+                            <p className="text-xs text-crimson dark:text-crimson-tint mt-1">
                                 {errors.organisation.message}
                             </p>
                         )}
@@ -332,8 +332,8 @@ export default function Contact() {
 
                     {/* Message */}
                     <div className="col-span-2">
-                        <div className="flex items-baseline justify-between mb-1">
-                            <label htmlFor="message" className="text-sm font-medium text-black dark:text-white">
+                        <div className="flex items-baseline justify-between mb-0.5 sm:mb-1">
+                            <label htmlFor="message" className="text-xs sm:text-sm font-medium text-black dark:text-white">
                                 {t('message')}
                             </label>
                             <span className="text-xs text-black/60 dark:text-white/60 tabular-nums">
@@ -344,7 +344,7 @@ export default function Contact() {
                             id="message"
                             rows={3}
                             aria-invalid={!!errors.message}
-                            className={`w-full px-4 py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors resize-y sm:min-h-[7.5rem] ${
+                            className={`w-full px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border bg-black/4 dark:bg-white/6 text-black dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:focus:ring-navy-tint transition-colors resize-y ${
                                 errors.message
                                     ? 'border-crimson dark:border-crimson-tint'
                                     : 'border-black/24 dark:border-white/28'
@@ -362,7 +362,7 @@ export default function Contact() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="col-span-2 w-full inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] text-base font-semibold rounded-xl bg-navy hover:bg-deep-navy dark:hover:bg-navy/80 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="col-span-2 w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 min-h-[44px] text-sm sm:text-base font-semibold rounded-xl bg-navy hover:bg-deep-navy dark:hover:bg-navy/80 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {isSubmitting && (
                             <svg
@@ -388,7 +388,7 @@ export default function Contact() {
                         )}
                         <span>{isSubmitting ? t('submitting') : t('submit')}</span>
                     </button>
-                    <p className="col-span-2 text-center text-xs text-black/60 dark:text-white/60">
+                    <p className="col-span-2 text-center text-xs text-black/60 dark:text-white/60 pt-0.5 sm:pt-1">
                         <Trans
                             i18nKey="contact:privacyNotice"
                             components={{

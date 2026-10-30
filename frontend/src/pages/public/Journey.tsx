@@ -96,7 +96,7 @@ export default function Journey() {
 
     // 2. Measure hero header block bottom for overlay clearance guard
     const heroHeaderRef = useRef<HTMLDivElement>(null);
-    const [headerBlockBottom, setHeaderBlockBottom] = useState(200);
+    const [headerBlockBottom, setHeaderBlockBottom] = useState<number | undefined>(undefined);
     useEffect(() => {
         const updateRect = () => {
             if (heroHeaderRef.current) {
@@ -127,13 +127,10 @@ export default function Journey() {
         return () => observer.disconnect();
     }, []);
 
-    // 4. Milestone selection with smooth scroll into view on phones (< 1024px) when phase card is below hero
+    // 4. Milestone selection (no auto-scroll on phones: keeps viewport stable)
     const phaseBoxRef = useRef<HTMLDivElement>(null);
     const handleSelectMilestone = (m: Milestone) => {
         setSelectedMilestone(m);
-        if (typeof window !== 'undefined' && window.innerWidth < 1024 && (!isBgFlagEnabled || fallbackCardNeeded)) {
-            phaseBoxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
     };
 
     return (

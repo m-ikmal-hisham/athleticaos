@@ -184,7 +184,7 @@ export default function TournamentDetail() {
 
     const selectTab = (tabId: string) => {
         setActiveTab(tabId);
-        navigate(`?tab=${tabId}`, { replace: true });
+        navigate(`?tab=${tabId}`, { replace: true, preventScrollReset: true });
     };
 
     const tabs: { id: string; label: string; shortLabel?: string; icon: Icon }[] = [

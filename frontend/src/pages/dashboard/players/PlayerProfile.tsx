@@ -95,9 +95,9 @@ export const PlayerProfile = () => {
     const handleTournamentSelect = (tournamentId: string | null) => {
         setSelectedTournamentId(tournamentId);
         if (tournamentId) {
-            setSearchParams({ tournamentId });
+            setSearchParams({ tournamentId }, { preventScrollReset: true });
         } else {
-            setSearchParams({});
+            setSearchParams({}, { preventScrollReset: true });
         }
     };
 

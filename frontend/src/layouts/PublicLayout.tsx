@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef, useState, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, CaretDown, SignIn, SquaresFour } from '@phosphor-icons/react';
 import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
@@ -11,6 +11,7 @@ import { PageLoader } from '@/components/PageLoader';
 import { Button } from '@/components/Button';
 import { LanguageSwitch } from '@/components/common/LanguageSwitch';
 import { PublicThemeToggle } from '@/components/public/PublicThemeToggle';
+import { ScrollToTopOnNavigate } from '@/components/common/ScrollToTopOnNavigate';
 import { changeLanguage } from '@/i18n';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/auth.store';
@@ -243,6 +244,11 @@ export default function PublicLayout() {
             {/* Global Background */}
             <AppBackground />
 
+            {/* New visits open at the top; Back/Forward restore the position saved for that
+                history entry. Same-page search-param changes opt out via preventScrollReset. */}
+            <ScrollRestoration />
+            <ScrollToTopOnNavigate />
+
             <EnvironmentRibbon />
 
             {/* Top bar: sticky on every size; on phones it slides away while scrolling down */}
@@ -357,7 +363,7 @@ export default function PublicLayout() {
                 id="main-content"
                 tabIndex={-1}
                 className={clsx(
-                    'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 outline-none',
+                    'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 relative z-10 outline-none',
                     'min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))]',
                     detailParent && 'pt-2 lg:pt-8'
                 )}

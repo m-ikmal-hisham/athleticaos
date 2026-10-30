@@ -1,5 +1,5 @@
 import { Suspense, useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, ScrollRestoration, useLocation } from 'react-router-dom';
 import { CaretDown, CaretLeft, CaretRight, CaretUpDown, Trophy } from '@phosphor-icons/react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,7 @@ import { AdminBrandBackground } from '@/components/admin/AdminBrandBackground';
 import { TournamentSwitcher } from '@/components/admin/TournamentSwitcher';
 import { useSpotlightTournament } from '@/hooks/useSpotlightTournament';
 import { TournamentLogo } from '@/components/common/TournamentLogo';
+import { ScrollToTopOnNavigate } from '@/components/common/ScrollToTopOnNavigate';
 
 function getAdminPageTitle(pathname: string, t: (key: string) => string): string {
     if (pathname === '/dashboard') return t('topBar.dashboard');
@@ -144,6 +145,10 @@ export const AppLayout = () => {
         >
             <AdminBrandBackground />
             <EnvironmentRibbon />
+            {/* New visits open at the top; Back/Forward restore the position saved for that
+                history entry. Same-page search-param changes opt out via preventScrollReset. */}
+            <ScrollRestoration />
+            <ScrollToTopOnNavigate />
             <div className="flex-1 flex min-h-0 relative">
                 {/* Sidebar - Desktop Only (≥ lg) */}
                 <aside

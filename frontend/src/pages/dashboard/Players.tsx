@@ -51,7 +51,7 @@ export default function Players() {
                     }
                     return next;
                 },
-                { replace: true }
+                { replace: true, preventScrollReset: true }
             );
         }, 300);
 
@@ -159,12 +159,12 @@ export default function Players() {
                 next.delete('status');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const clearFilters = () => {
         setSearchInput('');
-        setSearchParams(new URLSearchParams());
+        setSearchParams(new URLSearchParams(), { preventScrollReset: true });
     };
 
     const handleClearSearch = () => {
@@ -175,7 +175,7 @@ export default function Players() {
                 next.delete('search');
                 return next;
             },
-            { replace: true }
+            { replace: true, preventScrollReset: true }
         );
     };
 

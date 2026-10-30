@@ -113,7 +113,7 @@ export default function TournamentsList() {
                 next.delete('month');
             }
             return next;
-        }, { replace: true });
+        }, { replace: true, preventScrollReset: true });
     };
 
     const dateLocale = getDateLocale(i18n.language);

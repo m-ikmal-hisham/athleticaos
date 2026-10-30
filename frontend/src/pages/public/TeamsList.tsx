@@ -91,7 +91,7 @@ export default function TeamsList() {
                     }
                     return next;
                 },
-                { replace: true }
+                { replace: true, preventScrollReset: true }
             );
         }, 300);
 
@@ -167,7 +167,7 @@ export default function TeamsList() {
                 next.delete('state');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const clearDraftFilters = () => {
@@ -178,7 +178,7 @@ export default function TeamsList() {
             next.delete('category');
             next.delete('state');
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const {
@@ -219,7 +219,7 @@ export default function TeamsList() {
                 next.delete('search');
                 return next;
             },
-            { replace: true }
+            { replace: true, preventScrollReset: true }
         );
     };
 
@@ -232,7 +232,7 @@ export default function TeamsList() {
                 next.delete('category');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const handleStateChange = (st: string) => {
@@ -244,12 +244,12 @@ export default function TeamsList() {
                 next.delete('state');
             }
             return next;
-        });
+        }, { preventScrollReset: true });
     };
 
     const clearFilters = () => {
         setSearchInput('');
-        setSearchParams(new URLSearchParams());
+        setSearchParams(new URLSearchParams(), { preventScrollReset: true });
     };
 
     return (
