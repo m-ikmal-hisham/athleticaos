@@ -36,6 +36,8 @@ const PHONE_CARD_GAP = 12;
 const PHONE_MARKER_CLEARANCE = 30;
 // Used only for the first (hidden) layout pass, before the collapsed card has been measured
 const PHONE_CARD_ESTIMATE = 76;
+// Milestone marker button size (w-11): phones keep markers at least this far apart when the route allows
+const MARKER_HIT_TARGET = 44;
 
 export function JourneyOverlay({
     journey,
@@ -293,8 +295,7 @@ export function JourneyOverlay({
 
         // Phones: the route still starts at our posts, but milestones are placed only on the part
         // of the route above the phase card (screen y falls steadily from our posts to the far posts).
-        // If the usable route above the card is shorter than (milestoneCount - 1) * MIN_MARKER_SPACING,
-        // spread the markers evenly over the usable length instead (they may sit closer); never under the card.
+        // Markers are never placed under the card.
         let firstIdx = 0;
         if (phoneSafeBottom !== null) {
             const idx = samples.findIndex((s) => s.y <= phoneSafeBottom);
@@ -308,7 +309,7 @@ export function JourneyOverlay({
         // Place milestones at equal cumulative screen arc-length intervals
         // m=0 at start post (try line centre 10, 35) unless trimmed above the phone card,
         // m=count-1 at goal post (far try line centre 110, 35)
-        const milestonePoints = [];
+        let milestonePoints: { x: number; y: number; sampleIndex: number }[] = [];
         for (let m = 0; m < milestoneCount; m++) {
             const targetDist = startDist + (m / Math.max(1, milestoneCount - 1)) * usableLength;
 
@@ -327,6 +328,53 @@ export function JourneyOverlay({
                 y: s0.y + (s1.y - s0.y) * frac,
                 sampleIndex: idx,
             });
+        }
+
+        // Phones: equal arc length can put the markers either side of a weave turn almost on top
+        // of each other (the route above the card is short). If any two are closer than one hit
+        // target, use the largest straight-line gap that still fits them all: each marker sits at
+        // the first sample at least that far from every earlier one, the last on the far posts.
+        const closestPair = (pts: { x: number; y: number }[]) => {
+            let min = Infinity;
+            for (let a = 0; a < pts.length; a++) {
+                for (let b = a + 1; b < pts.length; b++) {
+                    min = Math.min(min, Math.hypot(pts[a].x - pts[b].x, pts[a].y - pts[b].y));
+                }
+            }
+            return min;
+        };
+        const placeByGap = (gap: number) => {
+            const picked = [firstIdx];
+            const clear = (i: number) =>
+                picked.every((p) => Math.hypot(samples[i].x - samples[p].x, samples[i].y - samples[p].y) >= gap);
+            let i = firstIdx;
+            while (picked.length < milestoneCount - 1) {
+                while (i < SAMPLE_COUNT && !clear(i)) i++;
+                if (i >= SAMPLE_COUNT) return null;
+                picked.push(i);
+            }
+            if (!clear(SAMPLE_COUNT)) return null;
+            picked.push(SAMPLE_COUNT);
+            return picked;
+        };
+        const arcGap = closestPair(milestonePoints);
+        if (phoneSafeBottom !== null && milestoneCount > 2 && arcGap < MARKER_HIT_TARGET) {
+            let lo = arcGap;
+            let hi = MARKER_HIT_TARGET;
+            let best: number[] | null = null;
+            for (let step = 0; step < 12; step++) {
+                const mid = (lo + hi) / 2;
+                const picked = placeByGap(mid);
+                if (picked) {
+                    lo = mid;
+                    best = picked;
+                } else {
+                    hi = mid;
+                }
+            }
+            if (best) {
+                milestonePoints = best.map((idx) => ({ x: samples[idx].x, y: samples[idx].y, sampleIndex: idx }));
+            }
         }
 
         const startPost = samples[0];
