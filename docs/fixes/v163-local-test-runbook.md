@@ -22,7 +22,7 @@ In a dedicated terminal tab. `-N` opens no shell — it sits silently, which is
 correct. Leave it running for the whole dump.
 
 ```
-ssh -i ~/Downloads/athleticaos-staging-backend.pem -N \
+ssh -i ~/.ssh/athleticaos-staging-backend.pem -N \
     -L 15432:<RDS_HOST>:5432 ec2-user@staging-api.athleticaos.com
 ```
 

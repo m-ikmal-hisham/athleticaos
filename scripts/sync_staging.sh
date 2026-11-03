@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-PEM_KEY="$HOME/Downloads/athleticaos-staging-backend.pem"
+PEM_KEY="$HOME/.ssh/athleticaos-staging-backend.pem"
 EC2_HOST="staging-api.athleticaos.com"
 EC2_USER="ec2-user"
 S3_BUCKET="athleticaos-staging-frontend"
