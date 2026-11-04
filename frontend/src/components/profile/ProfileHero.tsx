@@ -142,7 +142,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
                             ) : variant === 'organisation' ? (
                                 /* Organisation Round Logo Tile with Primary Ring */
                                 <div
-                                    className={`${isPublic ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-18 h-18 sm:w-20 sm:h-20'} rounded-full bg-[#0B1522] p-2 shadow-2xl overflow-hidden flex items-center justify-center`}
+                                    className={`${isPublic ? 'w-20 h-20 md:w-28 md:h-28' : 'w-18 h-18 sm:w-20 sm:h-20'} rounded-full bg-[#0B1522] p-2 shadow-2xl overflow-hidden flex items-center justify-center`}
                                     style={{
                                         boxShadow: `0 0 0 4px ${primary}, 0 10px 25px -5px rgba(0, 0, 0, 0.5)`,
                                     }}

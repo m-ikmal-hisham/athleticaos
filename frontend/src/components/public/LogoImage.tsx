@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/theme-utils';
 import { getImageUrl } from '@/utils/image';
 
 export interface LogoImageProps {
@@ -75,9 +75,10 @@ export function LogoImage({
     if (!resolvedSrc || hasError) {
         return (
             <div
-                className={clsx(
+                className={cn(
                     'w-full h-full flex items-center justify-center font-bold select-none text-slate-500 dark:text-slate-400 font-score tracking-wider',
                     sizeClass,
+                    className,
                     fallbackClassName
                 )}
                 aria-hidden="true"
@@ -94,7 +95,7 @@ export function LogoImage({
             width={resolvedDimension}
             height={resolvedDimension}
             decoding="async"
-            className={clsx(imgClassName, sizeClass, className)}
+            className={cn(imgClassName, sizeClass, className)}
             onError={() => setHasError(true)}
             loading="lazy"
         />
