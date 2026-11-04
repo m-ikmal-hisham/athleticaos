@@ -1,7 +1,7 @@
 import { Button } from '@/components/Button';
 import { MatchItem } from '@/store/matches.store';
 import { MatchStatus } from '@/types';
-import { Play, Pause, StopCircle, XCircle, FastForward, Rewind, FlagBanner } from '@phosphor-icons/react';
+import { Play, Pause, StopCircle, XCircle, FastForward, Rewind, FlagBanner, Trophy } from '@phosphor-icons/react';
 
 interface MatchControlsProps {
     match: MatchItem;
@@ -13,6 +13,10 @@ interface MatchControlsProps {
     onCancelMatch: () => void;
     /** Optional: records a forfeit/no-show without inventing a scoreline. */
     onRecordWalkover?: () => void;
+    showDecideLevelMatch?: boolean;
+    onDecideLevelMatch?: () => void;
+    isExtraTimeLive?: boolean;
+    onGoldenScoreEnd?: () => void;
     isAdmin: boolean;
     // Timer props
     // Timer props
@@ -40,6 +44,10 @@ export const MatchControls = ({
     onFullTime,
     onCancelMatch,
     onRecordWalkover,
+    showDecideLevelMatch,
+    onDecideLevelMatch,
+    isExtraTimeLive,
+    onGoldenScoreEnd,
     isAdmin,
     matchTimeSeconds,
     isTimerRunning,
@@ -185,6 +193,32 @@ export const MatchControls = ({
                     >
                         <StopCircle className="w-4 h-4" />
                         Full Time
+                    </Button>
+                )}
+
+                {/* Golden score button during live extra time */}
+                {isExtraTimeLive && onGoldenScoreEnd && (
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={onGoldenScoreEnd}
+                        className="w-full justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                        <Trophy className="w-4 h-4" />
+                        End Match (Golden Score)
+                    </Button>
+                )}
+
+                {/* Decide Level Match on completed undecided match */}
+                {showDecideLevelMatch && onDecideLevelMatch && (
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={onDecideLevelMatch}
+                        className="w-full justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                        <Trophy className="w-4 h-4" />
+                        Decide level match
                     </Button>
                 )}
 

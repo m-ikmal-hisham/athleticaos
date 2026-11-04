@@ -85,8 +85,14 @@ export function PublicTournamentBracket({ matches, placementRoundRobins = [] }: 
                                     {/* Matches Column */}
                                     <div className="flex flex-col justify-around flex-1 gap-6">
                                         {round.matches.map((match) => {
-                                            const isHomeWinner = match.homeScore != null && match.awayScore != null && match.homeScore > match.awayScore;
-                                            const isAwayWinner = match.homeScore != null && match.awayScore != null && match.awayScore > match.homeScore;
+                                            const isHomeWinner = match.homeScore != null && match.awayScore != null && (
+                                                match.homeScore > match.awayScore ||
+                                                (match.homeScore === match.awayScore && Boolean(match.winnerTeamId && match.homeTeamId && match.winnerTeamId === match.homeTeamId))
+                                            );
+                                            const isAwayWinner = match.homeScore != null && match.awayScore != null && (
+                                                match.awayScore > match.homeScore ||
+                                                (match.homeScore === match.awayScore && Boolean(match.winnerTeamId && match.awayTeamId && match.winnerTeamId === match.awayTeamId))
+                                            );
                                             const isFinal = round.name.toLowerCase().includes('final') && !round.name.toLowerCase().includes('semi');
 
                                             return (
@@ -102,8 +108,14 @@ export function PublicTournamentBracket({ matches, placementRoundRobins = [] }: 
                                                         <span className="bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-md font-mono text-slate-700 dark:text-slate-300">
                                                             {match.code && match.code.length < 12 ? match.code : t('tournament:bracket.match')}
                                                         </span>
-                                                        {/* An awarded result must read as one publicly too, not as an ordinary 28-0. */}
-                                                        {match.resultType && match.resultType !== 'NORMAL' ? (
+                                                        {match.decidedBy ? (
+                                                            <span className="text-blue-600 dark:text-blue-400 font-bold">
+                                                                {match.decidedBy === 'FIRST_TRY' && t('match:tieBreak.shortFirstTry')}
+                                                                {match.decidedBy === 'EXTRA_TIME' && t('match:tieBreak.shortExtraTime')}
+                                                                {match.decidedBy === 'DROP_KICKS' && t('match:tieBreak.shortDropKicks', { home: match.dropKicksHome ?? 0, away: match.dropKicksAway ?? 0 })}
+                                                                {match.decidedBy === 'COIN_TOSS' && t('match:tieBreak.shortCoinToss')}
+                                                            </span>
+                                                        ) : match.resultType && match.resultType !== 'NORMAL' ? (
                                                             <span className="text-amber-600 dark:text-amber-400">
                                                                 {match.resultType === 'BYE' ? t('tournament:bracket.bye') : t('tournament:bracket.walkover')}
                                                             </span>

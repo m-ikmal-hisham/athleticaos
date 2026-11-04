@@ -474,11 +474,38 @@ public class MatchServiceImpl implements MatchService {
         // ------------------------
 
         // Set scores first if provided in the request
+        boolean scoresChanged = false;
+        if (request.getHomeScore() != null && !java.util.Objects.equals(request.getHomeScore(), match.getHomeScore())) {
+            scoresChanged = true;
+        }
+        if (request.getAwayScore() != null && !java.util.Objects.equals(request.getAwayScore(), match.getAwayScore())) {
+            scoresChanged = true;
+        }
+
+        if (scoresChanged && !hasExplicitResult(match)) {
+            match.setDecidedBy(null);
+            match.setDropKicksHome(null);
+            match.setDropKicksAway(null);
+            match.setWinnerTeam(null);
+        }
         if (request.getHomeScore() != null) {
             match.setHomeScore(request.getHomeScore());
         }
         if (request.getAwayScore() != null) {
             match.setAwayScore(request.getAwayScore());
+        }
+
+        boolean statusChangingToCompleted = request.getStatus() == MatchStatus.COMPLETED && match.getStatus() != MatchStatus.COMPLETED;
+        boolean completedScoresChanged = match.getStatus() == MatchStatus.COMPLETED && scoresChanged;
+
+        if (statusChangingToCompleted || completedScoresChanged) {
+            if (com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match) && !hasExplicitResult(match)) {
+                if (match.getHomeScore() != null && match.getAwayScore() != null && match.getHomeScore().equals(match.getAwayScore())) {
+                    if (match.getDecidedBy() == null && match.getWinnerTeam() == null) {
+                        throw new IllegalArgumentException("Level knockout matches must be decided by a tie-breaker (first try, extra time, drop kicks, or coin toss).");
+                    }
+                }
+            }
         }
 
         // Status update logic - validate after scores are set
@@ -641,6 +668,9 @@ public class MatchServiceImpl implements MatchService {
                 .awayScore(match.getAwayScore())
                 .resultType(match.getResultType() != null ? match.getResultType().name() : null)
                 .winnerTeamId(match.getWinnerTeam() != null ? match.getWinnerTeam().getId() : null)
+                .decidedBy(match.getDecidedBy())
+                .dropKicksHome(match.getDropKicksHome())
+                .dropKicksAway(match.getDropKicksAway())
                 .phase(match.getPhase() != null ? match.getPhase() : (match.getStage() != null ? match.getStage().getName() : null))
                 .matchCode(match.getMatchCode())
                 .matchNumber(match.getMatchNumber());
@@ -651,6 +681,11 @@ public class MatchServiceImpl implements MatchService {
                     .name(match.getStage().getName())
                     .stageType(match.getStage().getStageType() != null ? match.getStage().getStageType().name() : null)
                     .categoryId(match.getStage().getCategory() != null ? match.getStage().getCategory().getId() : null)
+                    .knockout(com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match))
+                    .build());
+        } else if (com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match)) {
+            builder.stage(MatchResponse.StageInfo.builder()
+                    .knockout(true)
                     .build());
         }
 
@@ -856,6 +891,13 @@ public class MatchServiceImpl implements MatchService {
             if (!hasExplicitResult(match) && (match.getHomeScore() == null || match.getAwayScore() == null)) {
                 throw new IllegalArgumentException("Cannot set status to COMPLETED without home and away scores.");
             }
+            if (com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match) && !hasExplicitResult(match)) {
+                if (match.getHomeScore() != null && match.getAwayScore() != null && match.getHomeScore().equals(match.getAwayScore())) {
+                    if (match.getDecidedBy() == null && match.getWinnerTeam() == null) {
+                        throw new IllegalArgumentException("Level knockout matches must be decided by a tie-breaker (first try, extra time, drop kicks, or coin toss).");
+                    }
+                }
+            }
             suspensionService.decrementSuspensions(match);
         }
 
@@ -946,6 +988,180 @@ public class MatchServiceImpl implements MatchService {
             return away;
         }
         throw new IllegalArgumentException("The winning team must be one of the two teams in this match.");
+    }
+
+    @Override
+    @Transactional
+    public MatchResponse decideLevelKnockout(UUID matchId,
+            com.athleticaos.backend.dtos.match.DecideLevelKnockoutRequest request,
+            HttpServletRequest httpRequest) {
+        if (matchId == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
+        if (request == null || request.getMethod() == null || request.getWinnerTeamId() == null) {
+            throw new IllegalArgumentException("Method and winner team ID must not be null");
+        }
+
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
+
+        if (!accessScopeService.canWriteMatch(match)) {
+            UUID currentUserId = accessScopeService.getCurrentUserId();
+            log.warn("Access denied for match decide-level outside permitted scope: userId={}, matchId={}",
+                    currentUserId, match.getId());
+            throw new EntityNotFoundException("Match not found");
+        }
+
+        if (!com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match)) {
+            throw new IllegalArgumentException("Tie-break decision can only be applied to knockout matches.");
+        }
+
+        Team home = match.getHomeTeam();
+        Team away = match.getAwayTeam();
+        if (home == null || away == null) {
+            throw new IllegalArgumentException("Cannot decide tie-break on a match without both teams assigned.");
+        }
+
+        UUID winnerId = request.getWinnerTeamId();
+        if (!winnerId.equals(home.getId()) && !winnerId.equals(away.getId())) {
+            throw new IllegalArgumentException("Winner team must be one of the two competing teams.");
+        }
+        Team winner = winnerId.equals(home.getId()) ? home : away;
+
+        int hScore = match.getHomeScore() != null ? match.getHomeScore() : 0;
+        int aScore = match.getAwayScore() != null ? match.getAwayScore() : 0;
+
+        String method = request.getMethod().trim().toUpperCase();
+
+        Tournament tournament = match.getTournament();
+        UUID categoryId = match.getCategory() != null ? match.getCategory().getId()
+                : (match.getStage() != null && match.getStage().getCategory() != null
+                        ? match.getStage().getCategory().getId() : null);
+        TournamentFormatConfig catConfig = tournament != null ? tournament.getFormatConfig(categoryId) : null;
+        TournamentFormatConfig tourConfig = tournament != null ? tournament.getFormatConfig(null) : null;
+        String configuredSetting = com.athleticaos.backend.rules.KnockoutTieBreakResolver.resolveTieBreaker(catConfig, tourConfig);
+
+        switch (method) {
+            case "FIRST_TRY" -> {
+                if (hScore != aScore) {
+                    throw new IllegalArgumentException("First try decision requires scores to be level.");
+                }
+                if (!"FIRST_TRY".equalsIgnoreCase(configuredSetting)) {
+                    throw new IllegalArgumentException("First try decision is not allowed for this category format.");
+                }
+                match.setDecidedBy("FIRST_TRY");
+                match.setWinnerTeam(winner);
+                match.setDropKicksHome(null);
+                match.setDropKicksAway(null);
+            }
+            case "EXTRA_TIME" -> {
+                if (hScore == aScore) {
+                    throw new IllegalArgumentException("Extra time golden score requires scores to no longer be level.");
+                }
+                Team scoreWinner = hScore > aScore ? home : away;
+                if (!winner.getId().equals(scoreWinner.getId())) {
+                    throw new IllegalArgumentException("Winner must be the team ahead on score after extra time.");
+                }
+                match.setDecidedBy("EXTRA_TIME");
+                match.setWinnerTeam(scoreWinner);
+                match.setDropKicksHome(null);
+                match.setDropKicksAway(null);
+            }
+            case "DROP_KICKS" -> {
+                if (hScore != aScore) {
+                    throw new IllegalArgumentException("Drop kicks decision requires scores to be level.");
+                }
+                Integer dkH = request.getDropKicksHome();
+                Integer dkA = request.getDropKicksAway();
+                if (dkH == null || dkA == null) {
+                    throw new IllegalArgumentException("Drop kick tallies must be provided for both teams.");
+                }
+                if (dkH < 0 || dkH > 20 || dkA < 0 || dkA > 20) {
+                    throw new IllegalArgumentException("Drop kick tallies must be between 0 and 20.");
+                }
+                if (dkH.equals(dkA)) {
+                    throw new IllegalArgumentException("Drop kick tallies cannot be equal. Winner's tally must be strictly higher.");
+                }
+                Team dkWinner = dkH > dkA ? home : away;
+                if (!winner.getId().equals(dkWinner.getId())) {
+                    throw new IllegalArgumentException("Winner must be the team with the higher drop kick tally.");
+                }
+                match.setDecidedBy("DROP_KICKS");
+                match.setDropKicksHome(dkH);
+                match.setDropKicksAway(dkA);
+                match.setWinnerTeam(winner);
+            }
+            case "COIN_TOSS" -> {
+                if (hScore != aScore) {
+                    throw new IllegalArgumentException("Coin toss decision requires scores to be level.");
+                }
+                Integer dkH = request.getDropKicksHome();
+                Integer dkA = request.getDropKicksAway();
+                if (dkH != null && dkA != null && !dkH.equals(dkA)) {
+                    throw new IllegalArgumentException("Coin toss cannot override an unequal drop kick tally.");
+                }
+                match.setDecidedBy("COIN_TOSS");
+                if (dkH != null && dkA != null) {
+                    match.setDropKicksHome(dkH);
+                    match.setDropKicksAway(dkA);
+                } else {
+                    match.setDropKicksHome(null);
+                    match.setDropKicksAway(null);
+                }
+                match.setWinnerTeam(winner);
+            }
+            default -> throw new IllegalArgumentException("Unknown tie-break method: " + method);
+        }
+
+        // "Decide level match" can run on a match that was already completed (scores typed in
+        // earlier); its suspensions were counted down then, so only count them down once.
+        boolean wasCompleted = match.getStatus() == MatchStatus.COMPLETED;
+        match.setStatus(MatchStatus.COMPLETED);
+        if (!wasCompleted) {
+            suspensionService.decrementSuspensions(match);
+        }
+        Match updatedMatch = matchRepository.save(match);
+        auditLogger.logMatchUpdated(updatedMatch, httpRequest);
+        triggerAutoProgression(updatedMatch);
+        return mapToResponse(updatedMatch);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.athleticaos.backend.dtos.match.FirstTrySuggestionResponse getFirstTrySuggestion(UUID matchId) {
+        if (matchId == null) {
+            throw new IllegalArgumentException("Match ID must not be null");
+        }
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with ID: " + matchId));
+
+        List<com.athleticaos.backend.entities.MatchEvent> events = matchEventRepository.findByMatchId(matchId);
+        List<com.athleticaos.backend.entities.MatchEvent> tryEvents = events.stream()
+                .filter(e -> e.getEventType() == com.athleticaos.backend.enums.MatchEventType.TRY
+                        || e.getEventType() == com.athleticaos.backend.enums.MatchEventType.PENALTY_TRY
+                        || e.getEventType() == com.athleticaos.backend.enums.MatchEventType.SUPER_TRY)
+                .sorted(java.util.Comparator.comparing(
+                                (com.athleticaos.backend.entities.MatchEvent e) -> e.getMinute(),
+                                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .thenComparing(
+                                (com.athleticaos.backend.entities.MatchEvent e) -> e.getCreatedAt(),
+                                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .toList();
+
+        if (tryEvents.isEmpty()) {
+            return com.athleticaos.backend.dtos.match.FirstTrySuggestionResponse.builder()
+                    .hasTryEvents(false)
+                    .build();
+        }
+
+        com.athleticaos.backend.entities.MatchEvent first = tryEvents.get(0);
+        return com.athleticaos.backend.dtos.match.FirstTrySuggestionResponse.builder()
+                .hasTryEvents(true)
+                .suggestedWinnerTeamId(first.getTeam() != null ? first.getTeam().getId() : null)
+                .suggestedWinnerTeamName(first.getTeam() != null ? first.getTeam().getName() : null)
+                .minute(first.getMinute())
+                .eventType(first.getEventType().name())
+                .build();
     }
 
     @Override
@@ -1051,6 +1267,8 @@ public class MatchServiceImpl implements MatchService {
                     match.setWinnerTeam(match.getHomeTeam());
                 } else if (match.getAwayScore() > match.getHomeScore()) {
                     match.setWinnerTeam(match.getAwayTeam());
+                } else if (match.getDecidedBy() != null && match.getWinnerTeam() != null) {
+                    // Retain explicit tie-break winner for level match (FIRST_TRY, DROP_KICKS, COIN_TOSS)
                 } else {
                     match.setWinnerTeam(null);
                 }
@@ -1060,6 +1278,9 @@ public class MatchServiceImpl implements MatchService {
                 match.setResultType(null);
             }
             match.setWinnerTeam(null);
+            match.setDecidedBy(null);
+            match.setDropKicksHome(null);
+            match.setDropKicksAway(null);
         }
     }
 
@@ -1155,6 +1376,10 @@ public class MatchServiceImpl implements MatchService {
         final UUID tournamentId = match.getTournament() != null ? match.getTournament().getId() : null;
         final boolean isPoolMatch = !isRoundRobin && (Boolean.TRUE.equals(stage.getIsGroupStage()) || !isKnockout);
         final UUID categoryId = stage.getCategory() != null ? stage.getCategory().getId() : null;
+
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
 
         org.springframework.transaction.support.TransactionSynchronizationManager
                 .registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {

@@ -79,6 +79,12 @@ export interface PublicMatchSummary {
     status: string;
     /** NORMAL, WALKOVER or BYE. Absent means a normally played match. */
     resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
+    decidedBy?: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+    dropKicksHome?: number;
+    dropKicksAway?: number;
+    winnerTeamId?: string;
+    homeTeamId?: string;
+    awayTeamId?: string;
     stage?: string;
     stageId?: string;
     isRoundRobin?: boolean;
