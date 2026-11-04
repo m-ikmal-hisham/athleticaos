@@ -583,7 +583,58 @@ export interface TournamentStageResponse {
     displayOrder: number;
     groupStage: boolean;
     knockoutStage: boolean;
+    roundRobin?: boolean;
+    firstPlace?: number;
     categoryId?: string;
+}
+
+export interface PlacementStandingRow {
+    place: number;
+    teamId?: string;
+    teamName?: string;
+    teamShortName?: string;
+    teamLogoUrl?: string;
+    placeholder?: string;
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    pointsFor: number;
+    pointsAgainst: number;
+    pointsDiff: number;
+    bonusPoints?: number;
+    bonusPointsEnabled: boolean;
+    points: number;
+}
+
+export interface PublicPlacementRoundRobin {
+    stageId: string;
+    stageName: string;
+    categoryId?: string;
+    firstPlace: number;
+    matchIds: string[];
+    table: PlacementStandingRow[];
+}
+
+export interface PlacementRoundRobinCreateRequest {
+    name: string;
+    firstPlace: number;
+    teamCount: number;
+    categoryId?: string;
+    slots: { teamId?: string; placeholder?: string }[];
+}
+
+export interface PlacementRoundRobinSlotChangeRequest {
+    oldTeamId?: string;
+    oldPlaceholder?: string;
+    newTeamId: string;
+}
+
+export interface PlacementRoundRobinSlotSwapRequest {
+    teamId1?: string;
+    placeholder1?: string;
+    teamId2?: string;
+    placeholder2?: string;
 }
 
 export interface TournamentStageBracket {

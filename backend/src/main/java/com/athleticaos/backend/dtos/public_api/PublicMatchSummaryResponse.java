@@ -35,6 +35,8 @@ public class PublicMatchSummaryResponse {
     /** NORMAL, WALKOVER or BYE. Null means a normally played match. */
     private String resultType;
     private String stage;
+    private UUID stageId;
+    private Boolean isRoundRobin;
     /**
      * The stage's type (PLATE, BOWL, SHIELD, ...). Needed so the public bracket groups a match
      * the same way the organiser's view does — grouping on the stage *name* alone misfiles any

@@ -23,13 +23,17 @@ public class PublicMatchMapper {
             Map<UUID, TournamentStage> stageMap) {
         String stageName = m.getPhase(); // Default to phase (legacy)
         Integer stageDisplayOrder = null;
+        UUID stageIdVal = null;
+        Boolean isRoundRobin = null;
         if (m.getStage() != null && m.getStage().getName() != null) {
             stageName = m.getStage().getName();
             try {
                 UUID stageId = UUID.fromString(m.getStage().getId());
+                stageIdVal = stageId;
                 TournamentStage stageEntity = stageMap != null ? stageMap.get(stageId) : null;
                 if (stageEntity != null) {
                     stageDisplayOrder = stageEntity.getDisplayOrder();
+                    isRoundRobin = stageEntity.getIsRoundRobin();
                 }
             } catch (Exception ignored) {
                 // If stage ID is not valid, skip display order
@@ -55,6 +59,8 @@ public class PublicMatchMapper {
                 .status(m.getStatus())
                 .resultType(m.getResultType())
                 .stage(stageName)
+                .stageId(stageIdVal)
+                .isRoundRobin(isRoundRobin)
                 .stageType(m.getStage() != null ? m.getStage().getStageType() : null)
                 .stageDisplayOrder(stageDisplayOrder)
                 .matchNumber(m.getMatchNumber())

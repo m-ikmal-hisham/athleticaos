@@ -50,6 +50,13 @@ public class TournamentStage {
     @Builder.Default
     private Boolean isKnockoutStage = false;
 
+    @Column(name = "is_round_robin", nullable = false)
+    @Builder.Default
+    private Boolean isRoundRobin = false;
+
+    @Column(name = "first_place")
+    private Integer firstPlace;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -183,6 +183,52 @@ public class TournamentController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{idOrSlug}/bracket/placement-round-robin")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<BracketViewResponse> createPlacementRoundRobin(
+            @PathVariable String idOrSlug,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.PlacementRoundRobinCreateRequest request,
+            HttpServletRequest httpRequest) {
+        UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
+        bracketService.createPlacementRoundRobin(id, request, httpRequest);
+        return ResponseEntity.ok(bracketService.getBracketForTournament(id));
+    }
+
+    @PutMapping("/{idOrSlug}/stages/{stageId}/slots/change")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<Void> changePlacementRoundRobinSlot(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID stageId,
+            @Valid @RequestBody com.athleticaos.backend.dtos.tournament.PlacementRoundRobinSlotChangeRequest request,
+            HttpServletRequest httpRequest) {
+        UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
+        bracketService.changePlacementRoundRobinSlot(id, stageId, request, httpRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{idOrSlug}/stages/{stageId}/slots/swap")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<Void> swapPlacementRoundRobinSlots(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID stageId,
+            @RequestBody com.athleticaos.backend.dtos.tournament.PlacementRoundRobinSlotSwapRequest request,
+            HttpServletRequest httpRequest) {
+        UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
+        bracketService.swapPlacementRoundRobinSlots(id, stageId, request, httpRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{idOrSlug}/bracket/placement-round-robin/{stageId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
+    public ResponseEntity<Void> deletePlacementRoundRobinBracket(
+            @PathVariable String idOrSlug,
+            @PathVariable UUID stageId,
+            HttpServletRequest httpRequest) {
+        UUID id = fetchTournamentInOrganiserScope(idOrSlug).getId();
+        bracketService.deletePlacementRoundRobinStage(id, stageId, httpRequest);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{idOrSlug}/stages/{stageId}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_CLUB_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Delete an empty stage from a tournament")

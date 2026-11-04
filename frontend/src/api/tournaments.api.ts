@@ -43,3 +43,15 @@ export const deleteTournamentVenue = (idOrSlug: string, venueId: string) =>
 export const deleteStage = (idOrSlug: string, stageId: string) =>
     api.delete(`/tournaments/${idOrSlug}/stages/${stageId}`);
 
+export const createPlacementRoundRobin = (idOrSlug: string, data: import('@/types').PlacementRoundRobinCreateRequest) =>
+    api.post(`/tournaments/${idOrSlug}/bracket/placement-round-robin`, data);
+
+export const changePlacementRoundRobinSlot = (idOrSlug: string, stageId: string, data: import('@/types').PlacementRoundRobinSlotChangeRequest) =>
+    api.put(`/tournaments/${idOrSlug}/stages/${stageId}/slots/change`, data);
+
+export const swapPlacementRoundRobinSlots = (idOrSlug: string, stageId: string, data: import('@/types').PlacementRoundRobinSlotSwapRequest) =>
+    api.put(`/tournaments/${idOrSlug}/stages/${stageId}/slots/swap`, data);
+
+export const deletePlacementRoundRobinBracket = (idOrSlug: string, stageId: string) =>
+    api.delete(`/tournaments/${idOrSlug}/bracket/placement-round-robin/${stageId}`);
+
