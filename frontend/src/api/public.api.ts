@@ -1,5 +1,7 @@
 import axios from 'axios';
-import type { LivestreamLink } from '@/types';
+import type { LivestreamLink, PublicPlacementRoundRobin, PlacementStandingRow } from '@/types';
+
+export type { PublicPlacementRoundRobin, PlacementStandingRow };
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -78,6 +80,8 @@ export interface PublicMatchSummary {
     /** NORMAL, WALKOVER or BYE. Absent means a normally played match. */
     resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
     stage?: string;
+    stageId?: string;
+    isRoundRobin?: boolean;
     /** Stage type (PLATE, BOWL, SHIELD, ...), used to group the bracket the same way the admin view does. */
     stageType?: string;
     stageDisplayOrder?: number;
@@ -267,6 +271,13 @@ export const publicTournamentApi = {
 
     getTournamentStandings: async (id: string, categoryId?: string): Promise<PublicStanding[]> => {
         const response = await publicApi.get(`/tournaments/${id}/standings`, {
+            params: { categoryId }
+        });
+        return response.data;
+    },
+
+    getTournamentPlacementRoundRobins: async (id: string, categoryId?: string): Promise<import('@/types').PublicPlacementRoundRobin[]> => {
+        const response = await publicApi.get(`/tournaments/${id}/placement-round-robins`, {
             params: { categoryId }
         });
         return response.data;

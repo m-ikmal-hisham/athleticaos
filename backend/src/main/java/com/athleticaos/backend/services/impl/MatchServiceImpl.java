@@ -1148,11 +1148,12 @@ public class MatchServiceImpl implements MatchService {
         // A pool match that explicitly feeds a bracket must progress its winner too, so treat
         // "has an outgoing link" the same as "is in a knockout stage". Keying off the stage alone
         // left such winners stranded until someone noticed.
-        final boolean isKnockout = Boolean.TRUE.equals(stage.getIsKnockoutStage())
+        final boolean isRoundRobin = Boolean.TRUE.equals(stage.getIsRoundRobin());
+        final boolean isKnockout = !isRoundRobin && (Boolean.TRUE.equals(stage.getIsKnockoutStage())
                 || match.getNextMatchIdForWinner() != null
-                || match.getNextMatchIdForLoser() != null;
+                || match.getNextMatchIdForLoser() != null);
         final UUID tournamentId = match.getTournament() != null ? match.getTournament().getId() : null;
-        final boolean isPoolMatch = Boolean.TRUE.equals(stage.getIsGroupStage()) || !isKnockout;
+        final boolean isPoolMatch = !isRoundRobin && (Boolean.TRUE.equals(stage.getIsGroupStage()) || !isKnockout);
         final UUID categoryId = stage.getCategory() != null ? stage.getCategory().getId() : null;
 
         org.springframework.transaction.support.TransactionSynchronizationManager

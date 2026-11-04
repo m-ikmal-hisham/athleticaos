@@ -285,6 +285,24 @@ public class PublicTournamentController {
         }
     }
 
+    @GetMapping("/tournaments/{idOrSlug}/placement-round-robins")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.PublicPlacementRoundRobinResponse>> getTournamentPlacementRoundRobins(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
+        try {
+            TournamentResponse tournament = fetchTournament(idOrSlug);
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            List<com.athleticaos.backend.dtos.tournament.PublicPlacementRoundRobinResponse> roundRobins =
+                    standingsService.getPlacementRoundRobins(tournament.getId(), categoryId);
+            return PublicHttpCache.ok(roundRobins);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/tournaments/{idOrSlug}/stats")
     public ResponseEntity<PublicTournamentStatsResponse> getTournamentStats(
             @PathVariable String idOrSlug,

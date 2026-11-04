@@ -163,7 +163,8 @@ function resolveStageType(match: { stage?: any; stageType?: string }): string {
  */
 export function groupMatchesIntoBrackets<T extends {
     id: string;
-    stage?: any;
+    stage?: { name?: string; stageType?: string; isRoundRobin?: boolean; roundRobin?: boolean; displayOrder?: number } | string | null;
+    isRoundRobin?: boolean;
     stageType?: string;
     stageDisplayOrder?: number;
     code?: string;
@@ -171,8 +172,10 @@ export function groupMatchesIntoBrackets<T extends {
     matchDate?: string;
     kickOffTime?: string;
 }>(matches: T[]): BracketGroup<T>[] {
-    // 1. Filter out pool/group matches
+    // 1. Filter out pool/group matches and placement round robins
     const knockoutMatches = matches.filter(m => {
+        const stageObj = typeof m.stage === 'object' && m.stage !== null ? m.stage : null;
+        if (m.isRoundRobin || stageObj?.isRoundRobin || stageObj?.roundRobin) return false;
         const stageName = (typeof m.stage === 'string' ? m.stage : m.stage?.name || '').toLowerCase();
         // `typeof null === 'object'`, so a null stage — or one with no stageType — would
         // otherwise reach .toLowerCase() as undefined and throw, breaking the whole render.
@@ -259,6 +262,8 @@ export interface BracketStageLike {
     name: string;
     stageType?: string;
     displayOrder: number;
+    roundRobin?: boolean;
+    isRoundRobin?: boolean;
 }
 
 /**
@@ -283,6 +288,7 @@ export function buildBracketGroups<T extends {
     groupMatchesIntoBrackets(matches).forEach(group => groupMap.set(group.id, group));
 
     stages.forEach(stage => {
+        if (stage.roundRobin || stage.isRoundRobin) return;
         const typeId = getBracketTypeId(stage.name, stage.stageType);
         if (!groupMap.has(typeId)) {
             groupMap.set(typeId, { id: typeId, title: getBracketTitle(typeId), rounds: [] });

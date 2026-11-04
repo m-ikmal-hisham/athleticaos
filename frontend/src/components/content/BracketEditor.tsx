@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { TournamentStageResponse, MatchResponse, TournamentCategory } from '@/types';
+import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { TournamentStageResponse, MatchResponse, TournamentCategory, Team } from '@/types';
 import { GlassCard, GlassCardHeader, GlassCardTitle, GlassCardContent } from '@/components/GlassCard';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
@@ -7,8 +8,9 @@ import { ConfirmModal } from '@/components/ConfirmModal';
 import { Input } from '@/components/Input';
 import { Label } from '@/components/Label';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { Trash, PencilSimple, Plus, Info, Trophy, CaretRight, ArrowsClockwise, SkipForward, ArrowFatLineRight, WarningCircle } from '@phosphor-icons/react';
+import { Trash, PencilSimple, Plus, Info, Trophy, CaretRight, ArrowsClockwise, SkipForward, ArrowFatLineRight, WarningCircle, ArrowsLeftRight } from '@phosphor-icons/react';
 import { tournamentService, UnresolvedSlot } from '@/services/tournamentService';
+import { getTournamentTeams } from '@/api/tournaments.api';
 import { showToast } from '@/lib/customToast';
 import { buildBracketGroups, getBracketTypeId, getBracketTitle } from '@/utils/bracketUtils';
 import { hasMultipleVenues, formatFeederPlaceholder } from '@/utils/venue';
@@ -50,8 +52,81 @@ const MANUAL_BRACKET_TYPES: { type: string; label: string; places: string }[] = 
 
 const BRACKET_TEAM_COUNTS = [2, 4, 8, 16];
 
+interface StageSlot {
+    key: string;
+    teamId?: string;
+    teamName?: string;
+    teamLogoUrl?: string;
+    placeholder?: string;
+    label: string;
+}
+
+function getStageSlots(stageMatches: MatchResponse[]): StageSlot[] {
+    const slotsMap = new Map<string, StageSlot>();
+    // Creation order (slot 1 v 2, 1 v 3, 2 v 3, ...) so slots read in the order they were set up,
+    // whatever order the schedule puts the matches in.
+    const inCreationOrder = [...stageMatches].sort((a, b) =>
+        (a.createdAt || '').localeCompare(b.createdAt || '')
+        || (a.matchCode || '').localeCompare(b.matchCode || '', undefined, { numeric: true }));
+    for (const m of inCreationOrder) {
+        if (m.homeTeamId) {
+            const key = `team:${m.homeTeamId}`;
+            if (!slotsMap.has(key)) {
+                slotsMap.set(key, {
+                    key,
+                    teamId: m.homeTeamId,
+                    teamName: m.homeTeamName || 'Unknown Team',
+                    teamLogoUrl: m.homeTeamLogoUrl,
+                    label: m.homeTeamName || 'Unknown Team',
+                });
+            }
+        } else if (m.homeTeamPlaceholder) {
+            const key = `ph:${m.homeTeamPlaceholder.trim().toLowerCase()}`;
+            if (!slotsMap.has(key)) {
+                slotsMap.set(key, {
+                    key,
+                    placeholder: m.homeTeamPlaceholder,
+                    label: m.homeTeamPlaceholder,
+                });
+            }
+        }
+
+        if (m.awayTeamId) {
+            const key = `team:${m.awayTeamId}`;
+            if (!slotsMap.has(key)) {
+                slotsMap.set(key, {
+                    key,
+                    teamId: m.awayTeamId,
+                    teamName: m.awayTeamName || 'Unknown Team',
+                    teamLogoUrl: m.awayTeamLogoUrl,
+                    label: m.awayTeamName || 'Unknown Team',
+                });
+            }
+        } else if (m.awayTeamPlaceholder) {
+            const key = `ph:${m.awayTeamPlaceholder.trim().toLowerCase()}`;
+            if (!slotsMap.has(key)) {
+                slotsMap.set(key, {
+                    key,
+                    placeholder: m.awayTeamPlaceholder,
+                    label: m.awayTeamPlaceholder,
+                });
+            }
+        }
+    }
+    return Array.from(slotsMap.values());
+}
+
 export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRefresh, selectedCategoryId, categories = [], readonly = false }: BracketEditorProps) {
+    const { t } = useTranslation('tournament');
     const [loading, setLoading] = useState(false);
+    const [teams, setTeams] = useState<Team[]>([]);
+
+    useEffect(() => {
+        if (!tournamentId) return;
+        getTournamentTeams(tournamentId)
+            .then(res => setTeams((res.data as Team[]) || []))
+            .catch(() => setTeams([]));
+    }, [tournamentId]);
     const [addBracketOpen, setAddBracketOpen] = useState(false);
     const [newBracketType, setNewBracketType] = useState('PLATE');
     const [newBracketTeamCount, setNewBracketTeamCount] = useState(4);
@@ -66,6 +141,30 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     // Set when the delete is for one category's bracket only (the 3rd place playoff inside Cup).
     const [bracketDeleteCategoryId, setBracketDeleteCategoryId] = useState<string | null>(null);
     const [stageToDelete, setStageToDelete] = useState<{ id: string; name: string } | null>(null);
+
+    // Placement Round Robin States
+    const [addPlacementOpen, setAddPlacementOpen] = useState(false);
+    const [newPlacementCategoryId, setNewPlacementCategoryId] = useState('');
+    const [newPlacementName, setNewPlacementName] = useState('');
+    const [newPlacementFirstPlace, setNewPlacementFirstPlace] = useState(13);
+    const [newPlacementTeamCount, setNewPlacementTeamCount] = useState(3);
+    const [newPlacementSlots, setNewPlacementSlots] = useState<{ type: 'placeholder' | 'team'; placeholder: string; teamId: string }[]>([
+        { type: 'placeholder', placeholder: 'Rank 13', teamId: '' },
+        { type: 'placeholder', placeholder: 'Rank 14', teamId: '' },
+        { type: 'placeholder', placeholder: 'Rank 15', teamId: '' },
+    ]);
+
+    const [changeSlotModalOpen, setChangeSlotModalOpen] = useState(false);
+    const [changeSlotStage, setChangeSlotStage] = useState<TournamentStageResponse | null>(null);
+    const [slotToChange, setSlotToChange] = useState<StageSlot | null>(null);
+    const [newSlotTeamId, setNewSlotTeamId] = useState('');
+
+    const [swapSlotsModalOpen, setSwapSlotsModalOpen] = useState(false);
+    const [swapSlotsStage, setSwapSlotsStage] = useState<TournamentStageResponse | null>(null);
+    const [slotToSwap1, setSlotToSwap1] = useState<StageSlot | null>(null);
+    const [slotToSwap2Key, setSlotToSwap2Key] = useState('');
+
+    const [placementStageToDelete, setPlacementStageToDelete] = useState<TournamentStageResponse | null>(null);
 
     const hasCategories = Boolean(categories && categories.length > 0);
     // Brackets start collapsed. A tournament can run eight or more of them (Cup, Plate, Bowl,
@@ -91,6 +190,10 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         return knockoutOnly.filter(s => s.categoryId === selectedCategoryId || !s.categoryId);
     }, [stages, selectedCategoryId]);
 
+    const placementStages = useMemo(() => {
+        return stages.filter(s => Boolean(s.roundRobin) && (!selectedCategoryId || s.categoryId === selectedCategoryId || !s.categoryId));
+    }, [stages, selectedCategoryId]);
+
     // Filter matches by category first if category is selected
     const categoryMatches = useMemo(() => {
         if (!selectedCategoryId) return matches;
@@ -113,10 +216,12 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
     const hasMultiVenues = useMemo(() => hasMultipleVenues(matches), [matches]);
 
     // Shared with BracketView and the public site so all three group a tournament identically.
-    const bracketGroups = useMemo(
-        () => buildBracketGroups(categoryMatches, categoryStages),
-        [categoryMatches, categoryStages],
-    );
+    // Placement round robins have their own cards below, so their matches stay out of the knockout groups.
+    const bracketGroups = useMemo(() => {
+        const roundRobinStageIds = new Set(stages.filter(s => s.roundRobin).map(s => s.id));
+        const knockoutMatches = categoryMatches.filter(m => !m.stage?.id || !roundRobinStageIds.has(m.stage.id));
+        return buildBracketGroups(knockoutMatches, categoryStages);
+    }, [categoryMatches, categoryStages, stages]);
 
     const defaultBracketLabel = MANUAL_BRACKET_TYPES.find(b => b.type === newBracketType)?.label
         || newBracketType;
@@ -298,6 +403,170 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
         }
     };
 
+    // "13th to 15th place"; the name only follows first place / team count until the organiser edits it.
+    const ordinalPlace = (n: number) => {
+        const tens = n % 100;
+        const suffix = tens >= 11 && tens <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] || 'th';
+        return `${n}${suffix}`;
+    };
+    const placementAutoName = (first: number, count: number) =>
+        `${ordinalPlace(first)} to ${ordinalPlace(first + count - 1)} place`;
+
+    const openAddPlacement = () => {
+        const defaultCatId = selectedCategoryId || (categories && categories.length === 1 ? categories[0].id : '');
+        setNewPlacementCategoryId(defaultCatId);
+        setNewPlacementFirstPlace(13);
+        setNewPlacementTeamCount(3);
+        setNewPlacementName(placementAutoName(13, 3));
+        setNewPlacementSlots([
+            { type: 'placeholder', placeholder: 'Rank 13', teamId: '' },
+            { type: 'placeholder', placeholder: 'Rank 14', teamId: '' },
+            { type: 'placeholder', placeholder: 'Rank 15', teamId: '' },
+        ]);
+        setAddPlacementOpen(true);
+    };
+
+    const handlePlacementTeamCountChange = (count: number) => {
+        setNewPlacementTeamCount(count);
+        setNewPlacementName(prev => prev === placementAutoName(newPlacementFirstPlace, newPlacementTeamCount)
+            ? placementAutoName(newPlacementFirstPlace, count)
+            : prev);
+        setNewPlacementSlots(prev => {
+            const next = [...prev];
+            while (next.length < count) {
+                const idx = next.length;
+                next.push({ type: 'placeholder', placeholder: `Rank ${newPlacementFirstPlace + idx}`, teamId: '' });
+            }
+            return next.slice(0, count);
+        });
+    };
+
+    const handlePlacementFirstPlaceChange = (first: number) => {
+        setNewPlacementFirstPlace(first);
+        setNewPlacementName(prev => prev === placementAutoName(newPlacementFirstPlace, newPlacementTeamCount)
+            ? placementAutoName(first, newPlacementTeamCount)
+            : prev);
+        setNewPlacementSlots(prev => {
+            return prev.map((s, idx) => ({
+                ...s,
+                placeholder: s.placeholder.startsWith('Rank ') ? `Rank ${first + idx}` : s.placeholder,
+            }));
+        });
+    };
+
+    const handleAddPlacementSubmit = async () => {
+        if (!newPlacementName.trim()) {
+            showToast.error('Please enter a stage name');
+            return;
+        }
+        setLoading(true);
+        try {
+            const chosenCategoryId = hasCategories ? (newPlacementCategoryId || undefined) : (selectedCategoryId || undefined);
+            const slotsPayload = newPlacementSlots.slice(0, newPlacementTeamCount).map((s, idx) => {
+                if (s.type === 'team' && s.teamId) {
+                    return { teamId: s.teamId };
+                }
+                return { placeholder: s.placeholder.trim() || `Rank ${newPlacementFirstPlace + idx}` };
+            });
+
+            await tournamentService.createPlacementRoundRobin(tournamentId, {
+                name: newPlacementName.trim(),
+                categoryId: chosenCategoryId,
+                firstPlace: Number(newPlacementFirstPlace),
+                teamCount: Number(newPlacementTeamCount),
+                slots: slotsPayload,
+            });
+
+            showToast.success(`Created ${newPlacementName.trim()}`);
+            setAddPlacementOpen(false);
+            onRefresh();
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to create placement round robin');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleChangeSlotSubmit = async () => {
+        if (!changeSlotStage || !slotToChange || !newSlotTeamId) return;
+        setLoading(true);
+        try {
+            await tournamentService.changePlacementRoundRobinSlot(
+                tournamentId,
+                changeSlotStage.id,
+                {
+                    oldTeamId: slotToChange.teamId,
+                    oldPlaceholder: slotToChange.placeholder,
+                    newTeamId: newSlotTeamId,
+                }
+            );
+            showToast.success('Updated team assignment');
+            setSlotToChange(null);
+            setChangeSlotStage(null);
+            setNewSlotTeamId('');
+            setChangeSlotModalOpen(false);
+            onRefresh();
+        } catch (error: unknown) {
+            const err = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+            const msg = err?.response?.data?.message || err?.message || 'Failed to update team assignment';
+            showToast.error(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSwapSlotsSubmit = async () => {
+        if (!swapSlotsStage || !slotToSwap1 || !slotToSwap2Key) return;
+        const stageMatches = matches.filter(m => m.stage?.id === swapSlotsStage.id);
+        const slots = getStageSlots(stageMatches);
+        const slot2 = slots.find(s => s.key === slotToSwap2Key);
+        if (!slot2) return;
+
+        setLoading(true);
+        try {
+            await tournamentService.swapPlacementRoundRobinSlots(
+                tournamentId,
+                swapSlotsStage.id,
+                {
+                    teamId1: slotToSwap1.teamId,
+                    placeholder1: slotToSwap1.placeholder,
+                    teamId2: slot2.teamId,
+                    placeholder2: slot2.placeholder,
+                }
+            );
+            showToast.success('Swapped slot assignments');
+            setSlotToSwap1(null);
+            setSwapSlotsStage(null);
+            setSlotToSwap2Key('');
+            setSwapSlotsModalOpen(false);
+            onRefresh();
+        } catch (error: unknown) {
+            const err = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+            const msg = err?.response?.data?.message || err?.message || 'Failed to swap slot assignments';
+            showToast.error(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeletePlacementStage = async () => {
+        if (!placementStageToDelete) return;
+        const target = placementStageToDelete;
+        setPlacementStageToDelete(null);
+        setLoading(true);
+        try {
+            await tournamentService.deletePlacementRoundRobinBracket(tournamentId, target.id);
+            showToast.success(`Stage '${target.name}' deleted`);
+            onRefresh();
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            showToast.error(err?.response?.data?.message || 'Failed to delete placement round robin');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Title on its own line and actions that wrap: in one row, five buttons pushed the
@@ -358,6 +627,9 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                     </Button>
                     <Button size="sm" onClick={openAddBracket} disabled={loading}>
                         <Plus className="w-4 h-4 mr-1" /> Add Bracket
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={openAddPlacement} disabled={loading}>
+                        <Plus className="w-4 h-4 mr-1" /> {t('bracket.addPlacementRoundRobin', 'Add placement round robin')}
                     </Button>
                     </>)}
                 </div>
@@ -796,12 +1068,503 @@ export function BracketEditor({ tournamentId, stages, matches, onMatchEdit, onRe
                 );
             })}
 
-            {bracketGroups.length === 0 && (
+            {placementStages.map((stage) => {
+                const stageMatches = categoryMatches.filter(m => m.stage?.id === stage.id);
+                const slots = getStageSlots(stageMatches);
+                const hasPlayedMatches = stageMatches.some(m => m.status === 'COMPLETED' || m.homeScore != null || m.awayScore != null);
+                const isExpanded = expandedBrackets.has(stage.id);
+
+                return (
+                    <GlassCard key={stage.id} className="border-t-4 border-t-emerald-500 transition-all duration-300">
+                        <GlassCardHeader
+                            className={`py-3 px-3 md:py-3.5 md:px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${isExpanded ? 'border-b border-white/10' : ''}`}
+                        >
+                            <div className="flex items-center justify-between w-full sm:w-auto flex-1 min-w-0 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleBracket(stage.id)}
+                                    aria-expanded={isExpanded}
+                                    aria-controls={`placement-panel-${stage.id}`}
+                                    className="flex items-center gap-2 min-w-0 flex-1 text-left rounded-lg -m-1 p-1 hover:bg-white/5 transition-colors"
+                                >
+                                    <CaretRight
+                                        className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                                        aria-hidden="true"
+                                    />
+                                    <span className="min-w-0 flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                                        <GlassCardTitle className="text-sm md:text-base font-bold tracking-tight uppercase truncate">
+                                            {stage.name}
+                                        </GlassCardTitle>
+                                        <span className="text-xs font-normal normal-case text-muted-foreground whitespace-nowrap">
+                                            {t('bracket.placementRoundRobin')} · {stage.firstPlace ? `${stage.firstPlace}th – ${stage.firstPlace + slots.length - 1}th` : ''} · {stageMatches.length} {stageMatches.length === 1 ? 'match' : 'matches'}
+                                        </span>
+                                    </span>
+                                </button>
+                                {!readonly && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setPlacementStageToDelete(stage)}
+                                        disabled={hasPlayedMatches}
+                                        title={hasPlayedMatches ? t('bracket.matchesPlayedWarning') : t('bracket.deletePlacementRoundRobin')}
+                                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0 sm:hidden"
+                                        aria-label={t('bracket.deletePlacementRoundRobin')}
+                                    >
+                                        <Trash className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
+                            {!readonly && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setPlacementStageToDelete(stage)}
+                                    disabled={hasPlayedMatches}
+                                    title={hasPlayedMatches ? t('bracket.matchesPlayedWarning') : t('bracket.deletePlacementRoundRobin')}
+                                    className="hidden sm:inline-flex text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2 shrink-0"
+                                >
+                                    <Trash className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{t('bracket.deletePlacementRoundRobin')}</span>
+                                </Button>
+                            )}
+                        </GlassCardHeader>
+                        <GlassCardContent
+                            id={`placement-panel-${stage.id}`}
+                            hidden={!isExpanded}
+                            className="p-3 md:p-6 space-y-6"
+                        >
+                            {/* Slots Management */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-black uppercase tracking-wider text-primary">
+                                        {t('bracket.slotSources')} ({slots.length})
+                                    </h4>
+                                    {hasPlayedMatches && (
+                                        <span className="text-xs text-amber-400 font-medium">
+                                            {t('bracket.matchesPlayedWarning')}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {slots.map((slot, sIdx) => (
+                                        <div
+                                            key={slot.key}
+                                            className="p-3 rounded-xl bg-black/20 border border-white/10 flex flex-col justify-between gap-2.5"
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-mono text-muted-foreground">
+                                                    {t('bracket.slot', { number: sIdx + 1 })}
+                                                </span>
+                                                {slot.teamId ? (
+                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                                        Team
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                                        Placeholder
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2.5">
+                                                {slot.teamLogoUrl && (
+                                                    <img src={slot.teamLogoUrl} alt="" className="w-6 h-6 object-contain shrink-0" />
+                                                )}
+                                                <span className="text-sm font-bold text-white truncate">
+                                                    {slot.label}
+                                                </span>
+                                            </div>
+                                            {!readonly && (
+                                                <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="tertiary"
+                                                        disabled={loading || hasPlayedMatches}
+                                                        onClick={() => {
+                                                            setChangeSlotStage(stage);
+                                                            setSlotToChange(slot);
+                                                            setNewSlotTeamId('');
+                                                            setChangeSlotModalOpen(true);
+                                                        }}
+                                                        className="flex-1 h-7 text-xs"
+                                                        title={hasPlayedMatches ? t('bracket.matchesPlayedWarning') : t('bracket.changeTeam')}
+                                                    >
+                                                        <PencilSimple className="w-3.5 h-3.5 mr-1" /> {t('bracket.changeTeam')}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="tertiary"
+                                                        disabled={loading || hasPlayedMatches || slots.length < 2}
+                                                        onClick={() => {
+                                                            setSwapSlotsStage(stage);
+                                                            setSlotToSwap1(slot);
+                                                            setSlotToSwap2Key('');
+                                                            setSwapSlotsModalOpen(true);
+                                                        }}
+                                                        className="flex-1 h-7 text-xs"
+                                                        title={hasPlayedMatches ? t('bracket.matchesPlayedWarning') : t('bracket.swapTeam')}
+                                                    >
+                                                        <ArrowsLeftRight className="w-3.5 h-3.5 mr-1" /> {t('bracket.swapTeam')}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Fixtures / Matches */}
+                            <div>
+                                <h4 className="text-xs font-black uppercase tracking-wider text-primary mb-3">
+                                    {t('bracket.fixtures')} ({stageMatches.length})
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {stageMatches.map((match) => (
+                                        <div
+                                            key={match.id}
+                                            className="bg-background/60 border border-white/10 rounded-xl overflow-hidden relative group hover:border-primary/60 transition-all shadow-md"
+                                        >
+                                            {!readonly && (
+                                                <div className="hidden md:block absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-10">
+                                                    <button
+                                                        onClick={() => onMatchEdit(match)}
+                                                        className="p-1.5 bg-primary/30 hover:bg-primary text-white rounded-lg backdrop-blur-md transition-colors"
+                                                        title="Edit Match"
+                                                        aria-label="Edit Match"
+                                                    >
+                                                        <PencilSimple className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="text-[10px] text-muted-foreground/80 px-3 py-1 bg-black/40 border-b border-white/5 uppercase tracking-wider flex justify-between font-mono">
+                                                <span className="truncate">
+                                                    {match.matchNumber ? `M${match.matchNumber}` : (match.matchCode || 'MATCH')}
+                                                </span>
+                                                <span className="truncate">
+                                                    {match.matchDate ? match.matchDate.substring(5) : ''} {match.kickOffTime?.substring(0, 5)}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col p-1 space-y-1">
+                                                <div className="flex justify-between items-center px-2.5 py-1.5 rounded-lg bg-black/20">
+                                                    <span className={`text-xs truncate pr-2 font-medium ${!match.homeTeamName ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                                                        {match.homeTeamName || match.homeTeamPlaceholder || 'TBD'}
+                                                    </span>
+                                                    <span className="font-mono font-bold text-xs bg-black/40 px-2 py-0.5 rounded text-white min-w-[24px] text-center">
+                                                        {match.homeScore ?? '-'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center px-2.5 py-1.5 rounded-lg bg-black/20">
+                                                    <span className={`text-xs truncate pr-2 font-medium ${!match.awayTeamName ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                                                        {match.awayTeamName || match.awayTeamPlaceholder || 'TBD'}
+                                                    </span>
+                                                    <span className="font-mono font-bold text-xs bg-black/40 px-2 py-0.5 rounded text-white min-w-[24px] text-center">
+                                                        {match.awayScore ?? '-'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {!readonly && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onMatchEdit(match)}
+                                                    className="md:hidden w-full min-h-[44px] flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-primary/30 hover:bg-primary border-t border-white/10 transition-colors"
+                                                >
+                                                    <PencilSimple className="w-4 h-4" aria-hidden="true" /> Edit match
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </GlassCardContent>
+                    </GlassCard>
+                );
+            })}
+
+            {bracketGroups.length === 0 && placementStages.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl text-muted-foreground">
-                    <p>No knockout brackets configured.</p>
+                    <p>No knockout or placement brackets configured.</p>
                     <p className="text-sm mt-1">Generate matches or add a custom bracket above.</p>
                 </div>
             )}
+
+            <Modal
+                isOpen={addPlacementOpen}
+                onClose={() => setAddPlacementOpen(false)}
+                title={t('bracket.addPlacementRoundRobin')}
+                size="md"
+            >
+                <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+                    {hasCategories && (
+                        <div className="space-y-2">
+                            <Label>Category <span className="text-[var(--accent-text)]">*</span></Label>
+                            <SearchableSelect
+                                value={newPlacementCategoryId}
+                                onChange={(value) => setNewPlacementCategoryId(value as string)}
+                                options={categories.map(c => ({
+                                    value: c.id,
+                                    label: c.name,
+                                }))}
+                                placeholder="Select category"
+                            />
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <Label>Stage Name <span className="text-[var(--accent-text)]">*</span></Label>
+                        <Input
+                            value={newPlacementName}
+                            onChange={(e) => setNewPlacementName(e.target.value)}
+                            placeholder="e.g. 13th to 15th place"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>{t('bracket.firstPlaceLabel')}</Label>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={99}
+                                value={newPlacementFirstPlace}
+                                onChange={(e) => handlePlacementFirstPlaceChange(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                {t('bracket.firstPlaceHint')}
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('bracket.teamCount')}</Label>
+                            <SearchableSelect
+                                value={String(newPlacementTeamCount)}
+                                onChange={(val) => handlePlacementTeamCountChange(Number(val))}
+                                options={[3, 4, 5, 6].map(n => ({
+                                    value: String(n),
+                                    label: `${n} teams`,
+                                }))}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2 border-t border-white/10">
+                        <Label className="text-xs uppercase font-bold text-primary tracking-wider">
+                            {t('bracket.slotSources')}
+                        </Label>
+                        {newPlacementSlots.slice(0, newPlacementTeamCount).map((slot, idx) => (
+                            <div key={idx} className="p-3 rounded-xl bg-black/20 border border-white/5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-white">
+                                        {t('bracket.slot', { number: idx + 1 })}
+                                    </span>
+                                    <div className="flex items-center gap-3 text-xs">
+                                        <label className="flex items-center gap-1 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name={`slot-type-${idx}`}
+                                                checked={slot.type === 'placeholder'}
+                                                onChange={() => {
+                                                    setNewPlacementSlots(prev => {
+                                                        const copy = [...prev];
+                                                        copy[idx] = { ...copy[idx], type: 'placeholder', teamId: '' };
+                                                        return copy;
+                                                    });
+                                                }}
+                                            />
+                                            <span>{t('bracket.rankSource')}</span>
+                                        </label>
+                                        <label className="flex items-center gap-1 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name={`slot-type-${idx}`}
+                                                checked={slot.type === 'team'}
+                                                onChange={() => {
+                                                    setNewPlacementSlots(prev => {
+                                                        const copy = [...prev];
+                                                        copy[idx] = { ...copy[idx], type: 'team' };
+                                                        return copy;
+                                                    });
+                                                }}
+                                            />
+                                            <span>{t('bracket.manualTeamSource')}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                {slot.type === 'placeholder' ? (
+                                    <Input
+                                        value={slot.placeholder}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setNewPlacementSlots(prev => {
+                                                const copy = [...prev];
+                                                copy[idx] = { ...copy[idx], placeholder: val };
+                                                return copy;
+                                            });
+                                        }}
+                                        placeholder={`Rank ${newPlacementFirstPlace + idx}`}
+                                    />
+                                ) : (
+                                    <SearchableSelect
+                                        value={slot.teamId}
+                                        onChange={(val) => {
+                                            setNewPlacementSlots(prev => {
+                                                const copy = [...prev];
+                                                copy[idx] = { ...copy[idx], teamId: val as string };
+                                                return copy;
+                                            });
+                                        }}
+                                        options={teams
+                                            .filter(t => !newPlacementCategoryId || !t.tournamentCategoryId || t.tournamentCategoryId === newPlacementCategoryId)
+                                            .map(t => ({
+                                                value: t.id,
+                                                label: t.name,
+                                            }))}
+                                        placeholder="Select team"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+                        <Button type="button" variant="cancel" onClick={() => setAddPlacementOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleAddPlacementSubmit}
+                            isLoading={loading}
+                            disabled={!newPlacementName.trim() || (hasCategories && !newPlacementCategoryId)}
+                        >
+                            Add Round Robin
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={changeSlotModalOpen}
+                onClose={() => {
+                    setChangeSlotModalOpen(false);
+                    setSlotToChange(null);
+                    setChangeSlotStage(null);
+                    setNewSlotTeamId('');
+                }}
+                title={t('bracket.changeTeam')}
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <div className="p-3 rounded-xl bg-black/20 border border-white/10 space-y-1">
+                        <span className="text-xs text-muted-foreground">Current Assignment</span>
+                        <p className="text-sm font-bold text-white">{slotToChange?.label}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>{t('bracket.selectNewTeam')} <span className="text-[var(--accent-text)]">*</span></Label>
+                        <SearchableSelect
+                            value={newSlotTeamId}
+                            onChange={(val) => setNewSlotTeamId(val as string)}
+                            options={teams
+                                .filter(t => !changeSlotStage?.categoryId || !t.tournamentCategoryId || t.tournamentCategoryId === changeSlotStage.categoryId)
+                                .map(t => ({
+                                    value: t.id,
+                                    label: t.name,
+                                }))}
+                            placeholder="Select team"
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button
+                            type="button"
+                            variant="cancel"
+                            onClick={() => {
+                                setChangeSlotModalOpen(false);
+                                setSlotToChange(null);
+                                setChangeSlotStage(null);
+                                setNewSlotTeamId('');
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleChangeSlotSubmit}
+                            isLoading={loading}
+                            disabled={!newSlotTeamId}
+                        >
+                            Confirm
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={swapSlotsModalOpen}
+                onClose={() => {
+                    setSwapSlotsModalOpen(false);
+                    setSlotToSwap1(null);
+                    setSwapSlotsStage(null);
+                    setSlotToSwap2Key('');
+                }}
+                title={t('bracket.swapTeam')}
+                size="sm"
+            >
+                <div className="space-y-4">
+                    <div className="p-3 rounded-xl bg-black/20 border border-white/10 space-y-1">
+                        <span className="text-xs text-muted-foreground">Selected Slot</span>
+                        <p className="text-sm font-bold text-white">{slotToSwap1?.label}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>{t('bracket.selectSlotToSwap')} <span className="text-[var(--accent-text)]">*</span></Label>
+                        <SearchableSelect
+                            value={slotToSwap2Key}
+                            onChange={(val) => setSlotToSwap2Key(val as string)}
+                            options={(() => {
+                                if (!swapSlotsStage) return [];
+                                const stageMatches = matches.filter(m => m.stage?.id === swapSlotsStage.id);
+                                return getStageSlots(stageMatches)
+                                    .filter(s => s.key !== slotToSwap1?.key)
+                                    .map(s => ({
+                                        value: s.key,
+                                        label: s.label,
+                                    }));
+                            })()}
+                            placeholder={t('bracket.selectSlotToSwap')}
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button
+                            type="button"
+                            variant="cancel"
+                            onClick={() => {
+                                setSwapSlotsModalOpen(false);
+                                setSlotToSwap1(null);
+                                setSwapSlotsStage(null);
+                                setSlotToSwap2Key('');
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleSwapSlotsSubmit}
+                            isLoading={loading}
+                            disabled={!slotToSwap2Key}
+                        >
+                            Confirm
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <ConfirmModal
+                isOpen={placementStageToDelete !== null}
+                onClose={() => setPlacementStageToDelete(null)}
+                onConfirm={handleDeletePlacementStage}
+                title={t('bracket.deletePlacementRoundRobin')}
+                message={t('bracket.deletePlacementRoundRobinConfirm')}
+                confirmText="Delete"
+                variant="destructive"
+            />
 
             <ConfirmModal
                 isOpen={bracketToDelete !== null}

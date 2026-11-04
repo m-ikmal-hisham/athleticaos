@@ -52,4 +52,38 @@ public interface BracketService {
      */
     void deleteKnockoutBracket(UUID tournamentId, com.athleticaos.backend.enums.TournamentStageType type, UUID categoryId);
 
+    /**
+     * Creates a placement round robin stage and its round-robin pairings.
+     */
+    com.athleticaos.backend.entities.TournamentStage createPlacementRoundRobin(
+            UUID tournamentId,
+            com.athleticaos.backend.dtos.tournament.PlacementRoundRobinCreateRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    /**
+     * Changes a team/placeholder in a slot of a placement round robin stage (decision B1).
+     */
+    void changePlacementRoundRobinSlot(
+            UUID tournamentId,
+            UUID stageId,
+            com.athleticaos.backend.dtos.tournament.PlacementRoundRobinSlotChangeRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    /**
+     * Swaps two slots in a placement round robin stage (decision B1).
+     */
+    void swapPlacementRoundRobinSlots(
+            UUID tournamentId,
+            UUID stageId,
+            com.athleticaos.backend.dtos.tournament.PlacementRoundRobinSlotSwapRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest);
+
+    /**
+     * Deletes a placement round robin stage if none of its matches has a result.
+     */
+    void deletePlacementRoundRobinStage(
+            UUID tournamentId,
+            UUID stageId,
+            jakarta.servlet.http.HttpServletRequest httpRequest);
+
 }

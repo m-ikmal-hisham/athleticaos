@@ -13,15 +13,17 @@ import com.athleticaos.backend.services.standings.ScoringRules;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class BracketServiceImpl implements BracketService {
 
@@ -36,6 +38,56 @@ public class BracketServiceImpl implements BracketService {
     private final MediaAssetRepository mediaAssetRepository;
     private final EventRepository eventRepository;
     private final TournamentVenueRepository venueRepository;
+    private final TeamRepository teamRepository;
+    private final com.athleticaos.backend.audit.AuditLogger auditLogger;
+
+    @Autowired
+    public BracketServiceImpl(
+            TournamentRepository tournamentRepository,
+            TournamentStageRepository stageRepository,
+            MatchRepository matchRepository,
+            TournamentTeamRepository tournamentTeamRepository,
+            MatchEventRepository matchEventRepository,
+            MatchLineupRepository matchLineupRepository,
+            MatchOfficialRepository matchOfficialRepository,
+            PlayerSuspensionRepository playerSuspensionRepository,
+            MediaAssetRepository mediaAssetRepository,
+            EventRepository eventRepository,
+            TournamentVenueRepository venueRepository,
+            TeamRepository teamRepository,
+            com.athleticaos.backend.audit.AuditLogger auditLogger) {
+        this.tournamentRepository = tournamentRepository;
+        this.stageRepository = stageRepository;
+        this.matchRepository = matchRepository;
+        this.tournamentTeamRepository = tournamentTeamRepository;
+        this.matchEventRepository = matchEventRepository;
+        this.matchLineupRepository = matchLineupRepository;
+        this.matchOfficialRepository = matchOfficialRepository;
+        this.playerSuspensionRepository = playerSuspensionRepository;
+        this.mediaAssetRepository = mediaAssetRepository;
+        this.eventRepository = eventRepository;
+        this.venueRepository = venueRepository;
+        this.teamRepository = teamRepository;
+        this.auditLogger = auditLogger;
+    }
+
+    public BracketServiceImpl(
+            TournamentRepository tournamentRepository,
+            TournamentStageRepository stageRepository,
+            MatchRepository matchRepository,
+            TournamentTeamRepository tournamentTeamRepository,
+            MatchEventRepository matchEventRepository,
+            MatchLineupRepository matchLineupRepository,
+            MatchOfficialRepository matchOfficialRepository,
+            PlayerSuspensionRepository playerSuspensionRepository,
+            MediaAssetRepository mediaAssetRepository,
+            EventRepository eventRepository,
+            TournamentVenueRepository venueRepository) {
+        this(tournamentRepository, stageRepository, matchRepository, tournamentTeamRepository,
+                matchEventRepository, matchLineupRepository, matchOfficialRepository,
+                playerSuspensionRepository, mediaAssetRepository, eventRepository, venueRepository,
+                null, null);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -1607,7 +1659,7 @@ public class BracketServiceImpl implements BracketService {
     List<PoolSeedingResult.UnresolvedSlot> findUnresolvedSlots(UUID tournamentId, UUID categoryId) {
         List<Match> allMatches = matchRepository.findByTournamentId(tournamentId);
         List<Match> knockoutMatches = allMatches.stream()
-                .filter(m -> !m.isDeleted() && m.getStage() != null && Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()))
+                .filter(m -> !m.isDeleted() && m.getStage() != null && (Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()) || Boolean.TRUE.equals(m.getStage().getIsRoundRobin())))
                 .filter(m -> {
                     TournamentCategory stageCategory = m.getStage().getCategory();
                     return categoryId == null
@@ -1685,7 +1737,7 @@ public class BracketServiceImpl implements BracketService {
         }
 
         List<Match> knockoutMatches = matchRepository.findByTournamentId(tournamentId).stream()
-                .filter(m -> m.getStage() != null && Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()))
+                .filter(m -> m.getStage() != null && (Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()) || Boolean.TRUE.equals(m.getStage().getIsRoundRobin())))
                 .filter(m -> {
                     TournamentCategory stageCategory = m.getStage().getCategory();
                     return categoryId == null
@@ -1888,6 +1940,8 @@ public class BracketServiceImpl implements BracketService {
                 .displayOrder(stage.getDisplayOrder())
                 .groupStage(stage.getIsGroupStage() != null ? stage.getIsGroupStage() : false)
                 .knockoutStage(stage.getIsKnockoutStage() != null ? stage.getIsKnockoutStage() : false)
+                .roundRobin(Boolean.TRUE.equals(stage.getIsRoundRobin()))
+                .firstPlace(stage.getFirstPlace())
                 .categoryId(stage.getCategory() != null ? stage.getCategory().getId() : null)
                 .build();
     }
@@ -2370,5 +2424,388 @@ public class BracketServiceImpl implements BracketService {
             }
             matchRepository.saveAll(loserFeeders);
         }
+    }
+
+    @Override
+    @Transactional
+    public TournamentStage createPlacementRoundRobin(
+            UUID tournamentId,
+            PlacementRoundRobinCreateRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("Creating placement round robin for tournament {}: {}", tournamentId, request.getName());
+
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
+
+        if (request.getTeamCount() == null || request.getTeamCount() < 3 || request.getTeamCount() > 6) {
+            throw new IllegalArgumentException("Placement round robin requires between 3 and 6 teams.");
+        }
+        if (request.getSlots() == null || request.getSlots().size() != request.getTeamCount()) {
+            throw new IllegalArgumentException("Must provide exactly " + request.getTeamCount() + " slot definitions.");
+        }
+        if (request.getFirstPlace() == null || request.getFirstPlace() < 1) {
+            throw new IllegalArgumentException("First place must be 1 or greater.");
+        }
+        String stageName = request.getName() != null && !request.getName().isBlank()
+                ? request.getName().trim()
+                : String.format("%s to %s Place", ordinal(request.getFirstPlace()), ordinal(request.getFirstPlace() + request.getTeamCount() - 1));
+
+        TournamentCategory category = null;
+        if (request.getCategoryId() != null) {
+            category = tournament.getCategories().stream()
+                    .filter(c -> c.getId().equals(request.getCategoryId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Category does not belong to tournament"));
+        } else if (tournament.getCategories() != null && tournament.getCategories().size() == 1) {
+            category = tournament.getCategories().get(0);
+        } else if (tournament.getCategories() != null && tournament.getCategories().size() > 1) {
+            throw new IllegalArgumentException("Choose the category for this placement round robin.");
+        }
+
+        List<TournamentStage> existingStages = stageRepository.findByTournamentIdOrderByDisplayOrderAsc(tournamentId);
+        int nextDisplayOrder = existingStages.stream()
+                .map(TournamentStage::getDisplayOrder)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
+
+        TournamentStage stage = TournamentStage.builder()
+                .tournament(tournament)
+                .category(category)
+                .name(stageName)
+                .stageType(TournamentStageType.CLASSIFICATION)
+                .displayOrder(nextDisplayOrder)
+                .isGroupStage(false)
+                .isKnockoutStage(false)
+                .isRoundRobin(true)
+                .firstPlace(request.getFirstPlace())
+                .build();
+        stage = stageRepository.save(stage);
+
+        TournamentVenue defaultVenue = getDefaultVenue(tournament);
+        UUID defaultVenueId = defaultVenue != null ? defaultVenue.getId() : null;
+        String defaultVenueName = defaultVenue != null ? defaultVenue.getName() : null;
+
+        int n = request.getTeamCount();
+        List<PlacementRoundRobinCreateRequest.SlotSource> slots = request.getSlots();
+
+        Map<Integer, Team> teamBySlot = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            PlacementRoundRobinCreateRequest.SlotSource slot = slots.get(i);
+            if (slot.getTeamId() != null) {
+                teamBySlot.put(i, requireTournamentTeam(tournamentId, category, slot.getTeamId()));
+            } else if (slot.getPlaceholder() == null || slot.getPlaceholder().isBlank()) {
+                throw new IllegalArgumentException("Every slot needs a team or a source such as \"Rank 13\".");
+            }
+        }
+        Set<UUID> chosenTeams = new HashSet<>();
+        Set<String> chosenSources = new HashSet<>();
+        for (int i = 0; i < n; i++) {
+            Team team = teamBySlot.get(i);
+            boolean duplicate = team != null
+                    ? !chosenTeams.add(team.getId())
+                    : !chosenSources.add(normalizePlaceholder(slots.get(i).getPlaceholder()));
+            if (duplicate) {
+                throw new IllegalArgumentException("The same team or source is used in two slots.");
+            }
+        }
+
+        int matchIndex = 1;
+        List<Match> createdMatches = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                PlacementRoundRobinCreateRequest.SlotSource slotI = slots.get(i);
+                PlacementRoundRobinCreateRequest.SlotSource slotJ = slots.get(j);
+
+                Team homeTeam = teamBySlot.get(i);
+                String homePlaceholder = homeTeam == null ? slotI.getPlaceholder() : null;
+
+                Team awayTeam = teamBySlot.get(j);
+                String awayPlaceholder = awayTeam == null ? slotJ.getPlaceholder() : null;
+
+                Match match = Match.builder()
+                        .tournament(tournament)
+                        .category(category)
+                        .stage(stage)
+                        .homeTeam(homeTeam)
+                        .homeTeamPlaceholder(truncate(homePlaceholder, 50))
+                        .awayTeam(awayTeam)
+                        .awayTeamPlaceholder(truncate(awayPlaceholder, 50))
+                        .matchDate(tournament.getStartDate() != null ? tournament.getStartDate() : LocalDate.now())
+                        .kickOffTime(LocalTime.of(9, 0))
+                        .tournamentVenue(defaultVenue)
+                        .venue(defaultVenueName)
+                        .status(MatchStatus.SCHEDULED)
+                        .phase(truncate(stageName, 50))
+                        .matchCode(String.format("%s-RR-M%d", matchCodePrefix(tournament, category, 20), matchIndex))
+                        .matchNumber(nextMatchNumber(tournament, defaultVenueId))
+                        .build();
+
+                match = matchRepository.save(match);
+                createdMatches.add(match);
+                matchIndex++;
+            }
+        }
+
+        auditLogger.logBulkAction("PLACEMENT_ROUND_ROBIN_CREATED", "TOURNAMENT_STAGE", stage.getId(),
+                String.format("Created placement round robin '%s' with %d teams (%d matches)", stageName, n, createdMatches.size()), httpRequest);
+
+        try {
+            seedCategoryIfPoolsComplete(tournamentId, category != null ? category.getId() : null);
+        } catch (Exception e) {
+            log.debug("Auto-seeding during placement round robin creation skipped: {}", e.getMessage());
+        }
+
+        return stage;
+    }
+
+    @Override
+    @Transactional
+    public void changePlacementRoundRobinSlot(
+            UUID tournamentId,
+            UUID stageId,
+            PlacementRoundRobinSlotChangeRequest request,
+            HttpServletRequest httpRequest) {
+        TournamentStage stage = stageRepository.findById(stageId)
+                .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+
+        if (!stage.getTournament().getId().equals(tournamentId)) {
+            throw new IllegalArgumentException("Stage does not belong to tournament");
+        }
+        if (!Boolean.TRUE.equals(stage.getIsRoundRobin())) {
+            throw new IllegalArgumentException("Stage is not a placement round robin");
+        }
+
+        List<Match> stageMatches = matchRepository.findByStageId(stageId);
+
+        boolean foundOld = false;
+        for (Match m : stageMatches) {
+            if (request.getOldTeamId() != null) {
+                if ((m.getHomeTeam() != null && m.getHomeTeam().getId().equals(request.getOldTeamId())) ||
+                    (m.getAwayTeam() != null && m.getAwayTeam().getId().equals(request.getOldTeamId()))) {
+                    foundOld = true;
+                }
+            } else if (request.getOldPlaceholder() != null && !request.getOldPlaceholder().isBlank()) {
+                if ((m.getHomeTeamPlaceholder() != null && m.getHomeTeamPlaceholder().equalsIgnoreCase(request.getOldPlaceholder().trim())) ||
+                    (m.getAwayTeamPlaceholder() != null && m.getAwayTeamPlaceholder().equalsIgnoreCase(request.getOldPlaceholder().trim()))) {
+                    foundOld = true;
+                }
+            }
+        }
+        if (!foundOld) {
+            throw new IllegalArgumentException("The specified team or placeholder does not belong to this stage.");
+        }
+
+        for (Match m : stageMatches) {
+            boolean isAffected = false;
+            if (request.getOldTeamId() != null) {
+                if ((m.getHomeTeam() != null && m.getHomeTeam().getId().equals(request.getOldTeamId())) ||
+                    (m.getAwayTeam() != null && m.getAwayTeam().getId().equals(request.getOldTeamId()))) {
+                    isAffected = true;
+                }
+            } else if (request.getOldPlaceholder() != null) {
+                if ((m.getHomeTeamPlaceholder() != null && m.getHomeTeamPlaceholder().equalsIgnoreCase(request.getOldPlaceholder().trim())) ||
+                    (m.getAwayTeamPlaceholder() != null && m.getAwayTeamPlaceholder().equalsIgnoreCase(request.getOldPlaceholder().trim()))) {
+                    isAffected = true;
+                }
+            }
+            if (isAffected) {
+                if (m.getStatus() == MatchStatus.COMPLETED || m.getHomeScore() != null || m.getAwayScore() != null || m.getResultType() != null) {
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.CONFLICT,
+                            "Cannot change team because one or more matches already have a result.");
+                }
+            }
+        }
+
+        if (request.getNewTeamId() == null) {
+            throw new IllegalArgumentException("Choose the new team.");
+        }
+        Team newTeam = requireTournamentTeam(tournamentId, stage.getCategory(), request.getNewTeamId());
+        boolean alreadyInStage = stageMatches.stream().anyMatch(m ->
+                (m.getHomeTeam() != null && m.getHomeTeam().getId().equals(newTeam.getId()))
+                        || (m.getAwayTeam() != null && m.getAwayTeam().getId().equals(newTeam.getId())));
+        if (alreadyInStage) {
+            throw new IllegalArgumentException(newTeam.getName() + " is already in this round robin. Use Swap to change its slot.");
+        }
+
+        String oldIdentifier = request.getOldTeamId() != null ? request.getOldTeamId().toString() : request.getOldPlaceholder();
+
+        for (Match m : stageMatches) {
+            boolean changed = false;
+            if (request.getOldTeamId() != null) {
+                if (m.getHomeTeam() != null && m.getHomeTeam().getId().equals(request.getOldTeamId())) {
+                    m.setHomeTeam(newTeam);
+                    m.setHomeTeamPlaceholder(null);
+                    changed = true;
+                }
+                if (m.getAwayTeam() != null && m.getAwayTeam().getId().equals(request.getOldTeamId())) {
+                    m.setAwayTeam(newTeam);
+                    m.setAwayTeamPlaceholder(null);
+                    changed = true;
+                }
+            } else if (request.getOldPlaceholder() != null) {
+                if (m.getHomeTeamPlaceholder() != null && m.getHomeTeamPlaceholder().equalsIgnoreCase(request.getOldPlaceholder().trim())) {
+                    m.setHomeTeam(newTeam);
+                    m.setHomeTeamPlaceholder(null);
+                    changed = true;
+                }
+                if (m.getAwayTeamPlaceholder() != null && m.getAwayTeamPlaceholder().equalsIgnoreCase(request.getOldPlaceholder().trim())) {
+                    m.setAwayTeam(newTeam);
+                    m.setAwayTeamPlaceholder(null);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                matchRepository.save(m);
+            }
+        }
+
+        auditLogger.logBulkAction("PLACEMENT_SLOT_CHANGED", "TOURNAMENT_STAGE", stageId,
+                String.format("Changed slot in stage '%s': replaced %s with %s", stage.getName(), oldIdentifier, newTeam.getName()), httpRequest);
+    }
+
+    @Override
+    @Transactional
+    public void swapPlacementRoundRobinSlots(
+            UUID tournamentId,
+            UUID stageId,
+            PlacementRoundRobinSlotSwapRequest request,
+            HttpServletRequest httpRequest) {
+        TournamentStage stage = stageRepository.findById(stageId)
+                .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+
+        if (!stage.getTournament().getId().equals(tournamentId)) {
+            throw new IllegalArgumentException("Stage does not belong to tournament");
+        }
+        if (!Boolean.TRUE.equals(stage.getIsRoundRobin())) {
+            throw new IllegalArgumentException("Stage is not a placement round robin");
+        }
+
+        List<Match> stageMatches = matchRepository.findByStageId(stageId);
+
+        java.util.function.BiPredicate<Match, Boolean> isSlot1 = (m, isHome) -> {
+            if (isHome) {
+                if (request.getTeamId1() != null && m.getHomeTeam() != null && m.getHomeTeam().getId().equals(request.getTeamId1())) return true;
+                if (request.getPlaceholder1() != null && m.getHomeTeamPlaceholder() != null && m.getHomeTeamPlaceholder().equalsIgnoreCase(request.getPlaceholder1().trim())) return true;
+            } else {
+                if (request.getTeamId1() != null && m.getAwayTeam() != null && m.getAwayTeam().getId().equals(request.getTeamId1())) return true;
+                if (request.getPlaceholder1() != null && m.getAwayTeamPlaceholder() != null && m.getAwayTeamPlaceholder().equalsIgnoreCase(request.getPlaceholder1().trim())) return true;
+            }
+            return false;
+        };
+
+        java.util.function.BiPredicate<Match, Boolean> isSlot2 = (m, isHome) -> {
+            if (isHome) {
+                if (request.getTeamId2() != null && m.getHomeTeam() != null && m.getHomeTeam().getId().equals(request.getTeamId2())) return true;
+                if (request.getPlaceholder2() != null && m.getHomeTeamPlaceholder() != null && m.getHomeTeamPlaceholder().equalsIgnoreCase(request.getPlaceholder2().trim())) return true;
+            } else {
+                if (request.getTeamId2() != null && m.getAwayTeam() != null && m.getAwayTeam().getId().equals(request.getTeamId2())) return true;
+                if (request.getPlaceholder2() != null && m.getAwayTeamPlaceholder() != null && m.getAwayTeamPlaceholder().equalsIgnoreCase(request.getPlaceholder2().trim())) return true;
+            }
+            return false;
+        };
+
+        boolean found1 = false;
+        boolean found2 = false;
+        for (Match m : stageMatches) {
+            if (isSlot1.test(m, true) || isSlot1.test(m, false)) found1 = true;
+            if (isSlot2.test(m, true) || isSlot2.test(m, false)) found2 = true;
+        }
+        if (!found1 || !found2) {
+            throw new IllegalArgumentException("Both slots to swap must belong to this stage.");
+        }
+
+        for (Match m : stageMatches) {
+            boolean involved = isSlot1.test(m, true) || isSlot1.test(m, false) || isSlot2.test(m, true) || isSlot2.test(m, false);
+            if (involved) {
+                if (m.getStatus() == MatchStatus.COMPLETED || m.getHomeScore() != null || m.getAwayScore() != null || m.getResultType() != null) {
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.CONFLICT,
+                            "Cannot swap slots because one or more matches already have a result.");
+                }
+            }
+        }
+
+        Team team1 = request.getTeamId1() != null ? requireTournamentTeam(tournamentId, stage.getCategory(), request.getTeamId1()) : null;
+        String placeholder1 = request.getPlaceholder1();
+
+        Team team2 = request.getTeamId2() != null ? requireTournamentTeam(tournamentId, stage.getCategory(), request.getTeamId2()) : null;
+        String placeholder2 = request.getPlaceholder2();
+
+        for (Match m : stageMatches) {
+            boolean homeIsSlot1 = isSlot1.test(m, true);
+            boolean homeIsSlot2 = isSlot2.test(m, true);
+            boolean awayIsSlot1 = isSlot1.test(m, false);
+            boolean awayIsSlot2 = isSlot2.test(m, false);
+
+            if (homeIsSlot1) {
+                m.setHomeTeam(team2);
+                m.setHomeTeamPlaceholder(team2 != null ? null : placeholder2);
+            } else if (homeIsSlot2) {
+                m.setHomeTeam(team1);
+                m.setHomeTeamPlaceholder(team1 != null ? null : placeholder1);
+            }
+
+            if (awayIsSlot1) {
+                m.setAwayTeam(team2);
+                m.setAwayTeamPlaceholder(team2 != null ? null : placeholder2);
+            } else if (awayIsSlot2) {
+                m.setAwayTeam(team1);
+                m.setAwayTeamPlaceholder(team1 != null ? null : placeholder1);
+            }
+
+            if (homeIsSlot1 || homeIsSlot2 || awayIsSlot1 || awayIsSlot2) {
+                matchRepository.save(m);
+            }
+        }
+
+        auditLogger.logBulkAction("PLACEMENT_SLOTS_SWAPPED", "TOURNAMENT_STAGE", stageId,
+                String.format("Swapped slots in stage '%s'", stage.getName()), httpRequest);
+    }
+
+    /** The team, if it is an active entry of this tournament (and of the stage's category, when it has one). */
+    private Team requireTournamentTeam(UUID tournamentId, TournamentCategory category, UUID teamId) {
+        UUID categoryId = category != null ? category.getId() : null;
+        return tournamentTeamRepository.findByTournamentId(tournamentId).stream()
+                .filter(tt -> tt.isActive() && !tt.isDeleted() && tt.getTeam() != null)
+                .filter(tt -> tt.getTeam().getId().equals(teamId))
+                .filter(tt -> categoryId == null || (tt.getCategory() != null && categoryId.equals(tt.getCategory().getId())))
+                .map(TournamentTeam::getTeam)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("That team is not entered in this tournament category."));
+    }
+
+    @Override
+    @Transactional
+    public void deletePlacementRoundRobinStage(
+            UUID tournamentId,
+            UUID stageId,
+            HttpServletRequest httpRequest) {
+        TournamentStage stage = stageRepository.findById(stageId)
+                .orElseThrow(() -> new EntityNotFoundException("Stage not found"));
+
+        if (!stage.getTournament().getId().equals(tournamentId)) {
+            throw new IllegalArgumentException("Stage does not belong to tournament");
+        }
+        if (!Boolean.TRUE.equals(stage.getIsRoundRobin())) {
+            throw new IllegalArgumentException("Stage is not a placement round robin");
+        }
+
+        List<Match> stageMatches = matchRepository.findByStageId(stageId);
+        boolean hasResults = stageMatches.stream()
+                .anyMatch(m -> m.getStatus() == MatchStatus.COMPLETED || m.getHomeScore() != null || m.getAwayScore() != null || m.getResultType() != null);
+        if (hasResults) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Cannot delete round robin stage because one or more matches have results.");
+        }
+
+        matchRepository.deleteAll(stageMatches);
+        stageRepository.delete(stage);
+
+        auditLogger.logBulkAction("PLACEMENT_ROUND_ROBIN_DELETED", "TOURNAMENT_STAGE", stageId,
+                String.format("Deleted placement round robin stage '%s' and its %d matches", stage.getName(), stageMatches.size()), httpRequest);
     }
 }
