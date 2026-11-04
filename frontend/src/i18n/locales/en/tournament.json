@@ -70,7 +70,29 @@
     "champion": "Champion",
     "empty": "No knockout stages found.",
     "progression": "Knockout Stage Progression",
-    "stageBadge": "Knockout Stage"
+    "stageBadge": "Knockout Stage",
+    "addPlacementRoundRobin": "Add placement round robin",
+    "placementRoundRobin": "Placement Round Robin",
+    "placementStage": "Placement Playoff",
+    "changeTeam": "Change team",
+    "swapTeam": "Swap",
+    "selectNewTeam": "Select new team",
+    "selectSlotToSwap": "Select slot to swap with",
+    "firstPlaceLabel": "First Place",
+    "firstPlaceHint": "Starting rank for this table, e.g. 13 for a 13th to 15th playoff.",
+    "teamCount": "Number of teams",
+    "slotSources": "Slots",
+    "slot": "Slot {{number}}",
+    "sourceType": "Source type",
+    "rankSource": "Rank / Seed placeholder",
+    "manualTeamSource": "Specific team",
+    "deletePlacementRoundRobin": "Delete Placement Stage",
+    "deletePlacementRoundRobinConfirm": "Delete this placement round robin stage? All its matches will be removed. This cannot be undone.",
+    "matchesPlayedWarning": "Matches have already been played. Team assignments cannot be changed.",
+    "table": "Standings Table",
+    "fixtures": "Matches",
+    "rank": "Pos",
+    "pts": "Pts"
   },
   "pools": {
     "title": "Pool standings",
@@ -125,5 +147,16 @@
     "redCards": "Red Cards",
     "yellowCards": "Yellow Cards",
     "disciplineSummary": "Tournament discipline summary"
+  },
+  "tieBreak": {
+    "knockoutTieBreakTitle": "Knockout Tie-Break",
+    "knockoutTieBreakHint": "How a level knockout match is decided to advance a winner.",
+    "tieBreakMethod": "Tie-break method",
+    "extraTimeSequence": "Extra time sequence (golden score, drop kicks, coin toss)",
+    "firstTryRule": "First try rule (earliest try wins)",
+    "extraTimeHelp": "Extra time first; if still level, drop kicks, then coin toss.",
+    "firstTryHelp": "Team scoring the first try wins. If no try was scored, continues with extra time.",
+    "extraTimeMinutes": "Extra time duration (minutes)",
+    "extraTimeMinutesHelp": "Default 5 minutes for 7s/10s, 15 minutes for XV."
   }
 }

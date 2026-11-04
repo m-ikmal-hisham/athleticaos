@@ -34,7 +34,16 @@ public class PublicMatchSummaryResponse {
     private String status; // SCHEDULED, LIVE, FULL_TIME, CANCELLED
     /** NORMAL, WALKOVER or BYE. Null means a normally played match. */
     private String resultType;
+    /** FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
+    private String decidedBy;
+    private Integer dropKicksHome;
+    private Integer dropKicksAway;
+    private UUID winnerTeamId;
+    private UUID homeTeamId;
+    private UUID awayTeamId;
     private String stage;
+    private UUID stageId;
+    private Boolean isRoundRobin;
     /**
      * The stage's type (PLATE, BOWL, SHIELD, ...). Needed so the public bracket groups a match
      * the same way the organiser's view does — grouping on the stage *name* alone misfiles any

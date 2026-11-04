@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Gear, Play, FloppyDisk, Layout, Question, Trophy, SquaresFour } from '@phosphor-icons/react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { tournamentService } from '@/services/tournamentService';
@@ -20,6 +21,7 @@ interface TournamentFormatProps {
 }
 
 export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly = false }: TournamentFormatProps) {
+    const { t } = useTranslation(['tournament', 'common']);
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [structureLoading, setStructureLoading] = useState(false);
@@ -45,6 +47,8 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
         bonusTryThreshold: 4,
         pointsBonusLoss: 1,
         bonusLosingMargin: 7,
+        knockoutTieBreaker: 'EXTRA_TIME',
+        extraTimeMinutes: 15,
         startersCount: 15,
         maxBenchCount: 10,
         // 4 gives Cup 1-4 / Plate 5-8 (no quarter-final); 8 gives Cup 1-8 / Plate 9-16
@@ -607,6 +611,61 @@ export function TournamentFormat({ tournamentId, onScheduleGenerated, readonly =
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Knockout Tie-Break */}
+                        <div className="pt-4 border-t border-border/50 space-y-4">
+                            <div>
+                                <label className="text-sm font-semibold text-content-primary">
+                                    {t('tournament:tieBreak.knockoutTieBreakTitle', { defaultValue: 'Knockout Tie-Break' })}
+                                </label>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {t('tournament:tieBreak.knockoutTieBreakHint', { defaultValue: 'How a level knockout match is decided to advance a winner.' })}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        {t('tournament:tieBreak.tieBreakMethod', { defaultValue: 'Tie-break method' })}
+                                    </label>
+                                    <Select
+                                        value={config.knockoutTieBreaker || 'EXTRA_TIME'}
+                                        onChange={(value) => setConfig({ ...config, knockoutTieBreaker: value as any })}
+                                        options={[
+                                            {
+                                                value: 'EXTRA_TIME',
+                                                label: t('tournament:tieBreak.extraTimeSequence', { defaultValue: 'Extra time sequence (golden score, drop kicks, coin toss)' })
+                                            },
+                                            {
+                                                value: 'FIRST_TRY',
+                                                label: t('tournament:tieBreak.firstTryRule', { defaultValue: 'First try rule (earliest try wins)' })
+                                            }
+                                        ]}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        {(config.knockoutTieBreaker || 'EXTRA_TIME') === 'EXTRA_TIME'
+                                            ? t('tournament:tieBreak.extraTimeHelp', { defaultValue: 'Extra time first; if still level, drop kicks, then coin toss.' })
+                                            : t('tournament:tieBreak.firstTryHelp', { defaultValue: 'Team scoring the first try wins. If no try was scored, continues with extra time.' })}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        {t('tournament:tieBreak.extraTimeMinutes', { defaultValue: 'Extra time duration (minutes)' })}
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={60}
+                                        value={config.extraTimeMinutes !== undefined ? config.extraTimeMinutes : (config.rugbyFormat === 'XV' ? 15 : 5)}
+                                        onChange={(e) => setConfig({ ...config, extraTimeMinutes: parseInt(e.target.value) || 5 })}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('tournament:tieBreak.extraTimeMinutesHelp', { defaultValue: 'Default 5 minutes for 7s/10s, 15 minutes for XV.' })}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

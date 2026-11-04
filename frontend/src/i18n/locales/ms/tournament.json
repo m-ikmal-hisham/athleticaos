@@ -70,7 +70,29 @@
     "champion": "Juara",
     "empty": "Tiada peringkat kalah mati ditemui.",
     "progression": "Kemajuan peringkat kalah mati",
-    "stageBadge": "Peringkat kalah mati"
+    "stageBadge": "Peringkat kalah mati",
+    "addPlacementRoundRobin": "Tambah round robin penentuan",
+    "placementRoundRobin": "Round Robin Penentuan",
+    "placementStage": "Penentuan Kedudukan",
+    "changeTeam": "Tukar pasukan",
+    "swapTeam": "Tukar ganti",
+    "selectNewTeam": "Pilih pasukan baru",
+    "selectSlotToSwap": "Pilih slot untuk ditukar ganti",
+    "firstPlaceLabel": "Tempat Pertama",
+    "firstPlaceHint": "Kedudukan permulaan untuk jadual ini, cth. 13 bagi penentuan tempat ke-13 hingga ke-15.",
+    "teamCount": "Bilangan pasukan",
+    "slotSources": "Slot",
+    "slot": "Slot {{number}}",
+    "sourceType": "Jenis sumber",
+    "rankSource": "Pemegang tempat kedudukan / pilihan",
+    "manualTeamSource": "Pasukan tertentu",
+    "deletePlacementRoundRobin": "Padam Peringkat Penentuan",
+    "deletePlacementRoundRobinConfirm": "Padam peringkat round robin penentuan ini? Semua perlawanannya akan dipadamkan. Tindakan ini tidak boleh dibatalkan.",
+    "matchesPlayedWarning": "Perlawanan telah dimainkan. Pasukan tidak boleh diubah.",
+    "table": "Jadual Kedudukan",
+    "fixtures": "Perlawanan",
+    "rank": "Ked",
+    "pts": "Mata"
   },
   "pools": {
     "title": "Kedudukan kumpulan",
@@ -125,5 +147,16 @@
     "redCards": "Kad merah",
     "yellowCards": "Kad kuning",
     "disciplineSummary": "Ringkasan disiplin kejohanan"
+  },
+  "tieBreak": {
+    "knockoutTieBreakTitle": "Penyelesaian Seri Kalah Mati",
+    "knockoutTieBreakHint": "Cara perlawanan kalah mati yang seri ditentukan untuk memilih pemenang.",
+    "tieBreakMethod": "Kaedah penentuan pemenang",
+    "extraTimeSequence": "Urutan masa tambahan (golden score, tendangan jatuhan, lambungan syiling)",
+    "firstTryRule": "Peraturan try pertama (try terawal menang)",
+    "extraTimeHelp": "Masa tambahan dahulu; jika masih seri, tendangan jatuhan, kemudian lambungan syiling.",
+    "firstTryHelp": "Pasukan yang menjaringkan try pertama menang. Jika tiada try dijaringkan, diteruskan dengan masa tambahan.",
+    "extraTimeMinutes": "Tempoh masa tambahan (minit)",
+    "extraTimeMinutesHelp": "Lalai 5 minit untuk 7s/10s, 15 minit untuk XV."
   }
 }

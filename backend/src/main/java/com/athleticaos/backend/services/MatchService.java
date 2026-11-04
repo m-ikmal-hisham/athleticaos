@@ -55,4 +55,9 @@ public interface MatchService {
 
         com.athleticaos.backend.dtos.match.MatchRenumberResponse renumberMatches(
                         UUID tournamentId, boolean dryRun, jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        MatchResponse decideLevelKnockout(UUID matchId, com.athleticaos.backend.dtos.match.DecideLevelKnockoutRequest request,
+                        jakarta.servlet.http.HttpServletRequest httpRequest);
+
+        com.athleticaos.backend.dtos.match.FirstTrySuggestionResponse getFirstTrySuggestion(UUID matchId);
 }

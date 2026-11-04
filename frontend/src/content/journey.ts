@@ -278,66 +278,52 @@ export const JOURNEY_2: Journey = {
             },
         },
         {
-            id: 'privacy-notice-and-terms',
-            date: 'Oct 2026',
-            setPiece: 'lineout',
-            status: 'done',
-            title: {
-                en: 'Privacy notice and terms',
-                ms: 'Notis privasi dan terma',
-            },
-            text: {
-                en: 'In English and Bahasa Melayu, with a page for data requests.',
-                ms: 'Dalam Bahasa Inggeris dan Bahasa Melayu, bersama halaman permintaan data.',
-            },
-        },
-        {
             id: 'phone-first-navigation',
             date: 'Oct 2026',
             setPiece: 'scrum',
-            status: 'current',
+            status: 'done',
             title: {
                 en: 'Phone-first navigation',
                 ms: 'Navigasi mesra telefon',
             },
             text: {
-                en: 'A bottom tab bar, bilingual site and a new admin layout for phones and tablets.',
-                ms: 'Bar tab bawah, laman dwibahasa dan susun atur pentadbir baharu untuk telefon dan tablet.',
+                en: 'A bottom tab bar and a new admin layout for phones and tablets.',
+                ms: 'Bar tab bawah dan susun atur pentadbir baharu untuk telefon dan tablet.',
             },
         },
         {
-            id: 'johor-rugby-league-2026',
-            date: '24 Oct 2026',
-            setPiece: 'maul',
-            status: 'next',
+            id: 'public-site-in-bahasa-melayu',
+            date: 'Oct 2026',
+            setPiece: 'phase',
+            status: 'done',
             title: {
-                en: 'Johor Rugby League 2026',
-                ms: 'Johor Rugby League 2026',
+                en: 'Public site in Bahasa Melayu',
+                ms: 'Laman awam dalam Bahasa Melayu',
             },
             text: {
-                en: 'The league season starts on AthleticaOS.',
-                ms: 'Musim liga bermula di AthleticaOS.',
+                en: 'Every public page available in Bahasa Melayu.',
+                ms: 'Setiap halaman awam tersedia dalam Bahasa Melayu.',
             },
         },
         {
             id: 'tournament-setup-round-2',
-            date: 'Nov–Dec 2026',
+            date: 'Oct 2026',
             setPiece: 'ruck',
-            status: 'next',
+            status: 'done',
             title: {
                 en: 'Tournament setup round 2',
                 ms: 'Persediaan kejohanan, fasa 2',
             },
             text: {
-                en: 'Ready for the December knockouts.',
-                ms: 'Sedia untuk peringkat kalah mati Disember.',
+                en: 'Seed knockouts by league position, remove empty stages and edit brackets on phones.',
+                ms: 'Susun pasukan kalah mati ikut kedudukan liga, padam peringkat kosong dan sunting braket di telefon.',
             },
         },
         {
             id: 'tournament-calendar',
-            date: 'Nov 2026',
+            date: 'Oct 2026',
             setPiece: 'phase',
-            status: 'next',
+            status: 'done',
             title: {
                 en: 'Tournament calendar',
                 ms: 'Kalendar kejohanan',
@@ -349,9 +335,9 @@ export const JOURNEY_2: Journey = {
         },
         {
             id: 'matchday-home',
-            date: 'Nov 2026',
+            date: 'Oct 2026',
             setPiece: 'phase',
-            status: 'next',
+            status: 'done',
             title: {
                 en: 'Matchday home',
                 ms: 'Laman hari perlawanan',
@@ -359,6 +345,62 @@ export const JOURNEY_2: Journey = {
             text: {
                 en: 'Live, today and results in one place.',
                 ms: 'Langsung, hari ini dan keputusan di satu tempat.',
+            },
+        },
+        {
+            id: 'animated-stadium',
+            date: 'Oct 2026',
+            setPiece: 'phase',
+            status: 'done',
+            title: {
+                en: 'Animated stadium',
+                ms: 'Stadium beranimasi',
+            },
+            text: {
+                en: 'The animated 3D pitch and stadium behind the public pages.',
+                ms: 'Padang dan stadium 3D beranimasi di belakang halaman awam.',
+            },
+        },
+        {
+            id: 'johor-rugby-league-2026',
+            date: '24 Oct 2026',
+            setPiece: 'maul',
+            status: 'current',
+            title: {
+                en: 'Johor Rugby League 2026',
+                ms: 'Johor Rugby League 2026',
+            },
+            text: {
+                en: 'The league season is under way on AthleticaOS.',
+                ms: 'Musim liga sedang berlangsung di AthleticaOS.',
+            },
+        },
+        {
+            id: 'privacy-notice-and-terms',
+            date: 'Oct 2026',
+            setPiece: 'lineout',
+            status: 'next',
+            title: {
+                en: 'Privacy notice and terms',
+                ms: 'Notis privasi dan terma',
+            },
+            text: {
+                en: 'Written in English and Bahasa Melayu, now in final review.',
+                ms: 'Ditulis dalam Bahasa Inggeris dan Bahasa Melayu, kini dalam semakan akhir.',
+            },
+        },
+        {
+            id: 'guided-tours-for-organisers',
+            date: 'Q1 2027',
+            setPiece: 'phase',
+            status: 'next',
+            title: {
+                en: 'Guided tours for organisers',
+                ms: 'Panduan langkah demi langkah untuk penganjur',
+            },
+            text: {
+                en: 'Step-by-step help for setting up and running a tournament.',
+                ms: 'Bantuan langkah demi langkah untuk menyediakan dan mengendalikan kejohanan.',
             },
         },
         {
@@ -373,20 +415,6 @@ export const JOURNEY_2: Journey = {
             text: {
                 en: 'Organisations, associations, clubs and partners welcome to bring their competitions.',
                 ms: 'Organisasi, persatuan, kelab dan rakan kerjasama dialu-alukan membawa pertandingan mereka.',
-            },
-        },
-        {
-            id: 'stadium-and-guided-tours',
-            date: 'Q1 2027',
-            setPiece: 'phase',
-            status: 'next',
-            title: {
-                en: 'Stadium and guided tours',
-                ms: 'Stadium dan panduan interaktif',
-            },
-            text: {
-                en: 'An animated stadium and step-by-step guides for organisers.',
-                ms: 'Stadium beranimasi dan panduan langkah demi langkah untuk penganjur.',
             },
         },
         {
@@ -417,30 +445,12 @@ export const ROADMAP: Roadmap = {
             },
             testing: true,
         },
-        {
-            title: {
-                en: 'Tournament setup round 2',
-                ms: 'Persediaan kejohanan, fasa 2',
-            },
-        },
-        {
-            title: {
-                en: 'Our journey page',
-                ms: 'Halaman perjalanan kami',
-            },
-        },
     ],
     next: [
         {
             title: {
-                en: 'Tournament calendar',
-                ms: 'Kalendar kejohanan',
-            },
-        },
-        {
-            title: {
-                en: 'Matchday home',
-                ms: 'Laman hari perlawanan',
+                en: 'Privacy notice and terms',
+                ms: 'Notis privasi dan terma',
             },
         },
         {
@@ -449,19 +459,12 @@ export const ROADMAP: Roadmap = {
                 ms: 'Panduan langkah demi langkah untuk penganjur',
             },
         },
-        {
-            title: {
-                en: 'Animated pitch background',
-                ms: 'Latar belakang padang beranimasi',
-            },
-            testing: true,
-        },
     ],
     later: [
         {
             title: {
-                en: 'Player accounts — claim your profile',
-                ms: 'Akaun pemain — tuntut profil anda',
+                en: 'Player accounts: claim your profile',
+                ms: 'Akaun pemain: tuntut profil anda',
             },
         },
         {

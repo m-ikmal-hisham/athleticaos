@@ -18,6 +18,7 @@ import {
     PublicTournamentDetail,
     PublicMatchSummary,
     PublicStanding,
+    PublicPlacementRoundRobin,
     PublicPlayerSummary,
 } from '../../api/public.api';
 import { PublicTournamentPools } from './components/PublicTournamentPools';
@@ -121,6 +122,7 @@ export default function TournamentDetail() {
     const [tournament, setTournament] = useState<PublicTournamentDetail | null>(null);
     const [matches, setMatches] = useState<PublicMatchSummary[]>([]);
     const [standings, setStandings] = useState<PublicStanding[]>([]);
+    const [placementRoundRobins, setPlacementRoundRobins] = useState<PublicPlacementRoundRobin[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabId>('fixtures');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -155,17 +157,20 @@ export default function TournamentDetail() {
         setLoading(true);
         const loadCategoryData = async () => {
             try {
-                const [matchesData, standingsData] = await Promise.all([
+                const [matchesData, standingsData, placementData] = await Promise.all([
                     publicTournamentApi.getTournamentMatches(id, selectedCategoryId),
                     publicTournamentApi.getTournamentStandings(id, selectedCategoryId).catch(() => []),
+                    publicTournamentApi.getTournamentPlacementRoundRobins(id, selectedCategoryId).catch(() => []),
                 ]);
                 if (!active) return;
                 setMatches(matchesData);
                 setStandings(standingsData || []);
+                setPlacementRoundRobins(placementData || []);
             } catch (error) {
                 if (!active) return;
                 setMatches([]);
                 setStandings([]);
+                setPlacementRoundRobins([]);
                 console.error('Failed to load category data:', error);
             } finally {
                 if (active) setLoading(false);
@@ -202,12 +207,14 @@ export default function TournamentDetail() {
                 setSelectedCategoryId(tournamentData.categories[0].id);
             } else {
                 // Load all if no categories
-                const [matchesData, standingsData] = await Promise.all([
+                const [matchesData, standingsData, placementData] = await Promise.all([
                     publicTournamentApi.getTournamentMatches(id),
                     publicTournamentApi.getTournamentStandings(id).catch(() => []),
+                    publicTournamentApi.getTournamentPlacementRoundRobins(id).catch(() => []),
                 ]);
                 setMatches(matchesData);
                 setStandings(standingsData || []);
+                setPlacementRoundRobins(placementData || []);
             }
         } catch (error) {
             console.error('Failed to load tournament:', error);
@@ -284,14 +291,14 @@ export default function TournamentDetail() {
         const stage = m.stage?.toLowerCase() || '';
         return stage && !stage.includes('pool') && !stage.includes('group');
     });
-
+    const hasBracketContent = hasKnockoutMatches || placementRoundRobins.length > 0;
 
     const tabs: TabDef[] = [
         { id: 'fixtures', label: t('tournament:detail.fixtures'), icon: Calendar, count: fixturesMatches.length },
         { id: 'results', label: t('tournament:detail.results'), icon: Trophy, count: resultsMatches.length },
         { id: 'stats', label: t('tournament:detail.stats'), icon: Star, count: null },
         ...(showPoolTab ? [{ id: 'standings' as const, label: t('tournament:detail.standings'), icon: Table, count: null }] : []),
-        ...(hasKnockoutMatches ? [{ id: 'bracket' as const, label: t('tournament:detail.bracket'), icon: ShareNetwork, count: null }] : []),
+        ...(hasBracketContent ? [{ id: 'bracket' as const, label: t('tournament:detail.bracket'), icon: ShareNetwork, count: null }] : []),
         { id: 'teams', label: t('tournament:detail.teams'), icon: Users, count: categoryTeams.length || null },
         { id: 'players', label: t('tournament:detail.players'), icon: UserCircle, count: null },
     ];
@@ -521,7 +528,7 @@ export default function TournamentDetail() {
                         ) : activeTab === 'stats' ? (
                             <PublicStats tournamentId={tournament.id} categoryId={selectedCategoryId || undefined} />
                         ) : activeTab === 'bracket' ? (
-                            <PublicTournamentBracket matches={matches} />
+                            <PublicTournamentBracket matches={matches} placementRoundRobins={placementRoundRobins} />
                         ) : activeTab === 'teams' ? (
                             /* Teams Tab Content */
                             <div className="space-y-4">

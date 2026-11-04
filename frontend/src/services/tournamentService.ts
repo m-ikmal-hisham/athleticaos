@@ -237,5 +237,22 @@ export const tournamentService = {
 
     async deleteStage(tournamentId: string, stageId: string): Promise<void> {
         await axios.delete(`/tournaments/${tournamentId}/stages/${stageId}`);
+    },
+
+    async createPlacementRoundRobin(tournamentId: string, data: import('@/types').PlacementRoundRobinCreateRequest): Promise<import('@/types').TournamentStageResponse> {
+        const response = await axios.post(`/tournaments/${tournamentId}/bracket/placement-round-robin`, data);
+        return response.data;
+    },
+
+    async changePlacementRoundRobinSlot(tournamentId: string, stageId: string, data: import('@/types').PlacementRoundRobinSlotChangeRequest): Promise<void> {
+        await axios.put(`/tournaments/${tournamentId}/stages/${stageId}/slots/change`, data);
+    },
+
+    async swapPlacementRoundRobinSlots(tournamentId: string, stageId: string, data: import('@/types').PlacementRoundRobinSlotSwapRequest): Promise<void> {
+        await axios.put(`/tournaments/${tournamentId}/stages/${stageId}/slots/swap`, data);
+    },
+
+    async deletePlacementRoundRobinBracket(tournamentId: string, stageId: string): Promise<void> {
+        await axios.delete(`/tournaments/${tournamentId}/bracket/placement-round-robin/${stageId}`);
     }
 };

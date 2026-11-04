@@ -112,11 +112,12 @@ Follow this exact order:
 
    🍎 **Run on your Mac Terminal:**
    ```bash
-   # Set correct permissions for the .pem key (only needed once)
-   chmod 400 ~/Downloads/athleticaos-staging-backend.pem
+   # Move the .pem key out of Downloads and set correct permissions (only needed once)
+   mv ~/Downloads/athleticaos-staging-backend.pem ~/.ssh/
+   chmod 400 ~/.ssh/athleticaos-staging-backend.pem
 
    # Connect to EC2
-   ssh -i ~/Downloads/athleticaos-staging-backend.pem ec2-user@<ELASTIC-IP>
+   ssh -i ~/.ssh/athleticaos-staging-backend.pem ec2-user@<ELASTIC-IP>
    ```
 
    🖥️ **Now you're on the EC2 server — install Docker:**
@@ -133,7 +134,7 @@ Follow this exact order:
 
    🍎 **Back on your Mac — SSH in again (so the docker group takes effect):**
    ```bash
-   ssh -i ~/Downloads/athleticaos-staging-backend.pem ec2-user@<ELASTIC-IP>
+   ssh -i ~/.ssh/athleticaos-staging-backend.pem ec2-user@<ELASTIC-IP>
    ```
 
    🖥️ **Verify Docker is working (on EC2):**
@@ -324,13 +325,13 @@ dig staging-api.athleticaos.com A +short
 
 🍎 **Run on your Mac Terminal:**
 ```bash
-ssh -i ~/Downloads/athleticaos-staging-backend.pem ec2-user@staging-api.athleticaos.com
+ssh -i ~/.ssh/athleticaos-staging-backend.pem ec2-user@staging-api.athleticaos.com
 ```
 
 > [!TIP]
 > If you get `Permission denied (publickey)`, run this first:
 > ```bash
-> chmod 400 ~/Downloads/athleticaos-staging-backend.pem
+> chmod 400 ~/.ssh/athleticaos-staging-backend.pem
 > ```
 > Then try the SSH command again.
 
@@ -439,7 +440,7 @@ docker logs athleticaos-backend
 
 🍎 **Run on your Mac Terminal:**
 ```bash
-ssh -i ~/Downloads/athleticaos-staging-backend.pem ec2-user@staging-api.athleticaos.com
+ssh -i ~/.ssh/athleticaos-staging-backend.pem ec2-user@staging-api.athleticaos.com
 ```
 
 #### Step 2: Add port 443 to the Security Group

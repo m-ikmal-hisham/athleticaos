@@ -20,4 +20,6 @@ public class TournamentStageResponse {
     private boolean groupStage;
     private UUID categoryId;
     private boolean knockoutStage;
+    private boolean roundRobin;
+    private Integer firstPlace;
 }

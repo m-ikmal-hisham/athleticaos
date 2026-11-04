@@ -23,13 +23,17 @@ public class PublicMatchMapper {
             Map<UUID, TournamentStage> stageMap) {
         String stageName = m.getPhase(); // Default to phase (legacy)
         Integer stageDisplayOrder = null;
+        UUID stageIdVal = null;
+        Boolean isRoundRobin = null;
         if (m.getStage() != null && m.getStage().getName() != null) {
             stageName = m.getStage().getName();
             try {
                 UUID stageId = UUID.fromString(m.getStage().getId());
+                stageIdVal = stageId;
                 TournamentStage stageEntity = stageMap != null ? stageMap.get(stageId) : null;
                 if (stageEntity != null) {
                     stageDisplayOrder = stageEntity.getDisplayOrder();
+                    isRoundRobin = stageEntity.getIsRoundRobin();
                 }
             } catch (Exception ignored) {
                 // If stage ID is not valid, skip display order
@@ -54,7 +58,15 @@ public class PublicMatchMapper {
                 .venue(m.getVenue())
                 .status(m.getStatus())
                 .resultType(m.getResultType())
+                .decidedBy(m.getDecidedBy())
+                .dropKicksHome(m.getDropKicksHome())
+                .dropKicksAway(m.getDropKicksAway())
+                .winnerTeamId(m.getWinnerTeamId())
+                .homeTeamId(m.getHomeTeamId())
+                .awayTeamId(m.getAwayTeamId())
                 .stage(stageName)
+                .stageId(stageIdVal)
+                .isRoundRobin(isRoundRobin)
                 .stageType(m.getStage() != null ? m.getStage().getStageType() : null)
                 .stageDisplayOrder(stageDisplayOrder)
                 .matchNumber(m.getMatchNumber())
@@ -153,6 +165,12 @@ public class PublicMatchMapper {
                 .venue(m.getVenue())
                 .status(m.getStatus() != null ? m.getStatus().name() : null)
                 .resultType(m.getResultType() != null ? m.getResultType().name() : null)
+                .decidedBy(m.getDecidedBy())
+                .dropKicksHome(m.getDropKicksHome())
+                .dropKicksAway(m.getDropKicksAway())
+                .winnerTeamId(m.getWinnerTeam() != null ? m.getWinnerTeam().getId() : null)
+                .homeTeamId(m.getHomeTeam() != null ? m.getHomeTeam().getId() : null)
+                .awayTeamId(m.getAwayTeam() != null ? m.getAwayTeam().getId() : null)
                 .stage(stageName)
                 .stageType(stageType)
                 .stageDisplayOrder(stageDisplayOrder)

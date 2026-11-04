@@ -81,7 +81,11 @@ const BracketView: React.FC<BracketViewProps> = ({ stages, matches }) => {
                                                             >
                                                                 {match.matchNumber ? `Match ${match.matchNumber}${hasMultiVenues ? ` · ${match.venue?.trim() || 'Venue TBC'}` : ''}` : (match.matchCode && match.matchCode.length < 10 ? match.matchCode : 'Match')}
                                                             </span>
-                                                            {match.resultType && match.resultType !== 'NORMAL' ? (
+                                                            {match.decidedBy ? (
+                                                                <span className="uppercase text-[10px] font-bold tracking-wider text-blue-600 dark:text-blue-400">
+                                                                    {match.decidedBy === 'FIRST_TRY' ? 'First try' : match.decidedBy === 'EXTRA_TIME' ? 'Extra time' : match.decidedBy === 'DROP_KICKS' ? `Drop kicks ${match.dropKicksHome ?? 0}-${match.dropKicksAway ?? 0}` : 'Coin toss'}
+                                                                </span>
+                                                            ) : match.resultType && match.resultType !== 'NORMAL' ? (
                                                                 <span className="uppercase text-[10px] font-bold tracking-wider text-amber-600 dark:text-amber-400">
                                                                     {match.resultType === 'BYE' ? 'Bye' : 'Walkover'}
                                                                 </span>

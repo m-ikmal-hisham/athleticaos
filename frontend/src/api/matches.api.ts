@@ -76,4 +76,26 @@ export const createMatch = (data: any) => {
 
 export const updateMatchStatus = (matchId: string, status: string) => {
     return api.put(`/matches/${matchId}/status`, null, { params: { status } });
-}
+};
+
+export const decideLevelKnockout = (
+    id: string,
+    data: {
+        method: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+        winnerTeamId: string;
+        dropKicksHome?: number;
+        dropKicksAway?: number;
+    }
+) => {
+    return api.post(`/matches/${id}/decide-level`, data);
+};
+
+export const getFirstTrySuggestion = (id: string) => {
+    return api.get<{
+        hasTryEvents: boolean;
+        suggestedWinnerTeamId?: string;
+        suggestedWinnerTeamName?: string;
+        minute?: number;
+        eventType?: string;
+    }>(`/matches/${id}/first-try-suggestion`);
+};
