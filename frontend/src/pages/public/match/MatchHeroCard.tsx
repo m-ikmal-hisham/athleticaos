@@ -41,16 +41,29 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
     };
 
     const summaryEvents = (teamName: string) => (match.events || [])
-        .filter(event => event.teamName === teamName && (
-            (event.points || 0) > 0 || event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD'
-        ))
+        .filter(event => event.teamName === teamName && (event.points || 0) > 0)
         .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
 
-    // One line per score or card: minute, name (the only part that truncates), then points or a
-    // card marker. The event type sits in the tooltip; +5/+2/+3 and the card colour already say it.
-    const renderEventSummary = (event: PublicMatchEvent, index: number) => {
-        const isCard = event.eventType === 'YELLOW_CARD' || event.eventType === 'RED_CARD';
+    // One line per score:
+    // Home: minute, name, points
+    // Away: points, name, minute (mirrored and right-aligned)
+    const renderEventSummary = (event: PublicMatchEvent, index: number, side: 'home' | 'away' = 'home') => {
         const label = formatEnum(event.eventType);
+        if (side === 'away') {
+            return (
+                <div
+                    key={`${event.eventType}-${event.minute}-${index}`}
+                    className={`flex items-center gap-2 ${matchText.body}`}
+                    title={`${event.minute ?? 0}' ${event.playerName ?? ''} · ${label}`}
+                >
+                    <span className="shrink-0 tabular-nums font-bold text-slate-500 dark:text-slate-400">+{event.points ?? 0}</span>
+                    <span className="flex-1 min-w-0 truncate text-right font-semibold text-slate-700 dark:text-slate-200">
+                        {getPlayerShortName(event.playerName)}
+                    </span>
+                    <span className="shrink-0 w-7 text-left tabular-nums font-semibold text-slate-400">{event.minute ?? 0}'</span>
+                </div>
+            );
+        }
         return (
             <div
                 key={`${event.eventType}-${event.minute}-${index}`}
@@ -61,14 +74,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 <span className="flex-1 min-w-0 truncate font-semibold text-slate-700 dark:text-slate-200">
                     {getPlayerShortName(event.playerName)}
                 </span>
-                {isCard ? (
-                    <span
-                        aria-label={label}
-                        className={`shrink-0 w-2.5 h-3.5 rounded-sm ${event.eventType === 'RED_CARD' ? 'bg-red-500' : 'bg-yellow-400'}`}
-                    />
-                ) : (
-                    <span className="shrink-0 tabular-nums font-bold text-slate-500 dark:text-slate-400">+{event.points ?? 0}</span>
-                )}
+                <span className="shrink-0 tabular-nums font-bold text-slate-500 dark:text-slate-400">+{event.points ?? 0}</span>
             </div>
         );
     };
@@ -249,14 +255,22 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     </div>
                 </div>
 
-                {/* Scorers and cards: their own row, so a long list never pushes the score out of line */}
+                {/* Scorers: their own row, so a long list never pushes the score out of line */}
                 {(homeSummary.length > 0 || awaySummary.length > 0) && (
                     <div className="grid grid-cols-2 gap-2 md:gap-8">
                         <div className="min-w-0 space-y-1 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-2.5 md:p-3 self-start w-full md:max-w-xs justify-self-end">
-                            {homeSummary.length > 0 ? homeSummary.map(renderEventSummary) : <p className={`${matchText.body} text-slate-400`}>—</p>}
+                            {homeSummary.length > 0 ? (
+                                homeSummary.map((e, idx) => renderEventSummary(e, idx, 'home'))
+                            ) : (
+                                <p className={`${matchText.body} text-slate-400`}>—</p>
+                            )}
                         </div>
                         <div className="min-w-0 space-y-1 rounded-xl bg-white/45 dark:bg-black/15 border border-slate-200/60 dark:border-white/5 p-2.5 md:p-3 self-start w-full md:max-w-xs justify-self-start">
-                            {awaySummary.length > 0 ? awaySummary.map(renderEventSummary) : <p className={`${matchText.body} text-slate-400`}>—</p>}
+                            {awaySummary.length > 0 ? (
+                                awaySummary.map((e, idx) => renderEventSummary(e, idx, 'away'))
+                            ) : (
+                                <p className={`${matchText.body} text-slate-400 text-right`}>—</p>
+                            )}
                         </div>
                     </div>
                 )}
@@ -264,14 +278,14 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 {/* Match Officials */}
                 {match.officials && match.officials.length > 0 && (
                     <div className="flex justify-center">
-                        <div className="max-w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-1.5 px-4 py-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
+                        <div className="max-w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:gap-y-1.5 px-4 py-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
                             {match.officials.map((official, idx) => {
                                 // Some officials only carry assignedRole (e.g. REFEREE); without it the chip read ": Name".
                                 const role = formatOfficialRole(official.officialRoleName || official.assignedRole, t);
                                 return (
-                                    <div key={idx} className="flex items-center gap-2 min-w-0">
+                                    <div key={idx} className="flex flex-col md:flex-row items-center text-center md:text-left gap-0.5 md:gap-2 min-w-0">
                                         {role && <span className={`${matchText.caption} text-slate-400 shrink-0`}>{role}</span>}
-                                        <span className={`${matchText.body} font-semibold text-slate-700 dark:text-slate-300 truncate`}>{official.officialName}</span>
+                                        <span className={`${matchText.body} font-semibold text-slate-700 dark:text-slate-300 line-clamp-2 md:truncate break-words`}>{official.officialName}</span>
                                     </div>
                                 );
                             })}
@@ -287,41 +301,45 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                 />
 
                 {/* Meta Details Footer */}
-                <div className="flex items-center justify-between gap-2 pt-3 md:pt-4 border-t border-slate-200/50 dark:border-white/5">
-                    <div className={`flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-1 ${matchText.body} font-medium text-slate-500 dark:text-slate-400 min-w-0`}>
+                <div className="relative flex items-center justify-between gap-2 pt-3 md:pt-4 border-t border-slate-200/50 dark:border-white/5">
+                    <div className={`w-full md:w-auto flex flex-col md:flex-row md:flex-wrap items-center justify-center md:justify-start gap-y-1 md:gap-x-6 text-center md:text-left px-12 md:px-0 ${matchText.body} font-medium text-slate-500 dark:text-slate-400 min-w-0`}>
                         {/* Stage and match number: in the top row on desktop, here on phones */}
                         {(match.stage || match.code) && (
-                            <span className="md:hidden font-semibold text-slate-600 dark:text-slate-300">
+                            <div className="md:hidden font-semibold text-slate-600 dark:text-slate-300">
                                 {[
                                     match.stage ? enumLabel(t, 'stage', match.stage) : null,
                                     formatMatchCode(match.code, false)
                                 ].filter(Boolean).join(' • ')}
-                            </span>
+                            </div>
                         )}
-                        <div className="flex items-center gap-1.5">
-                            <CalendarBlank className="w-4 h-4 md:w-4 md:h-4 text-navy dark:text-navy-tint" />
-                            <span>{formatCalendarDate(match.matchDate, 'EEE, d MMM', { locale: getDateLocale(i18n.language) })}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 md:w-4 md:h-4 text-navy dark:text-navy-tint" />
-                            <span>{formatKickOff(match.matchTime, i18n.language)}</span>
+                        <div className="flex items-center justify-center gap-3 md:contents">
+                            <div className="flex items-center gap-1.5">
+                                <CalendarBlank className="w-4 h-4 md:w-4 md:h-4 text-navy dark:text-navy-tint shrink-0" />
+                                <span>{formatCalendarDate(match.matchDate, 'EEE, d MMM', { locale: getDateLocale(i18n.language) })}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 md:w-4 md:h-4 text-navy dark:text-navy-tint shrink-0" />
+                                <span>{formatKickOff(match.matchTime, i18n.language)}</span>
+                            </div>
                         </div>
                         {match.venue && (
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center justify-center gap-2 min-w-0">
                                 <MapPin className="w-4 h-4 md:w-4 md:h-4 text-crimson dark:text-crimson-tint shrink-0" />
-                                <span className="truncate">{match.venue}</span>
+                                <span className="break-words md:truncate">{match.venue}</span>
                             </div>
                         )}
                     </div>
 
                     {/* Share Action */}
-                    <ShareButton
-                        title={t('match:hero.shareTitle', { home: match.homeTeamName, away: match.awayTeamName })}
-                        text={t('match:hero.shareText', { home: match.homeTeamName, away: match.awayTeamName })}
-                        url={window.location.href}
-                        variant="ghost"
-                        className="shrink-0 text-slate-500 hover:text-navy dark:hover:text-navy-tint dark:text-slate-400"
-                    />
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 md:static md:translate-y-0 shrink-0">
+                        <ShareButton
+                            title={t('match:hero.shareTitle', { home: match.homeTeamName, away: match.awayTeamName })}
+                            text={t('match:hero.shareText', { home: match.homeTeamName, away: match.awayTeamName })}
+                            url={window.location.href}
+                            variant="ghost"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-500 hover:text-navy dark:hover:text-navy-tint dark:text-slate-400"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
