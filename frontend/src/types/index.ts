@@ -465,6 +465,8 @@ export interface TournamentFormatConfig {
     carnivalStartTime?: string;
     carnivalEndTime?: string;
     isOneWayMatch?: boolean;
+    knockoutTieBreaker?: 'FIRST_TRY' | 'EXTRA_TIME';
+    extraTimeMinutes?: number;
 }
 
 // ============================================
@@ -476,6 +478,7 @@ export interface MatchStage {
     name: string;
     stageType: string;
     categoryId?: string;
+    knockout?: boolean;
 }
 
 export enum MatchStatus {
@@ -521,6 +524,10 @@ export interface Match {
     resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
     /** Set only for walkovers and byes, which complete without a scoreline. */
     winnerTeamId?: string;
+    /** How a level knockout match was decided: FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
+    decidedBy?: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+    dropKicksHome?: number;
+    dropKicksAway?: number;
     // Admin match detail only: the backend says whether the caller may score this match.
     canWrite?: boolean;
     homeTeamPlaceholder?: string;
@@ -575,6 +582,24 @@ export interface MatchResponse extends Match {
     hasMultipleVenues?: boolean;
 }
 
+export type KnockoutTieBreaker = 'FIRST_TRY' | 'EXTRA_TIME';
+export type DecidedBy = 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+
+export interface DecideLevelKnockoutRequest {
+    method: DecidedBy;
+    winnerTeamId: string;
+    dropKicksHome?: number;
+    dropKicksAway?: number;
+}
+
+export interface FirstTrySuggestionResponse {
+    hasTryEvents: boolean;
+    suggestedWinnerTeamId?: string;
+    suggestedWinnerTeamName?: string;
+    minute?: number;
+    eventType?: string;
+}
+
 export interface TournamentStageResponse {
     id: string;
     tournamentId: string;
@@ -583,7 +608,58 @@ export interface TournamentStageResponse {
     displayOrder: number;
     groupStage: boolean;
     knockoutStage: boolean;
+    roundRobin?: boolean;
+    firstPlace?: number;
     categoryId?: string;
+}
+
+export interface PlacementStandingRow {
+    place: number;
+    teamId?: string;
+    teamName?: string;
+    teamShortName?: string;
+    teamLogoUrl?: string;
+    placeholder?: string;
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    pointsFor: number;
+    pointsAgainst: number;
+    pointsDiff: number;
+    bonusPoints?: number;
+    bonusPointsEnabled: boolean;
+    points: number;
+}
+
+export interface PublicPlacementRoundRobin {
+    stageId: string;
+    stageName: string;
+    categoryId?: string;
+    firstPlace: number;
+    matchIds: string[];
+    table: PlacementStandingRow[];
+}
+
+export interface PlacementRoundRobinCreateRequest {
+    name: string;
+    firstPlace: number;
+    teamCount: number;
+    categoryId?: string;
+    slots: { teamId?: string; placeholder?: string }[];
+}
+
+export interface PlacementRoundRobinSlotChangeRequest {
+    oldTeamId?: string;
+    oldPlaceholder?: string;
+    newTeamId: string;
+}
+
+export interface PlacementRoundRobinSlotSwapRequest {
+    teamId1?: string;
+    placeholder1?: string;
+    teamId2?: string;
+    placeholder2?: string;
 }
 
 export interface TournamentStageBracket {

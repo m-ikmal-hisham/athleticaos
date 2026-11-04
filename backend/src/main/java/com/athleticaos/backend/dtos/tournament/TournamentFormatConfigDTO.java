@@ -72,6 +72,13 @@ public class TournamentFormatConfigDTO {
     @Max(50)
     private Integer bonusLosingMargin;
 
+    // Knockout Tie-Breaker
+    private String knockoutTieBreaker; // FIRST_TRY or EXTRA_TIME
+
+    @Min(1)
+    @Max(60)
+    private Integer extraTimeMinutes;
+
     // Lineups
     @NotNull
     private Integer startersCount;

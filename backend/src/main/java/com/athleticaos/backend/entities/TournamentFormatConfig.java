@@ -113,6 +113,20 @@ public class TournamentFormatConfig {
     @Builder.Default
     private Integer bonusLosingMargin = 7;
 
+    /**
+     * Tie-break method for level knockout matches: FIRST_TRY or EXTRA_TIME.
+     * Nullable; falls back to tournament config or default EXTRA_TIME.
+     */
+    @Column(name = "knockout_tie_breaker", length = 32)
+    private String knockoutTieBreaker;
+
+    /**
+     * Duration in minutes for extra time in knockout matches (e.g. 5 for 7s/10s, 15 for XV).
+     * Nullable; falls back to tournament config or format-based defaults.
+     */
+    @Column(name = "extra_time_minutes")
+    private Integer extraTimeMinutes;
+
     // Lineup Rules
     @Column(name = "starters_count", nullable = false)
     private Integer startersCount;

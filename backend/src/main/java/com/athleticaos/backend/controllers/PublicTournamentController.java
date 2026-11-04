@@ -285,6 +285,24 @@ public class PublicTournamentController {
         }
     }
 
+    @GetMapping("/tournaments/{idOrSlug}/placement-round-robins")
+    public ResponseEntity<List<com.athleticaos.backend.dtos.tournament.PublicPlacementRoundRobinResponse>> getTournamentPlacementRoundRobins(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false) UUID categoryId) {
+        try {
+            TournamentResponse tournament = fetchTournament(idOrSlug);
+            if ("Draft".equalsIgnoreCase(tournament.getStatus())) {
+                return ResponseEntity.notFound().build();
+            }
+
+            List<com.athleticaos.backend.dtos.tournament.PublicPlacementRoundRobinResponse> roundRobins =
+                    standingsService.getPlacementRoundRobins(tournament.getId(), categoryId);
+            return PublicHttpCache.ok(roundRobins);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/tournaments/{idOrSlug}/stats")
     public ResponseEntity<PublicTournamentStatsResponse> getTournamentStats(
             @PathVariable String idOrSlug,
@@ -487,6 +505,13 @@ public class PublicTournamentController {
                 .awayTeamShortName(m.getAwayTeamShortName())
                 .homeScore(m.getHomeScore())
                 .awayScore(m.getAwayScore())
+                // How a level knockout was decided, so the match page can say "win on drop kicks" etc.
+                .homeTeamId(m.getHomeTeamId())
+                .awayTeamId(m.getAwayTeamId())
+                .winnerTeamId(m.getWinnerTeamId())
+                .decidedBy(m.getDecidedBy())
+                .dropKicksHome(m.getDropKicksHome())
+                .dropKicksAway(m.getDropKicksAway())
                 .matchDate(m.getMatchDate())
                 .officials(matchOfficialRepository.findByMatchId(m.getId()).stream()
                     .map(mo -> {

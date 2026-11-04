@@ -104,6 +104,23 @@ public class MatchController {
         return ResponseEntity.ok(matchService.recordUnplayedResult(id, resultType, winnerTeamId, httpRequest));
     }
 
+    @PostMapping("/{id}/decide-level")
+    @PreAuthorize(MatchRoles.MATCH_WRITE)
+    @Operation(summary = "Decide a level knockout match via category tie-break method")
+    public ResponseEntity<MatchResponse> decideLevelKnockout(@PathVariable UUID id,
+            @RequestBody @jakarta.validation.Valid com.athleticaos.backend.dtos.match.DecideLevelKnockoutRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(matchService.decideLevelKnockout(id, request, httpRequest));
+    }
+
+    @GetMapping("/{id}/first-try-suggestion")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Suggest first try winner from earliest try event")
+    public ResponseEntity<com.athleticaos.backend.dtos.match.FirstTrySuggestionResponse> getFirstTrySuggestion(
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(matchService.getFirstTrySuggestion(id));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN')")
     @Operation(summary = "Delete a match")

@@ -82,6 +82,37 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
     const homeSummary = summaryEvents(match.homeTeamName);
     const awaySummary = summaryEvents(match.awayTeamName);
 
+    const renderTieBreakHeroNote = () => {
+        if (!match.decidedBy) return null;
+        const winnerName = match.winnerTeamId === match.homeTeamId
+            ? match.homeTeamName
+            : match.winnerTeamId === match.awayTeamId
+                ? match.awayTeamName
+                : null;
+
+        if (match.decidedBy === 'FIRST_TRY' && winnerName) {
+            return t('match:tieBreak.heroFirstTry', { winner: winnerName });
+        }
+        if (match.decidedBy === 'EXTRA_TIME') {
+            return t('match:tieBreak.heroExtraTime');
+        }
+        if (match.decidedBy === 'DROP_KICKS' && winnerName) {
+            // "Kedah win 2 to 1": the winner's tally first, whichever side they were on.
+            const homeWon = match.winnerTeamId === match.homeTeamId;
+            const home = match.dropKicksHome ?? 0;
+            const away = match.dropKicksAway ?? 0;
+            return t('match:tieBreak.heroDropKicks', {
+                winner: winnerName,
+                homeKicks: homeWon ? home : away,
+                awayKicks: homeWon ? away : home
+            });
+        }
+        if (match.decidedBy === 'COIN_TOSS' && winnerName) {
+            return t('match:tieBreak.heroCoinToss', { winner: winnerName });
+        }
+        return null;
+    };
+
     // withVenue: the phone footer already lists the venue on its own line, so it passes false.
     const formatMatchCode = (code?: string, withVenue = true) => {
         if (match.matchNumber) {
@@ -215,18 +246,25 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
                     </div>
 
                     {/* Score Board */}
-                    <div className="relative flex items-center justify-center gap-2 md:gap-6 px-3 py-2 md:px-8 md:py-4 rounded-xl md:rounded-2xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
-                        <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
-                            {match.homeScore ?? 0}
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="relative flex items-center justify-center gap-2 md:gap-6 px-3 py-2 md:px-8 md:py-4 rounded-xl md:rounded-2xl bg-slate-50/50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 backdrop-blur-md">
+                            <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                                {match.homeScore ?? 0}
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5 md:gap-2">
+                                <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
+                                <span className={`${matchText.caption} text-slate-400`}>{t('match:card.versus')}</span>
+                                <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
+                            </div>
+                            <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
+                                {match.awayScore ?? 0}
+                            </div>
                         </div>
-                        <div className="flex flex-col items-center gap-0.5 md:gap-2">
-                            <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
-                            <span className={`${matchText.caption} text-slate-400`}>{t('match:card.versus')}</span>
-                            <div className="w-px h-4 md:h-8 bg-slate-300 dark:bg-white/10" />
-                        </div>
-                        <div className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums drop-shadow-sm">
-                            {match.awayScore ?? 0}
-                        </div>
+                        {match.decidedBy && renderTieBreakHeroNote() && (
+                            <div className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200/70 dark:border-white/10 text-center animate-in fade-in">
+                                {renderTieBreakHeroNote()}
+                            </div>
+                        )}
                     </div>
 
                     {/* Away Team */}

@@ -1152,7 +1152,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
         com.athleticaos.backend.entities.TournamentFormatConfig config = tournament.getFormatConfig(categoryId);
-        return config != null ? mapToConfigDTO(config) : null;
+        com.athleticaos.backend.entities.TournamentFormatConfig globalConfig = tournament.getFormatConfig(null);
+        return config != null ? mapToConfigDTO(config, globalConfig) : null;
     }
 
     // Kept for backward compatibility if needed, but redirects to global (null
@@ -1250,6 +1251,16 @@ public class TournamentServiceImpl implements TournamentService {
         config.setIsOneWayMatch(configDTO.getIsOneWayMatch());
         config.setIncludePlacementStages(configDTO.getIncludePlacementStages());
         config.setPlacementBracketSize(configDTO.getPlacementBracketSize());
+        String tieBreaker = configDTO.getKnockoutTieBreaker();
+        if (tieBreaker != null && !tieBreaker.isBlank()
+                && !"FIRST_TRY".equalsIgnoreCase(tieBreaker) && !"EXTRA_TIME".equalsIgnoreCase(tieBreaker)) {
+            throw new IllegalArgumentException("Knockout tie-break must be FIRST_TRY or EXTRA_TIME.");
+        }
+        if (configDTO.getExtraTimeMinutes() != null && (configDTO.getExtraTimeMinutes() < 1 || configDTO.getExtraTimeMinutes() > 30)) {
+            throw new IllegalArgumentException("Extra time must be between 1 and 30 minutes.");
+        }
+        config.setKnockoutTieBreaker(tieBreaker != null && !tieBreaker.isBlank() ? tieBreaker.toUpperCase() : null);
+        config.setExtraTimeMinutes(configDTO.getExtraTimeMinutes());
 
         // Save directly via repo
         config = tournamentFormatConfigRepository.save(config);
@@ -1263,11 +1274,22 @@ public class TournamentServiceImpl implements TournamentService {
         tournament.addFormatConfig(config); // Use helper to add/replace
         tournamentRepository.save(tournament);
 
-        return mapToConfigDTO(config);
+        com.athleticaos.backend.entities.TournamentFormatConfig globalConfig = tournament.getFormatConfig(null);
+        return mapToConfigDTO(config, globalConfig);
     }
 
     private com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO mapToConfigDTO(
             com.athleticaos.backend.entities.TournamentFormatConfig config) {
+        return mapToConfigDTO(config, null);
+    }
+
+    private com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO mapToConfigDTO(
+            com.athleticaos.backend.entities.TournamentFormatConfig config,
+            com.athleticaos.backend.entities.TournamentFormatConfig globalConfig) {
+        String tieBreaker = com.athleticaos.backend.rules.KnockoutTieBreakResolver.resolveTieBreaker(config, globalConfig);
+        int extraTimeMins = com.athleticaos.backend.rules.KnockoutTieBreakResolver.resolveExtraTimeMinutes(
+                config, globalConfig, config.getRugbyFormat());
+
         return com.athleticaos.backend.dtos.tournament.TournamentFormatConfigDTO.builder()
                 .id(config.getId())
                 .tournamentId(config.getTournament().getId())
@@ -1284,6 +1306,8 @@ public class TournamentServiceImpl implements TournamentService {
                 .isOneWayMatch(config.getIsOneWayMatch())
                 .includePlacementStages(config.getIncludePlacementStages())
                 .placementBracketSize(config.getPlacementBracketSize())
+                .knockoutTieBreaker(tieBreaker)
+                .extraTimeMinutes(extraTimeMins)
                 .pointsWin(config.getPointsWin())
                 .pointsDraw(config.getPointsDraw())
                 .pointsLoss(config.getPointsLoss())

@@ -16,18 +16,44 @@ export interface MatchCardProps {
 }
 
 export function MatchCard({ match, compact = false, footer, className = '' }: MatchCardProps) {
-    const { t, i18n } = useTranslation(['calendar', 'common']);
+    const { t, i18n } = useTranslation(['calendar', 'common', 'match']);
 
     const hasScores = match.homeScore !== undefined && match.awayScore !== undefined && match.homeScore !== null && match.awayScore !== null;
     const homeScore = match.homeScore ?? 0;
     const awayScore = match.awayScore ?? 0;
 
-    const isHomeWinner = hasScores && homeScore > awayScore;
-    const isAwayWinner = hasScores && awayScore > homeScore;
-    const isTie = hasScores && homeScore === awayScore;
+    const isHomeWinner = hasScores && (
+        homeScore > awayScore ||
+        (homeScore === awayScore && Boolean(match.winnerTeamId && match.homeTeamId && match.winnerTeamId === match.homeTeamId))
+    );
+    const isAwayWinner = hasScores && (
+        awayScore > homeScore ||
+        (homeScore === awayScore && Boolean(match.winnerTeamId && match.awayTeamId && match.winnerTeamId === match.awayTeamId))
+    );
+    const isTie = hasScores && homeScore === awayScore && !match.winnerTeamId;
 
     const homeOpacity = isTie || isHomeWinner || !hasScores ? 'opacity-100' : 'opacity-70';
     const awayOpacity = isTie || isAwayWinner || !hasScores ? 'opacity-100' : 'opacity-70';
+
+    const renderShortTieBreak = () => {
+        if (!match.decidedBy) return null;
+        if (match.decidedBy === 'FIRST_TRY') {
+            return t('match:tieBreak.shortFirstTry');
+        }
+        if (match.decidedBy === 'EXTRA_TIME') {
+            return t('match:tieBreak.shortExtraTime');
+        }
+        if (match.decidedBy === 'DROP_KICKS') {
+            return t('match:tieBreak.shortDropKicks', {
+                home: match.dropKicksHome ?? 0,
+                away: match.dropKicksAway ?? 0
+            });
+        }
+        if (match.decidedBy === 'COIN_TOSS') {
+            return t('match:tieBreak.shortCoinToss');
+        }
+        return null;
+    };
 
     const homeDisplayName = formatTeamShortName(match.homeTeamShortName, match.homeTeamName);
     const awayDisplayName = formatTeamShortName(match.awayTeamShortName, match.awayTeamName);
@@ -74,6 +100,12 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
                     ) : (
                         <span className="font-score tabular-nums text-xs sm:text-sm font-bold text-content-secondary leading-tight">
                             {formattedKickoff || t('calendar:vs', { defaultValue: 'VS' })}
+                        </span>
+                    )}
+
+                    {renderShortTieBreak() && (
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-content-secondary mt-0.5 leading-tight text-center">
+                            {renderShortTieBreak()}
                         </span>
                     )}
 

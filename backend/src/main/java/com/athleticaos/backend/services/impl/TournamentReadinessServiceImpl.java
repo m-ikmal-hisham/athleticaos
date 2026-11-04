@@ -117,7 +117,9 @@ public class TournamentReadinessServiceImpl implements TournamentReadinessServic
 
         // 2. SLOT_WILL_NOT_SEED (ERROR) and 3. SLOT_EMPTY (ERROR)
         List<Match> knockoutMatches = allMatches.stream()
-                .filter(m -> m.getStage() != null && (Boolean.TRUE.equals(m.getStage().getIsKnockoutStage()) || (m.getStage().getStageType() != null && m.getStage().getStageType() != com.athleticaos.backend.enums.TournamentStageType.POOL)))
+                .filter(m -> m.getStage() != null && !Boolean.TRUE.equals(m.getStage().getIsRoundRobin())
+                        && (Boolean.TRUE.equals(m.getStage().getIsKnockoutStage())
+                                || (m.getStage().getStageType() != null && m.getStage().getStageType() != com.athleticaos.backend.enums.TournamentStageType.POOL)))
                 .toList();
 
         for (Match match : knockoutMatches) {
