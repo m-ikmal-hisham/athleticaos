@@ -147,5 +147,16 @@
     "redCards": "Kad merah",
     "yellowCards": "Kad kuning",
     "disciplineSummary": "Ringkasan disiplin kejohanan"
+  },
+  "tieBreak": {
+    "knockoutTieBreakTitle": "Penyelesaian Seri Kalah Mati",
+    "knockoutTieBreakHint": "Cara perlawanan kalah mati yang seri ditentukan untuk memilih pemenang.",
+    "tieBreakMethod": "Kaedah penentuan pemenang",
+    "extraTimeSequence": "Urutan masa tambahan (golden score, tendangan jatuhan, lambungan syiling)",
+    "firstTryRule": "Peraturan try pertama (try terawal menang)",
+    "extraTimeHelp": "Masa tambahan dahulu; jika masih seri, tendangan jatuhan, kemudian lambungan syiling.",
+    "firstTryHelp": "Pasukan yang menjaringkan try pertama menang. Jika tiada try dijaringkan, diteruskan dengan masa tambahan.",
+    "extraTimeMinutes": "Tempoh masa tambahan (minit)",
+    "extraTimeMinutesHelp": "Lalai 5 minit untuk 7s/10s, 15 minit untuk XV."
   }
 }

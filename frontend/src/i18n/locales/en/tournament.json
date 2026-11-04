@@ -147,5 +147,16 @@
     "redCards": "Red Cards",
     "yellowCards": "Yellow Cards",
     "disciplineSummary": "Tournament discipline summary"
+  },
+  "tieBreak": {
+    "knockoutTieBreakTitle": "Knockout Tie-Break",
+    "knockoutTieBreakHint": "How a level knockout match is decided to advance a winner.",
+    "tieBreakMethod": "Tie-break method",
+    "extraTimeSequence": "Extra time sequence (golden score, drop kicks, coin toss)",
+    "firstTryRule": "First try rule (earliest try wins)",
+    "extraTimeHelp": "Extra time first; if still level, drop kicks, then coin toss.",
+    "firstTryHelp": "Team scoring the first try wins. If no try was scored, continues with extra time.",
+    "extraTimeMinutes": "Extra time duration (minutes)",
+    "extraTimeMinutesHelp": "Default 5 minutes for 7s/10s, 15 minutes for XV."
   }
 }

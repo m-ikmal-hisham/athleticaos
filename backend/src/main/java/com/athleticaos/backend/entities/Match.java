@@ -82,12 +82,26 @@ public class Match {
     private com.athleticaos.backend.enums.MatchResultType resultType;
 
     /**
-     * Explicit winner for results with no scores to derive one from (byes and walkovers).
+     * Explicit winner for results with no scores to derive one from (byes and walkovers),
+     * or for level knockout matches decided by tie-break (first try, drop kicks, coin toss).
      * Left null for normally played matches, where the scores decide it.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "winner_team_id")
     private Team winnerTeam;
+
+    /**
+     * How a level knockout match was decided: FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS.
+     * Null when decided on normal scores or unplayed.
+     */
+    @Column(name = "decided_by", length = 32)
+    private String decidedBy;
+
+    @Column(name = "drop_kicks_home")
+    private Integer dropKicksHome;
+
+    @Column(name = "drop_kicks_away")
+    private Integer dropKicksAway;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stage_id")

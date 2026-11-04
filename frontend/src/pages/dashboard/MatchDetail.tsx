@@ -7,7 +7,8 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/Table';
 import { useAuthStore } from '@/store/auth.store';
-import { updateMatch, updateMatchStatus, updateMatchEvent, recordUnplayedResult } from '@/api/matches.api';
+import { updateMatch, updateMatchStatus, updateMatchEvent, recordUnplayedResult, decideLevelKnockout } from '@/api/matches.api';
+import { LevelKnockoutTieBreakModal } from '@/components/modals/LevelKnockoutTieBreakModal';
 import { fetchTeamRoster } from '@/api/playerTeams.api';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { Modal } from '@/components/Modal';
@@ -91,6 +92,8 @@ export const MatchDetail = () => {
     });
 
     const [formatConfig, setFormatConfig] = useState<TournamentFormatConfig | null>(null);
+    const [isTieBreakModalOpen, setIsTieBreakModalOpen] = useState(false);
+    const [isExtraTimeLive, setIsExtraTimeLive] = useState(false);
 
     useEffect(() => {
         if (selectedMatch?.tournamentId) {
@@ -503,6 +506,14 @@ export const MatchDetail = () => {
     };
 
     const handleFullTime = async () => {
+        const isKnockout = Boolean(selectedMatch?.stage?.knockout);
+        const isLevel = calculatedScores.homeScore === calculatedScores.awayScore;
+
+        if (isKnockout && isLevel) {
+            setIsTieBreakModalOpen(true);
+            return;
+        }
+
         setConfirmModal({
             isOpen: true,
             title: 'Full Time',
@@ -515,9 +526,44 @@ export const MatchDetail = () => {
                 });
                 await loadMatchDetail(selectedMatch!.id);
                 setIsTimerRunning(false);
+                setIsExtraTimeLive(false);
                 showToast.success('Match Completed');
             }
         });
+    };
+
+    const handleStartExtraTime = (minutes: number) => {
+        setIsExtraTimeLive(true);
+        setMatchTimeSeconds(minutes * 60);
+        setIsTimerRunning(true);
+        showToast.success(`Extra time started (${minutes}m)`);
+    };
+
+    const handleGoldenScoreEnd = async () => {
+        if (!selectedMatch) return;
+        const isLevel = calculatedScores.homeScore === calculatedScores.awayScore;
+        if (isLevel) {
+            setIsTieBreakModalOpen(true);
+            return;
+        }
+        const winnerTeamId = calculatedScores.homeScore > calculatedScores.awayScore
+            ? selectedMatch.homeTeamId!
+            : selectedMatch.awayTeamId!;
+        try {
+            await decideLevelKnockout(selectedMatch.id, {
+                method: 'EXTRA_TIME',
+                winnerTeamId,
+            });
+            await loadMatchDetail(selectedMatch.id);
+            setIsTimerRunning(false);
+            setIsExtraTimeLive(false);
+            showToast.success('Match completed (Golden score)');
+        } catch (err: unknown) {
+            const msg = (typeof err === 'object' && err !== null && 'response' in err)
+                ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+                : undefined;
+            showToast.error(msg || 'Failed to complete match');
+        }
     };
 
     const handleCancelMatch = async () => {
@@ -882,6 +928,16 @@ export const MatchDetail = () => {
                                 onFullTime={handleFullTime}
                                 onCancelMatch={handleCancelMatch}
                                 onRecordWalkover={handleRecordWalkover}
+                                showDecideLevelMatch={Boolean(
+                                    selectedMatch?.status === 'COMPLETED'
+                                    && selectedMatch?.stage?.knockout
+                                    && calculatedScores.homeScore === calculatedScores.awayScore
+                                    && !selectedMatch.decidedBy
+                                    && !selectedMatch.resultType
+                                )}
+                                onDecideLevelMatch={() => setIsTieBreakModalOpen(true)}
+                                isExtraTimeLive={isExtraTimeLive && calculatedScores.homeScore !== calculatedScores.awayScore}
+                                onGoldenScoreEnd={handleGoldenScoreEnd}
                                 isAdmin={isAdmin!}
                                 matchTimeSeconds={matchTimeSeconds}
                                 isTimerRunning={isTimerRunning}
@@ -1422,6 +1478,24 @@ export const MatchDetail = () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Level Knockout Tie-Break Modal */}
+            {selectedMatch && (
+                <LevelKnockoutTieBreakModal
+                    isOpen={isTieBreakModalOpen}
+                    onClose={() => setIsTieBreakModalOpen(false)}
+                    match={selectedMatch}
+                    calculatedScores={calculatedScores}
+                    formatConfig={formatConfig}
+                    onSuccess={async () => {
+                        setIsTieBreakModalOpen(false);
+                        setIsTimerRunning(false);
+                        setIsExtraTimeLive(false);
+                        await loadMatchDetail(selectedMatch.id);
+                    }}
+                    onStartExtraTime={handleStartExtraTime}
+                />
+            )}
         </div>
     );
 };

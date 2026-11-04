@@ -42,8 +42,14 @@ public class MatchResponse {
     private Integer awayScore;
     /** NORMAL, WALKOVER or BYE. Null means a normally played match. */
     private String resultType;
-    /** Set only for walkovers and byes, which have no scores to derive a winner from. */
+    /**
+     * Explicit winner for walkovers, byes, or level knockout matches decided by tie-break.
+     */
     private UUID winnerTeamId;
+    /** FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
+    private String decidedBy;
+    private Integer dropKicksHome;
+    private Integer dropKicksAway;
     // Admin GET /api/v1/matches/{id} only: true when the caller may score this match
     // (organiser scope, the match's official, or the tournament officials panel). Null elsewhere.
     private Boolean canWrite;
@@ -74,6 +80,7 @@ public class MatchResponse {
         private String name;
         private String stageType;
         private UUID categoryId;
+        private Boolean knockout;
     }
 
     @Data

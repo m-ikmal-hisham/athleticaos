@@ -34,6 +34,13 @@ public class PublicMatchSummaryResponse {
     private String status; // SCHEDULED, LIVE, FULL_TIME, CANCELLED
     /** NORMAL, WALKOVER or BYE. Null means a normally played match. */
     private String resultType;
+    /** FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
+    private String decidedBy;
+    private Integer dropKicksHome;
+    private Integer dropKicksAway;
+    private UUID winnerTeamId;
+    private UUID homeTeamId;
+    private UUID awayTeamId;
     private String stage;
     private UUID stageId;
     private Boolean isRoundRobin;

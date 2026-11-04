@@ -465,6 +465,8 @@ export interface TournamentFormatConfig {
     carnivalStartTime?: string;
     carnivalEndTime?: string;
     isOneWayMatch?: boolean;
+    knockoutTieBreaker?: 'FIRST_TRY' | 'EXTRA_TIME';
+    extraTimeMinutes?: number;
 }
 
 // ============================================
@@ -476,6 +478,7 @@ export interface MatchStage {
     name: string;
     stageType: string;
     categoryId?: string;
+    knockout?: boolean;
 }
 
 export enum MatchStatus {
@@ -521,6 +524,10 @@ export interface Match {
     resultType?: 'NORMAL' | 'WALKOVER' | 'BYE';
     /** Set only for walkovers and byes, which complete without a scoreline. */
     winnerTeamId?: string;
+    /** How a level knockout match was decided: FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
+    decidedBy?: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+    dropKicksHome?: number;
+    dropKicksAway?: number;
     // Admin match detail only: the backend says whether the caller may score this match.
     canWrite?: boolean;
     homeTeamPlaceholder?: string;
@@ -573,6 +580,24 @@ export interface MatchResponse extends Match {
     matchDuration?: number;
     isOneWayMatch?: boolean;
     hasMultipleVenues?: boolean;
+}
+
+export type KnockoutTieBreaker = 'FIRST_TRY' | 'EXTRA_TIME';
+export type DecidedBy = 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+
+export interface DecideLevelKnockoutRequest {
+    method: DecidedBy;
+    winnerTeamId: string;
+    dropKicksHome?: number;
+    dropKicksAway?: number;
+}
+
+export interface FirstTrySuggestionResponse {
+    hasTryEvents: boolean;
+    suggestedWinnerTeamId?: string;
+    suggestedWinnerTeamName?: string;
+    minute?: number;
+    eventType?: string;
 }
 
 export interface TournamentStageResponse {

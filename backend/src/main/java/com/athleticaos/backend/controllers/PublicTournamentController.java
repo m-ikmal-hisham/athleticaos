@@ -505,6 +505,13 @@ public class PublicTournamentController {
                 .awayTeamShortName(m.getAwayTeamShortName())
                 .homeScore(m.getHomeScore())
                 .awayScore(m.getAwayScore())
+                // How a level knockout was decided, so the match page can say "win on drop kicks" etc.
+                .homeTeamId(m.getHomeTeamId())
+                .awayTeamId(m.getAwayTeamId())
+                .winnerTeamId(m.getWinnerTeamId())
+                .decidedBy(m.getDecidedBy())
+                .dropKicksHome(m.getDropKicksHome())
+                .dropKicksAway(m.getDropKicksAway())
                 .matchDate(m.getMatchDate())
                 .officials(matchOfficialRepository.findByMatchId(m.getId()).stream()
                     .map(mo -> {

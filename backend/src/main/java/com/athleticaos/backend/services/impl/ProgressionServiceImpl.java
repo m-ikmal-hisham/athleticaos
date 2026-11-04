@@ -59,8 +59,8 @@ public class ProgressionServiceImpl implements ProgressionService {
         // winner silently stopped here after passing the earlier gates.
         boolean hasExplicitLink = match.getNextMatchIdForWinner() != null
                 || match.getNextMatchIdForLoser() != null;
-        if (!Boolean.TRUE.equals(currentStage.getIsKnockoutStage()) && !hasExplicitLink) {
-            log.debug("Match {} is in group stage with no onward link, no progression needed", matchId);
+        if (!com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match) && !hasExplicitLink) {
+            log.debug("Match {} is not a knockout match and has no onward link, no progression needed", matchId);
             return;
         }
 
@@ -180,9 +180,11 @@ public class ProgressionServiceImpl implements ProgressionService {
                 return false;
             }
 
-            // Cannot be a draw (rugby can have draws in pool stages but not knockouts)
+            // Cannot be a draw unless decided by tie-break
             if (match.getHomeScore().equals(match.getAwayScore())) {
-                return false;
+                if (match.getWinnerTeam() == null && match.getDecidedBy() == null) {
+                    return false;
+                }
             }
         }
 
@@ -195,7 +197,7 @@ public class ProgressionServiceImpl implements ProgressionService {
             return true;
         }
 
-        if (match.getStage() == null || !match.getStage().getIsKnockoutStage()) {
+        if (!com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match)) {
             return false;
         }
 
@@ -213,6 +215,10 @@ public class ProgressionServiceImpl implements ProgressionService {
 
     private Team determineWinner(Match match) {
         if (hasExplicitResult(match)) {
+            return match.getWinnerTeam();
+        }
+
+        if (match.getWinnerTeam() != null) {
             return match.getWinnerTeam();
         }
 
@@ -236,6 +242,16 @@ public class ProgressionServiceImpl implements ProgressionService {
                 return null;
             }
             // A bye has no opponent, so it produces no loser to route onwards.
+            Team home = match.getHomeTeam();
+            Team away = match.getAwayTeam();
+            if (home != null && away != null) {
+                return winner.getId().equals(home.getId()) ? away : home;
+            }
+            return null;
+        }
+
+        if (match.getWinnerTeam() != null) {
+            Team winner = match.getWinnerTeam();
             Team home = match.getHomeTeam();
             Team away = match.getAwayTeam();
             if (home != null && away != null) {
