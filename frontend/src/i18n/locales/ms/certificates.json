@@ -1,0 +1,148 @@
+{
+  "tabLabel": "Sijil",
+  "title": "E-Sijil",
+  "subtitle": "Tetapkan reka bentuk sijil, penandatangan dan catatan, kemudian pratonton dan muat turun untuk semua pemain aktif dalam senarai pasukan.",
+  "design": {
+    "heading": "Reka bentuk sijil",
+    "help": "Pilih satu gaya pratetap. Semua reka bentuk berkongsi butiran yang sama supaya penukaran gaya tidak menghilangkan tetapan anda.",
+    "CLASSIC": {
+      "name": "Klasik",
+      "desc": "Bingkai emas berganda, tajuk serif. Rasmi, sesuai untuk sekolah dan persatuan."
+    },
+    "MODERN": {
+      "name": "Moden",
+      "desc": "Jalur biru gelap dan merah manggis AthleticaOS, jajaran kiri. Gaya lalai."
+    },
+    "ORGANISER_COLOURS": {
+      "name": "Warna penganjur",
+      "desc": "Jalur penjuru mengikut warna utama dan sekunder organisasi anda."
+    },
+    "PITCH": {
+      "name": "Padang",
+      "desc": "Garisan padang ragbi lembut, aksen hijau, tulisan tegas."
+    },
+    "PRINT_SAVER": {
+      "name": "Jimat dakwat",
+      "desc": "Hitam atas putih dengan garisan nipis. Paling jimat untuk cetakan pukal pejabat."
+    },
+    "SONGKET_GOLD": {
+      "name": "Songket Emas",
+      "desc": "Bingkai biru tua dengan jalur songket emas dan hiasan penjuru di atas krim. Formal dan anggun."
+    },
+    "HIBISCUS_ENERGY": {
+      "name": "Tenaga Bunga Raya",
+      "desc": "Reben merah dan koral dengan kelopak bunga raya di dua penjuru. Ceria dan meriah."
+    },
+    "PITCH_DYNAMIC": {
+      "name": "Padang Ragbi Dinamik",
+      "desc": "Jalur rumput hijau dan garisan try di atas dan bawah. Bersemangat sukan."
+    },
+    "STADIUM_LIGHTS": {
+      "name": "Lampu Stadium",
+      "desc": "Jalur biru tua ke biru elektrik dengan sinaran lampu limpah. Suasana perlawanan besar."
+    },
+    "BATIK_WAVE": {
+      "name": "Ombak Batik",
+      "desc": "Ombak batik hijau kebiruan dengan daun kuning di kedua-dua sisi. Segar dan bercirikan Malaysia."
+    },
+    "CHAMPIONS_RIBBON": {
+      "name": "Reben Juara",
+      "desc": "Reben pepenjuru ungu dan emas dengan konfeti. Sesuai untuk perlawanan akhir dan anugerah."
+    }
+  },
+  "settings": {
+    "heading": "Butiran sijil",
+    "customTitle": "Tajuk sijil (pilihan)",
+    "customTitlePlaceholder": "Biarkan kosong untuk lalai (Certificate of Participation / Sijil Penyertaan)",
+    "language": "Bahasa sijil",
+    "langEn": "English",
+    "langMs": "Bahasa Melayu",
+    "langBoth": "Dwibahasa (EN + BM)",
+    "issueDate": "Tarikh pengeluaran",
+    "remark": "Catatan pengesahan penganjur",
+    "remarkPlaceholder": "cth. Disahkan bahawa penama di atas telah menyertai kejohanan ini dengan semangat kesukanan.",
+    "showVerification": "Aktifkan semakan awam (kod QR & pautan)",
+    "showVerificationHint": "Sesiapa yang mengimbas kod QR boleh menyemak kesahihan sijil di halaman semakan awam.",
+    "verificationUrlMissing": "URL semakan awam tidak dikonfigurasi pada pelayan ini; kod QR akan disembunyikan pada PDF.",
+    "signatory1": "Penandatangan 1",
+    "signatory2": "Penandatangan 2 (pilihan)",
+    "signatoryName": "Nama penuh",
+    "signatoryNamePlaceholder": "cth. Ahmad Rahman",
+    "signatoryTitle": "Jawatan / gelaran",
+    "signatoryTitlePlaceholder": "cth. Pengarah Kejohanan",
+    "signatureImage": "Imej tandatangan (PNG atau JPEG, maks 500 KB)",
+    "uploadSignature": "Muat naik tandatangan",
+    "replaceSignature": "Ganti",
+    "removeSignature": "Alih keluar",
+    "signatureUploaded": "Tandatangan dimuat naik",
+    "signatureRemoved": "Tandatangan dialih keluar",
+    "signatureTooLarge": "Fail tandatangan mestilah 500 KB atau kurang.",
+    "signatureInvalidType": "Sila pilih imej PNG atau JPEG.",
+    "save": "Simpan tetapan",
+    "saving": "Menyimpan...",
+    "saved": "Tetapan sijil disimpan"
+  },
+  "preview": {
+    "heading": "Pratonton langsung",
+    "help": "Pratonton satu contoh sijil dalam reka bentuk yang dipilih sebelum mengeluarkan dan memuat turun.",
+    "refresh": "Segar semula pratonton",
+    "openNewTab": "Buka PDF",
+    "loading": "Menjana pratonton...",
+    "failed": "Tidak dapat memuatkan PDF pratonton.",
+    "unsavedHint": "Simpan tetapan terlebih dahulu untuk menyertakan catatan, tajuk atau tandatangan yang dikemas kini dalam pratonton."
+  },
+  "roster": {
+    "heading": "Peserta mengikut kategori & pasukan",
+    "summary": "{{active}} pemain aktif · {{issued}} dikeluarkan · {{revoked}} dibatalkan",
+    "empty": "Tiada pasukan aktif atau pemain dalam senarai untuk kejohanan ini.",
+    "downloadAllZip": "Muat turun ZIP kejohanan",
+    "downloading": "Menyediakan muat turun...",
+    "teamPdf": "PDF Pasukan",
+    "teamZip": "ZIP Pasukan",
+    "achievementLabel": "Baris pencapaian pasukan (pilihan)",
+    "achievementPlaceholder": "cth. Juara Piala, Naib Juara Plate",
+    "saveAchievement": "Simpan",
+    "playersCount": "{{count}} pemain aktif",
+    "issuedCount": "{{count}} dikeluarkan",
+    "revokedCount": "{{count}} dibatalkan",
+    "showPlayers": "Papar pemain",
+    "hidePlayers": "Sembunyi pemain",
+    "status": {
+      "NOT_ISSUED": "Belum dikeluarkan",
+      "VALID": "Sah",
+      "REVOKED": "Dibatalkan"
+    },
+    "revoke": "Batal",
+    "revokeTitle": "Batalkan sijil?",
+    "revokeMessage": "Membatalkan sijil {{name}} ({{code}}) akan menandakannya sebagai dibatalkan di halaman semakan awam dan mengecualikannya daripada muat turun akan datang. Tindakan ini tidak boleh dibuat asal.",
+    "revokeConfirm": "Batalkan sijil",
+    "revokedToast": "Sijil dibatalkan",
+    "downloadBusy": "Muat turun sijil lain sedang berjalan, cuba lagi sebentar lagi.",
+    "downloadFailed": "Muat turun sijil gagal. Sila cuba lagi."
+  },
+  "verify": {
+    "pageTitle": "Semakan Sijil",
+    "pageDescription": "Semak kesahihan e-sijil kejohanan AthleticaOS.",
+    "loading": "Menyemak sijil...",
+    "validBadge": "Sijil sah",
+    "validSubtitle": "Sijil penyertaan ini dikeluarkan secara rasmi melalui AthleticaOS.",
+    "revokedBadge": "Sijil dibatalkan",
+    "revokedSubtitle": "Sijil ini telah dibatalkan oleh penganjur kejohanan dan tidak lagi sah.",
+    "notFoundTitle": "Sijil tidak ditemui",
+    "notFoundBody": "Kami tidak menemui sijil dengan kod \"{{code}}\", atau semakan awam telah dimatikan oleh penganjur.",
+    "backHome": "Kembali ke utama",
+    "fields": {
+      "recipient": "Penerima",
+      "team": "Pasukan",
+      "category": "Kategori",
+      "achievement": "Pencapaian",
+      "tournament": "Kejohanan",
+      "dates": "Tarikh kejohanan",
+      "venue": "Tempat",
+      "organiser": "Penganjur",
+      "issueDate": "Tarikh pengeluaran",
+      "revokedOn": "Dibatalkan pada",
+      "code": "Kod semakan"
+    }
+  }
+}

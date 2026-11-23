@@ -1,0 +1,53 @@
+/* Artwork designs (ChatGPT backgrounds, owner 23 Nov 2026): the full-page image sits behind
+   the text; decoration lives at the edges, so the content keeps the base layout with a little
+   more room at the top and bottom. Colours per design come from each background. */
+.page-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 297mm;
+    height: 210mm;
+    z-index: 0;
+}
+
+.bg .content {
+    padding-top: 15mm;
+    padding-left: 22mm;
+    padding-right: 22mm;
+}
+
+.bg .footer-bar {
+    left: 22mm;
+    right: 22mm;
+    bottom: 15mm;
+}
+
+/* 1 Songket Gold: navy and gold on cream */
+.bg-songket .title { font-family: 'Playfair Display', serif; color: #13284f; }
+.bg-songket .name { font-family: 'Playfair Display', serif; color: #13284f; }
+.bg-songket .ach { background-color: #f3e2b8; color: #6b4f12; }
+
+/* 2 Hibiscus Energy: crimson and coral */
+.bg-hibiscus .title { color: #a61e45; }
+.bg-hibiscus .name { color: #111827; }
+.bg-hibiscus .ach { background-color: #a61e45; color: #ffffff; }
+
+/* 3 Rugby Pitch Dynamic: pitch green */
+.bg-pitch-dynamic .title { font-family: 'Oswald', sans-serif; color: #1f7a46; text-transform: uppercase; letter-spacing: 0.05em; }
+.bg-pitch-dynamic .name { font-family: 'Oswald', sans-serif; display: block; color: #0f172a; text-transform: uppercase; letter-spacing: 0.02em; }
+.bg-pitch-dynamic .ach { background-color: #1f7a46; color: #ffffff; }
+
+/* 4 Stadium Lights: navy to electric blue */
+.bg-stadium .title { color: #13284f; }
+.bg-stadium .name { color: #0f172a; }
+.bg-stadium .ach { background-color: #2563eb; color: #ffffff; }
+
+/* 5 Batik Wave: teal and warm yellow */
+.bg-batik .title { color: #12706f; }
+.bg-batik .name { color: #0f3f3e; }
+.bg-batik .ach { background-color: #f0b94f; color: #3b2a00; }
+
+/* 6 Champions Ribbon: royal purple and gold */
+.bg-champions .title { font-family: 'Oswald', sans-serif; color: #5b2a9a; text-transform: uppercase; letter-spacing: 0.04em; }
+.bg-champions .name { color: #1f1235; }
+.bg-champions .ach { background-color: #e8b03f; color: #3b1d00; }

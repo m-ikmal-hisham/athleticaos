@@ -1,0 +1,148 @@
+{
+  "tabLabel": "Certificates",
+  "title": "E-Certificates",
+  "subtitle": "Configure certificate design, signatories and remarks, then preview and download for active rostered players.",
+  "design": {
+    "heading": "Certificate design",
+    "help": "Choose a preset style. All designs share the same details so switching never loses your settings.",
+    "CLASSIC": {
+      "name": "Classic",
+      "desc": "Double gold border, serif title. Formal, suits schools and associations."
+    },
+    "MODERN": {
+      "name": "Modern",
+      "desc": "AthleticaOS navy and crimson band, left-aligned. Default brand look."
+    },
+    "ORGANISER_COLOURS": {
+      "name": "Organiser colours",
+      "desc": "Corner bands in your organisation's primary and secondary colours."
+    },
+    "PITCH": {
+      "name": "Pitch",
+      "desc": "Faint rugby pitch lines, green accent, bold condensed type."
+    },
+    "PRINT_SAVER": {
+      "name": "Print-saver",
+      "desc": "Black on white with thin lines. Lowest ink use for bulk office printing."
+    },
+    "SONGKET_GOLD": {
+      "name": "Songket Gold",
+      "desc": "Navy border with a gold songket band and corner ornaments on cream. Formal and elegant."
+    },
+    "HIBISCUS_ENERGY": {
+      "name": "Hibiscus Energy",
+      "desc": "Crimson and coral ribbons with hibiscus petals in two corners. Bright and celebratory."
+    },
+    "PITCH_DYNAMIC": {
+      "name": "Rugby Pitch Dynamic",
+      "desc": "Mown-pitch green stripes and try-line marks at the top and bottom. Sporty."
+    },
+    "STADIUM_LIGHTS": {
+      "name": "Stadium Lights",
+      "desc": "Navy to electric-blue bands with floodlight rays and sparkles. Big-match feel."
+    },
+    "BATIK_WAVE": {
+      "name": "Batik Wave",
+      "desc": "Teal batik waves with yellow leaves down both sides. Fresh and Malaysian."
+    },
+    "CHAMPIONS_RIBBON": {
+      "name": "Champions Ribbon",
+      "desc": "Purple and gold diagonal ribbons with confetti. Made for finals and awards."
+    }
+  },
+  "settings": {
+    "heading": "Certificate details",
+    "customTitle": "Certificate title (optional)",
+    "customTitlePlaceholder": "Leave blank for default (Certificate of Participation / Sijil Penyertaan)",
+    "language": "Certificate language",
+    "langEn": "English",
+    "langMs": "Bahasa Melayu",
+    "langBoth": "Bilingual (EN + BM)",
+    "issueDate": "Issue date",
+    "remark": "Organiser signing remark",
+    "remarkPlaceholder": "e.g. Certified that the above took part in the tournament in the spirit of the game.",
+    "showVerification": "Enable public verification (QR code & link)",
+    "showVerificationHint": "Anyone scanning the QR code can verify authenticity on the public verification page.",
+    "verificationUrlMissing": "Public verification URL is not configured on this server; QR codes will be hidden on PDFs.",
+    "signatory1": "Signatory 1",
+    "signatory2": "Signatory 2 (optional)",
+    "signatoryName": "Full name",
+    "signatoryNamePlaceholder": "e.g. Ahmad Rahman",
+    "signatoryTitle": "Role / title",
+    "signatoryTitlePlaceholder": "e.g. Tournament Director",
+    "signatureImage": "Signature image (PNG or JPEG, max 500 KB)",
+    "uploadSignature": "Upload signature",
+    "replaceSignature": "Replace",
+    "removeSignature": "Remove",
+    "signatureUploaded": "Signature uploaded",
+    "signatureRemoved": "Signature removed",
+    "signatureTooLarge": "Signature file must be 500 KB or smaller.",
+    "signatureInvalidType": "Please choose a PNG or JPEG image.",
+    "save": "Save settings",
+    "saving": "Saving...",
+    "saved": "Certificate settings saved"
+  },
+  "preview": {
+    "heading": "Live preview",
+    "help": "Preview one sample certificate in the selected design before issuing and downloading.",
+    "refresh": "Refresh preview",
+    "openNewTab": "Open PDF",
+    "loading": "Generating preview...",
+    "failed": "Could not load preview PDF.",
+    "unsavedHint": "Save settings first to include edited remarks, titles or signatures in the preview."
+  },
+  "roster": {
+    "heading": "Participants by category & team",
+    "summary": "{{active}} active players · {{issued}} issued · {{revoked}} revoked",
+    "empty": "No active teams or rostered players found for this tournament.",
+    "downloadAllZip": "Download tournament ZIP",
+    "downloading": "Preparing download...",
+    "teamPdf": "Team PDF",
+    "teamZip": "Team ZIP",
+    "achievementLabel": "Team achievement line (optional)",
+    "achievementPlaceholder": "e.g. Cup Champions, Plate Runners-up",
+    "saveAchievement": "Save",
+    "playersCount": "{{count}} active players",
+    "issuedCount": "{{count}} issued",
+    "revokedCount": "{{count}} revoked",
+    "showPlayers": "Show players",
+    "hidePlayers": "Hide players",
+    "status": {
+      "NOT_ISSUED": "Not issued",
+      "VALID": "Valid",
+      "REVOKED": "Revoked"
+    },
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke certificate?",
+    "revokeMessage": "Revoking {{name}}'s certificate ({{code}}) will mark it as revoked on the public verification page and exclude it from future downloads. This cannot be undone.",
+    "revokeConfirm": "Revoke certificate",
+    "revokedToast": "Certificate revoked",
+    "downloadBusy": "Another certificate download is running, try again in a minute.",
+    "downloadFailed": "Certificate download failed. Please try again."
+  },
+  "verify": {
+    "pageTitle": "Certificate Verification",
+    "pageDescription": "Verify the authenticity of an AthleticaOS tournament e-certificate.",
+    "loading": "Checking certificate...",
+    "validBadge": "Valid certificate",
+    "validSubtitle": "This participation certificate was officially issued through AthleticaOS.",
+    "revokedBadge": "Revoked certificate",
+    "revokedSubtitle": "This certificate has been revoked by the tournament organiser and is no longer valid.",
+    "notFoundTitle": "Certificate not found",
+    "notFoundBody": "We could not find a certificate with code \"{{code}}\", or verification has been turned off by the organiser.",
+    "backHome": "Back to home",
+    "fields": {
+      "recipient": "Recipient",
+      "team": "Team",
+      "category": "Category",
+      "achievement": "Achievement",
+      "tournament": "Tournament",
+      "dates": "Tournament dates",
+      "venue": "Venue",
+      "organiser": "Organiser",
+      "issueDate": "Issue date",
+      "revokedOn": "Revoked on",
+      "code": "Verification code"
+    }
+  }
+}

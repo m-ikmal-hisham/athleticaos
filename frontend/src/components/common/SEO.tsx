@@ -7,6 +7,7 @@ interface SEOProps {
     image?: string;
     url?: string;
     type?: string;
+    noIndex?: boolean;
 }
 
 export const SEO = ({
@@ -14,7 +15,8 @@ export const SEO = ({
     description = 'The complete operating system for sports organisations.',
     image = '/og-image.png',
     url = window.location.href,
-    type = 'website'
+    type = 'website',
+    noIndex = false
 }: SEOProps) => {
     // Ensure absolute URL for image
     const fullImage = image.startsWith('http') ? image : `${window.location.origin}${image}`;
@@ -26,6 +28,7 @@ export const SEO = ({
             {/* Standard metadata */}
             <title>{siteTitle}</title>
             <meta name="description" content={description} />
+            {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
             {/* Open Graph / Facebook */}
             <meta property="og:type" content={type} />

@@ -1,0 +1,50 @@
+/* 3. Organiser colours: primary/secondary corner bands framing white card */
+.org-corner-tl {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-top: 48mm solid {{ORG_PRIMARY}};
+    border-right: 68mm solid transparent;
+    z-index: 1;
+}
+
+.org-corner-br {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-bottom: 48mm solid {{ORG_SECONDARY}};
+    border-left: 68mm solid transparent;
+    z-index: 1;
+}
+
+.org-card {
+    position: absolute;
+    top: 6.5mm;
+    left: 6.5mm;
+    width: 284mm;
+    height: 197mm;
+    background-color: #ffffff;
+    border: 0.4mm solid #e2e8f0;
+    border-radius: 3mm;
+    z-index: 1;
+}
+
+.org .title {
+    font-family: 'Oswald', sans-serif;
+    color: {{ORG_PRIMARY}};
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.org .name {
+    color: #111827;
+}
+
+.org .ach {
+    background-color: {{ORG_SECONDARY}};
+    color: #1f2937;
+}

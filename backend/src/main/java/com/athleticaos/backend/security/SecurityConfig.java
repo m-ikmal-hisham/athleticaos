@@ -46,6 +46,10 @@ public class SecurityConfig {
                     return corsConfig;
                 }))
                 .authorizeHttpRequests(auth -> auth
+                        // Internal re-dispatches of a request that was already authorised: the ASYNC one
+                        // that ends a streamed download (certificate ZIPs) and the ERROR one. Without this
+                        // the async dispatch has no security context, is denied, and the download breaks.
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC, jakarta.servlet.DispatcherType.ERROR).permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/invite",

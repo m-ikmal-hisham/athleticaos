@@ -1,0 +1,25 @@
+/* 5. Print-saver: white background, thin neutral frame, lowest ink use */
+.print-frame {
+    position: absolute;
+    top: 7mm;
+    left: 7mm;
+    width: 283mm;
+    height: 196mm;
+    border: 0.35mm solid #94a3b8;
+    z-index: 1;
+}
+
+.print .title {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.print .name {
+    color: #0f172a;
+}
+
+.print .ach {
+    background-color: #ffffff;
+    border: 0.35mm solid #0f172a;
+    color: #0f172a;
+}
