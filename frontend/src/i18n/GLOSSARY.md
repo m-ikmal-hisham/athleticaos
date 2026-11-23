@@ -116,4 +116,12 @@
 | Affiliated organisations | Organisasi gabungan | Organisasi gabungan | no | Hierarchy affiliation |
 | Sub-affiliations | Sub-gabungan | Sub-gabungan | no | Secondary affiliations |
 | Direct affiliate | Gabungan langsung | Gabungan langsung | no | Immediate affiliate |
+| Certificates | Sijil | Sijil | no | Tournament e-certificates tab |
+| Certificate of Participation | Sijil Penyertaan | Sijil penyertaan | no | Default certificate title |
+| Certificate Verification | Semakan Sijil | Semakan sijil | no | Public verification page |
+| Valid certificate | Sijil sah | Sijil sah | no | Verification status badge |
+| Revoked certificate | Sijil dibatalkan | Sijil dibatalkan | no | Revoked status badge |
+| Signatory | Penandatangan | Penandatangan | no | Certificate signing authority |
+| Issue date | Tarikh pengeluaran | Tarikh pengeluaran | no | Certificate issuance date |
+| Verification code | Kod semakan | Kod semakan | no | Unique 10-character code |
 

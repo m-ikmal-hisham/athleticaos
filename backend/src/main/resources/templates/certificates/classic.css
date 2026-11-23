@@ -1,0 +1,37 @@
+/* 1. Classic: double gold border, serif title & navy recipient name */
+.classic-outer {
+    position: absolute;
+    top: 3mm;
+    left: 3mm;
+    width: 291mm;
+    height: 204mm;
+    border: 1.8mm solid #b8913a;
+    z-index: 1;
+}
+
+.classic-inner {
+    position: absolute;
+    top: 6.5mm;
+    left: 6.5mm;
+    width: 284mm;
+    height: 197mm;
+    border: 0.4mm solid #b8913a;
+    z-index: 1;
+}
+
+.classic .title {
+    font-family: 'Playfair Display', serif;
+    color: #1f2937;
+}
+
+.classic .name {
+    font-family: 'Playfair Display', serif;
+    color: #13284f;
+    border-bottom: 0.4mm solid #b8913a;
+    padding: 0 10mm 1.5mm 10mm;
+}
+
+.classic .ach {
+    background-color: #f7efdc;
+    color: #7a5b1c;
+}

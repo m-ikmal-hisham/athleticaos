@@ -1,0 +1,254 @@
+@page {
+    size: 297mm 210mm;
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 297mm;
+    font-family: 'Inter', sans-serif;
+    color: #0f172a;
+    background: #ffffff;
+}
+
+.page {
+    position: relative;
+    width: 297mm;
+    height: 210mm;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.page-break {
+    page-break-after: always;
+}
+
+.content {
+    position: relative;
+    z-index: 2;
+    padding: 9mm 18mm 42mm 18mm;
+    text-align: center;
+}
+
+.logos-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 3mm;
+}
+
+.logo-cell-left {
+    width: 50%;
+    text-align: left;
+    vertical-align: middle;
+    height: 37mm;
+}
+
+.logo-cell-right {
+    width: 50%;
+    text-align: right;
+    vertical-align: middle;
+    height: 37mm;
+}
+
+/* Logos about 3x the first release (owner 23 Nov): 36 mm tall, wide marks capped at 80 mm. */
+.logo-img {
+    height: 36mm;
+    width: auto;
+    max-width: 80mm;
+    vertical-align: middle;
+}
+
+.title {
+    font-size: 30pt;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-top: 2mm;
+}
+
+.title-both {
+    font-size: 23pt;
+}
+
+.sub {
+    font-size: 10pt;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-top: 3mm;
+}
+
+.name-wrap {
+    margin-top: 5mm;
+    padding: 0 8mm;
+}
+
+.name {
+    display: inline-block;
+    font-weight: 700;
+    line-height: 1.18;
+    color: #0f172a;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+.name-lg { font-size: 30pt; }
+.name-md { font-size: 24pt; }
+.name-sm { font-size: 20pt; }
+.name-xs { font-size: 16pt; }
+
+.meta {
+    font-size: 12pt;
+    font-weight: 500;
+    color: #334155;
+    margin-top: 3mm;
+}
+
+.ach-wrap {
+    margin-top: 3.5mm;
+}
+
+.ach {
+    display: inline-block;
+    padding: 1.6mm 5mm;
+    border-radius: 12mm;
+    font-size: 10.5pt;
+    font-weight: 600;
+}
+
+.event {
+    font-size: 11.5pt;
+    color: #334155;
+    margin: 4.5mm auto 0 auto;
+    line-height: 1.5;
+    width: 210mm;
+}
+
+.event strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.remark {
+    font-size: 9.5pt;
+    color: #475569;
+    margin: 3.5mm auto 0 auto;
+    width: 195mm;
+    line-height: 1.45;
+}
+
+.footer-bar {
+    position: absolute;
+    left: 18mm;
+    right: 18mm;
+    bottom: 11mm;
+    z-index: 3;
+}
+
+.footer-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.footer-sig-col {
+    width: 31%;
+    vertical-align: bottom;
+    text-align: center;
+}
+
+.footer-verify-col {
+    width: 38%;
+    vertical-align: bottom;
+}
+
+.footer-verify-center {
+    text-align: center;
+}
+
+.footer-verify-right {
+    text-align: right;
+}
+
+.sig-box {
+    width: 62mm;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.sig-img-slot {
+    height: 14mm;
+    line-height: 14mm;
+    text-align: center;
+}
+
+.sig-img {
+    max-height: 13.5mm;
+    max-width: 54mm;
+    vertical-align: bottom;
+}
+
+.sig-line {
+    border-top: 0.35mm solid #94a3b8;
+    padding-top: 1.5mm;
+    margin-top: 1mm;
+}
+
+.sig-name {
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.sig-title {
+    font-size: 8pt;
+    font-weight: 400;
+    color: #64748b;
+    margin-top: 0.5mm;
+}
+
+.verify-inner {
+    border-collapse: collapse;
+    margin: 0 auto;
+}
+
+.footer-verify-right .verify-inner {
+    margin: 0 0 0 auto;
+}
+
+.qr-cell {
+    vertical-align: middle;
+    padding-right: 2.5mm;
+}
+
+.qr-img {
+    width: 17mm;
+    height: 17mm;
+    border: 0.5mm solid #0f172a;
+    display: block;
+}
+
+.verify-text-cell {
+    vertical-align: middle;
+    text-align: left;
+}
+
+.verify-line {
+    font-size: 7.5pt;
+    font-weight: 500;
+    color: #475569;
+    line-height: 1.35;
+}
+
+.verify-code {
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: 0.04em;
+    margin-top: 0.5mm;
+}

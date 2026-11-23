@@ -38,6 +38,7 @@ const Signup = lazyNamed(() => import('@/pages/public/Signup'), 'Signup');
 const PublicTeamProfile = lazyNamed(() => import('@/pages/public/PublicTeamProfile'), 'PublicTeamProfile');
 const PublicPlayerProfile = lazyNamed(() => import('@/pages/public/PublicPlayerProfile'), 'PublicPlayerProfile');
 const MediaPortal = lazyNamed(() => import('@/pages/public/MediaPortal'), 'MediaPortal');
+const CertificateVerification = lazy(() => import('@/pages/public/CertificateVerification'));
 
 // ─── Dashboard Pages ────────────────────────────────────────────────
 const DashboardHome = lazyNamed(() => import('@/pages/dashboard/DashboardHome'), 'DashboardHome');
@@ -194,6 +195,10 @@ export const router = createBrowserRouter([
             {
                 path: '/data-requests',
                 element: <DataRequests />,
+            },
+            {
+                path: '/certificates/:code',
+                element: <CertificateVerification />,
             },
         ],
     },

@@ -1,0 +1,61 @@
+/* 4. Pitch: soft green tint, faint rugby pitch markings, condensed display type */
+.page.pitch {
+    background-color: #f4faf6;
+}
+
+.pitch-outer {
+    position: absolute;
+    top: 9mm;
+    left: 9mm;
+    width: 279mm;
+    height: 192mm;
+    border: 0.6mm solid #cfe7d8;
+    z-index: 1;
+}
+
+.pitch-22-left {
+    position: absolute;
+    top: 9mm;
+    height: 192mm;
+    left: 68mm;
+    border-left: 0.6mm dashed #cfe7d8;
+    z-index: 1;
+}
+
+.pitch-half {
+    position: absolute;
+    top: 9mm;
+    height: 192mm;
+    left: 148.5mm;
+    border-left: 0.6mm solid #cfe7d8;
+    z-index: 1;
+}
+
+.pitch-22-right {
+    position: absolute;
+    top: 9mm;
+    height: 192mm;
+    left: 229mm;
+    border-left: 0.6mm dashed #cfe7d8;
+    z-index: 1;
+}
+
+.pitch .title {
+    font-family: 'Oswald', sans-serif;
+    color: #1f6f43;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.pitch .name {
+    display: block;
+    font-family: 'Oswald', sans-serif;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.pitch .ach {
+    background-color: #1f6f43;
+    color: #ffffff;
+}

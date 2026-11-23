@@ -43,3 +43,7 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+app:
+  certificates:
+    public-base-url: https://staging.athleticaos.com

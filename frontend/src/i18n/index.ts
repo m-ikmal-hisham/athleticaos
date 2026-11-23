@@ -17,6 +17,7 @@ import enTeams from './locales/en/teams.json';
 import enPlayers from './locales/en/players.json';
 import enContact from './locales/en/contact.json';
 import enMedia from './locales/en/media.json';
+import enCertificates from './locales/en/certificates.json';
 
 export type AppLanguage = 'en' | 'ms';
 
@@ -62,7 +63,8 @@ type Namespaces = Record<
     | 'teams'
     | 'players'
     | 'contact'
-    | 'media',
+    | 'media'
+    | 'certificates',
     Record<string, unknown>
 >;
 
@@ -84,6 +86,7 @@ async function importMsResources(): Promise<Namespaces> {
         msPlayers,
         msContact,
         msMedia,
+        msCertificates,
     ] = await Promise.all([
         import('./locales/ms/common.json'),
         import('./locales/ms/home.json'),
@@ -101,6 +104,7 @@ async function importMsResources(): Promise<Namespaces> {
         import('./locales/ms/players.json'),
         import('./locales/ms/contact.json'),
         import('./locales/ms/media.json'),
+        import('./locales/ms/certificates.json'),
     ]);
     return {
         common: msCommon.default,
@@ -119,6 +123,7 @@ async function importMsResources(): Promise<Namespaces> {
         players: msPlayers.default,
         contact: msContact.default,
         media: msMedia.default,
+        certificates: msCertificates.default,
     };
 }
 
@@ -176,6 +181,7 @@ export async function initI18n(): Promise<typeof i18n> {
             'players',
             'contact',
             'media',
+            'certificates',
         ],
         resources: {
             en: {
@@ -195,6 +201,7 @@ export async function initI18n(): Promise<typeof i18n> {
                 players: enPlayers,
                 contact: enContact,
                 media: enMedia,
+                certificates: enCertificates,
             },
             ...(msInitial ? { ms: msInitial } : {}),
         },
