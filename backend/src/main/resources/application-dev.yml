@@ -22,6 +22,8 @@ app:
     recipient: contact-inbox@athleticaos.local
   accounts:
     mail-enabled: true
+  certificates:
+    public-base-url: http://localhost:5173
 
 logging:
   level:
