@@ -70,4 +70,36 @@ public class FileStorageService {
             throw new RuntimeException("File not found " + fileName, ex);
         }
     }
+
+    /**
+     * Reads raw bytes for a locally uploaded asset URL (e.g. "/api/v1/uploads/uuid_logo.png"
+     * or "/uploads/uuid_logo.png"). Returns null if the URL is not a local upload, escapes
+     * the storage root, or does not exist on disk.
+     */
+    public byte[] loadUploadedBytesByUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String trimmed = url.trim();
+        String fileName = null;
+        if (trimmed.startsWith("/api/v1/uploads/")) {
+            fileName = trimmed.substring("/api/v1/uploads/".length());
+        } else if (trimmed.startsWith("/uploads/")) {
+            fileName = trimmed.substring("/uploads/".length());
+        } else {
+            return null;
+        }
+        if (fileName.isBlank() || fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            return null;
+        }
+        try {
+            Path resolved = this.fileStorageLocation.resolve(fileName).normalize();
+            if (!resolved.startsWith(this.fileStorageLocation) || !Files.isRegularFile(resolved)) {
+                return null;
+            }
+            return Files.readAllBytes(resolved);
+        } catch (IOException ex) {
+            return null;
+        }
+    }
 }

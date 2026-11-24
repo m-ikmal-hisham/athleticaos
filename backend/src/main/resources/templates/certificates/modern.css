@@ -1,0 +1,69 @@
+/* 2. Modern (AthleticaOS default): left navy & crimson band, left-aligned sans-serif */
+.modern-band-navy {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 210mm;
+    width: 15mm;
+    background-color: #13284f;
+    z-index: 1;
+}
+
+.modern-band-crimson {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 15mm;
+    height: 63mm;
+    background-color: #c8102e;
+    z-index: 2;
+}
+
+.modern .content {
+    padding-left: 28mm;
+    padding-right: 18mm;
+    text-align: left;
+}
+
+.modern .footer-bar {
+    left: 28mm;
+    right: 18mm;
+}
+
+.modern .title {
+    color: #13284f;
+    letter-spacing: -0.02em;
+}
+
+.modern .sub {
+    margin-top: 2mm;
+}
+
+.modern .name-wrap {
+    padding: 0;
+}
+
+.modern .name {
+    color: #0f172a;
+}
+
+.modern .ach {
+    background-color: #e8eefb;
+    color: #13284f;
+}
+
+.modern .event,
+.modern .remark {
+    margin-left: 0;
+    margin-right: 0;
+    width: 235mm;
+}
+
+.modern .sig-box {
+    margin: 0;
+    text-align: left;
+}
+
+.modern .sig-img-slot {
+    text-align: left;
+}

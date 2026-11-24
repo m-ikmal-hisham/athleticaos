@@ -577,6 +577,48 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        // ==================== CERTIFICATE ACTIONS ====================
+
+        public void logCertificateSettingsUpdated(UUID tournamentId, String tournamentName, String design, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("CERTIFICATE_SETTINGS_UPDATED")
+                                .entityType("TOURNAMENT")
+                                .entityId(tournamentId)
+                                .entitySummary(String.format("Certificate settings updated for %s (design: %s)", tournamentName, design))
+                                .build();
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logCertificatesIssued(UUID tournamentId, String tournamentName, int created, int updated, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("CERTIFICATES_ISSUED")
+                                .entityType("TOURNAMENT")
+                                .entityId(tournamentId)
+                                .entitySummary(String.format("Certificates issued for %s: %d created, %d updated", tournamentName, created, updated))
+                                .build();
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logCertificatesDownloaded(UUID tournamentId, String scopeDescription, int count, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("CERTIFICATES_DOWNLOADED")
+                                .entityType("TOURNAMENT")
+                                .entityId(tournamentId)
+                                .entitySummary(String.format("Certificates downloaded (%s): %d certificate(s)", scopeDescription, count))
+                                .build();
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
+        public void logCertificateRevoked(Certificate certificate, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("CERTIFICATE_REVOKED")
+                                .entityType("CERTIFICATE")
+                                .entityId(certificate.getId())
+                                .entitySummary(String.format("Certificate revoked: %s (%s)", certificate.getRecipientName(), certificate.getCode()))
+                                .build();
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         // ==================== HELPER METHODS ====================
 
         private String getIpAddress(HttpServletRequest request) {

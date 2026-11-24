@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatCompetitionType, formatTournamentLevel, formatGender, formatTournamentStatus } from '@/utils/formatters';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStructure, type Icon } from '@phosphor-icons/react';
+import { CalendarBlank, MapPin, Trophy, Users, Gear, Play, ListNumbers, TreeStructure, Certificate, type Icon } from '@phosphor-icons/react';
 import { tournamentService } from '@/services/tournamentService';
 import { Tournament, TournamentStatus } from '@/types';
 import { Button } from '@/components/Button';
@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { TournamentTeams } from './tournament-tabs/TournamentTeams';
 import { TournamentFormat } from './tournament-tabs/TournamentFormat';
 import { TournamentMatches } from './tournament-tabs/TournamentMatches';
+import { TournamentCertificates } from './tournament-tabs/TournamentCertificates';
 import StandingsTable from '@/components/content/StandingsTable';
 import BracketView from '@/components/content/BracketView';
 import { BracketViewResponse, StandingsResponse } from '@/types';
@@ -187,6 +188,9 @@ export default function TournamentDetail() {
         navigate(`?tab=${tabId}`, { replace: true, preventScrollReset: true });
     };
 
+    const isSuperAdmin = Boolean(user?.roles?.includes('ROLE_SUPER_ADMIN'));
+    const canManageTournament = isSuperAdmin || tournament?.accessLevel === 'MANAGE';
+
     const tabs: { id: string; label: string; shortLabel?: string; icon: Icon }[] = [
         { id: 'overview', label: 'Overview', icon: Trophy },
         { id: 'teams', label: 'Teams', icon: Users },
@@ -195,10 +199,8 @@ export default function TournamentDetail() {
         { id: 'standings', label: 'Standings', icon: ListNumbers },
         { id: 'bracket', label: 'Bracket', icon: TreeStructure },
         { id: 'rosters', label: 'Rosters', icon: Users },
+        ...(canManageTournament ? [{ id: 'certificates', label: 'Certificates', shortLabel: 'Certs', icon: Certificate }] : []),
     ];
-
-    const isSuperAdmin = Boolean(user?.roles?.includes('ROLE_SUPER_ADMIN'));
-    const canManageTournament = isSuperAdmin || tournament?.accessLevel === 'MANAGE';
 
     {/* Header */ }
     return (
@@ -330,7 +332,7 @@ export default function TournamentDetail() {
                 })}
             </nav>
             <div className="hidden lg:block p-1.5 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-xl border border-white/20 dark:border-white/10 shadow-sm">
-                <nav className="grid grid-cols-7 gap-1" aria-label="Tabs">
+                <nav className={`grid ${canManageTournament ? 'grid-cols-8' : 'grid-cols-7'} gap-1`} aria-label="Tabs">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -496,6 +498,10 @@ export default function TournamentDetail() {
 
                 {activeTab === 'rosters' && tournament && (
                     <TournamentRosters tournamentId={tournament.id} />
+                )}
+
+                {activeTab === 'certificates' && tournament && canManageTournament && (
+                    <TournamentCertificates tournamentId={tournament.id} />
                 )}
             </div>
         </div >
