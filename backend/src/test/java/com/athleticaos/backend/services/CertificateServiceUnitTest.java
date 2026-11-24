@@ -173,6 +173,52 @@ class CertificateServiceUnitTest {
     }
 
     @Test
+    void recipientNamesKeepTheSameFontSizeAndWrapAtWordBoundaries() throws Exception {
+        String shortName = "ALEX TAN";
+        String longName = "MUHAMMAD NUR ALIF ISKANDAR BIN ABDUL RAHMAN AL HADDAD";
+        for (CertificateDesign design : CertificateDesign.values()) {
+            for (String name : List.of(shortName, longName)) {
+                byte[] pdf = pdfService.renderSingle(sampleRenderData(design, CertificateLanguage.EN, name));
+                try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+                    assertThat(doc.getNumberOfPages()).as("pages for %s / %s", design, name).isEqualTo(1);
+                    List<org.apache.pdfbox.text.TextPosition> nameGlyphs = new ArrayList<>();
+                    StringBuilder renderedName = new StringBuilder();
+                    org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper() {
+                        @Override
+                        protected void writeString(String text, List<org.apache.pdfbox.text.TextPosition> positions) {
+                            String line = text.trim();
+                            if (line.length() > 4 && name.contains(line)) {
+                                renderedName.append(line);
+                                nameGlyphs.addAll(positions);
+                            }
+                        }
+                    };
+                    stripper.getText(doc);
+                    assertThat(renderedName.toString().replaceAll("\\s+", ""))
+                            .as("complete name for %s", design).isEqualTo(name.replace(" ", ""));
+                    assertThat(nameGlyphs).as("name glyphs for %s", design).isNotEmpty();
+                    assertThat(nameGlyphs).allSatisfy(glyph ->
+                            assertThat(glyph.getFontSizeInPt()).as("name size for %s", design).isEqualTo(30));
+                    List<Float> baselines = nameGlyphs.stream()
+                            .map(org.apache.pdfbox.text.TextPosition::getYDirAdj).distinct().sorted().toList();
+                    if (name.equals(shortName)) {
+                        assertThat(baselines).as("short name lines for %s", design).hasSize(1);
+                    } else {
+                        assertThat(baselines.size()).as("long name lines for %s", design).isBetween(1, 2);
+                        if (design == CertificateDesign.MODERN) {
+                            assertThat(baselines).as("long Modern name wraps").hasSize(2);
+                        }
+                        if (baselines.size() == 2) {
+                            assertThat(baselines.get(1) - baselines.get(0))
+                                    .as("close line spacing for %s", design).isBetween(30f, 35f);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void everyDesignStaysOnOnePageInTheWorstCase() throws Exception {
         // Worst case: 36 mm logos on both sides, the longest name, both languages, a 500-character
         // remark, two signatures and the QR. Anything spilling onto a second page fails here.

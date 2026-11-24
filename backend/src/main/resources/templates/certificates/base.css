@@ -89,18 +89,14 @@ html, body {
 }
 
 .name {
-    display: inline-block;
+    display: block;
+    font-size: 30pt;
     font-weight: 700;
-    line-height: 1.18;
+    line-height: 1.1;
     color: #0f172a;
     word-wrap: break-word;
     max-width: 100%;
 }
-
-.name-lg { font-size: 30pt; }
-.name-md { font-size: 24pt; }
-.name-sm { font-size: 20pt; }
-.name-xs { font-size: 16pt; }
 
 .meta {
     font-size: 12pt;

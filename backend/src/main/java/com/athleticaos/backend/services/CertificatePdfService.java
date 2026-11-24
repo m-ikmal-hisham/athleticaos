@@ -214,7 +214,6 @@ public class CertificatePdfService {
         String titleText = resolveTitle(d.getCustomTitle(), lang);
         String subtitleText = resolveSubtitle(lang, design);
         String nameText = d.getRecipientName() != null ? d.getRecipientName().trim() : "";
-        String nameSizeClass = resolveNameSizeClass(nameText);
         String metaText = buildMetaLine(d.getTeamName(), d.getCategoryName());
         String eventHtml = buildEventHtml(d, lang, design);
         String remarkText = d.getRemark() != null ? d.getRemark().trim() : "";
@@ -269,7 +268,7 @@ public class CertificatePdfService {
         p.append("<div class=\"sub\">").append(escapeXml(subtitleText)).append("</div>");
 
         // Recipient name
-        p.append("<div class=\"name-wrap\"><span class=\"name ").append(nameSizeClass).append("\">")
+        p.append("<div class=\"name-wrap\"><span class=\"name\">")
                 .append(escapeXml(nameText)).append("</span></div>");
 
         // Team & Category
@@ -408,14 +407,6 @@ public class CertificatePdfService {
                 default -> "This certifies that";
             };
         };
-    }
-
-    private String resolveNameSizeClass(String name) {
-        int len = name.length();
-        if (len > 55) return "name-xs";
-        if (len > 40) return "name-sm";
-        if (len > 28) return "name-md";
-        return "name-lg";
     }
 
     private String buildMetaLine(String teamName, String categoryName) {
