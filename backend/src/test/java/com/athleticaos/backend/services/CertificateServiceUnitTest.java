@@ -195,6 +195,42 @@ class CertificateServiceUnitTest {
     }
 
     @Test
+    void tournamentHeadingIsProminentBetweenLogosAcrossEveryDesign() throws Exception {
+        String tournamentName = "Example International Schools Rugby Championship 2026";
+        String logo = squarePngDataUri(400);
+        for (CertificateDesign design : CertificateDesign.values()) {
+            CertificateRenderData sample = sampleRenderData(design, CertificateLanguage.BOTH,
+                    "Alex Morgan").toBuilder().tournamentName(tournamentName)
+                    .tournamentLogoDataUri(logo).organiserLogoDataUri(logo).build();
+            byte[] pdf = pdfService.renderSingle(sample);
+            try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+                assertThat(doc.getNumberOfPages()).as("pages for %s", design).isEqualTo(1);
+                List<org.apache.pdfbox.text.TextPosition> heading = new ArrayList<>();
+                org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper() {
+                    @Override
+                    protected void writeString(String text, List<org.apache.pdfbox.text.TextPosition> positions) {
+                        positions.stream().filter(g -> g.getFontSizeInPt() == 22 && g.getYDirAdj() < 150)
+                                .forEach(heading::add);
+                    }
+                };
+                stripper.getText(doc);
+                assertThat(heading).as("heading for %s", design).isNotEmpty();
+                assertThat(heading.stream().map(org.apache.pdfbox.text.TextPosition::getUnicode)
+                        .collect(java.util.stream.Collectors.joining()).replaceAll("\\s+", ""))
+                        .as("complete heading for %s", design)
+                        .isEqualTo(tournamentName.replace(" ", ""));
+                assertThat(heading.stream().map(org.apache.pdfbox.text.TextPosition::getYDirAdj)
+                        .distinct().count()).as("heading wraps to two lines for %s", design).isEqualTo(2);
+                assertThat(heading).allSatisfy(g -> {
+                    assertThat(g.getXDirAdj()).as("heading stays between logos for %s", design)
+                            .isBetween(220f, 630f);
+                    assertThat(g.getYDirAdj()).as("heading stays in header for %s", design).isLessThan(150);
+                });
+            }
+        }
+    }
+
+    @Test
     void recipientNamesKeepTheSameFontSizeAndWrapAtWordBoundaries() throws Exception {
         String shortName = "ALEX TAN";
         String longName = "MUHAMMAD NUR ALIF ISKANDAR BIN ABDUL RAHMAN AL HADDAD";
