@@ -48,6 +48,15 @@ public class UserControllerSecurityTest {
 
     @Test
     @org.springframework.security.test.context.support.WithMockUser(roles = "SUPER_ADMIN")
+    void crossOriginResponsesExposeDownloadFilename() throws Exception {
+        mockMvc.perform(get("/api/v1/users").header("Origin", "http://localhost:5173"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Access-Control-Expose-Headers", "Content-Disposition"));
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(roles = "SUPER_ADMIN")
     void superAdminCanAccessGetAllUsers() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isOk());
