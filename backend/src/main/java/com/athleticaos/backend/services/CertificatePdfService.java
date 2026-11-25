@@ -255,6 +255,8 @@ public class CertificatePdfService {
             p.append("<img class=\"logo-img\" src=\"").append(d.getTournamentLogoDataUri()).append("\" alt=\"\" />");
         }
         p.append("</td>");
+        p.append("<td class=\"tournament-heading\">")
+                .append(escapeXml(d.getTournamentName())).append("</td>");
         p.append("<td class=\"logo-cell-right\">");
         if (d.getOrganiserLogoDataUri() != null) {
             p.append("<img class=\"logo-img\" src=\"").append(d.getOrganiserLogoDataUri()).append("\" alt=\"\" />");

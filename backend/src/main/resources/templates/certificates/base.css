@@ -37,29 +37,43 @@ html, body {
 
 .logos-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     margin-bottom: 3mm;
 }
 
 .logo-cell-left {
-    width: 50%;
+    width: 25%;
     text-align: left;
     vertical-align: middle;
     height: 37mm;
 }
 
 .logo-cell-right {
-    width: 50%;
+    width: 25%;
     text-align: right;
     vertical-align: middle;
     height: 37mm;
 }
 
-/* Logos about 3x the first release (owner 23 Nov): 36 mm tall, wide marks capped at 80 mm. */
+.tournament-heading {
+    width: 50%;
+    padding: 0 4mm;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 22pt;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #13284f;
+    word-wrap: break-word;
+}
+
+/* Preserve logo proportions within each header column, up to 36 mm tall. */
 .logo-img {
-    height: 36mm;
+    height: auto;
     width: auto;
-    max-width: 80mm;
+    max-height: 36mm;
+    max-width: 100%;
     vertical-align: middle;
 }
 
