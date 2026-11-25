@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/auth.store';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { Modal } from '@/components/Modal';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -29,6 +31,27 @@ export const LevelKnockoutTieBreakModal: React.FC<LevelKnockoutTieBreakModalProp
     onSuccess,
 }) => {
     const { t } = useTranslation(['match', 'tournament', 'common']);
+
+    const user = useAuthStore(state => state.user);
+    const [confirmJointWinners, setConfirmJointWinners] = useState(false);
+    const mayShareFinal = match.canDeclareJointWinners === true
+        && Boolean(user?.roles?.some(role => ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'].includes(role)))
+        && match.stage?.stageType === 'FINAL'
+        && calculatedScores.homeScore === calculatedScores.awayScore;
+
+    const handleJointWinners = async () => {
+        setLoading(true);
+        try {
+            await decideLevelKnockout(match.id, { method: 'JOINT_WINNERS' });
+            showToast.success(t('match:tieBreak.jointWinnersRecorded'));
+            await onSuccess();
+            onClose();
+        } catch (error: unknown) {
+            showToast.error(getErrorMessage(error, t('match:tieBreak.jointWinnersFailed')));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const configuredMethod = formatConfig?.knockoutTieBreaker || 'EXTRA_TIME';
     const isFifteens = formatConfig?.rugbyFormat === 'XV';
@@ -184,7 +207,16 @@ export const LevelKnockoutTieBreakModal: React.FC<LevelKnockoutTieBreakModalProp
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={t('match:tieBreak.levelAtFullTime')}>
+        <>
+        <ConfirmModal
+            isOpen={isOpen && confirmJointWinners}
+            onClose={() => setConfirmJointWinners(false)}
+            onConfirm={() => { void handleJointWinners(); }}
+            title={t('match:tieBreak.jointWinners')}
+            message={t('match:tieBreak.jointWinnersConfirm')}
+            confirmText={t('match:tieBreak.declareJointWinners')}
+        />
+        <Modal isOpen={isOpen && !confirmJointWinners} onClose={onClose} title={t('match:tieBreak.levelAtFullTime')}>
             <div className="space-y-5">
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5">
                     <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -197,6 +229,15 @@ export const LevelKnockoutTieBreakModal: React.FC<LevelKnockoutTieBreakModalProp
                         </p>
                     </div>
                 </div>
+
+                {mayShareFinal && (
+                    <div className="space-y-2 border-t border-border/50 pt-3">
+                        <p className="text-sm text-muted-foreground">{t('match:tieBreak.jointWinnersHint')}</p>
+                        <Button type="button" variant="outline" disabled={loading} onClick={() => setConfirmJointWinners(true)}>
+                            {t('match:tieBreak.declareJointWinners')}
+                        </Button>
+                    </div>
+                )}
 
                 {/* Tab Navigation when falling through to ET sequence */}
                 <div className="flex border-b border-border/50 gap-2 pb-1 text-xs">
@@ -455,6 +496,7 @@ export const LevelKnockoutTieBreakModal: React.FC<LevelKnockoutTieBreakModalProp
                 )}
             </div>
         </Modal>
+        </>
     );
 };
 

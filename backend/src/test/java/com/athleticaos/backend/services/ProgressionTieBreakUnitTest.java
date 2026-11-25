@@ -69,6 +69,18 @@ class ProgressionTieBreakUnitTest {
     }
 
     @Test
+    void jointWinnersNeverProgressEvenIfStaleWinnerOrOnwardLinkExists() {
+        Match match = Match.builder().id(UUID.randomUUID()).stage(knockoutStage)
+                .status(MatchStatus.COMPLETED).decidedBy("JOINT_WINNERS")
+                .homeTeam(homeTeam).awayTeam(awayTeam).homeScore(12).awayScore(12)
+                .winnerTeam(homeTeam).nextMatchIdForWinner(UUID.randomUUID()).build();
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+        assertThat(progressionService.canProgress(match.getId())).isFalse();
+        progressionService.processMatchCompletion(match.getId());
+        org.mockito.Mockito.verify(matchRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
     @DisplayName("Level knockout match with decidedBy advances explicit winner to next match and loser to 3rd place match")
     void levelKnockoutAdvancesExplicitWinnerAndLoser() {
         UUID qfId = UUID.randomUUID();

@@ -685,6 +685,8 @@ public class MatchServiceImpl implements MatchService {
                     .build());
         } else if (com.athleticaos.backend.rules.MatchStageRules.isKnockoutMatch(match)) {
             builder.stage(MatchResponse.StageInfo.builder()
+                    .name(match.getPhase())
+                    .stageType(com.athleticaos.backend.rules.MatchStageRules.isTerminalFinal(match) ? "FINAL" : null)
                     .knockout(true)
                     .build());
         }
@@ -998,8 +1000,8 @@ public class MatchServiceImpl implements MatchService {
         if (matchId == null) {
             throw new IllegalArgumentException("Match ID must not be null");
         }
-        if (request == null || request.getMethod() == null || request.getWinnerTeamId() == null) {
-            throw new IllegalArgumentException("Method and winner team ID must not be null");
+        if (request == null || request.getMethod() == null) {
+            throw new IllegalArgumentException("Method must not be null");
         }
 
         Match match = matchRepository.findById(matchId)
@@ -1023,6 +1025,39 @@ public class MatchServiceImpl implements MatchService {
         }
 
         UUID winnerId = request.getWinnerTeamId();
+        String method = request.getMethod().trim().toUpperCase(java.util.Locale.ROOT);
+        if ("JOINT_WINNERS".equals(method)) {
+            if (match.getTournament() == null || !accessScopeService.isTournamentInScope(match.getTournament())) {
+                throw new EntityNotFoundException("Match not found");
+            }
+            if (!com.athleticaos.backend.rules.MatchStageRules.isTerminalFinal(match)) {
+                throw new IllegalArgumentException("Joint winners are only allowed for a final with no onward matches.");
+            }
+            if (match.getStatus() == MatchStatus.CANCELLED || match.getStatus() == MatchStatus.SCHEDULED
+                    || hasExplicitResult(match) || home.getId().equals(away.getId())
+                    || match.getHomeScore() == null || match.getHomeScore() < 0
+                    || !match.getHomeScore().equals(match.getAwayScore())) {
+                throw new IllegalArgumentException("Joint winners require a played final with level scores.");
+            }
+            if (winnerId != null) {
+                throw new IllegalArgumentException("Joint winners cannot select a single winner.");
+            }
+            boolean wasCompleted = match.getStatus() == MatchStatus.COMPLETED;
+            match.setDecidedBy("JOINT_WINNERS");
+            match.setWinnerTeam(null);
+            match.setDropKicksHome(null);
+            match.setDropKicksAway(null);
+            match.setResultType(MatchResultType.NORMAL);
+            match.setStatus(MatchStatus.COMPLETED);
+            if (!wasCompleted) suspensionService.decrementSuspensions(match);
+            Match saved = matchRepository.save(match);
+            auditLogger.logMatchJointWinners(saved, httpRequest);
+            // Both teams share the terminal result; neither is routed as a single winner/loser.
+            return mapToResponse(saved);
+        }
+        if (winnerId == null) {
+            throw new IllegalArgumentException("Winner team ID is required for a single-winner decision.");
+        }
         if (!winnerId.equals(home.getId()) && !winnerId.equals(away.getId())) {
             throw new IllegalArgumentException("Winner team must be one of the two competing teams.");
         }
@@ -1030,8 +1065,6 @@ public class MatchServiceImpl implements MatchService {
 
         int hScore = match.getHomeScore() != null ? match.getHomeScore() : 0;
         int aScore = match.getAwayScore() != null ? match.getAwayScore() : 0;
-
-        String method = request.getMethod().trim().toUpperCase();
 
         Tournament tournament = match.getTournament();
         UUID categoryId = match.getCategory() != null ? match.getCategory().getId()
@@ -1260,6 +1293,15 @@ public class MatchServiceImpl implements MatchService {
         if (match == null || hasExplicitResult(match)) {
             return;
         }
+        if ("JOINT_WINNERS".equals(match.getDecidedBy())) {
+            match.setWinnerTeam(null);
+            if (match.getStatus() == MatchStatus.COMPLETED && match.getHomeScore() != null
+                    && match.getHomeScore().equals(match.getAwayScore())) {
+                match.setResultType(MatchResultType.NORMAL);
+                return;
+            }
+            match.setDecidedBy(null);
+        }
         if (match.getStatus() == MatchStatus.COMPLETED) {
             if (match.getHomeScore() != null && match.getAwayScore() != null) {
                 match.setResultType(MatchResultType.NORMAL);
@@ -1355,7 +1397,8 @@ public class MatchServiceImpl implements MatchService {
      * failures are isolated in their own transaction.
      */
     private void triggerAutoProgression(Match match) {
-        if (match == null || match.getStatus() != MatchStatus.COMPLETED) {
+        if (match == null || match.getStatus() != MatchStatus.COMPLETED
+                || "JOINT_WINNERS".equals(match.getDecidedBy())) {
             return;
         }
 

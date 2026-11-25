@@ -525,11 +525,12 @@ export interface Match {
     /** Set only for walkovers and byes, which complete without a scoreline. */
     winnerTeamId?: string;
     /** How a level knockout match was decided: FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
-    decidedBy?: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+    decidedBy?: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS' | 'JOINT_WINNERS';
     dropKicksHome?: number;
     dropKicksAway?: number;
     // Admin match detail only: the backend says whether the caller may score this match.
     canWrite?: boolean;
+    canDeclareJointWinners?: boolean;
     homeTeamPlaceholder?: string;
     awayTeamPlaceholder?: string;
     
@@ -583,14 +584,19 @@ export interface MatchResponse extends Match {
 }
 
 export type KnockoutTieBreaker = 'FIRST_TRY' | 'EXTRA_TIME';
-export type DecidedBy = 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
+export type DecidedBy = 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS' | 'JOINT_WINNERS';
 
-export interface DecideLevelKnockoutRequest {
-    method: DecidedBy;
+export type DecideLevelKnockoutRequest = {
+    method: Exclude<DecidedBy, 'JOINT_WINNERS'>;
     winnerTeamId: string;
     dropKicksHome?: number;
     dropKicksAway?: number;
-}
+} | {
+    method: 'JOINT_WINNERS';
+    winnerTeamId?: never;
+    dropKicksHome?: never;
+    dropKicksAway?: never;
+};
 
 export interface FirstTrySuggestionResponse {
     hasTryEvents: boolean;

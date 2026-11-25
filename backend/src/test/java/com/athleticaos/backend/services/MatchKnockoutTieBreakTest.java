@@ -157,6 +157,100 @@ class MatchKnockoutTieBreakTest {
     }
 
     @Test
+    void legacyCupFinalWithoutStageCanShareTitleButLegacySemiFinalCannot() {
+        Match match = createKnockoutMatch(12, 12);
+        match.setStage(null);
+        match.setPhase("Cup Semi-Final");
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+        DecideLevelKnockoutRequest request = DecideLevelKnockoutRequest.builder().method("JOINT_WINNERS").build();
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .isInstanceOf(IllegalArgumentException.class);
+        match.setPhase("Cup Final");
+        when(matchRepository.save(any(Match.class))).thenAnswer(inv -> inv.getArgument(0));
+        var response = matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest());
+        assertThat(response.getStage().getStageType()).isEqualTo("FINAL");
+        assertThat(response.getStage().getKnockout()).isTrue();
+        assertThat(match.getDecidedBy()).isEqualTo("JOINT_WINNERS");
+        org.mockito.Mockito.verifyNoInteractions(progressionService);
+    }
+
+    @Test
+    void organiserCanDeclareJointWinnersWithoutChangingScoreOrProgressing() {
+        Match match = createKnockoutMatch(12, 12);
+        knockoutStage.setStageType(TournamentStageType.FINAL);
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+        when(matchRepository.save(any(Match.class))).thenAnswer(inv -> inv.getArgument(0));
+        DecideLevelKnockoutRequest request = DecideLevelKnockoutRequest.builder().method("JOINT_WINNERS").build();
+
+        matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest());
+        assertThat(match.getStatus()).isEqualTo(MatchStatus.COMPLETED);
+        assertThat(match.getDecidedBy()).isEqualTo("JOINT_WINNERS");
+        assertThat(match.getWinnerTeam()).isNull();
+        assertThat(match.getHomeScore()).isEqualTo(12);
+        assertThat(match.getAwayScore()).isEqualTo(12);
+        verify(auditLogger).logMatchJointWinners(any(), any());
+        org.mockito.Mockito.verifyNoInteractions(progressionService);
+
+        matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest());
+        verify(suspensionService, org.mockito.Mockito.times(1)).decrementSuspensions(match);
+        matchService.updateMatchStatus(match.getId(), "COMPLETED", new MockHttpServletRequest());
+        assertThat(match.getDecidedBy()).isEqualTo("JOINT_WINNERS");
+        matchService.updateMatchStatus(match.getId(), "ONGOING", new MockHttpServletRequest());
+        assertThat(match.getDecidedBy()).isNull();
+    }
+
+    @Test
+    void matchOfficialOutsideOrganiserScopeCannotDeclareJointWinners() {
+        Match match = createKnockoutMatch(12, 12);
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+        when(accessScopeService.isTournamentInScope(tournament)).thenReturn(false);
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(),
+                DecideLevelKnockoutRequest.builder().method("JOINT_WINNERS").build(), new MockHttpServletRequest()))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class).hasMessage("Match not found");
+        verify(matchRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void jointWinnersRejectNonFinalsAndOnwardLinks() {
+        Match match = createKnockoutMatch(12, 12);
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+        DecideLevelKnockoutRequest request = DecideLevelKnockoutRequest.builder().method("JOINT_WINNERS").build();
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("final with no onward matches");
+        knockoutStage.setStageType(TournamentStageType.FINAL);
+        match.setNextMatchIdForWinner(UUID.randomUUID());
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("final with no onward matches");
+        match.setNextMatchIdForWinner(null);
+        match.setNextMatchIdForLoser(UUID.randomUUID());
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("final with no onward matches");
+        verify(matchRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void jointWinnersRequireBothTeamsLevelScoresAndNoSingleWinner() {
+        Match match = createKnockoutMatch(12, 7);
+        knockoutStage.setStageType(TournamentStageType.FINAL);
+        when(matchRepository.findById(match.getId())).thenReturn(Optional.of(match));
+        DecideLevelKnockoutRequest request = DecideLevelKnockoutRequest.builder().method("JOINT_WINNERS").build();
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("level scores");
+        match.setAwayScore(null);
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("level scores");
+        match.setAwayScore(12);
+        request.setWinnerTeamId(homeTeam.getId());
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("single winner");
+        request.setWinnerTeamId(null);
+        match.setAwayTeam(null);
+        assertThatThrownBy(() -> matchService.decideLevelKnockout(match.getId(), request, new MockHttpServletRequest()))
+                .hasMessageContaining("both teams assigned");
+        verify(matchRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
     @DisplayName("Completing a level knockout match without a decision is refused with a clear message")
     void completingLevelKnockoutWithoutDecisionIsRefused() {
         Match match = createKnockoutMatch(14, 14);

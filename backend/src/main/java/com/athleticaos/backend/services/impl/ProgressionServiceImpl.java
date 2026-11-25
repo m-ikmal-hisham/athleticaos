@@ -165,7 +165,7 @@ public class ProgressionServiceImpl implements ProgressionService {
                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
 
         // Match must be completed
-        if (match.getStatus() != MatchStatus.COMPLETED) {
+        if (match.getStatus() != MatchStatus.COMPLETED || "JOINT_WINNERS".equals(match.getDecidedBy())) {
             return false;
         }
 
@@ -214,6 +214,7 @@ public class ProgressionServiceImpl implements ProgressionService {
     }
 
     private Team determineWinner(Match match) {
+        if ("JOINT_WINNERS".equals(match.getDecidedBy())) return null;
         if (hasExplicitResult(match)) {
             return match.getWinnerTeam();
         }
@@ -236,6 +237,7 @@ public class ProgressionServiceImpl implements ProgressionService {
     }
 
     private Team determineLoser(Match match) {
+        if ("JOINT_WINNERS".equals(match.getDecidedBy())) return null;
         if (hasExplicitResult(match)) {
             Team winner = match.getWinnerTeam();
             if (winner == null) {
