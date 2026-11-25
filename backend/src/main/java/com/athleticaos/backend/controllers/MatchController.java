@@ -54,6 +54,8 @@ public class MatchController {
             throw new EntityNotFoundException("Match not found");
         }
         match.setCanWrite(accessScopeService.canWriteMatch(match.getId()));
+        match.setCanDeclareJointWinners(match.getTournamentId() != null
+                && accessScopeService.isTournamentInScope(match.getTournamentId()));
         return ResponseEntity.ok(match);
     }
 
@@ -105,7 +107,7 @@ public class MatchController {
     }
 
     @PostMapping("/{id}/decide-level")
-    @PreAuthorize(MatchRoles.MATCH_WRITE)
+    @PreAuthorize(MatchRoles.MATCH_WRITE + " and (#request.method == null or !#request.method.trim().equalsIgnoreCase('JOINT_WINNERS') or hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN'))")
     @Operation(summary = "Decide a level knockout match via category tie-break method")
     public ResponseEntity<MatchResponse> decideLevelKnockout(@PathVariable UUID id,
             @RequestBody @jakarta.validation.Valid com.athleticaos.backend.dtos.match.DecideLevelKnockoutRequest request,

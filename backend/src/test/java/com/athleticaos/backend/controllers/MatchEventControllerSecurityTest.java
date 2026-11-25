@@ -94,6 +94,24 @@ class MatchEventControllerSecurityTest {
 
     @Test
     @WithMockUser(authorities = "ROLE_ORG_ADMIN")
+    void organisationAdminCanSubmitJointWinnersWithoutSingleWinnerId() throws Exception {
+        mockMvc.perform(post("/api/v1/matches/{id}/decide-level", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"method\":\"JOINT_WINNERS\"}"))
+                .andExpect(status().isOk());
+        verify(matchService).decideLevelKnockout(eq(matchId), any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_CLUB_ADMIN")
+    void scorerCannotDeclareJointWinnersIncludingMixedCaseMethod() throws Exception {
+        mockMvc.perform(post("/api/v1/matches/{id}/decide-level", matchId)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"method\":\" joint_winners \"}"))
+                .andExpect(status().isForbidden());
+        verify(matchService, never()).decideLevelKnockout(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ROLE_ORG_ADMIN")
     void orgAdminCanAddEventInOwnTournament() throws Exception {
         when(matchEventService.addEventToMatch(eq(matchId), any(), any())).thenReturn(new MatchEventResponse());
 

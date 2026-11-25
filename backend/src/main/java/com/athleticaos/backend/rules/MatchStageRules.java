@@ -26,7 +26,7 @@ public final class MatchStageRules {
                 || match.getNextMatchIdForLoser() != null;
 
         if (stage == null) {
-            return hasNextMatchLink;
+            return hasNextMatchLink || isTerminalFinal(match);
         }
 
         boolean isRoundRobin = Boolean.TRUE.equals(stage.getIsRoundRobin());
@@ -40,6 +40,22 @@ public final class MatchStageRules {
         boolean isNotPool = stage.getStageType() != null && stage.getStageType() != TournamentStageType.POOL;
 
         return isKnockoutStage || isNotPool || hasNextMatchLink;
+    }
+
+    /** Recognise explicit legacy final labels without treating semi/quarter-finals as finals. */
+    public static boolean isTerminalFinal(Match match) {
+        if (match == null || match.getNextMatchIdForWinner() != null || match.getNextMatchIdForLoser() != null) {
+            return false;
+        }
+        TournamentStage stage = match.getStage();
+        if (stage != null) {
+            return stage.getStageType() == TournamentStageType.FINAL
+                    && !Boolean.TRUE.equals(stage.getIsRoundRobin())
+                    && !Boolean.TRUE.equals(stage.getIsGroupStage());
+        }
+        String phase = match.getPhase();
+        return phase != null && phase.trim().replace('_', ' ').matches(
+                "(?i)(?:(?:cup|plate|bowl|shield|spoon|fork|saucer|chopstick|wooden spoon|wooden fork)\\s+)?final(?:\\s*\\([^)]*\\))?");
     }
 }
 

@@ -201,6 +201,30 @@ public class KnockoutTieBreakIntegrationTest {
     }
 
     @Test
+    void jointFinalResultPersistsWithoutRoutingEitherTeam() {
+        Tournament tournament = createTournament("Shared Final Cup", "shared-final");
+        LevelQf fixture = levelQf(tournament, "Shared");
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Match match = matchRepository.findById(fixture.qf().getId()).orElseThrow();
+            match.getStage().setStageType(TournamentStageType.FINAL);
+            stageRepository.save(match.getStage());
+            match.setNextMatchIdForWinner(null);
+            match.setNextMatchIdForLoser(null);
+            matchRepository.save(match);
+        });
+        DecideLevelKnockoutRequest request = DecideLevelKnockoutRequest.builder().method("JOINT_WINNERS").build();
+        matchService.decideLevelKnockout(fixture.qf().getId(), request, new MockHttpServletRequest());
+        Match saved = reloadMatch(fixture.qf().getId());
+        assertThat(saved.getStatus()).isEqualTo(MatchStatus.COMPLETED);
+        assertThat(saved.getDecidedBy()).isEqualTo("JOINT_WINNERS");
+        assertThat(saved.getWinnerTeam()).isNull();
+        assertThat(saved.getHomeScore()).isEqualTo(10);
+        assertThat(saved.getAwayScore()).isEqualTo(10);
+        assertThat(reloadMatch(fixture.sf().getId()).getHomeTeam()).isNull();
+        assertThat(reloadMatch(fixture.bronze().getId()).getAwayTeam()).isNull();
+    }
+
+    @Test
     @DisplayName("QF level score cannot be completed without decision, completes with each method and advances")
     void qfLevelTieBreakersAndProgression() {
         Tournament tournament = createTournament("TieBreak Tourney", "tb-tourney");

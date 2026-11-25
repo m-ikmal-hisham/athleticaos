@@ -151,6 +151,12 @@
     "heroFirstTry": "{{winner}} win on first try",
     "heroExtraTime": "after extra time",
     "heroDropKicks": "{{winner}} win {{homeKicks}} to {{awayKicks}} on drop kicks",
-    "heroCoinToss": "{{winner}} win on coin toss"
+    "heroCoinToss": "{{winner}} win on coin toss",
+    "jointWinners": "Joint winners",
+    "declareJointWinners": "Declare both teams joint winners",
+    "jointWinnersConfirm": "Use only when the organiser has abandoned this final and awarded both teams the shared title. The match will be completed with the current level score. Neither team will advance as a single winner or loser.",
+    "jointWinnersHint": "Final abandoned due to weather or external circumstances? The organiser can award both teams the shared title.",
+    "jointWinnersRecorded": "Both teams recorded as joint winners.",
+    "jointWinnersFailed": "Could not record joint winners."
   }
 }

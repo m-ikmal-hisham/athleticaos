@@ -84,6 +84,7 @@ export const MatchHeroCard = ({ match, lastUpdated, tournamentName }: MatchHeroC
 
     const renderTieBreakHeroNote = () => {
         if (!match.decidedBy) return null;
+        if (match.decidedBy === 'JOINT_WINNERS') return t('match:tieBreak.jointWinners');
         const winnerName = match.winnerTeamId === match.homeTeamId
             ? match.homeTeamName
             : match.winnerTeamId === match.awayTeamId

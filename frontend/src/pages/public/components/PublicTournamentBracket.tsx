@@ -85,11 +85,12 @@ export function PublicTournamentBracket({ matches, placementRoundRobins = [] }: 
                                     {/* Matches Column */}
                                     <div className="flex flex-col justify-around flex-1 gap-6">
                                         {round.matches.map((match) => {
-                                            const isHomeWinner = match.homeScore != null && match.awayScore != null && (
+                                            const isJointWinner = match.status === 'COMPLETED' && match.decidedBy === 'JOINT_WINNERS';
+                                            const isHomeWinner = isJointWinner || match.homeScore != null && match.awayScore != null && (
                                                 match.homeScore > match.awayScore ||
                                                 (match.homeScore === match.awayScore && Boolean(match.winnerTeamId && match.homeTeamId && match.winnerTeamId === match.homeTeamId))
                                             );
-                                            const isAwayWinner = match.homeScore != null && match.awayScore != null && (
+                                            const isAwayWinner = isJointWinner || match.homeScore != null && match.awayScore != null && (
                                                 match.awayScore > match.homeScore ||
                                                 (match.homeScore === match.awayScore && Boolean(match.winnerTeamId && match.awayTeamId && match.winnerTeamId === match.awayTeamId))
                                             );
@@ -110,6 +111,7 @@ export function PublicTournamentBracket({ matches, placementRoundRobins = [] }: 
                                                         </span>
                                                         {match.decidedBy ? (
                                                             <span className="text-blue-600 dark:text-blue-400 font-bold">
+                                                                {match.decidedBy === 'JOINT_WINNERS' && t('match:tieBreak.jointWinners')}
                                                                 {match.decidedBy === 'FIRST_TRY' && t('match:tieBreak.shortFirstTry')}
                                                                 {match.decidedBy === 'EXTRA_TIME' && t('match:tieBreak.shortExtraTime')}
                                                                 {match.decidedBy === 'DROP_KICKS' && t('match:tieBreak.shortDropKicks', { home: match.dropKicksHome ?? 0, away: match.dropKicksAway ?? 0 })}
@@ -141,7 +143,7 @@ export function PublicTournamentBracket({ matches, placementRoundRobins = [] }: 
                                                                     />
                                                                 </div>
                                                                 <span className={`text-xs truncate ${isHomeWinner ? 'text-slate-900 dark:text-white font-extrabold' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                    {match.homeTeamName ? formatPoolPositionPlaceholder(match.homeTeamName) : t('tournament:bracket.tbd')}
+                                                                    {match.homeTeamName ? (match.homeTeamId ? match.homeTeamName : formatPoolPositionPlaceholder(match.homeTeamName)) : t('tournament:bracket.tbd')}
                                                                 </span>
                                                             </div>
                                                             <span className={`font-mono text-xs px-2 py-0.5 rounded-md ${isHomeWinner ? 'bg-emerald-500 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold'}`}>
@@ -161,7 +163,7 @@ export function PublicTournamentBracket({ matches, placementRoundRobins = [] }: 
                                                                     />
                                                                 </div>
                                                                 <span className={`text-xs truncate ${isAwayWinner ? 'text-slate-900 dark:text-white font-extrabold' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                    {match.awayTeamName ? formatPoolPositionPlaceholder(match.awayTeamName) : t('tournament:bracket.tbd')}
+                                                                    {match.awayTeamName ? (match.awayTeamId ? match.awayTeamName : formatPoolPositionPlaceholder(match.awayTeamName)) : t('tournament:bracket.tbd')}
                                                                 </span>
                                                             </div>
                                                             <span className={`font-mono text-xs px-2 py-0.5 rounded-md ${isAwayWinner ? 'bg-emerald-500 text-white font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold'}`}>
