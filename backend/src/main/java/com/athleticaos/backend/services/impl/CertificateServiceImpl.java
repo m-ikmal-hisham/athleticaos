@@ -546,7 +546,8 @@ public class CertificateServiceImpl implements CertificateService {
         ImageAssets assets = loadImageAssets(tournament, settings);
         List<CertificateDownloadPayload.Entry> entries = buildDownloadEntries(tournament, settings, assets, validCerts);
         String teamName = validCerts.get(0).getTeam().getName();
-        String fileBase = fileNameSanitizer.sanitizeSegment(teamName, "team");
+        String fileBase = fileNameSanitizer.sanitizeSegment(tournament.getName(), "tournament")
+                + "-" + fileNameSanitizer.sanitizeSegment(teamName, "team");
 
         return CertificateDownloadPayload.builder()
                 .downloadFileName(fileBase + "-certificates")
