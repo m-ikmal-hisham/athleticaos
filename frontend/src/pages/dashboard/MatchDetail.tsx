@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CalendarBlank, MapPin, Trash, ArrowCounterClockwise, Target, Lightning, ArrowsLeftRight, Notebook, Football, GameController, Pencil, ArrowUp, ArrowDown, Star } from '@phosphor-icons/react';
 import { useMatchesStore } from '@/store/matches.store';
@@ -62,6 +63,7 @@ interface PlayerInTeam {
 }
 
 export const MatchDetail = () => {
+    const { t } = useTranslation('match');
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const {
@@ -918,6 +920,11 @@ export const MatchDetail = () => {
                         </GlassCard>
 
                         {/* Moved Match Controls Here */}
+                        {selectedMatch.decidedBy === 'JOINT_WINNERS' && (
+                            <p className="text-center font-semibold text-emerald-700 dark:text-emerald-300">
+                                {t('match:tieBreak.jointWinners')}
+                            </p>
+                        )}
                         <div className="flex justify-center w-full">
                             <MatchControls
                                 match={selectedMatch}

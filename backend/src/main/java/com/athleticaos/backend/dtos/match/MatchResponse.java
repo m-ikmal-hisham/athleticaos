@@ -46,13 +46,15 @@ public class MatchResponse {
      * Explicit winner for walkovers, byes, or level knockout matches decided by tie-break.
      */
     private UUID winnerTeamId;
-    /** FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS. */
+    /** FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS, JOINT_WINNERS. */
     private String decidedBy;
     private Integer dropKicksHome;
     private Integer dropKicksAway;
     // Admin GET /api/v1/matches/{id} only: true when the caller may score this match
     // (organiser scope, the match's official, or the tournament officials panel). Null elsewhere.
     private Boolean canWrite;
+    // Admin detail only: organiser scope; the joint-result action has additional final/score guards.
+    private Boolean canDeclareJointWinners;
     private String phase;
     private String matchCode;
     /** Sequential number within the tournament (1, 2, 3, …) for easy identification. */

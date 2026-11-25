@@ -22,11 +22,12 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
     const homeScore = match.homeScore ?? 0;
     const awayScore = match.awayScore ?? 0;
 
-    const isHomeWinner = hasScores && (
+    const isJointWinner = match.status === 'COMPLETED' && match.decidedBy === 'JOINT_WINNERS';
+    const isHomeWinner = isJointWinner || hasScores && (
         homeScore > awayScore ||
         (homeScore === awayScore && Boolean(match.winnerTeamId && match.homeTeamId && match.winnerTeamId === match.homeTeamId))
     );
-    const isAwayWinner = hasScores && (
+    const isAwayWinner = isJointWinner || hasScores && (
         awayScore > homeScore ||
         (homeScore === awayScore && Boolean(match.winnerTeamId && match.awayTeamId && match.winnerTeamId === match.awayTeamId))
     );
@@ -37,6 +38,7 @@ export function MatchCard({ match, compact = false, footer, className = '' }: Ma
 
     const renderShortTieBreak = () => {
         if (!match.decidedBy) return null;
+        if (match.decidedBy === 'JOINT_WINNERS') return t('match:tieBreak.jointWinners');
         if (match.decidedBy === 'FIRST_TRY') {
             return t('match:tieBreak.shortFirstTry');
         }

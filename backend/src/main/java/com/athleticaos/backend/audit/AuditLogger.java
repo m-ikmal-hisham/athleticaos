@@ -196,6 +196,16 @@ public class AuditLogger {
                 auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
         }
 
+        public void logMatchJointWinners(Match match, HttpServletRequest request) {
+                AuditLogEntry entry = AuditLogEntry.builder()
+                                .actionType("MATCH_JOINT_WINNERS")
+                                .entityType("MATCH")
+                                .entityId(match.getId())
+                                .entitySummary("Organiser declared both teams joint winners of an abandoned final")
+                                .build();
+                auditLogService.log(entry, getIpAddress(request), getUserAgent(request));
+        }
+
         public void logMatchScoreUpdated(Match match, HttpServletRequest request) {
                 AuditLogEntry entry = AuditLogEntry.builder()
                                 .actionType("MATCH_SCORE_UPDATED")

@@ -91,7 +91,8 @@ public class Match {
     private Team winnerTeam;
 
     /**
-     * How a level knockout match was decided: FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS.
+     * How a level knockout match was decided: FIRST_TRY, EXTRA_TIME, DROP_KICKS, COIN_TOSS,
+     * or JOINT_WINNERS for a shared terminal final (winnerTeam remains null).
      * Null when decided on normal scores or unplayed.
      */
     @Column(name = "decided_by", length = 32)

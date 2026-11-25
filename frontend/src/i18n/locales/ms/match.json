@@ -151,6 +151,12 @@
     "heroFirstTry": "{{winner}} menang try pertama",
     "heroExtraTime": "selepas masa tambahan",
     "heroDropKicks": "{{winner}} menang {{homeKicks}} lawan {{awayKicks}} tendangan jatuhan",
-    "heroCoinToss": "{{winner}} menang lambungan syiling"
+    "heroCoinToss": "{{winner}} menang lambungan syiling",
+    "jointWinners": "Johan bersama",
+    "declareJointWinners": "Isytiharkan kedua-dua pasukan sebagai johan bersama",
+    "jointWinnersConfirm": "Gunakan hanya apabila penganjur telah menamatkan perlawanan akhir ini dan menganugerahkan gelaran bersama kepada kedua-dua pasukan. Perlawanan akan diselesaikan dengan skor seri semasa. Tiada pasukan akan mara sebagai pemenang atau pasukan kalah tunggal.",
+    "jointWinnersHint": "Perlawanan akhir dihentikan akibat cuaca atau faktor luar? Penganjur boleh menganugerahkan gelaran bersama kepada kedua-dua pasukan.",
+    "jointWinnersRecorded": "Kedua-dua pasukan direkodkan sebagai johan bersama.",
+    "jointWinnersFailed": "Johan bersama tidak dapat direkodkan."
   }
 }

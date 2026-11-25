@@ -1,4 +1,5 @@
 import api from "./axios";
+import type { DecideLevelKnockoutRequest } from '@/types';
 
 export const fetchMatches = (params?: {
     tournamentId?: string;
@@ -80,12 +81,7 @@ export const updateMatchStatus = (matchId: string, status: string) => {
 
 export const decideLevelKnockout = (
     id: string,
-    data: {
-        method: 'FIRST_TRY' | 'EXTRA_TIME' | 'DROP_KICKS' | 'COIN_TOSS';
-        winnerTeamId: string;
-        dropKicksHome?: number;
-        dropKicksAway?: number;
-    }
+    data: DecideLevelKnockoutRequest
 ) => {
     return api.post(`/matches/${id}/decide-level`, data);
 };
