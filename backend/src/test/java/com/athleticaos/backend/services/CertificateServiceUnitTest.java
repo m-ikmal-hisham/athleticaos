@@ -85,6 +85,28 @@ class CertificateServiceUnitTest {
     }
 
     @Test
+    void teamDownloadFilenameIncludesSanitizedTournamentAndTeamNames() {
+        UUID tournamentId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        Tournament tournament = Tournament.builder().id(tournamentId)
+                .name("Example Cup 2026 / Finals").build();
+        Team team = Team.builder().id(teamId).name("Falcons: U15").build();
+        Certificate certificate = Certificate.builder().tournament(tournament).team(team)
+                .recipientName("Alex Example").code("ABCD123456").build();
+        when(tournamentRepository.findById(tournamentId)).thenReturn(Optional.of(tournament));
+        when(settingsRepository.findByTournamentId(tournamentId)).thenReturn(Optional.empty());
+        when(certificateRepository.findValidByTournamentIdAndTeamIdWithTeamAndCategory(tournamentId, teamId))
+                .thenReturn(List.of(certificate));
+
+        assertThat(service.prepareTeamDownloadPayload(tournamentId, teamId).getDownloadFileName())
+                .isEqualTo("Example Cup 2026 Finals-Falcons U15-certificates");
+
+        tournament.setName("Another Cup 2026");
+        assertThat(service.prepareTeamDownloadPayload(tournamentId, teamId).getDownloadFileName())
+                .isEqualTo("Another Cup 2026-Falcons U15-certificates");
+    }
+
+    @Test
     void settingsValidationRejectsInvalidTeamIdAndOverlongAchievement() {
         UUID tournamentId = UUID.randomUUID();
         Tournament tournament = Tournament.builder()
