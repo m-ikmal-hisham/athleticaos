@@ -812,6 +812,7 @@ class BracketServiceImplTest {
 
         // 1. Multi categories and categoryId is null -> throws IllegalArgumentException("Choose a category for this bracket.")
         org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(tMulti));
+        org.mockito.Mockito.when(tournaments.findByIdForUpdate(tournamentId)).thenReturn(java.util.Optional.of(tMulti));
         com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest reqNullCat = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
         reqNullCat.setType(com.athleticaos.backend.enums.TournamentStageType.PLATE);
         reqNullCat.setTeamCount(4);
@@ -829,6 +830,7 @@ class BracketServiceImplTest {
 
         // 3. Exactly one category and categoryId is null -> uses that single category
         org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(tSingle));
+        org.mockito.Mockito.when(tournaments.findByIdForUpdate(tournamentId)).thenReturn(java.util.Optional.of(tSingle));
         org.mockito.Mockito.when(stages.existsByTournamentIdAndStageTypeAndCategoryId(tournamentId, com.athleticaos.backend.enums.TournamentStageType.PLATE, cat1.getId()))
                 .thenReturn(false);
         org.mockito.Mockito.when(stages.save(org.mockito.ArgumentMatchers.any(com.athleticaos.backend.entities.TournamentStage.class)))
@@ -856,6 +858,7 @@ class BracketServiceImplTest {
         com.athleticaos.backend.entities.Tournament t = com.athleticaos.backend.entities.Tournament.builder()
                 .id(tournamentId).name("Tourney").categories(List.of(cat)).build();
         org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(t));
+        org.mockito.Mockito.when(tournaments.findByIdForUpdate(tournamentId)).thenReturn(java.util.Optional.of(t));
 
         com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest req = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
         req.setType(com.athleticaos.backend.enums.TournamentStageType.THIRD_PLACE);
@@ -890,6 +893,7 @@ class BracketServiceImplTest {
         com.athleticaos.backend.entities.Tournament t = com.athleticaos.backend.entities.Tournament.builder()
                 .id(tournamentId).name("Tourney").categories(List.of(cat)).build();
         org.mockito.Mockito.when(tournaments.findById(tournamentId)).thenReturn(java.util.Optional.of(t));
+        org.mockito.Mockito.when(tournaments.findByIdForUpdate(tournamentId)).thenReturn(java.util.Optional.of(t));
 
         com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest req = new com.athleticaos.backend.dtos.tournament.ManualBracketCreateRequest();
         req.setType(com.athleticaos.backend.enums.TournamentStageType.THIRD_PLACE);
