@@ -65,7 +65,16 @@ public class MatchServiceImpl implements MatchService {
     private final PlatformTransactionManager transactionManager;
     private final com.athleticaos.backend.services.AccessScopeService accessScopeService;
 
+    private static final UUID ZERO_UUID = new UUID(0L, 0L);
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     private TransactionTemplate requiresNewTransactionTemplate;
+
+    void setEntityManager(jakarta.persistence.EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @jakarta.annotation.PostConstruct
     void initTransactionTemplate() {
@@ -202,7 +211,7 @@ public class MatchServiceImpl implements MatchService {
         if (tournamentId == null) {
             throw new IllegalArgumentException("Tournament ID must not be null");
         }
-        Tournament tournament = tournamentRepository.findById(tournamentId)
+        Tournament tournament = tournamentRepository.findByIdForUpdate(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Tournament not found with ID: " + tournamentId));
 
@@ -315,38 +324,51 @@ public class MatchServiceImpl implements MatchService {
             throw new EntityNotFoundException("Match not found");
         }
 
+        UUID tournamentId = match.getTournament().getId();
+        boolean venueRequested = request.isVenueIdSet() || request.getVenue() != null;
+        TournamentVenue destinationVenue = null;
+        UUID destinationVenueId = null;
+        Integer allocatedMatchNumber = null;
+
+        if (venueRequested) {
+            // Resolve and validate the requested destination BEFORE mutating any managed entity
+            // fields so Hibernate cannot auto-flush a conflicting venue_id ahead of number allocation.
+            destinationVenue = resolveRequestedVenueForUpdate(tournamentId, request);
+            destinationVenueId = destinationVenue != null ? destinationVenue.getId() : null;
+
+            // Even an apparent same-venue submission can have stale state after a concurrent
+            // move or renumber. Lock and refresh before deciding whether it is a genuine move.
+            tournamentRepository.findByIdForUpdate(tournamentId)
+                    .orElseThrow(() -> new EntityNotFoundException("Tournament not found with ID: " + tournamentId));
+            if (entityManager != null && entityManager.contains(match)) {
+                entityManager.refresh(match);
+            }
+            if (match.isDeleted()) {
+                throw new EntityNotFoundException("Match not found with ID: " + id);
+            }
+
+            UUID refreshedVenueId = match.getVenueId();
+            if (!java.util.Objects.equals(refreshedVenueId, destinationVenueId)) {
+                Integer currentMatchNumber = match.getMatchNumber();
+                if (currentMatchNumber == null
+                        || matchRepository.isMatchNumberOccupied(
+                                tournamentId, destinationVenueId, currentMatchNumber, match.getId())) {
+                    allocatedMatchNumber = matchRepository.findMaxMatchNumber(tournamentId, destinationVenueId) + 1;
+                }
+            }
+        }
+
         if (request.getMatchDate() != null) {
             match.setMatchDate(request.getMatchDate());
         }
         if (request.getKickOffTime() != null) {
             match.setKickOffTime(request.getKickOffTime());
         }
-        if (request.isVenueIdSet()) {
-            UUID reqVenueId = request.getVenueId();
-            if (reqVenueId == null || reqVenueId.equals(new UUID(0L, 0L))) {
-                match.setTournamentVenue(null);
-                match.setVenue(null);
-            } else {
-                TournamentVenue venue = venueRepository.findByIdAndTournamentIdAndDeletedFalse(reqVenueId, match.getTournament().getId())
-                        .orElseThrow(() -> new IllegalArgumentException("Venue does not belong to this tournament or was not found"));
-                match.setTournamentVenue(venue);
-                match.setVenue(venue.getName());
-            }
-        } else if (request.getVenue() != null) {
-            String requestedVenue = request.getVenue().trim();
-            if (requestedVenue.isEmpty()) {
-                match.setTournamentVenue(null);
-                match.setVenue(null);
-            } else {
-                // As on create: resolve a legacy venue name against the declared venues, never
-                // create one. An undeclared name is a typo, not a new venue.
-                TournamentVenue venue = venueRepository.findByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(match.getTournament().getId()).stream()
-                        .filter(v -> v.getName().equalsIgnoreCase(requestedVenue))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Unknown venue '" + requestedVenue + "'. Declare it on the tournament first, then assign it."));
-                match.setTournamentVenue(venue);
-                match.setVenue(venue.getName());
+        if (venueRequested) {
+            match.setTournamentVenue(destinationVenue);
+            match.setVenue(destinationVenue != null ? destinationVenue.getName() : null);
+            if (allocatedMatchNumber != null) {
+                match.setMatchNumber(allocatedMatchNumber);
             }
         }
         if (request.getPitch() != null) {
@@ -533,6 +555,30 @@ public class MatchServiceImpl implements MatchService {
         auditLogger.logMatchUpdated(updatedMatch, httpRequest);
         triggerAutoProgression(updatedMatch);
         return mapToResponse(updatedMatch);
+    }
+
+    private TournamentVenue resolveRequestedVenueForUpdate(UUID tournamentId, MatchUpdateRequest request) {
+        if (request.isVenueIdSet()) {
+            UUID reqVenueId = request.getVenueId();
+            if (reqVenueId == null || ZERO_UUID.equals(reqVenueId)) {
+                return null;
+            }
+            return venueRepository.findByIdAndTournamentIdAndDeletedFalse(reqVenueId, tournamentId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Venue does not belong to this tournament or was not found"));
+        }
+
+        String requestedVenue = request.getVenue() != null ? request.getVenue().trim() : "";
+        if (requestedVenue.isEmpty()) {
+            return null;
+        }
+        // As on create: resolve a legacy venue name against the declared venues, never
+        // create one. An undeclared name is a typo, not a new venue.
+        return venueRepository.findByTournamentIdAndDeletedFalseOrderByDisplayOrderAscNameAsc(tournamentId).stream()
+                .filter(v -> v.getName().equalsIgnoreCase(requestedVenue))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown venue '" + requestedVenue + "'. Declare it on the tournament first, then assign it."));
     }
 
     private void clearIncomingLinksToSlot(Match targetMatch, String slot) {
@@ -1468,8 +1514,13 @@ public class MatchServiceImpl implements MatchService {
     @Transactional
     public com.athleticaos.backend.dtos.match.MatchRenumberResponse renumberMatches(
             UUID tournamentId, boolean dryRun, HttpServletRequest httpRequest) {
-        tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new EntityNotFoundException("Tournament not found: " + tournamentId));
+        if (dryRun) {
+            tournamentRepository.findById(tournamentId)
+                    .orElseThrow(() -> new EntityNotFoundException("Tournament not found: " + tournamentId));
+        } else {
+            tournamentRepository.findByIdForUpdate(tournamentId)
+                    .orElseThrow(() -> new EntityNotFoundException("Tournament not found: " + tournamentId));
+        }
 
         List<Match> matches = matchRepository.findByTournamentId(tournamentId);
         int totalMatches = matches.size();

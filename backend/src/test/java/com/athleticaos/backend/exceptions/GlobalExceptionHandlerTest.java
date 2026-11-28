@@ -148,6 +148,25 @@ public class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void dataIntegrityViolation_uniqueViolationMatchVenueNumber_returns409WithMatchNumberConflictCode() throws Exception {
+        mockMvc.perform(get("/test-errors/unique-violation-match-venue-number"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").value("MATCH_NUMBER_CONFLICT"))
+                .andExpect(jsonPath("$.message").value("Match number conflict at the selected venue. Please try again."))
+                .andExpect(jsonPath("$.message").value(not(containsString("uq_matches_tournament_venue_id_match_number"))));
+    }
+
+    @Test
+    void dataIntegrityViolation_otherConstraintContainingMatchNumber_doesNotMapToMatchNumberConflict() throws Exception {
+        mockMvc.perform(get("/test-errors/unique-violation-other-match-number"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.errorCode").doesNotExist())
+                .andExpect(jsonPath("$.message").value("A record with this identifier already exists."));
+    }
+
+    @Test
     void emailRequiredException_returns400WithEmailRequiredCode() throws Exception {
         mockMvc.perform(get("/test-errors/email-required"))
                 .andExpect(status().isBadRequest())
@@ -321,6 +340,26 @@ public class GlobalExceptionHandlerTest {
         public String testUniqueViolationEmail() {
             SQLException sqlEx = new SQLException("duplicate key value violates unique constraint \"idx_persons_email_unique\"", "23505");
             ConstraintViolationException cve = new ConstraintViolationException("Unique violation", sqlEx, "idx_persons_email_unique");
+            throw new DataIntegrityViolationException("Data integrity violation", cve);
+        }
+
+        @GetMapping("/unique-violation-match-venue-number")
+        public String testUniqueViolationMatchVenueNumber() {
+            SQLException sqlEx = new SQLException(
+                    "duplicate key value violates unique constraint \"uq_matches_tournament_venue_id_match_number\"",
+                    "23505");
+            ConstraintViolationException cve = new ConstraintViolationException(
+                    "Unique violation", sqlEx, "uq_matches_tournament_venue_id_match_number");
+            throw new DataIntegrityViolationException("Data integrity violation", cve);
+        }
+
+        @GetMapping("/unique-violation-other-match-number")
+        public String testUniqueViolationOtherMatchNumber() {
+            SQLException sqlEx = new SQLException(
+                    "duplicate key value violates unique constraint \"uq_other_match_number_idx\"",
+                    "23505");
+            ConstraintViolationException cve = new ConstraintViolationException(
+                    "Unique violation", sqlEx, "uq_other_match_number_idx");
             throw new DataIntegrityViolationException("Data integrity violation", cve);
         }
 

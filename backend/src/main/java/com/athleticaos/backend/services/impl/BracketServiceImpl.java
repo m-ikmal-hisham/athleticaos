@@ -127,7 +127,7 @@ public class BracketServiceImpl implements BracketService {
     public BracketViewResponse generateBracketForTournament(UUID tournamentId, BracketGenerationRequest request) {
         log.info("Generating bracket for tournament: {} with format: {}", tournamentId, request.getFormat());
 
-        Tournament tournament = tournamentRepository.findById(tournamentId)
+        Tournament tournament = tournamentRepository.findByIdForUpdate(tournamentId)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
@@ -2143,7 +2143,7 @@ public class BracketServiceImpl implements BracketService {
         com.athleticaos.backend.enums.TournamentStageType type = request.getType();
         UUID categoryId = request.getCategoryId();
 
-        Tournament tournament = tournamentRepository.findById(tournamentId).orElseThrow();
+        Tournament tournament = tournamentRepository.findByIdForUpdate(tournamentId).orElseThrow();
 
         boolean tournamentHasCategories = tournament.getCategories() != null && !tournament.getCategories().isEmpty();
         TournamentCategory category = null;
@@ -2434,7 +2434,7 @@ public class BracketServiceImpl implements BracketService {
             HttpServletRequest httpRequest) {
         log.info("Creating placement round robin for tournament {}: {}", tournamentId, request.getName());
 
-        Tournament tournament = tournamentRepository.findById(tournamentId)
+        Tournament tournament = tournamentRepository.findByIdForUpdate(tournamentId)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 

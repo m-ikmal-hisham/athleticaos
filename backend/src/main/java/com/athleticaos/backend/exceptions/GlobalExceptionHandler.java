@@ -128,10 +128,14 @@ public class GlobalExceptionHandler {
             status = HttpStatus.CONFLICT;
             boolean isEmailConstraint = constraintName != null
                     && constraintName.toLowerCase(Locale.ROOT).contains("email");
+            boolean isMatchVenueNumberConstraint = "uq_matches_tournament_venue_id_match_number".equals(constraintName);
 
             if (isEmailConstraint) {
                 message = "A person with this email already exists.";
                 errorCode = "DUPLICATE_EMAIL";
+            } else if (isMatchVenueNumberConstraint) {
+                message = "Match number conflict at the selected venue. Please try again.";
+                errorCode = "MATCH_NUMBER_CONFLICT";
             } else {
                 message = "A record with this identifier already exists.";
             }

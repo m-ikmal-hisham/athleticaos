@@ -39,6 +39,10 @@ public interface TournamentRepository extends JpaRepository<Tournament, UUID> {
     Integer acquireFeaturedAdvisoryLock();
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM Tournament t WHERE t.id = :id")
+    java.util.Optional<Tournament> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("SELECT t FROM Tournament t WHERE t.featured = true AND (t.deleted IS NULL OR t.deleted = false) ORDER BY t.featuredOrder ASC")
     java.util.List<Tournament> findFeaturedForUpdate();
 
