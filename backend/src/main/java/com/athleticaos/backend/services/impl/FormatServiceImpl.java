@@ -39,7 +39,7 @@ public class FormatServiceImpl implements FormatService {
     @Transactional
     @SuppressWarnings("null")
     public void generateSchedule(UUID tournamentId, BracketGenerationRequest request) {
-        Tournament tournament = tournamentRepository.findById(tournamentId)
+        Tournament tournament = tournamentRepository.findByIdForUpdate(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
         // Clear existing matches before generating new ones (preserve structure/pools).

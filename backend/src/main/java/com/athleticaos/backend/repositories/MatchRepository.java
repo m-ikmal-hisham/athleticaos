@@ -211,6 +211,39 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
             }
         }
 
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) > 0 FROM Match m " +
+                        "WHERE m.tournament.id = :tournamentId " +
+                        "AND m.tournamentVenue.id = :venueId " +
+                        "AND m.matchNumber = :matchNumber " +
+                        "AND m.id <> :excludeMatchId " +
+                        "AND m.deleted = false")
+        boolean existsByTournamentIdAndVenueIdAndMatchNumberExcludingMatch(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+                        @org.springframework.data.repository.query.Param("venueId") UUID venueId,
+                        @org.springframework.data.repository.query.Param("matchNumber") Integer matchNumber,
+                        @org.springframework.data.repository.query.Param("excludeMatchId") UUID excludeMatchId);
+
+        @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) > 0 FROM Match m " +
+                        "WHERE m.tournament.id = :tournamentId " +
+                        "AND m.tournamentVenue IS NULL " +
+                        "AND m.matchNumber = :matchNumber " +
+                        "AND m.id <> :excludeMatchId " +
+                        "AND m.deleted = false")
+        boolean existsByTournamentIdAndVenueNullAndMatchNumberExcludingMatch(
+                        @org.springframework.data.repository.query.Param("tournamentId") UUID tournamentId,
+                        @org.springframework.data.repository.query.Param("matchNumber") Integer matchNumber,
+                        @org.springframework.data.repository.query.Param("excludeMatchId") UUID excludeMatchId);
+
+        default boolean isMatchNumberOccupied(UUID tournamentId, UUID venueId, Integer matchNumber, UUID excludeMatchId) {
+            if (matchNumber == null) {
+                return false;
+            }
+            if (venueId == null) {
+                return existsByTournamentIdAndVenueNullAndMatchNumberExcludingMatch(tournamentId, matchNumber, excludeMatchId);
+            }
+            return existsByTournamentIdAndVenueIdAndMatchNumberExcludingMatch(tournamentId, venueId, matchNumber, excludeMatchId);
+        }
+
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Match m WHERE m.tournamentVenue.id = :venueId AND m.deleted = false")
         long countByTournamentVenueIdAndDeletedFalse(
                         @org.springframework.data.repository.query.Param("venueId") UUID venueId);

@@ -84,6 +84,9 @@ public class ProgressionServiceImpl implements ProgressionService {
         }
 
         // Fallback to implicit stage-based progression (legacy support)
+        if (match.getTournament() != null && match.getTournament().getId() != null) {
+            tournamentRepository.findByIdForUpdate(match.getTournament().getId());
+        }
         TournamentStage nextStage = findNextStage(currentStage);
         if (nextStage == null) {
             log.info("Match {} is in final stage, no further progression", matchId);
@@ -106,8 +109,8 @@ public class ProgressionServiceImpl implements ProgressionService {
     public int progressTournament(UUID tournamentId) {
         log.info("Processing tournament progression for tournament: {}", tournamentId);
 
-        // Verify tournament exists
-        tournamentRepository.findById(tournamentId)
+        // Verify tournament exists and lock it before any stage reads or implicit match creation
+        tournamentRepository.findByIdForUpdate(tournamentId)
                 .filter(t -> !Boolean.TRUE.equals(t.getDeleted()))
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found"));
 
